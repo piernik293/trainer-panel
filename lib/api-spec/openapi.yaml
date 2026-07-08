@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Trainer management API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: clients
+    description: Client management
+  - name: surveys
+    description: Client surveys
+  - name: stats
+    description: Dashboard statistics
 paths:
   /healthz:
     get:
@@ -24,6 +30,200 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /clients:
+    get:
+      operationId: listClients
+      tags: [clients]
+      summary: List all clients
+      responses:
+        "200":
+          description: List of clients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Client"
+    post:
+      operationId: createClient
+      tags: [clients]
+      summary: Create a new client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientInput"
+      responses:
+        "201":
+          description: Created client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /clients/{id}:
+    get:
+      operationId: getClient
+      tags: [clients]
+      summary: Get a client by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Client details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateClient
+      tags: [clients]
+      summary: Update a client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientUpdate"
+      responses:
+        "200":
+          description: Updated client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteClient
+      tags: [clients]
+      summary: Delete a client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /clients/{clientId}/survey:
+    get:
+      operationId: getClientSurvey
+      tags: [surveys]
+      summary: Get client's survey
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Client survey
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Survey"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: upsertClientSurvey
+      tags: [surveys]
+      summary: Create or update client's survey
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SurveyInput"
+      responses:
+        "200":
+          description: Saved survey
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Survey"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Get dashboard statistics
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+
+  /training-goals-distribution:
+    get:
+      operationId: getTrainingGoalsDistribution
+      tags: [stats]
+      summary: Get distribution of training goals across all clients
+      responses:
+        "200":
+          description: Distribution map
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GoalCount"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +234,182 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Client:
+      type: object
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        hasSurvey:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - firstName
+        - lastName
+        - hasSurvey
+        - createdAt
+        - updatedAt
+
+    ClientInput:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+        lastName:
+          type: string
+          minLength: 1
+        email:
+          type: string
+        phone:
+          type: string
+        notes:
+          type: string
+      required:
+        - firstName
+        - lastName
+
+    ClientUpdate:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+        lastName:
+          type: string
+          minLength: 1
+        email:
+          type: string
+        phone:
+          type: string
+        notes:
+          type: string
+
+    Survey:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        trainingGoal:
+          type: ["string", "null"]
+        experienceLevel:
+          type: ["string", "null"]
+        trainingDuration:
+          type: ["string", "null"]
+        healthLimitations:
+          type: ["string", "null"]
+        weeklyFrequency:
+          type: ["integer", "null"]
+        sessionDuration:
+          type: ["string", "null"]
+        preferredMuscles:
+          type: ["string", "null"]
+        avoidedMuscles:
+          type: ["string", "null"]
+        avoidedExercises:
+          type: ["string", "null"]
+        favoriteExercises:
+          type: ["string", "null"]
+        advancedMethodsToAvoid:
+          type: array
+          items:
+            type: string
+        additionalInfo:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - clientId
+        - advancedMethodsToAvoid
+        - createdAt
+        - updatedAt
+
+    SurveyInput:
+      type: object
+      properties:
+        trainingGoal:
+          type: string
+        experienceLevel:
+          type: string
+        trainingDuration:
+          type: string
+        healthLimitations:
+          type: string
+        weeklyFrequency:
+          type: integer
+        sessionDuration:
+          type: string
+        preferredMuscles:
+          type: string
+        avoidedMuscles:
+          type: string
+        avoidedExercises:
+          type: string
+        favoriteExercises:
+          type: string
+        advancedMethodsToAvoid:
+          type: array
+          items:
+            type: string
+        additionalInfo:
+          type: string
+
+    Stats:
+      type: object
+      properties:
+        totalClients:
+          type: integer
+        surveysCompleted:
+          type: integer
+        surveysPercent:
+          type: number
+        recentClients:
+          type: array
+          items:
+            $ref: "#/components/schemas/Client"
+      required:
+        - totalClients
+        - surveysCompleted
+        - surveysPercent
+        - recentClients
+
+    GoalCount:
+      type: object
+      properties:
+        goal:
+          type: string
+        count:
+          type: integer
+      required:
+        - goal
+        - count

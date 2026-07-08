@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Panel Trenera"
+version = "1.0.0"
+id = "artifacts/trainer-app"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23889
+
+[services.development]
+run = "pnpm --filter @workspace/trainer-app run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/trainer-app", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/trainer-app/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23889"
+BASE_PATH = "/"
