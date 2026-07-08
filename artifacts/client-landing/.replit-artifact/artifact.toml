@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/client-landing/"
+title = "Strona dla Klientów"
+version = "1.0.0"
+id = "artifacts/client-landing"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/client-landing/" ]
+localPort = 22347
+
+[services.development]
+run = "pnpm --filter @workspace/client-landing run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/client-landing", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/client-landing/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22347"
+BASE_PATH = "/client-landing/"

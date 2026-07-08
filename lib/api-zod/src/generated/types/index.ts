@@ -12,6 +12,8 @@ export * from './clientUpdate';
 export * from './errorResponse';
 export * from './goalCount';
 export * from './healthStatus';
+export * from './publicSurveyResponse';
+export * from './publicSurveySubmission';
 export * from './stats';
 export * from './survey';
 export * from './surveyInput';

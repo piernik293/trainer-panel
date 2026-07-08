@@ -100,6 +100,33 @@ export interface Stats {
   recentClients: Client[];
 }
 
+export interface PublicSurveySubmission {
+  /** @minLength 1 */
+  firstName: string;
+  /** @minLength 1 */
+  lastName: string;
+  email?: string;
+  phone?: string;
+  trainingGoal?: string;
+  experienceLevel?: string;
+  trainingDuration?: string;
+  healthLimitations?: string;
+  weeklyFrequency?: number;
+  sessionDuration?: string;
+  preferredMuscles?: string;
+  avoidedMuscles?: string;
+  avoidedExercises?: string;
+  favoriteExercises?: string;
+  advancedMethodsToAvoid?: string[];
+  additionalInfo?: string;
+}
+
+export interface PublicSurveyResponse {
+  success: boolean;
+  clientId?: number;
+  message: string;
+}
+
 export interface GoalCount {
   goal: string;
   count: number;

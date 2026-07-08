@@ -1,0 +1,27 @@
+kind = "slides"
+previewPath = "/panel-trenera-deck/"
+title = "Panel Trenera — Prezentacja"
+version = "1.0.0"
+id = "artifacts/panel-trenera-deck"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/panel-trenera-deck/" ]
+localPort = 25168
+
+[services.development]
+run = "pnpm --filter @workspace/panel-trenera-deck run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/panel-trenera-deck", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/panel-trenera-deck/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25168"
+BASE_PATH = "/panel-trenera-deck/"

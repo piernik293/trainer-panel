@@ -26,6 +26,8 @@ import type {
   ErrorResponse,
   GoalCount,
   HealthStatus,
+  PublicSurveyResponse,
+  PublicSurveySubmission,
   Stats,
   Survey,
   SurveyInput
@@ -729,6 +731,77 @@ export function useGetStats<TData = Awaited<ReturnType<typeof getStats>>, TError
 
 
 
+
+export const getSubmitPublicSurveyUrl = () => {
+
+
+
+
+  return `/api/public/survey`
+}
+
+/**
+ * @summary Submit a public client survey (self-service)
+ */
+export const submitPublicSurvey = async (publicSurveySubmission: PublicSurveySubmission, options?: RequestInit): Promise<PublicSurveyResponse> => {
+
+  return customFetch<PublicSurveyResponse>(getSubmitPublicSurveyUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(publicSurveySubmission)
+  }
+);}
+
+
+
+
+
+export const getSubmitPublicSurveyMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitPublicSurvey>>, TError,{data: BodyType<PublicSurveySubmission>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitPublicSurvey>>, TError,{data: BodyType<PublicSurveySubmission>}, TContext> => {
+
+const mutationKey = ['submitPublicSurvey'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitPublicSurvey>>, {data: BodyType<PublicSurveySubmission>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitPublicSurvey(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitPublicSurveyMutationResult = NonNullable<Awaited<ReturnType<typeof submitPublicSurvey>>>
+    export type SubmitPublicSurveyMutationBody = BodyType<PublicSurveySubmission>
+    export type SubmitPublicSurveyMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Submit a public client survey (self-service)
+ */
+export const useSubmitPublicSurvey = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitPublicSurvey>>, TError,{data: BodyType<PublicSurveySubmission>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitPublicSurvey>>,
+        TError,
+        {data: BodyType<PublicSurveySubmission>},
+        TContext
+      > => {
+      return useMutation(getSubmitPublicSurveyMutationOptions(options));
+    }
 
 export const getGetTrainingGoalsDistributionUrl = () => {
 

@@ -16,6 +16,8 @@ tags:
     description: Client surveys
   - name: stats
     description: Dashboard statistics
+  - name: public
+    description: Public-facing endpoints for client self-service
 paths:
   /healthz:
     get:
@@ -208,6 +210,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Stats"
+
+  /public/survey:
+    post:
+      operationId: submitPublicSurvey
+      tags: [public]
+      summary: Submit a public client survey (self-service)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicSurveySubmission"
+      responses:
+        "201":
+          description: Survey submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicSurveyResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /training-goals-distribution:
     get:
@@ -402,6 +429,62 @@ components:
         - surveysCompleted
         - surveysPercent
         - recentClients
+
+    PublicSurveySubmission:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+        lastName:
+          type: string
+          minLength: 1
+        email:
+          type: string
+        phone:
+          type: string
+        trainingGoal:
+          type: string
+        experienceLevel:
+          type: string
+        trainingDuration:
+          type: string
+        healthLimitations:
+          type: string
+        weeklyFrequency:
+          type: integer
+        sessionDuration:
+          type: string
+        preferredMuscles:
+          type: string
+        avoidedMuscles:
+          type: string
+        avoidedExercises:
+          type: string
+        favoriteExercises:
+          type: string
+        advancedMethodsToAvoid:
+          type: array
+          items:
+            type: string
+        additionalInfo:
+          type: string
+      required:
+        - firstName
+        - lastName
+
+    PublicSurveyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        clientId:
+          type: integer
+        message:
+          type: string
+      required:
+        - success
+        - message
 
     GoalCount:
       type: object

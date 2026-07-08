@@ -1,0 +1,74 @@
+[
+  {
+    "id": "f3a1b2c4-d5e6-7890-abcd-ef1234560001",
+    "position": 1,
+    "filepath": "src/pages/slides/Slide1Title.tsx",
+    "title": "Panel Trenera",
+    "description": "Strona tytułowa — nazwa projektu, data, status",
+    "speakerNotes": ""
+  },
+  {
+    "id": "f3a1b2c4-d5e6-7890-abcd-ef1234560002",
+    "position": 2,
+    "filepath": "src/pages/slides/Slide2Zakres.tsx",
+    "title": "Zakres projektu",
+    "description": "Czego potrzebował trener — 4 cele projektu",
+    "speakerNotes": ""
+  },
+  {
+    "id": "f3a1b2c4-d5e6-7890-abcd-ef1234560003",
+    "position": 3,
+    "filepath": "src/pages/slides/Slide3Deliverables.tsx",
+    "title": "Co zostało zbudowane",
+    "description": "Trzy deliverables: Panel Trenera, Strona Klienta, API Server",
+    "speakerNotes": ""
+  },
+  {
+    "id": "f3a1b2c4-d5e6-7890-abcd-ef1234560004",
+    "position": 4,
+    "filepath": "src/pages/slides/Slide4AdminApp.tsx",
+    "title": "Panel Trenera — aplikacja administracyjna",
+    "description": "Funkcje panelu: pulpit, klienci, ankiety, PDF",
+    "speakerNotes": ""
+  },
+  {
+    "id": "f3a1b2c4-d5e6-7890-abcd-ef1234560005",
+    "position": 5,
+    "filepath": "src/pages/slides/Slide5ClientSite.tsx",
+    "title": "Strona Klienta — publiczny formularz",
+    "description": "Landing page dla klientów z formularzem ankiety",
+    "speakerNotes": ""
+  },
+  {
+    "id": "f3a1b2c4-d5e6-7890-abcd-ef1234560006",
+    "position": 6,
+    "filepath": "src/pages/slides/Slide6Architecture.tsx",
+    "title": "Architektura techniczna",
+    "description": "Stack: React, Express, PostgreSQL, OpenAPI, pnpm workspace",
+    "speakerNotes": ""
+  },
+  {
+    "id": "f3a1b2c4-d5e6-7890-abcd-ef1234560007",
+    "position": 7,
+    "filepath": "src/pages/slides/Slide7Database.tsx",
+    "title": "Baza danych i API",
+    "description": "2 tabele, 12 endpointów REST, walidacja Zod",
+    "speakerNotes": ""
+  },
+  {
+    "id": "f3a1b2c4-d5e6-7890-abcd-ef1234560008",
+    "position": 8,
+    "filepath": "src/pages/slides/Slide8Email.tsx",
+    "title": "Powiadomienia e-mail",
+    "description": "Konfiguracja SMTP — zmienne środowiskowe",
+    "speakerNotes": ""
+  },
+  {
+    "id": "f3a1b2c4-d5e6-7890-abcd-ef1234560009",
+    "position": 9,
+    "filepath": "src/pages/slides/Slide9NextSteps.tsx",
+    "title": "Dalsze rekomendacje",
+    "description": "5 opcjonalnych następnych kroków",
+    "speakerNotes": ""
+  }
+]

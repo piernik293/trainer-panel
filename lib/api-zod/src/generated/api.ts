@@ -215,6 +215,39 @@ export const GetStatsResponse = zod.object({
 
 
 /**
+ * @summary Submit a public client survey (self-service)
+ */
+
+
+
+
+export const SubmitPublicSurveyBody = zod.object({
+  "firstName": zod.string().min(1),
+  "lastName": zod.string().min(1),
+  "email": zod.string().optional(),
+  "phone": zod.string().optional(),
+  "trainingGoal": zod.string().optional(),
+  "experienceLevel": zod.string().optional(),
+  "trainingDuration": zod.string().optional(),
+  "healthLimitations": zod.string().optional(),
+  "weeklyFrequency": zod.number().optional(),
+  "sessionDuration": zod.string().optional(),
+  "preferredMuscles": zod.string().optional(),
+  "avoidedMuscles": zod.string().optional(),
+  "avoidedExercises": zod.string().optional(),
+  "favoriteExercises": zod.string().optional(),
+  "advancedMethodsToAvoid": zod.array(zod.string()).optional(),
+  "additionalInfo": zod.string().optional()
+})
+
+export const SubmitPublicSurveyResponse = zod.object({
+  "success": zod.boolean(),
+  "clientId": zod.number().optional(),
+  "message": zod.string()
+})
+
+
+/**
  * @summary Get distribution of training goals across all clients
  */
 export const GetTrainingGoalsDistributionResponseItem = zod.object({
