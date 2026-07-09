@@ -1,0 +1,69 @@
+TASK — Diagnose why public link and workspace preview show different app versions/data
+
+IMPORTANT
+
+Do not rebuild the application.
+Do not redesign the UI.
+Do not add new features.
+Do not modify unrelated files.
+Do not delete database data.
+
+Problem:
+The app appears different depending on where I open it.
+The workspace preview seems different from the public link opened in another browser tab.
+Data or UI updates are not consistent between them.
+
+Please diagnose and fix the issue.
+
+Check these possible causes:
+
+1. Deployment vs workspace preview
+- Verify whether the public link is using an old deployed build.
+- If needed, rebuild and redeploy the current version.
+- Confirm which URL is the current production/public URL.
+
+2. Frontend build/cache
+- Verify the frontend build includes the latest changes.
+- Check if browser cache or service worker is serving an old version.
+- If there is a service worker/PWA cache, make sure it does not serve stale app files during development.
+
+3. API base URL
+- Verify the client-facing survey and trainer panel are using the same backend API.
+- Check for hardcoded API URLs.
+- Make sure public survey submissions and trainer panel reads go to the same server.
+
+4. Database connection
+- Verify the workspace preview and deployed app use the same intended PostgreSQL database.
+- Check DATABASE_URL and environment variables.
+- Make sure the public survey writes to the same database that the trainer panel reads from.
+
+5. Routing
+- Verify these routes work consistently:
+  - public survey route
+  - trainer panel route
+  - client profile route
+  - API routes
+
+6. End-to-end test
+Run a test:
+- open the public survey link
+- submit a test client
+- open the trainer panel from the public link
+- verify the new client appears
+- refresh the page
+- verify the data persists
+
+If the issue is deployment-related:
+- redeploy the app
+- confirm the public link shows the latest UI
+
+If the issue is database/API-related:
+- fix the configuration so both survey and trainer panel use the same backend and database.
+
+After fixing, tell me:
+1. what caused the issue
+2. which URL is the correct public app URL
+3. whether the public survey and trainer panel now use the same database
+4. whether a test submission appears correctly in the trainer panel
+
+Do not commit until the issue is verified fixed.
