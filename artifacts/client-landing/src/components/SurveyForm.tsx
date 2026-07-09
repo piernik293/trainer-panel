@@ -5,6 +5,7 @@ import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSubmitPublicSurvey } from "@workspace/api-client-react";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import {
   Form,
@@ -81,14 +82,31 @@ const TRAINING_FREQUENCY_RECOMMENDATIONS: Record<string, string> = {
     "Najczęściej sprawdza się 4–6 treningów tygodniowo. Liczbę treningów należy dopasować do objętości, celu oraz regeneracji.",
 };
 
+function getLocalDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function calculateAge(dateOfBirth: string | undefined): number | undefined {
   if (!dateOfBirth) return undefined;
-  const dob = new Date(dateOfBirth);
-  if (isNaN(dob.getTime())) return undefined;
+  // Parse the date-only string as local calendar values (year, month, day)
+  // rather than via `new Date(str)`, which parses YYYY-MM-DD as UTC midnight
+  // and can shift the date by a day when compared against local time.
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateOfBirth);
+  if (!match) return undefined;
+  const dobYear = Number(match[1]);
+  const dobMonth = Number(match[2]) - 1;
+  const dobDay = Number(match[3]);
+  const dob = new Date(dobYear, dobMonth, dobDay);
+  if (isNaN(dob.getTime()) || dob.getFullYear() !== dobYear || dob.getMonth() !== dobMonth || dob.getDate() !== dobDay) {
+    return undefined;
+  }
   const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const monthDiff = today.getMonth() - dob.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+  let age = today.getFullYear() - dobYear;
+  const monthDiff = today.getMonth() - dobMonth;
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDay)) {
     age--;
   }
   return age;
@@ -102,7 +120,10 @@ const formSchema = z.object({
   dateOfBirth: z
     .string()
     .min(1, "Data urodzenia jest wymagana")
-    .refine((val) => new Date(val) <= new Date(), "Data urodzenia nie może być w przyszłości"),
+    .refine((val) => {
+      const age = calculateAge(val);
+      return age !== undefined && age >= 0 && age <= 100;
+    }, "❌ Wprowadzona data urodzenia jest nieprawidłowa. Sprawdź i popraw datę."),
   gender: z.enum(["Mężczyzna", "Kobieta"], { required_error: "Płeć jest wymagana" }),
   heightCm: z.coerce.number().min(50, "Wzrost jest wymagany").max(260),
   weightKg: z.coerce.number().min(20, "Waga jest wymagana").max(400),
@@ -309,13 +330,25 @@ export default function SurveyForm() {
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="dateOfBirth" render={({field}) => (
+            <FormField control={form.control} name="dateOfBirth" render={({field, fieldState}) => (
               <FormItem>
                 <FormLabel className="text-muted-foreground">Data urodzenia *</FormLabel>
                 <FormControl>
-                  <Input type="date" max={new Date().toISOString().slice(0, 10)} {...field} className="bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none" />
+                  <Input
+                    type="date"
+                    max={getLocalDateString(new Date())}
+                    {...field}
+                    onChange={(e) => {
+                      field.onChange(e);
+                      form.trigger("dateOfBirth");
+                    }}
+                    className={cn(
+                      "bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none",
+                      fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive"
+                    )}
+                  />
                 </FormControl>
-                {calculatedAge !== undefined && (
+                {calculatedAge !== undefined && !fieldState.error && (
                   <p className="text-xs text-muted-foreground">Wiek: {calculatedAge} lat</p>
                 )}
                 <FormMessage />
