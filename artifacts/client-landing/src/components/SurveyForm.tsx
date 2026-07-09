@@ -137,6 +137,7 @@ const formSchema = z.object({
   heightCm: z.coerce.number().min(50, "Wzrost jest wymagany").max(260),
   weightKg: z.coerce.number().min(20, "Waga jest wymagana").max(400),
   trainingGoal: z.string().min(1, "To pole jest wymagane"),
+  trainingGoalOther: z.string().optional(),
   experienceLevel: z.string().min(1, "Poziom doświadczenia jest wymagany"),
   trainingDuration: z.string().optional(),
   healthLimitations: z.string().optional(),
@@ -168,6 +169,13 @@ const formSchema = z.object({
       code: z.ZodIssueCode.custom,
       message: "To pole jest wymagane.",
       path: ["equipment"],
+    });
+  }
+  if (data.trainingGoal === "Inny" && (!data.trainingGoalOther || data.trainingGoalOther.trim() === "")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "To pole jest wymagane.",
+      path: ["trainingGoalOther"],
     });
   }
 });
@@ -202,6 +210,7 @@ export default function SurveyForm() {
       heightCm: undefined,
       weightKg: undefined,
       trainingGoal: "",
+      trainingGoalOther: "",
       experienceLevel: "",
       trainingDuration: "",
       healthLimitations: "",
@@ -448,7 +457,14 @@ export default function SurveyForm() {
                 </p>
               )}
               <FormControl>
-                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}>
+                <RadioGroup
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    form.trigger(["trainingGoal", "trainingGoalOther"]);
+                  }}
+                  defaultValue={field.value}
+                  className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}
+                >
                   {["Budowa sylwetki", "Zwiększenie siły", "Redukcja tkanki tłuszczowej", "Poprawa kondycji", "Poprawa sprawności", "Inny"].map(goal => (
                     <FormItem key={goal} className="flex items-center space-x-0 space-y-0">
                       <FormControl>
@@ -464,6 +480,24 @@ export default function SurveyForm() {
               <FormMessage />
             </FormItem>
           )} />
+          {trainingGoal === "Inny" && (
+            <FormField control={form.control} name="trainingGoalOther" render={({field, fieldState}) => (
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Opisz swój cel treningowy *</FormLabel>
+                <p className="text-xs text-muted-foreground/70 -mt-2">
+                  Napisz krótko, co dokładnie chcesz osiągnąć. Na podstawie tej odpowiedzi trener dobierze odpowiedni kierunek planu.
+                </p>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    placeholder="Np. poprawa sylwetki bez dużej redukcji, lepsza forma do sportu, powrót do treningów po przerwie..."
+                    className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary text-base rounded-none min-h-[100px]", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
         </Section>
 
         <Section

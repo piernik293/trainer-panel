@@ -509,6 +509,9 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <SurveyBlock label="Cel treningowy" value={survey.trainingGoal} />
+        {survey.trainingGoal === "Inny" && (
+          <SurveyBlock label="Inny cel:" value={survey.trainingGoalOther} />
+        )}
         <SurveyBlock label="Poziom doświadczenia" value={survey.experienceLevel} />
         <SurveyBlock label="Staż treningowy" value={survey.trainingDuration} />
         <SurveyBlock label="Preferowana liczba treningów tygodniowo" value={survey.desiredWeeklyFrequency?.toString()} />

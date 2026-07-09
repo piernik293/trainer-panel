@@ -9,6 +9,7 @@ export const surveysTable = pgTable("surveys", {
     .notNull()
     .references(() => clientsTable.id, { onDelete: "cascade" }),
   trainingGoal: text("training_goal"),
+  trainingGoalOther: text("training_goal_other"),
   experienceLevel: text("experience_level"),
   trainingDuration: text("training_duration"),
   healthLimitations: text("health_limitations"),

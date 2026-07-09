@@ -19,6 +19,7 @@ export interface PublicSurveySubmission {
   email: string;
   phone?: string;
   trainingGoal?: string;
+  trainingGoalOther?: string;
   experienceLevel?: string;
   trainingDuration?: string;
   healthLimitations?: string;

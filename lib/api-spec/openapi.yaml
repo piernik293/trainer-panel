@@ -466,6 +466,8 @@ components:
           format: date-time
         trainingGoal:
           type: ["string", "null"]
+        trainingGoalOther:
+          type: ["string", "null"]
         experienceLevel:
           type: ["string", "null"]
         weeklyFrequency:
@@ -541,6 +543,8 @@ components:
         clientId:
           type: integer
         trainingGoal:
+          type: ["string", "null"]
+        trainingGoalOther:
           type: ["string", "null"]
         experienceLevel:
           type: ["string", "null"]
@@ -622,6 +626,8 @@ components:
       type: object
       properties:
         trainingGoal:
+          type: string
+        trainingGoalOther:
           type: string
         experienceLevel:
           type: string
@@ -782,6 +788,8 @@ components:
         phone:
           type: string
         trainingGoal:
+          type: string
+        trainingGoalOther:
           type: string
         experienceLevel:
           type: string

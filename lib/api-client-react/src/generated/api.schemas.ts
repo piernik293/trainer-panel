@@ -49,6 +49,8 @@ export interface Client {
   /** @nullable */
   trainingGoal?: string | null;
   /** @nullable */
+  trainingGoalOther?: string | null;
+  /** @nullable */
   experienceLevel?: string | null;
   /** @nullable */
   weeklyFrequency?: number | null;
@@ -91,6 +93,8 @@ export interface Survey {
   clientId: number;
   /** @nullable */
   trainingGoal?: string | null;
+  /** @nullable */
+  trainingGoalOther?: string | null;
   /** @nullable */
   experienceLevel?: string | null;
   /** @nullable */
@@ -194,6 +198,7 @@ export const SurveyInputPlanStylePreference = {
 
 export interface SurveyInput {
   trainingGoal?: string;
+  trainingGoalOther?: string;
   experienceLevel?: string;
   trainingDuration?: string;
   healthLimitations?: string;
@@ -315,6 +320,7 @@ export interface PublicSurveySubmission {
   email: string;
   phone?: string;
   trainingGoal?: string;
+  trainingGoalOther?: string;
   experienceLevel?: string;
   trainingDuration?: string;
   healthLimitations?: string;

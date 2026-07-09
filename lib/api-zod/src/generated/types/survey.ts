@@ -12,6 +12,8 @@ export interface Survey {
   /** @nullable */
   trainingGoal?: string | null;
   /** @nullable */
+  trainingGoalOther?: string | null;
+  /** @nullable */
   experienceLevel?: string | null;
   /** @nullable */
   trainingDuration?: string | null;

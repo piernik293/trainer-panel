@@ -12,6 +12,7 @@ import type { SurveyInputSleepHours } from './surveyInputSleepHours';
 
 export interface SurveyInput {
   trainingGoal?: string;
+  trainingGoalOther?: string;
   experienceLevel?: string;
   trainingDuration?: string;
   healthLimitations?: string;

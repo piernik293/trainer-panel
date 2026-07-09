@@ -77,11 +77,17 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     return;
   }
 
+  if (parsed.data.trainingGoal === "Inny" && (!parsed.data.trainingGoalOther || parsed.data.trainingGoalOther.trim() === "")) {
+    res.status(400).json({ error: "Opis celu treningowego jest wymagany, gdy wybrano \"Inny\"" });
+    return;
+  }
+
   const {
     firstName,
     lastName,
     phone,
     trainingGoal,
+    trainingGoalOther,
     experienceLevel,
     trainingDuration,
     healthLimitations,
@@ -132,6 +138,7 @@ router.post("/public/survey", async (req, res): Promise<void> => {
   await db.insert(surveysTable).values({
     clientId: client.id,
     trainingGoal,
+    trainingGoalOther,
     experienceLevel,
     trainingDuration,
     healthLimitations,

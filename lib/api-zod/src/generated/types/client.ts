@@ -26,6 +26,8 @@ export interface Client {
   /** @nullable */
   trainingGoal?: string | null;
   /** @nullable */
+  trainingGoalOther?: string | null;
+  /** @nullable */
   experienceLevel?: string | null;
   /** @nullable */
   weeklyFrequency?: number | null;
