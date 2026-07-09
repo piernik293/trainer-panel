@@ -25,6 +25,16 @@ import { Slider } from "@/components/ui/slider";
 const MUSCLE_GROUPS = ["klatka piersiowa", "plecy", "barki", "biceps", "triceps", "brzuch", "uda", "łydki"];
 const ADVANCED_METHODS = ["superserie", "serie złożone (compound set)", "drop sety", "serie do upadku mięśniowego", "serie wymuszone", "rest-pause"];
 
+function calculateBmi(heightCm: number | undefined, weightKg: number | undefined): number | undefined {
+  if (!heightCm || !weightKg) return undefined;
+  const heightM = heightCm / 100;
+  if (heightM <= 0) return undefined;
+  return weightKg / (heightM * heightM);
+}
+
+const BMI_RECOMMENDATION_TEXT =
+  "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj, że BMI nie rozróżnia masy mięśniowej i tkanki tłuszczowej. W takim przypadku często warto rozważyć redukcję tkanki tłuszczowej lub rekompozycję sylwetki.";
+
 function calculateAge(dateOfBirth: string | undefined): number | undefined {
   if (!dateOfBirth) return undefined;
   const dob = new Date(dateOfBirth);
@@ -130,6 +140,10 @@ export default function SurveyForm() {
   const isBeginner = experienceLevel === "Początkujący";
   const isIntermediateOrAdvanced = experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
   const calculatedAge = calculateAge(dateOfBirth);
+  const heightCm = form.watch("heightCm");
+  const weightKg = form.watch("weightKg");
+  const bmi = calculateBmi(heightCm, weightKg);
+  const showBmiRecommendation = isBeginner && bmi !== undefined && bmi >= 25;
 
   const mutation = useSubmitPublicSurvey();
 
@@ -263,6 +277,9 @@ export default function SurveyForm() {
                 <FormControl>
                   <Input type="number" min={20} max={400} {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} className="bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none" />
                 </FormControl>
+                {bmi !== undefined && (
+                  <p className="text-xs text-muted-foreground/70">BMI: {bmi.toFixed(1)}</p>
+                )}
                 <FormMessage />
               </FormItem>
             )} />
@@ -273,6 +290,11 @@ export default function SurveyForm() {
           <FormField control={form.control} name="trainingGoal" render={({field}) => (
             <FormItem className="space-y-4">
               <FormLabel className="text-muted-foreground">Cel treningowy</FormLabel>
+              {showBmiRecommendation && (
+                <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
+                  {BMI_RECOMMENDATION_TEXT}
+                </p>
+              )}
               <FormControl>
                 <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {["Budowa sylwetki", "Zwiększenie siły", "Redukcja tkanki tłuszczowej", "Poprawa sprawności", "Poprawa kondycji", "Inny"].map(goal => (

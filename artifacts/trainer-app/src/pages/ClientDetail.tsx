@@ -35,6 +35,16 @@ function formatGender(gender: string | null | undefined): string | undefined {
   return "Nieokreślono";
 }
 
+function calculateBmi(heightCm: number | null | undefined, weightKg: number | null | undefined): number | undefined {
+  if (!heightCm || !weightKg) return undefined;
+  const heightM = heightCm / 100;
+  if (heightM <= 0) return undefined;
+  return weightKg / (heightM * heightM);
+}
+
+const BMI_RECOMMENDATION_TEXT =
+  "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj, że BMI nie rozróżnia masy mięśniowej i tkanki tłuszczowej. W takim przypadku często warto rozważyć redukcję tkanki tłuszczowej lub rekompozycję sylwetki.";
+
 export default function ClientDetail() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
@@ -46,6 +56,9 @@ export default function ClientDetail() {
   const { data: survey, isLoading: surveyLoading } = useGetClientSurvey(id, {
     query: { enabled: !!client?.hasSurvey, queryKey: ['client-survey', id] as any }
   });
+
+  const bmi = calculateBmi(survey?.heightCm, survey?.weightKg);
+  const showBmiRecommendation = survey?.experienceLevel === "Początkujący" && bmi !== undefined && bmi >= 25;
 
   const handlePrint = () => {
     window.print();
@@ -156,7 +169,21 @@ export default function ClientDetail() {
                 <SurveyBlock label="Płeć" value={formatGender(survey.gender)} />
                 <SurveyBlock label="Wzrost" value={survey.heightCm ? `${survey.heightCm} cm` : undefined} />
                 <SurveyBlock label="Waga" value={survey.weightKg ? `${survey.weightKg} kg` : undefined} />
+                <SurveyBlock label="BMI" value={bmi !== undefined ? `BMI: ${bmi.toFixed(1)}` : undefined} />
               </div>
+
+              {showBmiRecommendation && (
+                <Card className="border-primary/20 shadow-sm print-break-inside-avoid">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base text-primary flex items-center gap-2">
+                      Automatyczna podpowiedź
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-foreground/90 text-sm">{BMI_RECOMMENDATION_TEXT}</p>
+                  </CardContent>
+                </Card>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <SurveyBlock label="Cel treningowy" value={survey.trainingGoal} />

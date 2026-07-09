@@ -1,0 +1,144 @@
+TASK — Add beginner BMI-based training goal recommendation
+
+IMPORTANT
+
+Do not rebuild the application.
+Do not change the architecture.
+Do not redesign the UI.
+Do not add unrelated features.
+Do not delete existing database data.
+Keep all current survey logic working.
+Keep the current dark premium fitness style.
+
+The goal is to add a subtle BMI-based recommendation only for beginner users.
+
+------------------------------------------------
+
+1. BMI calculation
+
+Use existing fields:
+
+- height in cm
+- weight in kg
+
+Calculate BMI using:
+
+BMI = weight / (heightInMeters * heightInMeters)
+
+Example:
+height 180 cm = 1.8 m
+
+Do not store BMI in the database unless the current architecture already supports derived values.
+BMI can be calculated in the frontend and/or trainer panel as a derived value.
+
+------------------------------------------------
+
+2. Show recommendation only for beginners
+
+Show the recommendation only if:
+
+- experience level is "Początkujący"
+- height and weight are provided
+- calculated BMI is 25 or higher
+
+Do not show this recommendation for:
+
+- Średniozaawansowany
+- Zaawansowany
+
+------------------------------------------------
+
+3. Recommendation text
+
+Display a subtle helper box near the training goal section.
+
+Use this Polish text:
+
+"Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj, że BMI nie rozróżnia masy mięśniowej i tkanki tłuszczowej. W takim przypadku często warto rozważyć redukcję tkanki tłuszczowej lub rekompozycję sylwetki."
+
+Keep the tone professional, neutral and non-judgmental.
+
+Do not write:
+
+- "Masz nadwagę"
+- "Musisz redukować"
+- "Powinieneś schudnąć"
+
+------------------------------------------------
+
+4. Do not auto-select goal
+
+Important:
+
+- Do not automatically select "Redukcja tkanki tłuszczowej"
+- Do not change the user's selected goal
+- Do not force any choice
+
+The recommendation is only a visual suggestion.
+
+The client must still choose their own goal.
+
+------------------------------------------------
+
+5. Optional BMI display
+
+If it fits the current UI cleanly, display:
+
+"BMI: X.X"
+
+Example:
+
+"BMI: 27.4"
+
+But keep it subtle.
+
+Do not make BMI the main focus of the form.
+
+------------------------------------------------
+
+6. Trainer panel
+
+In the trainer panel, show calculated BMI if height and weight are available.
+
+If BMI is 25 or higher and the client is beginner, show the same recommendation in the client profile as a trainer note/helper.
+
+Label it:
+
+"Automatyczna podpowiedź"
+
+Do not present it as a medical diagnosis.
+
+------------------------------------------------
+
+7. PDF export
+
+If the PDF already includes calculated values, include BMI as:
+
+"BMI: X.X"
+
+If adding BMI makes the PDF messy, skip BMI in PDF.
+
+Do not include strong medical wording in PDF.
+
+------------------------------------------------
+
+8. Testing
+
+After implementation, verify:
+
+- app builds successfully
+- BMI calculates correctly from height and weight
+- beginner with BMI under 25 does not see recommendation
+- beginner with BMI 25 or higher sees recommendation
+- intermediate user with BMI 25 or higher does not see recommendation
+- advanced user with BMI 25 or higher does not see recommendation
+- recommendation does not auto-select any goal
+- trainer panel displays BMI/recommendation correctly if implemented
+- old surveys do not crash
+- no unrelated functionality was changed
+
+After testing, commit changes with message:
+
+"feat: add beginner BMI recommendation"
+
+Then push to GitHub using Replit GitHub integration.

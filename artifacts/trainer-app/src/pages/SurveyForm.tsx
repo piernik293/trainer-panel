@@ -28,6 +28,16 @@ const advancedMethodsOptions = [
 
 const MUSCLE_GROUPS = ["klatka piersiowa", "plecy", "barki", "biceps", "triceps", "brzuch", "uda", "łydki"];
 
+function calculateBmi(heightCm: number | undefined, weightKg: number | undefined): number | undefined {
+  if (!heightCm || !weightKg) return undefined;
+  const heightM = heightCm / 100;
+  if (heightM <= 0) return undefined;
+  return weightKg / (heightM * heightM);
+}
+
+const BMI_RECOMMENDATION_TEXT =
+  "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj, że BMI nie rozróżnia masy mięśniowej i tkanki tłuszczowej. W takim przypadku często warto rozważyć redukcję tkanki tłuszczowej lub rekompozycję sylwetki.";
+
 function calculateAge(dateOfBirth: string | undefined): number | undefined {
   if (!dateOfBirth) return undefined;
   const dob = new Date(dateOfBirth);
@@ -129,6 +139,10 @@ export default function SurveyForm() {
       : gender === "Mężczyzna"
       ? "Podpowiedź: Często wybierane cele sylwetkowe: klatka piersiowa, barki, plecy, ramiona."
       : undefined;
+  const heightCm = form.watch("heightCm");
+  const weightKg = form.watch("weightKg");
+  const bmi = calculateBmi(heightCm, weightKg);
+  const showBmiRecommendation = isBeginner && bmi !== undefined && bmi >= 25;
 
   const isInitialized = useRef(false);
 
@@ -232,6 +246,11 @@ export default function SurveyForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cel treningowy</FormLabel>
+                    {showBmiRecommendation && (
+                      <FormDescription className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
+                        {BMI_RECOMMENDATION_TEXT}
+                      </FormDescription>
+                    )}
                     <FormControl>
                       <Input placeholder="np. Budowa sylwetki, Zwiększenie siły..." {...field} />
                     </FormControl>
@@ -367,6 +386,9 @@ export default function SurveyForm() {
                     <FormControl>
                       <Input type="number" min="20" max="400" placeholder="np. 75" {...field} value={field.value ?? ""} />
                     </FormControl>
+                    {bmi !== undefined && (
+                      <FormDescription className="text-xs">BMI: {bmi.toFixed(1)}</FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
