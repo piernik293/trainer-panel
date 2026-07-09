@@ -61,7 +61,7 @@ export default function Dashboard() {
         <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Wypełnione Ankiety
+              Wypełnione Wywiady Treningowe
             </CardTitle>
             <FileText className="w-4 h-4 text-primary" />
           </CardHeader>
@@ -85,7 +85,7 @@ export default function Dashboard() {
         <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Nowe ankiety (7 dni)
+              Nowe wywiady treningowe (7 dni)
             </CardTitle>
             <Sparkles className="w-4 h-4 text-primary" />
           </CardHeader>
@@ -104,7 +104,7 @@ export default function Dashboard() {
           <CardContent>
             <div className="text-3xl font-bold font-display">{Math.round(stats?.surveysPercent || 0)}%</div>
             <p className="text-xs text-muted-foreground mt-1">
-              klientów posiada ankietę
+              klientów posiada wywiad treningowy
             </p>
           </CardContent>
         </Card>

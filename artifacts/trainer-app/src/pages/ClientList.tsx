@@ -81,7 +81,7 @@ export default function ClientList() {
             Klienci
           </h1>
           <p className="text-muted-foreground mt-1">
-            Zarządzaj swoimi podopiecznymi i ich ankietami
+            Zarządzaj swoimi podopiecznymi i ich wywiadami treningowymi
           </p>
         </div>
         <Button asChild>
@@ -118,10 +118,10 @@ export default function ClientList() {
 
           <Select value={surveyFilter} onValueChange={setSurveyFilter}>
             <SelectTrigger className="w-full sm:w-[190px] bg-background">
-              <SelectValue placeholder="Status ankiety" />
+              <SelectValue placeholder="Status wywiadu treningowego" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Wszystkie ankiety</SelectItem>
+              <SelectItem value="all">Wszystkie wywiady treningowe</SelectItem>
               <SelectItem value="not_started">Nie rozpoczęta</SelectItem>
               <SelectItem value="incomplete">Niekompletna</SelectItem>
               <SelectItem value="completed">Wypełniona</SelectItem>
@@ -164,7 +164,7 @@ export default function ClientList() {
                     <TableHead>Imię i nazwisko</TableHead>
                     <TableHead>Kontakt</TableHead>
                     <TableHead>Status klienta</TableHead>
-                    <TableHead>Ankieta</TableHead>
+                    <TableHead>Wywiad treningowy</TableHead>
                     <TableHead>Data dodania</TableHead>
                     <TableHead className="text-right">Akcje</TableHead>
                   </TableRow>

@@ -36,18 +36,18 @@ export default function Home() {
             </div>
             
             <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight mb-8 text-white leading-[1.1]">
-              Indywidualny plan treningowy dopasowany do Twojego celu
+              Twój indywidualny plan treningowy zaczyna się tutaj.
             </h1>
             
             <p className="text-lg md:text-2xl text-muted-foreground max-w-3xl mb-12 leading-relaxed font-light">
-              Przed rozpoczęciem współpracy wypełnij krótką ankietę. Dzięki niej przygotuję plan treningowy dopasowany do Twoich celów, doświadczenia i preferencji.
+              Wypełnij krótki wywiad treningowy, dzięki któremu przygotuję plan dopasowany do Twojego celu, poziomu zaawansowania, możliwości oraz stylu życia.
             </p>
             
             <button 
               onClick={scrollToForm}
               className="inline-flex items-center justify-center gap-4 px-10 py-5 bg-primary text-primary-foreground font-semibold text-lg uppercase tracking-wider hover:bg-primary/90 transition-all rounded-none hover:gap-6 group"
             >
-              Rozpocznij ankietę
+              Rozpocznij wywiad treningowy
               <ChevronDown className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
             </button>
           </motion.div>
@@ -61,7 +61,7 @@ export default function Home() {
           animate={{ opacity: 1 }}
           transition={{ delay: 1.5, duration: 1 }}
         >
-          <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Eksploruj</span>
+          <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Dowiedz się więcej</span>
           <div className="w-[1px] h-12 bg-gradient-to-b from-primary/50 to-transparent"></div>
         </motion.div>
       </section>
@@ -93,7 +93,7 @@ export default function Home() {
               transition={{ duration: 0.8, delay: 0.4 }}
               className="mt-8 text-muted-foreground text-lg max-w-2xl mx-auto"
             >
-              Odpowiedz szczerze. Detale robią różnicę między przeciętnym planem, a strategią skazaną na sukces.
+              Odpowiedz na kilka prostych pytań. Dzięki temu przygotuję plan treningowy dopasowany do Twoich potrzeb, możliwości oraz celu treningowego.
             </motion.p>
           </div>
           

@@ -45,13 +45,13 @@ async function sendNotificationEmail(
     await transporter.sendMail({
       from: smtpUser,
       to: adminEmail,
-      subject: `Nowa ankieta od klienta: ${clientName}`,
+      subject: `Nowy wywiad treningowy od klienta: ${clientName}`,
       html: `
-        <h2>Nowa ankieta treningowa</h2>
+        <h2>Nowy wywiad treningowy</h2>
         <p><strong>Klient:</strong> ${clientName}</p>
         ${email ? `<p><strong>E-mail:</strong> ${email}</p>` : ""}
         ${trainingGoal ? `<p><strong>Cel treningowy:</strong> ${trainingGoal}</p>` : ""}
-        <p>Zaloguj się do Panelu Trenera, aby zobaczyć pełną ankietę.</p>
+        <p>Zaloguj się do Panelu Trenera, aby zobaczyć pełny wywiad treningowy.</p>
       `,
     });
 
@@ -164,7 +164,7 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     SubmitPublicSurveyResponse.parse({
       success: true,
       clientId: client.id,
-      message: "Dziękuję za wypełnienie ankiety. Przeanalizuję Twoje odpowiedzi i przygotuję indywidualny plan treningowy.",
+      message: "Dziękuję za wypełnienie wywiadu treningowego. Przeanalizuję Twoje odpowiedzi i przygotuję indywidualny plan treningowy.",
     })
   );
 });

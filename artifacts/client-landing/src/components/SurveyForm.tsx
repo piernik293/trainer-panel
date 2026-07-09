@@ -22,8 +22,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
-const MUSCLE_GROUPS = ["klatka piersiowa", "plecy", "barki", "biceps", "triceps", "brzuch", "uda", "łydki"];
-const ADVANCED_METHODS = ["superserie", "serie złożone (compound set)", "drop sety", "serie do upadku mięśniowego", "serie wymuszone", "rest-pause"];
+const MUSCLE_GROUPS = ["klatka piersiowa", "plecy", "barki", "biceps", "triceps", "brzuch", "uda", "pośladki", "łydki"];
+const ADVANCED_METHODS = ["Superserie", "Serie złożone (Compound Set)", "Drop sety", "Serie do upadku mięśniowego", "Serie wymuszone", "Rest-Pause"];
 
 function calculateBmi(heightCm: number | undefined, weightKg: number | undefined): number | undefined {
   if (!heightCm || !weightKg) return undefined;
@@ -33,7 +33,7 @@ function calculateBmi(heightCm: number | undefined, weightKg: number | undefined
 }
 
 const BMI_RECOMMENDATION_TEXT =
-  "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj, że BMI nie rozróżnia masy mięśniowej i tkanki tłuszczowej. W takim przypadku często warto rozważyć redukcję tkanki tłuszczowej lub rekompozycję sylwetki.";
+  "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj jednak, że BMI nie rozróżnia tkanki tłuszczowej od masy mięśniowej. W wielu przypadkach dobrym rozwiązaniem może być redukcja tkanki tłuszczowej lub rekompozycja sylwetki.";
 
 function calculateAge(dateOfBirth: string | undefined): number | undefined {
   if (!dateOfBirth) return undefined;
@@ -149,9 +149,9 @@ export default function SurveyForm() {
   const gender = form.watch("gender");
   const genderMuscleSuggestion =
     gender === "Kobieta"
-      ? "Podpowiedź: Często wybierane cele sylwetkowe: pośladki, uda, brzuch, barki."
+      ? "Podpowiedź: Często wybierane cele sylwetkowe to pośladki, uda, brzuch oraz barki."
       : gender === "Mężczyzna"
-      ? "Podpowiedź: Często wybierane cele sylwetkowe: klatka piersiowa, barki, plecy, ramiona."
+      ? "Podpowiedź: Często wybierane cele sylwetkowe to klatka piersiowa, barki, plecy oraz ramiona."
       : undefined;
   const isBeginner = experienceLevel === "Początkujący";
   const isIntermediateOrAdvanced = experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
@@ -177,7 +177,7 @@ export default function SurveyForm() {
       { data: payload as Parameters<typeof mutation.mutate>[0]["data"] },
       {
         onSuccess: (res) => {
-          setSuccessMessage(res.message || "Dziękuję za wypełnienie ankiety. Przeanalizuję Twoje odpowiedzi i przygotuję indywidualny plan treningowy.");
+          setSuccessMessage(res.message || "Dziękuję za wypełnienie wywiadu treningowego. Przeanalizuję Twoje odpowiedzi i przygotuję indywidualny plan treningowy.");
           setIsSubmitted(true);
         },
       }
@@ -313,7 +313,7 @@ export default function SurveyForm() {
               )}
               <FormControl>
                 <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {["Budowa sylwetki", "Zwiększenie siły", "Redukcja tkanki tłuszczowej", "Poprawa sprawności", "Poprawa kondycji", "Inny"].map(goal => (
+                  {["Budowa sylwetki", "Zwiększenie siły", "Redukcja tkanki tłuszczowej", "Poprawa kondycji", "Poprawa sprawności", "Inny"].map(goal => (
                     <FormItem key={goal} className="flex items-center space-x-0 space-y-0">
                       <FormControl>
                         <RadioGroupItem value={goal} className="peer sr-only" />
@@ -330,21 +330,29 @@ export default function SurveyForm() {
 
           <FormField control={form.control} name="experienceLevel" render={({field}) => (
             <FormItem className="space-y-4 mt-12">
-              <FormLabel className="text-muted-foreground">Doświadczenie treningowe</FormLabel>
+              <FormLabel className="text-muted-foreground">Który poziom najlepiej opisuje Twoje doświadczenie treningowe?</FormLabel>
               <FormControl>
                 <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {["Początkujący", "Średniozaawansowany", "Zaawansowany"].map(level => (
+                  {[
+                    { level: "Początkujący", desc: "Dopiero zaczynam swoją przygodę z treningiem lub nadal uczę się podstaw. Nie czuję się jeszcze pewnie w doborze ćwiczeń, technice oraz planowaniu treningów." },
+                    { level: "Średniozaawansowany", desc: "Trenuję regularnie, znam podstawowe ćwiczenia i potrafię poprawnie je wykonywać. Rozumiem podstawowe zasady treningowe i świadomie realizuję plan treningowy." },
+                    { level: "Zaawansowany", desc: "Posiadam duże doświadczenie treningowe, dobrze znam swoje możliwości i świadomie wykorzystuję różne metody treningowe do osiągania konkretnych celów." },
+                  ].map(({ level, desc }) => (
                     <FormItem key={level} className="flex items-center space-x-0 space-y-0">
                       <FormControl>
                         <RadioGroupItem value={level} className="peer sr-only" />
                       </FormControl>
-                      <FormLabel className="w-full flex items-center justify-center px-6 py-5 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
-                        {level}
+                      <FormLabel className="w-full flex flex-col items-center justify-center gap-2 px-6 py-5 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                        <span>{level}</span>
+                        <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
                       </FormLabel>
                     </FormItem>
                   ))}
                 </RadioGroup>
               </FormControl>
+              <FormDescription className="text-xs text-muted-foreground/70">
+                Nie kieruj się wyłącznie liczbą lat treningu. Wybierz poziom, który najlepiej opisuje Twoją wiedzę oraz samodzielność podczas treningów.
+              </FormDescription>
             </FormItem>
           )} />
           
@@ -397,22 +405,24 @@ export default function SurveyForm() {
           </div>
 
           <div className="grid grid-cols-1 gap-8">
-            <FormField control={form.control} name="preferredMuscles" render={({field}) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Czy są partie mięśniowe, na których szczególnie Ci zależy?</FormLabel>
-                <FormDescription className="text-xs text-muted-foreground/70">
-                  Np. {MUSCLE_GROUPS.join(", ")}.
-                </FormDescription>
-                {genderMuscleSuggestion && (
-                  <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
-                    {genderMuscleSuggestion}
-                  </p>
-                )}
-                <FormControl>
-                  <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
-                </FormControl>
-              </FormItem>
-            )} />
+            {isBeginner && (
+              <FormField control={form.control} name="preferredMuscles" render={({field}) => (
+                <FormItem>
+                  <FormLabel className="text-muted-foreground">Na których partiach mięśniowych najbardziej Ci zależy?</FormLabel>
+                  <FormDescription className="text-xs text-muted-foreground/70">
+                    Jeśli nie znasz nazw partii mięśniowych, przykłady to: {MUSCLE_GROUPS.join(", ")}.
+                  </FormDescription>
+                  {genderMuscleSuggestion && (
+                    <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
+                      {genderMuscleSuggestion}
+                    </p>
+                  )}
+                  <FormControl>
+                    <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
+                  </FormControl>
+                </FormItem>
+              )} />
+            )}
             <FormField control={form.control} name="avoidedMuscles" render={({field}) => (
               <FormItem>
                 <FormLabel className="text-muted-foreground">Czy są partie mięśniowe, których nie chcesz rozwijać? Jeżeli tak opisz dlaczego.</FormLabel>
@@ -442,32 +452,34 @@ export default function SurveyForm() {
             )} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-            <FormField control={form.control} name="priorityMuscle1" render={({field}) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Partia priorytetowa #1</FormLabel>
-                <FormControl>
-                  <Input placeholder="np. Barki" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
-                </FormControl>
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="priorityMuscle2" render={({field}) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Partia priorytetowa #2</FormLabel>
-                <FormControl>
-                  <Input placeholder="np. Pośladki" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
-                </FormControl>
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="priorityMuscle3" render={({field}) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Partia priorytetowa #3</FormLabel>
-                <FormControl>
-                  <Input placeholder="np. Plecy" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
-                </FormControl>
-              </FormItem>
-            )} />
-          </div>
+          {isIntermediateOrAdvanced && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+              <FormField control={form.control} name="priorityMuscle1" render={({field}) => (
+                <FormItem>
+                  <FormLabel className="text-muted-foreground">Partia priorytetowa 1</FormLabel>
+                  <FormControl>
+                    <Input placeholder="np. Barki" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
+                  </FormControl>
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="priorityMuscle2" render={({field}) => (
+                <FormItem>
+                  <FormLabel className="text-muted-foreground">Partia priorytetowa 2</FormLabel>
+                  <FormControl>
+                    <Input placeholder="np. Pośladki" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
+                  </FormControl>
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="priorityMuscle3" render={({field}) => (
+                <FormItem>
+                  <FormLabel className="text-muted-foreground">Partia priorytetowa 3</FormLabel>
+                  <FormControl>
+                    <Input placeholder="np. Plecy" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
+                  </FormControl>
+                </FormItem>
+              )} />
+            </div>
+          )}
         </Section>
 
         <Section title="Miejsce treningu i cardio">
@@ -568,7 +580,7 @@ export default function SurveyForm() {
                 <FormLabel className="text-muted-foreground">Ile godzin średnio sypiasz w ciągu doby? *</FormLabel>
                 <FormControl>
                   <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
-                    {["poniżej 6h", "6-7h", "7-8h", "powyżej 8h"].map(hours => (
+                    {["Poniżej 5 godzin", "5–6 godzin", "6–7 godzin", "7–8 godzin", "Powyżej 8 godzin"].map(hours => (
                       <FormItem key={hours} className="flex items-center space-x-0 space-y-0">
                         <FormControl>
                           <RadioGroupItem value={hours} className="peer sr-only" />
@@ -587,7 +599,10 @@ export default function SurveyForm() {
 
           <FormField control={form.control} name="stressLevel" render={({field}) => (
             <FormItem>
-              <FormLabel className="text-muted-foreground">Poziom odczuwanego stresu (1 = niski, 10 = bardzo wysoki)</FormLabel>
+              <FormLabel className="text-muted-foreground">Jak oceniasz swój poziom stresu?</FormLabel>
+              <FormDescription className="text-xs text-muted-foreground/70">
+                1 = bardzo niski poziom stresu, 10 = bardzo wysoki poziom stresu
+              </FormDescription>
               <FormControl>
                 <div className="flex items-center gap-6 pt-2">
                   <Slider min={1} max={10} step={1} value={[field.value ?? 5]} onValueChange={(v) => field.onChange(v[0])} className="flex-1" />
@@ -604,13 +619,18 @@ export default function SurveyForm() {
               <FormLabel className="text-muted-foreground">Jaki styl planu Ci odpowiada? *</FormLabel>
               <FormControl>
                 <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {["Maksymalnie efektywny", "Kompromis", "Prosty i trwały"].map(style => (
+                  {[
+                    { style: "Maksymalna efektywność", desc: "Najważniejsze są dla mnie jak najlepsze efekty." },
+                    { style: "Balans efektywności i wygody", desc: "Chcę osiągać dobre efekty przy zachowaniu komfortu treningów." },
+                    { style: "Prosty i łatwy do utrzymania", desc: "Zależy mi na prostym, przejrzystym planie, który będzie łatwy do realizacji nawet w gorsze dni." },
+                  ].map(({ style, desc }) => (
                     <FormItem key={style} className="flex items-center space-x-0 space-y-0">
                       <FormControl>
                         <RadioGroupItem value={style} className="peer sr-only" />
                       </FormControl>
-                      <FormLabel className="w-full flex items-center justify-center px-6 py-5 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
-                        {style}
+                      <FormLabel className="w-full flex flex-col items-center justify-center gap-2 px-6 py-5 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                        <span>{style}</span>
+                        <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
                       </FormLabel>
                     </FormItem>
                   ))}
@@ -630,10 +650,10 @@ export default function SurveyForm() {
               transition={{ duration: 0.4, ease: "easeInOut" }}
               className="overflow-hidden"
             >
-              <Section title="Metody intensyfikacji">
+              <Section title="Zaawansowane metody treningowe">
                 <FormField control={form.control} name="avoidsAdvancedMethods" render={({field}) => (
                   <FormItem className="space-y-4 mb-8">
-                    <FormLabel className="text-muted-foreground">Czy masz jakieś metody treningowe, których nie chcesz stosować lub które są dla Ciebie przeciwwskazane?</FormLabel>
+                    <FormLabel className="text-muted-foreground">Czy są metody treningowe, których nie chcesz stosować lub które są dla Ciebie przeciwwskazane?</FormLabel>
                     <FormControl>
                       <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 gap-4 max-w-sm">
                         {["Tak", "Nie"].map(opt => (
@@ -700,7 +720,10 @@ export default function SurveyForm() {
           )}
           <FormField control={form.control} name="additionalInfo" render={({field}) => (
             <FormItem>
-              <FormLabel className="text-muted-foreground">Czy chcesz dodać coś jeszcze? Styl życia, dieta, inne uwagi.</FormLabel>
+              <FormLabel className="text-muted-foreground">Czy jest coś jeszcze, co powinienem wiedzieć przed przygotowaniem Twojego planu treningowego?</FormLabel>
+              <FormDescription className="text-xs text-muted-foreground/70">
+                Możesz wpisać informacje dotyczące diety, stylu życia, pracy, regeneracji, wcześniejszych doświadczeń treningowych lub innych ważnych informacji.
+              </FormDescription>
               <FormControl>
                 <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[120px] p-4 rounded-none resize-y" />
               </FormControl>
@@ -717,7 +740,7 @@ export default function SurveyForm() {
             {mutation.isPending ? (
               <span className="flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Przetwarzanie...</span>
             ) : (
-              "Wyślij ankietę"
+              "Wyślij wywiad treningowy"
             )}
           </Button>
         </div>

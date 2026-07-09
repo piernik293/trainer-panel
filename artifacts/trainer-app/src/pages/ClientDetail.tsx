@@ -63,7 +63,7 @@ function calculateBmi(heightCm: number | null | undefined, weightKg: number | nu
 }
 
 const BMI_RECOMMENDATION_TEXT =
-  "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj, że BMI nie rozróżnia masy mięśniowej i tkanki tłuszczowej. W takim przypadku często warto rozważyć redukcję tkanki tłuszczowej lub rekompozycję sylwetki.";
+  "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj jednak, że BMI nie rozróżnia tkanki tłuszczowej od masy mięśniowej. W wielu przypadkach dobrym rozwiązaniem może być redukcja tkanki tłuszczowej lub rekompozycja sylwetki.";
 
 export default function ClientDetail() {
   const params = useParams<{ id: string }>();
@@ -213,7 +213,7 @@ export default function ClientDetail() {
           <Button asChild className="gap-2">
             <Link href={`/clients/${id}/survey`}>
               <FileEdit size={16} />
-              {client.hasSurvey ? "Nowa wersja ankiety" : "Wypełnij Ankietę"}
+              {client.hasSurvey ? "Nowa wersja wywiadu treningowego" : "Wypełnij Wywiad Treningowy"}
             </Link>
           </Button>
         </div>
@@ -222,8 +222,8 @@ export default function ClientDetail() {
       <Tabs defaultValue="overview" className="no-print">
         <TabsList>
           <TabsTrigger value="overview">Przegląd</TabsTrigger>
-          <TabsTrigger value="survey">Ankieta</TabsTrigger>
-          <TabsTrigger value="history">Historia ankiet</TabsTrigger>
+          <TabsTrigger value="survey">Wywiad treningowy</TabsTrigger>
+          <TabsTrigger value="history">Historia wywiadów treningowych</TabsTrigger>
           <TabsTrigger value="notes">Notatki</TabsTrigger>
         </TabsList>
 
@@ -247,12 +247,12 @@ export default function ClientDetail() {
             <CardHeader className="bg-muted/20 border-b border-border/50">
               <CardTitle className="text-base flex items-center gap-2">
                 <History className="w-4 h-4" />
-                Historia wypełnionych ankiet
+                Historia wypełnionych wywiadów treningowych
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {!surveyHistory || surveyHistory.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">Brak historii ankiet.</div>
+                <div className="p-8 text-center text-muted-foreground">Brak historii wywiadów treningowych.</div>
               ) : (
                 <div className="divide-y divide-border/50">
                   {surveyHistory.map((s, index) => (
@@ -270,7 +270,7 @@ export default function ClientDetail() {
                         onClick={() => setSelectedSurveyId(s.id)}
                         className="text-primary"
                       >
-                        Zobacz ankietę
+                        Zobacz wywiad treningowy
                       </Button>
                     </div>
                   ))}
@@ -283,7 +283,7 @@ export default function ClientDetail() {
             <div className="pt-6 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
-                  Podgląd ankiety
+                  Podgląd wywiadu treningowego
                   <Badge variant={isViewingArchival ? "outline" : "default"} className={isViewingArchival ? "text-muted-foreground" : "bg-primary/10 text-primary"}>
                     {isViewingArchival ? "Archiwalna" : "Aktualna"}
                   </Badge>
@@ -422,8 +422,8 @@ function OverviewTab({ client, survey }: { client: any; survey: any }) {
             <CardTitle className="text-base">Podsumowanie</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <SummaryRow label="Status ankiety" value={surveyStatusLabel(client.surveyStatus)} />
-            <SummaryRow label="Ostatnia ankieta" value={client.lastSurveyDate ? formatDate(client.lastSurveyDate) : "Brak"} />
+            <SummaryRow label="Status wywiadu treningowego" value={surveyStatusLabel(client.surveyStatus)} />
+            <SummaryRow label="Ostatni wywiad treningowy" value={client.lastSurveyDate ? formatDate(client.lastSurveyDate) : "Brak"} />
             <SummaryRow label="Cel treningowy" value={survey?.trainingGoal || "-"} />
             <SummaryRow label="Poziom doświadczenia" value={survey?.experienceLevel || "-"} />
             <SummaryRow label="Częstotliwość treningów" value={survey?.weeklyFrequency ? `${survey.weeklyFrequency}x / tydz.` : "-"} />
@@ -452,7 +452,7 @@ function SurveyTab({ client, survey, surveyLoading, id, bmi, showBmiRecommendati
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
             <FileEdit className="w-8 h-8 text-muted-foreground/50" />
           </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">Brak ankiety startowej</h3>
+          <h3 className="text-lg font-medium text-foreground mb-2">Brak wywiadu startowego</h3>
           <p className="text-muted-foreground max-w-md mb-6">
             Zbierz wywiad od klienta przed pierwszym treningiem, aby optymalnie ułożyć plan treningowy i zapobiec kontuzjom.
           </p>
@@ -582,7 +582,7 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName }: any) 
       )}
 
       <div className="text-xs text-muted-foreground text-right pt-4 print-only">
-        Ankieta wygenerowana z systemu Panel Trenera dnia {new Date().toLocaleDateString('pl-PL')}
+        Wywiad treningowy wygenerowany z systemu Panel Trenera dnia {new Date().toLocaleDateString('pl-PL')}
       </div>
     </div>
   );

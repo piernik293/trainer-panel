@@ -55,7 +55,7 @@ router.get("/clients/:clientId/survey", async (req, res): Promise<void> => {
     .limit(1);
 
   if (!survey) {
-    res.status(404).json({ error: "Ankieta nie znaleziona" });
+    res.status(404).json({ error: "Wywiad treningowy nie znaleziony" });
     return;
   }
 
@@ -93,7 +93,7 @@ router.get("/clients/:clientId/surveys/:surveyId", async (req, res): Promise<voi
     .where(and(eq(surveysTable.clientId, params.data.clientId), eq(surveysTable.id, params.data.surveyId)));
 
   if (!survey) {
-    res.status(404).json({ error: "Ankieta nie znaleziona" });
+    res.status(404).json({ error: "Wywiad treningowy nie znaleziony" });
     return;
   }
 

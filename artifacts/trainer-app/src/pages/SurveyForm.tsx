@@ -18,14 +18,14 @@ import { AnimatePresence, motion } from "framer-motion";
 
 const advancedMethodsOptions = [
   "Superserie", 
-  "Serie złożone", 
+  "Serie złożone (Compound Set)", 
   "Drop sety", 
   "Serie do upadku mięśniowego", 
   "Serie wymuszone", 
-  "Serie rest-pause"
+  "Rest-Pause"
 ];
 
-const MUSCLE_GROUPS = ["klatka piersiowa", "plecy", "barki", "biceps", "triceps", "brzuch", "uda", "łydki"];
+const MUSCLE_GROUPS = ["klatka piersiowa", "plecy", "barki", "biceps", "triceps", "brzuch", "uda", "pośladki", "łydki"];
 
 function calculateBmi(heightCm: number | undefined, weightKg: number | undefined): number | undefined {
   if (!heightCm || !weightKg) return undefined;
@@ -35,7 +35,7 @@ function calculateBmi(heightCm: number | undefined, weightKg: number | undefined
 }
 
 const BMI_RECOMMENDATION_TEXT =
-  "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj, że BMI nie rozróżnia masy mięśniowej i tkanki tłuszczowej. W takim przypadku często warto rozważyć redukcję tkanki tłuszczowej lub rekompozycję sylwetki.";
+  "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj jednak, że BMI nie rozróżnia tkanki tłuszczowej od masy mięśniowej. W wielu przypadkach dobrym rozwiązaniem może być redukcja tkanki tłuszczowej lub rekompozycja sylwetki.";
 
 function calculateAge(dateOfBirth: string | undefined): number | undefined {
   if (!dateOfBirth) return undefined;
@@ -166,9 +166,9 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
   const gender = form.watch("gender");
   const genderMuscleSuggestion =
     gender === "Kobieta"
-      ? "Podpowiedź: Często wybierane cele sylwetkowe: pośladki, uda, brzuch, barki."
+      ? "Podpowiedź: Często wybierane cele sylwetkowe to pośladki, uda, brzuch oraz barki."
       : gender === "Mężczyzna"
-      ? "Podpowiedź: Często wybierane cele sylwetkowe: klatka piersiowa, barki, plecy, ramiona."
+      ? "Podpowiedź: Często wybierane cele sylwetkowe to klatka piersiowa, barki, plecy oraz ramiona."
       : undefined;
   const heightCm = form.watch("heightCm");
   const weightKg = form.watch("weightKg");
@@ -193,7 +193,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
       onSuccess: () => {
         toast({
           title: "Zapisano pomyślnie",
-          description: "Ankieta klienta została zaktualizowana."
+          description: "Wywiad treningowy klienta został zaktualizowany."
         });
         queryClient.invalidateQueries({ queryKey: getGetClientQueryKey(id) });
         queryClient.invalidateQueries({ queryKey: ['client-survey', id] as any });
@@ -203,7 +203,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
       onError: () => {
         toast({
           title: "Błąd zapisu",
-          description: "Nie udało się zapisać ankiety.",
+          description: "Nie udało się zapisać wywiadu treningowego.",
           variant: "destructive"
         });
       }
@@ -259,7 +259,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                 name="experienceLevel"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Poziom doświadczenia</FormLabel>
+                    <FormLabel>Który poziom najlepiej opisuje doświadczenie treningowe klienta?</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ?? ""}>
                       <FormControl>
                         <SelectTrigger>
@@ -425,25 +425,27 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
             <CardContent className="pt-6 grid grid-cols-1 gap-6">
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="preferredMuscles"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Partie mięśniowe do priorytetowego rozwoju</FormLabel>
-                      <FormDescription className="text-xs">Np. {MUSCLE_GROUPS.join(", ")}.</FormDescription>
-                      {genderMuscleSuggestion && (
-                        <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
-                          {genderMuscleSuggestion}
-                        </p>
-                      )}
-                      <FormControl>
-                        <Input placeholder="np. Barki, Pośladki" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {isBeginner && (
+                  <FormField
+                    control={form.control}
+                    name="preferredMuscles"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Na których partiach mięśniowych najbardziej zależy klientowi?</FormLabel>
+                        <FormDescription className="text-xs">Jeśli klient nie zna nazw partii mięśniowych, przykłady to: {MUSCLE_GROUPS.join(", ")}.</FormDescription>
+                        {genderMuscleSuggestion && (
+                          <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
+                            {genderMuscleSuggestion}
+                          </p>
+                        )}
+                        <FormControl>
+                          <Input placeholder="np. Barki, Pośladki" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormField
                   control={form.control}
@@ -509,7 +511,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                       name="avoidsAdvancedMethods"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Czy klient ma metody treningowe, których nie chce stosować / są przeciwwskazane?</FormLabel>
+                          <FormLabel>Czy klient ma metody treningowe, których nie chce stosować lub które są dla niego przeciwwskazane?</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value ?? ""}>
                             <FormControl>
                               <SelectTrigger className="max-w-xs">
@@ -645,10 +647,11 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="poniżej 6h">poniżej 6h</SelectItem>
-                        <SelectItem value="6-7h">6-7h</SelectItem>
-                        <SelectItem value="7-8h">7-8h</SelectItem>
-                        <SelectItem value="powyżej 8h">powyżej 8h</SelectItem>
+                        <SelectItem value="Poniżej 5 godzin">Poniżej 5 godzin</SelectItem>
+                        <SelectItem value="5–6 godzin">5–6 godzin</SelectItem>
+                        <SelectItem value="6–7 godzin">6–7 godzin</SelectItem>
+                        <SelectItem value="7–8 godzin">7–8 godzin</SelectItem>
+                        <SelectItem value="Powyżej 8 godzin">Powyżej 8 godzin</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -669,9 +672,9 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Maksymalnie efektywny">Maksymalnie efektywny</SelectItem>
-                        <SelectItem value="Kompromis">Kompromis</SelectItem>
-                        <SelectItem value="Prosty i trwały">Prosty i trwały</SelectItem>
+                        <SelectItem value="Maksymalna efektywność">Maksymalna efektywność</SelectItem>
+                        <SelectItem value="Balans efektywności i wygody">Balans efektywności i wygody</SelectItem>
+                        <SelectItem value="Prosty i łatwy do utrzymania">Prosty i łatwy do utrzymania</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -684,7 +687,8 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                 name="stressLevel"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Poziom odczuwanego stresu (1-10)</FormLabel>
+                    <FormLabel>Jak oceniasz poziom stresu klienta?</FormLabel>
+                    <FormDescription className="text-xs">1 = bardzo niski poziom stresu, 10 = bardzo wysoki poziom stresu</FormDescription>
                     <FormControl>
                       <div className="flex items-center gap-4 pt-2">
                         <Slider min={1} max={10} step={1} value={[field.value ?? 5]} onValueChange={(v) => field.onChange(v[0])} className="flex-1" />
@@ -703,47 +707,49 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
               <CardTitle>Lokalizacja treningu i cardio</CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FormField
-                  control={form.control}
-                  name="priorityMuscle1"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Partia priorytetowa #1</FormLabel>
-                      <FormControl>
-                        <Input placeholder="np. Barki" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="priorityMuscle2"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Partia priorytetowa #2</FormLabel>
-                      <FormControl>
-                        <Input placeholder="np. Pośladki" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="priorityMuscle3"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Partia priorytetowa #3</FormLabel>
-                      <FormControl>
-                        <Input placeholder="np. Plecy" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              {isIntermediateOrAdvanced && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="priorityMuscle1"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Partia priorytetowa 1</FormLabel>
+                        <FormControl>
+                          <Input placeholder="np. Barki" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="priorityMuscle2"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Partia priorytetowa 2</FormLabel>
+                        <FormControl>
+                          <Input placeholder="np. Pośladki" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="priorityMuscle3"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Partia priorytetowa 3</FormLabel>
+                        <FormControl>
+                          <Input placeholder="np. Plecy" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
@@ -843,7 +849,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
             </Button>
             <Button type="submit" disabled={upsertSurvey.isPending} className="gap-2">
               <Save size={16} />
-              {upsertSurvey.isPending ? "Zapisywanie..." : "Zapisz Ankietę"}
+              {upsertSurvey.isPending ? "Zapisywanie..." : "Zapisz Wywiad Treningowy"}
             </Button>
           </div>
         </form>
