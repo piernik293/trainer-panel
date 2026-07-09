@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -44,6 +45,35 @@ const TRAINING_FREQUENCY_RECOMMENDATIONS: Record<string, string> = {
   "Zaawansowany":
     "Najczęściej sprawdza się 4–6 treningów tygodniowo. Liczbę treningów należy dopasować do objętości, celu oraz regeneracji.",
 };
+
+const EQUIPMENT_OPTIONS = [
+  "Hantle",
+  "Sztanga i talerze",
+  "Ławeczka treningowa",
+  "Kettlebell",
+  "Gumy oporowe",
+  "Drążek do podciągania",
+  "TRX / pasy treningowe",
+  "Rower stacjonarny / orbitrek",
+  "Brak sprzętu",
+];
+
+function parseEquipment(raw: string | undefined | null): { items: string[]; other: string } {
+  if (!raw) return { items: [], other: "" };
+  const parts = raw.split(",").map((p) => p.trim()).filter(Boolean);
+  const items = parts.filter((p) => EQUIPMENT_OPTIONS.includes(p));
+  const other = parts.filter((p) => !EQUIPMENT_OPTIONS.includes(p)).join(", ");
+  return { items, other };
+}
+
+function buildEquipmentString(items: string[], other: string): string {
+  const parts = [...items];
+  if (other.trim()) parts.push(other.trim());
+  return parts.join(", ");
+}
+
+const CARDIO_RECOMMENDATION_TEXT =
+  "Podpowiedź: Przy tym celu regularny trening cardio może wspierać osiąganie lepszych efektów. Ostateczna ilość cardio zostanie dopasowana indywidualnie.";
 
 const ACTIVITY_LEVEL_DESCRIPTIONS: Record<string, string> = {
   "Siedzący": "Większość dnia spędza siedząc (np. praca biurowa, nauka lub praca przy komputerze).",
@@ -197,6 +227,17 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
   const trainingFrequencyRecommendation = experienceLevel ? TRAINING_FREQUENCY_RECOMMENDATIONS[experienceLevel] : undefined;
   const trainingLocation = form.watch("trainingLocation");
   const showEquipmentField = trainingLocation === "Dom" || trainingLocation === "Siłownia plenerowa";
+  const showTrainingDuration =
+    experienceLevel === "Początkujący" || experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
+  const trainingGoal = form.watch("trainingGoal");
+  const showCardioRecommendation = trainingGoal === "Redukcja tkanki tłuszczowej" || trainingGoal === "Poprawa kondycji";
+
+  const [equipmentItems, setEquipmentItems] = useState<string[]>(() => parseEquipment(survey?.equipment).items);
+  const [equipmentOther, setEquipmentOther] = useState<string>(() => parseEquipment(survey?.equipment).other);
+  useEffect(() => {
+    form.setValue("equipment", buildEquipmentString(equipmentItems, equipmentOther));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [equipmentItems, equipmentOther]);
 
   const onSubmit = (data: SurveyFormValues) => {
     const avoidsAdvancedMethodsBool =
@@ -301,27 +342,29 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="trainingDuration"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Jak długo trenujesz?</FormLabel>
-                    <FormControl>
-                      <Input placeholder="np. 2 lata z przerwami" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {showTrainingDuration && (
+                <FormField
+                  control={form.control}
+                  name="trainingDuration"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Jak długo trenuje klient?</FormLabel>
+                      <FormControl>
+                        <Input placeholder="np. 2 lata z przerwami" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
                 name="weeklyFrequency"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ile dni w tygodniu REALNIE klient może przeznaczyć na trening?</FormLabel>
-                    <FormDescription className="text-xs">Weź pod uwagę pracę, szkołę, rodzinę oraz inne obowiązki klienta.</FormDescription>
+                    <FormLabel>Ile dni w tygodniu realnie klient może przeznaczyć na trening?</FormLabel>
+                    <FormDescription className="text-xs">Uwzględnij pracę, szkołę, rodzinę oraz pozostałe obowiązki klienta.</FormDescription>
                     <FormControl>
                       <Input type="number" min="1" max="7" placeholder="3" {...field} value={field.value ?? ""} />
                     </FormControl>
@@ -336,7 +379,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Ile treningów tygodniowo klient chciałby wykonywać?</FormLabel>
-                    <FormDescription className="text-xs">Nie muszą to być takie same wartości — dzięki temu można lepiej dopasować plan do możliwości klienta.</FormDescription>
+                    <FormDescription className="text-xs">Pozwoli to lepiej dopasować plan do oczekiwań oraz możliwości klienta.</FormDescription>
                     {trainingFrequencyRecommendation && (
                       <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
                         {trainingFrequencyRecommendation}
@@ -355,7 +398,8 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                 name="sessionDuration"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Czas jednego treningu (minuty)</FormLabel>
+                    <FormLabel>Ile czasu realnie klient może poświęcić na pojedynczy trening?</FormLabel>
+                    <FormDescription className="text-xs">Uwzględnij codzienne obowiązki klienta oraz jego możliwości regeneracji.</FormDescription>
                     <FormControl>
                       <Input placeholder="np. 60-90 minut" {...field} />
                     </FormControl>
@@ -448,7 +492,10 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                 name="healthLimitations"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Kontuzje / ograniczenia ruchowe / choroby</FormLabel>
+                    <FormLabel>Czy u klienta występują kontuzje, dolegliwości bólowe lub ograniczenia ruchowe, które należy uwzględnić podczas układania planu?</FormLabel>
+                    <FormDescription className="text-xs">
+                      Przykłady: ból kolan, ból barków, ból odcinka lędźwiowego, strzelający łokieć, problemy z nadgarstkami, ograniczona ruchomość, przebyte operacje, inne przewlekłe dolegliwości.
+                    </FormDescription>
                     <FormControl>
                       <Textarea 
                         placeholder="Opisz wszelkie przebyte kontuzje, bóle w stawach, nadciśnienie itp." 
@@ -756,7 +803,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
 
           <Card className="border-border/50 shadow-sm">
             <CardHeader className="bg-muted/20 border-b border-border/50">
-              <CardTitle>Lokalizacja treningu i cardio</CardTitle>
+              <CardTitle>Miejsce treningu</CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
               {isIntermediateOrAdvanced && (
@@ -809,7 +856,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                   name="trainingLocation"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Miejsce treningu</FormLabel>
+                      <FormLabel>Gdzie najczęściej trenuje klient?</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value ?? ""}>
                         <FormControl>
                           <SelectTrigger>
@@ -827,29 +874,50 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                   )}
                 />
                 {showEquipmentField && (
-                  <FormField
-                    control={form.control}
-                    name="equipment"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Dostępny sprzęt</FormLabel>
-                        <FormControl>
-                          <Input placeholder="np. Hantle, gumy oporowe, brak sprzętu" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormItem>
+                    <FormLabel>Jakim sprzętem dysponuje klient?</FormLabel>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {EQUIPMENT_OPTIONS.map((opt) => (
+                        <label key={opt} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={equipmentItems.includes(opt)}
+                            onCheckedChange={(checked) =>
+                              setEquipmentItems((prev) => (checked ? [...prev, opt] : prev.filter((i) => i !== opt)))
+                            }
+                          />
+                          {opt}
+                        </label>
+                      ))}
+                    </div>
+                    <Input
+                      placeholder="Inny sprzęt"
+                      value={equipmentOther}
+                      onChange={(e) => setEquipmentOther(e.target.value)}
+                      className="mt-2"
+                    />
+                  </FormItem>
                 )}
               </div>
+            </CardContent>
+          </Card>
 
+          <Card className="border-border/50 shadow-sm">
+            <CardHeader className="bg-muted/20 border-b border-border/50">
+              <CardTitle>Cardio</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormField
                   control={form.control}
                   name="cardioPreference"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nastawienie do cardio</FormLabel>
+                      <FormLabel>Jakie jest nastawienie klienta do treningów cardio?</FormLabel>
+                      {showCardioRecommendation && (
+                        <FormDescription className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
+                          {CARDIO_RECOMMENDATION_TEXT}
+                        </FormDescription>
+                      )}
                       <Select onValueChange={field.onChange} value={field.value ?? ""}>
                         <FormControl>
                           <SelectTrigger>
@@ -857,9 +925,9 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Lubi">Lubi</SelectItem>
-                          <SelectItem value="Neutralne">Neutralne</SelectItem>
-                          <SelectItem value="Nie lubi">Nie lubi</SelectItem>
+                          <SelectItem value="Lubię cardio">Lubię cardio</SelectItem>
+                          <SelectItem value="Jest mi obojętne">Jest mi obojętne</SelectItem>
+                          <SelectItem value="Nie przepadam za cardio">Nie przepadam za cardio</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -871,7 +939,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                   name="cardioFrequency"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Częstotliwość cardio</FormLabel>
+                      <FormLabel>Jak często klient wykonuje trening cardio?</FormLabel>
                       <FormControl>
                         <Input placeholder="np. 2x w tygodniu" {...field} />
                       </FormControl>
@@ -884,7 +952,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                   name="preferredCardioType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Preferowany typ cardio</FormLabel>
+                      <FormLabel>Jaki rodzaj cardio najbardziej odpowiada klientowi?</FormLabel>
                       <FormControl>
                         <Input placeholder="np. Rower, bieganie, marsz" {...field} />
                       </FormControl>

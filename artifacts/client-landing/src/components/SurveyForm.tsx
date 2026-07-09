@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -34,6 +34,35 @@ function calculateBmi(heightCm: number | undefined, weightKg: number | undefined
 
 const BMI_RECOMMENDATION_TEXT =
   "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj jednak, że BMI nie rozróżnia tkanki tłuszczowej od masy mięśniowej. W wielu przypadkach dobrym rozwiązaniem może być redukcja tkanki tłuszczowej lub rekompozycja sylwetki.";
+
+const EQUIPMENT_OPTIONS = [
+  "Hantle",
+  "Sztanga i talerze",
+  "Ławeczka treningowa",
+  "Kettlebell",
+  "Gumy oporowe",
+  "Drążek do podciągania",
+  "TRX / pasy treningowe",
+  "Rower stacjonarny / orbitrek",
+  "Brak sprzętu",
+];
+
+function parseEquipment(raw: string | undefined): { items: string[]; other: string } {
+  if (!raw) return { items: [], other: "" };
+  const parts = raw.split(",").map((p) => p.trim()).filter(Boolean);
+  const items = parts.filter((p) => EQUIPMENT_OPTIONS.includes(p));
+  const other = parts.filter((p) => !EQUIPMENT_OPTIONS.includes(p)).join(", ");
+  return { items, other };
+}
+
+function buildEquipmentString(items: string[], other: string): string {
+  const parts = [...items];
+  if (other.trim()) parts.push(other.trim());
+  return parts.join(", ");
+}
+
+const CARDIO_RECOMMENDATION_TEXT =
+  "Podpowiedź: Przy tym celu regularny trening cardio może wspierać osiąganie lepszych efektów. Ostateczna ilość cardio zostanie dopasowana indywidualnie.";
 
 const TRAINING_FREQUENCY_RECOMMENDATIONS: Record<string, string> = {
   "Brak aktywności fizycznej":
@@ -167,6 +196,8 @@ export default function SurveyForm() {
       : undefined;
   const isBeginner = experienceLevel === "Brak aktywności fizycznej" || experienceLevel === "Początkujący";
   const isIntermediateOrAdvanced = experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
+  const showTrainingDuration =
+    experienceLevel === "Początkujący" || experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
   const calculatedAge = calculateAge(dateOfBirth);
   const heightCm = form.watch("heightCm");
   const weightKg = form.watch("weightKg");
@@ -175,6 +206,15 @@ export default function SurveyForm() {
   const trainingFrequencyRecommendation = experienceLevel ? TRAINING_FREQUENCY_RECOMMENDATIONS[experienceLevel] : undefined;
   const trainingLocation = form.watch("trainingLocation");
   const showEquipmentField = trainingLocation === "Dom" || trainingLocation === "Siłownia plenerowa";
+  const trainingGoal = form.watch("trainingGoal");
+  const showCardioRecommendation = trainingGoal === "Redukcja tkanki tłuszczowej" || trainingGoal === "Poprawa kondycji";
+
+  const [equipmentItems, setEquipmentItems] = useState<string[]>([]);
+  const [equipmentOther, setEquipmentOther] = useState<string>("");
+  useEffect(() => {
+    form.setValue("equipment", buildEquipmentString(equipmentItems, equipmentOther));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [equipmentItems, equipmentOther]);
 
   const mutation = useSubmitPublicSurvey();
 
@@ -373,17 +413,22 @@ export default function SurveyForm() {
           )} />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
-            <FormField control={form.control} name="trainingDuration" render={({field}) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Jak długo trenujesz?</FormLabel>
-                <FormControl>
-                  <Input placeholder="np. 2 lata" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
-                </FormControl>
-              </FormItem>
-            )} />
+            {showTrainingDuration && (
+              <FormField control={form.control} name="trainingDuration" render={({field}) => (
+                <FormItem>
+                  <FormLabel className="text-muted-foreground">Jak długo trenujesz?</FormLabel>
+                  <FormControl>
+                    <Input placeholder="np. 2 lata" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
+                  </FormControl>
+                </FormItem>
+              )} />
+            )}
             <FormField control={form.control} name="healthLimitations" render={({field}) => (
               <FormItem className="md:col-span-2">
-                <FormLabel className="text-muted-foreground">Czy masz kontuzje, urazy lub ograniczenia ruchowe?</FormLabel>
+                <FormLabel className="text-muted-foreground">Czy występują u Ciebie kontuzje, dolegliwości bólowe lub ograniczenia ruchowe, które trener powinien uwzględnić podczas układania planu?</FormLabel>
+                <FormDescription className="text-xs text-muted-foreground/70">
+                  Przykłady: ból kolan, ból barków, ból odcinka lędźwiowego, strzelający łokieć, problemy z nadgarstkami, ograniczona ruchomość, przebyte operacje, inne przewlekłe dolegliwości.
+                </FormDescription>
                 <FormControl>
                   <Textarea placeholder="Brak / Opisz krótko" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[80px] p-4 rounded-none resize-y" />
                 </FormControl>
@@ -396,9 +441,9 @@ export default function SurveyForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
             <FormField control={form.control} name="weeklyFrequency" render={({field}) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground">Ile dni w tygodniu REALNIE możesz przeznaczyć na trening?</FormLabel>
+                <FormLabel className="text-muted-foreground">Ile dni w tygodniu realnie możesz przeznaczyć na trening?</FormLabel>
                 <FormDescription className="text-xs text-muted-foreground/70">
-                  Weź pod uwagę pracę, szkołę, rodzinę oraz inne obowiązki.
+                  Uwzględnij pracę, szkołę, rodzinę oraz pozostałe obowiązki.
                 </FormDescription>
                 <FormControl>
                   <Input 
@@ -417,7 +462,7 @@ export default function SurveyForm() {
               <FormItem>
                 <FormLabel className="text-muted-foreground">Ile treningów tygodniowo chciałbyś wykonywać?</FormLabel>
                 <FormDescription className="text-xs text-muted-foreground/70">
-                  Nie muszą to być takie same wartości. Dzięki temu trener będzie mógł lepiej dopasować plan do Twoich możliwości.
+                  Pozwoli to lepiej dopasować plan do Twoich oczekiwań oraz możliwości.
                 </FormDescription>
                 {trainingFrequencyRecommendation && (
                   <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
@@ -439,7 +484,10 @@ export default function SurveyForm() {
             )} />
             <FormField control={form.control} name="sessionDuration" render={({field}) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground">Ile czasu możesz przeznaczyć na jeden trening?</FormLabel>
+                <FormLabel className="text-muted-foreground">Ile czasu realnie możesz poświęcić na pojedynczy trening?</FormLabel>
+                <FormDescription className="text-xs text-muted-foreground/70">
+                  Uwzględnij swoje codzienne obowiązki oraz możliwości regeneracji.
+                </FormDescription>
                 <FormControl>
                   <Input placeholder="np. 60 min" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
                 </FormControl>
@@ -529,17 +577,17 @@ export default function SurveyForm() {
           )}
         </Section>
 
-        <Section title="Miejsce treningu i cardio">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+        <Section title="Miejsce treningu">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <FormField control={form.control} name="trainingLocation" render={({field}) => (
               <FormItem className="space-y-4">
-                <FormLabel className="text-muted-foreground">Gdzie najczęściej planujesz trenować?</FormLabel>
+                <FormLabel className="text-muted-foreground">Gdzie najczęściej będziesz trenować?</FormLabel>
                 <FormControl>
                   <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
                     {[
                       { loc: "Siłownia", desc: "Mam dostęp do pełnego wyposażenia siłowni." },
-                      { loc: "Dom", desc: "Trenuję w domu z własnym sprzętem lub bez sprzętu." },
-                      { loc: "Siłownia plenerowa", desc: "Korzystam głównie z drążków, poręczy oraz sprzętu dostępnego na świeżym powietrzu." },
+                      { loc: "Dom", desc: "Trenuję w domu." },
+                      { loc: "Siłownia plenerowa", desc: "Trenuję głównie na drążkach, poręczach oraz sprzęcie dostępnym na świeżym powietrzu." },
                     ].map(({ loc, desc }) => (
                       <FormItem key={loc} className="flex items-center space-x-0 space-y-0">
                         <FormControl>
@@ -556,24 +604,46 @@ export default function SurveyForm() {
               </FormItem>
             )} />
             {showEquipmentField && (
-              <FormField control={form.control} name="equipment" render={({field}) => (
-                <FormItem>
-                  <FormLabel className="text-muted-foreground">Jaki sprzęt masz do dyspozycji?</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="np. hantle, gumy oporowe, brak sprzętu" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
-                  </FormControl>
-                </FormItem>
-              )} />
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Jakim sprzętem dysponujesz?</FormLabel>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {EQUIPMENT_OPTIONS.map((opt) => (
+                    <label key={opt} className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                      <Checkbox
+                        checked={equipmentItems.includes(opt)}
+                        onCheckedChange={(checked) =>
+                          setEquipmentItems((prev) => (checked ? [...prev, opt] : prev.filter((i) => i !== opt)))
+                        }
+                        className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-white/20 h-4 w-4 rounded-none"
+                      />
+                      {opt}
+                    </label>
+                  ))}
+                </div>
+                <Input
+                  placeholder="Inny sprzęt"
+                  value={equipmentOther}
+                  onChange={(e) => setEquipmentOther(e.target.value)}
+                  className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none mt-2"
+                />
+              </FormItem>
             )}
           </div>
+        </Section>
 
+        <Section title="Cardio">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <FormField control={form.control} name="cardioPreference" render={({field}) => (
               <FormItem className="space-y-4">
-                <FormLabel className="text-muted-foreground">Twoje nastawienie do cardio</FormLabel>
+                <FormLabel className="text-muted-foreground">Jakie jest Twoje nastawienie do treningów cardio?</FormLabel>
+                {showCardioRecommendation && (
+                  <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
+                    {CARDIO_RECOMMENDATION_TEXT}
+                  </p>
+                )}
                 <FormControl>
                   <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
-                    {["Lubi", "Neutralne", "Nie lubi"].map(pref => (
+                    {["Lubię cardio", "Jest mi obojętne", "Nie przepadam za cardio"].map(pref => (
                       <FormItem key={pref} className="flex items-center space-x-0 space-y-0">
                         <FormControl>
                           <RadioGroupItem value={pref} className="peer sr-only" />
@@ -589,7 +659,7 @@ export default function SurveyForm() {
             )} />
             <FormField control={form.control} name="cardioFrequency" render={({field}) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground">Jak często robisz cardio?</FormLabel>
+                <FormLabel className="text-muted-foreground">Jak często wykonujesz trening cardio?</FormLabel>
                 <FormControl>
                   <Input placeholder="np. 2x w tygodniu" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
                 </FormControl>
@@ -597,7 +667,7 @@ export default function SurveyForm() {
             )} />
             <FormField control={form.control} name="preferredCardioType" render={({field}) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground">Preferowany typ cardio</FormLabel>
+                <FormLabel className="text-muted-foreground">Jaki rodzaj cardio najbardziej Ci odpowiada?</FormLabel>
                 <FormControl>
                   <Input placeholder="np. rower, bieganie, marsz" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
                 </FormControl>
