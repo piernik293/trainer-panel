@@ -10,7 +10,6 @@ export type SurveyInputGender = typeof SurveyInputGender[keyof typeof SurveyInpu
 
 
 export const SurveyInputGender = {
-  Kobieta: 'Kobieta',
   Mężczyzna: 'Mężczyzna',
-  Inna: 'Inna',
+  Kobieta: 'Kobieta',
 } as const;

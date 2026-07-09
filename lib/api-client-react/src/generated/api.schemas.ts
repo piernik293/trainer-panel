@@ -102,9 +102,8 @@ export type SurveyInputGender = typeof SurveyInputGender[keyof typeof SurveyInpu
 
 
 export const SurveyInputGender = {
-  Kobieta: 'Kobieta',
   Mężczyzna: 'Mężczyzna',
-  Inna: 'Inna',
+  Kobieta: 'Kobieta',
 } as const;
 
 export type SurveyInputActivityLevel = typeof SurveyInputActivityLevel[keyof typeof SurveyInputActivityLevel];
@@ -188,9 +187,8 @@ export type PublicSurveySubmissionGender = typeof PublicSurveySubmissionGender[k
 
 
 export const PublicSurveySubmissionGender = {
-  Kobieta: 'Kobieta',
   Mężczyzna: 'Mężczyzna',
-  Inna: 'Inna',
+  Kobieta: 'Kobieta',
 } as const;
 
 export type PublicSurveySubmissionActivityLevel = typeof PublicSurveySubmissionActivityLevel[keyof typeof PublicSurveySubmissionActivityLevel];
@@ -247,7 +245,7 @@ export interface PublicSurveySubmission {
      */
   age?: number;
   dateOfBirth: string;
-  gender?: PublicSurveySubmissionGender;
+  gender: PublicSurveySubmissionGender;
   /**
      * @minimum 50
      * @maximum 260

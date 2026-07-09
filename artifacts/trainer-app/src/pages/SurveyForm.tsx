@@ -57,7 +57,7 @@ const surveySchema = z.object({
     .string()
     .optional()
     .refine((val) => !val || new Date(val) <= new Date(), "Data urodzenia nie może być w przyszłości"),
-  gender: z.string().optional(),
+  gender: z.enum(["Mężczyzna", "Kobieta"]).optional().or(z.literal("")),
   heightCm: z.coerce.number().min(50).max(260).optional().or(z.literal("").transform(() => undefined)),
   weightKg: z.coerce.number().min(20).max(400).optional().or(z.literal("").transform(() => undefined)),
   activityLevel: z.string().optional(),
@@ -122,6 +122,13 @@ export default function SurveyForm() {
   const isBeginner = experienceLevel === "Początkujący";
   const isIntermediateOrAdvanced = experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
   const calculatedAge = calculateAge(dateOfBirth) ?? watchedAge;
+  const gender = form.watch("gender");
+  const genderMuscleSuggestion =
+    gender === "Kobieta"
+      ? "Podpowiedź: Często wybierane cele sylwetkowe: pośladki, uda, brzuch, barki."
+      : gender === "Mężczyzna"
+      ? "Podpowiedź: Często wybierane cele sylwetkowe: klatka piersiowa, barki, plecy, ramiona."
+      : undefined;
 
   const isInitialized = useRef(false);
 
@@ -141,7 +148,7 @@ export default function SurveyForm() {
         favoriteExercises: survey.favoriteExercises ?? "",
         age: survey.age ?? undefined,
         dateOfBirth: survey.dateOfBirth ?? "",
-        gender: survey.gender ?? "",
+        gender: (survey.gender === "Mężczyzna" || survey.gender === "Kobieta" ? survey.gender : "") as "" | "Mężczyzna" | "Kobieta",
         heightCm: survey.heightCm ?? undefined,
         weightKg: survey.weightKg ?? undefined,
         activityLevel: survey.activityLevel ?? "",
@@ -328,9 +335,8 @@ export default function SurveyForm() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Kobieta">Kobieta</SelectItem>
                         <SelectItem value="Mężczyzna">Mężczyzna</SelectItem>
-                        <SelectItem value="Inna">Inna</SelectItem>
+                        <SelectItem value="Kobieta">Kobieta</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -409,6 +415,11 @@ export default function SurveyForm() {
                     <FormItem>
                       <FormLabel>Partie mięśniowe do priorytetowego rozwoju</FormLabel>
                       <FormDescription className="text-xs">Np. {MUSCLE_GROUPS.join(", ")}.</FormDescription>
+                      {genderMuscleSuggestion && (
+                        <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
+                          {genderMuscleSuggestion}
+                        </p>
+                      )}
                       <FormControl>
                         <Input placeholder="np. Barki, Pośladki" {...field} />
                       </FormControl>

@@ -47,7 +47,7 @@ const formSchema = z.object({
     .string()
     .min(1, "Data urodzenia jest wymagana")
     .refine((val) => new Date(val) <= new Date(), "Data urodzenia nie może być w przyszłości"),
-  gender: z.string().min(1, "Płeć jest wymagana"),
+  gender: z.enum(["Mężczyzna", "Kobieta"], { required_error: "Płeć jest wymagana" }),
   heightCm: z.coerce.number().min(50, "Wzrost jest wymagany").max(260),
   weightKg: z.coerce.number().min(20, "Waga jest wymagana").max(400),
   trainingGoal: z.string().optional(),
@@ -94,7 +94,7 @@ export default function SurveyForm() {
       email: "",
       phone: "",
       dateOfBirth: "",
-      gender: "",
+      gender: undefined,
       heightCm: undefined,
       weightKg: undefined,
       trainingGoal: "",
@@ -120,6 +120,13 @@ export default function SurveyForm() {
   const experienceLevel = form.watch("experienceLevel");
   const avoidsAdvancedMethods = form.watch("avoidsAdvancedMethods");
   const dateOfBirth = form.watch("dateOfBirth");
+  const gender = form.watch("gender");
+  const genderMuscleSuggestion =
+    gender === "Kobieta"
+      ? "Podpowiedź: Często wybierane cele sylwetkowe: pośladki, uda, brzuch, barki."
+      : gender === "Mężczyzna"
+      ? "Podpowiedź: Często wybierane cele sylwetkowe: klatka piersiowa, barki, plecy, ramiona."
+      : undefined;
   const isBeginner = experienceLevel === "Początkujący";
   const isIntermediateOrAdvanced = experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
   const calculatedAge = calculateAge(dateOfBirth);
@@ -225,8 +232,8 @@ export default function SurveyForm() {
               <FormItem className="space-y-4">
                 <FormLabel className="text-muted-foreground">Płeć *</FormLabel>
                 <FormControl>
-                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-3 gap-3">
-                    {["Kobieta", "Mężczyzna", "Inna"].map(g => (
+                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 gap-3">
+                    {["Mężczyzna", "Kobieta"].map(g => (
                       <FormItem key={g} className="flex items-center space-x-0 space-y-0">
                         <FormControl>
                           <RadioGroupItem value={g} className="peer sr-only" />
@@ -358,6 +365,11 @@ export default function SurveyForm() {
                 <FormDescription className="text-xs text-muted-foreground/70">
                   Np. {MUSCLE_GROUPS.join(", ")}.
                 </FormDescription>
+                {genderMuscleSuggestion && (
+                  <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
+                    {genderMuscleSuggestion}
+                  </p>
+                )}
                 <FormControl>
                   <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
                 </FormControl>

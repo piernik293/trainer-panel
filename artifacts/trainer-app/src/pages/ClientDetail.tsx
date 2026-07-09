@@ -29,6 +29,12 @@ function formatDateOfBirth(dateOfBirth: string | null | undefined): string | und
   return dob.toLocaleDateString("pl-PL");
 }
 
+function formatGender(gender: string | null | undefined): string | undefined {
+  if (!gender) return undefined;
+  if (gender === "Mężczyzna" || gender === "Kobieta") return gender;
+  return "Nieokreślono";
+}
+
 export default function ClientDetail() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
@@ -147,7 +153,7 @@ export default function ClientDetail() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <SurveyBlock label="Data urodzenia" value={formatDateOfBirth(survey.dateOfBirth)} />
                 <SurveyBlock label="Wiek" value={calculateAgeFromSurvey(survey.dateOfBirth, survey.age)?.toString()} />
-                <SurveyBlock label="Płeć" value={survey.gender} />
+                <SurveyBlock label="Płeć" value={formatGender(survey.gender)} />
                 <SurveyBlock label="Wzrost" value={survey.heightCm ? `${survey.heightCm} cm` : undefined} />
                 <SurveyBlock label="Waga" value={survey.weightKg ? `${survey.weightKg} kg` : undefined} />
               </div>

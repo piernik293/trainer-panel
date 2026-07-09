@@ -10,7 +10,6 @@ export type PublicSurveySubmissionGender = typeof PublicSurveySubmissionGender[k
 
 
 export const PublicSurveySubmissionGender = {
-  Kobieta: 'Kobieta',
   Mężczyzna: 'Mężczyzna',
-  Inna: 'Inna',
+  Kobieta: 'Kobieta',
 } as const;

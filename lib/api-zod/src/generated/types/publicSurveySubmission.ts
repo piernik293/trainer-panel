@@ -35,7 +35,7 @@ export interface PublicSurveySubmission {
      */
   age?: number;
   dateOfBirth: Date;
-  gender?: PublicSurveySubmissionGender;
+  gender: PublicSurveySubmissionGender;
   /**
      * @minimum 50
      * @maximum 260
