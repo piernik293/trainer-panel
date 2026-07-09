@@ -104,7 +104,6 @@ const formSchema = z.object({
   experienceLevel: z.string().min(1, "Poziom doświadczenia jest wymagany"),
   trainingDuration: z.string().optional(),
   healthLimitations: z.string().optional(),
-  weeklyFrequency: z.coerce.number().min(1).max(7).optional(),
   sessionDuration: z.string().optional(),
   preferredMuscles: z.string().optional(),
   avoidedMuscles: z.string().optional(),
@@ -163,7 +162,6 @@ export default function SurveyForm() {
       experienceLevel: "",
       trainingDuration: "",
       healthLimitations: "",
-      weeklyFrequency: undefined,
       sessionDuration: "",
       preferredMuscles: "",
       avoidedMuscles: "",
@@ -467,25 +465,6 @@ export default function SurveyForm() {
           description="Realny czas i częstotliwość treningów pozwalają ułożyć plan, który będzie możliwy do utrzymania na dłuższą metę, a nie tylko przez pierwsze tygodnie."
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            <FormField control={form.control} name="weeklyFrequency" render={({field}) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Ile dni w tygodniu realnie możesz przeznaczyć na trening?</FormLabel>
-                <FormDescription className="text-xs text-muted-foreground/70">
-                  Uwzględnij pracę, szkołę, rodzinę oraz pozostałe obowiązki.
-                </FormDescription>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    min={1} 
-                    max={7} 
-                    {...field} 
-                    value={field.value || ''} 
-                    onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} 
-                    className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" 
-                  />
-                </FormControl>
-              </FormItem>
-            )} />
             <FormField control={form.control} name="desiredWeeklyFrequency" render={({field}) => (
               <FormItem>
                 <FormLabel className="text-muted-foreground">Ile treningów tygodniowo chciałbyś wykonywać?</FormLabel>

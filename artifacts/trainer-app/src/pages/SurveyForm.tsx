@@ -103,7 +103,6 @@ const surveySchema = z.object({
   experienceLevel: z.string().optional(),
   trainingDuration: z.string().optional(),
   healthLimitations: z.string().optional(),
-  weeklyFrequency: z.coerce.number().min(1).max(7).optional().or(z.literal("").transform(() => undefined)),
   desiredWeeklyFrequency: z.coerce.number().min(1).max(14).optional().or(z.literal("").transform(() => undefined)),
   sessionDuration: z.string().optional(),
   preferredMuscles: z.string().optional(),
@@ -176,7 +175,6 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
       experienceLevel: survey?.experienceLevel ?? "",
       trainingDuration: survey?.trainingDuration ?? "",
       healthLimitations: survey?.healthLimitations ?? "",
-      weeklyFrequency: survey?.weeklyFrequency ?? undefined,
       desiredWeeklyFrequency: survey?.desiredWeeklyFrequency ?? undefined,
       sessionDuration: survey?.sessionDuration ?? "",
       preferredMuscles: survey?.preferredMuscles ?? "",
@@ -357,21 +355,6 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                   )}
                 />
               )}
-
-              <FormField
-                control={form.control}
-                name="weeklyFrequency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ile dni w tygodniu realnie klient może przeznaczyć na trening?</FormLabel>
-                    <FormDescription className="text-xs">Uwzględnij pracę, szkołę, rodzinę oraz pozostałe obowiązki klienta.</FormDescription>
-                    <FormControl>
-                      <Input type="number" min="1" max="7" placeholder="3" {...field} value={field.value ?? ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}

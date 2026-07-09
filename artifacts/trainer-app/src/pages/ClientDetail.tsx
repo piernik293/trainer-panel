@@ -426,7 +426,6 @@ function OverviewTab({ client, survey }: { client: any; survey: any }) {
             <SummaryRow label="Ostatni wywiad treningowy" value={client.lastSurveyDate ? formatDate(client.lastSurveyDate) : "Brak"} />
             <SummaryRow label="Cel treningowy" value={survey?.trainingGoal || "-"} />
             <SummaryRow label="Poziom doświadczenia" value={survey?.experienceLevel || "-"} />
-            <SummaryRow label="Możliwa liczba dni treningowych" value={survey?.weeklyFrequency ? `${survey.weeklyFrequency}x / tydz.` : "-"} />
             <SummaryRow label="Preferowana liczba treningów tygodniowo" value={survey?.desiredWeeklyFrequency ? `${survey.desiredWeeklyFrequency}x / tydz.` : "-"} />
             <SummaryRow label="Miejsce treningu" value={survey?.trainingLocation || "-"} />
           </CardContent>
@@ -509,7 +508,6 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName }: any) 
         <SurveyBlock label="Cel treningowy" value={survey.trainingGoal} />
         <SurveyBlock label="Poziom doświadczenia" value={survey.experienceLevel} />
         <SurveyBlock label="Staż treningowy" value={survey.trainingDuration} />
-        <SurveyBlock label="Możliwa liczba dni treningowych" value={survey.weeklyFrequency?.toString()} />
         <SurveyBlock label="Preferowana liczba treningów tygodniowo" value={survey.desiredWeeklyFrequency?.toString()} />
         <SurveyBlock label="Czas trwania sesji" value={survey.sessionDuration} />
       </div>
