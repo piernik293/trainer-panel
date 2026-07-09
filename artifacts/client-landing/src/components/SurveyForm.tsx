@@ -424,33 +424,37 @@ export default function SurveyForm() {
                 </FormItem>
               )} />
             )}
-            <FormField control={form.control} name="avoidedMuscles" render={({field}) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Czy są partie mięśniowe, których nie chcesz rozwijać? Jeżeli tak opisz dlaczego.</FormLabel>
-                <FormDescription className="text-xs text-muted-foreground/70">
-                  Np. {MUSCLE_GROUPS.join(", ")}.
-                </FormDescription>
-                <FormControl>
-                  <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
-                </FormControl>
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="avoidedExercises" render={({field}) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Czy są ćwiczenia, których nie chcesz wykonywać?</FormLabel>
-                <FormControl>
-                  <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
-                </FormControl>
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="favoriteExercises" render={({field}) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Jakie są Twoje ulubione ćwiczenia?</FormLabel>
-                <FormControl>
-                  <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
-                </FormControl>
-              </FormItem>
-            )} />
+            {isIntermediateOrAdvanced && (
+              <>
+                <FormField control={form.control} name="avoidedMuscles" render={({field}) => (
+                  <FormItem>
+                    <FormLabel className="text-muted-foreground">Czy są partie mięśniowe, których nie chcesz rozwijać? Jeżeli tak opisz dlaczego.</FormLabel>
+                    <FormDescription className="text-xs text-muted-foreground/70">
+                      Np. {MUSCLE_GROUPS.join(", ")}.
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
+                    </FormControl>
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="avoidedExercises" render={({field}) => (
+                  <FormItem>
+                    <FormLabel className="text-muted-foreground">Czy są ćwiczenia, których nie chcesz wykonywać?</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
+                    </FormControl>
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="favoriteExercises" render={({field}) => (
+                  <FormItem>
+                    <FormLabel className="text-muted-foreground">Jakie są Twoje ulubione ćwiczenia?</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
+                    </FormControl>
+                  </FormItem>
+                )} />
+              </>
+            )}
           </div>
 
           {isIntermediateOrAdvanced && (

@@ -448,48 +448,52 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                   />
                 )}
 
-                <FormField
-                  control={form.control}
-                  name="avoidedMuscles"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Partie do pominięcia. Jeżeli tak opisz dlaczego.</FormLabel>
-                      <FormDescription className="text-xs">Np. {MUSCLE_GROUPS.join(", ")}.</FormDescription>
-                      <FormControl>
-                        <Input placeholder="np. Łydki (są już wystarczające)" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {isIntermediateOrAdvanced && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="avoidedMuscles"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Partie do pominięcia. Jeżeli tak opisz dlaczego.</FormLabel>
+                          <FormDescription className="text-xs">Np. {MUSCLE_GROUPS.join(", ")}.</FormDescription>
+                          <FormControl>
+                            <Input placeholder="np. Łydki (są już wystarczające)" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="favoriteExercises"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ulubione ćwiczenia</FormLabel>
-                      <FormControl>
-                        <Input placeholder="np. Martwy ciąg, Wyciskanie sztangielek" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="favoriteExercises"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ulubione ćwiczenia</FormLabel>
+                          <FormControl>
+                            <Input placeholder="np. Martwy ciąg, Wyciskanie sztangielek" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="avoidedExercises"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ćwiczenia do bezwzględnego unikania</FormLabel>
-                      <FormControl>
-                        <Input placeholder="np. Przysiady ze sztangą (ból pleców)" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="avoidedExercises"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ćwiczenia do bezwzględnego unikania</FormLabel>
+                          <FormControl>
+                            <Input placeholder="np. Przysiady ze sztangą (ból pleców)" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
               </div>
 
               {isBeginner && (
