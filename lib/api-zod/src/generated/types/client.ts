@@ -5,6 +5,8 @@
  * Trainer management API
  * OpenAPI spec version: 0.1.0
  */
+import type { ClientStatus } from './clientStatus';
+import type { SurveyStatus } from './surveyStatus';
 
 export interface Client {
   id: number;
@@ -16,7 +18,25 @@ export interface Client {
   phone?: string | null;
   /** @nullable */
   notes?: string | null;
+  status: ClientStatus;
   hasSurvey: boolean;
+  surveyStatus: SurveyStatus;
+  /** @nullable */
+  lastSurveyDate?: Date | null;
+  /** @nullable */
+  trainingGoal?: string | null;
+  /** @nullable */
+  experienceLevel?: string | null;
+  /** @nullable */
+  weeklyFrequency?: number | null;
+  /** @nullable */
+  preferredMuscles?: string | null;
+  /** @nullable */
+  priorityMuscle1?: string | null;
+  /** @nullable */
+  trainingLocation?: string | null;
+  /** @nullable */
+  cardioPreference?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -11,5 +11,11 @@ export interface Stats {
   totalClients: number;
   surveysCompleted: number;
   surveysPercent: number;
+  activeClients: number;
+  pausedClients: number;
+  finishedClients: number;
+  incompleteSurveys: number;
+  noSurveyClients: number;
+  newSurveysThisWeek: number;
   recentClients: Client[];
 }

@@ -48,5 +48,13 @@ export interface SurveyInput {
      */
   stressLevel?: number;
   planStylePreference?: SurveyInputPlanStylePreference;
+  priorityMuscle1?: string;
+  priorityMuscle2?: string;
+  priorityMuscle3?: string;
+  trainingLocation?: string;
+  equipment?: string;
+  cardioPreference?: string;
+  cardioFrequency?: string;
+  preferredCardioType?: string;
   avoidsAdvancedMethods?: boolean;
 }

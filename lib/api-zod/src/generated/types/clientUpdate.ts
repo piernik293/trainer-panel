@@ -5,6 +5,7 @@
  * Trainer management API
  * OpenAPI spec version: 0.1.0
  */
+import type { ClientStatus } from './clientStatus';
 
 export interface ClientUpdate {
   /** @minLength 1 */
@@ -14,4 +15,5 @@ export interface ClientUpdate {
   email?: string;
   phone?: string;
   notes?: string;
+  status?: ClientStatus;
 }

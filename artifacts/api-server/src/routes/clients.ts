@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, count, isNotNull } from "drizzle-orm";
-import { db, clientsTable, surveysTable } from "@workspace/db";
+import { eq, desc } from "drizzle-orm";
+import { db, clientsTable, surveysTable, type Client, type Survey } from "@workspace/db";
 import {
   CreateClientBody,
   UpdateClientBody,
@@ -12,8 +12,25 @@ import {
   UpdateClientResponse,
   CreateClientResponse,
 } from "@workspace/api-zod";
+import { computeSurveyStatus, pickLatestSurveyPerClient } from "../lib/survey-status";
 
 const router: IRouter = Router();
+
+function toClientListItem(client: Client, latestSurvey: Survey | undefined) {
+  return {
+    ...client,
+    hasSurvey: !!latestSurvey,
+    surveyStatus: computeSurveyStatus(latestSurvey),
+    lastSurveyDate: latestSurvey ? latestSurvey.createdAt : null,
+    trainingGoal: latestSurvey?.trainingGoal ?? null,
+    experienceLevel: latestSurvey?.experienceLevel ?? null,
+    weeklyFrequency: latestSurvey?.weeklyFrequency ?? null,
+    preferredMuscles: latestSurvey?.preferredMuscles ?? null,
+    priorityMuscle1: latestSurvey?.priorityMuscle1 ?? null,
+    trainingLocation: latestSurvey?.trainingLocation ?? null,
+    cardioPreference: latestSurvey?.cardioPreference ?? null,
+  };
+}
 
 router.get("/clients", async (_req, res): Promise<void> => {
   const clients = await db
@@ -21,13 +38,10 @@ router.get("/clients", async (_req, res): Promise<void> => {
     .from(clientsTable)
     .orderBy(desc(clientsTable.createdAt));
 
-  const surveyClientIds = await db
-    .select({ clientId: surveysTable.clientId })
-    .from(surveysTable);
+  const surveys = await db.select().from(surveysTable);
+  const latestByClient = pickLatestSurveyPerClient(surveys);
 
-  const surveySet = new Set(surveyClientIds.map((s) => s.clientId));
-
-  const result = clients.map((c) => ({ ...c, hasSurvey: surveySet.has(c.id) }));
+  const result = clients.map((c) => toClientListItem(c, latestByClient.get(c.id)));
   res.json(ListClientsResponse.parse(result));
 });
 
@@ -43,7 +57,7 @@ router.post("/clients", async (req, res): Promise<void> => {
     .values(parsed.data)
     .returning();
 
-  res.status(201).json(CreateClientResponse.parse({ ...client, hasSurvey: false }));
+  res.status(201).json(CreateClientResponse.parse(toClientListItem(client, undefined)));
 });
 
 router.get("/clients/:id", async (req, res): Promise<void> => {
@@ -63,12 +77,13 @@ router.get("/clients/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [survey] = await db
-    .select({ id: surveysTable.id })
+  const clientSurveys = await db
+    .select()
     .from(surveysTable)
-    .where(eq(surveysTable.clientId, params.data.id));
+    .where(eq(surveysTable.clientId, params.data.id))
+    .orderBy(desc(surveysTable.createdAt));
 
-  res.json(GetClientResponse.parse({ ...client, hasSurvey: !!survey }));
+  res.json(GetClientResponse.parse(toClientListItem(client, clientSurveys[0])));
 });
 
 router.patch("/clients/:id", async (req, res): Promise<void> => {
@@ -95,12 +110,13 @@ router.patch("/clients/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [survey] = await db
-    .select({ id: surveysTable.id })
+  const clientSurveys = await db
+    .select()
     .from(surveysTable)
-    .where(eq(surveysTable.clientId, params.data.id));
+    .where(eq(surveysTable.clientId, params.data.id))
+    .orderBy(desc(surveysTable.createdAt));
 
-  res.json(UpdateClientResponse.parse({ ...client, hasSurvey: !!survey }));
+  res.json(UpdateClientResponse.parse(toClientListItem(client, clientSurveys[0])));
 });
 
 router.delete("/clients/:id", async (req, res): Promise<void> => {

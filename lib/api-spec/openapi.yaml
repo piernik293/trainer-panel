@@ -18,6 +18,8 @@ tags:
     description: Dashboard statistics
   - name: public
     description: Public-facing endpoints for client self-service
+  - name: notes
+    description: Private trainer notes
 paths:
   /healthz:
     get:
@@ -198,6 +200,167 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /clients/{clientId}/surveys:
+    get:
+      operationId: listClientSurveys
+      tags: [surveys]
+      summary: List survey history for a client (newest first)
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Survey history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Survey"
+
+  /clients/{clientId}/surveys/{surveyId}:
+    get:
+      operationId: getClientSurveyById
+      tags: [surveys]
+      summary: Get a specific historical survey for a client
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: surveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Historical survey
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Survey"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /clients/{clientId}/notes:
+    get:
+      operationId: listClientNotes
+      tags: [notes]
+      summary: List private trainer notes for a client
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Trainer notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrainerNote"
+    post:
+      operationId: createClientNote
+      tags: [notes]
+      summary: Add a private trainer note to a client
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainerNoteInput"
+      responses:
+        "201":
+          description: Created note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainerNote"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /clients/{clientId}/notes/{noteId}:
+    patch:
+      operationId: updateClientNote
+      tags: [notes]
+      summary: Edit a private trainer note
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainerNoteInput"
+      responses:
+        "200":
+          description: Updated note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainerNote"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteClientNote
+      tags: [notes]
+      summary: Delete a private trainer note
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /stats:
     get:
       operationId: getStats
@@ -269,6 +432,14 @@ components:
       required:
         - error
 
+    ClientStatus:
+      type: string
+      enum: [active, paused, finished]
+
+    SurveyStatus:
+      type: string
+      enum: [not_started, incomplete, completed]
+
     Client:
       type: object
       properties:
@@ -284,8 +455,29 @@ components:
           type: ["string", "null"]
         notes:
           type: ["string", "null"]
+        status:
+          $ref: "#/components/schemas/ClientStatus"
         hasSurvey:
           type: boolean
+        surveyStatus:
+          $ref: "#/components/schemas/SurveyStatus"
+        lastSurveyDate:
+          type: ["string", "null"]
+          format: date-time
+        trainingGoal:
+          type: ["string", "null"]
+        experienceLevel:
+          type: ["string", "null"]
+        weeklyFrequency:
+          type: ["integer", "null"]
+        preferredMuscles:
+          type: ["string", "null"]
+        priorityMuscle1:
+          type: ["string", "null"]
+        trainingLocation:
+          type: ["string", "null"]
+        cardioPreference:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -296,7 +488,9 @@ components:
         - id
         - firstName
         - lastName
+        - status
         - hasSurvey
+        - surveyStatus
         - createdAt
         - updatedAt
 
@@ -315,6 +509,8 @@ components:
           type: string
         notes:
           type: string
+        status:
+          $ref: "#/components/schemas/ClientStatus"
       required:
         - firstName
         - lastName
@@ -334,6 +530,8 @@ components:
           type: string
         notes:
           type: string
+        status:
+          $ref: "#/components/schemas/ClientStatus"
 
     Survey:
       type: object
@@ -386,6 +584,22 @@ components:
         stressLevel:
           type: ["integer", "null"]
         planStylePreference:
+          type: ["string", "null"]
+        priorityMuscle1:
+          type: ["string", "null"]
+        priorityMuscle2:
+          type: ["string", "null"]
+        priorityMuscle3:
+          type: ["string", "null"]
+        trainingLocation:
+          type: ["string", "null"]
+        equipment:
+          type: ["string", "null"]
+        cardioPreference:
+          type: ["string", "null"]
+        cardioFrequency:
+          type: ["string", "null"]
+        preferredCardioType:
           type: ["string", "null"]
         avoidsAdvancedMethods:
           type: ["boolean", "null"]
@@ -462,8 +676,55 @@ components:
         planStylePreference:
           type: string
           enum: [Maksymalnie efektywny, Kompromis, Prosty i trwały]
+        priorityMuscle1:
+          type: string
+        priorityMuscle2:
+          type: string
+        priorityMuscle3:
+          type: string
+        trainingLocation:
+          type: string
+        equipment:
+          type: string
+        cardioPreference:
+          type: string
+        cardioFrequency:
+          type: string
+        preferredCardioType:
+          type: string
         avoidsAdvancedMethods:
           type: boolean
+
+    TrainerNote:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - clientId
+        - content
+        - createdAt
+        - updatedAt
+
+    TrainerNoteInput:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+      required:
+        - content
 
     Stats:
       type: object
@@ -474,6 +735,18 @@ components:
           type: integer
         surveysPercent:
           type: number
+        activeClients:
+          type: integer
+        pausedClients:
+          type: integer
+        finishedClients:
+          type: integer
+        incompleteSurveys:
+          type: integer
+        noSurveyClients:
+          type: integer
+        newSurveysThisWeek:
+          type: integer
         recentClients:
           type: array
           items:
@@ -482,6 +755,12 @@ components:
         - totalClients
         - surveysCompleted
         - surveysPercent
+        - activeClients
+        - pausedClients
+        - finishedClients
+        - incompleteSurveys
+        - noSurveyClients
+        - newSurveysThisWeek
         - recentClients
 
     PublicSurveySubmission:
@@ -554,6 +833,22 @@ components:
         planStylePreference:
           type: string
           enum: [Maksymalnie efektywny, Kompromis, Prosty i trwały]
+        priorityMuscle1:
+          type: string
+        priorityMuscle2:
+          type: string
+        priorityMuscle3:
+          type: string
+        trainingLocation:
+          type: string
+        equipment:
+          type: string
+        cardioPreference:
+          type: string
+        cardioFrequency:
+          type: string
+        preferredCardioType:
+          type: string
         avoidsAdvancedMethods:
           type: boolean
       required:

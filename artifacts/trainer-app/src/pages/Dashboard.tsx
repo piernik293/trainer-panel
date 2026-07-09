@@ -1,6 +1,6 @@
 import { useGetStats } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, FileText, Activity } from "lucide-react";
+import { Users, FileText, Activity, PauseCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
@@ -30,7 +30,7 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
         <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -46,12 +46,51 @@ export default function Dashboard() {
         <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
+              Aktywni / Wstrzymani
+            </CardTitle>
+            <PauseCircle className="w-4 h-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold font-display">{stats?.activeClients || 0} / {stats?.pausedClients || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              zakończonych: {stats?.finishedClients || 0}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Wypełnione Ankiety
             </CardTitle>
             <FileText className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold font-display">{stats?.surveysCompleted || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Niekompletne / Brak
+            </CardTitle>
+            <CheckCircle2 className="w-4 h-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold font-display">{stats?.incompleteSurveys || 0} / {stats?.noSurveyClients || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Nowe ankiety (7 dni)
+            </CardTitle>
+            <Sparkles className="w-4 h-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold font-display">{stats?.newSurveysThisWeek || 0}</div>
           </CardContent>
         </Card>
 

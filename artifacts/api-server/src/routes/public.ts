@@ -95,6 +95,14 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     sleepHours,
     stressLevel,
     planStylePreference,
+    priorityMuscle1,
+    priorityMuscle2,
+    priorityMuscle3,
+    trainingLocation,
+    equipment,
+    cardioPreference,
+    cardioFrequency,
+    preferredCardioType,
     avoidsAdvancedMethods,
   } = parsed.data;
 
@@ -105,7 +113,7 @@ router.post("/public/survey", async (req, res): Promise<void> => {
   const dateOfBirthIso = dateOfBirth.toISOString().slice(0, 10);
   const calculatedAge = calculateAge(dateOfBirth);
 
-  // Insert client first, then survey (unique constraint on surveys.clientId)
+  // Insert client, then insert a new survey history row for them
   const [client] = await db
     .insert(clientsTable)
     .values({ firstName, lastName, email, phone })
@@ -134,6 +142,14 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     sleepHours,
     stressLevel,
     planStylePreference,
+    priorityMuscle1,
+    priorityMuscle2,
+    priorityMuscle3,
+    trainingLocation,
+    equipment,
+    cardioPreference,
+    cardioFrequency,
+    preferredCardioType,
     avoidsAdvancedMethods,
   });
 

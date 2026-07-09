@@ -77,6 +77,14 @@ const formSchema = z.object({
   avoidsAdvancedMethods: z.enum(["Tak", "Nie"]).optional(),
   advancedMethodsToAvoid: z.array(z.string()).optional().default([]),
   additionalInfo: z.string().optional(),
+  priorityMuscle1: z.string().optional(),
+  priorityMuscle2: z.string().optional(),
+  priorityMuscle3: z.string().optional(),
+  trainingLocation: z.string().optional(),
+  equipment: z.string().optional(),
+  cardioPreference: z.string().optional(),
+  cardioFrequency: z.string().optional(),
+  preferredCardioType: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -124,6 +132,14 @@ export default function SurveyForm() {
       avoidsAdvancedMethods: undefined,
       advancedMethodsToAvoid: [],
       additionalInfo: "",
+      priorityMuscle1: "",
+      priorityMuscle2: "",
+      priorityMuscle3: "",
+      trainingLocation: "",
+      equipment: "",
+      cardioPreference: "",
+      cardioFrequency: "",
+      preferredCardioType: "",
     },
   });
 
@@ -421,6 +437,103 @@ export default function SurveyForm() {
                 <FormLabel className="text-muted-foreground">Jakie są Twoje ulubione ćwiczenia?</FormLabel>
                 <FormControl>
                   <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
+                </FormControl>
+              </FormItem>
+            )} />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+            <FormField control={form.control} name="priorityMuscle1" render={({field}) => (
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Partia priorytetowa #1</FormLabel>
+                <FormControl>
+                  <Input placeholder="np. Barki" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
+                </FormControl>
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="priorityMuscle2" render={({field}) => (
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Partia priorytetowa #2</FormLabel>
+                <FormControl>
+                  <Input placeholder="np. Pośladki" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
+                </FormControl>
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="priorityMuscle3" render={({field}) => (
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Partia priorytetowa #3</FormLabel>
+                <FormControl>
+                  <Input placeholder="np. Plecy" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
+                </FormControl>
+              </FormItem>
+            )} />
+          </div>
+        </Section>
+
+        <Section title="Miejsce treningu i cardio">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <FormField control={form.control} name="trainingLocation" render={({field}) => (
+              <FormItem className="space-y-4">
+                <FormLabel className="text-muted-foreground">Gdzie zwykle trenujesz?</FormLabel>
+                <FormControl>
+                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
+                    {["Siłownia", "Dom", "Plener", "Mieszane"].map(loc => (
+                      <FormItem key={loc} className="flex items-center space-x-0 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value={loc} className="peer sr-only" />
+                        </FormControl>
+                        <FormLabel className="w-full flex items-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                          {loc}
+                        </FormLabel>
+                      </FormItem>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="equipment" render={({field}) => (
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Jaki sprzęt masz do dyspozycji?</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="np. hantle, gumy oporowe, brak sprzętu" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
+                </FormControl>
+              </FormItem>
+            )} />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <FormField control={form.control} name="cardioPreference" render={({field}) => (
+              <FormItem className="space-y-4">
+                <FormLabel className="text-muted-foreground">Twoje nastawienie do cardio</FormLabel>
+                <FormControl>
+                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
+                    {["Lubi", "Neutralne", "Nie lubi"].map(pref => (
+                      <FormItem key={pref} className="flex items-center space-x-0 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value={pref} className="peer sr-only" />
+                        </FormControl>
+                        <FormLabel className="w-full flex items-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                          {pref}
+                        </FormLabel>
+                      </FormItem>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="cardioFrequency" render={({field}) => (
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Jak często robisz cardio?</FormLabel>
+                <FormControl>
+                  <Input placeholder="np. 2x w tygodniu" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
+                </FormControl>
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="preferredCardioType" render={({field}) => (
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Preferowany typ cardio</FormLabel>
+                <FormControl>
+                  <Input placeholder="np. rower, bieganie, marsz" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
                 </FormControl>
               </FormItem>
             )} />

@@ -4,6 +4,7 @@ import clientsRouter from "./clients";
 import surveysRouter from "./surveys";
 import statsRouter from "./stats";
 import publicRouter from "./public";
+import notesRouter from "./notes";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(clientsRouter);
 router.use(surveysRouter);
 router.use(statsRouter);
 router.use(publicRouter);
+router.use(notesRouter);
 
 export default router;

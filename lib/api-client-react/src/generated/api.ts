@@ -30,7 +30,9 @@ import type {
   PublicSurveySubmission,
   Stats,
   Survey,
-  SurveyInput
+  SurveyInput,
+  TrainerNote,
+  TrainerNoteInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -653,6 +655,461 @@ export const useUpsertClientSurvey = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getUpsertClientSurveyMutationOptions(options));
+    }
+
+export const getListClientSurveysUrl = (clientId: number,) => {
+
+
+
+
+  return `/api/clients/${clientId}/surveys`
+}
+
+/**
+ * @summary List survey history for a client (newest first)
+ */
+export const listClientSurveys = async (clientId: number, options?: RequestInit): Promise<Survey[]> => {
+
+  return customFetch<Survey[]>(getListClientSurveysUrl(clientId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClientSurveysQueryKey = (clientId: number,) => {
+    return [
+    `/api/clients/${clientId}/surveys`
+    ] as const;
+    }
+
+
+export const getListClientSurveysQueryOptions = <TData = Awaited<ReturnType<typeof listClientSurveys>>, TError = ErrorType<unknown>>(clientId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClientSurveys>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClientSurveysQueryKey(clientId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClientSurveys>>> = ({ signal }) => listClientSurveys(clientId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: clientId !== null && clientId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClientSurveys>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClientSurveysQueryResult = NonNullable<Awaited<ReturnType<typeof listClientSurveys>>>
+export type ListClientSurveysQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List survey history for a client (newest first)
+ */
+
+export function useListClientSurveys<TData = Awaited<ReturnType<typeof listClientSurveys>>, TError = ErrorType<unknown>>(
+ clientId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClientSurveys>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClientSurveysQueryOptions(clientId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetClientSurveyByIdUrl = (clientId: number,
+    surveyId: number,) => {
+
+
+
+
+  return `/api/clients/${clientId}/surveys/${surveyId}`
+}
+
+/**
+ * @summary Get a specific historical survey for a client
+ */
+export const getClientSurveyById = async (clientId: number,
+    surveyId: number, options?: RequestInit): Promise<Survey> => {
+
+  return customFetch<Survey>(getGetClientSurveyByIdUrl(clientId,surveyId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClientSurveyByIdQueryKey = (clientId: number,
+    surveyId: number,) => {
+    return [
+    `/api/clients/${clientId}/surveys/${surveyId}`
+    ] as const;
+    }
+
+
+export const getGetClientSurveyByIdQueryOptions = <TData = Awaited<ReturnType<typeof getClientSurveyById>>, TError = ErrorType<ErrorResponse>>(clientId: number,
+    surveyId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientSurveyById>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClientSurveyByIdQueryKey(clientId,surveyId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClientSurveyById>>> = ({ signal }) => getClientSurveyById(clientId,surveyId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: clientId !== null && clientId !== undefined && surveyId !== null && surveyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClientSurveyById>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClientSurveyByIdQueryResult = NonNullable<Awaited<ReturnType<typeof getClientSurveyById>>>
+export type GetClientSurveyByIdQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get a specific historical survey for a client
+ */
+
+export function useGetClientSurveyById<TData = Awaited<ReturnType<typeof getClientSurveyById>>, TError = ErrorType<ErrorResponse>>(
+ clientId: number,
+    surveyId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientSurveyById>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClientSurveyByIdQueryOptions(clientId,surveyId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListClientNotesUrl = (clientId: number,) => {
+
+
+
+
+  return `/api/clients/${clientId}/notes`
+}
+
+/**
+ * @summary List private trainer notes for a client
+ */
+export const listClientNotes = async (clientId: number, options?: RequestInit): Promise<TrainerNote[]> => {
+
+  return customFetch<TrainerNote[]>(getListClientNotesUrl(clientId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClientNotesQueryKey = (clientId: number,) => {
+    return [
+    `/api/clients/${clientId}/notes`
+    ] as const;
+    }
+
+
+export const getListClientNotesQueryOptions = <TData = Awaited<ReturnType<typeof listClientNotes>>, TError = ErrorType<unknown>>(clientId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClientNotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClientNotesQueryKey(clientId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClientNotes>>> = ({ signal }) => listClientNotes(clientId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: clientId !== null && clientId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClientNotes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClientNotesQueryResult = NonNullable<Awaited<ReturnType<typeof listClientNotes>>>
+export type ListClientNotesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List private trainer notes for a client
+ */
+
+export function useListClientNotes<TData = Awaited<ReturnType<typeof listClientNotes>>, TError = ErrorType<unknown>>(
+ clientId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClientNotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClientNotesQueryOptions(clientId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateClientNoteUrl = (clientId: number,) => {
+
+
+
+
+  return `/api/clients/${clientId}/notes`
+}
+
+/**
+ * @summary Add a private trainer note to a client
+ */
+export const createClientNote = async (clientId: number,
+    trainerNoteInput: TrainerNoteInput, options?: RequestInit): Promise<TrainerNote> => {
+
+  return customFetch<TrainerNote>(getCreateClientNoteUrl(clientId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(trainerNoteInput)
+  }
+);}
+
+
+
+
+
+export const getCreateClientNoteMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClientNote>>, TError,{clientId: number;data: BodyType<TrainerNoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createClientNote>>, TError,{clientId: number;data: BodyType<TrainerNoteInput>}, TContext> => {
+
+const mutationKey = ['createClientNote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createClientNote>>, {clientId: number;data: BodyType<TrainerNoteInput>}> = (props) => {
+          const {clientId,data} = props ?? {};
+
+          return  createClientNote(clientId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateClientNoteMutationResult = NonNullable<Awaited<ReturnType<typeof createClientNote>>>
+    export type CreateClientNoteMutationBody = BodyType<TrainerNoteInput>
+    export type CreateClientNoteMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Add a private trainer note to a client
+ */
+export const useCreateClientNote = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClientNote>>, TError,{clientId: number;data: BodyType<TrainerNoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createClientNote>>,
+        TError,
+        {clientId: number;data: BodyType<TrainerNoteInput>},
+        TContext
+      > => {
+      return useMutation(getCreateClientNoteMutationOptions(options));
+    }
+
+export const getUpdateClientNoteUrl = (clientId: number,
+    noteId: number,) => {
+
+
+
+
+  return `/api/clients/${clientId}/notes/${noteId}`
+}
+
+/**
+ * @summary Edit a private trainer note
+ */
+export const updateClientNote = async (clientId: number,
+    noteId: number,
+    trainerNoteInput: TrainerNoteInput, options?: RequestInit): Promise<TrainerNote> => {
+
+  return customFetch<TrainerNote>(getUpdateClientNoteUrl(clientId,noteId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(trainerNoteInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateClientNoteMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateClientNote>>, TError,{clientId: number;noteId: number;data: BodyType<TrainerNoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateClientNote>>, TError,{clientId: number;noteId: number;data: BodyType<TrainerNoteInput>}, TContext> => {
+
+const mutationKey = ['updateClientNote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateClientNote>>, {clientId: number;noteId: number;data: BodyType<TrainerNoteInput>}> = (props) => {
+          const {clientId,noteId,data} = props ?? {};
+
+          return  updateClientNote(clientId,noteId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateClientNoteMutationResult = NonNullable<Awaited<ReturnType<typeof updateClientNote>>>
+    export type UpdateClientNoteMutationBody = BodyType<TrainerNoteInput>
+    export type UpdateClientNoteMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Edit a private trainer note
+ */
+export const useUpdateClientNote = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateClientNote>>, TError,{clientId: number;noteId: number;data: BodyType<TrainerNoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateClientNote>>,
+        TError,
+        {clientId: number;noteId: number;data: BodyType<TrainerNoteInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateClientNoteMutationOptions(options));
+    }
+
+export const getDeleteClientNoteUrl = (clientId: number,
+    noteId: number,) => {
+
+
+
+
+  return `/api/clients/${clientId}/notes/${noteId}`
+}
+
+/**
+ * @summary Delete a private trainer note
+ */
+export const deleteClientNote = async (clientId: number,
+    noteId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteClientNoteUrl(clientId,noteId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteClientNoteMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClientNote>>, TError,{clientId: number;noteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteClientNote>>, TError,{clientId: number;noteId: number}, TContext> => {
+
+const mutationKey = ['deleteClientNote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteClientNote>>, {clientId: number;noteId: number}> = (props) => {
+          const {clientId,noteId} = props ?? {};
+
+          return  deleteClientNote(clientId,noteId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteClientNoteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteClientNote>>>
+
+    export type DeleteClientNoteMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Delete a private trainer note
+ */
+export const useDeleteClientNote = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClientNote>>, TError,{clientId: number;noteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteClientNote>>,
+        TError,
+        {clientId: number;noteId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteClientNoteMutationOptions(options));
     }
 
 export const getGetStatsUrl = () => {

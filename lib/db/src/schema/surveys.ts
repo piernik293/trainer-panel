@@ -7,7 +7,6 @@ export const surveysTable = pgTable("surveys", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id")
     .notNull()
-    .unique()
     .references(() => clientsTable.id, { onDelete: "cascade" }),
   trainingGoal: text("training_goal"),
   experienceLevel: text("experience_level"),
@@ -33,6 +32,17 @@ export const surveysTable = pgTable("surveys", {
   stressLevel: integer("stress_level"),
   // Preferencje planu
   planStylePreference: text("plan_style_preference"),
+  // Priorytetowe partie mięśniowe (ranking); preferredMuscles pozostaje jako legacy wolny tekst
+  priorityMuscle1: text("priority_muscle_1"),
+  priorityMuscle2: text("priority_muscle_2"),
+  priorityMuscle3: text("priority_muscle_3"),
+  // Miejsce treningu i sprzęt
+  trainingLocation: text("training_location"),
+  equipment: text("equipment"),
+  // Cardio
+  cardioPreference: text("cardio_preference"),
+  cardioFrequency: text("cardio_frequency"),
+  preferredCardioType: text("preferred_cardio_type"),
   // Czy klient ma przeciwwskazania do metod intensyfikacji (pytanie tak/nie, poprzedzające listę checkboxów)
   avoidsAdvancedMethods: boolean("avoids_advanced_methods"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

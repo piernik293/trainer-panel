@@ -8,6 +8,7 @@
 
 export * from './client';
 export * from './clientInput';
+export * from './clientStatus';
 export * from './clientUpdate';
 export * from './errorResponse';
 export * from './goalCount';
@@ -25,3 +26,6 @@ export * from './surveyInputActivityLevel';
 export * from './surveyInputGender';
 export * from './surveyInputPlanStylePreference';
 export * from './surveyInputSleepHours';
+export * from './surveyStatus';
+export * from './trainerNote';
+export * from './trainerNoteInput';

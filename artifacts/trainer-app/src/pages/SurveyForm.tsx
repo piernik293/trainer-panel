@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -76,7 +75,15 @@ const surveySchema = z.object({
   planStylePreference: z.string().optional(),
   avoidsAdvancedMethods: z.string().optional(),
   advancedMethodsToAvoid: z.array(z.string()).default([]),
-  additionalInfo: z.string().optional()
+  additionalInfo: z.string().optional(),
+  priorityMuscle1: z.string().optional(),
+  priorityMuscle2: z.string().optional(),
+  priorityMuscle3: z.string().optional(),
+  trainingLocation: z.string().optional(),
+  equipment: z.string().optional(),
+  cardioPreference: z.string().optional(),
+  cardioFrequency: z.string().optional(),
+  preferredCardioType: z.string().optional(),
 });
 
 type SurveyFormValues = z.infer<typeof surveySchema>;
@@ -84,10 +91,6 @@ type SurveyFormValues = z.infer<typeof surveySchema>;
 export default function SurveyForm() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
-  const [, setLocation] = useLocation();
-  const queryClient = useQueryClient();
-  const upsertSurvey = useUpsertClientSurvey();
-  const { toast } = useToast();
 
   const { data: client, isLoading: clientLoading } = useGetClient(id, { 
     query: { enabled: !!id, queryKey: getGetClientQueryKey(id) } 
@@ -97,31 +100,59 @@ export default function SurveyForm() {
     query: { enabled: !!client?.hasSurvey, queryKey: ['client-survey-edit', id] as any }
   });
 
+  if (clientLoading || (client?.hasSurvey && surveyLoading)) {
+    return <div className="p-8 text-center text-muted-foreground">Wczytywanie formularza...</div>;
+  }
+
+  if (!client) {
+    return <div className="p-8 text-center text-destructive">Nie znaleziono klienta</div>;
+  }
+
+  // Keying on the survey id (or "new") forces a fresh mount with correct
+  // defaultValues once the survey data has loaded, avoiding any risk of
+  // stale/uninitialized Select values that a manual form.reset() could leave behind.
+  return <SurveyFormBody key={survey?.id ?? "new"} id={id} client={client} survey={survey} />;
+}
+
+function SurveyFormBody({ id, client, survey }: { id: number; client: { firstName: string; lastName: string; hasSurvey?: boolean }; survey: any }) {
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const upsertSurvey = useUpsertClientSurvey();
+  const { toast } = useToast();
+
   const form = useForm<SurveyFormValues>({
     resolver: zodResolver(surveySchema),
     defaultValues: {
-      trainingGoal: "",
-      experienceLevel: "",
-      trainingDuration: "",
-      healthLimitations: "",
-      weeklyFrequency: undefined,
-      sessionDuration: "",
-      preferredMuscles: "",
-      avoidedMuscles: "",
-      avoidedExercises: "",
-      favoriteExercises: "",
-      age: undefined,
-      dateOfBirth: "",
-      gender: "",
-      heightCm: undefined,
-      weightKg: undefined,
-      activityLevel: "",
-      sleepHours: "",
-      stressLevel: 5,
-      planStylePreference: "",
-      avoidsAdvancedMethods: "",
-      advancedMethodsToAvoid: [],
-      additionalInfo: ""
+      trainingGoal: survey?.trainingGoal ?? "",
+      experienceLevel: survey?.experienceLevel ?? "",
+      trainingDuration: survey?.trainingDuration ?? "",
+      healthLimitations: survey?.healthLimitations ?? "",
+      weeklyFrequency: survey?.weeklyFrequency ?? undefined,
+      sessionDuration: survey?.sessionDuration ?? "",
+      preferredMuscles: survey?.preferredMuscles ?? "",
+      avoidedMuscles: survey?.avoidedMuscles ?? "",
+      avoidedExercises: survey?.avoidedExercises ?? "",
+      favoriteExercises: survey?.favoriteExercises ?? "",
+      age: survey?.age ?? undefined,
+      dateOfBirth: survey?.dateOfBirth ?? "",
+      gender: (survey?.gender === "Mężczyzna" || survey?.gender === "Kobieta" ? survey.gender : "") as "" | "Mężczyzna" | "Kobieta",
+      heightCm: survey?.heightCm ?? undefined,
+      weightKg: survey?.weightKg ?? undefined,
+      activityLevel: survey?.activityLevel ?? "",
+      sleepHours: survey?.sleepHours ?? "",
+      stressLevel: survey?.stressLevel ?? 5,
+      planStylePreference: survey?.planStylePreference ?? "",
+      avoidsAdvancedMethods: survey?.avoidsAdvancedMethods === true ? "Tak" : survey?.avoidsAdvancedMethods === false ? "Nie" : "",
+      advancedMethodsToAvoid: survey?.advancedMethodsToAvoid ?? [],
+      additionalInfo: survey?.additionalInfo ?? "",
+      priorityMuscle1: survey?.priorityMuscle1 ?? "",
+      priorityMuscle2: survey?.priorityMuscle2 ?? "",
+      priorityMuscle3: survey?.priorityMuscle3 ?? "",
+      trainingLocation: survey?.trainingLocation ?? "",
+      equipment: survey?.equipment ?? "",
+      cardioPreference: survey?.cardioPreference ?? "",
+      cardioFrequency: survey?.cardioFrequency ?? "",
+      preferredCardioType: survey?.preferredCardioType ?? "",
     }
   });
 
@@ -143,38 +174,6 @@ export default function SurveyForm() {
   const weightKg = form.watch("weightKg");
   const bmi = calculateBmi(heightCm, weightKg);
   const showBmiRecommendation = isBeginner && bmi !== undefined && bmi >= 25;
-
-  const isInitialized = useRef(false);
-
-  useEffect(() => {
-    if (survey && !isInitialized.current) {
-      isInitialized.current = true;
-      form.reset({
-        trainingGoal: survey.trainingGoal ?? "",
-        experienceLevel: survey.experienceLevel ?? "",
-        trainingDuration: survey.trainingDuration ?? "",
-        healthLimitations: survey.healthLimitations ?? "",
-        weeklyFrequency: survey.weeklyFrequency ?? undefined,
-        sessionDuration: survey.sessionDuration ?? "",
-        preferredMuscles: survey.preferredMuscles ?? "",
-        avoidedMuscles: survey.avoidedMuscles ?? "",
-        avoidedExercises: survey.avoidedExercises ?? "",
-        favoriteExercises: survey.favoriteExercises ?? "",
-        age: survey.age ?? undefined,
-        dateOfBirth: survey.dateOfBirth ?? "",
-        gender: (survey.gender === "Mężczyzna" || survey.gender === "Kobieta" ? survey.gender : "") as "" | "Mężczyzna" | "Kobieta",
-        heightCm: survey.heightCm ?? undefined,
-        weightKg: survey.weightKg ?? undefined,
-        activityLevel: survey.activityLevel ?? "",
-        sleepHours: survey.sleepHours ?? "",
-        stressLevel: survey.stressLevel ?? 5,
-        planStylePreference: survey.planStylePreference ?? "",
-        avoidsAdvancedMethods: survey.avoidsAdvancedMethods === true ? "Tak" : survey.avoidsAdvancedMethods === false ? "Nie" : "",
-        advancedMethodsToAvoid: survey.advancedMethodsToAvoid ?? [],
-        additionalInfo: survey.additionalInfo ?? "",
-      });
-    }
-  }, [survey, form]);
 
   const onSubmit = (data: SurveyFormValues) => {
     const avoidsAdvancedMethodsBool =
@@ -210,10 +209,6 @@ export default function SurveyForm() {
       }
     });
   };
-
-  if (clientLoading || (client?.hasSurvey && surveyLoading)) {
-    return <div className="p-8 text-center text-muted-foreground">Wczytywanie formularza...</div>;
-  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20 animate-in fade-in duration-300">
@@ -265,10 +260,10 @@ export default function SurveyForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Poziom doświadczenia</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Wybierz poziom..." />
+                          <SelectValue placeholder="Wybierz poziom...">{field.value || undefined}</SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -347,10 +342,10 @@ export default function SurveyForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Płeć</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Wybierz..." />
+                          <SelectValue placeholder="Wybierz...">{field.value || undefined}</SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -515,10 +510,10 @@ export default function SurveyForm() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Czy klient ma metody treningowe, których nie chce stosować / są przeciwwskazane?</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value ?? ""}>
                             <FormControl>
                               <SelectTrigger className="max-w-xs">
-                                <SelectValue placeholder="Wybierz..." />
+                                <SelectValue placeholder="Wybierz...">{field.value || undefined}</SelectValue>
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -619,10 +614,10 @@ export default function SurveyForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Poziom aktywności fizycznej w ciągu dnia</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Wybierz..." />
+                          <SelectValue placeholder="Wybierz...">{field.value || undefined}</SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -643,10 +638,10 @@ export default function SurveyForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Średnia liczba godzin snu na dobę</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Wybierz..." />
+                          <SelectValue placeholder="Wybierz...">{field.value || undefined}</SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -667,10 +662,10 @@ export default function SurveyForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Preferowany styl planu</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Wybierz..." />
+                          <SelectValue placeholder="Wybierz...">{field.value || undefined}</SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -700,6 +695,145 @@ export default function SurveyForm() {
                   </FormItem>
                 )}
               />
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/50 shadow-sm">
+            <CardHeader className="bg-muted/20 border-b border-border/50">
+              <CardTitle>Lokalizacja treningu i cardio</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="priorityMuscle1"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Partia priorytetowa #1</FormLabel>
+                      <FormControl>
+                        <Input placeholder="np. Barki" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="priorityMuscle2"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Partia priorytetowa #2</FormLabel>
+                      <FormControl>
+                        <Input placeholder="np. Pośladki" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="priorityMuscle3"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Partia priorytetowa #3</FormLabel>
+                      <FormControl>
+                        <Input placeholder="np. Plecy" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="trainingLocation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Miejsce treningu</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Wybierz...">{field.value || undefined}</SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Siłownia">Siłownia</SelectItem>
+                          <SelectItem value="Dom">Dom</SelectItem>
+                          <SelectItem value="Plener">Plener</SelectItem>
+                          <SelectItem value="Mieszane">Mieszane</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="equipment"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dostępny sprzęt</FormLabel>
+                      <FormControl>
+                        <Input placeholder="np. Hantle, gumy oporowe, brak sprzętu" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="cardioPreference"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nastawienie do cardio</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Wybierz...">{field.value || undefined}</SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Lubi">Lubi</SelectItem>
+                          <SelectItem value="Neutralne">Neutralne</SelectItem>
+                          <SelectItem value="Nie lubi">Nie lubi</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="cardioFrequency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Częstotliwość cardio</FormLabel>
+                      <FormControl>
+                        <Input placeholder="np. 2x w tygodniu" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="preferredCardioType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preferowany typ cardio</FormLabel>
+                      <FormControl>
+                        <Input placeholder="np. Rower, bieganie, marsz" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
           </Card>
 

@@ -51,6 +51,22 @@ export interface Survey {
   /** @nullable */
   planStylePreference?: string | null;
   /** @nullable */
+  priorityMuscle1?: string | null;
+  /** @nullable */
+  priorityMuscle2?: string | null;
+  /** @nullable */
+  priorityMuscle3?: string | null;
+  /** @nullable */
+  trainingLocation?: string | null;
+  /** @nullable */
+  equipment?: string | null;
+  /** @nullable */
+  cardioPreference?: string | null;
+  /** @nullable */
+  cardioFrequency?: string | null;
+  /** @nullable */
+  preferredCardioType?: string | null;
+  /** @nullable */
   avoidsAdvancedMethods?: boolean | null;
   createdAt: Date;
   updatedAt: Date;

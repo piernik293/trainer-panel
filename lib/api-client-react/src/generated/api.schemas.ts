@@ -13,6 +13,24 @@ export interface ErrorResponse {
   error: string;
 }
 
+export type ClientStatus = typeof ClientStatus[keyof typeof ClientStatus];
+
+
+export const ClientStatus = {
+  active: 'active',
+  paused: 'paused',
+  finished: 'finished',
+} as const;
+
+export type SurveyStatus = typeof SurveyStatus[keyof typeof SurveyStatus];
+
+
+export const SurveyStatus = {
+  not_started: 'not_started',
+  incomplete: 'incomplete',
+  completed: 'completed',
+} as const;
+
 export interface Client {
   id: number;
   firstName: string;
@@ -23,7 +41,25 @@ export interface Client {
   phone?: string | null;
   /** @nullable */
   notes?: string | null;
+  status: ClientStatus;
   hasSurvey: boolean;
+  surveyStatus: SurveyStatus;
+  /** @nullable */
+  lastSurveyDate?: string | null;
+  /** @nullable */
+  trainingGoal?: string | null;
+  /** @nullable */
+  experienceLevel?: string | null;
+  /** @nullable */
+  weeklyFrequency?: number | null;
+  /** @nullable */
+  preferredMuscles?: string | null;
+  /** @nullable */
+  priorityMuscle1?: string | null;
+  /** @nullable */
+  trainingLocation?: string | null;
+  /** @nullable */
+  cardioPreference?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,6 +72,7 @@ export interface ClientInput {
   email?: string;
   phone?: string;
   notes?: string;
+  status?: ClientStatus;
 }
 
 export interface ClientUpdate {
@@ -46,6 +83,7 @@ export interface ClientUpdate {
   email?: string;
   phone?: string;
   notes?: string;
+  status?: ClientStatus;
 }
 
 export interface Survey {
@@ -92,6 +130,22 @@ export interface Survey {
   stressLevel?: number | null;
   /** @nullable */
   planStylePreference?: string | null;
+  /** @nullable */
+  priorityMuscle1?: string | null;
+  /** @nullable */
+  priorityMuscle2?: string | null;
+  /** @nullable */
+  priorityMuscle3?: string | null;
+  /** @nullable */
+  trainingLocation?: string | null;
+  /** @nullable */
+  equipment?: string | null;
+  /** @nullable */
+  cardioPreference?: string | null;
+  /** @nullable */
+  cardioFrequency?: string | null;
+  /** @nullable */
+  preferredCardioType?: string | null;
   /** @nullable */
   avoidsAdvancedMethods?: boolean | null;
   createdAt: string;
@@ -173,13 +227,40 @@ export interface SurveyInput {
      */
   stressLevel?: number;
   planStylePreference?: SurveyInputPlanStylePreference;
+  priorityMuscle1?: string;
+  priorityMuscle2?: string;
+  priorityMuscle3?: string;
+  trainingLocation?: string;
+  equipment?: string;
+  cardioPreference?: string;
+  cardioFrequency?: string;
+  preferredCardioType?: string;
   avoidsAdvancedMethods?: boolean;
+}
+
+export interface TrainerNote {
+  id: number;
+  clientId: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TrainerNoteInput {
+  /** @minLength 1 */
+  content: string;
 }
 
 export interface Stats {
   totalClients: number;
   surveysCompleted: number;
   surveysPercent: number;
+  activeClients: number;
+  pausedClients: number;
+  finishedClients: number;
+  incompleteSurveys: number;
+  noSurveyClients: number;
+  newSurveysThisWeek: number;
   recentClients: Client[];
 }
 
@@ -264,6 +345,14 @@ export interface PublicSurveySubmission {
      */
   stressLevel?: number;
   planStylePreference?: PublicSurveySubmissionPlanStylePreference;
+  priorityMuscle1?: string;
+  priorityMuscle2?: string;
+  priorityMuscle3?: string;
+  trainingLocation?: string;
+  equipment?: string;
+  cardioPreference?: string;
+  cardioFrequency?: string;
+  preferredCardioType?: string;
   avoidsAdvancedMethods?: boolean;
 }
 

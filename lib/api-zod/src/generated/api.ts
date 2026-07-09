@@ -27,7 +27,17 @@ export const ListClientsResponseItem = zod.object({
   "email": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "status": zod.enum(['active', 'paused', 'finished']),
   "hasSurvey": zod.boolean(),
+  "surveyStatus": zod.enum(['not_started', 'incomplete', 'completed']),
+  "lastSurveyDate": zod.coerce.date().nullish(),
+  "trainingGoal": zod.string().nullish(),
+  "experienceLevel": zod.string().nullish(),
+  "weeklyFrequency": zod.number().nullish(),
+  "preferredMuscles": zod.string().nullish(),
+  "priorityMuscle1": zod.string().nullish(),
+  "trainingLocation": zod.string().nullish(),
+  "cardioPreference": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -46,7 +56,8 @@ export const CreateClientBody = zod.object({
   "lastName": zod.string().min(1),
   "email": zod.string().optional(),
   "phone": zod.string().optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "status": zod.enum(['active', 'paused', 'finished']).optional()
 })
 
 export const CreateClientResponse = zod.object({
@@ -56,7 +67,17 @@ export const CreateClientResponse = zod.object({
   "email": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "status": zod.enum(['active', 'paused', 'finished']),
   "hasSurvey": zod.boolean(),
+  "surveyStatus": zod.enum(['not_started', 'incomplete', 'completed']),
+  "lastSurveyDate": zod.coerce.date().nullish(),
+  "trainingGoal": zod.string().nullish(),
+  "experienceLevel": zod.string().nullish(),
+  "weeklyFrequency": zod.number().nullish(),
+  "preferredMuscles": zod.string().nullish(),
+  "priorityMuscle1": zod.string().nullish(),
+  "trainingLocation": zod.string().nullish(),
+  "cardioPreference": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -76,7 +97,17 @@ export const GetClientResponse = zod.object({
   "email": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "status": zod.enum(['active', 'paused', 'finished']),
   "hasSurvey": zod.boolean(),
+  "surveyStatus": zod.enum(['not_started', 'incomplete', 'completed']),
+  "lastSurveyDate": zod.coerce.date().nullish(),
+  "trainingGoal": zod.string().nullish(),
+  "experienceLevel": zod.string().nullish(),
+  "weeklyFrequency": zod.number().nullish(),
+  "preferredMuscles": zod.string().nullish(),
+  "priorityMuscle1": zod.string().nullish(),
+  "trainingLocation": zod.string().nullish(),
+  "cardioPreference": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -98,7 +129,8 @@ export const UpdateClientBody = zod.object({
   "lastName": zod.string().min(1).optional(),
   "email": zod.string().optional(),
   "phone": zod.string().optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "status": zod.enum(['active', 'paused', 'finished']).optional()
 })
 
 export const UpdateClientResponse = zod.object({
@@ -108,7 +140,17 @@ export const UpdateClientResponse = zod.object({
   "email": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "status": zod.enum(['active', 'paused', 'finished']),
   "hasSurvey": zod.boolean(),
+  "surveyStatus": zod.enum(['not_started', 'incomplete', 'completed']),
+  "lastSurveyDate": zod.coerce.date().nullish(),
+  "trainingGoal": zod.string().nullish(),
+  "experienceLevel": zod.string().nullish(),
+  "weeklyFrequency": zod.number().nullish(),
+  "preferredMuscles": zod.string().nullish(),
+  "priorityMuscle1": zod.string().nullish(),
+  "trainingLocation": zod.string().nullish(),
+  "cardioPreference": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -155,6 +197,14 @@ export const GetClientSurveyResponse = zod.object({
   "sleepHours": zod.string().nullish(),
   "stressLevel": zod.number().nullish(),
   "planStylePreference": zod.string().nullish(),
+  "priorityMuscle1": zod.string().nullish(),
+  "priorityMuscle2": zod.string().nullish(),
+  "priorityMuscle3": zod.string().nullish(),
+  "trainingLocation": zod.string().nullish(),
+  "equipment": zod.string().nullish(),
+  "cardioPreference": zod.string().nullish(),
+  "cardioFrequency": zod.string().nullish(),
+  "preferredCardioType": zod.string().nullish(),
   "avoidsAdvancedMethods": zod.boolean().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -203,6 +253,14 @@ export const UpsertClientSurveyBody = zod.object({
   "sleepHours": zod.enum(['poniżej 6h', '6-7h', '7-8h', 'powyżej 8h']).optional(),
   "stressLevel": zod.number().min(1).max(upsertClientSurveyBodyStressLevelMax).optional(),
   "planStylePreference": zod.enum(['Maksymalnie efektywny', 'Kompromis', 'Prosty i trwały']).optional(),
+  "priorityMuscle1": zod.string().optional(),
+  "priorityMuscle2": zod.string().optional(),
+  "priorityMuscle3": zod.string().optional(),
+  "trainingLocation": zod.string().optional(),
+  "equipment": zod.string().optional(),
+  "cardioPreference": zod.string().optional(),
+  "cardioFrequency": zod.string().optional(),
+  "preferredCardioType": zod.string().optional(),
   "avoidsAdvancedMethods": zod.boolean().optional()
 })
 
@@ -230,10 +288,185 @@ export const UpsertClientSurveyResponse = zod.object({
   "sleepHours": zod.string().nullish(),
   "stressLevel": zod.number().nullish(),
   "planStylePreference": zod.string().nullish(),
+  "priorityMuscle1": zod.string().nullish(),
+  "priorityMuscle2": zod.string().nullish(),
+  "priorityMuscle3": zod.string().nullish(),
+  "trainingLocation": zod.string().nullish(),
+  "equipment": zod.string().nullish(),
+  "cardioPreference": zod.string().nullish(),
+  "cardioFrequency": zod.string().nullish(),
+  "preferredCardioType": zod.string().nullish(),
   "avoidsAdvancedMethods": zod.boolean().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
+
+
+/**
+ * @summary List survey history for a client (newest first)
+ */
+export const ListClientSurveysParams = zod.object({
+  "clientId": zod.coerce.number()
+})
+
+export const ListClientSurveysResponseItem = zod.object({
+  "id": zod.number(),
+  "clientId": zod.number(),
+  "trainingGoal": zod.string().nullish(),
+  "experienceLevel": zod.string().nullish(),
+  "trainingDuration": zod.string().nullish(),
+  "healthLimitations": zod.string().nullish(),
+  "weeklyFrequency": zod.number().nullish(),
+  "sessionDuration": zod.string().nullish(),
+  "preferredMuscles": zod.string().nullish(),
+  "avoidedMuscles": zod.string().nullish(),
+  "avoidedExercises": zod.string().nullish(),
+  "favoriteExercises": zod.string().nullish(),
+  "advancedMethodsToAvoid": zod.array(zod.string()),
+  "additionalInfo": zod.string().nullish(),
+  "age": zod.number().nullish(),
+  "dateOfBirth": zod.coerce.date().nullish(),
+  "gender": zod.string().nullish(),
+  "heightCm": zod.number().nullish(),
+  "weightKg": zod.number().nullish(),
+  "activityLevel": zod.string().nullish(),
+  "sleepHours": zod.string().nullish(),
+  "stressLevel": zod.number().nullish(),
+  "planStylePreference": zod.string().nullish(),
+  "priorityMuscle1": zod.string().nullish(),
+  "priorityMuscle2": zod.string().nullish(),
+  "priorityMuscle3": zod.string().nullish(),
+  "trainingLocation": zod.string().nullish(),
+  "equipment": zod.string().nullish(),
+  "cardioPreference": zod.string().nullish(),
+  "cardioFrequency": zod.string().nullish(),
+  "preferredCardioType": zod.string().nullish(),
+  "avoidsAdvancedMethods": zod.boolean().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListClientSurveysResponse = zod.array(ListClientSurveysResponseItem)
+
+
+/**
+ * @summary Get a specific historical survey for a client
+ */
+export const GetClientSurveyByIdParams = zod.object({
+  "clientId": zod.coerce.number(),
+  "surveyId": zod.coerce.number()
+})
+
+export const GetClientSurveyByIdResponse = zod.object({
+  "id": zod.number(),
+  "clientId": zod.number(),
+  "trainingGoal": zod.string().nullish(),
+  "experienceLevel": zod.string().nullish(),
+  "trainingDuration": zod.string().nullish(),
+  "healthLimitations": zod.string().nullish(),
+  "weeklyFrequency": zod.number().nullish(),
+  "sessionDuration": zod.string().nullish(),
+  "preferredMuscles": zod.string().nullish(),
+  "avoidedMuscles": zod.string().nullish(),
+  "avoidedExercises": zod.string().nullish(),
+  "favoriteExercises": zod.string().nullish(),
+  "advancedMethodsToAvoid": zod.array(zod.string()),
+  "additionalInfo": zod.string().nullish(),
+  "age": zod.number().nullish(),
+  "dateOfBirth": zod.coerce.date().nullish(),
+  "gender": zod.string().nullish(),
+  "heightCm": zod.number().nullish(),
+  "weightKg": zod.number().nullish(),
+  "activityLevel": zod.string().nullish(),
+  "sleepHours": zod.string().nullish(),
+  "stressLevel": zod.number().nullish(),
+  "planStylePreference": zod.string().nullish(),
+  "priorityMuscle1": zod.string().nullish(),
+  "priorityMuscle2": zod.string().nullish(),
+  "priorityMuscle3": zod.string().nullish(),
+  "trainingLocation": zod.string().nullish(),
+  "equipment": zod.string().nullish(),
+  "cardioPreference": zod.string().nullish(),
+  "cardioFrequency": zod.string().nullish(),
+  "preferredCardioType": zod.string().nullish(),
+  "avoidsAdvancedMethods": zod.boolean().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List private trainer notes for a client
+ */
+export const ListClientNotesParams = zod.object({
+  "clientId": zod.coerce.number()
+})
+
+export const ListClientNotesResponseItem = zod.object({
+  "id": zod.number(),
+  "clientId": zod.number(),
+  "content": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListClientNotesResponse = zod.array(ListClientNotesResponseItem)
+
+
+/**
+ * @summary Add a private trainer note to a client
+ */
+export const CreateClientNoteParams = zod.object({
+  "clientId": zod.coerce.number()
+})
+
+
+
+
+export const CreateClientNoteBody = zod.object({
+  "content": zod.string().min(1)
+})
+
+export const CreateClientNoteResponse = zod.object({
+  "id": zod.number(),
+  "clientId": zod.number(),
+  "content": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Edit a private trainer note
+ */
+export const UpdateClientNoteParams = zod.object({
+  "clientId": zod.coerce.number(),
+  "noteId": zod.coerce.number()
+})
+
+
+
+
+export const UpdateClientNoteBody = zod.object({
+  "content": zod.string().min(1)
+})
+
+export const UpdateClientNoteResponse = zod.object({
+  "id": zod.number(),
+  "clientId": zod.number(),
+  "content": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a private trainer note
+ */
+export const DeleteClientNoteParams = zod.object({
+  "clientId": zod.coerce.number(),
+  "noteId": zod.coerce.number()
+})
+
+export const DeleteClientNoteResponse = zod.void()
 
 
 /**
@@ -243,6 +476,12 @@ export const GetStatsResponse = zod.object({
   "totalClients": zod.number(),
   "surveysCompleted": zod.number(),
   "surveysPercent": zod.number(),
+  "activeClients": zod.number(),
+  "pausedClients": zod.number(),
+  "finishedClients": zod.number(),
+  "incompleteSurveys": zod.number(),
+  "noSurveyClients": zod.number(),
+  "newSurveysThisWeek": zod.number(),
   "recentClients": zod.array(zod.object({
   "id": zod.number(),
   "firstName": zod.string(),
@@ -250,7 +489,17 @@ export const GetStatsResponse = zod.object({
   "email": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "status": zod.enum(['active', 'paused', 'finished']),
   "hasSurvey": zod.boolean(),
+  "surveyStatus": zod.enum(['not_started', 'incomplete', 'completed']),
+  "lastSurveyDate": zod.coerce.date().nullish(),
+  "trainingGoal": zod.string().nullish(),
+  "experienceLevel": zod.string().nullish(),
+  "weeklyFrequency": zod.number().nullish(),
+  "preferredMuscles": zod.string().nullish(),
+  "priorityMuscle1": zod.string().nullish(),
+  "trainingLocation": zod.string().nullish(),
+  "cardioPreference": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }))
@@ -301,6 +550,14 @@ export const SubmitPublicSurveyBody = zod.object({
   "sleepHours": zod.enum(['poniżej 6h', '6-7h', '7-8h', 'powyżej 8h']).optional(),
   "stressLevel": zod.number().min(1).max(submitPublicSurveyBodyStressLevelMax).optional(),
   "planStylePreference": zod.enum(['Maksymalnie efektywny', 'Kompromis', 'Prosty i trwały']).optional(),
+  "priorityMuscle1": zod.string().optional(),
+  "priorityMuscle2": zod.string().optional(),
+  "priorityMuscle3": zod.string().optional(),
+  "trainingLocation": zod.string().optional(),
+  "equipment": zod.string().optional(),
+  "cardioPreference": zod.string().optional(),
+  "cardioFrequency": zod.string().optional(),
+  "preferredCardioType": zod.string().optional(),
   "avoidsAdvancedMethods": zod.boolean().optional()
 })
 
