@@ -100,6 +100,7 @@ function calculateAge(dateOfBirth: string | undefined): number | undefined {
 
 const surveySchema = z.object({
   trainingGoal: z.string().optional(),
+  trainingGoalOther: z.string().optional(),
   experienceLevel: z.string().optional(),
   trainingDuration: z.string().optional(),
   healthLimitations: z.string().optional(),
@@ -172,6 +173,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
     resolver: zodResolver(surveySchema),
     defaultValues: {
       trainingGoal: survey?.trainingGoal ?? "",
+      trainingGoalOther: survey?.trainingGoalOther ?? "",
       experienceLevel: survey?.experienceLevel ?? "",
       trainingDuration: survey?.trainingDuration ?? "",
       healthLimitations: survey?.healthLimitations ?? "",
@@ -315,6 +317,22 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                   </FormItem>
                 )}
               />
+
+              {trainingGoal === "Inny" && (
+                <FormField
+                  control={form.control}
+                  name="trainingGoalOther"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Opisz swój cel treningowy</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Np. poprawa sylwetki bez dużej redukcji, lepsza forma do sportu..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}

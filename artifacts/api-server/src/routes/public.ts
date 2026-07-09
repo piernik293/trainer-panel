@@ -100,7 +100,6 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     favoriteExercises,
     advancedMethodsToAvoid,
     additionalInfo,
-    age,
     dateOfBirth,
     gender,
     heightCm,

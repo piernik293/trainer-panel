@@ -1,0 +1,189 @@
+TASK — Final QA and stabilization of Training Interview v1
+
+IMPORTANT
+
+Do not add any new features.
+Do not redesign the application.
+Do not modify the database schema unless required to fix a bug.
+Do not change the trainer panel unless necessary to fix compatibility.
+Do not change API endpoints.
+
+The goal is to complete and stabilize the Training Interview v1 before starting the next development phase.
+
+==================================================
+1. FULL REVIEW
+==================================================
+
+Review the entire training interview from beginning to end.
+
+Check:
+
+- wording
+- UX
+- spacing
+- mobile responsiveness
+- conditional fields
+- required fields
+- validation
+- Polish language
+- helper texts
+- trainer panel compatibility
+- PDF export compatibility
+
+Fix only issues that reduce quality or professionalism.
+
+==================================================
+2. CONDITIONAL LOGIC
+==================================================
+
+Verify every conditional field.
+
+Examples:
+
+✓ Beginner version
+
+✓ No physical activity version
+
+✓ Intermediate version
+
+✓ Advanced version
+
+✓ Home equipment
+
+✓ Outdoor equipment
+
+✓ "Other" training goal
+
+✓ Cardio recommendations
+
+✓ BMI recommendation
+
+✓ Priority muscle groups
+
+✓ Advanced training methods
+
+Make sure every field appears only when intended.
+
+==================================================
+3. VALIDATION
+==================================================
+
+Verify every required field.
+
+Ensure the interview cannot be submitted with missing required data.
+
+Check:
+
+- invalid email
+- invalid birth date
+- missing training goal
+- missing gender
+- missing height
+- missing weight
+- missing experience
+- missing required equipment
+- missing required custom goal description
+
+==================================================
+4. TRAINER PANEL
+==================================================
+
+Verify that every answer is displayed correctly.
+
+No empty values should break the UI.
+
+No old interviews should crash the panel.
+
+==================================================
+5. PDF EXPORT
+==================================================
+
+Verify that every answer is exported correctly.
+
+No missing sections.
+
+No broken formatting.
+
+==================================================
+6. PERFORMANCE
+==================================================
+
+Remove unused code if it was left after previous changes.
+
+Remove duplicate components.
+
+Remove duplicate validation.
+
+Remove unused imports.
+
+Do not change visible functionality.
+
+==================================================
+7. FINAL POLISH REVIEW
+==================================================
+
+Review every visible Polish sentence.
+
+Fix:
+
+- awkward wording
+- machine translations
+- inconsistent labels
+- duplicated phrases
+- capitalization
+
+Keep one consistent professional tone.
+
+==================================================
+8. FINAL TEST
+==================================================
+
+Run a complete end-to-end test.
+
+Scenario:
+
+- Complete the interview
+- Submit
+- Verify database write
+- Open trainer panel
+- Verify answers
+- Export PDF
+
+Confirm everything works.
+
+==================================================
+9. DOCUMENTATION
+==================================================
+
+Create:
+
+docs/02-training-interview.md
+
+Include:
+
+- purpose of the training interview
+- survey flow
+- conditional logic
+- required fields
+- optional fields
+- validation rules
+- known limitations
+- future improvements
+
+==================================================
+10. GITHUB
+==================================================
+
+When everything has been verified and works correctly:
+
+Commit:
+
+feat: complete training interview v1
+
+Push to GitHub using the Replit GitHub integration.
+
+Finally provide a short report including:
+
+- Bugs fixed
+- Improvements made
+- Remaining recommendations before starting the next module

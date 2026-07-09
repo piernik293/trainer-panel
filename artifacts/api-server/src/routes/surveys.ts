@@ -102,6 +102,11 @@ router.put("/clients/:clientId/survey", async (req, res): Promise<void> => {
     return;
   }
 
+  if (parsed.data.trainingGoal === "Inny" && (!parsed.data.trainingGoalOther || parsed.data.trainingGoalOther.trim() === "")) {
+    res.status(400).json({ error: "Opis celu treningowego jest wymagany, gdy wybrano \"Inny\"" });
+    return;
+  }
+
   // `dateOfBirth` is a plain "YYYY-MM-DD" string (see @workspace/api-zod's
   // `dateOnly` schema) — parse it into a `Date` only for validation/age math.
   const { dateOfBirth, ...rest } = parsed.data;

@@ -1,3 +1,4 @@
 - [React Hook Form + Radix Select prefill](rhf-select-prefill.md) — a mounted Select's `form.reset()` in a useEffect can silently fail to update the displayed value; key the form component on the loaded record's id instead.
 - [Zod coerce.date() breaks native date inputs](zod-coerce-date-html-input.md) — API responses using `z.coerce.date()` serialize as full ISO timestamps, not `YYYY-MM-DD`, which breaks `<input type="date">` binding.
 - [orval zod date vs date-time](orval-date-only-fields.md) — orval's zod client can't tell OpenAPI `format: date` from `date-time`; fixed via a postprocess script + shared `dateOnly` schema, not per-route patches.
+- [Dual survey form parity](dual-survey-form-parity.md) — client-landing and trainer-app have separate, non-shared survey forms; conditional/required field changes must be ported to both + both API validation routes.

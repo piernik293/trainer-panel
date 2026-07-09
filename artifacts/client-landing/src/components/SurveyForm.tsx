@@ -49,14 +49,6 @@ const EQUIPMENT_OPTIONS = [
   "Brak sprzętu",
 ];
 
-function parseEquipment(raw: string | undefined): { items: string[]; other: string } {
-  if (!raw) return { items: [], other: "" };
-  const parts = raw.split(",").map((p) => p.trim()).filter(Boolean);
-  const items = parts.filter((p) => EQUIPMENT_OPTIONS.includes(p));
-  const other = parts.filter((p) => !EQUIPMENT_OPTIONS.includes(p)).join(", ");
-  return { items, other };
-}
-
 function buildEquipmentString(items: string[], other: string): string {
   const parts = [...items];
   if (other.trim()) parts.push(other.trim());
@@ -182,7 +174,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const Section = ({ step, title, description, children }: { step: number, title: string, description: string, children: React.ReactNode }) => (
+const Section = ({ title, description, children }: { step: number, title: string, description: string, children: React.ReactNode }) => (
   <div className="space-y-8 mb-16 relative">
     <div className="mb-10">
       <h3 className="text-2xl font-bold text-foreground tracking-tight">{title}</h3>
