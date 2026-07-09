@@ -107,12 +107,14 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     avoidsAdvancedMethods,
   } = parsed.data;
 
-  if (dateOfBirth.getTime() > Date.now()) {
+  // `dateOfBirth` is a plain "YYYY-MM-DD" string (see @workspace/api-zod's
+  // `dateOnly` schema) — parse it into a `Date` only for validation/age math.
+  const dateOfBirthDate = new Date(dateOfBirth);
+  if (dateOfBirthDate.getTime() > Date.now()) {
     res.status(400).json({ error: "Data urodzenia nie może być w przyszłości" });
     return;
   }
-  const dateOfBirthIso = dateOfBirth.toISOString().slice(0, 10);
-  const calculatedAge = calculateAge(dateOfBirth);
+  const calculatedAge = calculateAge(dateOfBirthDate);
 
   // Insert client, then insert a new survey history row for them
   const [client] = await db
@@ -136,7 +138,7 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     advancedMethodsToAvoid: advancedMethodsToAvoid ?? [],
     additionalInfo,
     age: calculatedAge,
-    dateOfBirth: dateOfBirthIso,
+    dateOfBirth,
     gender,
     heightCm,
     weightKg,

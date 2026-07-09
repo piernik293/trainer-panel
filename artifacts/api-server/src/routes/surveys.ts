@@ -15,19 +15,6 @@ import {
 
 const router: IRouter = Router();
 
-// The `dateOfBirth` column is stored as a plain YYYY-MM-DD date, but the
-// generated response schemas coerce it to a `Date`, which JSON-serializes as
-// a full ISO timestamp (e.g. "1990-05-15T00:00:00.000Z"). The trainer app
-// binds this value directly to an `<input type="date">`, which requires an
-// exact "YYYY-MM-DD" string — anything else renders as blank/invalid. Trim
-// back down to a date-only string before sending the response.
-function toDateOnlyResponse<T extends { dateOfBirth?: Date | null }>(survey: T): T {
-  if (survey.dateOfBirth instanceof Date) {
-    return { ...survey, dateOfBirth: survey.dateOfBirth.toISOString().slice(0, 10) as unknown as Date };
-  }
-  return survey;
-}
-
 function calculateAge(dateOfBirth: Date): number {
   const today = new Date();
   let age = today.getUTCFullYear() - dateOfBirth.getUTCFullYear();
@@ -59,7 +46,7 @@ router.get("/clients/:clientId/survey", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(toDateOnlyResponse(GetClientSurveyResponse.parse(survey)));
+  res.json(GetClientSurveyResponse.parse(survey));
 });
 
 // Full survey history for a client, newest first.
@@ -76,7 +63,7 @@ router.get("/clients/:clientId/surveys", async (req, res): Promise<void> => {
     .where(eq(surveysTable.clientId, params.data.clientId))
     .orderBy(desc(surveysTable.createdAt));
 
-  res.json(ListClientSurveysResponse.parse(surveys).map(toDateOnlyResponse));
+  res.json(ListClientSurveysResponse.parse(surveys));
 });
 
 // A specific historical survey, for read-only viewing.
@@ -97,7 +84,7 @@ router.get("/clients/:clientId/surveys/:surveyId", async (req, res): Promise<voi
     return;
   }
 
-  res.json(toDateOnlyResponse(GetClientSurveyByIdResponse.parse(survey)));
+  res.json(GetClientSurveyByIdResponse.parse(survey));
 });
 
 // Always inserts a new survey row — surveys are append-only history so past
@@ -115,15 +102,18 @@ router.put("/clients/:clientId/survey", async (req, res): Promise<void> => {
     return;
   }
 
+  // `dateOfBirth` is a plain "YYYY-MM-DD" string (see @workspace/api-zod's
+  // `dateOnly` schema) — parse it into a `Date` only for validation/age math.
   const { dateOfBirth, ...rest } = parsed.data;
-  if (dateOfBirth && dateOfBirth.getTime() > Date.now()) {
+  const dateOfBirthDate = dateOfBirth ? new Date(dateOfBirth) : undefined;
+  if (dateOfBirthDate && dateOfBirthDate.getTime() > Date.now()) {
     res.status(400).json({ error: "Data urodzenia nie może być w przyszłości" });
     return;
   }
   const normalizedData = {
     ...rest,
-    dateOfBirth: dateOfBirth ? dateOfBirth.toISOString().slice(0, 10) : undefined,
-    age: dateOfBirth ? calculateAge(dateOfBirth) : rest.age,
+    dateOfBirth,
+    age: dateOfBirthDate ? calculateAge(dateOfBirthDate) : rest.age,
   };
 
   const [survey] = await db
@@ -131,7 +121,7 @@ router.put("/clients/:clientId/survey", async (req, res): Promise<void> => {
     .values({ ...normalizedData, clientId: params.data.clientId })
     .returning();
 
-  res.json(toDateOnlyResponse(UpsertClientSurveyResponse.parse(survey)));
+  res.json(UpsertClientSurveyResponse.parse(survey));
 });
 
 export default router;

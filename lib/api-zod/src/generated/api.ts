@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import * as zod from 'zod';
+import { dateOnly } from "../date-only";
 
 
 /**
@@ -190,7 +191,7 @@ export const GetClientSurveyResponse = zod.object({
   "advancedMethodsToAvoid": zod.array(zod.string()),
   "additionalInfo": zod.string().nullish(),
   "age": zod.number().nullish(),
-  "dateOfBirth": zod.coerce.date().nullish(),
+  "dateOfBirth": dateOnly.nullish(),
   "gender": zod.string().nullish(),
   "heightCm": zod.number().nullish(),
   "weightKg": zod.number().nullish(),
@@ -247,7 +248,7 @@ export const UpsertClientSurveyBody = zod.object({
   "advancedMethodsToAvoid": zod.array(zod.string()).optional(),
   "additionalInfo": zod.string().optional(),
   "age": zod.number().min(upsertClientSurveyBodyAgeMin).max(upsertClientSurveyBodyAgeMax).optional(),
-  "dateOfBirth": zod.coerce.date().optional(),
+  "dateOfBirth": dateOnly.optional(),
   "gender": zod.enum(['Mężczyzna', 'Kobieta']).optional(),
   "heightCm": zod.number().min(upsertClientSurveyBodyHeightCmMin).max(upsertClientSurveyBodyHeightCmMax).optional(),
   "weightKg": zod.number().min(upsertClientSurveyBodyWeightKgMin).max(upsertClientSurveyBodyWeightKgMax).optional(),
@@ -283,7 +284,7 @@ export const UpsertClientSurveyResponse = zod.object({
   "advancedMethodsToAvoid": zod.array(zod.string()),
   "additionalInfo": zod.string().nullish(),
   "age": zod.number().nullish(),
-  "dateOfBirth": zod.coerce.date().nullish(),
+  "dateOfBirth": dateOnly.nullish(),
   "gender": zod.string().nullish(),
   "heightCm": zod.number().nullish(),
   "weightKg": zod.number().nullish(),
@@ -329,7 +330,7 @@ export const ListClientSurveysResponseItem = zod.object({
   "advancedMethodsToAvoid": zod.array(zod.string()),
   "additionalInfo": zod.string().nullish(),
   "age": zod.number().nullish(),
-  "dateOfBirth": zod.coerce.date().nullish(),
+  "dateOfBirth": dateOnly.nullish(),
   "gender": zod.string().nullish(),
   "heightCm": zod.number().nullish(),
   "weightKg": zod.number().nullish(),
@@ -377,7 +378,7 @@ export const GetClientSurveyByIdResponse = zod.object({
   "advancedMethodsToAvoid": zod.array(zod.string()),
   "additionalInfo": zod.string().nullish(),
   "age": zod.number().nullish(),
-  "dateOfBirth": zod.coerce.date().nullish(),
+  "dateOfBirth": dateOnly.nullish(),
   "gender": zod.string().nullish(),
   "heightCm": zod.number().nullish(),
   "weightKg": zod.number().nullish(),
@@ -548,7 +549,7 @@ export const SubmitPublicSurveyBody = zod.object({
   "advancedMethodsToAvoid": zod.array(zod.string()).optional(),
   "additionalInfo": zod.string().optional(),
   "age": zod.number().min(submitPublicSurveyBodyAgeMin).max(submitPublicSurveyBodyAgeMax).optional(),
-  "dateOfBirth": zod.coerce.date(),
+  "dateOfBirth": dateOnly,
   "gender": zod.enum(['Mężczyzna', 'Kobieta']),
   "heightCm": zod.number().min(submitPublicSurveyBodyHeightCmMin).max(submitPublicSurveyBodyHeightCmMax).optional(),
   "weightKg": zod.number().min(submitPublicSurveyBodyWeightKgMin).max(submitPublicSurveyBodyWeightKgMax).optional(),
