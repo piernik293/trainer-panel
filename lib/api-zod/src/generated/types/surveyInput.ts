@@ -5,6 +5,10 @@
  * Trainer management API
  * OpenAPI spec version: 0.1.0
  */
+import type { SurveyInputActivityLevel } from './surveyInputActivityLevel';
+import type { SurveyInputGender } from './surveyInputGender';
+import type { SurveyInputPlanStylePreference } from './surveyInputPlanStylePreference';
+import type { SurveyInputSleepHours } from './surveyInputSleepHours';
 
 export interface SurveyInput {
   trainingGoal?: string;
@@ -19,4 +23,29 @@ export interface SurveyInput {
   favoriteExercises?: string;
   advancedMethodsToAvoid?: string[];
   additionalInfo?: string;
+  /**
+     * @minimum 0
+     * @maximum 120
+     */
+  age?: number;
+  gender?: SurveyInputGender;
+  /**
+     * @minimum 50
+     * @maximum 260
+     */
+  heightCm?: number;
+  /**
+     * @minimum 20
+     * @maximum 400
+     */
+  weightKg?: number;
+  activityLevel?: SurveyInputActivityLevel;
+  sleepHours?: SurveyInputSleepHours;
+  /**
+     * @minimum 1
+     * @maximum 10
+     */
+  stressLevel?: number;
+  planStylePreference?: SurveyInputPlanStylePreference;
+  avoidsAdvancedMethods?: boolean;
 }

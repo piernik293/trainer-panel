@@ -122,11 +122,25 @@ export default function ClientDetail() {
               </h2>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <SurveyBlock label="Wiek" value={survey.age?.toString()} />
+                <SurveyBlock label="Płeć" value={survey.gender} />
+                <SurveyBlock label="Wzrost" value={survey.heightCm ? `${survey.heightCm} cm` : undefined} />
+                <SurveyBlock label="Waga" value={survey.weightKg ? `${survey.weightKg} kg` : undefined} />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <SurveyBlock label="Cel treningowy" value={survey.trainingGoal} />
                 <SurveyBlock label="Poziom doświadczenia" value={survey.experienceLevel} />
                 <SurveyBlock label="Staż treningowy" value={survey.trainingDuration} />
                 <SurveyBlock label="Ilość treningów w tyg." value={survey.weeklyFrequency?.toString()} />
                 <SurveyBlock label="Czas trwania sesji" value={survey.sessionDuration} />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <SurveyBlock label="Aktywność w ciągu dnia" value={survey.activityLevel} />
+                <SurveyBlock label="Sen (śr. godz./dobę)" value={survey.sleepHours} />
+                <SurveyBlock label="Poziom stresu (1-10)" value={survey.stressLevel?.toString()} />
+                <SurveyBlock label="Preferowany styl planu" value={survey.planStylePreference} />
               </div>
 
               <Card className="border-border/50 shadow-sm print-break-inside-avoid">
@@ -150,6 +164,10 @@ export default function ClientDetail() {
                 <SurveyBlock label="Ulubione ćwiczenia" value={survey.favoriteExercises} />
                 <SurveyBlock label="Czego unikać" value={survey.avoidedExercises} />
               </div>
+
+              {survey.avoidsAdvancedMethods === true && survey.advancedMethodsToAvoid && survey.advancedMethodsToAvoid.length === 0 && (
+                <SurveyBlock label="Unikane metody intensyfikacji" value="Klient zgłosił przeciwwskazania, ale nie wskazał konkretnych metod." fullWidth />
+              )}
 
               {survey.advancedMethodsToAvoid && survey.advancedMethodsToAvoid.length > 0 && (
                 <SurveyBlock 

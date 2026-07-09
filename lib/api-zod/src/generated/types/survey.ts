@@ -32,6 +32,24 @@ export interface Survey {
   advancedMethodsToAvoid: string[];
   /** @nullable */
   additionalInfo?: string | null;
+  /** @nullable */
+  age?: number | null;
+  /** @nullable */
+  gender?: string | null;
+  /** @nullable */
+  heightCm?: number | null;
+  /** @nullable */
+  weightKg?: number | null;
+  /** @nullable */
+  activityLevel?: string | null;
+  /** @nullable */
+  sleepHours?: string | null;
+  /** @nullable */
+  stressLevel?: number | null;
+  /** @nullable */
+  planStylePreference?: string | null;
+  /** @nullable */
+  avoidsAdvancedMethods?: boolean | null;
   createdAt: Date;
   updatedAt: Date;
 }

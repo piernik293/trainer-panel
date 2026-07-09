@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, uniqueIndex, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { clientsTable } from "./clients";
@@ -21,6 +21,19 @@ export const surveysTable = pgTable("surveys", {
   favoriteExercises: text("favorite_exercises"),
   advancedMethodsToAvoid: text("advanced_methods_to_avoid").array().notNull().default([]),
   additionalInfo: text("additional_info"),
+  // Dane podstawowe
+  age: integer("age"),
+  gender: text("gender"),
+  heightCm: integer("height_cm"),
+  weightKg: integer("weight_kg"),
+  // Aktywność fizyczna / regeneracja / stres
+  activityLevel: text("activity_level"),
+  sleepHours: text("sleep_hours"),
+  stressLevel: integer("stress_level"),
+  // Preferencje planu
+  planStylePreference: text("plan_style_preference"),
+  // Czy klient ma przeciwwskazania do metod intensyfikacji (pytanie tak/nie, poprzedzające listę checkboxów)
+  avoidsAdvancedMethods: boolean("avoids_advanced_methods"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

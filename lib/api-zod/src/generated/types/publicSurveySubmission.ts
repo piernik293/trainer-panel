@@ -5,6 +5,10 @@
  * Trainer management API
  * OpenAPI spec version: 0.1.0
  */
+import type { PublicSurveySubmissionActivityLevel } from './publicSurveySubmissionActivityLevel';
+import type { PublicSurveySubmissionGender } from './publicSurveySubmissionGender';
+import type { PublicSurveySubmissionPlanStylePreference } from './publicSurveySubmissionPlanStylePreference';
+import type { PublicSurveySubmissionSleepHours } from './publicSurveySubmissionSleepHours';
 
 export interface PublicSurveySubmission {
   /** @minLength 1 */
@@ -25,4 +29,29 @@ export interface PublicSurveySubmission {
   favoriteExercises?: string;
   advancedMethodsToAvoid?: string[];
   additionalInfo?: string;
+  /**
+     * @minimum 0
+     * @maximum 120
+     */
+  age?: number;
+  gender?: PublicSurveySubmissionGender;
+  /**
+     * @minimum 50
+     * @maximum 260
+     */
+  heightCm?: number;
+  /**
+     * @minimum 20
+     * @maximum 400
+     */
+  weightKg?: number;
+  activityLevel?: PublicSurveySubmissionActivityLevel;
+  sleepHours?: PublicSurveySubmissionSleepHours;
+  /**
+     * @minimum 1
+     * @maximum 10
+     */
+  stressLevel?: number;
+  planStylePreference?: PublicSurveySubmissionPlanStylePreference;
+  avoidsAdvancedMethods?: boolean;
 }

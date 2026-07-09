@@ -12,8 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 import { ArrowLeft, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AnimatePresence, motion } from "framer-motion";
 
 const advancedMethodsOptions = [
   "Superserie", 
@@ -23,6 +25,8 @@ const advancedMethodsOptions = [
   "Serie wymuszone", 
   "Serie rest-pause"
 ];
+
+const MUSCLE_GROUPS = ["klatka piersiowa", "plecy", "barki", "biceps", "triceps", "brzuch", "uda", "łydki"];
 
 const surveySchema = z.object({
   trainingGoal: z.string().optional(),
@@ -35,6 +39,15 @@ const surveySchema = z.object({
   avoidedMuscles: z.string().optional(),
   avoidedExercises: z.string().optional(),
   favoriteExercises: z.string().optional(),
+  age: z.coerce.number().min(1).max(120).optional().or(z.literal("").transform(() => undefined)),
+  gender: z.string().optional(),
+  heightCm: z.coerce.number().min(50).max(260).optional().or(z.literal("").transform(() => undefined)),
+  weightKg: z.coerce.number().min(20).max(400).optional().or(z.literal("").transform(() => undefined)),
+  activityLevel: z.string().optional(),
+  sleepHours: z.string().optional(),
+  stressLevel: z.coerce.number().min(1).max(10).optional(),
+  planStylePreference: z.string().optional(),
+  avoidsAdvancedMethods: z.string().optional(),
   advancedMethodsToAvoid: z.array(z.string()).default([]),
   additionalInfo: z.string().optional()
 });
@@ -70,10 +83,24 @@ export default function SurveyForm() {
       avoidedMuscles: "",
       avoidedExercises: "",
       favoriteExercises: "",
+      age: undefined,
+      gender: "",
+      heightCm: undefined,
+      weightKg: undefined,
+      activityLevel: "",
+      sleepHours: "",
+      stressLevel: 5,
+      planStylePreference: "",
+      avoidsAdvancedMethods: "",
       advancedMethodsToAvoid: [],
       additionalInfo: ""
     }
   });
+
+  const experienceLevel = form.watch("experienceLevel");
+  const avoidsAdvancedMethods = form.watch("avoidsAdvancedMethods");
+  const isBeginner = experienceLevel === "Początkujący";
+  const isIntermediateOrAdvanced = experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
 
   const isInitialized = useRef(false);
 
@@ -91,6 +118,15 @@ export default function SurveyForm() {
         avoidedMuscles: survey.avoidedMuscles ?? "",
         avoidedExercises: survey.avoidedExercises ?? "",
         favoriteExercises: survey.favoriteExercises ?? "",
+        age: survey.age ?? undefined,
+        gender: survey.gender ?? "",
+        heightCm: survey.heightCm ?? undefined,
+        weightKg: survey.weightKg ?? undefined,
+        activityLevel: survey.activityLevel ?? "",
+        sleepHours: survey.sleepHours ?? "",
+        stressLevel: survey.stressLevel ?? 5,
+        planStylePreference: survey.planStylePreference ?? "",
+        avoidsAdvancedMethods: survey.avoidsAdvancedMethods === true ? "Tak" : survey.avoidsAdvancedMethods === false ? "Nie" : "",
         advancedMethodsToAvoid: survey.advancedMethodsToAvoid ?? [],
         additionalInfo: survey.additionalInfo ?? "",
       });
@@ -98,7 +134,18 @@ export default function SurveyForm() {
   }, [survey, form]);
 
   const onSubmit = (data: SurveyFormValues) => {
-    upsertSurvey.mutate({ clientId: id, data }, {
+    const avoidsAdvancedMethodsBool =
+      data.avoidsAdvancedMethods === "Tak" ? true : data.avoidsAdvancedMethods === "Nie" ? false : undefined;
+    const payload = {
+      ...data,
+      gender: data.gender || undefined,
+      activityLevel: data.activityLevel || undefined,
+      sleepHours: data.sleepHours || undefined,
+      planStylePreference: data.planStylePreference || undefined,
+      avoidsAdvancedMethods: avoidsAdvancedMethodsBool,
+      advancedMethodsToAvoid: avoidsAdvancedMethodsBool === true ? data.advancedMethodsToAvoid : [],
+    };
+    upsertSurvey.mutate({ clientId: id, data: payload as Parameters<typeof upsertSurvey.mutate>[0]["data"] }, {
       onSuccess: () => {
         toast({
           title: "Zapisano pomyślnie",
@@ -227,6 +274,71 @@ export default function SurveyForm() {
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="age"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Wiek</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="1" max="120" placeholder="np. 30" {...field} value={field.value ?? ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Płeć</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Wybierz..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Kobieta">Kobieta</SelectItem>
+                        <SelectItem value="Mężczyzna">Mężczyzna</SelectItem>
+                        <SelectItem value="Inna">Inna</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="heightCm"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Wzrost (cm)</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="50" max="260" placeholder="np. 178" {...field} value={field.value ?? ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="weightKg"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Waga (kg)</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="20" max="400" placeholder="np. 75" {...field} value={field.value ?? ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
             </CardContent>
           </Card>
 
@@ -269,6 +381,7 @@ export default function SurveyForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Partie mięśniowe do priorytetowego rozwoju</FormLabel>
+                      <FormDescription className="text-xs">Np. {MUSCLE_GROUPS.join(", ")}.</FormDescription>
                       <FormControl>
                         <Input placeholder="np. Barki, Pośladki" {...field} />
                       </FormControl>
@@ -282,7 +395,8 @@ export default function SurveyForm() {
                   name="avoidedMuscles"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Partie do pominięcia</FormLabel>
+                      <FormLabel>Partie do pominięcia. Jeżeli tak opisz dlaczego.</FormLabel>
+                      <FormDescription className="text-xs">Np. {MUSCLE_GROUPS.join(", ")}.</FormDescription>
                       <FormControl>
                         <Input placeholder="np. Łydki (są już wystarczające)" {...field} />
                       </FormControl>
@@ -320,6 +434,44 @@ export default function SurveyForm() {
                 />
               </div>
 
+              {isBeginner && (
+                <p className="text-sm text-muted-foreground -mt-2">
+                  Klient jest początkujący — pytania o superserie, serie złożone, drop sety i inne metody intensyfikacji są pomijane.
+                </p>
+              )}
+
+              <AnimatePresence>
+                {isIntermediateOrAdvanced && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="overflow-hidden space-y-4"
+                  >
+                    <FormField
+                      control={form.control}
+                      name="avoidsAdvancedMethods"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Czy klient ma metody treningowe, których nie chce stosować / są przeciwwskazane?</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="max-w-xs">
+                                <SelectValue placeholder="Wybierz..." />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Tak">Tak</SelectItem>
+                              <SelectItem value="Nie">Nie</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+              {avoidsAdvancedMethods === "Tak" && (
               <FormField
                 control={form.control}
                 name="advancedMethodsToAvoid"
@@ -370,6 +522,10 @@ export default function SurveyForm() {
                   </FormItem>
                 )}
               />
+              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <FormField
                 control={form.control}
@@ -389,6 +545,101 @@ export default function SurveyForm() {
                 )}
               />
 
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/50 shadow-sm">
+            <CardHeader className="bg-muted/20 border-b border-border/50">
+              <CardTitle>Aktywność, regeneracja i stres</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="activityLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Poziom aktywności fizycznej w ciągu dnia</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Wybierz..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Siedzący">Siedzący</SelectItem>
+                        <SelectItem value="Lekko aktywny">Lekko aktywny</SelectItem>
+                        <SelectItem value="Praca fizyczna">Praca fizyczna</SelectItem>
+                        <SelectItem value="Bardzo aktywny">Bardzo aktywny</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="sleepHours"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Średnia liczba godzin snu na dobę</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Wybierz..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="poniżej 6h">poniżej 6h</SelectItem>
+                        <SelectItem value="6-7h">6-7h</SelectItem>
+                        <SelectItem value="7-8h">7-8h</SelectItem>
+                        <SelectItem value="powyżej 8h">powyżej 8h</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="planStylePreference"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preferowany styl planu</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Wybierz..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Maksymalnie efektywny">Maksymalnie efektywny</SelectItem>
+                        <SelectItem value="Kompromis">Kompromis</SelectItem>
+                        <SelectItem value="Prosty i trwały">Prosty i trwały</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="stressLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Poziom odczuwanego stresu (1-10)</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center gap-4 pt-2">
+                        <Slider min={1} max={10} step={1} value={[field.value ?? 5]} onValueChange={(v) => field.onChange(v[0])} className="flex-1" />
+                        <span className="text-primary font-semibold w-6 text-center">{field.value ?? 5}</span>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
 

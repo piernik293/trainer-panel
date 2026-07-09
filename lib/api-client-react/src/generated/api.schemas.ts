@@ -74,9 +74,65 @@ export interface Survey {
   advancedMethodsToAvoid: string[];
   /** @nullable */
   additionalInfo?: string | null;
+  /** @nullable */
+  age?: number | null;
+  /** @nullable */
+  gender?: string | null;
+  /** @nullable */
+  heightCm?: number | null;
+  /** @nullable */
+  weightKg?: number | null;
+  /** @nullable */
+  activityLevel?: string | null;
+  /** @nullable */
+  sleepHours?: string | null;
+  /** @nullable */
+  stressLevel?: number | null;
+  /** @nullable */
+  planStylePreference?: string | null;
+  /** @nullable */
+  avoidsAdvancedMethods?: boolean | null;
   createdAt: string;
   updatedAt: string;
 }
+
+export type SurveyInputGender = typeof SurveyInputGender[keyof typeof SurveyInputGender];
+
+
+export const SurveyInputGender = {
+  Kobieta: 'Kobieta',
+  Mężczyzna: 'Mężczyzna',
+  Inna: 'Inna',
+} as const;
+
+export type SurveyInputActivityLevel = typeof SurveyInputActivityLevel[keyof typeof SurveyInputActivityLevel];
+
+
+export const SurveyInputActivityLevel = {
+  Siedzący: 'Siedzący',
+  Lekko_aktywny: 'Lekko aktywny',
+  Praca_fizyczna: 'Praca fizyczna',
+  Bardzo_aktywny: 'Bardzo aktywny',
+} as const;
+
+export type SurveyInputSleepHours = typeof SurveyInputSleepHours[keyof typeof SurveyInputSleepHours];
+
+
+export const SurveyInputSleepHours = {
+  poniżej_6h: 'poniżej 6h',
+  '6-7h': '6-7h',
+  '7-8h': '7-8h',
+  powyżej_8h: 'powyżej 8h',
+} as const;
+
+export type SurveyInputPlanStylePreference = typeof SurveyInputPlanStylePreference[keyof typeof SurveyInputPlanStylePreference];
+
+
+export const SurveyInputPlanStylePreference = {
+  Maksymalnie_efektywny: 'Maksymalnie efektywny',
+  Kompromis: 'Kompromis',
+  Prosty_i_trwały: 'Prosty i trwały',
+} as const;
 
 export interface SurveyInput {
   trainingGoal?: string;
@@ -91,6 +147,31 @@ export interface SurveyInput {
   favoriteExercises?: string;
   advancedMethodsToAvoid?: string[];
   additionalInfo?: string;
+  /**
+     * @minimum 0
+     * @maximum 120
+     */
+  age?: number;
+  gender?: SurveyInputGender;
+  /**
+     * @minimum 50
+     * @maximum 260
+     */
+  heightCm?: number;
+  /**
+     * @minimum 20
+     * @maximum 400
+     */
+  weightKg?: number;
+  activityLevel?: SurveyInputActivityLevel;
+  sleepHours?: SurveyInputSleepHours;
+  /**
+     * @minimum 1
+     * @maximum 10
+     */
+  stressLevel?: number;
+  planStylePreference?: SurveyInputPlanStylePreference;
+  avoidsAdvancedMethods?: boolean;
 }
 
 export interface Stats {
@@ -99,6 +180,44 @@ export interface Stats {
   surveysPercent: number;
   recentClients: Client[];
 }
+
+export type PublicSurveySubmissionGender = typeof PublicSurveySubmissionGender[keyof typeof PublicSurveySubmissionGender];
+
+
+export const PublicSurveySubmissionGender = {
+  Kobieta: 'Kobieta',
+  Mężczyzna: 'Mężczyzna',
+  Inna: 'Inna',
+} as const;
+
+export type PublicSurveySubmissionActivityLevel = typeof PublicSurveySubmissionActivityLevel[keyof typeof PublicSurveySubmissionActivityLevel];
+
+
+export const PublicSurveySubmissionActivityLevel = {
+  Siedzący: 'Siedzący',
+  Lekko_aktywny: 'Lekko aktywny',
+  Praca_fizyczna: 'Praca fizyczna',
+  Bardzo_aktywny: 'Bardzo aktywny',
+} as const;
+
+export type PublicSurveySubmissionSleepHours = typeof PublicSurveySubmissionSleepHours[keyof typeof PublicSurveySubmissionSleepHours];
+
+
+export const PublicSurveySubmissionSleepHours = {
+  poniżej_6h: 'poniżej 6h',
+  '6-7h': '6-7h',
+  '7-8h': '7-8h',
+  powyżej_8h: 'powyżej 8h',
+} as const;
+
+export type PublicSurveySubmissionPlanStylePreference = typeof PublicSurveySubmissionPlanStylePreference[keyof typeof PublicSurveySubmissionPlanStylePreference];
+
+
+export const PublicSurveySubmissionPlanStylePreference = {
+  Maksymalnie_efektywny: 'Maksymalnie efektywny',
+  Kompromis: 'Kompromis',
+  Prosty_i_trwały: 'Prosty i trwały',
+} as const;
 
 export interface PublicSurveySubmission {
   /** @minLength 1 */
@@ -119,6 +238,31 @@ export interface PublicSurveySubmission {
   favoriteExercises?: string;
   advancedMethodsToAvoid?: string[];
   additionalInfo?: string;
+  /**
+     * @minimum 0
+     * @maximum 120
+     */
+  age?: number;
+  gender?: PublicSurveySubmissionGender;
+  /**
+     * @minimum 50
+     * @maximum 260
+     */
+  heightCm?: number;
+  /**
+     * @minimum 20
+     * @maximum 400
+     */
+  weightKg?: number;
+  activityLevel?: PublicSurveySubmissionActivityLevel;
+  sleepHours?: PublicSurveySubmissionSleepHours;
+  /**
+     * @minimum 1
+     * @maximum 10
+     */
+  stressLevel?: number;
+  planStylePreference?: PublicSurveySubmissionPlanStylePreference;
+  avoidsAdvancedMethods?: boolean;
 }
 
 export interface PublicSurveyResponse {

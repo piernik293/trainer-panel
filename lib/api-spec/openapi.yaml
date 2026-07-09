@@ -368,6 +368,24 @@ components:
             type: string
         additionalInfo:
           type: ["string", "null"]
+        age:
+          type: ["integer", "null"]
+        gender:
+          type: ["string", "null"]
+        heightCm:
+          type: ["integer", "null"]
+        weightKg:
+          type: ["integer", "null"]
+        activityLevel:
+          type: ["string", "null"]
+        sleepHours:
+          type: ["string", "null"]
+        stressLevel:
+          type: ["integer", "null"]
+        planStylePreference:
+          type: ["string", "null"]
+        avoidsAdvancedMethods:
+          type: ["boolean", "null"]
         createdAt:
           type: string
           format: date-time
@@ -410,6 +428,36 @@ components:
             type: string
         additionalInfo:
           type: string
+        age:
+          type: integer
+          minimum: 0
+          maximum: 120
+        gender:
+          type: string
+          enum: [Kobieta, Mężczyzna, Inna]
+        heightCm:
+          type: integer
+          minimum: 50
+          maximum: 260
+        weightKg:
+          type: integer
+          minimum: 20
+          maximum: 400
+        activityLevel:
+          type: string
+          enum: [Siedzący, Lekko aktywny, Praca fizyczna, Bardzo aktywny]
+        sleepHours:
+          type: string
+          enum: ["poniżej 6h", "6-7h", "7-8h", "powyżej 8h"]
+        stressLevel:
+          type: integer
+          minimum: 1
+          maximum: 10
+        planStylePreference:
+          type: string
+          enum: [Maksymalnie efektywny, Kompromis, Prosty i trwały]
+        avoidsAdvancedMethods:
+          type: boolean
 
     Stats:
       type: object
@@ -469,6 +517,36 @@ components:
             type: string
         additionalInfo:
           type: string
+        age:
+          type: integer
+          minimum: 0
+          maximum: 120
+        gender:
+          type: string
+          enum: [Kobieta, Mężczyzna, Inna]
+        heightCm:
+          type: integer
+          minimum: 50
+          maximum: 260
+        weightKg:
+          type: integer
+          minimum: 20
+          maximum: 400
+        activityLevel:
+          type: string
+          enum: [Siedzący, Lekko aktywny, Praca fizyczna, Bardzo aktywny]
+        sleepHours:
+          type: string
+          enum: ["poniżej 6h", "6-7h", "7-8h", "powyżej 8h"]
+        stressLevel:
+          type: integer
+          minimum: 1
+          maximum: 10
+        planStylePreference:
+          type: string
+          enum: [Maksymalnie efektywny, Kompromis, Prosty i trwały]
+        avoidsAdvancedMethods:
+          type: boolean
       required:
         - firstName
         - lastName

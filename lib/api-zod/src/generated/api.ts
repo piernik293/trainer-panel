@@ -146,6 +146,15 @@ export const GetClientSurveyResponse = zod.object({
   "favoriteExercises": zod.string().nullish(),
   "advancedMethodsToAvoid": zod.array(zod.string()),
   "additionalInfo": zod.string().nullish(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "heightCm": zod.number().nullish(),
+  "weightKg": zod.number().nullish(),
+  "activityLevel": zod.string().nullish(),
+  "sleepHours": zod.string().nullish(),
+  "stressLevel": zod.number().nullish(),
+  "planStylePreference": zod.string().nullish(),
+  "avoidsAdvancedMethods": zod.boolean().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -157,6 +166,19 @@ export const GetClientSurveyResponse = zod.object({
 export const UpsertClientSurveyParams = zod.object({
   "clientId": zod.coerce.number()
 })
+
+export const upsertClientSurveyBodyAgeMin = 0;
+export const upsertClientSurveyBodyAgeMax = 120;
+
+export const upsertClientSurveyBodyHeightCmMin = 50;
+export const upsertClientSurveyBodyHeightCmMax = 260;
+
+export const upsertClientSurveyBodyWeightKgMin = 20;
+export const upsertClientSurveyBodyWeightKgMax = 400;
+
+export const upsertClientSurveyBodyStressLevelMax = 10;
+
+
 
 export const UpsertClientSurveyBody = zod.object({
   "trainingGoal": zod.string().optional(),
@@ -170,7 +192,16 @@ export const UpsertClientSurveyBody = zod.object({
   "avoidedExercises": zod.string().optional(),
   "favoriteExercises": zod.string().optional(),
   "advancedMethodsToAvoid": zod.array(zod.string()).optional(),
-  "additionalInfo": zod.string().optional()
+  "additionalInfo": zod.string().optional(),
+  "age": zod.number().min(upsertClientSurveyBodyAgeMin).max(upsertClientSurveyBodyAgeMax).optional(),
+  "gender": zod.enum(['Kobieta', 'Mężczyzna', 'Inna']).optional(),
+  "heightCm": zod.number().min(upsertClientSurveyBodyHeightCmMin).max(upsertClientSurveyBodyHeightCmMax).optional(),
+  "weightKg": zod.number().min(upsertClientSurveyBodyWeightKgMin).max(upsertClientSurveyBodyWeightKgMax).optional(),
+  "activityLevel": zod.enum(['Siedzący', 'Lekko aktywny', 'Praca fizyczna', 'Bardzo aktywny']).optional(),
+  "sleepHours": zod.enum(['poniżej 6h', '6-7h', '7-8h', 'powyżej 8h']).optional(),
+  "stressLevel": zod.number().min(1).max(upsertClientSurveyBodyStressLevelMax).optional(),
+  "planStylePreference": zod.enum(['Maksymalnie efektywny', 'Kompromis', 'Prosty i trwały']).optional(),
+  "avoidsAdvancedMethods": zod.boolean().optional()
 })
 
 export const UpsertClientSurveyResponse = zod.object({
@@ -188,6 +219,15 @@ export const UpsertClientSurveyResponse = zod.object({
   "favoriteExercises": zod.string().nullish(),
   "advancedMethodsToAvoid": zod.array(zod.string()),
   "additionalInfo": zod.string().nullish(),
+  "age": zod.number().nullish(),
+  "gender": zod.string().nullish(),
+  "heightCm": zod.number().nullish(),
+  "weightKg": zod.number().nullish(),
+  "activityLevel": zod.string().nullish(),
+  "sleepHours": zod.string().nullish(),
+  "stressLevel": zod.number().nullish(),
+  "planStylePreference": zod.string().nullish(),
+  "avoidsAdvancedMethods": zod.boolean().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -219,6 +259,17 @@ export const GetStatsResponse = zod.object({
  */
 
 
+export const submitPublicSurveyBodyAgeMin = 0;
+export const submitPublicSurveyBodyAgeMax = 120;
+
+export const submitPublicSurveyBodyHeightCmMin = 50;
+export const submitPublicSurveyBodyHeightCmMax = 260;
+
+export const submitPublicSurveyBodyWeightKgMin = 20;
+export const submitPublicSurveyBodyWeightKgMax = 400;
+
+export const submitPublicSurveyBodyStressLevelMax = 10;
+
 
 
 export const SubmitPublicSurveyBody = zod.object({
@@ -237,7 +288,16 @@ export const SubmitPublicSurveyBody = zod.object({
   "avoidedExercises": zod.string().optional(),
   "favoriteExercises": zod.string().optional(),
   "advancedMethodsToAvoid": zod.array(zod.string()).optional(),
-  "additionalInfo": zod.string().optional()
+  "additionalInfo": zod.string().optional(),
+  "age": zod.number().min(submitPublicSurveyBodyAgeMin).max(submitPublicSurveyBodyAgeMax).optional(),
+  "gender": zod.enum(['Kobieta', 'Mężczyzna', 'Inna']).optional(),
+  "heightCm": zod.number().min(submitPublicSurveyBodyHeightCmMin).max(submitPublicSurveyBodyHeightCmMax).optional(),
+  "weightKg": zod.number().min(submitPublicSurveyBodyWeightKgMin).max(submitPublicSurveyBodyWeightKgMax).optional(),
+  "activityLevel": zod.enum(['Siedzący', 'Lekko aktywny', 'Praca fizyczna', 'Bardzo aktywny']).optional(),
+  "sleepHours": zod.enum(['poniżej 6h', '6-7h', '7-8h', 'powyżej 8h']).optional(),
+  "stressLevel": zod.number().min(1).max(submitPublicSurveyBodyStressLevelMax).optional(),
+  "planStylePreference": zod.enum(['Maksymalnie efektywny', 'Kompromis', 'Prosty i trwały']).optional(),
+  "avoidsAdvancedMethods": zod.boolean().optional()
 })
 
 export const SubmitPublicSurveyResponse = zod.object({

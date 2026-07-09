@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSubmitPublicSurvey } from "@workspace/api-client-react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 
@@ -13,20 +13,29 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+
+const MUSCLE_GROUPS = ["klatka piersiowa", "plecy", "barki", "biceps", "triceps", "brzuch", "uda", "łydki"];
+const ADVANCED_METHODS = ["superserie", "serie złożone (compound set)", "drop sety", "serie do upadku mięśniowego", "serie wymuszone", "rest-pause"];
 
 const formSchema = z.object({
   firstName: z.string().min(1, "Imię jest wymagane"),
   lastName: z.string().min(1, "Nazwisko jest wymagane"),
   email: z.string().email("Nieprawidłowy adres e-mail").optional().or(z.literal("")),
   phone: z.string().optional(),
+  age: z.coerce.number().min(1, "Wiek jest wymagany").max(120),
+  gender: z.string().min(1, "Płeć jest wymagana"),
+  heightCm: z.coerce.number().min(50, "Wzrost jest wymagany").max(260),
+  weightKg: z.coerce.number().min(20, "Waga jest wymagana").max(400),
   trainingGoal: z.string().optional(),
-  experienceLevel: z.string().optional(),
+  experienceLevel: z.string().min(1, "Poziom doświadczenia jest wymagany"),
   trainingDuration: z.string().optional(),
   healthLimitations: z.string().optional(),
   weeklyFrequency: z.coerce.number().min(1).max(7).optional(),
@@ -35,6 +44,11 @@ const formSchema = z.object({
   avoidedMuscles: z.string().optional(),
   avoidedExercises: z.string().optional(),
   favoriteExercises: z.string().optional(),
+  activityLevel: z.string().min(1, "Poziom aktywności jest wymagany"),
+  sleepHours: z.string().min(1, "To pole jest wymagane"),
+  stressLevel: z.coerce.number().min(1).max(10).default(5),
+  planStylePreference: z.string().min(1, "Wybierz styl planu"),
+  avoidsAdvancedMethods: z.enum(["Tak", "Nie"]).optional(),
   advancedMethodsToAvoid: z.array(z.string()).optional().default([]),
   additionalInfo: z.string().optional(),
 });
@@ -63,6 +77,10 @@ export default function SurveyForm() {
       lastName: "",
       email: "",
       phone: "",
+      age: undefined,
+      gender: "",
+      heightCm: undefined,
+      weightKg: undefined,
       trainingGoal: "",
       experienceLevel: "",
       trainingDuration: "",
@@ -73,16 +91,34 @@ export default function SurveyForm() {
       avoidedMuscles: "",
       avoidedExercises: "",
       favoriteExercises: "",
+      activityLevel: "",
+      sleepHours: "",
+      stressLevel: 5,
+      planStylePreference: "",
+      avoidsAdvancedMethods: undefined,
       advancedMethodsToAvoid: [],
       additionalInfo: "",
     },
   });
 
+  const experienceLevel = form.watch("experienceLevel");
+  const avoidsAdvancedMethods = form.watch("avoidsAdvancedMethods");
+  const isBeginner = experienceLevel === "Początkujący";
+  const isIntermediateOrAdvanced = experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
+
   const mutation = useSubmitPublicSurvey();
 
   const onSubmit = (data: FormValues) => {
+    const { avoidsAdvancedMethods, advancedMethodsToAvoid, ...rest } = data;
+    const avoidsAdvancedMethodsBool =
+      avoidsAdvancedMethods === "Tak" ? true : avoidsAdvancedMethods === "Nie" ? false : undefined;
+    const payload = {
+      ...rest,
+      avoidsAdvancedMethods: avoidsAdvancedMethodsBool,
+      advancedMethodsToAvoid: avoidsAdvancedMethodsBool === true ? advancedMethodsToAvoid : [],
+    };
     mutation.mutate(
-      { data },
+      { data: payload as Parameters<typeof mutation.mutate>[0]["data"] },
       {
         onSuccess: (res) => {
           setSuccessMessage(res.message || "Dziękuję za wypełnienie ankiety. Przeanalizuję Twoje odpowiedzi i przygotuję indywidualny plan treningowy.");
@@ -116,7 +152,7 @@ export default function SurveyForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         
-        <Section title="Dane kontaktowe">
+        <Section title="Dane podstawowe">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <FormField control={form.control} name="firstName" render={({field}) => (
               <FormItem>
@@ -150,6 +186,53 @@ export default function SurveyForm() {
                 <FormLabel className="text-muted-foreground">Telefon</FormLabel>
                 <FormControl>
                   <Input {...field} type="tel" className="bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="age" render={({field}) => (
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Wiek *</FormLabel>
+                <FormControl>
+                  <Input type="number" min={1} max={120} {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} className="bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="gender" render={({field}) => (
+              <FormItem className="space-y-4">
+                <FormLabel className="text-muted-foreground">Płeć *</FormLabel>
+                <FormControl>
+                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-3 gap-3">
+                    {["Kobieta", "Mężczyzna", "Inna"].map(g => (
+                      <FormItem key={g} className="flex items-center space-x-0 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value={g} className="peer sr-only" />
+                        </FormControl>
+                        <FormLabel className="w-full flex items-center justify-center px-4 py-3 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium text-sm">
+                          {g}
+                        </FormLabel>
+                      </FormItem>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="heightCm" render={({field}) => (
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Wzrost (cm) *</FormLabel>
+                <FormControl>
+                  <Input type="number" min={50} max={260} {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} className="bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="weightKg" render={({field}) => (
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Waga (kg) *</FormLabel>
+                <FormControl>
+                  <Input type="number" min={20} max={400} {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} className="bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -250,6 +333,9 @@ export default function SurveyForm() {
             <FormField control={form.control} name="preferredMuscles" render={({field}) => (
               <FormItem>
                 <FormLabel className="text-muted-foreground">Czy są partie mięśniowe, na których szczególnie Ci zależy?</FormLabel>
+                <FormDescription className="text-xs text-muted-foreground/70">
+                  Np. {MUSCLE_GROUPS.join(", ")}.
+                </FormDescription>
                 <FormControl>
                   <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
                 </FormControl>
@@ -257,7 +343,10 @@ export default function SurveyForm() {
             )} />
             <FormField control={form.control} name="avoidedMuscles" render={({field}) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground">Czy są partie mięśniowe, których nie chcesz rozwijać?</FormLabel>
+                <FormLabel className="text-muted-foreground">Czy są partie mięśniowe, których nie chcesz rozwijać? Jeżeli tak opisz dlaczego.</FormLabel>
+                <FormDescription className="text-xs text-muted-foreground/70">
+                  Np. {MUSCLE_GROUPS.join(", ")}.
+                </FormDescription>
                 <FormControl>
                   <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
                 </FormControl>
@@ -282,35 +371,164 @@ export default function SurveyForm() {
           </div>
         </Section>
 
-        <Section title="Informacje dodatkowe">
-          <FormField control={form.control} name="advancedMethodsToAvoid" render={() => (
-            <FormItem className="mb-12">
-              <div className="mb-6">
-                <FormLabel className="text-muted-foreground text-base">Czy masz przeciwwskazania do wykonywania:</FormLabel>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {["superserie", "serie złożone (compound set)", "drop sety", "serie do upadku mięśniowego", "serie wymuszone", "rest-pause"].map(method => (
-                  <FormField key={method} control={form.control} name="advancedMethodsToAvoid" render={({field}) => (
-                    <FormItem className="flex flex-row items-center space-x-4 space-y-0 p-5 border border-white/5 bg-card/50 rounded-none hover:bg-card/80 transition-colors">
-                      <FormControl>
-                        <Checkbox 
-                          checked={field.value?.includes(method)}
-                          onCheckedChange={(checked) => {
-                            return checked 
-                              ? field.onChange([...(field.value || []), method])
-                              : field.onChange((field.value || []).filter(val => val !== method))
-                          }}
-                          className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-white/20 h-5 w-5 rounded-none"
-                        />
-                      </FormControl>
-                      <FormLabel className="font-normal cursor-pointer text-sm leading-snug flex-1">{method}</FormLabel>
-                    </FormItem>
-                  )} />
-                ))}
-              </div>
+        <Section title="Aktywność i regeneracja">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <FormField control={form.control} name="activityLevel" render={({field}) => (
+              <FormItem className="space-y-4">
+                <FormLabel className="text-muted-foreground">Poziom aktywności fizycznej w ciągu dnia *</FormLabel>
+                <FormControl>
+                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
+                    {["Siedzący", "Lekko aktywny", "Praca fizyczna", "Bardzo aktywny"].map(level => (
+                      <FormItem key={level} className="flex items-center space-x-0 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value={level} className="peer sr-only" />
+                        </FormControl>
+                        <FormLabel className="w-full flex items-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                          {level}
+                        </FormLabel>
+                      </FormItem>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="sleepHours" render={({field}) => (
+              <FormItem className="space-y-4">
+                <FormLabel className="text-muted-foreground">Ile godzin średnio sypiasz w ciągu doby? *</FormLabel>
+                <FormControl>
+                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
+                    {["poniżej 6h", "6-7h", "7-8h", "powyżej 8h"].map(hours => (
+                      <FormItem key={hours} className="flex items-center space-x-0 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value={hours} className="peer sr-only" />
+                        </FormControl>
+                        <FormLabel className="w-full flex items-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                          {hours}
+                        </FormLabel>
+                      </FormItem>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
+
+          <FormField control={form.control} name="stressLevel" render={({field}) => (
+            <FormItem>
+              <FormLabel className="text-muted-foreground">Poziom odczuwanego stresu (1 = niski, 10 = bardzo wysoki)</FormLabel>
+              <FormControl>
+                <div className="flex items-center gap-6 pt-2">
+                  <Slider min={1} max={10} step={1} value={[field.value ?? 5]} onValueChange={(v) => field.onChange(v[0])} className="flex-1" />
+                  <span className="text-primary font-semibold text-lg w-8 text-center">{field.value ?? 5}</span>
+                </div>
+              </FormControl>
             </FormItem>
           )} />
+        </Section>
 
+        <Section title="Styl planu treningowego">
+          <FormField control={form.control} name="planStylePreference" render={({field}) => (
+            <FormItem className="space-y-4">
+              <FormLabel className="text-muted-foreground">Jaki styl planu Ci odpowiada? *</FormLabel>
+              <FormControl>
+                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {["Maksymalnie efektywny", "Kompromis", "Prosty i trwały"].map(style => (
+                    <FormItem key={style} className="flex items-center space-x-0 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value={style} className="peer sr-only" />
+                      </FormControl>
+                      <FormLabel className="w-full flex items-center justify-center px-6 py-5 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                        {style}
+                      </FormLabel>
+                    </FormItem>
+                  ))}
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </Section>
+
+        <AnimatePresence>
+          {isIntermediateOrAdvanced && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <Section title="Metody intensyfikacji">
+                <FormField control={form.control} name="avoidsAdvancedMethods" render={({field}) => (
+                  <FormItem className="space-y-4 mb-8">
+                    <FormLabel className="text-muted-foreground">Czy masz jakieś metody treningowe, których nie chcesz stosować lub które są dla Ciebie przeciwwskazane?</FormLabel>
+                    <FormControl>
+                      <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 gap-4 max-w-sm">
+                        {["Tak", "Nie"].map(opt => (
+                          <FormItem key={opt} className="flex items-center space-x-0 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value={opt} className="peer sr-only" />
+                            </FormControl>
+                            <FormLabel className="w-full flex items-center justify-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                              {opt}
+                            </FormLabel>
+                          </FormItem>
+                        ))}
+                      </RadioGroup>
+                    </FormControl>
+                  </FormItem>
+                )} />
+
+                <AnimatePresence>
+                  {avoidsAdvancedMethods === "Tak" && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <FormField control={form.control} name="advancedMethodsToAvoid" render={() => (
+                        <FormItem className="mb-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            {ADVANCED_METHODS.map(method => (
+                              <FormField key={method} control={form.control} name="advancedMethodsToAvoid" render={({field}) => (
+                                <FormItem className="flex flex-row items-center space-x-4 space-y-0 p-5 border border-white/5 bg-card/50 rounded-none hover:bg-card/80 transition-colors">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(method)}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([...(field.value || []), method])
+                                          : field.onChange((field.value || []).filter(val => val !== method))
+                                      }}
+                                      className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-white/20 h-5 w-5 rounded-none"
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal cursor-pointer text-sm leading-snug flex-1">{method}</FormLabel>
+                                </FormItem>
+                              )} />
+                            ))}
+                          </div>
+                        </FormItem>
+                      )} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Section>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <Section title="Informacje dodatkowe">
+          {isBeginner && (
+            <p className="text-sm text-muted-foreground/70 mb-8 -mt-4">
+              Jako początkujący/a nie musisz znać zaawansowanych technik treningowych — trener dobierze je za Ciebie.
+            </p>
+          )}
           <FormField control={form.control} name="additionalInfo" render={({field}) => (
             <FormItem>
               <FormLabel className="text-muted-foreground">Czy chcesz dodać coś jeszcze? Styl życia, dieta, inne uwagi.</FormLabel>

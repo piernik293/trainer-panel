@@ -1,0 +1,245 @@
+TASK 1 – Rozbudowa formularza klienta oraz bazy danych
+
+IMPORTANT
+
+Nie przebudowuj obecnej aplikacji.
+
+Nie zmieniaj obecnej architektury projektu.
+
+Nie usuwaj żadnych istniejących funkcji.
+
+Nie zmieniaj obecnego wyglądu aplikacji.
+
+Nie usuwaj istniejących danych z bazy PostgreSQL.
+
+Jeżeli konieczne są zmiany w bazie danych, wykonaj migracje zachowujące pełną kompatybilność.
+
+Kod powinien pozostać zgodny z React + Vite + Tailwind + shadcn/ui + Node.js + Express + PostgreSQL + Drizzle ORM.
+
+Po zakończeniu upewnij się, że aplikacja nadal działa poprawnie.
+
+------------------------------------------------
+
+1. Dynamiczny formularz
+
+Pole:
+
+Poziom doświadczenia treningowego
+
+powinno sterować widocznością kolejnych sekcji.
+
+Jeżeli użytkownik wybierze:
+
+• Początkujący
+
+ukryj wszystkie pytania dotyczące:
+
+- Superserii
+- Compound Set
+- Drop Setów
+- Serii do upadku mięśniowego
+- Serii wymuszonych
+- Rest-Pause
+
+Dla początkujących wyświetl prostszy formularz.
+
+Przy pytaniu:
+
+Na których partiach mięśniowych najbardziej Ci zależy?
+
+dodaj pomocniczy opis:
+
+Jeżeli nie znasz nazw partii mięśniowych:
+
+• Klatka piersiowa
+• Plecy
+• Barki
+• Biceps
+• Triceps
+• Brzuch
+• Uda
+• Łydki
+
+Przy pytaniu:
+
+Czy są partie mięśniowe, których nie chcesz rozwijać?
+
+dodaj ten sam opis.
+
+------------------------------------------------
+
+Jeżeli użytkownik wybierze
+
+Średniozaawansowany
+
+lub
+
+Zaawansowany
+
+wyświetl dodatkową sekcję.
+
+Pytanie:
+
+Czy są metody treningowe, których nie chcesz wykonywać lub które są dla Ciebie niewskazane?
+
+Opcje:
+
+Tak
+
+Nie
+
+Jeżeli Tak
+
+wyświetl checkboxy:
+
+- Superserie
+- Serie złożone (Compound Set)
+- Drop Sety
+- Serie do upadku mięśniowego
+- Serie wymuszone
+- Rest-Pause
+
+Jeżeli Nie
+
+lista pozostaje ukryta.
+
+------------------------------------------------
+
+2. Dane podstawowe
+
+Dodaj nową sekcję:
+
+Dane podstawowe
+
+Pola:
+
+- Imię
+- Nazwisko
+- Wiek
+- Płeć
+- Wzrost
+- Waga
+
+Wszystkie pola powinny zostać zapisane do bazy.
+
+------------------------------------------------
+
+3. Aktywność
+
+Dodaj sekcję
+
+Aktywność fizyczna
+
+Pytanie:
+
+Jak wygląda Twoja codzienna aktywność?
+
+Opcje:
+
+- Praca siedząca
+
+- Lekko aktywna
+
+- Praca fizyczna
+
+- Bardzo aktywna
+
+------------------------------------------------
+
+4. Regeneracja
+
+Dodaj pytanie
+
+Ile godzin śpisz średnio każdej nocy?
+
+Opcje:
+
+poniżej 6
+
+6-7
+
+7-8
+
+ponad 8
+
+------------------------------------------------
+
+5. Stres
+
+Dodaj pytanie
+
+Jak oceniasz swój poziom stresu?
+
+Skala:
+
+1-10
+
+------------------------------------------------
+
+6. Styl planu
+
+Dodaj pytanie
+
+Jakiego planu treningowego oczekujesz?
+
+Opcje:
+
+- Maksymalnie skutecznego
+
+- Kompromis między skutecznością a komfortem
+
+- Możliwie prostego i łatwego do utrzymania
+
+------------------------------------------------
+
+7. Partie
+
+Zmień pytanie
+
+Czy są partie mięśniowe, których nie chcesz rozwijać?
+
+na
+
+Czy są partie mięśniowe, których nie chcesz rozwijać? Jeżeli tak opisz dlaczego.
+
+------------------------------------------------
+
+8. Walidacja
+
+Dodaj walidację nowych pól.
+
+Nie pozwól wysłać pustych wymaganych danych.
+
+------------------------------------------------
+
+9. PDF
+
+Dodaj wszystkie nowe informacje do eksportu PDF.
+
+------------------------------------------------
+
+10. UX
+
+Nowe sekcje powinny pojawiać się płynnie.
+
+Formularz ma być prosty dla początkujących.
+
+Bardziej szczegółowy dla średniozaawansowanych.
+
+Najbardziej rozbudowany dla zaawansowanych.
+
+------------------------------------------------
+
+11. Test
+
+Po zakończeniu:
+
+- sprawdź formularz
+
+- sprawdź zapis do bazy
+
+- sprawdź eksport PDF
+
+- sprawdź responsywność
+
+- upewnij się że nic nie zostało uszkodzone.

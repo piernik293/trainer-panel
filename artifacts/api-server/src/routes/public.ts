@@ -76,6 +76,15 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     favoriteExercises,
     advancedMethodsToAvoid,
     additionalInfo,
+    age,
+    gender,
+    heightCm,
+    weightKg,
+    activityLevel,
+    sleepHours,
+    stressLevel,
+    planStylePreference,
+    avoidsAdvancedMethods,
   } = parsed.data;
 
   // Insert client first, then survey (unique constraint on surveys.clientId)
@@ -98,6 +107,15 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     favoriteExercises,
     advancedMethodsToAvoid: advancedMethodsToAvoid ?? [],
     additionalInfo,
+    age,
+    gender,
+    heightCm,
+    weightKg,
+    activityLevel,
+    sleepHours,
+    stressLevel,
+    planStylePreference,
+    avoidsAdvancedMethods,
   });
 
   // Fire-and-forget email notification
