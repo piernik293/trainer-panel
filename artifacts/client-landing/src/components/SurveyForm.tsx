@@ -137,13 +137,10 @@ type FormValues = z.infer<typeof formSchema>;
 
 const Section = ({ step, title, description, children }: { step: number, title: string, description: string, children: React.ReactNode }) => (
   <div className="space-y-8 mb-16 relative">
-    <div className="mb-8">
-      <div className="flex items-center gap-4 mb-3">
-        <span className="text-xs font-semibold text-primary/80 tracking-widest">{String(step).padStart(2, "0")}</span>
-        <div className="h-[1px] flex-1 bg-white/5"></div>
-      </div>
-      <h3 className="text-lg font-semibold text-foreground tracking-tight">{title}</h3>
-      <p className="text-sm text-muted-foreground/80 leading-relaxed mt-1 max-w-2xl">{description}</p>
+    <div className="mb-10">
+      <h3 className="text-2xl font-bold text-foreground tracking-tight">{title}</h3>
+      <div className="h-[1px] w-12 bg-primary/40 my-4"></div>
+      <p className="text-sm text-muted-foreground/80 leading-relaxed max-w-2xl">{description}</p>
     </div>
     {children}
   </div>
