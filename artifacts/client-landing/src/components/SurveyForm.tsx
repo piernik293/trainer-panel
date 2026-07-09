@@ -130,12 +130,15 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const Section = ({ title, children }: { title: string, children: React.ReactNode }) => (
+const Section = ({ step, title, description, children }: { step: number, title: string, description: string, children: React.ReactNode }) => (
   <div className="space-y-8 mb-16 relative">
-    <div className="flex items-center gap-4 mb-8">
-      <div className="h-[1px] flex-1 bg-white/5"></div>
-      <h3 className="text-sm font-semibold text-primary tracking-widest uppercase">{title}</h3>
-      <div className="h-[1px] flex-1 bg-white/5"></div>
+    <div className="mb-8">
+      <div className="flex items-center gap-4 mb-3">
+        <span className="text-xs font-semibold text-primary/80 tracking-widest">{String(step).padStart(2, "0")}</span>
+        <div className="h-[1px] flex-1 bg-white/5"></div>
+      </div>
+      <h3 className="text-lg font-semibold text-foreground tracking-tight">{title}</h3>
+      <p className="text-sm text-muted-foreground/80 leading-relaxed mt-1 max-w-2xl">{description}</p>
     </div>
     {children}
   </div>
@@ -263,7 +266,11 @@ export default function SurveyForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         
-        <Section title="Dane podstawowe">
+        <Section
+          step={1}
+          title="Dane podstawowe"
+          description="Podstawowe informacje pozwalają mi lepiej Cię poznać oraz uwzględnić wiek, wzrost i wagę przy doborze obciążeń i tempa progresji."
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <FormField control={form.control} name="firstName" render={({field}) => (
               <FormItem>
@@ -357,7 +364,11 @@ export default function SurveyForm() {
           </div>
         </Section>
 
-        <Section title="Profil treningowy">
+        <Section
+          step={2}
+          title="Cel treningowy"
+          description="Twój cel wyznacza kierunek całego planu — od doboru ćwiczeń, przez intensywność, aż po proporcje treningu siłowego i cardio."
+        >
           <FormField control={form.control} name="trainingGoal" render={({field}) => (
             <FormItem className="space-y-4">
               <FormLabel className="text-muted-foreground">Cel treningowy</FormLabel>
@@ -382,7 +393,13 @@ export default function SurveyForm() {
               </FormControl>
             </FormItem>
           )} />
+        </Section>
 
+        <Section
+          step={3}
+          title="Doświadczenie"
+          description="Poziom zaawansowania decyduje o tym, jak dobieram technikę, złożoność ćwiczeń oraz sposób prowadzenia planu."
+        >
           <FormField control={form.control} name="experienceLevel" render={({field}) => (
             <FormItem className="space-y-4 mt-12">
               <FormLabel className="text-muted-foreground">Który poziom najlepiej opisuje Twoje doświadczenie treningowe?</FormLabel>
@@ -412,8 +429,8 @@ export default function SurveyForm() {
             </FormItem>
           )} />
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
-            {showTrainingDuration && (
+          {showTrainingDuration && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
               <FormField control={form.control} name="trainingDuration" render={({field}) => (
                 <FormItem>
                   <FormLabel className="text-muted-foreground">Jak długo trenujesz?</FormLabel>
@@ -422,22 +439,33 @@ export default function SurveyForm() {
                   </FormControl>
                 </FormItem>
               )} />
-            )}
-            <FormField control={form.control} name="healthLimitations" render={({field}) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel className="text-muted-foreground">Czy występują u Ciebie kontuzje, dolegliwości bólowe lub ograniczenia ruchowe, które trener powinien uwzględnić podczas układania planu?</FormLabel>
-                <FormDescription className="text-xs text-muted-foreground/70">
-                  Przykłady: ból kolan, ból barków, ból odcinka lędźwiowego, strzelający łokieć, problemy z nadgarstkami, ograniczona ruchomość, przebyte operacje, inne przewlekłe dolegliwości.
-                </FormDescription>
-                <FormControl>
-                  <Textarea placeholder="Brak / Opisz krótko" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[80px] p-4 rounded-none resize-y" />
-                </FormControl>
-              </FormItem>
-            )} />
-          </div>
+            </div>
+          )}
         </Section>
 
-        <Section title="Organizacja i Preferencje">
+        <Section
+          step={4}
+          title="Zdrowie i ograniczenia"
+          description="Informacje o kontuzjach i dolegliwościach są kluczowe dla bezpieczeństwa — pozwalają wykluczyć ryzykowne ćwiczenia i dobrać bezpieczne alternatywy."
+        >
+          <FormField control={form.control} name="healthLimitations" render={({field}) => (
+            <FormItem>
+              <FormLabel className="text-muted-foreground">Czy występują u Ciebie kontuzje, dolegliwości bólowe lub ograniczenia ruchowe, które trener powinien uwzględnić podczas układania planu?</FormLabel>
+              <FormDescription className="text-xs text-muted-foreground/70">
+                Przykłady: ból kolan, ból barków, ból odcinka lędźwiowego, strzelający łokieć, problemy z nadgarstkami, ograniczona ruchomość, przebyte operacje, inne przewlekłe dolegliwości.
+              </FormDescription>
+              <FormControl>
+                <Textarea placeholder="Brak / Opisz krótko" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[80px] p-4 rounded-none resize-y" />
+              </FormControl>
+            </FormItem>
+          )} />
+        </Section>
+
+        <Section
+          step={5}
+          title="Organizacja treningów"
+          description="Realny czas i częstotliwość treningów pozwalają ułożyć plan, który będzie możliwy do utrzymania na dłuższą metę, a nie tylko przez pierwsze tygodnie."
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
             <FormField control={form.control} name="weeklyFrequency" render={({field}) => (
               <FormItem>
@@ -494,8 +522,218 @@ export default function SurveyForm() {
               </FormItem>
             )} />
           </div>
+        </Section>
 
-          <div className="grid grid-cols-1 gap-8">
+        <Section
+          step={6}
+          title="Miejsce treningu i sprzęt"
+          description="Miejsce oraz dostępny sprzęt decydują o tym, jakie ćwiczenia i warianty obciążeń będą dla Ciebie realnie wykonalne."
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <FormField control={form.control} name="trainingLocation" render={({field}) => (
+              <FormItem className="space-y-4">
+                <FormLabel className="text-muted-foreground">Gdzie najczęściej będziesz trenować?</FormLabel>
+                <FormControl>
+                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
+                    {[
+                      { loc: "Siłownia", desc: "Mam dostęp do pełnego wyposażenia siłowni." },
+                      { loc: "Dom", desc: "Trenuję w domu." },
+                      { loc: "Siłownia plenerowa", desc: "Trenuję głównie na drążkach, poręczach oraz sprzęcie dostępnym na świeżym powietrzu." },
+                    ].map(({ loc, desc }) => (
+                      <FormItem key={loc} className="flex items-center space-x-0 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value={loc} className="peer sr-only" />
+                        </FormControl>
+                        <FormLabel className="w-full flex flex-col items-start gap-1 px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                          <span>{loc}</span>
+                          <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
+                        </FormLabel>
+                      </FormItem>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+              </FormItem>
+            )} />
+            {showEquipmentField && (
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Jakim sprzętem dysponujesz?</FormLabel>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {EQUIPMENT_OPTIONS.map((opt) => (
+                    <label key={opt} className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                      <Checkbox
+                        checked={equipmentItems.includes(opt)}
+                        onCheckedChange={(checked) =>
+                          setEquipmentItems((prev) => (checked ? [...prev, opt] : prev.filter((i) => i !== opt)))
+                        }
+                        className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-white/20 h-4 w-4 rounded-none"
+                      />
+                      {opt}
+                    </label>
+                  ))}
+                </div>
+                <Input
+                  placeholder="Inny sprzęt"
+                  value={equipmentOther}
+                  onChange={(e) => setEquipmentOther(e.target.value)}
+                  className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none mt-2"
+                />
+              </FormItem>
+            )}
+          </div>
+        </Section>
+
+        <Section
+          step={7}
+          title="Cardio"
+          description="Twoje nastawienie do cardio pomaga określić, ile treningu wytrzymałościowego warto włączyć do planu, aby wspierał on Twój cel bez zbędnego dyskomfortu."
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <FormField control={form.control} name="cardioPreference" render={({field}) => (
+              <FormItem className="space-y-4">
+                <FormLabel className="text-muted-foreground">Jakie jest Twoje nastawienie do treningów cardio?</FormLabel>
+                {showCardioRecommendation && (
+                  <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
+                    {CARDIO_RECOMMENDATION_TEXT}
+                  </p>
+                )}
+                <FormControl>
+                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
+                    {["Lubię cardio", "Jest mi obojętne", "Nie przepadam za cardio"].map(pref => (
+                      <FormItem key={pref} className="flex items-center space-x-0 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value={pref} className="peer sr-only" />
+                        </FormControl>
+                        <FormLabel className="w-full flex items-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                          {pref}
+                        </FormLabel>
+                      </FormItem>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="cardioFrequency" render={({field}) => (
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Jak często wykonujesz trening cardio?</FormLabel>
+                <FormControl>
+                  <Input placeholder="np. 2x w tygodniu" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
+                </FormControl>
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="preferredCardioType" render={({field}) => (
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Jaki rodzaj cardio najbardziej Ci odpowiada?</FormLabel>
+                <FormControl>
+                  <Input placeholder="np. rower, bieganie, marsz" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
+                </FormControl>
+              </FormItem>
+            )} />
+          </div>
+        </Section>
+
+        <Section
+          step={8}
+          title="Regeneracja i styl życia"
+          description="Sen, poziom stresu oraz codzienna aktywność wpływają na zdolność organizmu do regeneracji, co bezpośrednio przekłada się na dobór objętości treningowej."
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <FormField control={form.control} name="activityLevel" render={({field}) => (
+              <FormItem className="space-y-4">
+                <FormLabel className="text-muted-foreground">Jaki jest Twój poziom aktywności fizycznej w ciągu dnia? *</FormLabel>
+                <FormControl>
+                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
+                    {[
+                      { level: "Siedzący", desc: "Większość dnia spędzam siedząc (np. praca biurowa, nauka lub praca przy komputerze)." },
+                      { level: "Lekko aktywny", desc: "W ciągu dnia sporo chodzę lub wykonuję lekką aktywność, jednak nie jest to ciężka praca fizyczna." },
+                      { level: "Praca fizyczna", desc: "Moja praca wymaga regularnego wysiłku fizycznego, przenoszenia ciężarów lub długotrwałego ruchu." },
+                      { level: "Bardzo aktywny", desc: "Na co dzień wykonuję ciężką pracę fizyczną lub jestem aktywny przez większość dnia." },
+                    ].map(({ level, desc }) => (
+                      <FormItem key={level} className="flex items-center space-x-0 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value={level} className="peer sr-only" />
+                        </FormControl>
+                        <FormLabel className="w-full flex flex-col items-start gap-1 px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                          <span>{level}</span>
+                          <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
+                        </FormLabel>
+                      </FormItem>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="sleepHours" render={({field}) => (
+              <FormItem className="space-y-4">
+                <FormLabel className="text-muted-foreground">Ile godzin średnio sypiasz w ciągu doby? *</FormLabel>
+                <FormControl>
+                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
+                    {["Poniżej 5 godzin", "5–6 godzin", "6–7 godzin", "7–8 godzin", "Powyżej 8 godzin"].map(hours => (
+                      <FormItem key={hours} className="flex items-center space-x-0 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value={hours} className="peer sr-only" />
+                        </FormControl>
+                        <FormLabel className="w-full flex items-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                          {hours}
+                        </FormLabel>
+                      </FormItem>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
+
+          <FormField control={form.control} name="stressLevel" render={({field}) => (
+            <FormItem>
+              <FormLabel className="text-muted-foreground">Jak oceniasz swój poziom stresu?</FormLabel>
+              <FormDescription className="text-xs text-muted-foreground/70">
+                1 = bardzo niski poziom stresu, 10 = bardzo wysoki poziom stresu
+              </FormDescription>
+              <FormControl>
+                <div className="flex items-center gap-6 pt-2">
+                  <Slider min={1} max={10} step={1} value={[field.value ?? 5]} onValueChange={(v) => field.onChange(v[0])} className="flex-1" />
+                  <span className="text-primary font-semibold text-lg w-8 text-center">{field.value ?? 5}</span>
+                </div>
+              </FormControl>
+            </FormItem>
+          )} />
+        </Section>
+
+        <Section
+          step={9}
+          title="Dodatkowe preferencje"
+          description="Twoje preferencje dotyczące stylu planu, priorytetowych partii oraz technik treningowych pomagają dopasować plan nie tylko pod cel, ale i pod Twój komfort."
+        >
+          <FormField control={form.control} name="planStylePreference" render={({field}) => (
+            <FormItem className="space-y-4">
+              <FormLabel className="text-muted-foreground">Jaki styl planu Ci odpowiada? *</FormLabel>
+              <FormControl>
+                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {[
+                    { style: "Maksymalna efektywność", desc: "Najważniejsze są dla mnie jak najlepsze efekty." },
+                    { style: "Balans efektywności i wygody", desc: "Chcę osiągać dobre efekty przy zachowaniu komfortu treningów." },
+                    { style: "Prosty i łatwy do utrzymania", desc: "Zależy mi na prostym, przejrzystym planie, który będzie łatwy do realizacji nawet w gorsze dni." },
+                  ].map(({ style, desc }) => (
+                    <FormItem key={style} className="flex items-center space-x-0 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value={style} className="peer sr-only" />
+                      </FormControl>
+                      <FormLabel className="w-full flex flex-col items-center justify-center gap-2 px-6 py-5 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                        <span>{style}</span>
+                        <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
+                      </FormLabel>
+                    </FormItem>
+                  ))}
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <div className="grid grid-cols-1 gap-8 mt-12">
             {isBeginner && (
               <FormField control={form.control} name="preferredMuscles" render={({field}) => (
                 <FormItem>
@@ -575,274 +813,84 @@ export default function SurveyForm() {
               )} />
             </div>
           )}
-        </Section>
 
-        <Section title="Miejsce treningu">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <FormField control={form.control} name="trainingLocation" render={({field}) => (
-              <FormItem className="space-y-4">
-                <FormLabel className="text-muted-foreground">Gdzie najczęściej będziesz trenować?</FormLabel>
-                <FormControl>
-                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
-                    {[
-                      { loc: "Siłownia", desc: "Mam dostęp do pełnego wyposażenia siłowni." },
-                      { loc: "Dom", desc: "Trenuję w domu." },
-                      { loc: "Siłownia plenerowa", desc: "Trenuję głównie na drążkach, poręczach oraz sprzęcie dostępnym na świeżym powietrzu." },
-                    ].map(({ loc, desc }) => (
-                      <FormItem key={loc} className="flex items-center space-x-0 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value={loc} className="peer sr-only" />
-                        </FormControl>
-                        <FormLabel className="w-full flex flex-col items-start gap-1 px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
-                          <span>{loc}</span>
-                          <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
-                        </FormLabel>
-                      </FormItem>
-                    ))}
-                  </RadioGroup>
-                </FormControl>
-              </FormItem>
-            )} />
-            {showEquipmentField && (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Jakim sprzętem dysponujesz?</FormLabel>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {EQUIPMENT_OPTIONS.map((opt) => (
-                    <label key={opt} className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
-                      <Checkbox
-                        checked={equipmentItems.includes(opt)}
-                        onCheckedChange={(checked) =>
-                          setEquipmentItems((prev) => (checked ? [...prev, opt] : prev.filter((i) => i !== opt)))
-                        }
-                        className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-white/20 h-4 w-4 rounded-none"
-                      />
-                      {opt}
-                    </label>
-                  ))}
-                </div>
-                <Input
-                  placeholder="Inny sprzęt"
-                  value={equipmentOther}
-                  onChange={(e) => setEquipmentOther(e.target.value)}
-                  className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none mt-2"
-                />
-              </FormItem>
-            )}
-          </div>
-        </Section>
-
-        <Section title="Cardio">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <FormField control={form.control} name="cardioPreference" render={({field}) => (
-              <FormItem className="space-y-4">
-                <FormLabel className="text-muted-foreground">Jakie jest Twoje nastawienie do treningów cardio?</FormLabel>
-                {showCardioRecommendation && (
-                  <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
-                    {CARDIO_RECOMMENDATION_TEXT}
-                  </p>
-                )}
-                <FormControl>
-                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
-                    {["Lubię cardio", "Jest mi obojętne", "Nie przepadam za cardio"].map(pref => (
-                      <FormItem key={pref} className="flex items-center space-x-0 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value={pref} className="peer sr-only" />
-                        </FormControl>
-                        <FormLabel className="w-full flex items-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
-                          {pref}
-                        </FormLabel>
-                      </FormItem>
-                    ))}
-                  </RadioGroup>
-                </FormControl>
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="cardioFrequency" render={({field}) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Jak często wykonujesz trening cardio?</FormLabel>
-                <FormControl>
-                  <Input placeholder="np. 2x w tygodniu" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
-                </FormControl>
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="preferredCardioType" render={({field}) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Jaki rodzaj cardio najbardziej Ci odpowiada?</FormLabel>
-                <FormControl>
-                  <Input placeholder="np. rower, bieganie, marsz" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
-                </FormControl>
-              </FormItem>
-            )} />
-          </div>
-        </Section>
-
-        <Section title="Aktywność i regeneracja">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            <FormField control={form.control} name="activityLevel" render={({field}) => (
-              <FormItem className="space-y-4">
-                <FormLabel className="text-muted-foreground">Jaki jest Twój poziom aktywności fizycznej w ciągu dnia? *</FormLabel>
-                <FormControl>
-                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
-                    {[
-                      { level: "Siedzący", desc: "Większość dnia spędzam siedząc (np. praca biurowa, nauka lub praca przy komputerze)." },
-                      { level: "Lekko aktywny", desc: "W ciągu dnia sporo chodzę lub wykonuję lekką aktywność, jednak nie jest to ciężka praca fizyczna." },
-                      { level: "Praca fizyczna", desc: "Moja praca wymaga regularnego wysiłku fizycznego, przenoszenia ciężarów lub długotrwałego ruchu." },
-                      { level: "Bardzo aktywny", desc: "Na co dzień wykonuję ciężką pracę fizyczną lub jestem aktywny przez większość dnia." },
-                    ].map(({ level, desc }) => (
-                      <FormItem key={level} className="flex items-center space-x-0 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value={level} className="peer sr-only" />
-                        </FormControl>
-                        <FormLabel className="w-full flex flex-col items-start gap-1 px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
-                          <span>{level}</span>
-                          <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
-                        </FormLabel>
-                      </FormItem>
-                    ))}
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            <FormField control={form.control} name="sleepHours" render={({field}) => (
-              <FormItem className="space-y-4">
-                <FormLabel className="text-muted-foreground">Ile godzin średnio sypiasz w ciągu doby? *</FormLabel>
-                <FormControl>
-                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
-                    {["Poniżej 5 godzin", "5–6 godzin", "6–7 godzin", "7–8 godzin", "Powyżej 8 godzin"].map(hours => (
-                      <FormItem key={hours} className="flex items-center space-x-0 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value={hours} className="peer sr-only" />
-                        </FormControl>
-                        <FormLabel className="w-full flex items-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
-                          {hours}
-                        </FormLabel>
-                      </FormItem>
-                    ))}
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          </div>
-
-          <FormField control={form.control} name="stressLevel" render={({field}) => (
-            <FormItem>
-              <FormLabel className="text-muted-foreground">Jak oceniasz swój poziom stresu?</FormLabel>
-              <FormDescription className="text-xs text-muted-foreground/70">
-                1 = bardzo niski poziom stresu, 10 = bardzo wysoki poziom stresu
-              </FormDescription>
-              <FormControl>
-                <div className="flex items-center gap-6 pt-2">
-                  <Slider min={1} max={10} step={1} value={[field.value ?? 5]} onValueChange={(v) => field.onChange(v[0])} className="flex-1" />
-                  <span className="text-primary font-semibold text-lg w-8 text-center">{field.value ?? 5}</span>
-                </div>
-              </FormControl>
-            </FormItem>
-          )} />
-        </Section>
-
-        <Section title="Styl planu treningowego">
-          <FormField control={form.control} name="planStylePreference" render={({field}) => (
-            <FormItem className="space-y-4">
-              <FormLabel className="text-muted-foreground">Jaki styl planu Ci odpowiada? *</FormLabel>
-              <FormControl>
-                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {[
-                    { style: "Maksymalna efektywność", desc: "Najważniejsze są dla mnie jak najlepsze efekty." },
-                    { style: "Balans efektywności i wygody", desc: "Chcę osiągać dobre efekty przy zachowaniu komfortu treningów." },
-                    { style: "Prosty i łatwy do utrzymania", desc: "Zależy mi na prostym, przejrzystym planie, który będzie łatwy do realizacji nawet w gorsze dni." },
-                  ].map(({ style, desc }) => (
-                    <FormItem key={style} className="flex items-center space-x-0 space-y-0">
+          <AnimatePresence>
+            {isIntermediateOrAdvanced && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="mt-12">
+                  <FormField control={form.control} name="avoidsAdvancedMethods" render={({field}) => (
+                    <FormItem className="space-y-4 mb-8">
+                      <FormLabel className="text-muted-foreground">Czy są metody treningowe, których nie chcesz stosować lub które są dla Ciebie przeciwwskazane?</FormLabel>
                       <FormControl>
-                        <RadioGroupItem value={style} className="peer sr-only" />
+                        <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 gap-4 max-w-sm">
+                          {["Tak", "Nie"].map(opt => (
+                            <FormItem key={opt} className="flex items-center space-x-0 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value={opt} className="peer sr-only" />
+                              </FormControl>
+                              <FormLabel className="w-full flex items-center justify-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                                {opt}
+                              </FormLabel>
+                            </FormItem>
+                          ))}
+                        </RadioGroup>
                       </FormControl>
-                      <FormLabel className="w-full flex flex-col items-center justify-center gap-2 px-6 py-5 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
-                        <span>{style}</span>
-                        <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
-                      </FormLabel>
                     </FormItem>
-                  ))}
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
+                  )} />
+
+                  <AnimatePresence>
+                    {avoidsAdvancedMethods === "Tak" && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
+                        <FormField control={form.control} name="advancedMethodsToAvoid" render={() => (
+                          <FormItem className="mb-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                              {ADVANCED_METHODS.map(method => (
+                                <FormField key={method} control={form.control} name="advancedMethodsToAvoid" render={({field}) => (
+                                  <FormItem className="flex flex-row items-center space-x-4 space-y-0 p-5 border border-white/5 bg-card/50 rounded-none hover:bg-card/80 transition-colors">
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value?.includes(method)}
+                                        onCheckedChange={(checked) => {
+                                          return checked
+                                            ? field.onChange([...(field.value || []), method])
+                                            : field.onChange((field.value || []).filter(val => val !== method))
+                                        }}
+                                        className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-white/20 h-5 w-5 rounded-none"
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="font-normal cursor-pointer text-sm leading-snug flex-1">{method}</FormLabel>
+                                  </FormItem>
+                                )} />
+                              ))}
+                            </div>
+                          </FormItem>
+                        )} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Section>
 
-        <AnimatePresence>
-          {isIntermediateOrAdvanced && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.4, ease: "easeInOut" }}
-              className="overflow-hidden"
-            >
-              <Section title="Zaawansowane metody treningowe">
-                <FormField control={form.control} name="avoidsAdvancedMethods" render={({field}) => (
-                  <FormItem className="space-y-4 mb-8">
-                    <FormLabel className="text-muted-foreground">Czy są metody treningowe, których nie chcesz stosować lub które są dla Ciebie przeciwwskazane?</FormLabel>
-                    <FormControl>
-                      <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 gap-4 max-w-sm">
-                        {["Tak", "Nie"].map(opt => (
-                          <FormItem key={opt} className="flex items-center space-x-0 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value={opt} className="peer sr-only" />
-                            </FormControl>
-                            <FormLabel className="w-full flex items-center justify-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
-                              {opt}
-                            </FormLabel>
-                          </FormItem>
-                        ))}
-                      </RadioGroup>
-                    </FormControl>
-                  </FormItem>
-                )} />
-
-                <AnimatePresence>
-                  {avoidsAdvancedMethods === "Tak" && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="overflow-hidden"
-                    >
-                      <FormField control={form.control} name="advancedMethodsToAvoid" render={() => (
-                        <FormItem className="mb-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            {ADVANCED_METHODS.map(method => (
-                              <FormField key={method} control={form.control} name="advancedMethodsToAvoid" render={({field}) => (
-                                <FormItem className="flex flex-row items-center space-x-4 space-y-0 p-5 border border-white/5 bg-card/50 rounded-none hover:bg-card/80 transition-colors">
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(method)}
-                                      onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...(field.value || []), method])
-                                          : field.onChange((field.value || []).filter(val => val !== method))
-                                      }}
-                                      className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-white/20 h-5 w-5 rounded-none"
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal cursor-pointer text-sm leading-snug flex-1">{method}</FormLabel>
-                                </FormItem>
-                              )} />
-                            ))}
-                          </div>
-                        </FormItem>
-                      )} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Section>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <Section title="Informacje dodatkowe">
+        <Section
+          step={10}
+          title="Informacje dodatkowe"
+          description="Miejsce na wszystko, co nie zmieściło się w powyższych pytaniach, a może mieć znaczenie przy przygotowaniu Twojego planu."
+        >
           {isBeginner && (
             <p className="text-sm text-muted-foreground/70 mb-8 -mt-4">
               Jako początkujący/a nie musisz znać zaawansowanych technik treningowych — trener dobierze je za Ciebie.
