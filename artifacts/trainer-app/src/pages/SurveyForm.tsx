@@ -160,7 +160,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
   const avoidsAdvancedMethods = form.watch("avoidsAdvancedMethods");
   const dateOfBirth = form.watch("dateOfBirth");
   const watchedAge = form.watch("age");
-  const isBeginner = experienceLevel === "Początkujący";
+  const isBeginner = experienceLevel === "Brak aktywności fizycznej" || experienceLevel === "Początkujący";
   const isIntermediateOrAdvanced = experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
   const calculatedAge = calculateAge(dateOfBirth) ?? watchedAge;
   const gender = form.watch("gender");
@@ -267,6 +267,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="Brak aktywności fizycznej">Brak aktywności fizycznej</SelectItem>
                         <SelectItem value="Początkujący">Początkujący</SelectItem>
                         <SelectItem value="Średniozaawansowany">Średniozaawansowany</SelectItem>
                         <SelectItem value="Zaawansowany">Zaawansowany</SelectItem>
@@ -432,7 +433,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Na których partiach mięśniowych najbardziej zależy klientowi?</FormLabel>
-                        <FormDescription className="text-xs">Jeśli klient nie zna nazw partii mięśniowych, przykłady to: {MUSCLE_GROUPS.join(", ")}.</FormDescription>
+                        <FormDescription className="text-xs">Jeśli klient nie zna nazw partii mięśniowych, nie martw się — wybierz partie, na których najbardziej mu zależy. Przykłady: {MUSCLE_GROUPS.join(", ")}.</FormDescription>
                         {genderMuscleSuggestion && (
                           <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
                             {genderMuscleSuggestion}

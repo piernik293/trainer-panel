@@ -101,7 +101,7 @@ export default function ClientDetail() {
   const deleteNote = useDeleteClientNote();
 
   const bmi = calculateBmi(survey?.heightCm, survey?.weightKg);
-  const showBmiRecommendation = survey?.experienceLevel === "Początkujący" && bmi !== undefined && bmi >= 25;
+  const showBmiRecommendation = (survey?.experienceLevel === "Brak aktywności fizycznej" || survey?.experienceLevel === "Początkujący") && bmi !== undefined && bmi >= 25;
 
   const handlePrint = () => {
     window.print();

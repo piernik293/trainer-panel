@@ -153,7 +153,7 @@ export default function SurveyForm() {
       : gender === "Mężczyzna"
       ? "Podpowiedź: Często wybierane cele sylwetkowe to klatka piersiowa, barki, plecy oraz ramiona."
       : undefined;
-  const isBeginner = experienceLevel === "Początkujący";
+  const isBeginner = experienceLevel === "Brak aktywności fizycznej" || experienceLevel === "Początkujący";
   const isIntermediateOrAdvanced = experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
   const calculatedAge = calculateAge(dateOfBirth);
   const heightCm = form.watch("heightCm");
@@ -332,11 +332,12 @@ export default function SurveyForm() {
             <FormItem className="space-y-4 mt-12">
               <FormLabel className="text-muted-foreground">Który poziom najlepiej opisuje Twoje doświadczenie treningowe?</FormLabel>
               <FormControl>
-                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[
-                    { level: "Początkujący", desc: "Dopiero zaczynam swoją przygodę z treningiem lub nadal uczę się podstaw. Nie czuję się jeszcze pewnie w doborze ćwiczeń, technice oraz planowaniu treningów." },
-                    { level: "Średniozaawansowany", desc: "Trenuję regularnie, znam podstawowe ćwiczenia i potrafię poprawnie je wykonywać. Rozumiem podstawowe zasady treningowe i świadomie realizuję plan treningowy." },
-                    { level: "Zaawansowany", desc: "Posiadam duże doświadczenie treningowe, dobrze znam swoje możliwości i świadomie wykorzystuję różne metody treningowe do osiągania konkretnych celów." },
+                    { level: "Brak aktywności fizycznej", desc: "Obecnie nie trenuję lub od bardzo dawna nie podejmuję regularnej aktywności fizycznej. Chcę dopiero rozpocząć swoją przygodę z treningiem." },
+                    { level: "Początkujący", desc: "Mam niewielkie doświadczenie treningowe. Nadal uczę się podstawowych ćwiczeń, poprawnej techniki oraz zasad treningowych i nie czuję się jeszcze pewnie w samodzielnym planowaniu treningów." },
+                    { level: "Średniozaawansowany", desc: "Trenuję regularnie i swobodnie wykonuję większość podstawowych ćwiczeń. Rozumiem podstawowe zasady treningowe, potrafię kontrolować technikę i świadomie realizuję plan treningowy." },
+                    { level: "Zaawansowany", desc: "Posiadam duże doświadczenie treningowe, bardzo dobrze znam swoje możliwości oraz świadomie wykorzystuję różne metody treningowe do osiągania konkretnych celów." },
                   ].map(({ level, desc }) => (
                     <FormItem key={level} className="flex items-center space-x-0 space-y-0">
                       <FormControl>
@@ -351,7 +352,7 @@ export default function SurveyForm() {
                 </RadioGroup>
               </FormControl>
               <FormDescription className="text-xs text-muted-foreground/70">
-                Nie kieruj się wyłącznie liczbą lat treningu. Wybierz poziom, który najlepiej opisuje Twoją wiedzę oraz samodzielność podczas treningów.
+                Nie kieruj się wyłącznie liczbą lat treningu. Wybierz poziom, który najlepiej opisuje Twoją wiedzę, umiejętności oraz samodzielność podczas treningów.
               </FormDescription>
             </FormItem>
           )} />
@@ -410,7 +411,7 @@ export default function SurveyForm() {
                 <FormItem>
                   <FormLabel className="text-muted-foreground">Na których partiach mięśniowych najbardziej Ci zależy?</FormLabel>
                   <FormDescription className="text-xs text-muted-foreground/70">
-                    Jeśli nie znasz nazw partii mięśniowych, przykłady to: {MUSCLE_GROUPS.join(", ")}.
+                    Jeśli nie znasz nazw partii mięśniowych, nie martw się — wybierz partie, na których najbardziej Ci zależy. Przykłady: {MUSCLE_GROUPS.join(", ")}.
                   </FormDescription>
                   {genderMuscleSuggestion && (
                     <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
