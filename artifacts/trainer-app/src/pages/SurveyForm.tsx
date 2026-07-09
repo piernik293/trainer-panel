@@ -28,6 +28,19 @@ const advancedMethodsOptions = [
 
 const MUSCLE_GROUPS = ["klatka piersiowa", "plecy", "barki", "biceps", "triceps", "brzuch", "uda", "łydki"];
 
+function calculateAge(dateOfBirth: string | undefined): number | undefined {
+  if (!dateOfBirth) return undefined;
+  const dob = new Date(dateOfBirth);
+  if (isNaN(dob.getTime())) return undefined;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 const surveySchema = z.object({
   trainingGoal: z.string().optional(),
   experienceLevel: z.string().optional(),
@@ -40,6 +53,10 @@ const surveySchema = z.object({
   avoidedExercises: z.string().optional(),
   favoriteExercises: z.string().optional(),
   age: z.coerce.number().min(1).max(120).optional().or(z.literal("").transform(() => undefined)),
+  dateOfBirth: z
+    .string()
+    .optional()
+    .refine((val) => !val || new Date(val) <= new Date(), "Data urodzenia nie może być w przyszłości"),
   gender: z.string().optional(),
   heightCm: z.coerce.number().min(50).max(260).optional().or(z.literal("").transform(() => undefined)),
   weightKg: z.coerce.number().min(20).max(400).optional().or(z.literal("").transform(() => undefined)),
@@ -84,6 +101,7 @@ export default function SurveyForm() {
       avoidedExercises: "",
       favoriteExercises: "",
       age: undefined,
+      dateOfBirth: "",
       gender: "",
       heightCm: undefined,
       weightKg: undefined,
@@ -99,8 +117,11 @@ export default function SurveyForm() {
 
   const experienceLevel = form.watch("experienceLevel");
   const avoidsAdvancedMethods = form.watch("avoidsAdvancedMethods");
+  const dateOfBirth = form.watch("dateOfBirth");
+  const watchedAge = form.watch("age");
   const isBeginner = experienceLevel === "Początkujący";
   const isIntermediateOrAdvanced = experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
+  const calculatedAge = calculateAge(dateOfBirth) ?? watchedAge;
 
   const isInitialized = useRef(false);
 
@@ -119,6 +140,7 @@ export default function SurveyForm() {
         avoidedExercises: survey.avoidedExercises ?? "",
         favoriteExercises: survey.favoriteExercises ?? "",
         age: survey.age ?? undefined,
+        dateOfBirth: survey.dateOfBirth ?? "",
         gender: survey.gender ?? "",
         heightCm: survey.heightCm ?? undefined,
         weightKg: survey.weightKg ?? undefined,
@@ -142,6 +164,8 @@ export default function SurveyForm() {
       activityLevel: data.activityLevel || undefined,
       sleepHours: data.sleepHours || undefined,
       planStylePreference: data.planStylePreference || undefined,
+      dateOfBirth: data.dateOfBirth || undefined,
+      age: calculateAge(data.dateOfBirth) ?? data.age,
       avoidsAdvancedMethods: avoidsAdvancedMethodsBool,
       advancedMethodsToAvoid: avoidsAdvancedMethodsBool === true ? data.advancedMethodsToAvoid : [],
     };
@@ -276,13 +300,16 @@ export default function SurveyForm() {
 
               <FormField
                 control={form.control}
-                name="age"
+                name="dateOfBirth"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Wiek</FormLabel>
+                    <FormLabel>Data urodzenia</FormLabel>
                     <FormControl>
-                      <Input type="number" min="1" max="120" placeholder="np. 30" {...field} value={field.value ?? ""} />
+                      <Input type="date" max={new Date().toISOString().slice(0, 10)} {...field} value={field.value ?? ""} />
                     </FormControl>
+                    {calculatedAge !== undefined && (
+                      <FormDescription className="text-xs">Wiek: {calculatedAge} lat{!dateOfBirth && watchedAge ? " (wartość historyczna)" : ""}</FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

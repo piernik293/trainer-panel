@@ -28,6 +28,7 @@ export interface SurveyInput {
      * @maximum 120
      */
   age?: number;
+  dateOfBirth?: Date;
   gender?: SurveyInputGender;
   /**
      * @minimum 50

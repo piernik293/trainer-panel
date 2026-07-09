@@ -11,6 +11,16 @@ import {
 
 const router: IRouter = Router();
 
+function calculateAge(dateOfBirth: Date): number {
+  const today = new Date();
+  let age = today.getUTCFullYear() - dateOfBirth.getUTCFullYear();
+  const monthDiff = today.getUTCMonth() - dateOfBirth.getUTCMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getUTCDate() < dateOfBirth.getUTCDate())) {
+    age--;
+  }
+  return age;
+}
+
 router.get("/clients/:clientId/survey", async (req, res): Promise<void> => {
   const params = GetClientSurveyParams.safeParse(req.params);
   if (!params.success) {
@@ -28,7 +38,11 @@ router.get("/clients/:clientId/survey", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(GetClientSurveyResponse.parse(survey));
+  const parsedSurvey = GetClientSurveyResponse.parse(survey);
+  res.json({
+    ...parsedSurvey,
+    dateOfBirth: parsedSurvey.dateOfBirth ? parsedSurvey.dateOfBirth.toISOString().slice(0, 10) : parsedSurvey.dateOfBirth,
+  });
 });
 
 router.put("/clients/:clientId/survey", async (req, res): Promise<void> => {
@@ -44,6 +58,17 @@ router.put("/clients/:clientId/survey", async (req, res): Promise<void> => {
     return;
   }
 
+  const { dateOfBirth, ...rest } = parsed.data;
+  if (dateOfBirth && dateOfBirth.getTime() > Date.now()) {
+    res.status(400).json({ error: "Data urodzenia nie może być w przyszłości" });
+    return;
+  }
+  const normalizedData = {
+    ...rest,
+    dateOfBirth: dateOfBirth ? dateOfBirth.toISOString().slice(0, 10) : undefined,
+    age: dateOfBirth ? calculateAge(dateOfBirth) : rest.age,
+  };
+
   const [existing] = await db
     .select({ id: surveysTable.id })
     .from(surveysTable)
@@ -53,17 +78,21 @@ router.put("/clients/:clientId/survey", async (req, res): Promise<void> => {
   if (existing) {
     [survey] = await db
       .update(surveysTable)
-      .set({ ...parsed.data, updatedAt: new Date() })
+      .set({ ...normalizedData, updatedAt: new Date() })
       .where(eq(surveysTable.clientId, params.data.clientId))
       .returning();
   } else {
     [survey] = await db
       .insert(surveysTable)
-      .values({ ...parsed.data, clientId: params.data.clientId })
+      .values({ ...normalizedData, clientId: params.data.clientId })
       .returning();
   }
 
-  res.json(UpsertClientSurveyResponse.parse(survey));
+  const parsedResponse = UpsertClientSurveyResponse.parse(survey);
+  res.json({
+    ...parsedResponse,
+    dateOfBirth: parsedResponse.dateOfBirth ? parsedResponse.dateOfBirth.toISOString().slice(0, 10) : parsedResponse.dateOfBirth,
+  });
 });
 
 export default router;

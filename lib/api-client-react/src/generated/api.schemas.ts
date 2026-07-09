@@ -77,6 +77,8 @@ export interface Survey {
   /** @nullable */
   age?: number | null;
   /** @nullable */
+  dateOfBirth?: string | null;
+  /** @nullable */
   gender?: string | null;
   /** @nullable */
   heightCm?: number | null;
@@ -152,6 +154,7 @@ export interface SurveyInput {
      * @maximum 120
      */
   age?: number;
+  dateOfBirth?: string;
   gender?: SurveyInputGender;
   /**
      * @minimum 50
@@ -243,6 +246,7 @@ export interface PublicSurveySubmission {
      * @maximum 120
      */
   age?: number;
+  dateOfBirth: string;
   gender?: PublicSurveySubmissionGender;
   /**
      * @minimum 50

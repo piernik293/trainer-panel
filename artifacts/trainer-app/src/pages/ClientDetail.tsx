@@ -6,6 +6,29 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Printer, FileEdit, Phone, Mail, Calendar, ClipboardList } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
+function calculateAgeFromSurvey(dateOfBirth: string | null | undefined, legacyAge: number | null | undefined): number | undefined {
+  if (dateOfBirth) {
+    const dob = new Date(dateOfBirth);
+    if (!isNaN(dob.getTime())) {
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const monthDiff = today.getMonth() - dob.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+      return age;
+    }
+  }
+  return legacyAge ?? undefined;
+}
+
+function formatDateOfBirth(dateOfBirth: string | null | undefined): string | undefined {
+  if (!dateOfBirth) return undefined;
+  const dob = new Date(dateOfBirth);
+  if (isNaN(dob.getTime())) return undefined;
+  return dob.toLocaleDateString("pl-PL");
+}
+
 export default function ClientDetail() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
@@ -122,7 +145,8 @@ export default function ClientDetail() {
               </h2>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <SurveyBlock label="Wiek" value={survey.age?.toString()} />
+                <SurveyBlock label="Data urodzenia" value={formatDateOfBirth(survey.dateOfBirth)} />
+                <SurveyBlock label="Wiek" value={calculateAgeFromSurvey(survey.dateOfBirth, survey.age)?.toString()} />
                 <SurveyBlock label="Płeć" value={survey.gender} />
                 <SurveyBlock label="Wzrost" value={survey.heightCm ? `${survey.heightCm} cm` : undefined} />
                 <SurveyBlock label="Waga" value={survey.weightKg ? `${survey.weightKg} kg` : undefined} />

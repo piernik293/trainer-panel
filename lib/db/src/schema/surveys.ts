@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp, uniqueIndex, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, uniqueIndex, boolean, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { clientsTable } from "./clients";
@@ -23,6 +23,7 @@ export const surveysTable = pgTable("surveys", {
   additionalInfo: text("additional_info"),
   // Dane podstawowe
   age: integer("age"),
+  dateOfBirth: date("date_of_birth"),
   gender: text("gender"),
   heightCm: integer("height_cm"),
   weightKg: integer("weight_kg"),

@@ -5,6 +5,16 @@ import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
+function calculateAge(dateOfBirth: Date): number {
+  const today = new Date();
+  let age = today.getUTCFullYear() - dateOfBirth.getUTCFullYear();
+  const monthDiff = today.getUTCMonth() - dateOfBirth.getUTCMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getUTCDate() < dateOfBirth.getUTCDate())) {
+    age--;
+  }
+  return age;
+}
+
 async function sendNotificationEmail(
   clientName: string,
   email: string | undefined,
@@ -77,6 +87,7 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     advancedMethodsToAvoid,
     additionalInfo,
     age,
+    dateOfBirth,
     gender,
     heightCm,
     weightKg,
@@ -86,6 +97,13 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     planStylePreference,
     avoidsAdvancedMethods,
   } = parsed.data;
+
+  if (dateOfBirth.getTime() > Date.now()) {
+    res.status(400).json({ error: "Data urodzenia nie może być w przyszłości" });
+    return;
+  }
+  const dateOfBirthIso = dateOfBirth.toISOString().slice(0, 10);
+  const calculatedAge = calculateAge(dateOfBirth);
 
   // Insert client first, then survey (unique constraint on surveys.clientId)
   const [client] = await db
@@ -107,7 +125,8 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     favoriteExercises,
     advancedMethodsToAvoid: advancedMethodsToAvoid ?? [],
     additionalInfo,
-    age,
+    age: calculatedAge,
+    dateOfBirth: dateOfBirthIso,
     gender,
     heightCm,
     weightKg,

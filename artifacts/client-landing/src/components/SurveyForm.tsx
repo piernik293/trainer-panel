@@ -25,12 +25,28 @@ import { Slider } from "@/components/ui/slider";
 const MUSCLE_GROUPS = ["klatka piersiowa", "plecy", "barki", "biceps", "triceps", "brzuch", "uda", "łydki"];
 const ADVANCED_METHODS = ["superserie", "serie złożone (compound set)", "drop sety", "serie do upadku mięśniowego", "serie wymuszone", "rest-pause"];
 
+function calculateAge(dateOfBirth: string | undefined): number | undefined {
+  if (!dateOfBirth) return undefined;
+  const dob = new Date(dateOfBirth);
+  if (isNaN(dob.getTime())) return undefined;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 const formSchema = z.object({
   firstName: z.string().min(1, "Imię jest wymagane"),
   lastName: z.string().min(1, "Nazwisko jest wymagane"),
   email: z.string().email("Nieprawidłowy adres e-mail").optional().or(z.literal("")),
   phone: z.string().optional(),
-  age: z.coerce.number().min(1, "Wiek jest wymagany").max(120),
+  dateOfBirth: z
+    .string()
+    .min(1, "Data urodzenia jest wymagana")
+    .refine((val) => new Date(val) <= new Date(), "Data urodzenia nie może być w przyszłości"),
   gender: z.string().min(1, "Płeć jest wymagana"),
   heightCm: z.coerce.number().min(50, "Wzrost jest wymagany").max(260),
   weightKg: z.coerce.number().min(20, "Waga jest wymagana").max(400),
@@ -77,7 +93,7 @@ export default function SurveyForm() {
       lastName: "",
       email: "",
       phone: "",
-      age: undefined,
+      dateOfBirth: "",
       gender: "",
       heightCm: undefined,
       weightKg: undefined,
@@ -103,8 +119,10 @@ export default function SurveyForm() {
 
   const experienceLevel = form.watch("experienceLevel");
   const avoidsAdvancedMethods = form.watch("avoidsAdvancedMethods");
+  const dateOfBirth = form.watch("dateOfBirth");
   const isBeginner = experienceLevel === "Początkujący";
   const isIntermediateOrAdvanced = experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
+  const calculatedAge = calculateAge(dateOfBirth);
 
   const mutation = useSubmitPublicSurvey();
 
@@ -114,6 +132,7 @@ export default function SurveyForm() {
       avoidsAdvancedMethods === "Tak" ? true : avoidsAdvancedMethods === "Nie" ? false : undefined;
     const payload = {
       ...rest,
+      age: calculateAge(rest.dateOfBirth) ?? undefined,
       avoidsAdvancedMethods: avoidsAdvancedMethodsBool,
       advancedMethodsToAvoid: avoidsAdvancedMethodsBool === true ? advancedMethodsToAvoid : [],
     };
@@ -190,12 +209,15 @@ export default function SurveyForm() {
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="age" render={({field}) => (
+            <FormField control={form.control} name="dateOfBirth" render={({field}) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground">Wiek *</FormLabel>
+                <FormLabel className="text-muted-foreground">Data urodzenia *</FormLabel>
                 <FormControl>
-                  <Input type="number" min={1} max={120} {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} className="bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none" />
+                  <Input type="date" max={new Date().toISOString().slice(0, 10)} {...field} className="bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none" />
                 </FormControl>
+                {calculatedAge !== undefined && (
+                  <p className="text-xs text-muted-foreground">Wiek: {calculatedAge} lat</p>
+                )}
                 <FormMessage />
               </FormItem>
             )} />
@@ -246,7 +268,7 @@ export default function SurveyForm() {
               <FormLabel className="text-muted-foreground">Cel treningowy</FormLabel>
               <FormControl>
                 <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {["Budowa sylwetki", "Zwiększenie siły", "Redukcja tkanki tłuszczowej", "Poprawa sprawności", "Inny"].map(goal => (
+                  {["Budowa sylwetki", "Zwiększenie siły", "Redukcja tkanki tłuszczowej", "Poprawa sprawności", "Poprawa kondycji", "Inny"].map(goal => (
                     <FormItem key={goal} className="flex items-center space-x-0 space-y-0">
                       <FormControl>
                         <RadioGroupItem value={goal} className="peer sr-only" />

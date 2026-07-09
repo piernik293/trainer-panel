@@ -370,6 +370,9 @@ components:
           type: ["string", "null"]
         age:
           type: ["integer", "null"]
+        dateOfBirth:
+          type: ["string", "null"]
+          format: date
         gender:
           type: ["string", "null"]
         heightCm:
@@ -432,6 +435,9 @@ components:
           type: integer
           minimum: 0
           maximum: 120
+        dateOfBirth:
+          type: string
+          format: date
         gender:
           type: string
           enum: [Kobieta, Mężczyzna, Inna]
@@ -521,6 +527,9 @@ components:
           type: integer
           minimum: 0
           maximum: 120
+        dateOfBirth:
+          type: string
+          format: date
         gender:
           type: string
           enum: [Kobieta, Mężczyzna, Inna]
@@ -550,6 +559,7 @@ components:
       required:
         - firstName
         - lastName
+        - dateOfBirth
 
     PublicSurveyResponse:
       type: object

@@ -35,6 +35,8 @@ export interface Survey {
   /** @nullable */
   age?: number | null;
   /** @nullable */
+  dateOfBirth?: Date | null;
+  /** @nullable */
   gender?: string | null;
   /** @nullable */
   heightCm?: number | null;
