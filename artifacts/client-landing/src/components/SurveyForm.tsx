@@ -613,17 +613,13 @@ export default function SurveyForm() {
                 )}
                 <FormControl>
                   <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
-                    {[
-                      { value: "Lubię cardio", label: "❤️ Lubię cardio" },
-                      { value: "Jest mi obojętne", label: "😐 Jest mi obojętne" },
-                      { value: "Wolę unikać cardio", label: "🙅 Wolę unikać cardio" },
-                    ].map(({ value, label }) => (
-                      <FormItem key={value} className="flex items-center space-x-0 space-y-0">
+                    {["Lubię cardio", "Jest mi obojętne", "Wolę unikać cardio"].map((pref) => (
+                      <FormItem key={pref} className="flex items-center space-x-0 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value={value} className="peer sr-only" />
+                          <RadioGroupItem value={pref} className="peer sr-only" />
                         </FormControl>
                         <FormLabel className="w-full flex items-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
-                          {label}
+                          {pref}
                         </FormLabel>
                       </FormItem>
                     ))}
