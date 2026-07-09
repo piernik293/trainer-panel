@@ -17,6 +17,7 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -127,16 +128,16 @@ const formSchema = z.object({
   gender: z.enum(["Mężczyzna", "Kobieta"], { required_error: "Płeć jest wymagana" }),
   heightCm: z.coerce.number().min(50, "Wzrost jest wymagany").max(260),
   weightKg: z.coerce.number().min(20, "Waga jest wymagana").max(400),
-  trainingGoal: z.string().optional(),
+  trainingGoal: z.string().min(1, "To pole jest wymagane"),
   experienceLevel: z.string().min(1, "Poziom doświadczenia jest wymagany"),
   trainingDuration: z.string().optional(),
   healthLimitations: z.string().optional(),
-  sessionDuration: z.string().optional(),
+  sessionDuration: z.string().min(1, "To pole jest wymagane"),
   preferredMuscles: z.string().optional(),
   avoidedMuscles: z.string().optional(),
   avoidedExercises: z.string().optional(),
   favoriteExercises: z.string().optional(),
-  desiredWeeklyFrequency: z.coerce.number().min(1).max(14).optional(),
+  desiredWeeklyFrequency: z.coerce.number({ invalid_type_error: "To pole jest wymagane" }).min(1, "To pole jest wymagane").max(14),
   activityLevel: z.string().min(1, "Poziom aktywności jest wymagany"),
   sleepHours: z.string().min(1, "To pole jest wymagane"),
   stressLevel: z.coerce.number().min(1).max(10).default(5),
@@ -147,11 +148,20 @@ const formSchema = z.object({
   priorityMuscle1: z.string().optional(),
   priorityMuscle2: z.string().optional(),
   priorityMuscle3: z.string().optional(),
-  trainingLocation: z.string().optional(),
+  trainingLocation: z.string().min(1, "To pole jest wymagane"),
   equipment: z.string().optional(),
   cardioPreference: z.string().optional(),
   cardioFrequency: z.string().optional(),
   preferredCardioType: z.string().optional(),
+}).superRefine((data, ctx) => {
+  const requiresEquipment = data.trainingLocation === "Dom" || data.trainingLocation === "Siłownia plenerowa";
+  if (requiresEquipment && (!data.equipment || data.equipment.trim() === "")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "To pole jest wymagane.",
+      path: ["equipment"],
+    });
+  }
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -170,6 +180,7 @@ const Section = ({ step, title, description, children }: { step: number, title: 
 export default function SurveyForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [showValidationBanner, setShowValidationBanner] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -238,12 +249,24 @@ export default function SurveyForm() {
   const [equipmentOther, setEquipmentOther] = useState<string>("");
   useEffect(() => {
     form.setValue("equipment", buildEquipmentString(equipmentItems, equipmentOther));
+    form.trigger("equipment");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [equipmentItems, equipmentOther]);
 
   const mutation = useSubmitPublicSurvey();
 
+  const onInvalid = () => {
+    setShowValidationBanner(true);
+    setTimeout(() => {
+      const firstInvalid = document.querySelector('[aria-invalid="true"]');
+      if (firstInvalid) {
+        firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 0);
+  };
+
   const onSubmit = (data: FormValues) => {
+    setShowValidationBanner(false);
     const { avoidsAdvancedMethods, advancedMethodsToAvoid, ...rest } = data;
     const avoidsAdvancedMethodsBool =
       avoidsAdvancedMethods === "Tak" ? true : avoidsAdvancedMethods === "Nie" ? false : undefined;
@@ -286,7 +309,12 @@ export default function SurveyForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-4">
+        {showValidationBanner && Object.keys(form.formState.errors).length > 0 && (
+          <div className="border border-destructive/40 bg-destructive/10 text-destructive px-4 py-3 text-sm font-medium mb-8">
+            Nie można wysłać wywiadu treningowego. Uzupełnij wymagane pola oznaczone na czerwono.
+          </div>
+        )}
         
         <Section
           step={1}
@@ -294,20 +322,20 @@ export default function SurveyForm() {
           description="Podstawowe informacje pozwalają mi lepiej Cię poznać oraz uwzględnić wiek, wzrost i wagę przy doborze obciążeń i tempa progresji."
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <FormField control={form.control} name="firstName" render={({field}) => (
+            <FormField control={form.control} name="firstName" render={({field, fieldState}) => (
               <FormItem>
                 <FormLabel className="text-muted-foreground">Imię *</FormLabel>
                 <FormControl>
-                  <Input {...field} className="bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none" />
+                  <Input {...field} className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="lastName" render={({field}) => (
+            <FormField control={form.control} name="lastName" render={({field, fieldState}) => (
               <FormItem>
                 <FormLabel className="text-muted-foreground">Nazwisko *</FormLabel>
                 <FormControl>
-                  <Input {...field} className="bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none" />
+                  <Input {...field} className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -354,11 +382,11 @@ export default function SurveyForm() {
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="gender" render={({field}) => (
+            <FormField control={form.control} name="gender" render={({field, fieldState}) => (
               <FormItem className="space-y-4">
                 <FormLabel className="text-muted-foreground">Płeć *</FormLabel>
                 <FormControl>
-                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 gap-3">
+                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className={cn("grid grid-cols-2 gap-3", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}>
                     {["Mężczyzna", "Kobieta"].map(g => (
                       <FormItem key={g} className="flex items-center space-x-0 space-y-0">
                         <FormControl>
@@ -374,20 +402,20 @@ export default function SurveyForm() {
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="heightCm" render={({field}) => (
+            <FormField control={form.control} name="heightCm" render={({field, fieldState}) => (
               <FormItem>
                 <FormLabel className="text-muted-foreground">Wzrost (cm) *</FormLabel>
                 <FormControl>
-                  <Input type="number" min={50} max={260} {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} className="bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none" />
+                  <Input type="number" min={50} max={260} {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="weightKg" render={({field}) => (
+            <FormField control={form.control} name="weightKg" render={({field, fieldState}) => (
               <FormItem>
                 <FormLabel className="text-muted-foreground">Waga (kg) *</FormLabel>
                 <FormControl>
-                  <Input type="number" min={20} max={400} {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} className="bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none" />
+                  <Input type="number" min={20} max={400} {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
                 </FormControl>
                 {bmi !== undefined && (
                   <p className="text-xs text-muted-foreground/70">BMI: {bmi.toFixed(1)}</p>
@@ -403,16 +431,16 @@ export default function SurveyForm() {
           title="Cel treningowy"
           description="Twój cel wyznacza kierunek całego planu — od doboru ćwiczeń, przez intensywność, aż po proporcje treningu siłowego i cardio."
         >
-          <FormField control={form.control} name="trainingGoal" render={({field}) => (
+          <FormField control={form.control} name="trainingGoal" render={({field, fieldState}) => (
             <FormItem className="space-y-4">
-              <FormLabel className="text-muted-foreground">Cel treningowy</FormLabel>
+              <FormLabel className="text-muted-foreground">Cel treningowy *</FormLabel>
               {showBmiRecommendation && (
                 <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
                   {BMI_RECOMMENDATION_TEXT}
                 </p>
               )}
               <FormControl>
-                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}>
                   {["Budowa sylwetki", "Zwiększenie siły", "Redukcja tkanki tłuszczowej", "Poprawa kondycji", "Poprawa sprawności", "Inny"].map(goal => (
                     <FormItem key={goal} className="flex items-center space-x-0 space-y-0">
                       <FormControl>
@@ -425,6 +453,7 @@ export default function SurveyForm() {
                   ))}
                 </RadioGroup>
               </FormControl>
+              <FormMessage />
             </FormItem>
           )} />
         </Section>
@@ -434,11 +463,11 @@ export default function SurveyForm() {
           title="Doświadczenie"
           description="Poziom zaawansowania decyduje o tym, jak dobieram technikę, złożoność ćwiczeń oraz sposób prowadzenia planu."
         >
-          <FormField control={form.control} name="experienceLevel" render={({field}) => (
+          <FormField control={form.control} name="experienceLevel" render={({field, fieldState}) => (
             <FormItem className="space-y-4 mt-12">
-              <FormLabel className="text-muted-foreground">Który poziom najlepiej opisuje Twoje doświadczenie treningowe?</FormLabel>
+              <FormLabel className="text-muted-foreground">Który poziom najlepiej opisuje Twoje doświadczenie treningowe? *</FormLabel>
               <FormControl>
-                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}>
                   {[
                     { level: "Brak aktywności fizycznej", desc: "Obecnie nie trenuję lub od bardzo dawna nie podejmuję regularnej aktywności fizycznej. Chcę dopiero rozpocząć swoją przygodę z treningiem." },
                     { level: "Początkujący", desc: "Mam niewielkie doświadczenie treningowe. Nadal uczę się podstawowych ćwiczeń, poprawnej techniki oraz zasad treningowych i nie czuję się jeszcze pewnie w samodzielnym planowaniu treningów." },
@@ -460,6 +489,7 @@ export default function SurveyForm() {
               <FormDescription className="text-xs text-muted-foreground/70">
                 Nie kieruj się wyłącznie liczbą lat treningu. Wybierz poziom, który najlepiej opisuje Twoją wiedzę, umiejętności oraz samodzielność podczas treningów.
               </FormDescription>
+              <FormMessage />
             </FormItem>
           )} />
           
@@ -501,9 +531,9 @@ export default function SurveyForm() {
           description="Realny czas i częstotliwość treningów pozwalają ułożyć plan, który będzie możliwy do utrzymania na dłuższą metę, a nie tylko przez pierwsze tygodnie."
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            <FormField control={form.control} name="desiredWeeklyFrequency" render={({field}) => (
+            <FormField control={form.control} name="desiredWeeklyFrequency" render={({field, fieldState}) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground">Ile treningów tygodniowo chciałbyś wykonywać?</FormLabel>
+                <FormLabel className="text-muted-foreground">Ile treningów tygodniowo chciałbyś wykonywać? *</FormLabel>
                 <FormDescription className="text-xs text-muted-foreground/70">
                   Pozwoli to lepiej dopasować plan do Twoich oczekiwań oraz możliwości.
                 </FormDescription>
@@ -520,20 +550,22 @@ export default function SurveyForm() {
                     {...field} 
                     value={field.value || ''} 
                     onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} 
-                    className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" 
+                    className={cn("bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive")}
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="sessionDuration" render={({field}) => (
+            <FormField control={form.control} name="sessionDuration" render={({field, fieldState}) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground">Ile czasu realnie możesz poświęcić na pojedynczy trening?</FormLabel>
+                <FormLabel className="text-muted-foreground">Ile czasu realnie możesz poświęcić na pojedynczy trening? *</FormLabel>
                 <FormDescription className="text-xs text-muted-foreground/70">
                   Uwzględnij swoje codzienne obowiązki oraz możliwości regeneracji.
                 </FormDescription>
                 <FormControl>
-                  <Input placeholder="np. 60 min" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
+                  <Input placeholder="np. 60 min" {...field} className={cn("bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive")} />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )} />
           </div>
@@ -545,11 +577,18 @@ export default function SurveyForm() {
           description="Miejsce oraz dostępny sprzęt decydują o tym, jakie ćwiczenia i warianty obciążeń będą dla Ciebie realnie wykonalne."
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <FormField control={form.control} name="trainingLocation" render={({field}) => (
+            <FormField control={form.control} name="trainingLocation" render={({field, fieldState}) => (
               <FormItem className="space-y-4">
-                <FormLabel className="text-muted-foreground">Gdzie najczęściej będziesz trenować?</FormLabel>
+                <FormLabel className="text-muted-foreground">Gdzie najczęściej będziesz trenować? *</FormLabel>
                 <FormControl>
-                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
+                  <RadioGroup
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      form.trigger(["trainingLocation", "equipment"]);
+                    }}
+                    defaultValue={field.value}
+                    className={cn("grid grid-cols-1 gap-3", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}
+                  >
                     {[
                       { loc: "Siłownia", desc: "Mam dostęp do pełnego wyposażenia siłowni." },
                       { loc: "Dom", desc: "Trenuję w domu." },
@@ -567,12 +606,13 @@ export default function SurveyForm() {
                     ))}
                   </RadioGroup>
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )} />
             {showEquipmentField && (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Jakim sprzętem dysponujesz?</FormLabel>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div aria-invalid={!!form.formState.errors.equipment} className="space-y-2">
+                <Label className="text-muted-foreground">Jakim sprzętem dysponujesz? *</Label>
+                <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 -m-2", form.formState.errors.equipment && "ring-1 ring-destructive ring-offset-2 ring-offset-background")}>
                   {EQUIPMENT_OPTIONS.map((opt) => (
                     <label key={opt} className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
                       <Checkbox
@@ -592,7 +632,10 @@ export default function SurveyForm() {
                   onChange={(e) => setEquipmentOther(e.target.value)}
                   className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none mt-2"
                 />
-              </FormItem>
+                {form.formState.errors.equipment && (
+                  <p className="text-sm font-medium text-destructive">{form.formState.errors.equipment.message as string}</p>
+                )}
+              </div>
             )}
           </div>
         </Section>
@@ -660,11 +703,11 @@ export default function SurveyForm() {
           description="Sen, poziom stresu oraz codzienna aktywność wpływają na zdolność organizmu do regeneracji, co bezpośrednio przekłada się na dobór objętości treningowej."
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            <FormField control={form.control} name="activityLevel" render={({field}) => (
+            <FormField control={form.control} name="activityLevel" render={({field, fieldState}) => (
               <FormItem className="space-y-4">
                 <FormLabel className="text-muted-foreground">Jaki jest Twój poziom aktywności fizycznej w ciągu dnia? *</FormLabel>
                 <FormControl>
-                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
+                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className={cn("grid grid-cols-1 gap-3", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}>
                     {[
                       { level: "Siedzący", desc: "Większość dnia spędzam siedząc (np. praca biurowa, nauka lub praca przy komputerze)." },
                       { level: "Lekko aktywny", desc: "W ciągu dnia sporo chodzę lub wykonuję lekką aktywność, jednak nie jest to ciężka praca fizyczna." },
@@ -687,11 +730,11 @@ export default function SurveyForm() {
               </FormItem>
             )} />
 
-            <FormField control={form.control} name="sleepHours" render={({field}) => (
+            <FormField control={form.control} name="sleepHours" render={({field, fieldState}) => (
               <FormItem className="space-y-4">
                 <FormLabel className="text-muted-foreground">Ile godzin średnio sypiasz w ciągu doby? *</FormLabel>
                 <FormControl>
-                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
+                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className={cn("grid grid-cols-1 gap-3", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}>
                     {["Poniżej 5 godzin", "5–6 godzin", "6–7 godzin", "7–8 godzin", "Powyżej 8 godzin"].map(hours => (
                       <FormItem key={hours} className="flex items-center space-x-0 space-y-0">
                         <FormControl>
@@ -730,11 +773,11 @@ export default function SurveyForm() {
           title="Dodatkowe preferencje"
           description="Twoje preferencje dotyczące stylu planu, priorytetowych partii oraz technik treningowych pomagają dopasować plan nie tylko pod cel, ale i pod Twój komfort."
         >
-          <FormField control={form.control} name="planStylePreference" render={({field}) => (
+          <FormField control={form.control} name="planStylePreference" render={({field, fieldState}) => (
             <FormItem className="space-y-4">
               <FormLabel className="text-muted-foreground">Jaki styl planu Ci odpowiada? *</FormLabel>
               <FormControl>
-                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className={cn("grid grid-cols-1 sm:grid-cols-3 gap-4", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}>
                   {[
                     { style: "Maksymalna efektywność", desc: "Najważniejsze są dla mnie jak najlepsze efekty." },
                     { style: "Balans efektywności i wygody", desc: "Chcę osiągać dobre efekty przy zachowaniu komfortu treningów." },

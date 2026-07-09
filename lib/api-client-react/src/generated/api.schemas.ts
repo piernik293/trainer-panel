@@ -176,19 +176,20 @@ export type SurveyInputSleepHours = typeof SurveyInputSleepHours[keyof typeof Su
 
 
 export const SurveyInputSleepHours = {
-  poniżej_6h: 'poniżej 6h',
-  '6-7h': '6-7h',
-  '7-8h': '7-8h',
-  powyżej_8h: 'powyżej 8h',
+  Poniżej_5_godzin: 'Poniżej 5 godzin',
+  '5–6_godzin': '5–6 godzin',
+  '6–7_godzin': '6–7 godzin',
+  '7–8_godzin': '7–8 godzin',
+  Powyżej_8_godzin: 'Powyżej 8 godzin',
 } as const;
 
 export type SurveyInputPlanStylePreference = typeof SurveyInputPlanStylePreference[keyof typeof SurveyInputPlanStylePreference];
 
 
 export const SurveyInputPlanStylePreference = {
-  Maksymalnie_efektywny: 'Maksymalnie efektywny',
-  Kompromis: 'Kompromis',
-  Prosty_i_trwały: 'Prosty i trwały',
+  Maksymalna_efektywność: 'Maksymalna efektywność',
+  Balans_efektywności_i_wygody: 'Balans efektywności i wygody',
+  Prosty_i_łatwy_do_utrzymania: 'Prosty i łatwy do utrzymania',
 } as const;
 
 export interface SurveyInput {
@@ -289,19 +290,20 @@ export type PublicSurveySubmissionSleepHours = typeof PublicSurveySubmissionSlee
 
 
 export const PublicSurveySubmissionSleepHours = {
-  poniżej_6h: 'poniżej 6h',
-  '6-7h': '6-7h',
-  '7-8h': '7-8h',
-  powyżej_8h: 'powyżej 8h',
+  Poniżej_5_godzin: 'Poniżej 5 godzin',
+  '5–6_godzin': '5–6 godzin',
+  '6–7_godzin': '6–7 godzin',
+  '7–8_godzin': '7–8 godzin',
+  Powyżej_8_godzin: 'Powyżej 8 godzin',
 } as const;
 
 export type PublicSurveySubmissionPlanStylePreference = typeof PublicSurveySubmissionPlanStylePreference[keyof typeof PublicSurveySubmissionPlanStylePreference];
 
 
 export const PublicSurveySubmissionPlanStylePreference = {
-  Maksymalnie_efektywny: 'Maksymalnie efektywny',
-  Kompromis: 'Kompromis',
-  Prosty_i_trwały: 'Prosty i trwały',
+  Maksymalna_efektywność: 'Maksymalna efektywność',
+  Balans_efektywności_i_wygody: 'Balans efektywności i wygody',
+  Prosty_i_łatwy_do_utrzymania: 'Prosty i łatwy do utrzymania',
 } as const;
 
 export interface PublicSurveySubmission {

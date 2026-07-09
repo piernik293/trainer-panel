@@ -10,8 +10,9 @@ export type PublicSurveySubmissionSleepHours = typeof PublicSurveySubmissionSlee
 
 
 export const PublicSurveySubmissionSleepHours = {
-  poniżej_6h: 'poniżej 6h',
-  '6-7h': '6-7h',
-  '7-8h': '7-8h',
-  powyżej_8h: 'powyżej 8h',
+  Poniżej_5_godzin: 'Poniżej 5 godzin',
+  '5–6_godzin': '5–6 godzin',
+  '6–7_godzin': '6–7 godzin',
+  '7–8_godzin': '7–8 godzin',
+  Powyżej_8_godzin: 'Powyżej 8 godzin',
 } as const;

@@ -10,7 +10,7 @@ export type SurveyInputPlanStylePreference = typeof SurveyInputPlanStylePreferen
 
 
 export const SurveyInputPlanStylePreference = {
-  Maksymalnie_efektywny: 'Maksymalnie efektywny',
-  Kompromis: 'Kompromis',
-  Prosty_i_trwały: 'Prosty i trwały',
+  Maksymalna_efektywność: 'Maksymalna efektywność',
+  Balans_efektywności_i_wygody: 'Balans efektywności i wygody',
+  Prosty_i_łatwy_do_utrzymania: 'Prosty i łatwy do utrzymania',
 } as const;
