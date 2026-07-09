@@ -1,4 +1,5 @@
-import type { Survey } from "@workspace/db";
+import { desc } from "drizzle-orm";
+import { db, surveysTable, type Survey } from "@workspace/db";
 
 export type SurveyStatusValue = "not_started" | "incomplete" | "completed";
 
@@ -37,6 +38,24 @@ export function pickLatestSurveyPerClient(surveys: Survey[]): Map<number, Survey
     if (!existing || new Date(survey.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
       latestByClient.set(survey.clientId, survey);
     }
+  }
+  return latestByClient;
+}
+
+/**
+ * Fetches only the most recent survey per client directly from the database
+ * (via DISTINCT ON), instead of loading the full survey history into memory
+ * and reducing it in application code. Scales flat as survey history grows.
+ */
+export async function fetchLatestSurveyPerClient(): Promise<Map<number, Survey>> {
+  const rows = await db
+    .selectDistinctOn([surveysTable.clientId])
+    .from(surveysTable)
+    .orderBy(surveysTable.clientId, desc(surveysTable.createdAt));
+
+  const latestByClient = new Map<number, Survey>();
+  for (const survey of rows) {
+    latestByClient.set(survey.clientId, survey);
   }
   return latestByClient;
 }

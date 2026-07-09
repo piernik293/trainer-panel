@@ -5,7 +5,7 @@ import {
   GetStatsResponse,
   GetTrainingGoalsDistributionResponse,
 } from "@workspace/api-zod";
-import { computeSurveyStatus, pickLatestSurveyPerClient } from "../lib/survey-status";
+import { computeSurveyStatus, fetchLatestSurveyPerClient } from "../lib/survey-status";
 
 const router: IRouter = Router();
 
@@ -33,8 +33,7 @@ router.get("/stats", async (_req, res): Promise<void> => {
     .where(gte(surveysTable.createdAt, oneWeekAgo));
 
   const allClients = await db.select().from(clientsTable);
-  const allSurveys = await db.select().from(surveysTable);
-  const latestByClient = pickLatestSurveyPerClient(allSurveys);
+  const latestByClient = await fetchLatestSurveyPerClient();
 
   let surveysCompleted = 0;
   let incompleteSurveys = 0;
@@ -89,18 +88,8 @@ router.get("/stats", async (_req, res): Promise<void> => {
 });
 
 router.get("/training-goals-distribution", async (_req, res): Promise<void> => {
-  const surveys = await db
-    .select({ trainingGoal: surveysTable.trainingGoal, clientId: surveysTable.clientId, createdAt: surveysTable.createdAt })
-    .from(surveysTable);
-
   // Only count each client's latest survey toward the distribution.
-  const latestByClient = new Map<number, { trainingGoal: string | null; createdAt: Date }>();
-  for (const s of surveys) {
-    const existing = latestByClient.get(s.clientId);
-    if (!existing || s.createdAt.getTime() > existing.createdAt.getTime()) {
-      latestByClient.set(s.clientId, { trainingGoal: s.trainingGoal, createdAt: s.createdAt });
-    }
-  }
+  const latestByClient = await fetchLatestSurveyPerClient();
 
   const counts: Record<string, number> = {};
   for (const { trainingGoal } of latestByClient.values()) {

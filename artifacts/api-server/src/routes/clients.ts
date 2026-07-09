@@ -12,7 +12,7 @@ import {
   UpdateClientResponse,
   CreateClientResponse,
 } from "@workspace/api-zod";
-import { computeSurveyStatus, pickLatestSurveyPerClient } from "../lib/survey-status";
+import { computeSurveyStatus, fetchLatestSurveyPerClient } from "../lib/survey-status";
 
 const router: IRouter = Router();
 
@@ -38,8 +38,7 @@ router.get("/clients", async (_req, res): Promise<void> => {
     .from(clientsTable)
     .orderBy(desc(clientsTable.createdAt));
 
-  const surveys = await db.select().from(surveysTable);
-  const latestByClient = pickLatestSurveyPerClient(surveys);
+  const latestByClient = await fetchLatestSurveyPerClient();
 
   const result = clients.map((c) => toClientListItem(c, latestByClient.get(c.id)));
   res.json(ListClientsResponse.parse(result));
