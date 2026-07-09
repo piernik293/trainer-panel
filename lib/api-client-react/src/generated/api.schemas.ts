@@ -100,6 +100,8 @@ export interface Survey {
   /** @nullable */
   weeklyFrequency?: number | null;
   /** @nullable */
+  desiredWeeklyFrequency?: number | null;
+  /** @nullable */
   sessionDuration?: string | null;
   /** @nullable */
   preferredMuscles?: string | null;
@@ -195,6 +197,7 @@ export interface SurveyInput {
   trainingDuration?: string;
   healthLimitations?: string;
   weeklyFrequency?: number;
+  desiredWeeklyFrequency?: number;
   sessionDuration?: string;
   preferredMuscles?: string;
   avoidedMuscles?: string;
@@ -313,6 +316,7 @@ export interface PublicSurveySubmission {
   trainingDuration?: string;
   healthLimitations?: string;
   weeklyFrequency?: number;
+  desiredWeeklyFrequency?: number;
   sessionDuration?: string;
   preferredMuscles?: string;
   avoidedMuscles?: string;

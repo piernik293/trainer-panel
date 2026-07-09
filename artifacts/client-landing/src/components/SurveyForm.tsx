@@ -35,6 +35,17 @@ function calculateBmi(heightCm: number | undefined, weightKg: number | undefined
 const BMI_RECOMMENDATION_TEXT =
   "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj jednak, że BMI nie rozróżnia tkanki tłuszczowej od masy mięśniowej. W wielu przypadkach dobrym rozwiązaniem może być redukcja tkanki tłuszczowej lub rekompozycja sylwetki.";
 
+const TRAINING_FREQUENCY_RECOMMENDATIONS: Record<string, string> = {
+  "Brak aktywności fizycznej":
+    "Najczęściej zaleca się rozpoczęcie od 1–3 treningów tygodniowo, aby organizm mógł stopniowo przyzwyczaić się do regularnej aktywności.",
+  "Początkujący":
+    "Najczęściej sprawdza się 2–3 treningi tygodniowo, co pozwala rozwijać technikę oraz zapewnia odpowiednią regenerację.",
+  "Średniozaawansowany":
+    "Najczęściej wybierane jest 3–5 treningów tygodniowo. Ostateczna liczba zależy od celu treningowego oraz możliwości regeneracji.",
+  "Zaawansowany":
+    "Najczęściej sprawdza się 4–6 treningów tygodniowo. Liczbę treningów należy dopasować do objętości, celu oraz regeneracji.",
+};
+
 function calculateAge(dateOfBirth: string | undefined): number | undefined {
   if (!dateOfBirth) return undefined;
   const dob = new Date(dateOfBirth);
@@ -70,6 +81,7 @@ const formSchema = z.object({
   avoidedMuscles: z.string().optional(),
   avoidedExercises: z.string().optional(),
   favoriteExercises: z.string().optional(),
+  desiredWeeklyFrequency: z.coerce.number().min(1).max(14).optional(),
   activityLevel: z.string().min(1, "Poziom aktywności jest wymagany"),
   sleepHours: z.string().min(1, "To pole jest wymagane"),
   stressLevel: z.coerce.number().min(1).max(10).default(5),
@@ -160,6 +172,9 @@ export default function SurveyForm() {
   const weightKg = form.watch("weightKg");
   const bmi = calculateBmi(heightCm, weightKg);
   const showBmiRecommendation = isBeginner && bmi !== undefined && bmi >= 25;
+  const trainingFrequencyRecommendation = experienceLevel ? TRAINING_FREQUENCY_RECOMMENDATIONS[experienceLevel] : undefined;
+  const trainingLocation = form.watch("trainingLocation");
+  const showEquipmentField = trainingLocation === "Dom" || trainingLocation === "Siłownia plenerowa";
 
   const mutation = useSubmitPublicSurvey();
 
@@ -381,12 +396,39 @@ export default function SurveyForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
             <FormField control={form.control} name="weeklyFrequency" render={({field}) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground">Ile razy w tygodniu chcesz trenować?</FormLabel>
+                <FormLabel className="text-muted-foreground">Ile dni w tygodniu REALNIE możesz przeznaczyć na trening?</FormLabel>
+                <FormDescription className="text-xs text-muted-foreground/70">
+                  Weź pod uwagę pracę, szkołę, rodzinę oraz inne obowiązki.
+                </FormDescription>
                 <FormControl>
                   <Input 
                     type="number" 
                     min={1} 
                     max={7} 
+                    {...field} 
+                    value={field.value || ''} 
+                    onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} 
+                    className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" 
+                  />
+                </FormControl>
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="desiredWeeklyFrequency" render={({field}) => (
+              <FormItem>
+                <FormLabel className="text-muted-foreground">Ile treningów tygodniowo chciałbyś wykonywać?</FormLabel>
+                <FormDescription className="text-xs text-muted-foreground/70">
+                  Nie muszą to być takie same wartości. Dzięki temu trener będzie mógł lepiej dopasować plan do Twoich możliwości.
+                </FormDescription>
+                {trainingFrequencyRecommendation && (
+                  <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
+                    {trainingFrequencyRecommendation}
+                  </p>
+                )}
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    min={1} 
+                    max={14} 
                     {...field} 
                     value={field.value || ''} 
                     onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} 
@@ -491,16 +533,21 @@ export default function SurveyForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
             <FormField control={form.control} name="trainingLocation" render={({field}) => (
               <FormItem className="space-y-4">
-                <FormLabel className="text-muted-foreground">Gdzie zwykle trenujesz?</FormLabel>
+                <FormLabel className="text-muted-foreground">Gdzie najczęściej planujesz trenować?</FormLabel>
                 <FormControl>
                   <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
-                    {["Siłownia", "Dom", "Plener", "Mieszane"].map(loc => (
+                    {[
+                      { loc: "Siłownia", desc: "Mam dostęp do pełnego wyposażenia siłowni." },
+                      { loc: "Dom", desc: "Trenuję w domu z własnym sprzętem lub bez sprzętu." },
+                      { loc: "Siłownia plenerowa", desc: "Korzystam głównie z drążków, poręczy oraz sprzętu dostępnego na świeżym powietrzu." },
+                    ].map(({ loc, desc }) => (
                       <FormItem key={loc} className="flex items-center space-x-0 space-y-0">
                         <FormControl>
                           <RadioGroupItem value={loc} className="peer sr-only" />
                         </FormControl>
-                        <FormLabel className="w-full flex items-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
-                          {loc}
+                        <FormLabel className="w-full flex flex-col items-start gap-1 px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                          <span>{loc}</span>
+                          <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
                         </FormLabel>
                       </FormItem>
                     ))}
@@ -508,14 +555,16 @@ export default function SurveyForm() {
                 </FormControl>
               </FormItem>
             )} />
-            <FormField control={form.control} name="equipment" render={({field}) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Jaki sprzęt masz do dyspozycji?</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="np. hantle, gumy oporowe, brak sprzętu" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
-                </FormControl>
-              </FormItem>
-            )} />
+            {showEquipmentField && (
+              <FormField control={form.control} name="equipment" render={({field}) => (
+                <FormItem>
+                  <FormLabel className="text-muted-foreground">Jaki sprzęt masz do dyspozycji?</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="np. hantle, gumy oporowe, brak sprzętu" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
+                  </FormControl>
+                </FormItem>
+              )} />
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -561,16 +610,22 @@ export default function SurveyForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
             <FormField control={form.control} name="activityLevel" render={({field}) => (
               <FormItem className="space-y-4">
-                <FormLabel className="text-muted-foreground">Poziom aktywności fizycznej w ciągu dnia *</FormLabel>
+                <FormLabel className="text-muted-foreground">Jaki jest Twój poziom aktywności fizycznej w ciągu dnia? *</FormLabel>
                 <FormControl>
                   <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
-                    {["Siedzący", "Lekko aktywny", "Praca fizyczna", "Bardzo aktywny"].map(level => (
+                    {[
+                      { level: "Siedzący", desc: "Większość dnia spędzam siedząc (np. praca biurowa, nauka lub praca przy komputerze)." },
+                      { level: "Lekko aktywny", desc: "W ciągu dnia sporo chodzę lub wykonuję lekką aktywność, jednak nie jest to ciężka praca fizyczna." },
+                      { level: "Praca fizyczna", desc: "Moja praca wymaga regularnego wysiłku fizycznego, przenoszenia ciężarów lub długotrwałego ruchu." },
+                      { level: "Bardzo aktywny", desc: "Na co dzień wykonuję ciężką pracę fizyczną lub jestem aktywny przez większość dnia." },
+                    ].map(({ level, desc }) => (
                       <FormItem key={level} className="flex items-center space-x-0 space-y-0">
                         <FormControl>
                           <RadioGroupItem value={level} className="peer sr-only" />
                         </FormControl>
-                        <FormLabel className="w-full flex items-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
-                          {level}
+                        <FormLabel className="w-full flex flex-col items-start gap-1 px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                          <span>{level}</span>
+                          <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
                         </FormLabel>
                       </FormItem>
                     ))}

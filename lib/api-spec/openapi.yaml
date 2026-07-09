@@ -550,6 +550,8 @@ components:
           type: ["string", "null"]
         weeklyFrequency:
           type: ["integer", "null"]
+        desiredWeeklyFrequency:
+          type: ["integer", "null"]
         sessionDuration:
           type: ["string", "null"]
         preferredMuscles:
@@ -628,6 +630,8 @@ components:
         healthLimitations:
           type: string
         weeklyFrequency:
+          type: integer
+        desiredWeeklyFrequency:
           type: integer
         sessionDuration:
           type: string
@@ -785,6 +789,8 @@ components:
         healthLimitations:
           type: string
         weeklyFrequency:
+          type: integer
+        desiredWeeklyFrequency:
           type: integer
         sessionDuration:
           type: string

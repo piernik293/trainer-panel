@@ -13,6 +13,7 @@ export const surveysTable = pgTable("surveys", {
   trainingDuration: text("training_duration"),
   healthLimitations: text("health_limitations"),
   weeklyFrequency: integer("weekly_frequency"),
+  desiredWeeklyFrequency: integer("desired_weekly_frequency"),
   sessionDuration: text("session_duration"),
   preferredMuscles: text("preferred_muscles"),
   avoidedMuscles: text("avoided_muscles"),

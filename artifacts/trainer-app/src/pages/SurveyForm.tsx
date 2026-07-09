@@ -34,6 +34,24 @@ function calculateBmi(heightCm: number | undefined, weightKg: number | undefined
   return weightKg / (heightM * heightM);
 }
 
+const TRAINING_FREQUENCY_RECOMMENDATIONS: Record<string, string> = {
+  "Brak aktywności fizycznej":
+    "Najczęściej zaleca się rozpoczęcie od 1–3 treningów tygodniowo, aby organizm mógł stopniowo przyzwyczaić się do regularnej aktywności.",
+  "Początkujący":
+    "Najczęściej sprawdza się 2–3 treningi tygodniowo, co pozwala rozwijać technikę oraz zapewnia odpowiednią regenerację.",
+  "Średniozaawansowany":
+    "Najczęściej wybierane jest 3–5 treningów tygodniowo. Ostateczna liczba zależy od celu treningowego oraz możliwości regeneracji.",
+  "Zaawansowany":
+    "Najczęściej sprawdza się 4–6 treningów tygodniowo. Liczbę treningów należy dopasować do objętości, celu oraz regeneracji.",
+};
+
+const ACTIVITY_LEVEL_DESCRIPTIONS: Record<string, string> = {
+  "Siedzący": "Większość dnia spędza siedząc (np. praca biurowa, nauka lub praca przy komputerze).",
+  "Lekko aktywny": "W ciągu dnia sporo chodzi lub wykonuje lekką aktywność, jednak nie jest to ciężka praca fizyczna.",
+  "Praca fizyczna": "Praca wymaga regularnego wysiłku fizycznego, przenoszenia ciężarów lub długotrwałego ruchu.",
+  "Bardzo aktywny": "Na co dzień wykonuje ciężką pracę fizyczną lub jest aktywny przez większość dnia.",
+};
+
 const BMI_RECOMMENDATION_TEXT =
   "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj jednak, że BMI nie rozróżnia tkanki tłuszczowej od masy mięśniowej. W wielu przypadkach dobrym rozwiązaniem może być redukcja tkanki tłuszczowej lub rekompozycja sylwetki.";
 
@@ -55,7 +73,8 @@ const surveySchema = z.object({
   experienceLevel: z.string().optional(),
   trainingDuration: z.string().optional(),
   healthLimitations: z.string().optional(),
-  weeklyFrequency: z.coerce.number().min(1).max(14).optional().or(z.literal("").transform(() => undefined)),
+  weeklyFrequency: z.coerce.number().min(1).max(7).optional().or(z.literal("").transform(() => undefined)),
+  desiredWeeklyFrequency: z.coerce.number().min(1).max(14).optional().or(z.literal("").transform(() => undefined)),
   sessionDuration: z.string().optional(),
   preferredMuscles: z.string().optional(),
   avoidedMuscles: z.string().optional(),
@@ -128,6 +147,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
       trainingDuration: survey?.trainingDuration ?? "",
       healthLimitations: survey?.healthLimitations ?? "",
       weeklyFrequency: survey?.weeklyFrequency ?? undefined,
+      desiredWeeklyFrequency: survey?.desiredWeeklyFrequency ?? undefined,
       sessionDuration: survey?.sessionDuration ?? "",
       preferredMuscles: survey?.preferredMuscles ?? "",
       avoidedMuscles: survey?.avoidedMuscles ?? "",
@@ -174,6 +194,9 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
   const weightKg = form.watch("weightKg");
   const bmi = calculateBmi(heightCm, weightKg);
   const showBmiRecommendation = isBeginner && bmi !== undefined && bmi >= 25;
+  const trainingFrequencyRecommendation = experienceLevel ? TRAINING_FREQUENCY_RECOMMENDATIONS[experienceLevel] : undefined;
+  const trainingLocation = form.watch("trainingLocation");
+  const showEquipmentField = trainingLocation === "Dom" || trainingLocation === "Siłownia plenerowa";
 
   const onSubmit = (data: SurveyFormValues) => {
     const avoidsAdvancedMethodsBool =
@@ -297,9 +320,30 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                 name="weeklyFrequency"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Liczba treningów w tygodniu</FormLabel>
+                    <FormLabel>Ile dni w tygodniu REALNIE klient może przeznaczyć na trening?</FormLabel>
+                    <FormDescription className="text-xs">Weź pod uwagę pracę, szkołę, rodzinę oraz inne obowiązki klienta.</FormDescription>
                     <FormControl>
-                      <Input type="number" min="1" max="14" placeholder="3" {...field} value={field.value ?? ""} />
+                      <Input type="number" min="1" max="7" placeholder="3" {...field} value={field.value ?? ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="desiredWeeklyFrequency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ile treningów tygodniowo klient chciałby wykonywać?</FormLabel>
+                    <FormDescription className="text-xs">Nie muszą to być takie same wartości — dzięki temu można lepiej dopasować plan do możliwości klienta.</FormDescription>
+                    {trainingFrequencyRecommendation && (
+                      <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
+                        {trainingFrequencyRecommendation}
+                      </p>
+                    )}
+                    <FormControl>
+                      <Input type="number" min="1" max="14" placeholder="4" {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -620,7 +664,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                 name="activityLevel"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Poziom aktywności fizycznej w ciągu dnia</FormLabel>
+                    <FormLabel>Jaki jest poziom aktywności fizycznej klienta w ciągu dnia?</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ?? ""}>
                       <FormControl>
                         <SelectTrigger>
@@ -634,6 +678,9 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                         <SelectItem value="Bardzo aktywny">Bardzo aktywny</SelectItem>
                       </SelectContent>
                     </Select>
+                    {field.value && ACTIVITY_LEVEL_DESCRIPTIONS[field.value] && (
+                      <FormDescription className="text-xs">{ACTIVITY_LEVEL_DESCRIPTIONS[field.value]}</FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -772,27 +819,28 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                         <SelectContent>
                           <SelectItem value="Siłownia">Siłownia</SelectItem>
                           <SelectItem value="Dom">Dom</SelectItem>
-                          <SelectItem value="Plener">Plener</SelectItem>
-                          <SelectItem value="Mieszane">Mieszane</SelectItem>
+                          <SelectItem value="Siłownia plenerowa">Siłownia plenerowa</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="equipment"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Dostępny sprzęt</FormLabel>
-                      <FormControl>
-                        <Input placeholder="np. Hantle, gumy oporowe, brak sprzętu" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {showEquipmentField && (
+                  <FormField
+                    control={form.control}
+                    name="equipment"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Dostępny sprzęt</FormLabel>
+                        <FormControl>
+                          <Input placeholder="np. Hantle, gumy oporowe, brak sprzętu" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

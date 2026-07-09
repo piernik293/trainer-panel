@@ -20,6 +20,8 @@ export interface Survey {
   /** @nullable */
   weeklyFrequency?: number | null;
   /** @nullable */
+  desiredWeeklyFrequency?: number | null;
+  /** @nullable */
   sessionDuration?: string | null;
   /** @nullable */
   preferredMuscles?: string | null;

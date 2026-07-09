@@ -22,6 +22,7 @@ export interface PublicSurveySubmission {
   trainingDuration?: string;
   healthLimitations?: string;
   weeklyFrequency?: number;
+  desiredWeeklyFrequency?: number;
   sessionDuration?: string;
   preferredMuscles?: string;
   avoidedMuscles?: string;
