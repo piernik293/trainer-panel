@@ -116,7 +116,15 @@ function calculateAge(dateOfBirth: string | undefined): number | undefined {
 const formSchema = z.object({
   firstName: z.string().min(1, "Imię jest wymagane"),
   lastName: z.string().min(1, "Nazwisko jest wymagane"),
-  email: z.string().email("Nieprawidłowy adres e-mail").optional().or(z.literal("")),
+  email: z
+    .string()
+    .transform((val) => val.trim())
+    .pipe(
+      z
+        .string()
+        .min(1, "E-mail jest wymagany, aby trener mógł skontaktować się z Tobą oraz przesłać plan treningowy.")
+        .email("E-mail jest wymagany, aby trener mógł skontaktować się z Tobą oraz przesłać plan treningowy.")
+    ),
   phone: z.string().optional(),
   dateOfBirth: z
     .string()
@@ -340,11 +348,11 @@ export default function SurveyForm() {
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="email" render={({field}) => (
+            <FormField control={form.control} name="email" render={({field, fieldState}) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground">E-mail</FormLabel>
+                <FormLabel className="text-muted-foreground">E-mail *</FormLabel>
                 <FormControl>
-                  <Input {...field} type="email" className="bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none" />
+                  <Input {...field} type="email" className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

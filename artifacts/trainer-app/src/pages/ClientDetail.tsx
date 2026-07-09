@@ -290,7 +290,7 @@ export default function ClientDetail() {
                 </h3>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedSurveyId(null)}>Zamknij podgląd</Button>
               </div>
-              <SurveyDetails survey={displayedSurvey} bmi={calculateBmi(displayedSurvey.heightCm, displayedSurvey.weightKg)} showBmiRecommendation={false} />
+              <SurveyDetails survey={displayedSurvey} bmi={calculateBmi(displayedSurvey.heightCm, displayedSurvey.weightKg)} showBmiRecommendation={false} clientEmail={client.email} />
             </div>
           )}
         </TabsContent>
@@ -369,7 +369,7 @@ export default function ClientDetail() {
       <div className="print-only space-y-6">
         <ContactCard client={client} />
         {survey && (
-          <SurveyDetails survey={survey} bmi={bmi} showBmiRecommendation={showBmiRecommendation} clientName={`${client.firstName} ${client.lastName}`} />
+          <SurveyDetails survey={survey} bmi={bmi} showBmiRecommendation={showBmiRecommendation} clientName={`${client.firstName} ${client.lastName}`} clientEmail={client.email} />
         )}
       </div>
     </div>
@@ -445,6 +445,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 function SurveyTab({ client, survey, surveyLoading, id, bmi, showBmiRecommendation }: any) {
+  const clientEmail = client?.email;
   if (!client.hasSurvey) {
     return (
       <Card className="border-border/50 shadow-sm border-dashed">
@@ -470,10 +471,10 @@ function SurveyTab({ client, survey, surveyLoading, id, bmi, showBmiRecommendati
 
   if (!survey) return null;
 
-  return <SurveyDetails survey={survey} bmi={bmi} showBmiRecommendation={showBmiRecommendation} />;
+  return <SurveyDetails survey={survey} bmi={bmi} showBmiRecommendation={showBmiRecommendation} clientEmail={clientEmail} />;
 }
 
-function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName }: any) {
+function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientEmail }: any) {
   return (
     <div className="space-y-6 print-page-break-before">
       {clientName && (
@@ -482,7 +483,9 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName }: any) 
         </h2>
       )}
 
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Dane podstawowe</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <SurveyBlock label="E-mail" value={clientEmail} />
         <SurveyBlock label="Data urodzenia" value={formatDateOfBirth(survey.dateOfBirth)} />
         <SurveyBlock label="Wiek" value={calculateAgeFromSurvey(survey.dateOfBirth, survey.age)?.toString()} />
         <SurveyBlock label="Płeć" value={formatGender(survey.gender)} />

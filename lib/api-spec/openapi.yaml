@@ -778,6 +778,7 @@ components:
           minLength: 1
         email:
           type: string
+          minLength: 1
         phone:
           type: string
         trainingGoal:
@@ -860,6 +861,7 @@ components:
       required:
         - firstName
         - lastName
+        - email
         - dateOfBirth
         - gender
 

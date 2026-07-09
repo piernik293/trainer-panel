@@ -5,6 +5,8 @@ import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function calculateAge(dateOfBirth: Date): number {
   const today = new Date();
   let age = today.getUTCFullYear() - dateOfBirth.getUTCFullYear();
@@ -69,10 +71,15 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     return;
   }
 
+  const trimmedEmail = parsed.data.email.trim();
+  if (!EMAIL_REGEX.test(trimmedEmail)) {
+    res.status(400).json({ error: "Nieprawidłowy adres e-mail" });
+    return;
+  }
+
   const {
     firstName,
     lastName,
-    email,
     phone,
     trainingGoal,
     experienceLevel,
@@ -119,7 +126,7 @@ router.post("/public/survey", async (req, res): Promise<void> => {
   // Insert client, then insert a new survey history row for them
   const [client] = await db
     .insert(clientsTable)
-    .values({ firstName, lastName, email, phone })
+    .values({ firstName, lastName, email: trimmedEmail, phone })
     .returning();
 
   await db.insert(surveysTable).values({
@@ -160,7 +167,7 @@ router.post("/public/survey", async (req, res): Promise<void> => {
   // Fire-and-forget email notification
   void sendNotificationEmail(
     `${firstName} ${lastName}`,
-    email,
+    trimmedEmail,
     trainingGoal
   );
 

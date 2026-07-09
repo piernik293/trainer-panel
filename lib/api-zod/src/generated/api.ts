@@ -517,6 +517,7 @@ export const GetStatsResponse = zod.object({
  */
 
 
+
 export const submitPublicSurveyBodyAgeMin = 0;
 export const submitPublicSurveyBodyAgeMax = 120;
 
@@ -533,7 +534,7 @@ export const submitPublicSurveyBodyStressLevelMax = 10;
 export const SubmitPublicSurveyBody = zod.object({
   "firstName": zod.string().min(1),
   "lastName": zod.string().min(1),
-  "email": zod.string().optional(),
+  "email": zod.string().min(1),
   "phone": zod.string().optional(),
   "trainingGoal": zod.string().optional(),
   "experienceLevel": zod.string().optional(),

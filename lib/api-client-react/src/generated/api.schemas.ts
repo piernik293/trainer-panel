@@ -311,7 +311,8 @@ export interface PublicSurveySubmission {
   firstName: string;
   /** @minLength 1 */
   lastName: string;
-  email?: string;
+  /** @minLength 1 */
+  email: string;
   phone?: string;
   trainingGoal?: string;
   experienceLevel?: string;
