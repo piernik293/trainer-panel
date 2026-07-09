@@ -910,7 +910,7 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                         <SelectContent>
                           <SelectItem value="Lubię cardio">Lubię cardio</SelectItem>
                           <SelectItem value="Jest mi obojętne">Jest mi obojętne</SelectItem>
-                          <SelectItem value="Nie przepadam za cardio">Nie przepadam za cardio</SelectItem>
+                          <SelectItem value="Wolę unikać cardio">Wolę unikać cardio</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

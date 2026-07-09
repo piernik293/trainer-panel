@@ -62,7 +62,13 @@ function buildEquipmentString(items: string[], other: string): string {
 }
 
 const CARDIO_RECOMMENDATION_TEXT =
-  "Podpowiedź: Przy tym celu regularny trening cardio może wspierać osiąganie lepszych efektów. Ostateczna ilość cardio zostanie dopasowana indywidualnie.";
+  "💡 Przy tym celu treningi cardio często wspierają osiąganie lepszych efektów. Ostateczna ilość zostanie indywidualnie dopasowana do Twoich możliwości, preferencji oraz planu treningowego.";
+
+const CARDIO_AVOID_REASSURANCE_TEXT =
+  "👍 To nie problem. W miarę możliwości plan zostanie przygotowany tak, aby ograniczyć ilość cardio lub zastąpić je innymi formami aktywności, jeśli będzie to zgodne z Twoim celem treningowym.";
+
+const CARDIO_FREQUENCY_HELPER_TEXT =
+  "💡 Ta informacja pomoże lepiej dopasować plan treningowy do Twojego celu oraz preferencji. Cardio nie jest obowiązkowym elementem każdego planu.";
 
 const TRAINING_FREQUENCY_RECOMMENDATIONS: Record<string, string> = {
   "Brak aktywności fizycznej":
@@ -577,23 +583,35 @@ export default function SurveyForm() {
                 )}
                 <FormControl>
                   <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
-                    {["Lubię cardio", "Jest mi obojętne", "Nie przepadam za cardio"].map(pref => (
-                      <FormItem key={pref} className="flex items-center space-x-0 space-y-0">
+                    {[
+                      { value: "Lubię cardio", label: "❤️ Lubię cardio" },
+                      { value: "Jest mi obojętne", label: "😐 Jest mi obojętne" },
+                      { value: "Wolę unikać cardio", label: "🙅 Wolę unikać cardio" },
+                    ].map(({ value, label }) => (
+                      <FormItem key={value} className="flex items-center space-x-0 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value={pref} className="peer sr-only" />
+                          <RadioGroupItem value={value} className="peer sr-only" />
                         </FormControl>
                         <FormLabel className="w-full flex items-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
-                          {pref}
+                          {label}
                         </FormLabel>
                       </FormItem>
                     ))}
                   </RadioGroup>
                 </FormControl>
+                {field.value === "Wolę unikać cardio" && (
+                  <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
+                    {CARDIO_AVOID_REASSURANCE_TEXT}
+                  </p>
+                )}
               </FormItem>
             )} />
             <FormField control={form.control} name="cardioFrequency" render={({field}) => (
               <FormItem>
                 <FormLabel className="text-muted-foreground">Jak często wykonujesz trening cardio?</FormLabel>
+                <FormDescription className="text-xs text-muted-foreground/70">
+                  {CARDIO_FREQUENCY_HELPER_TEXT}
+                </FormDescription>
                 <FormControl>
                   <Input placeholder="np. 2x w tygodniu" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
                 </FormControl>
