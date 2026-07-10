@@ -2,3 +2,4 @@
 - [Zod coerce.date() breaks native date inputs](zod-coerce-date-html-input.md) — API responses using `z.coerce.date()` serialize as full ISO timestamps, not `YYYY-MM-DD`, which breaks `<input type="date">` binding.
 - [orval zod date vs date-time](orval-date-only-fields.md) — orval's zod client can't tell OpenAPI `format: date` from `date-time`; fixed via a postprocess script + shared `dateOnly` schema, not per-route patches.
 - [Dual survey form parity](dual-survey-form-parity.md) — client-landing and trainer-app have separate, non-shared survey forms; conditional/required field changes must be ported to both + both API validation routes.
+- [orval boolean query coercion](orval-boolean-query-coercion.md) — `zod.coerce.boolean()` on generated query-param schemas treats any non-empty string (incl. "false") as true; parse boolean query params from raw req.query in the route instead of trusting the generated schema.
