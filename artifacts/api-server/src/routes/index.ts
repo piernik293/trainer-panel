@@ -5,6 +5,7 @@ import surveysRouter from "./surveys";
 import statsRouter from "./stats";
 import publicRouter from "./public";
 import notesRouter from "./notes";
+import exercisesRouter from "./exercises";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(surveysRouter);
 router.use(statsRouter);
 router.use(publicRouter);
 router.use(notesRouter);
+router.use(exercisesRouter);
 
 export default router;

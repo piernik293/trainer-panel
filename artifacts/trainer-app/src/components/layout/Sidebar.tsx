@@ -8,6 +8,7 @@ export function Sidebar() {
   const navItems = [
     { href: "/", label: "Pulpit", icon: LayoutDashboard },
     { href: "/clients", label: "Klienci", icon: Users },
+    { href: "/exercises", label: "Biblioteka ćwiczeń", icon: Dumbbell },
   ];
 
   return (

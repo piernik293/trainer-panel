@@ -260,6 +260,79 @@ export interface TrainerNoteInput {
   content: string;
 }
 
+export interface Exercise {
+  id: number;
+  name: string;
+  slug: string;
+  mainMuscleGroup: string;
+  secondaryMuscleGroups: string[];
+  equipment: string[];
+  /** @nullable */
+  equipmentOther?: string | null;
+  trainingLocation: string[];
+  /** @nullable */
+  difficultyLevel?: string | null;
+  /** @nullable */
+  movementPattern?: string | null;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  executionInstructions?: string | null;
+  /** @nullable */
+  commonMistakes?: string | null;
+  /** @nullable */
+  coachingTips?: string | null;
+  /** @nullable */
+  videoUrl?: string | null;
+  /** @nullable */
+  imageUrl?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExerciseInput {
+  /** @minLength 1 */
+  name: string;
+  slug?: string;
+  /** @minLength 1 */
+  mainMuscleGroup: string;
+  secondaryMuscleGroups?: string[];
+  equipment?: string[];
+  equipmentOther?: string;
+  trainingLocation?: string[];
+  difficultyLevel?: string;
+  movementPattern?: string;
+  description?: string;
+  executionInstructions?: string;
+  commonMistakes?: string;
+  coachingTips?: string;
+  videoUrl?: string;
+  imageUrl?: string;
+  isActive?: boolean;
+}
+
+export interface ExerciseUpdate {
+  /** @minLength 1 */
+  name?: string;
+  slug?: string;
+  /** @minLength 1 */
+  mainMuscleGroup?: string;
+  secondaryMuscleGroups?: string[];
+  equipment?: string[];
+  equipmentOther?: string;
+  trainingLocation?: string[];
+  difficultyLevel?: string;
+  movementPattern?: string;
+  description?: string;
+  executionInstructions?: string;
+  commonMistakes?: string;
+  coachingTips?: string;
+  videoUrl?: string;
+  imageUrl?: string;
+  isActive?: boolean;
+}
+
 export interface Stats {
   totalClients: number;
   surveysCompleted: number;
@@ -379,4 +452,13 @@ export interface GoalCount {
   goal: string;
   count: number;
 }
+
+export type ListExercisesParams = {
+search?: string;
+mainMuscleGroup?: string;
+equipment?: string;
+difficultyLevel?: string;
+trainingLocation?: string;
+isActive?: boolean;
+};
 

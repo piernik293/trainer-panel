@@ -588,6 +588,174 @@ export const SubmitPublicSurveyResponse = zod.object({
 
 
 /**
+ * @summary List exercises in the trainer's exercise library
+ */
+export const ListExercisesQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "mainMuscleGroup": zod.coerce.string().optional(),
+  "equipment": zod.coerce.string().optional(),
+  "difficultyLevel": zod.coerce.string().optional(),
+  "trainingLocation": zod.coerce.string().optional(),
+  "isActive": zod.coerce.boolean().optional()
+})
+
+export const ListExercisesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "mainMuscleGroup": zod.string(),
+  "secondaryMuscleGroups": zod.array(zod.string()),
+  "equipment": zod.array(zod.string()),
+  "equipmentOther": zod.string().nullish(),
+  "trainingLocation": zod.array(zod.string()),
+  "difficultyLevel": zod.string().nullish(),
+  "movementPattern": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "executionInstructions": zod.string().nullish(),
+  "commonMistakes": zod.string().nullish(),
+  "coachingTips": zod.string().nullish(),
+  "videoUrl": zod.string().nullish(),
+  "imageUrl": zod.string().nullish(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListExercisesResponse = zod.array(ListExercisesResponseItem)
+
+
+/**
+ * @summary Create a new exercise
+ */
+
+
+
+
+export const CreateExerciseBody = zod.object({
+  "name": zod.string().min(1),
+  "slug": zod.string().optional(),
+  "mainMuscleGroup": zod.string().min(1),
+  "secondaryMuscleGroups": zod.array(zod.string()).optional(),
+  "equipment": zod.array(zod.string()).optional(),
+  "equipmentOther": zod.string().optional(),
+  "trainingLocation": zod.array(zod.string()).optional(),
+  "difficultyLevel": zod.string().optional(),
+  "movementPattern": zod.string().optional(),
+  "description": zod.string().optional(),
+  "executionInstructions": zod.string().optional(),
+  "commonMistakes": zod.string().optional(),
+  "coachingTips": zod.string().optional(),
+  "videoUrl": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "isActive": zod.boolean().optional()
+})
+
+export const CreateExerciseResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "mainMuscleGroup": zod.string(),
+  "secondaryMuscleGroups": zod.array(zod.string()),
+  "equipment": zod.array(zod.string()),
+  "equipmentOther": zod.string().nullish(),
+  "trainingLocation": zod.array(zod.string()),
+  "difficultyLevel": zod.string().nullish(),
+  "movementPattern": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "executionInstructions": zod.string().nullish(),
+  "commonMistakes": zod.string().nullish(),
+  "coachingTips": zod.string().nullish(),
+  "videoUrl": zod.string().nullish(),
+  "imageUrl": zod.string().nullish(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get an exercise by ID
+ */
+export const GetExerciseParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetExerciseResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "mainMuscleGroup": zod.string(),
+  "secondaryMuscleGroups": zod.array(zod.string()),
+  "equipment": zod.array(zod.string()),
+  "equipmentOther": zod.string().nullish(),
+  "trainingLocation": zod.array(zod.string()),
+  "difficultyLevel": zod.string().nullish(),
+  "movementPattern": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "executionInstructions": zod.string().nullish(),
+  "commonMistakes": zod.string().nullish(),
+  "coachingTips": zod.string().nullish(),
+  "videoUrl": zod.string().nullish(),
+  "imageUrl": zod.string().nullish(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update an exercise (including activate/deactivate)
+ */
+export const UpdateExerciseParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+
+export const UpdateExerciseBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "slug": zod.string().optional(),
+  "mainMuscleGroup": zod.string().min(1).optional(),
+  "secondaryMuscleGroups": zod.array(zod.string()).optional(),
+  "equipment": zod.array(zod.string()).optional(),
+  "equipmentOther": zod.string().optional(),
+  "trainingLocation": zod.array(zod.string()).optional(),
+  "difficultyLevel": zod.string().optional(),
+  "movementPattern": zod.string().optional(),
+  "description": zod.string().optional(),
+  "executionInstructions": zod.string().optional(),
+  "commonMistakes": zod.string().optional(),
+  "coachingTips": zod.string().optional(),
+  "videoUrl": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "isActive": zod.boolean().optional()
+})
+
+export const UpdateExerciseResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "mainMuscleGroup": zod.string(),
+  "secondaryMuscleGroups": zod.array(zod.string()),
+  "equipment": zod.array(zod.string()),
+  "equipmentOther": zod.string().nullish(),
+  "trainingLocation": zod.array(zod.string()),
+  "difficultyLevel": zod.string().nullish(),
+  "movementPattern": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "executionInstructions": zod.string().nullish(),
+  "commonMistakes": zod.string().nullish(),
+  "coachingTips": zod.string().nullish(),
+  "videoUrl": zod.string().nullish(),
+  "imageUrl": zod.string().nullish(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Get distribution of training goals across all clients
  */
 export const GetTrainingGoalsDistributionResponseItem = zod.object({

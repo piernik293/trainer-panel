@@ -20,6 +20,8 @@ tags:
     description: Public-facing endpoints for client self-service
   - name: notes
     description: Private trainer notes
+  - name: exercises
+    description: Trainer-only exercise library
 paths:
   /healthz:
     get:
@@ -399,6 +401,135 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /exercises:
+    get:
+      operationId: listExercises
+      tags: [exercises]
+      summary: List exercises in the trainer's exercise library
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: mainMuscleGroup
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: equipment
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: difficultyLevel
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: trainingLocation
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: isActive
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of exercises
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Exercise"
+    post:
+      operationId: createExercise
+      tags: [exercises]
+      summary: Create a new exercise
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExerciseInput"
+      responses:
+        "201":
+          description: Created exercise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exercise"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /exercises/{id}:
+    get:
+      operationId: getExercise
+      tags: [exercises]
+      summary: Get an exercise by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Exercise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exercise"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateExercise
+      tags: [exercises]
+      summary: Update an exercise (including activate/deactivate)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExerciseUpdate"
+      responses:
+        "200":
+          description: Updated exercise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exercise"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /training-goals-distribution:
     get:
       operationId: getTrainingGoalsDistribution
@@ -735,6 +866,158 @@ components:
           minLength: 1
       required:
         - content
+
+    Exercise:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        mainMuscleGroup:
+          type: string
+        secondaryMuscleGroups:
+          type: array
+          items:
+            type: string
+        equipment:
+          type: array
+          items:
+            type: string
+        equipmentOther:
+          type: ["string", "null"]
+        trainingLocation:
+          type: array
+          items:
+            type: string
+        difficultyLevel:
+          type: ["string", "null"]
+        movementPattern:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        executionInstructions:
+          type: ["string", "null"]
+        commonMistakes:
+          type: ["string", "null"]
+        coachingTips:
+          type: ["string", "null"]
+        videoUrl:
+          type: ["string", "null"]
+        imageUrl:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - slug
+        - mainMuscleGroup
+        - secondaryMuscleGroups
+        - equipment
+        - trainingLocation
+        - isActive
+        - createdAt
+        - updatedAt
+
+    ExerciseInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        slug:
+          type: string
+        mainMuscleGroup:
+          type: string
+          minLength: 1
+        secondaryMuscleGroups:
+          type: array
+          items:
+            type: string
+        equipment:
+          type: array
+          items:
+            type: string
+        equipmentOther:
+          type: string
+        trainingLocation:
+          type: array
+          items:
+            type: string
+        difficultyLevel:
+          type: string
+        movementPattern:
+          type: string
+        description:
+          type: string
+        executionInstructions:
+          type: string
+        commonMistakes:
+          type: string
+        coachingTips:
+          type: string
+        videoUrl:
+          type: string
+        imageUrl:
+          type: string
+        isActive:
+          type: boolean
+      required:
+        - name
+        - mainMuscleGroup
+
+    ExerciseUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        slug:
+          type: string
+        mainMuscleGroup:
+          type: string
+          minLength: 1
+        secondaryMuscleGroups:
+          type: array
+          items:
+            type: string
+        equipment:
+          type: array
+          items:
+            type: string
+        equipmentOther:
+          type: string
+        trainingLocation:
+          type: array
+          items:
+            type: string
+        difficultyLevel:
+          type: string
+        movementPattern:
+          type: string
+        description:
+          type: string
+        executionInstructions:
+          type: string
+        commonMistakes:
+          type: string
+        coachingTips:
+          type: string
+        videoUrl:
+          type: string
+        imageUrl:
+          type: string
+        isActive:
+          type: boolean
 
     Stats:
       type: object
