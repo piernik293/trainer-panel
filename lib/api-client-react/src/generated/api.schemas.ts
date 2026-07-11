@@ -333,6 +333,43 @@ export interface ExerciseUpdate {
   isActive?: boolean;
 }
 
+export interface SpecificMuscle {
+  id: number;
+  name: string;
+  broadCategory: string;
+}
+
+export interface SpecificMuscleInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  broadCategory: string;
+}
+
+export interface MuscleAssignmentInput {
+  specificMuscleId: number;
+  isPrimary: boolean;
+  /**
+     * @minimum 0
+     * @maximum 1
+     */
+  coefficient: number;
+}
+
+export interface ExerciseMusclesInput {
+  assignments: MuscleAssignmentInput[];
+}
+
+export interface ExerciseMuscleAssignment {
+  id: number;
+  exerciseId: number;
+  specificMuscleId: number;
+  muscleName: string;
+  broadCategory: string;
+  isPrimary: boolean;
+  coefficient: number;
+}
+
 export interface Stats {
   totalClients: number;
   surveysCompleted: number;
@@ -460,5 +497,9 @@ equipment?: string;
 difficultyLevel?: string;
 trainingLocation?: string;
 isActive?: boolean;
+};
+
+export type ListMusclesParams = {
+broadCategory?: string;
 };
 

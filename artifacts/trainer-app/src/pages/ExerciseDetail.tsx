@@ -1,4 +1,5 @@
 import { useParams, Link, useLocation } from "wouter";
+import ExerciseMuscleAssignments from "./ExerciseMuscleAssignments";
 import {
   useGetExercise,
   useUpdateExercise,
@@ -125,6 +126,7 @@ export default function ExerciseDetail() {
         <DetailBlock label="Instrukcje wykonania" value={exercise.executionInstructions} fullWidth />
         <DetailBlock label="Częste błędy" value={exercise.commonMistakes} fullWidth />
         <DetailBlock label="Wskazówki trenerskie" value={exercise.coachingTips} fullWidth />
+        <ExerciseMuscleAssignments exerciseId={exerciseId} />
         <DetailBlock
           label="Wideo"
           value={exercise.videoUrl ? (

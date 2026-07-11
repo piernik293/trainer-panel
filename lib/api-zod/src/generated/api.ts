@@ -756,6 +756,91 @@ export const UpdateExerciseResponse = zod.object({
 
 
 /**
+ * @summary List specific muscles in the trainer catalogue
+ */
+export const ListMusclesQueryParams = zod.object({
+  "broadCategory": zod.coerce.string().optional()
+})
+
+export const ListMusclesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "broadCategory": zod.string()
+})
+export const ListMusclesResponse = zod.array(ListMusclesResponseItem)
+
+
+/**
+ * @summary Add a specific muscle to the catalogue
+ */
+
+
+
+
+export const CreateMuscleBody = zod.object({
+  "name": zod.string().min(1),
+  "broadCategory": zod.string().min(1)
+})
+
+export const CreateMuscleResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "broadCategory": zod.string()
+})
+
+
+/**
+ * @summary Get specific-muscle assignments for an exercise
+ */
+export const GetExerciseMusclesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetExerciseMusclesResponseItem = zod.object({
+  "id": zod.number(),
+  "exerciseId": zod.number(),
+  "specificMuscleId": zod.number(),
+  "muscleName": zod.string(),
+  "broadCategory": zod.string(),
+  "isPrimary": zod.boolean(),
+  "coefficient": zod.number()
+})
+export const GetExerciseMusclesResponse = zod.array(GetExerciseMusclesResponseItem)
+
+
+/**
+ * @summary Replace all muscle assignments for an exercise (atomic)
+ */
+export const SetExerciseMusclesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const setExerciseMusclesBodyAssignmentsItemCoefficientMin = 0;
+export const setExerciseMusclesBodyAssignmentsItemCoefficientMax = 1;
+
+
+
+export const SetExerciseMusclesBody = zod.object({
+  "assignments": zod.array(zod.object({
+  "specificMuscleId": zod.number(),
+  "isPrimary": zod.boolean(),
+  "coefficient": zod.number().min(setExerciseMusclesBodyAssignmentsItemCoefficientMin).max(setExerciseMusclesBodyAssignmentsItemCoefficientMax)
+}))
+})
+
+export const SetExerciseMusclesResponseItem = zod.object({
+  "id": zod.number(),
+  "exerciseId": zod.number(),
+  "specificMuscleId": zod.number(),
+  "muscleName": zod.string(),
+  "broadCategory": zod.string(),
+  "isPrimary": zod.boolean(),
+  "coefficient": zod.number()
+})
+export const SetExerciseMusclesResponse = zod.array(SetExerciseMusclesResponseItem)
+
+
+/**
  * @summary Get distribution of training goals across all clients
  */
 export const GetTrainingGoalsDistributionResponseItem = zod.object({

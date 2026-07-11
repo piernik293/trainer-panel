@@ -26,12 +26,17 @@ import type {
   ErrorResponse,
   Exercise,
   ExerciseInput,
+  ExerciseMuscleAssignment,
+  ExerciseMusclesInput,
   ExerciseUpdate,
   GoalCount,
   HealthStatus,
   ListExercisesParams,
+  ListMusclesParams,
   PublicSurveyResponse,
   PublicSurveySubmission,
+  SpecificMuscle,
+  SpecificMuscleInput,
   Stats,
   Survey,
   SurveyInput,
@@ -1566,6 +1571,310 @@ export const useUpdateExercise = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getUpdateExerciseMutationOptions(options));
+    }
+
+export const getListMusclesUrl = (params?: ListMusclesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/muscles?${stringifiedParams}` : `/api/muscles`
+}
+
+/**
+ * @summary List specific muscles in the trainer catalogue
+ */
+export const listMuscles = async (params?: ListMusclesParams, options?: RequestInit): Promise<SpecificMuscle[]> => {
+
+  return customFetch<SpecificMuscle[]>(getListMusclesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMusclesQueryKey = (params?: ListMusclesParams,) => {
+    return [
+    `/api/muscles`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListMusclesQueryOptions = <TData = Awaited<ReturnType<typeof listMuscles>>, TError = ErrorType<unknown>>(params?: ListMusclesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMuscles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMusclesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMuscles>>> = ({ signal }) => listMuscles(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMuscles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMusclesQueryResult = NonNullable<Awaited<ReturnType<typeof listMuscles>>>
+export type ListMusclesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List specific muscles in the trainer catalogue
+ */
+
+export function useListMuscles<TData = Awaited<ReturnType<typeof listMuscles>>, TError = ErrorType<unknown>>(
+ params?: ListMusclesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMuscles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMusclesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateMuscleUrl = () => {
+
+
+
+
+  return `/api/muscles`
+}
+
+/**
+ * @summary Add a specific muscle to the catalogue
+ */
+export const createMuscle = async (specificMuscleInput: SpecificMuscleInput, options?: RequestInit): Promise<SpecificMuscle> => {
+
+  return customFetch<SpecificMuscle>(getCreateMuscleUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(specificMuscleInput)
+  }
+);}
+
+
+
+
+
+export const getCreateMuscleMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMuscle>>, TError,{data: BodyType<SpecificMuscleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMuscle>>, TError,{data: BodyType<SpecificMuscleInput>}, TContext> => {
+
+const mutationKey = ['createMuscle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMuscle>>, {data: BodyType<SpecificMuscleInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMuscle(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMuscleMutationResult = NonNullable<Awaited<ReturnType<typeof createMuscle>>>
+    export type CreateMuscleMutationBody = BodyType<SpecificMuscleInput>
+    export type CreateMuscleMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Add a specific muscle to the catalogue
+ */
+export const useCreateMuscle = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMuscle>>, TError,{data: BodyType<SpecificMuscleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createMuscle>>,
+        TError,
+        {data: BodyType<SpecificMuscleInput>},
+        TContext
+      > => {
+      return useMutation(getCreateMuscleMutationOptions(options));
+    }
+
+export const getGetExerciseMusclesUrl = (id: number,) => {
+
+
+
+
+  return `/api/exercises/${id}/muscles`
+}
+
+/**
+ * @summary Get specific-muscle assignments for an exercise
+ */
+export const getExerciseMuscles = async (id: number, options?: RequestInit): Promise<ExerciseMuscleAssignment[]> => {
+
+  return customFetch<ExerciseMuscleAssignment[]>(getGetExerciseMusclesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetExerciseMusclesQueryKey = (id: number,) => {
+    return [
+    `/api/exercises/${id}/muscles`
+    ] as const;
+    }
+
+
+export const getGetExerciseMusclesQueryOptions = <TData = Awaited<ReturnType<typeof getExerciseMuscles>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExerciseMuscles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExerciseMusclesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExerciseMuscles>>> = ({ signal }) => getExerciseMuscles(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExerciseMuscles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetExerciseMusclesQueryResult = NonNullable<Awaited<ReturnType<typeof getExerciseMuscles>>>
+export type GetExerciseMusclesQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get specific-muscle assignments for an exercise
+ */
+
+export function useGetExerciseMuscles<TData = Awaited<ReturnType<typeof getExerciseMuscles>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExerciseMuscles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetExerciseMusclesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetExerciseMusclesUrl = (id: number,) => {
+
+
+
+
+  return `/api/exercises/${id}/muscles`
+}
+
+/**
+ * @summary Replace all muscle assignments for an exercise (atomic)
+ */
+export const setExerciseMuscles = async (id: number,
+    exerciseMusclesInput: ExerciseMusclesInput, options?: RequestInit): Promise<ExerciseMuscleAssignment[]> => {
+
+  return customFetch<ExerciseMuscleAssignment[]>(getSetExerciseMusclesUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(exerciseMusclesInput)
+  }
+);}
+
+
+
+
+
+export const getSetExerciseMusclesMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setExerciseMuscles>>, TError,{id: number;data: BodyType<ExerciseMusclesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setExerciseMuscles>>, TError,{id: number;data: BodyType<ExerciseMusclesInput>}, TContext> => {
+
+const mutationKey = ['setExerciseMuscles'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setExerciseMuscles>>, {id: number;data: BodyType<ExerciseMusclesInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setExerciseMuscles(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetExerciseMusclesMutationResult = NonNullable<Awaited<ReturnType<typeof setExerciseMuscles>>>
+    export type SetExerciseMusclesMutationBody = BodyType<ExerciseMusclesInput>
+    export type SetExerciseMusclesMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Replace all muscle assignments for an exercise (atomic)
+ */
+export const useSetExerciseMuscles = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setExerciseMuscles>>, TError,{id: number;data: BodyType<ExerciseMusclesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setExerciseMuscles>>,
+        TError,
+        {id: number;data: BodyType<ExerciseMusclesInput>},
+        TContext
+      > => {
+      return useMutation(getSetExerciseMusclesMutationOptions(options));
     }
 
 export const getGetTrainingGoalsDistributionUrl = () => {

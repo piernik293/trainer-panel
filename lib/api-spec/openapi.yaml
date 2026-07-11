@@ -530,6 +530,120 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /muscles:
+    get:
+      operationId: listMuscles
+      tags: [exercises]
+      summary: List specific muscles in the trainer catalogue
+      parameters:
+        - name: broadCategory
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of specific muscles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpecificMuscle"
+    post:
+      operationId: createMuscle
+      tags: [exercises]
+      summary: Add a specific muscle to the catalogue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpecificMuscleInput"
+      responses:
+        "201":
+          description: Created specific muscle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpecificMuscle"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Muscle name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /exercises/{id}/muscles:
+    get:
+      operationId: getExerciseMuscles
+      tags: [exercises]
+      summary: Get specific-muscle assignments for an exercise
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Muscle assignments for this exercise
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExerciseMuscleAssignment"
+        "404":
+          description: Exercise not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: setExerciseMuscles
+      tags: [exercises]
+      summary: Replace all muscle assignments for an exercise (atomic)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExerciseMusclesInput"
+      responses:
+        "200":
+          description: Updated muscle assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExerciseMuscleAssignment"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Exercise not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /training-goals-distribution:
     get:
       operationId: getTrainingGoalsDistribution
@@ -1018,6 +1132,85 @@ components:
           type: string
         isActive:
           type: boolean
+
+    SpecificMuscle:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        broadCategory:
+          type: string
+      required:
+        - id
+        - name
+        - broadCategory
+
+    SpecificMuscleInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        broadCategory:
+          type: string
+          minLength: 1
+      required:
+        - name
+        - broadCategory
+
+    MuscleAssignmentInput:
+      type: object
+      properties:
+        specificMuscleId:
+          type: integer
+        isPrimary:
+          type: boolean
+        coefficient:
+          type: number
+          minimum: 0
+          maximum: 1
+      required:
+        - specificMuscleId
+        - isPrimary
+        - coefficient
+
+    ExerciseMusclesInput:
+      type: object
+      properties:
+        assignments:
+          type: array
+          items:
+            $ref: "#/components/schemas/MuscleAssignmentInput"
+      required:
+        - assignments
+
+    ExerciseMuscleAssignment:
+      type: object
+      properties:
+        id:
+          type: integer
+        exerciseId:
+          type: integer
+        specificMuscleId:
+          type: integer
+        muscleName:
+          type: string
+        broadCategory:
+          type: string
+        isPrimary:
+          type: boolean
+        coefficient:
+          type: number
+      required:
+        - id
+        - exerciseId
+        - specificMuscleId
+        - muscleName
+        - broadCategory
+        - isPrimary
+        - coefficient
 
     Stats:
       type: object
