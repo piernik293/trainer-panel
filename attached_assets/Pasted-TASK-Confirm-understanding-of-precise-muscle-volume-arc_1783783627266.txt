@@ -1,0 +1,155 @@
+TASK — Confirm understanding of precise muscle volume architecture
+
+IMPORTANT
+
+Do not make any code changes yet.
+Do not modify the database.
+Do not change the exercise library.
+Do not create migrations.
+Do not implement weekly volume calculations.
+
+First, confirm your understanding of the proposed architecture and provide examples.
+Wait for my approval before implementation.
+
+==================================================
+1. PURPOSE
+==================================================
+
+The current exercise library uses broad muscle groups such as:
+
+- Plecy
+- Klatka piersiowa
+- Barki
+- Nogi
+
+This is useful for navigation and filtering, but it is not precise enough for future weekly muscle-volume calculations.
+
+The improved system should use two levels:
+
+1. Broad body-part category
+2. Specific muscle
+
+Example:
+
+Broad category:
+Plecy
+
+Specific muscles inside this category may include:
+
+- Mięsień najszerszy grzbietu
+- Mięsień czworoboczny grzbietu
+- Mięśnie równoległoboczne
+- Mięsień obły większy
+- Prostowniki grzbietu
+
+The broad category must remain available for simple filtering.
+
+==================================================
+2. EXERCISE MUSCLE CONTRIBUTIONS
+==================================================
+
+Each exercise should support:
+
+- one broad body-part category
+- one primary specific muscle
+- multiple secondary specific muscles
+- an editable volume-contribution coefficient for every assigned muscle
+
+Suggested starting coefficients:
+
+- 1.0 — główny mięsień pracujący
+- 0.5 — istotny mięsień pomocniczy
+- 0.25 — mniejszy udział pomocniczy
+- 0 — mięsień nie jest liczony do objętości
+
+These coefficients are coaching estimates.
+
+They must be editable by the trainer for each exercise.
+
+Do not treat them as scientifically exact or universally fixed values.
+
+The coefficients do not need to add up to 1.0.
+
+==================================================
+3. EXAMPLE — PULL-UP
+==================================================
+
+Exercise:
+Podciąganie na drążku
+
+Broad category:
+Plecy
+
+Example muscle assignments:
+
+- Mięsień najszerszy grzbietu — primary — 1.0
+- Mięsień dwugłowy ramienia — secondary — 0.5
+- Mięsień obły większy — secondary — 0.5
+- Mięsień czworoboczny grzbietu — secondary — 0.25
+
+For 3 workout sets, the future volume calculation could produce:
+
+- Mięsień najszerszy grzbietu: 3.0 sets
+- Mięsień dwugłowy ramienia: 1.5 sets
+- Mięsień obły większy: 1.5 sets
+- Mięsień czworoboczny grzbietu: 0.75 sets
+
+Do not implement this calculation yet.
+
+==================================================
+4. SECOND EXAMPLE
+==================================================
+
+Provide your own example for:
+
+Wyciskanie sztangi leżąc
+
+Show:
+
+- broad category
+- primary specific muscle
+- secondary specific muscles
+- suggested editable coefficients
+- result for 4 workout sets
+
+Use practical coaching-level anatomy.
+
+Do not create unnecessarily detailed anatomical subdivisions unless they are useful for programming training volume.
+
+==================================================
+5. FUTURE DATA MODEL
+==================================================
+
+Explain how you would safely extend the existing exercise model without deleting current data.
+
+The intended structure should preserve:
+
+- existing broad muscle-group filtering
+- current exercises
+- backward compatibility
+
+The future system should be ready for:
+
+- workout plan editor
+- weekly muscle-volume calculations
+- exercise substitutions
+- trainer adjustments
+- AI plan analysis
+
+Do not implement any of these features now.
+
+==================================================
+6. VALIDATION RULES
+==================================================
+
+Confirm that the future implementation would:
+
+- prevent assigning the same specific muscle twice
+- require one primary specific muscle
+- allow multiple secondary muscles
+- allow coefficients from 0 to 1
+- keep coefficients editable
+- keep this metadata hidden from clients
+- show it only in the trainer exercise library and future plan editor
+
+Before making any changes, summarize your understanding and wait for my approval.
