@@ -21,10 +21,11 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Printer, FileEdit, Phone, Mail, Calendar, ClipboardList, History, StickyNote, Trash2, Pencil } from "lucide-react";
+import { ArrowLeft, Printer, FileEdit, Phone, Mail, Calendar, ClipboardList, History, StickyNote, Trash2, Pencil, Dumbbell } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { clientStatusLabel, surveyStatusLabel } from "@/lib/client-status";
 import { useToast } from "@/hooks/use-toast";
+import { useListClientPlans, useDeletePlan, type WorkoutPlanSummary } from "@/lib/planApi";
 
 function calculateAgeFromSurvey(dateOfBirth: string | null | undefined, legacyAge: number | null | undefined): number | undefined {
   if (dateOfBirth) {
@@ -64,6 +65,101 @@ function calculateBmi(heightCm: number | null | undefined, weightKg: number | nu
 
 const BMI_RECOMMENDATION_TEXT =
   "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj jednak, że BMI nie rozróżnia tkanki tłuszczowej od masy mięśniowej. W wielu przypadkach dobrym rozwiązaniem może być redukcja tkanki tłuszczowej lub rekompozycja sylwetki.";
+
+const PLAN_STATUS_LABEL: Record<string, string> = {
+  draft: "Szkic",
+  active: "Aktywny",
+  archived: "Zarchiwizowany",
+};
+const PLAN_STATUS_CLASS: Record<string, string> = {
+  draft: "bg-muted text-muted-foreground",
+  active: "bg-green-100 text-green-700 border-green-200",
+  archived: "bg-gray-100 text-gray-500",
+};
+
+function PlansTab({ clientId }: { clientId: number }) {
+  const { toast } = useToast();
+  const { data: plans, isLoading } = useListClientPlans(clientId);
+  const deletePlan = useDeletePlan(clientId);
+
+  const handleDelete = (plan: WorkoutPlanSummary) => {
+    if (!window.confirm(`Usunąć plan "${plan.title}"?`)) return;
+    deletePlan.mutate(plan.id, {
+      onError: (err) => toast({ title: err.message, variant: "destructive" }),
+    });
+  };
+
+  return (
+    <Card className="border-border/50 shadow-sm">
+      <CardHeader className="bg-muted/20 border-b border-border/50 flex flex-row items-center justify-between">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Dumbbell className="w-4 h-4" />
+          Plany treningowe
+        </CardTitle>
+        <Button asChild size="sm" className="gap-1">
+          <Link href={`/clients/${clientId}/plans/new`}>
+            <ClipboardList size={14} />
+            Nowy plan
+          </Link>
+        </Button>
+      </CardHeader>
+      <CardContent className="pt-4">
+        {isLoading ? (
+          <div className="space-y-2">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-14 bg-muted animate-pulse rounded-lg" />
+            ))}
+          </div>
+        ) : !plans || plans.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">
+            <Dumbbell className="w-8 h-8 mx-auto mb-2 opacity-30" />
+            <p className="text-sm">Brak planów treningowych.</p>
+            <p className="text-xs mt-1">
+              Utwórz plan na podstawie wywiadu treningowego klienta.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {plans.map((plan) => (
+              <div
+                key={plan.id}
+                className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/20 transition-colors group"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">{plan.title}</span>
+                    <Badge
+                      variant="outline"
+                      className={`text-xs px-1.5 py-0 ${PLAN_STATUS_CLASS[plan.status] ?? ""}`}
+                    >
+                      {PLAN_STATUS_LABEL[plan.status] ?? plan.status}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Poziom: {plan.experienceLevelUsed} · Utworzony {formatDate(plan.createdAt)}
+                  </p>
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/plans/${plan.id}`}>Edytuj</Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(plan)}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function ClientDetail() {
   const params = useParams<{ id: string }>();
@@ -225,6 +321,7 @@ export default function ClientDetail() {
           <TabsTrigger value="survey">Wywiad treningowy</TabsTrigger>
           <TabsTrigger value="history">Historia wywiadów treningowych</TabsTrigger>
           <TabsTrigger value="notes">Notatki</TabsTrigger>
+          <TabsTrigger value="plans">Plany treningowe</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="pt-4">
@@ -293,6 +390,10 @@ export default function ClientDetail() {
               <SurveyDetails survey={displayedSurvey} bmi={calculateBmi(displayedSurvey.heightCm, displayedSurvey.weightKg)} showBmiRecommendation={false} clientEmail={client.email} />
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="plans" className="pt-4">
+          <PlansTab clientId={id} />
         </TabsContent>
 
         <TabsContent value="notes" className="pt-4">

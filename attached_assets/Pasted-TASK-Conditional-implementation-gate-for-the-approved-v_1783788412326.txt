@@ -1,0 +1,200 @@
+TASK — Conditional implementation gate for the approved volume system
+
+Run this task only after the previous understanding-check task has finished.
+
+IMPORTANT:
+
+Do not proceed based only on the previous answer saying “READY TO IMPLEMENT”.
+
+First independently verify that the complete approved implementation specification is available and internally consistent.
+
+Do not guess.
+Do not silently correct requirements.
+Do not invent missing values.
+Do not commit or push.
+
+==================================================
+PHASE 1 — PRE-IMPLEMENTATION GATE
+==================================================
+
+Before changing any file, confirm all of the following:
+
+1. The exact approved list contains only these 11 volume targets:
+
+- Mięsień czworogłowy uda
+- Mięśnie pośladkowe
+- Mięsień trójgłowy łydki
+- Przywodziciele
+- Grupa kulszowo-goleniowa
+- Mięśnie naramienne
+- Mięsień trójgłowy ramienia
+- Mięsień piersiowy większy
+- Mięsień najszerszy grzbietu
+- Mięsień czworoboczny grzbietu
+- Mięsień dwugłowy ramienia
+
+2. The complete approved values are available for:
+
+- Początkujący
+- Średniozaawansowany
+- Zaawansowany
+
+Each target must have:
+
+- sessionMin
+- sessionMax
+- weeklyPreferredCeiling
+- weeklyAbsoluteCeiling
+
+3. The final implementation must seed exactly:
+
+- 11 volume targets
+- 3 experience levels
+- 33 guideline rows
+
+4. Mięsień obły większy is completely excluded from this volume-control feature.
+
+Do not:
+
+- calculate it in this feature
+- display it in the weekly summary
+- seed a limit for it
+- map it to another approved target
+
+5. No combined “Plecy” volume target or ceiling may be created.
+
+The broad Exercise Library category “Plecy” remains available only for navigation, filtering and classification.
+
+Within volume control:
+
+- Mięsień najszerszy grzbietu is calculated separately
+- Mięsień czworoboczny grzbietu is calculated separately
+
+6. Effective volume must use:
+
+working sets × muscle coefficient
+
+summed across the complete training week.
+
+Warm-up sets must not count.
+
+7. For approved group targets, one exercise contributes:
+
+working sets × highest relevant coefficient
+
+Do not sum several coefficients from the same exercise inside the same approved group.
+
+8. Weekly range interpretation must be:
+
+- lower value = preferred ceiling
+- upper value = absolute ceiling
+
+The lower value is not a mandatory minimum.
+
+9. Draft plans may temporarily exceed limits.
+
+Activation must be blocked when:
+
+- any approved target exceeds its absolute ceiling
+- an exercise has zero muscle assignments
+- surveyId is missing
+- guidelineVersionId is missing
+
+10. The implementation scope is:
+
+- versioned database guidelines
+- workout-plan foundation
+- manual plan editor
+- live weekly volume summary
+- per-session warnings
+- server-side activation validation
+
+Do not implement automatic AI exercise selection in this task.
+
+==================================================
+STOP CONDITIONS
+==================================================
+
+Immediately stop without changing any files if:
+
+- any approved value is missing
+- any value conflicts between prompts
+- the exact 11-target list is unclear
+- the existing muscle catalogue cannot be mapped safely
+- implementation would require inventing a muscle or mapping
+- the complete approved implementation prompt is unavailable
+- any database assumption cannot be verified
+- any previous implementation already conflicts with the approved scope
+
+If stopped:
+
+- do not modify code
+- do not create migrations
+- do not modify the database
+- do not seed partial data
+- do not commit or push
+
+Return:
+
+“IMPLEMENTATION BLOCKED — clarification required”
+
+Then list every exact mismatch or missing item.
+
+==================================================
+PHASE 2 — IMPLEMENTATION
+==================================================
+
+Proceed only if every Phase 1 requirement passes with no ambiguity.
+
+If all checks pass:
+
+1. Return:
+
+“PRE-IMPLEMENTATION GATE PASSED”
+
+2. Implement the complete previously approved prompt titled:
+
+“TASK — Implement interview-based workout plans with approved weekly volume control”
+
+3. Use the exact values and rules from that prompt.
+
+4. Do not expand or reinterpret its scope.
+
+5. If a new ambiguity appears during implementation:
+
+- stop immediately
+- rollback incomplete database work where possible
+- preserve existing functionality
+- report the ambiguity
+- do not guess
+
+==================================================
+PHASE 3 — VERIFICATION
+==================================================
+
+After implementation, verify:
+
+- exactly 11 targets exist
+- exactly 33 guideline rows exist
+- no Mięsień obły większy volume target exists
+- no combined Plecy target exists
+- all seeded values exactly match the approved prompt
+- beginner, intermediate and advanced profiles work
+- warm-up sets are excluded
+- weekly volume includes every training day
+- group targets use the maximum coefficient
+- draft plans can be edited above limits
+- activation above an absolute ceiling is blocked by the server
+- exercises without muscle assignments block activation
+- existing clients, surveys and Exercise Library still work
+
+Run:
+
+- database migration verification
+- TypeScript type checking
+- available automated tests
+- production build
+
+Do not commit or push.
+
+Return a detailed implementation report and wait for review.

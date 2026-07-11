@@ -7,6 +7,7 @@ import publicRouter from "./public";
 import notesRouter from "./notes";
 import exercisesRouter from "./exercises";
 import musclesRouter from "./muscles";
+import plansRouter from "./plans";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(publicRouter);
 router.use(notesRouter);
 router.use(exercisesRouter);
 router.use(musclesRouter);
+router.use(plansRouter);
 
 export default router;

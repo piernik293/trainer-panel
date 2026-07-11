@@ -13,6 +13,8 @@ import SurveyForm from '@/pages/SurveyForm';
 import ExerciseList from '@/pages/ExerciseList';
 import { ExerciseNew, ExerciseEdit } from '@/pages/ExerciseForm';
 import ExerciseDetail from '@/pages/ExerciseDetail';
+import PlanCreate from '@/pages/PlanCreate';
+import PlanEditor from '@/pages/PlanEditor';
 
 const queryClient = new QueryClient();
 
@@ -24,11 +26,13 @@ function Router() {
         <Route path="/clients" component={ClientList} />
         <Route path="/clients/new" component={ClientNew} />
         <Route path="/clients/:id/survey" component={SurveyForm} />
+        <Route path="/clients/:id/plans/new" component={PlanCreate} />
         <Route path="/clients/:id" component={ClientDetail} />
         <Route path="/exercises/new" component={ExerciseNew} />
         <Route path="/exercises/:id/edit" component={ExerciseEdit} />
         <Route path="/exercises/:id" component={ExerciseDetail} />
         <Route path="/exercises" component={ExerciseList} />
+        <Route path="/plans/:id" component={PlanEditor} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
