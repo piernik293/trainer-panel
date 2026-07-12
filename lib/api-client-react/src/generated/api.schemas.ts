@@ -321,6 +321,8 @@ export interface Exercise {
   /** @nullable */
   exercisePriority?: string | null;
   isActive: boolean;
+  isComplete: boolean;
+  missingFields: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -590,13 +592,99 @@ export interface AddProgressionBody {
   sortOrder?: number;
 }
 
+/**
+ * One row of exercise data for bulk import
+ */
+export interface ImportExerciseRow {
+  name: string;
+  mainMuscleGroup: string;
+  secondaryMuscleGroups?: string[];
+  movementPattern?: string;
+  difficultyLevel?: string;
+  equipment?: string[];
+  equipmentOther?: string;
+  trainingLocation?: string[];
+  exerciseType?: string;
+  description?: string;
+  executionInstructions?: string;
+  commonMistakes?: string;
+  coachingTips?: string;
+  breathingTips?: string;
+  safetyNotes?: string;
+  tempo?: string;
+  rangeOfMotion?: string;
+  videoUrl?: string;
+  imageUrl?: string;
+  suitableExperienceLevels?: string[];
+  trainingGoals?: string[];
+  movementCategory?: string;
+  planeOfMotion?: string;
+  execution?: string;
+  resistanceType?: string;
+  requiresSpotter?: boolean;
+  canBePerformedToFailure?: string;
+  jointStress?: string;
+  learningDifficulty?: number;
+  neurologicalFatigue?: number;
+  domsPotential?: number;
+  exercisePriority?: string;
+}
+
+export interface ImportPreviewRequest {
+  rows: ImportExerciseRow[];
+}
+
+export interface ImportRowError {
+  rowIndex: number;
+  exerciseName?: string;
+  errors: string[];
+}
+
+export interface ImportDuplicate {
+  rowIndex: number;
+  exerciseName: string;
+  existingId: number;
+}
+
+export interface ImportPreviewResponse {
+  validCount: number;
+  errors: ImportRowError[];
+  duplicates: ImportDuplicate[];
+}
+
+export type ImportRequestDuplicateStrategy = typeof ImportRequestDuplicateStrategy[keyof typeof ImportRequestDuplicateStrategy];
+
+
+export const ImportRequestDuplicateStrategy = {
+  skip: 'skip',
+  update: 'update',
+  create: 'create',
+} as const;
+
+export interface ImportRequest {
+  rows: ImportExerciseRow[];
+  duplicateStrategy: ImportRequestDuplicateStrategy;
+  skipInvalidRows?: boolean;
+}
+
+export interface ImportSummary {
+  imported: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+  errors: ImportRowError[];
+}
+
 export type ListExercisesParams = {
 search?: string;
 mainMuscleGroup?: string;
 equipment?: string;
 difficultyLevel?: string;
 trainingLocation?: string;
+exerciseType?: string;
+movementPattern?: string;
 isActive?: boolean;
+isComplete?: boolean;
 };
 
 export type ListMusclesParams = {

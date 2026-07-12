@@ -12,5 +12,8 @@ mainMuscleGroup?: string;
 equipment?: string;
 difficultyLevel?: string;
 trainingLocation?: string;
+exerciseType?: string;
+movementPattern?: string;
 isActive?: boolean;
+isComplete?: boolean;
 };

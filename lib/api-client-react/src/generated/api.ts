@@ -35,6 +35,10 @@ import type {
   ExerciseUpdate,
   GoalCount,
   HealthStatus,
+  ImportPreviewRequest,
+  ImportPreviewResponse,
+  ImportRequest,
+  ImportSummary,
   ListExercisesParams,
   ListMusclesParams,
   PublicSurveyResponse,
@@ -2323,6 +2327,148 @@ export const useRemoveExerciseProgression = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getRemoveExerciseProgressionMutationOptions(options));
+    }
+
+export const getPreviewExerciseImportUrl = () => {
+
+
+
+
+  return `/api/exercises/import/preview`
+}
+
+/**
+ * @summary Validate import rows without writing to the database
+ */
+export const previewExerciseImport = async (importPreviewRequest: ImportPreviewRequest, options?: RequestInit): Promise<ImportPreviewResponse> => {
+
+  return customFetch<ImportPreviewResponse>(getPreviewExerciseImportUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(importPreviewRequest)
+  }
+);}
+
+
+
+
+
+export const getPreviewExerciseImportMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewExerciseImport>>, TError,{data: BodyType<ImportPreviewRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewExerciseImport>>, TError,{data: BodyType<ImportPreviewRequest>}, TContext> => {
+
+const mutationKey = ['previewExerciseImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewExerciseImport>>, {data: BodyType<ImportPreviewRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewExerciseImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewExerciseImportMutationResult = NonNullable<Awaited<ReturnType<typeof previewExerciseImport>>>
+    export type PreviewExerciseImportMutationBody = BodyType<ImportPreviewRequest>
+    export type PreviewExerciseImportMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Validate import rows without writing to the database
+ */
+export const usePreviewExerciseImport = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewExerciseImport>>, TError,{data: BodyType<ImportPreviewRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewExerciseImport>>,
+        TError,
+        {data: BodyType<ImportPreviewRequest>},
+        TContext
+      > => {
+      return useMutation(getPreviewExerciseImportMutationOptions(options));
+    }
+
+export const getImportExercisesUrl = () => {
+
+
+
+
+  return `/api/exercises/import`
+}
+
+/**
+ * @summary Bulk import exercises with duplicate strategy
+ */
+export const importExercises = async (importRequest: ImportRequest, options?: RequestInit): Promise<ImportSummary> => {
+
+  return customFetch<ImportSummary>(getImportExercisesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(importRequest)
+  }
+);}
+
+
+
+
+
+export const getImportExercisesMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importExercises>>, TError,{data: BodyType<ImportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importExercises>>, TError,{data: BodyType<ImportRequest>}, TContext> => {
+
+const mutationKey = ['importExercises'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importExercises>>, {data: BodyType<ImportRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importExercises(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportExercisesMutationResult = NonNullable<Awaited<ReturnType<typeof importExercises>>>
+    export type ImportExercisesMutationBody = BodyType<ImportRequest>
+    export type ImportExercisesMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Bulk import exercises with duplicate strategy
+ */
+export const useImportExercises = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importExercises>>, TError,{data: BodyType<ImportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importExercises>>,
+        TError,
+        {data: BodyType<ImportRequest>},
+        TContext
+      > => {
+      return useMutation(getImportExercisesMutationOptions(options));
     }
 
 export const getGetTrainingGoalsDistributionUrl = () => {

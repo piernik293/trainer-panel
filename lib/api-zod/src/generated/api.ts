@@ -595,7 +595,10 @@ export const ListExercisesQueryParams = zod.object({
   "equipment": zod.coerce.string().optional(),
   "difficultyLevel": zod.coerce.string().optional(),
   "trainingLocation": zod.coerce.string().optional(),
-  "isActive": zod.coerce.boolean().optional()
+  "exerciseType": zod.coerce.string().optional(),
+  "movementPattern": zod.coerce.string().optional(),
+  "isActive": zod.coerce.boolean().optional(),
+  "isComplete": zod.coerce.boolean().optional()
 })
 
 export const ListExercisesResponseItem = zod.object({
@@ -634,6 +637,8 @@ export const ListExercisesResponseItem = zod.object({
   "domsPotential": zod.number().nullish(),
   "exercisePriority": zod.string().nullish(),
   "isActive": zod.boolean(),
+  "isComplete": zod.boolean(),
+  "missingFields": zod.array(zod.string()),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -720,6 +725,8 @@ export const CreateExerciseResponse = zod.object({
   "domsPotential": zod.number().nullish(),
   "exercisePriority": zod.string().nullish(),
   "isActive": zod.boolean(),
+  "isComplete": zod.boolean(),
+  "missingFields": zod.array(zod.string()),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -768,6 +775,8 @@ export const GetExerciseResponse = zod.object({
   "domsPotential": zod.number().nullish(),
   "exercisePriority": zod.string().nullish(),
   "isActive": zod.boolean(),
+  "isComplete": zod.boolean(),
+  "missingFields": zod.array(zod.string()),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -857,6 +866,8 @@ export const UpdateExerciseResponse = zod.object({
   "domsPotential": zod.number().nullish(),
   "exercisePriority": zod.string().nullish(),
   "isActive": zod.boolean(),
+  "isComplete": zod.boolean(),
+  "missingFields": zod.array(zod.string()),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1050,6 +1061,116 @@ export const RemoveExerciseProgressionParams = zod.object({
 })
 
 export const RemoveExerciseProgressionResponse = zod.void()
+
+
+/**
+ * @summary Validate import rows without writing to the database
+ */
+export const PreviewExerciseImportBody = zod.object({
+  "rows": zod.array(zod.object({
+  "name": zod.string(),
+  "mainMuscleGroup": zod.string(),
+  "secondaryMuscleGroups": zod.array(zod.string()).optional(),
+  "movementPattern": zod.string().optional(),
+  "difficultyLevel": zod.string().optional(),
+  "equipment": zod.array(zod.string()).optional(),
+  "equipmentOther": zod.string().optional(),
+  "trainingLocation": zod.array(zod.string()).optional(),
+  "exerciseType": zod.string().optional(),
+  "description": zod.string().optional(),
+  "executionInstructions": zod.string().optional(),
+  "commonMistakes": zod.string().optional(),
+  "coachingTips": zod.string().optional(),
+  "breathingTips": zod.string().optional(),
+  "safetyNotes": zod.string().optional(),
+  "tempo": zod.string().optional(),
+  "rangeOfMotion": zod.string().optional(),
+  "videoUrl": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "suitableExperienceLevels": zod.array(zod.string()).optional(),
+  "trainingGoals": zod.array(zod.string()).optional(),
+  "movementCategory": zod.string().optional(),
+  "planeOfMotion": zod.string().optional(),
+  "execution": zod.string().optional(),
+  "resistanceType": zod.string().optional(),
+  "requiresSpotter": zod.boolean().optional(),
+  "canBePerformedToFailure": zod.string().optional(),
+  "jointStress": zod.string().optional(),
+  "learningDifficulty": zod.number().optional(),
+  "neurologicalFatigue": zod.number().optional(),
+  "domsPotential": zod.number().optional(),
+  "exercisePriority": zod.string().optional()
+}).describe('One row of exercise data for bulk import'))
+})
+
+export const PreviewExerciseImportResponse = zod.object({
+  "validCount": zod.number(),
+  "errors": zod.array(zod.object({
+  "rowIndex": zod.number(),
+  "exerciseName": zod.string().optional(),
+  "errors": zod.array(zod.string())
+})),
+  "duplicates": zod.array(zod.object({
+  "rowIndex": zod.number(),
+  "exerciseName": zod.string(),
+  "existingId": zod.number()
+}))
+})
+
+
+/**
+ * @summary Bulk import exercises with duplicate strategy
+ */
+export const ImportExercisesBody = zod.object({
+  "rows": zod.array(zod.object({
+  "name": zod.string(),
+  "mainMuscleGroup": zod.string(),
+  "secondaryMuscleGroups": zod.array(zod.string()).optional(),
+  "movementPattern": zod.string().optional(),
+  "difficultyLevel": zod.string().optional(),
+  "equipment": zod.array(zod.string()).optional(),
+  "equipmentOther": zod.string().optional(),
+  "trainingLocation": zod.array(zod.string()).optional(),
+  "exerciseType": zod.string().optional(),
+  "description": zod.string().optional(),
+  "executionInstructions": zod.string().optional(),
+  "commonMistakes": zod.string().optional(),
+  "coachingTips": zod.string().optional(),
+  "breathingTips": zod.string().optional(),
+  "safetyNotes": zod.string().optional(),
+  "tempo": zod.string().optional(),
+  "rangeOfMotion": zod.string().optional(),
+  "videoUrl": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "suitableExperienceLevels": zod.array(zod.string()).optional(),
+  "trainingGoals": zod.array(zod.string()).optional(),
+  "movementCategory": zod.string().optional(),
+  "planeOfMotion": zod.string().optional(),
+  "execution": zod.string().optional(),
+  "resistanceType": zod.string().optional(),
+  "requiresSpotter": zod.boolean().optional(),
+  "canBePerformedToFailure": zod.string().optional(),
+  "jointStress": zod.string().optional(),
+  "learningDifficulty": zod.number().optional(),
+  "neurologicalFatigue": zod.number().optional(),
+  "domsPotential": zod.number().optional(),
+  "exercisePriority": zod.string().optional()
+}).describe('One row of exercise data for bulk import')),
+  "duplicateStrategy": zod.enum(['skip', 'update', 'create']),
+  "skipInvalidRows": zod.boolean().optional()
+})
+
+export const ImportExercisesResponse = zod.object({
+  "imported": zod.number(),
+  "updated": zod.number(),
+  "skipped": zod.number(),
+  "failed": zod.number(),
+  "errors": zod.array(zod.object({
+  "rowIndex": zod.number(),
+  "exerciseName": zod.string().optional(),
+  "errors": zod.array(zod.string())
+}))
+})
 
 
 /**

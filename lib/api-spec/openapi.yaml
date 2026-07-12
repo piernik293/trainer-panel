@@ -432,7 +432,22 @@ paths:
           required: false
           schema:
             type: string
+        - name: exerciseType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: movementPattern
+          in: query
+          required: false
+          schema:
+            type: string
         - name: isActive
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: isComplete
           in: query
           required: false
           schema:
@@ -827,6 +842,56 @@ paths:
           description: Progression removed
         "404":
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /exercises/import/preview:
+    post:
+      operationId: previewExerciseImport
+      tags: [exercises]
+      summary: Validate import rows without writing to the database
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportPreviewRequest"
+      responses:
+        "200":
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportPreviewResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /exercises/import:
+    post:
+      operationId: importExercises
+      tags: [exercises]
+      summary: Bulk import exercises with duplicate strategy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportRequest"
+      responses:
+        "200":
+          description: Import summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportSummary"
+        "400":
+          description: Bad request
           content:
             application/json:
               schema:
@@ -1252,6 +1317,12 @@ components:
           type: ["string", "null"]
         isActive:
           type: boolean
+        isComplete:
+          type: boolean
+        missingFields:
+          type: array
+          items:
+            type: string
         createdAt:
           type: string
           format: date-time
@@ -1269,6 +1340,8 @@ components:
         - suitableExperienceLevels
         - trainingGoals
         - isActive
+        - isComplete
+        - missingFields
         - createdAt
         - updatedAt
 
@@ -1754,3 +1827,180 @@ components:
       required:
         - linkedExerciseId
         - direction
+
+    ImportExerciseRow:
+      type: object
+      description: One row of exercise data for bulk import
+      properties:
+        name:
+          type: string
+        mainMuscleGroup:
+          type: string
+        secondaryMuscleGroups:
+          type: array
+          items:
+            type: string
+        movementPattern:
+          type: string
+        difficultyLevel:
+          type: string
+        equipment:
+          type: array
+          items:
+            type: string
+        equipmentOther:
+          type: string
+        trainingLocation:
+          type: array
+          items:
+            type: string
+        exerciseType:
+          type: string
+        description:
+          type: string
+        executionInstructions:
+          type: string
+        commonMistakes:
+          type: string
+        coachingTips:
+          type: string
+        breathingTips:
+          type: string
+        safetyNotes:
+          type: string
+        tempo:
+          type: string
+        rangeOfMotion:
+          type: string
+        videoUrl:
+          type: string
+        imageUrl:
+          type: string
+        suitableExperienceLevels:
+          type: array
+          items:
+            type: string
+        trainingGoals:
+          type: array
+          items:
+            type: string
+        movementCategory:
+          type: string
+        planeOfMotion:
+          type: string
+        execution:
+          type: string
+        resistanceType:
+          type: string
+        requiresSpotter:
+          type: boolean
+        canBePerformedToFailure:
+          type: string
+        jointStress:
+          type: string
+        learningDifficulty:
+          type: integer
+        neurologicalFatigue:
+          type: integer
+        domsPotential:
+          type: integer
+        exercisePriority:
+          type: string
+      required:
+        - name
+        - mainMuscleGroup
+
+    ImportPreviewRequest:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportExerciseRow"
+      required:
+        - rows
+
+    ImportRowError:
+      type: object
+      properties:
+        rowIndex:
+          type: integer
+        exerciseName:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+      required:
+        - rowIndex
+        - errors
+
+    ImportDuplicate:
+      type: object
+      properties:
+        rowIndex:
+          type: integer
+        exerciseName:
+          type: string
+        existingId:
+          type: integer
+      required:
+        - rowIndex
+        - exerciseName
+        - existingId
+
+    ImportPreviewResponse:
+      type: object
+      properties:
+        validCount:
+          type: integer
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportRowError"
+        duplicates:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportDuplicate"
+      required:
+        - validCount
+        - errors
+        - duplicates
+
+    ImportRequest:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportExerciseRow"
+        duplicateStrategy:
+          type: string
+          enum: [skip, update, create]
+        skipInvalidRows:
+          type: boolean
+      required:
+        - rows
+        - duplicateStrategy
+
+    ImportSummary:
+      type: object
+      properties:
+        imported:
+          type: integer
+        updated:
+          type: integer
+        skipped:
+          type: integer
+        failed:
+          type: integer
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportRowError"
+      required:
+        - imported
+        - updated
+        - skipped
+        - failed
+        - errors

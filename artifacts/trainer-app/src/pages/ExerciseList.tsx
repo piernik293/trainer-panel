@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useListExercises } from "@workspace/api-client-react";
+import BulkImportModal from "./BulkImportModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Search, Dumbbell } from "lucide-react";
+import { PlusCircle, Search, Dumbbell, Upload, CheckCircle, AlertCircle } from "lucide-react";
 import {
   MAIN_MUSCLE_GROUPS,
   EQUIPMENT_OPTIONS,
   DIFFICULTY_LEVEL_OPTIONS,
   TRAINING_LOCATION_OPTIONS,
+  EXERCISE_TYPE_OPTIONS,
+  MOVEMENT_PATTERN_OPTIONS,
 } from "@/lib/exercise-constants";
 
 export default function ExerciseList() {
@@ -20,6 +23,16 @@ export default function ExerciseList() {
   const [equipmentFilter, setEquipmentFilter] = useState<string>("all");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [locationFilter, setLocationFilter] = useState<string>("all");
+  const [exerciseTypeFilter, setExerciseTypeFilter] = useState<string>("all");
+  const [movementPatternFilter, setMovementPatternFilter] = useState<string>("all");
+  const [completenessFilter, setCompletenessFilter] = useState<string>("all");
+  const [importOpen, setImportOpen] = useState(false);
+
+  const parseIsCompleteParam = (val: string): boolean | undefined => {
+    if (val === "complete") return true;
+    if (val === "incomplete") return false;
+    return undefined;
+  };
 
   const { data: exercises, isLoading } = useListExercises({
     search: searchTerm || undefined,
@@ -27,6 +40,9 @@ export default function ExerciseList() {
     equipment: equipmentFilter !== "all" ? equipmentFilter : undefined,
     difficultyLevel: difficultyFilter !== "all" ? difficultyFilter : undefined,
     trainingLocation: locationFilter !== "all" ? locationFilter : undefined,
+    exerciseType: exerciseTypeFilter !== "all" ? exerciseTypeFilter : undefined,
+    movementPattern: movementPatternFilter !== "all" ? movementPatternFilter : undefined,
+    isComplete: parseIsCompleteParam(completenessFilter),
   });
 
   const hasActiveFilters =
@@ -34,7 +50,10 @@ export default function ExerciseList() {
     muscleFilter !== "all" ||
     equipmentFilter !== "all" ||
     difficultyFilter !== "all" ||
-    locationFilter !== "all";
+    locationFilter !== "all" ||
+    exerciseTypeFilter !== "all" ||
+    movementPatternFilter !== "all" ||
+    completenessFilter !== "all";
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -42,6 +61,9 @@ export default function ExerciseList() {
     setEquipmentFilter("all");
     setDifficultyFilter("all");
     setLocationFilter("all");
+    setExerciseTypeFilter("all");
+    setMovementPatternFilter("all");
+    setCompletenessFilter("all");
   };
 
   return (
@@ -55,79 +77,127 @@ export default function ExerciseList() {
             Twoja baza ćwiczeń do wykorzystania w planach treningowych
           </p>
         </div>
-        <Button asChild>
-          <Link href="/exercises/new" className="flex items-center gap-2">
-            <PlusCircle size={18} />
-            Dodaj Ćwiczenie
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+            <Upload size={16} />
+            Importuj ćwiczenia
+          </Button>
+          <Button asChild>
+            <Link href="/exercises/new" className="flex items-center gap-2">
+              <PlusCircle size={18} />
+              Dodaj Ćwiczenie
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-border/50 bg-muted/20 flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
-          <div className="relative max-w-sm w-full sm:w-auto flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Szukaj po nazwie ćwiczenia..."
-              className="pl-9 bg-background"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+        {/* Filter bar */}
+        <div className="p-4 border-b border-border/50 bg-muted/20 flex flex-col gap-3">
+          {/* Row 1: search + primary filters */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
+            <div className="relative max-w-sm w-full sm:w-auto flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Szukaj po nazwie ćwiczenia..."
+                className="pl-9 bg-background"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <Select value={muscleFilter} onValueChange={setMuscleFilter}>
+              <SelectTrigger className="w-full sm:w-[180px] bg-background">
+                <SelectValue placeholder="Partia mięśniowa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Wszystkie partie</SelectItem>
+                {MAIN_MUSCLE_GROUPS.map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={equipmentFilter} onValueChange={setEquipmentFilter}>
+              <SelectTrigger className="w-full sm:w-[160px] bg-background">
+                <SelectValue placeholder="Sprzęt" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Wszystki sprzęt</SelectItem>
+                {EQUIPMENT_OPTIONS.map((e) => (
+                  <SelectItem key={e} value={e}>{e}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+              <SelectTrigger className="w-full sm:w-[170px] bg-background">
+                <SelectValue placeholder="Poziom trudności" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Wszystkie poziomy</SelectItem>
+                {DIFFICULTY_LEVEL_OPTIONS.map((d) => (
+                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={locationFilter} onValueChange={setLocationFilter}>
+              <SelectTrigger className="w-full sm:w-[160px] bg-background">
+                <SelectValue placeholder="Miejsce treningu" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Wszystkie miejsca</SelectItem>
+                {TRAINING_LOCATION_OPTIONS.map((l) => (
+                  <SelectItem key={l} value={l}>{l}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <Select value={muscleFilter} onValueChange={setMuscleFilter}>
-            <SelectTrigger className="w-full sm:w-[190px] bg-background">
-              <SelectValue placeholder="Partia mięśniowa" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Wszystkie partie</SelectItem>
-              {MAIN_MUSCLE_GROUPS.map((m) => (
-                <SelectItem key={m} value={m}>{m}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Row 2: secondary filters */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
+            <Select value={exerciseTypeFilter} onValueChange={setExerciseTypeFilter}>
+              <SelectTrigger className="w-full sm:w-[160px] bg-background">
+                <SelectValue placeholder="Typ ćwiczenia" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Wszystkie typy</SelectItem>
+                {EXERCISE_TYPE_OPTIONS.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select value={equipmentFilter} onValueChange={setEquipmentFilter}>
-            <SelectTrigger className="w-full sm:w-[170px] bg-background">
-              <SelectValue placeholder="Sprzęt" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Wszystki sprzęt</SelectItem>
-              {EQUIPMENT_OPTIONS.map((e) => (
-                <SelectItem key={e} value={e}>{e}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={movementPatternFilter} onValueChange={setMovementPatternFilter}>
+              <SelectTrigger className="w-full sm:w-[200px] bg-background">
+                <SelectValue placeholder="Wzorzec ruchowy" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Wszystkie wzorce</SelectItem>
+                {MOVEMENT_PATTERN_OPTIONS.map((p) => (
+                  <SelectItem key={p} value={p}>{p}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-            <SelectTrigger className="w-full sm:w-[170px] bg-background">
-              <SelectValue placeholder="Poziom trudności" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Wszystkie poziomy</SelectItem>
-              {DIFFICULTY_LEVEL_OPTIONS.map((d) => (
-                <SelectItem key={d} value={d}>{d}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={completenessFilter} onValueChange={setCompletenessFilter}>
+              <SelectTrigger className="w-full sm:w-[170px] bg-background">
+                <SelectValue placeholder="Kompletność" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Wszystkie statusy</SelectItem>
+                <SelectItem value="complete">🟢 Kompletne</SelectItem>
+                <SelectItem value="incomplete">🟡 Niekompletne</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select value={locationFilter} onValueChange={setLocationFilter}>
-            <SelectTrigger className="w-full sm:w-[170px] bg-background">
-              <SelectValue placeholder="Miejsce treningu" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Wszystkie miejsca</SelectItem>
-              {TRAINING_LOCATION_OPTIONS.map((l) => (
-                <SelectItem key={l} value={l}>{l}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {hasActiveFilters && (
-            <Button variant="ghost" onClick={clearFilters} className="text-muted-foreground">
-              Wyczyść filtry
-            </Button>
-          )}
+            {hasActiveFilters && (
+              <Button variant="ghost" onClick={clearFilters} className="text-muted-foreground">
+                Wyczyść filtry
+              </Button>
+            )}
+          </div>
         </div>
 
         {isLoading ? (
@@ -162,6 +232,7 @@ export default function ExerciseList() {
                     <TableHead>Poziom</TableHead>
                     <TableHead>Miejsce</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Kompletność</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -190,6 +261,19 @@ export default function ExerciseList() {
                           {exercise.isActive ? "Aktywne" : "Nieaktywne"}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        {exercise.isComplete ? (
+                          <span className="flex items-center gap-1 text-emerald-600 text-sm">
+                            <CheckCircle size={14} />
+                            Kompletne
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-amber-600 text-sm">
+                            <AlertCircle size={14} />
+                            Niekompletne
+                          </span>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -206,14 +290,19 @@ export default function ExerciseList() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-medium">{exercise.name}</span>
-                    <Badge
-                      variant="outline"
-                      className={exercise.isActive
-                        ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
-                        : "bg-muted text-muted-foreground"}
-                    >
-                      {exercise.isActive ? "Aktywne" : "Nieaktywne"}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <Badge
+                        variant="outline"
+                        className={exercise.isActive
+                          ? "bg-emerald-500/10 text-emerald-600"
+                          : "bg-muted text-muted-foreground"}
+                      >
+                        {exercise.isActive ? "Aktywne" : "Nieaktywne"}
+                      </Badge>
+                      {!exercise.isComplete && (
+                        <AlertCircle size={14} className="text-amber-500" />
+                      )}
+                    </div>
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {exercise.mainMuscleGroup} · {exercise.difficultyLevel || "-"}
@@ -227,6 +316,8 @@ export default function ExerciseList() {
           </>
         )}
       </div>
+
+      <BulkImportModal open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }

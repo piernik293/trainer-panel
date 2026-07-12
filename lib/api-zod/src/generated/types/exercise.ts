@@ -67,6 +67,8 @@ export interface Exercise {
   /** @nullable */
   exercisePriority?: string | null;
   isActive: boolean;
+  isComplete: boolean;
+  missingFields: string[];
   createdAt: Date;
   updatedAt: Date;
 }
