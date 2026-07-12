@@ -6,7 +6,7 @@
  *   - 1 guideline version ("v1 – zatwierdzona tabela objętości")
  *   - 11 approved volume targets
  *   - volume_target_members linking targets → specific_muscles (by name)
- *   - 33 guideline rows (11 targets × 3 experience levels)
+ *   - 44 guideline rows (11 targets × 4 experience levels)
  */
 
 import { eq, inArray } from "drizzle-orm";
@@ -159,10 +159,25 @@ const ADVANCED: GuidelineTable = {
   "Mięsień dwugłowy ramienia":   { sessionMin: 4, sessionMax: 4, weeklyPreferredCeiling: 12, weeklyAbsoluteCeiling: 16 },
 };
 
+const NO_ACTIVITY: GuidelineTable = {
+  "Mięsień czworogłowy uda":       { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 5 },
+  "Mięśnie pośladkowe":            { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 5 },
+  "Mięsień trójgłowy łydki":       { sessionMin: 1, sessionMax: 1, weeklyPreferredCeiling: 2, weeklyAbsoluteCeiling: 2 },
+  "Przywodziciele":                { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 3, weeklyAbsoluteCeiling: 3 },
+  "Grupa kulszowo-goleniowa":      { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 3, weeklyAbsoluteCeiling: 3 },
+  "Mięśnie naramienne":            { sessionMin: 1, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 6 },
+  "Mięsień trójgłowy ramienia":    { sessionMin: 1, sessionMax: 1, weeklyPreferredCeiling: 2, weeklyAbsoluteCeiling: 2 },
+  "Mięsień piersiowy większy":     { sessionMin: 1, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 5 },
+  "Mięsień najszerszy grzbietu":   { sessionMin: 1, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 4 },
+  "Mięsień czworoboczny grzbietu": { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 6 },
+  "Mięsień dwugłowy ramienia":     { sessionMin: 1, sessionMax: 1, weeklyPreferredCeiling: 2, weeklyAbsoluteCeiling: 2 },
+};
+
 const LEVELS: { level: string; table: GuidelineTable }[] = [
-  { level: "Początkujący",      table: BEGINNER },
-  { level: "Średniozaawansowany", table: INTERMEDIATE },
-  { level: "Zaawansowany",      table: ADVANCED },
+  { level: "Brak aktywności fizycznej", table: NO_ACTIVITY },
+  { level: "Początkujący",             table: BEGINNER },
+  { level: "Średniozaawansowany",      table: INTERMEDIATE },
+  { level: "Zaawansowany",             table: ADVANCED },
 ];
 
 // ─── Seed function ────────────────────────────────────────────────────────────
@@ -221,7 +236,7 @@ export async function seedVolumeGuidelines(): Promise<void> {
       }
     }
 
-    // 4. Insert 33 guideline rows (11 targets × 3 levels).
+    // 4. Insert 44 guideline rows (11 targets × 4 levels).
     const guidelineRows: (typeof volumeGuidelinesTable.$inferInsert)[] = [];
 
     for (const { level, table } of LEVELS) {

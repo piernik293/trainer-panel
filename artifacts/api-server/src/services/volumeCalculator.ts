@@ -87,7 +87,9 @@ export interface VolumeResult {
  * Maps the raw survey experience level to the guideline profile key stored
  * in volume_guidelines.experienceLevel.
  *
- * "Brak aktywności fizycznej" uses beginner ceilings (conservative planning).
+ * Each level has its own dedicated row set in the guidelines table.
+ * "Brak aktywności fizycznej" uses its own reduced ceilings (~50% of Beginner).
+ * Unknown values fall back to "Początkujący" as a safe default.
  */
 export function mapToGuidelineLevel(experienceLevelUsed: string): string {
   switch (experienceLevelUsed) {
@@ -96,7 +98,9 @@ export function mapToGuidelineLevel(experienceLevelUsed: string): string {
     case "Średniozaawansowany":
       return "Średniozaawansowany";
     case "Początkujący":
+      return "Początkujący";
     case "Brak aktywności fizycznej":
+      return "Brak aktywności fizycznej";
     default:
       return "Początkujący";
   }
