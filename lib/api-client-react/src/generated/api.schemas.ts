@@ -683,6 +683,7 @@ difficultyLevel?: string;
 trainingLocation?: string;
 exerciseType?: string;
 movementPattern?: string;
+secondaryMuscleGroup?: string;
 isActive?: boolean;
 isComplete?: boolean;
 };

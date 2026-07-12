@@ -25,6 +25,7 @@ export default function ExerciseList() {
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [exerciseTypeFilter, setExerciseTypeFilter] = useState<string>("all");
   const [movementPatternFilter, setMovementPatternFilter] = useState<string>("all");
+  const [secondaryMuscleFilter, setSecondaryMuscleFilter] = useState<string>("all");
   const [completenessFilter, setCompletenessFilter] = useState<string>("all");
   const [importOpen, setImportOpen] = useState(false);
 
@@ -42,6 +43,7 @@ export default function ExerciseList() {
     trainingLocation: locationFilter !== "all" ? locationFilter : undefined,
     exerciseType: exerciseTypeFilter !== "all" ? exerciseTypeFilter : undefined,
     movementPattern: movementPatternFilter !== "all" ? movementPatternFilter : undefined,
+    secondaryMuscleGroup: secondaryMuscleFilter !== "all" ? secondaryMuscleFilter : undefined,
     isComplete: parseIsCompleteParam(completenessFilter),
   });
 
@@ -53,6 +55,7 @@ export default function ExerciseList() {
     locationFilter !== "all" ||
     exerciseTypeFilter !== "all" ||
     movementPatternFilter !== "all" ||
+    secondaryMuscleFilter !== "all" ||
     completenessFilter !== "all";
 
   const clearFilters = () => {
@@ -63,6 +66,7 @@ export default function ExerciseList() {
     setLocationFilter("all");
     setExerciseTypeFilter("all");
     setMovementPatternFilter("all");
+    setSecondaryMuscleFilter("all");
     setCompletenessFilter("all");
   };
 
@@ -157,6 +161,18 @@ export default function ExerciseList() {
 
           {/* Row 2: secondary filters */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
+            <Select value={secondaryMuscleFilter} onValueChange={setSecondaryMuscleFilter}>
+              <SelectTrigger className="w-full sm:w-[190px] bg-background">
+                <SelectValue placeholder="Drugoplanowa partia" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Wszystkie wtórne</SelectItem>
+                {MAIN_MUSCLE_GROUPS.map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select value={exerciseTypeFilter} onValueChange={setExerciseTypeFilter}>
               <SelectTrigger className="w-full sm:w-[160px] bg-background">
                 <SelectValue placeholder="Typ ćwiczenia" />

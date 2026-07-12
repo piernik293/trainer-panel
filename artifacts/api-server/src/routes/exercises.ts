@@ -174,7 +174,7 @@ router.get("/exercises", async (req, res): Promise<void> => {
     return;
   }
 
-  const { search, mainMuscleGroup, equipment, difficultyLevel, trainingLocation, exerciseType, movementPattern } = query.data;
+  const { search, mainMuscleGroup, equipment, difficultyLevel, trainingLocation, exerciseType, movementPattern, secondaryMuscleGroup } = query.data;
   // The generated query schema coerces "isActive" and "isComplete" with
   // zod.coerce.boolean(), which treats any non-empty string as true.
   // Parse both from raw query ourselves so `?isActive=false` is honoured.
@@ -202,6 +202,9 @@ router.get("/exercises", async (req, res): Promise<void> => {
   }
   if (trainingLocation) {
     exercises = exercises.filter((e) => e.trainingLocation.includes(trainingLocation));
+  }
+  if (secondaryMuscleGroup) {
+    exercises = exercises.filter((e) => e.secondaryMuscleGroups.includes(secondaryMuscleGroup));
   }
 
   // Fetch muscle stats once for all exercises, then attach completeness.

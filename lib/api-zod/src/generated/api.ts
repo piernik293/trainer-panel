@@ -597,6 +597,7 @@ export const ListExercisesQueryParams = zod.object({
   "trainingLocation": zod.coerce.string().optional(),
   "exerciseType": zod.coerce.string().optional(),
   "movementPattern": zod.coerce.string().optional(),
+  "secondaryMuscleGroup": zod.coerce.string().optional(),
   "isActive": zod.coerce.boolean().optional(),
   "isComplete": zod.coerce.boolean().optional()
 })
