@@ -24,5 +24,23 @@ export interface ExerciseInput {
   coachingTips?: string;
   videoUrl?: string;
   imageUrl?: string;
+  exerciseType?: string;
+  breathingTips?: string;
+  safetyNotes?: string;
+  tempo?: string;
+  rangeOfMotion?: string;
+  suitableExperienceLevels?: string[];
+  trainingGoals?: string[];
+  movementCategory?: string;
+  planeOfMotion?: string;
+  execution?: string;
+  resistanceType?: string;
+  requiresSpotter?: boolean;
+  canBePerformedToFailure?: string;
+  jointStress?: string;
+  learningDifficulty?: number;
+  neurologicalFatigue?: number;
+  domsPotential?: number;
+  exercisePriority?: string;
   isActive?: boolean;
 }

@@ -1,5 +1,6 @@
 import { useParams, Link, useLocation } from "wouter";
 import ExerciseMuscleAssignments from "./ExerciseMuscleAssignments";
+import ExerciseRelations from "./ExerciseRelations";
 import {
   useGetExercise,
   useUpdateExercise,
@@ -11,8 +12,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Pencil, Ban, RotateCcw } from "lucide-react";
 
-function DetailBlock({ label, value, fullWidth = false }: { label: string; value: React.ReactNode; fullWidth?: boolean }) {
-  if (!value) return null;
+// ─── DetailBlock ──────────────────────────────────────────────────────────────
+
+function DetailBlock({
+  label,
+  value,
+  fullWidth = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  fullWidth?: boolean;
+}) {
+  if (value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0))
+    return null;
 
   return (
     <div className={`bg-card border border-border/50 rounded-xl p-5 shadow-sm ${fullWidth ? "col-span-full" : ""}`}>
@@ -25,6 +37,25 @@ function DetailBlock({ label, value, fullWidth = false }: { label: string; value
     </div>
   );
 }
+
+function RatingBadge({ value }: { value: number | null | undefined }) {
+  if (value == null) return null;
+  return (
+    <span className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-primary/10 text-primary text-sm font-semibold">
+      {value}
+    </span>
+  );
+}
+
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="col-span-full text-sm font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/50 pb-2 mt-2">
+      {children}
+    </h3>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ExerciseDetail() {
   const { id } = useParams<{ id: string }>();
@@ -66,8 +97,9 @@ export default function ExerciseDetail() {
         Powrót do biblioteki
       </Link>
 
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">
             {exercise.name}
           </h1>
@@ -79,20 +111,24 @@ export default function ExerciseDetail() {
           >
             {exercise.isActive ? "Aktywne" : "Nieaktywne"}
           </Badge>
+          {exercise.exerciseType && (
+            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-200">
+              {exercise.exerciseType}
+            </Badge>
+          )}
+          {exercise.exercisePriority && (
+            <Badge variant="outline" className="text-muted-foreground">
+              Priorytet: {exercise.exercisePriority}
+            </Badge>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={toggleActive} disabled={updateExercise.isPending}>
             {exercise.isActive ? (
-              <>
-                <Ban size={16} className="mr-2" />
-                Oznacz jako nieaktywne
-              </>
+              <><Ban size={16} className="mr-2" />Oznacz jako nieaktywne</>
             ) : (
-              <>
-                <RotateCcw size={16} className="mr-2" />
-                Przywróć
-              </>
+              <><RotateCcw size={16} className="mr-2" />Przywróć</>
             )}
           </Button>
           <Button onClick={() => setLocation(`/exercises/${exerciseId}/edit`)}>
@@ -102,7 +138,10 @@ export default function ExerciseDetail() {
         </div>
       </div>
 
+      {/* ── Section 1: Basic Information ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <SectionHeader>Podstawowe informacje</SectionHeader>
+
         <DetailBlock label="Główna partia mięśniowa" value={exercise.mainMuscleGroup} />
         <DetailBlock label="Poziom trudności" value={exercise.difficultyLevel} />
         <DetailBlock
@@ -122,11 +161,20 @@ export default function ExerciseDetail() {
           label="Miejsce treningu"
           value={exercise.trainingLocation.length > 0 ? exercise.trainingLocation.join(", ") : undefined}
         />
+      </div>
+
+      {/* ── Section 2: Coaching Information ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <SectionHeader>Informacje trenerskie</SectionHeader>
+
         <DetailBlock label="Opis" value={exercise.description} fullWidth />
         <DetailBlock label="Instrukcje wykonania" value={exercise.executionInstructions} fullWidth />
         <DetailBlock label="Częste błędy" value={exercise.commonMistakes} fullWidth />
         <DetailBlock label="Wskazówki trenerskie" value={exercise.coachingTips} fullWidth />
-        <ExerciseMuscleAssignments exerciseId={exerciseId} />
+        <DetailBlock label="Wskazówki oddechowe" value={exercise.breathingTips} fullWidth />
+        <DetailBlock label="Uwagi dot. bezpieczeństwa" value={exercise.safetyNotes} fullWidth />
+        <DetailBlock label="Tempo" value={exercise.tempo} />
+        <DetailBlock label="Zalecany zakres ruchu" value={exercise.rangeOfMotion} />
         <DetailBlock
           label="Wideo"
           value={exercise.videoUrl ? (
@@ -143,6 +191,93 @@ export default function ExerciseDetail() {
             </a>
           ) : undefined}
         />
+      </div>
+
+      {/* ── Section 3: Muscle Assignments ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <SectionHeader>Precyzyjne przypisanie mięśni</SectionHeader>
+        <ExerciseMuscleAssignments exerciseId={exerciseId} />
+      </div>
+
+      {/* ── Section 4: AI Exercise Intelligence ── */}
+      {(
+        (exercise.suitableExperienceLevels?.length ?? 0) > 0 ||
+        (exercise.trainingGoals?.length ?? 0) > 0 ||
+        exercise.movementCategory ||
+        exercise.planeOfMotion ||
+        exercise.execution ||
+        exercise.resistanceType ||
+        exercise.requiresSpotter != null ||
+        exercise.canBePerformedToFailure ||
+        exercise.jointStress ||
+        exercise.learningDifficulty != null ||
+        exercise.neurologicalFatigue != null ||
+        exercise.domsPotential != null
+      ) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <SectionHeader>Inteligencja ćwiczenia</SectionHeader>
+
+          <DetailBlock
+            label="Odpowiedni poziom doświadczenia"
+            value={
+              (exercise.suitableExperienceLevels?.length ?? 0) > 0
+                ? exercise.suitableExperienceLevels!.join(", ")
+                : undefined
+            }
+            fullWidth
+          />
+          <DetailBlock
+            label="Cel treningowy"
+            value={
+              (exercise.trainingGoals?.length ?? 0) > 0
+                ? exercise.trainingGoals!.join(", ")
+                : undefined
+            }
+            fullWidth
+          />
+          <DetailBlock label="Kategoria ruchu" value={exercise.movementCategory} />
+          <DetailBlock label="Płaszczyzna ruchu" value={exercise.planeOfMotion} />
+          <DetailBlock label="Wykonanie" value={exercise.execution} />
+          <DetailBlock label="Typ oporu" value={exercise.resistanceType} />
+          <DetailBlock
+            label="Wymaga asekuracji"
+            value={exercise.requiresSpotter != null ? (exercise.requiresSpotter ? "Tak" : "Nie") : undefined}
+          />
+          <DetailBlock label="Możliwość wykonania do upadku" value={exercise.canBePerformedToFailure} />
+          <DetailBlock label="Obciążenie stawów" value={exercise.jointStress} />
+
+          {(exercise.learningDifficulty != null || exercise.neurologicalFatigue != null || exercise.domsPotential != null) && (
+            <div className="col-span-full bg-card border border-border/50 rounded-xl p-5 shadow-sm">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Oceny</h4>
+              <div className="flex flex-wrap gap-6">
+                {exercise.learningDifficulty != null && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Trudność nauki</span>
+                    <RatingBadge value={exercise.learningDifficulty} />
+                  </div>
+                )}
+                {exercise.neurologicalFatigue != null && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Zmęczenie neurologiczne</span>
+                    <RatingBadge value={exercise.neurologicalFatigue} />
+                  </div>
+                )}
+                {exercise.domsPotential != null && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Potencjał DOMS</span>
+                    <RatingBadge value={exercise.domsPotential} />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Related Exercises ── */}
+      <div className="grid grid-cols-1 gap-4">
+        <SectionHeader>Powiązane ćwiczenia</SectionHeader>
+        <ExerciseRelations exerciseId={exerciseId} />
       </div>
     </div>
   );

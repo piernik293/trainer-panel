@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AddProgressionBody,
+  AddSubstitutionBody,
   Client,
   ClientInput,
   ClientUpdate,
@@ -28,6 +30,8 @@ import type {
   ExerciseInput,
   ExerciseMuscleAssignment,
   ExerciseMusclesInput,
+  ExerciseProgression,
+  ExerciseSubstitution,
   ExerciseUpdate,
   GoalCount,
   HealthStatus,
@@ -1875,6 +1879,450 @@ export const useSetExerciseMuscles = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getSetExerciseMusclesMutationOptions(options));
+    }
+
+export const getGetExerciseSubstitutionsUrl = (id: number,) => {
+
+
+
+
+  return `/api/exercises/${id}/substitutions`
+}
+
+/**
+ * @summary List substitution exercises for an exercise
+ */
+export const getExerciseSubstitutions = async (id: number, options?: RequestInit): Promise<ExerciseSubstitution[]> => {
+
+  return customFetch<ExerciseSubstitution[]>(getGetExerciseSubstitutionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetExerciseSubstitutionsQueryKey = (id: number,) => {
+    return [
+    `/api/exercises/${id}/substitutions`
+    ] as const;
+    }
+
+
+export const getGetExerciseSubstitutionsQueryOptions = <TData = Awaited<ReturnType<typeof getExerciseSubstitutions>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExerciseSubstitutions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExerciseSubstitutionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExerciseSubstitutions>>> = ({ signal }) => getExerciseSubstitutions(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExerciseSubstitutions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetExerciseSubstitutionsQueryResult = NonNullable<Awaited<ReturnType<typeof getExerciseSubstitutions>>>
+export type GetExerciseSubstitutionsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List substitution exercises for an exercise
+ */
+
+export function useGetExerciseSubstitutions<TData = Awaited<ReturnType<typeof getExerciseSubstitutions>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExerciseSubstitutions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetExerciseSubstitutionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAddExerciseSubstitutionUrl = (id: number,) => {
+
+
+
+
+  return `/api/exercises/${id}/substitutions`
+}
+
+/**
+ * @summary Add a substitution exercise
+ */
+export const addExerciseSubstitution = async (id: number,
+    addSubstitutionBody: AddSubstitutionBody, options?: RequestInit): Promise<ExerciseSubstitution> => {
+
+  return customFetch<ExerciseSubstitution>(getAddExerciseSubstitutionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(addSubstitutionBody)
+  }
+);}
+
+
+
+
+
+export const getAddExerciseSubstitutionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addExerciseSubstitution>>, TError,{id: number;data: BodyType<AddSubstitutionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addExerciseSubstitution>>, TError,{id: number;data: BodyType<AddSubstitutionBody>}, TContext> => {
+
+const mutationKey = ['addExerciseSubstitution'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addExerciseSubstitution>>, {id: number;data: BodyType<AddSubstitutionBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addExerciseSubstitution(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddExerciseSubstitutionMutationResult = NonNullable<Awaited<ReturnType<typeof addExerciseSubstitution>>>
+    export type AddExerciseSubstitutionMutationBody = BodyType<AddSubstitutionBody>
+    export type AddExerciseSubstitutionMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Add a substitution exercise
+ */
+export const useAddExerciseSubstitution = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addExerciseSubstitution>>, TError,{id: number;data: BodyType<AddSubstitutionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addExerciseSubstitution>>,
+        TError,
+        {id: number;data: BodyType<AddSubstitutionBody>},
+        TContext
+      > => {
+      return useMutation(getAddExerciseSubstitutionMutationOptions(options));
+    }
+
+export const getRemoveExerciseSubstitutionUrl = (id: number,
+    substituteId: number,) => {
+
+
+
+
+  return `/api/exercises/${id}/substitutions/${substituteId}`
+}
+
+/**
+ * @summary Remove a substitution exercise
+ */
+export const removeExerciseSubstitution = async (id: number,
+    substituteId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveExerciseSubstitutionUrl(id,substituteId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveExerciseSubstitutionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeExerciseSubstitution>>, TError,{id: number;substituteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeExerciseSubstitution>>, TError,{id: number;substituteId: number}, TContext> => {
+
+const mutationKey = ['removeExerciseSubstitution'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeExerciseSubstitution>>, {id: number;substituteId: number}> = (props) => {
+          const {id,substituteId} = props ?? {};
+
+          return  removeExerciseSubstitution(id,substituteId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveExerciseSubstitutionMutationResult = NonNullable<Awaited<ReturnType<typeof removeExerciseSubstitution>>>
+
+    export type RemoveExerciseSubstitutionMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Remove a substitution exercise
+ */
+export const useRemoveExerciseSubstitution = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeExerciseSubstitution>>, TError,{id: number;substituteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeExerciseSubstitution>>,
+        TError,
+        {id: number;substituteId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveExerciseSubstitutionMutationOptions(options));
+    }
+
+export const getGetExerciseProgressionsUrl = (id: number,) => {
+
+
+
+
+  return `/api/exercises/${id}/progressions`
+}
+
+/**
+ * @summary List progressions and regressions for an exercise
+ */
+export const getExerciseProgressions = async (id: number, options?: RequestInit): Promise<ExerciseProgression[]> => {
+
+  return customFetch<ExerciseProgression[]>(getGetExerciseProgressionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetExerciseProgressionsQueryKey = (id: number,) => {
+    return [
+    `/api/exercises/${id}/progressions`
+    ] as const;
+    }
+
+
+export const getGetExerciseProgressionsQueryOptions = <TData = Awaited<ReturnType<typeof getExerciseProgressions>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExerciseProgressions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExerciseProgressionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExerciseProgressions>>> = ({ signal }) => getExerciseProgressions(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExerciseProgressions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetExerciseProgressionsQueryResult = NonNullable<Awaited<ReturnType<typeof getExerciseProgressions>>>
+export type GetExerciseProgressionsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List progressions and regressions for an exercise
+ */
+
+export function useGetExerciseProgressions<TData = Awaited<ReturnType<typeof getExerciseProgressions>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExerciseProgressions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetExerciseProgressionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAddExerciseProgressionUrl = (id: number,) => {
+
+
+
+
+  return `/api/exercises/${id}/progressions`
+}
+
+/**
+ * @summary Add a progression or regression link
+ */
+export const addExerciseProgression = async (id: number,
+    addProgressionBody: AddProgressionBody, options?: RequestInit): Promise<ExerciseProgression> => {
+
+  return customFetch<ExerciseProgression>(getAddExerciseProgressionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(addProgressionBody)
+  }
+);}
+
+
+
+
+
+export const getAddExerciseProgressionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addExerciseProgression>>, TError,{id: number;data: BodyType<AddProgressionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addExerciseProgression>>, TError,{id: number;data: BodyType<AddProgressionBody>}, TContext> => {
+
+const mutationKey = ['addExerciseProgression'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addExerciseProgression>>, {id: number;data: BodyType<AddProgressionBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addExerciseProgression(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddExerciseProgressionMutationResult = NonNullable<Awaited<ReturnType<typeof addExerciseProgression>>>
+    export type AddExerciseProgressionMutationBody = BodyType<AddProgressionBody>
+    export type AddExerciseProgressionMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Add a progression or regression link
+ */
+export const useAddExerciseProgression = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addExerciseProgression>>, TError,{id: number;data: BodyType<AddProgressionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addExerciseProgression>>,
+        TError,
+        {id: number;data: BodyType<AddProgressionBody>},
+        TContext
+      > => {
+      return useMutation(getAddExerciseProgressionMutationOptions(options));
+    }
+
+export const getRemoveExerciseProgressionUrl = (id: number,
+    progressionId: number,) => {
+
+
+
+
+  return `/api/exercises/${id}/progressions/${progressionId}`
+}
+
+/**
+ * @summary Remove a progression or regression link
+ */
+export const removeExerciseProgression = async (id: number,
+    progressionId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveExerciseProgressionUrl(id,progressionId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveExerciseProgressionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeExerciseProgression>>, TError,{id: number;progressionId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeExerciseProgression>>, TError,{id: number;progressionId: number}, TContext> => {
+
+const mutationKey = ['removeExerciseProgression'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeExerciseProgression>>, {id: number;progressionId: number}> = (props) => {
+          const {id,progressionId} = props ?? {};
+
+          return  removeExerciseProgression(id,progressionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveExerciseProgressionMutationResult = NonNullable<Awaited<ReturnType<typeof removeExerciseProgression>>>
+
+    export type RemoveExerciseProgressionMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Remove a progression or regression link
+ */
+export const useRemoveExerciseProgression = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeExerciseProgression>>, TError,{id: number;progressionId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeExerciseProgression>>,
+        TError,
+        {id: number;progressionId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveExerciseProgressionMutationOptions(options));
     }
 
 export const getGetTrainingGoalsDistributionUrl = () => {

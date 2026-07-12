@@ -286,6 +286,40 @@ export interface Exercise {
   videoUrl?: string | null;
   /** @nullable */
   imageUrl?: string | null;
+  /** @nullable */
+  exerciseType?: string | null;
+  /** @nullable */
+  breathingTips?: string | null;
+  /** @nullable */
+  safetyNotes?: string | null;
+  /** @nullable */
+  tempo?: string | null;
+  /** @nullable */
+  rangeOfMotion?: string | null;
+  suitableExperienceLevels: string[];
+  trainingGoals: string[];
+  /** @nullable */
+  movementCategory?: string | null;
+  /** @nullable */
+  planeOfMotion?: string | null;
+  /** @nullable */
+  execution?: string | null;
+  /** @nullable */
+  resistanceType?: string | null;
+  /** @nullable */
+  requiresSpotter?: boolean | null;
+  /** @nullable */
+  canBePerformedToFailure?: string | null;
+  /** @nullable */
+  jointStress?: string | null;
+  /** @nullable */
+  learningDifficulty?: number | null;
+  /** @nullable */
+  neurologicalFatigue?: number | null;
+  /** @nullable */
+  domsPotential?: number | null;
+  /** @nullable */
+  exercisePriority?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -309,6 +343,24 @@ export interface ExerciseInput {
   coachingTips?: string;
   videoUrl?: string;
   imageUrl?: string;
+  exerciseType?: string;
+  breathingTips?: string;
+  safetyNotes?: string;
+  tempo?: string;
+  rangeOfMotion?: string;
+  suitableExperienceLevels?: string[];
+  trainingGoals?: string[];
+  movementCategory?: string;
+  planeOfMotion?: string;
+  execution?: string;
+  resistanceType?: string;
+  requiresSpotter?: boolean;
+  canBePerformedToFailure?: string;
+  jointStress?: string;
+  learningDifficulty?: number;
+  neurologicalFatigue?: number;
+  domsPotential?: number;
+  exercisePriority?: string;
   isActive?: boolean;
 }
 
@@ -330,6 +382,24 @@ export interface ExerciseUpdate {
   coachingTips?: string;
   videoUrl?: string;
   imageUrl?: string;
+  exerciseType?: string;
+  breathingTips?: string;
+  safetyNotes?: string;
+  tempo?: string;
+  rangeOfMotion?: string;
+  suitableExperienceLevels?: string[];
+  trainingGoals?: string[];
+  movementCategory?: string;
+  planeOfMotion?: string;
+  execution?: string;
+  resistanceType?: string;
+  requiresSpotter?: boolean;
+  canBePerformedToFailure?: string;
+  jointStress?: string;
+  learningDifficulty?: number;
+  neurologicalFatigue?: number;
+  domsPotential?: number;
+  exercisePriority?: string;
   isActive?: boolean;
 }
 
@@ -488,6 +558,36 @@ export interface PublicSurveyResponse {
 export interface GoalCount {
   goal: string;
   count: number;
+}
+
+export interface ExerciseSubstitution {
+  id: number;
+  exerciseId: number;
+  substituteExerciseId: number;
+  substituteName: string;
+  substituteSlug: string;
+  sortOrder: number;
+}
+
+export interface AddSubstitutionBody {
+  substituteExerciseId: number;
+  sortOrder?: number;
+}
+
+export interface ExerciseProgression {
+  id: number;
+  exerciseId: number;
+  linkedExerciseId: number;
+  linkedExerciseName: string;
+  linkedExerciseSlug: string;
+  direction: string;
+  sortOrder: number;
+}
+
+export interface AddProgressionBody {
+  linkedExerciseId: number;
+  direction: string;
+  sortOrder?: number;
 }
 
 export type ListExercisesParams = {

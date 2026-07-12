@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, boolean, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, boolean, uniqueIndex, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -22,6 +22,30 @@ export const exercisesTable = pgTable("exercises", {
   coachingTips: text("coaching_tips"),
   videoUrl: text("video_url"),
   imageUrl: text("image_url"),
+  // Section 1 — Basic Information
+  exerciseType: text("exercise_type"), // "Złożone" | "Izolowane"
+
+  // Section 2 — Coaching Information
+  breathingTips: text("breathing_tips"),
+  safetyNotes: text("safety_notes"),
+  tempo: text("tempo"),
+  rangeOfMotion: text("range_of_motion"),
+
+  // Section 4 — AI Exercise Intelligence
+  suitableExperienceLevels: text("suitable_experience_levels").array().notNull().default([]),
+  trainingGoals: text("training_goals").array().notNull().default([]),
+  movementCategory: text("movement_category"),
+  planeOfMotion: text("plane_of_motion"),
+  execution: text("execution"), // "Obustronne" | "Jednostronne"
+  resistanceType: text("resistance_type"),
+  requiresSpotter: boolean("requires_spotter"),
+  canBePerformedToFailure: text("can_be_performed_to_failure"), // "Tak" | "Nie" | "Z ostrożnością"
+  jointStress: text("joint_stress"), // "Niskie" | "Średnie" | "Wysokie"
+  learningDifficulty: integer("learning_difficulty"), // 1–5
+  neurologicalFatigue: integer("neurological_fatigue"), // 1–5
+  domsPotential: integer("doms_potential"), // 1–5
+  exercisePriority: text("exercise_priority"), // "Bardzo wysoki" | "Wysoki" | "Średni" | "Niski"
+
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

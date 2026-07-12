@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './addProgressionBody';
+export * from './addSubstitutionBody';
 export * from './client';
 export * from './clientInput';
 export * from './clientStatus';
@@ -15,6 +17,8 @@ export * from './exercise';
 export * from './exerciseInput';
 export * from './exerciseMuscleAssignment';
 export * from './exerciseMusclesInput';
+export * from './exerciseProgression';
+export * from './exerciseSubstitution';
 export * from './exerciseUpdate';
 export * from './goalCount';
 export * from './healthStatus';

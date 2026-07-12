@@ -2,5 +2,6 @@ export * from "./clients";
 export * from "./surveys";
 export * from "./notes";
 export * from "./exercises";
+export * from "./exercise-relations";
 export * from "./muscles";
 export * from "./plans";

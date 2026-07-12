@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, ilike } from "drizzle-orm";
-import { db, exercisesTable } from "@workspace/db";
+import { db, exercisesTable, exerciseSubstitutionsTable, exerciseProgressionsTable } from "@workspace/db";
 import {
   ListExercisesQueryParams,
   ListExercisesResponse,
@@ -11,6 +11,18 @@ import {
   UpdateExerciseParams,
   UpdateExerciseBody,
   UpdateExerciseResponse,
+  GetExerciseSubstitutionsParams,
+  GetExerciseSubstitutionsResponse,
+  AddExerciseSubstitutionParams,
+  AddExerciseSubstitutionBody,
+  AddExerciseSubstitutionResponse,
+  RemoveExerciseSubstitutionParams,
+  GetExerciseProgressionsParams,
+  GetExerciseProgressionsResponse,
+  AddExerciseProgressionParams,
+  AddExerciseProgressionBody,
+  AddExerciseProgressionResponse,
+  RemoveExerciseProgressionParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -203,6 +215,196 @@ router.patch("/exercises/:id", async (req, res): Promise<void> => {
   }
 
   res.json(UpdateExerciseResponse.parse(exercise));
+});
+
+// ─── Substitutions ────────────────────────────────────────────────────────────
+
+router.get("/exercises/:id/substitutions", async (req, res): Promise<void> => {
+  const params = GetExerciseSubstitutionsParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+
+  const [exercise] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(eq(exercisesTable.id, params.data.id));
+  if (!exercise) { res.status(404).json({ error: "Ćwiczenie nie znalezione" }); return; }
+
+  const rows = await db
+    .select({
+      id: exerciseSubstitutionsTable.id,
+      exerciseId: exerciseSubstitutionsTable.exerciseId,
+      substituteExerciseId: exerciseSubstitutionsTable.substituteExerciseId,
+      substituteName: exercisesTable.name,
+      substituteSlug: exercisesTable.slug,
+      sortOrder: exerciseSubstitutionsTable.sortOrder,
+    })
+    .from(exerciseSubstitutionsTable)
+    .innerJoin(exercisesTable, eq(exercisesTable.id, exerciseSubstitutionsTable.substituteExerciseId))
+    .where(eq(exerciseSubstitutionsTable.exerciseId, params.data.id))
+    .orderBy(exerciseSubstitutionsTable.sortOrder, exercisesTable.name);
+
+  res.json(GetExerciseSubstitutionsResponse.parse(rows));
+});
+
+router.post("/exercises/:id/substitutions", async (req, res): Promise<void> => {
+  const params = AddExerciseSubstitutionParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+
+  const parsed = AddExerciseSubstitutionBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  const [exercise] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(eq(exercisesTable.id, params.data.id));
+  if (!exercise) { res.status(404).json({ error: "Ćwiczenie nie znalezione" }); return; }
+
+  const [sub] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(eq(exercisesTable.id, parsed.data.substituteExerciseId));
+  if (!sub) { res.status(404).json({ error: "Zamiennik nie znaleziony" }); return; }
+
+  try {
+    const [inserted] = await db
+      .insert(exerciseSubstitutionsTable)
+      .values({
+        exerciseId: params.data.id,
+        substituteExerciseId: parsed.data.substituteExerciseId,
+        sortOrder: parsed.data.sortOrder ?? 0,
+      })
+      .returning();
+
+    const [row] = await db
+      .select({
+        id: exerciseSubstitutionsTable.id,
+        exerciseId: exerciseSubstitutionsTable.exerciseId,
+        substituteExerciseId: exerciseSubstitutionsTable.substituteExerciseId,
+        substituteName: exercisesTable.name,
+        substituteSlug: exercisesTable.slug,
+        sortOrder: exerciseSubstitutionsTable.sortOrder,
+      })
+      .from(exerciseSubstitutionsTable)
+      .innerJoin(exercisesTable, eq(exercisesTable.id, exerciseSubstitutionsTable.substituteExerciseId))
+      .where(eq(exerciseSubstitutionsTable.id, inserted.id));
+
+    res.status(201).json(AddExerciseSubstitutionResponse.parse(row));
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      res.status(409).json({ error: "Ten zamiennik jest już przypisany" });
+      return;
+    }
+    throw error;
+  }
+});
+
+router.delete("/exercises/:id/substitutions/:substituteId", async (req, res): Promise<void> => {
+  const params = RemoveExerciseSubstitutionParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+
+  const result = await db
+    .delete(exerciseSubstitutionsTable)
+    .where(
+      and(
+        eq(exerciseSubstitutionsTable.exerciseId, params.data.id),
+        eq(exerciseSubstitutionsTable.substituteExerciseId, params.data.substituteId),
+      ),
+    )
+    .returning({ id: exerciseSubstitutionsTable.id });
+
+  if (result.length === 0) { res.status(404).json({ error: "Zamiennik nie znaleziony" }); return; }
+
+  res.status(204).send();
+});
+
+// ─── Progressions ─────────────────────────────────────────────────────────────
+
+router.get("/exercises/:id/progressions", async (req, res): Promise<void> => {
+  const params = GetExerciseProgressionsParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+
+  const [exercise] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(eq(exercisesTable.id, params.data.id));
+  if (!exercise) { res.status(404).json({ error: "Ćwiczenie nie znalezione" }); return; }
+
+  const rows = await db
+    .select({
+      id: exerciseProgressionsTable.id,
+      exerciseId: exerciseProgressionsTable.exerciseId,
+      linkedExerciseId: exerciseProgressionsTable.linkedExerciseId,
+      linkedExerciseName: exercisesTable.name,
+      linkedExerciseSlug: exercisesTable.slug,
+      direction: exerciseProgressionsTable.direction,
+      sortOrder: exerciseProgressionsTable.sortOrder,
+    })
+    .from(exerciseProgressionsTable)
+    .innerJoin(exercisesTable, eq(exercisesTable.id, exerciseProgressionsTable.linkedExerciseId))
+    .where(eq(exerciseProgressionsTable.exerciseId, params.data.id))
+    .orderBy(exerciseProgressionsTable.direction, exerciseProgressionsTable.sortOrder, exercisesTable.name);
+
+  res.json(GetExerciseProgressionsResponse.parse(rows));
+});
+
+router.post("/exercises/:id/progressions", async (req, res): Promise<void> => {
+  const params = AddExerciseProgressionParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+
+  const parsed = AddExerciseProgressionBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  if (parsed.data.direction !== "progression" && parsed.data.direction !== "regression") {
+    res.status(400).json({ error: "direction musi być 'progression' lub 'regression'" });
+    return;
+  }
+
+  const [exercise] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(eq(exercisesTable.id, params.data.id));
+  if (!exercise) { res.status(404).json({ error: "Ćwiczenie nie znalezione" }); return; }
+
+  const [linked] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(eq(exercisesTable.id, parsed.data.linkedExerciseId));
+  if (!linked) { res.status(404).json({ error: "Powiązane ćwiczenie nie znalezione" }); return; }
+
+  try {
+    const [inserted] = await db
+      .insert(exerciseProgressionsTable)
+      .values({
+        exerciseId: params.data.id,
+        linkedExerciseId: parsed.data.linkedExerciseId,
+        direction: parsed.data.direction,
+        sortOrder: parsed.data.sortOrder ?? 0,
+      })
+      .returning();
+
+    const [row] = await db
+      .select({
+        id: exerciseProgressionsTable.id,
+        exerciseId: exerciseProgressionsTable.exerciseId,
+        linkedExerciseId: exerciseProgressionsTable.linkedExerciseId,
+        linkedExerciseName: exercisesTable.name,
+        linkedExerciseSlug: exercisesTable.slug,
+        direction: exerciseProgressionsTable.direction,
+        sortOrder: exerciseProgressionsTable.sortOrder,
+      })
+      .from(exerciseProgressionsTable)
+      .innerJoin(exercisesTable, eq(exercisesTable.id, exerciseProgressionsTable.linkedExerciseId))
+      .where(eq(exerciseProgressionsTable.id, inserted.id));
+
+    res.status(201).json(AddExerciseProgressionResponse.parse(row));
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      res.status(409).json({ error: "To powiązanie już istnieje" });
+      return;
+    }
+    throw error;
+  }
+});
+
+router.delete("/exercises/:id/progressions/:progressionId", async (req, res): Promise<void> => {
+  const params = RemoveExerciseProgressionParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+
+  const result = await db
+    .delete(exerciseProgressionsTable)
+    .where(
+      and(
+        eq(exerciseProgressionsTable.exerciseId, params.data.id),
+        eq(exerciseProgressionsTable.id, params.data.progressionId),
+      ),
+    )
+    .returning({ id: exerciseProgressionsTable.id });
+
+  if (result.length === 0) { res.status(404).json({ error: "Powiązanie nie znalezione" }); return; }
+
+  res.status(204).send();
 });
 
 export default router;

@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 import * as zod from 'zod';
-import { dateOnly } from "../date-only";
 
 
 /**
@@ -196,7 +195,7 @@ export const GetClientSurveyResponse = zod.object({
   "advancedMethodsToAvoid": zod.array(zod.string()),
   "additionalInfo": zod.string().nullish(),
   "age": zod.number().nullish(),
-  "dateOfBirth": dateOnly.nullish(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "gender": zod.string().nullish(),
   "heightCm": zod.number().nullish(),
   "weightKg": zod.number().nullish(),
@@ -254,7 +253,7 @@ export const UpsertClientSurveyBody = zod.object({
   "advancedMethodsToAvoid": zod.array(zod.string()).optional(),
   "additionalInfo": zod.string().optional(),
   "age": zod.number().min(upsertClientSurveyBodyAgeMin).max(upsertClientSurveyBodyAgeMax).optional(),
-  "dateOfBirth": dateOnly.optional(),
+  "dateOfBirth": zod.coerce.date().optional(),
   "gender": zod.enum(['Mężczyzna', 'Kobieta']).optional(),
   "heightCm": zod.number().min(upsertClientSurveyBodyHeightCmMin).max(upsertClientSurveyBodyHeightCmMax).optional(),
   "weightKg": zod.number().min(upsertClientSurveyBodyWeightKgMin).max(upsertClientSurveyBodyWeightKgMax).optional(),
@@ -291,7 +290,7 @@ export const UpsertClientSurveyResponse = zod.object({
   "advancedMethodsToAvoid": zod.array(zod.string()),
   "additionalInfo": zod.string().nullish(),
   "age": zod.number().nullish(),
-  "dateOfBirth": dateOnly.nullish(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "gender": zod.string().nullish(),
   "heightCm": zod.number().nullish(),
   "weightKg": zod.number().nullish(),
@@ -338,7 +337,7 @@ export const ListClientSurveysResponseItem = zod.object({
   "advancedMethodsToAvoid": zod.array(zod.string()),
   "additionalInfo": zod.string().nullish(),
   "age": zod.number().nullish(),
-  "dateOfBirth": dateOnly.nullish(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "gender": zod.string().nullish(),
   "heightCm": zod.number().nullish(),
   "weightKg": zod.number().nullish(),
@@ -387,7 +386,7 @@ export const GetClientSurveyByIdResponse = zod.object({
   "advancedMethodsToAvoid": zod.array(zod.string()),
   "additionalInfo": zod.string().nullish(),
   "age": zod.number().nullish(),
-  "dateOfBirth": dateOnly.nullish(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "gender": zod.string().nullish(),
   "heightCm": zod.number().nullish(),
   "weightKg": zod.number().nullish(),
@@ -561,7 +560,7 @@ export const SubmitPublicSurveyBody = zod.object({
   "advancedMethodsToAvoid": zod.array(zod.string()).optional(),
   "additionalInfo": zod.string().optional(),
   "age": zod.number().min(submitPublicSurveyBodyAgeMin).max(submitPublicSurveyBodyAgeMax).optional(),
-  "dateOfBirth": dateOnly,
+  "dateOfBirth": zod.coerce.date(),
   "gender": zod.enum(['Mężczyzna', 'Kobieta']),
   "heightCm": zod.number().min(submitPublicSurveyBodyHeightCmMin).max(submitPublicSurveyBodyHeightCmMax).optional(),
   "weightKg": zod.number().min(submitPublicSurveyBodyWeightKgMin).max(submitPublicSurveyBodyWeightKgMax).optional(),
@@ -616,6 +615,24 @@ export const ListExercisesResponseItem = zod.object({
   "coachingTips": zod.string().nullish(),
   "videoUrl": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "exerciseType": zod.string().nullish(),
+  "breathingTips": zod.string().nullish(),
+  "safetyNotes": zod.string().nullish(),
+  "tempo": zod.string().nullish(),
+  "rangeOfMotion": zod.string().nullish(),
+  "suitableExperienceLevels": zod.array(zod.string()),
+  "trainingGoals": zod.array(zod.string()),
+  "movementCategory": zod.string().nullish(),
+  "planeOfMotion": zod.string().nullish(),
+  "execution": zod.string().nullish(),
+  "resistanceType": zod.string().nullish(),
+  "requiresSpotter": zod.boolean().nullish(),
+  "canBePerformedToFailure": zod.string().nullish(),
+  "jointStress": zod.string().nullish(),
+  "learningDifficulty": zod.number().nullish(),
+  "neurologicalFatigue": zod.number().nullish(),
+  "domsPotential": zod.number().nullish(),
+  "exercisePriority": zod.string().nullish(),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -646,6 +663,24 @@ export const CreateExerciseBody = zod.object({
   "coachingTips": zod.string().optional(),
   "videoUrl": zod.string().optional(),
   "imageUrl": zod.string().optional(),
+  "exerciseType": zod.string().optional(),
+  "breathingTips": zod.string().optional(),
+  "safetyNotes": zod.string().optional(),
+  "tempo": zod.string().optional(),
+  "rangeOfMotion": zod.string().optional(),
+  "suitableExperienceLevels": zod.array(zod.string()).optional(),
+  "trainingGoals": zod.array(zod.string()).optional(),
+  "movementCategory": zod.string().optional(),
+  "planeOfMotion": zod.string().optional(),
+  "execution": zod.string().optional(),
+  "resistanceType": zod.string().optional(),
+  "requiresSpotter": zod.boolean().optional(),
+  "canBePerformedToFailure": zod.string().optional(),
+  "jointStress": zod.string().optional(),
+  "learningDifficulty": zod.number().optional(),
+  "neurologicalFatigue": zod.number().optional(),
+  "domsPotential": zod.number().optional(),
+  "exercisePriority": zod.string().optional(),
   "isActive": zod.boolean().optional()
 })
 
@@ -666,6 +701,24 @@ export const CreateExerciseResponse = zod.object({
   "coachingTips": zod.string().nullish(),
   "videoUrl": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "exerciseType": zod.string().nullish(),
+  "breathingTips": zod.string().nullish(),
+  "safetyNotes": zod.string().nullish(),
+  "tempo": zod.string().nullish(),
+  "rangeOfMotion": zod.string().nullish(),
+  "suitableExperienceLevels": zod.array(zod.string()),
+  "trainingGoals": zod.array(zod.string()),
+  "movementCategory": zod.string().nullish(),
+  "planeOfMotion": zod.string().nullish(),
+  "execution": zod.string().nullish(),
+  "resistanceType": zod.string().nullish(),
+  "requiresSpotter": zod.boolean().nullish(),
+  "canBePerformedToFailure": zod.string().nullish(),
+  "jointStress": zod.string().nullish(),
+  "learningDifficulty": zod.number().nullish(),
+  "neurologicalFatigue": zod.number().nullish(),
+  "domsPotential": zod.number().nullish(),
+  "exercisePriority": zod.string().nullish(),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -696,6 +749,24 @@ export const GetExerciseResponse = zod.object({
   "coachingTips": zod.string().nullish(),
   "videoUrl": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "exerciseType": zod.string().nullish(),
+  "breathingTips": zod.string().nullish(),
+  "safetyNotes": zod.string().nullish(),
+  "tempo": zod.string().nullish(),
+  "rangeOfMotion": zod.string().nullish(),
+  "suitableExperienceLevels": zod.array(zod.string()),
+  "trainingGoals": zod.array(zod.string()),
+  "movementCategory": zod.string().nullish(),
+  "planeOfMotion": zod.string().nullish(),
+  "execution": zod.string().nullish(),
+  "resistanceType": zod.string().nullish(),
+  "requiresSpotter": zod.boolean().nullish(),
+  "canBePerformedToFailure": zod.string().nullish(),
+  "jointStress": zod.string().nullish(),
+  "learningDifficulty": zod.number().nullish(),
+  "neurologicalFatigue": zod.number().nullish(),
+  "domsPotential": zod.number().nullish(),
+  "exercisePriority": zod.string().nullish(),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -729,6 +800,24 @@ export const UpdateExerciseBody = zod.object({
   "coachingTips": zod.string().optional(),
   "videoUrl": zod.string().optional(),
   "imageUrl": zod.string().optional(),
+  "exerciseType": zod.string().optional(),
+  "breathingTips": zod.string().optional(),
+  "safetyNotes": zod.string().optional(),
+  "tempo": zod.string().optional(),
+  "rangeOfMotion": zod.string().optional(),
+  "suitableExperienceLevels": zod.array(zod.string()).optional(),
+  "trainingGoals": zod.array(zod.string()).optional(),
+  "movementCategory": zod.string().optional(),
+  "planeOfMotion": zod.string().optional(),
+  "execution": zod.string().optional(),
+  "resistanceType": zod.string().optional(),
+  "requiresSpotter": zod.boolean().optional(),
+  "canBePerformedToFailure": zod.string().optional(),
+  "jointStress": zod.string().optional(),
+  "learningDifficulty": zod.number().optional(),
+  "neurologicalFatigue": zod.number().optional(),
+  "domsPotential": zod.number().optional(),
+  "exercisePriority": zod.string().optional(),
   "isActive": zod.boolean().optional()
 })
 
@@ -749,6 +838,24 @@ export const UpdateExerciseResponse = zod.object({
   "coachingTips": zod.string().nullish(),
   "videoUrl": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "exerciseType": zod.string().nullish(),
+  "breathingTips": zod.string().nullish(),
+  "safetyNotes": zod.string().nullish(),
+  "tempo": zod.string().nullish(),
+  "rangeOfMotion": zod.string().nullish(),
+  "suitableExperienceLevels": zod.array(zod.string()),
+  "trainingGoals": zod.array(zod.string()),
+  "movementCategory": zod.string().nullish(),
+  "planeOfMotion": zod.string().nullish(),
+  "execution": zod.string().nullish(),
+  "resistanceType": zod.string().nullish(),
+  "requiresSpotter": zod.boolean().nullish(),
+  "canBePerformedToFailure": zod.string().nullish(),
+  "jointStress": zod.string().nullish(),
+  "learningDifficulty": zod.number().nullish(),
+  "neurologicalFatigue": zod.number().nullish(),
+  "domsPotential": zod.number().nullish(),
+  "exercisePriority": zod.string().nullish(),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -838,6 +945,111 @@ export const SetExerciseMusclesResponseItem = zod.object({
   "coefficient": zod.number()
 })
 export const SetExerciseMusclesResponse = zod.array(SetExerciseMusclesResponseItem)
+
+
+/**
+ * @summary List substitution exercises for an exercise
+ */
+export const GetExerciseSubstitutionsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetExerciseSubstitutionsResponseItem = zod.object({
+  "id": zod.number(),
+  "exerciseId": zod.number(),
+  "substituteExerciseId": zod.number(),
+  "substituteName": zod.string(),
+  "substituteSlug": zod.string(),
+  "sortOrder": zod.number()
+})
+export const GetExerciseSubstitutionsResponse = zod.array(GetExerciseSubstitutionsResponseItem)
+
+
+/**
+ * @summary Add a substitution exercise
+ */
+export const AddExerciseSubstitutionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AddExerciseSubstitutionBody = zod.object({
+  "substituteExerciseId": zod.number(),
+  "sortOrder": zod.number().optional()
+})
+
+export const AddExerciseSubstitutionResponse = zod.object({
+  "id": zod.number(),
+  "exerciseId": zod.number(),
+  "substituteExerciseId": zod.number(),
+  "substituteName": zod.string(),
+  "substituteSlug": zod.string(),
+  "sortOrder": zod.number()
+})
+
+
+/**
+ * @summary Remove a substitution exercise
+ */
+export const RemoveExerciseSubstitutionParams = zod.object({
+  "id": zod.coerce.number(),
+  "substituteId": zod.coerce.number()
+})
+
+export const RemoveExerciseSubstitutionResponse = zod.void()
+
+
+/**
+ * @summary List progressions and regressions for an exercise
+ */
+export const GetExerciseProgressionsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetExerciseProgressionsResponseItem = zod.object({
+  "id": zod.number(),
+  "exerciseId": zod.number(),
+  "linkedExerciseId": zod.number(),
+  "linkedExerciseName": zod.string(),
+  "linkedExerciseSlug": zod.string(),
+  "direction": zod.string(),
+  "sortOrder": zod.number()
+})
+export const GetExerciseProgressionsResponse = zod.array(GetExerciseProgressionsResponseItem)
+
+
+/**
+ * @summary Add a progression or regression link
+ */
+export const AddExerciseProgressionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AddExerciseProgressionBody = zod.object({
+  "linkedExerciseId": zod.number(),
+  "direction": zod.string(),
+  "sortOrder": zod.number().optional()
+})
+
+export const AddExerciseProgressionResponse = zod.object({
+  "id": zod.number(),
+  "exerciseId": zod.number(),
+  "linkedExerciseId": zod.number(),
+  "linkedExerciseName": zod.string(),
+  "linkedExerciseSlug": zod.string(),
+  "direction": zod.string(),
+  "sortOrder": zod.number()
+})
+
+
+/**
+ * @summary Remove a progression or regression link
+ */
+export const RemoveExerciseProgressionParams = zod.object({
+  "id": zod.coerce.number(),
+  "progressionId": zod.coerce.number()
+})
+
+export const RemoveExerciseProgressionResponse = zod.void()
 
 
 /**

@@ -1,0 +1,290 @@
+# TASK — Intelligent Exercise Recommendation Engine
+
+This task extends the existing Plan Editor and Exercise Library.
+
+Do NOT modify any existing functionality.
+
+Do NOT change:
+
+- Training Interview logic
+- Volume Calculator
+- Muscle Coefficient System
+- Exercise Library structure
+- Exercise Intelligence metadata
+- Database relationships
+
+Only extend the Plan Editor by creating an intelligent Exercise Recommendation Engine.
+
+============================================================
+OBJECTIVE
+============================================================
+
+When a trainer wants to add an exercise to a workout plan, the application should no longer display only a flat list of exercises.
+
+Instead, it should intelligently recommend the best exercises for the selected client.
+
+The trainer must always remain in full control.
+
+The system should recommend, prioritize and warn — never force decisions.
+
+============================================================
+AUTOMATIC FILTERING
+============================================================
+
+Before displaying recommendations, automatically evaluate every exercise.
+
+The recommendation engine should consider:
+
+• Client experience level
+
+• Available equipment
+
+• Training location
+
+• Exercise active status
+
+• Exercise completeness
+
+• Exercise Intelligence metadata
+
+• Client's avoided exercises
+
+• Selected training goal
+
+• Muscle currently being programmed
+
+• Current weekly volume
+
+• Selected movement pattern
+
+Exercises that fail critical requirements should not appear as recommended.
+
+============================================================
+RECOMMENDATION SCORE
+============================================================
+
+Every exercise should receive a recommendation score.
+
+The score should consider:
+
+• Experience suitability
+
+• Equipment compatibility
+
+• Training location compatibility
+
+• Goal compatibility
+
+• Movement pattern suitability
+
+• Exercise priority
+
+• Learning difficulty
+
+• Joint stress
+
+• Neurological fatigue
+
+• DOMS potential
+
+• Existing weekly volume
+
+• Variety within the workout
+
+The application should automatically sort exercises from highest score to lowest.
+
+============================================================
+RECOMMENDATION BADGES
+============================================================
+
+Display badges beside every exercise.
+
+Examples:
+
+🟢 Best Match
+
+🟢 Recommended
+
+🟡 Good Alternative
+
+🟠 Advanced Exercise
+
+🔴 Client Wants To Avoid
+
+🔴 Missing Equipment
+
+🔴 Incomplete Metadata
+
+🔴 High Joint Stress
+
+🔴 High Fatigue
+
+These badges should explain WHY an exercise appears lower or higher in the recommendations.
+
+============================================================
+CLIENT WARNINGS
+============================================================
+
+Never completely block manual selection.
+
+Instead display warnings.
+
+Examples:
+
+This exercise is above the client's experience level.
+
+The client marked this exercise as unwanted.
+
+Required equipment is unavailable.
+
+Metadata is incomplete.
+
+Joint stress is high.
+
+============================================================
+RELATED EXERCISES
+============================================================
+
+When an exercise is selected, automatically display:
+
+------------------------------------------------
+
+Alternative Exercises
+
+------------------------------------------------
+
+Regression Options
+
+------------------------------------------------
+
+Progression Options
+
+------------------------------------------------
+
+Exercises Using Similar Equipment
+
+------------------------------------------------
+
+Exercises With The Same Movement Pattern
+
+------------------------------------------------
+
+Exercises Targeting The Same Primary Muscle
+
+============================================================
+AUTOMATIC SUBSTITUTIONS
+============================================================
+
+When an exercise becomes unavailable because of:
+
+• Equipment
+
+• Injury
+
+• Trainer decision
+
+the application should immediately suggest the best alternatives from the Exercise Library.
+
+Never replace automatically.
+
+Always let the trainer decide.
+
+============================================================
+LIVE VOLUME PREVIEW
+============================================================
+
+When hovering or selecting an exercise, immediately display:
+
+Primary muscles affected
+
+Secondary muscles affected
+
+Muscle coefficients
+
+Additional weekly volume that would be added
+
+Current weekly volume
+
+Recommended weekly range
+
+Warning if the recommendation exceeds the client's target volume.
+
+============================================================
+SMART SEARCH
+============================================================
+
+The exercise picker should support searching by:
+
+Exercise name
+
+Primary muscle
+
+Secondary muscle
+
+Movement pattern
+
+Equipment
+
+Training goal
+
+Difficulty
+
+Training location
+
+Exercise type
+
+Priority
+
+Joint stress
+
+Learning difficulty
+
+Status
+
+Completeness
+
+============================================================
+RECOMMENDATION EXPLANATION
+============================================================
+
+Every recommendation should include a short explanation.
+
+Examples:
+
+Recommended because this matches the client's equipment and experience.
+
+Recommended because this exercise has low neurological fatigue.
+
+Recommended because it complements today's movement pattern.
+
+Recommended because it helps achieve the weekly volume target.
+
+============================================================
+FUTURE AI COMPATIBILITY
+============================================================
+
+Prepare the architecture so future AI modules can reuse the recommendation engine.
+
+Do NOT implement AI yet.
+
+The recommendation engine must be reusable by:
+
+• Automatic workout generation
+
+• AI workout builder
+
+• Exercise substitution engine
+
+• Injury adaptation engine
+
+• Progressive overload engine
+
+============================================================
+EXPECTED RESULT
+============================================================
+
+The Plan Editor should become an intelligent coaching assistant.
+
+Instead of displaying hundreds of exercises equally, it should prioritize the most appropriate options while still allowing the trainer complete manual control.
+
+The recommendation engine must remain modular, scalable and fully compatible with all future AI systems.

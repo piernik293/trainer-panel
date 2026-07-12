@@ -32,6 +32,40 @@ export interface Exercise {
   videoUrl?: string | null;
   /** @nullable */
   imageUrl?: string | null;
+  /** @nullable */
+  exerciseType?: string | null;
+  /** @nullable */
+  breathingTips?: string | null;
+  /** @nullable */
+  safetyNotes?: string | null;
+  /** @nullable */
+  tempo?: string | null;
+  /** @nullable */
+  rangeOfMotion?: string | null;
+  suitableExperienceLevels: string[];
+  trainingGoals: string[];
+  /** @nullable */
+  movementCategory?: string | null;
+  /** @nullable */
+  planeOfMotion?: string | null;
+  /** @nullable */
+  execution?: string | null;
+  /** @nullable */
+  resistanceType?: string | null;
+  /** @nullable */
+  requiresSpotter?: boolean | null;
+  /** @nullable */
+  canBePerformedToFailure?: string | null;
+  /** @nullable */
+  jointStress?: string | null;
+  /** @nullable */
+  learningDifficulty?: number | null;
+  /** @nullable */
+  neurologicalFatigue?: number | null;
+  /** @nullable */
+  domsPotential?: number | null;
+  /** @nullable */
+  exercisePriority?: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
