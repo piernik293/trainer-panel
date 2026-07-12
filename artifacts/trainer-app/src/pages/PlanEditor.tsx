@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
-import { useListExercises } from "@workspace/api-client-react";
+import { useListExercises, useListExerciseRecommendations } from "@workspace/api-client-react";
 import {
   useGetPlan,
   useUpdatePlan,
@@ -39,6 +39,8 @@ import {
   ChevronRight,
   Dumbbell,
   BarChart3,
+  Sparkles,
+  AlertCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -62,54 +64,158 @@ const VOLUME_STATUS_COLOR: Record<string, string> = {
 
 // ─── ExercisePicker ───────────────────────────────────────────────────────────
 
+function ScoreChip({ score }: { score: number }) {
+  const cls =
+    score >= 75
+      ? "text-emerald-700 bg-emerald-500/10"
+      : score >= 45
+      ? "text-amber-700 bg-amber-500/10"
+      : "text-muted-foreground bg-muted/50";
+  return (
+    <span className={`text-xs font-bold rounded-full px-1.5 py-0.5 tabular-nums ${cls}`}>
+      {score}
+    </span>
+  );
+}
+
 function ExercisePicker({
   open,
   onClose,
   onSelect,
+  clientId,
 }: {
   open: boolean;
   onClose: () => void;
   onSelect: (exerciseId: number, exerciseName: string) => void;
+  clientId?: number | null;
 }) {
   const [search, setSearch] = useState("");
-  const { data: exercises } = useListExercises({ isActive: true } as any);
+  const [tab, setTab] = useState<"all" | "recommended">("all");
 
-  const filtered = (exercises ?? []).filter((e) =>
+  const { data: allExercises } = useListExercises({ isActive: true } as any);
+  const { data: recommendations } = useListExerciseRecommendations(
+    clientId ?? 0,
+    {},
+    { query: { enabled: !!clientId && tab === "recommended" } },
+  );
+
+  const showTabs = !!clientId;
+
+  const filtered = (allExercises ?? []).filter((e) =>
     e.name.toLowerCase().includes(search.toLowerCase()),
   );
 
+  const handleSelect = (id: number, name: string) => {
+    onSelect(id, name);
+    onClose();
+    setSearch("");
+  };
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
+      <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Wybierz ćwiczenie</DialogTitle>
         </DialogHeader>
-        <div className="px-1 pb-2">
-          <Input
-            placeholder="Szukaj..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            autoFocus
-          />
-        </div>
-        <div className="overflow-y-auto flex-1 space-y-1 px-1">
-          {filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Brak wyników</p>
+
+        {/* Tab selector — only when a client profile exists */}
+        {showTabs && (
+          <div className="flex gap-1 px-1 pb-1 border-b border-border/50">
+            <button
+              type="button"
+              onClick={() => setTab("all")}
+              className={`flex-1 text-sm py-1.5 rounded-md transition-colors ${
+                tab === "all"
+                  ? "bg-muted font-medium text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Wszystkie
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("recommended")}
+              className={`flex-1 text-sm py-1.5 rounded-md transition-colors flex items-center justify-center gap-1.5 ${
+                tab === "recommended"
+                  ? "bg-muted font-medium text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Sparkles size={13} />
+              Rekomendowane
+            </button>
+          </div>
+        )}
+
+        {/* Search — only on the "all" tab */}
+        {tab === "all" && (
+          <div className="px-1 pb-2">
+            <Input
+              placeholder="Szukaj..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoFocus
+            />
+          </div>
+        )}
+
+        {/* List */}
+        <div className="overflow-y-auto flex-1 space-y-0.5 px-1">
+          {tab === "all" ? (
+            filtered.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Brak wyników</p>
+            ) : (
+              filtered.map((ex) => (
+                <button
+                  key={ex.id}
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm"
+                  onClick={() => handleSelect(ex.id, ex.name)}
+                >
+                  <span className="font-medium">{ex.name}</span>
+                  <span className="text-muted-foreground ml-2 text-xs">{ex.mainMuscleGroup}</span>
+                </button>
+              ))
+            )
           ) : (
-            filtered.map((ex) => (
-              <button
-                key={ex.id}
-                className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm"
-                onClick={() => {
-                  onSelect(ex.id, ex.name);
-                  onClose();
-                  setSearch("");
-                }}
-              >
-                <span className="font-medium">{ex.name}</span>
-                <span className="text-muted-foreground ml-2 text-xs">{ex.mainMuscleGroup}</span>
-              </button>
-            ))
+            // Recommended tab
+            !recommendations ? (
+              <div className="py-8 space-y-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-10 bg-muted/30 animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : !recommendations.hasProfile ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                <p>Brak wywiadu treningowego klienta.</p>
+                <p className="text-xs mt-1">Wypełnij wywiad, aby zobaczyć rekomendacje.</p>
+              </div>
+            ) : recommendations.exercises.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Brak kompletnych ćwiczeń dopasowanych do profilu klienta.
+              </p>
+            ) : (
+              recommendations.exercises.map((ex) => (
+                <button
+                  key={ex.id}
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm"
+                  onClick={() => handleSelect(ex.id, ex.name)}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <span className="font-medium">{ex.name}</span>
+                      <span className="text-muted-foreground ml-2 text-xs">{ex.mainMuscleGroup}</span>
+                    </div>
+                    <ScoreChip score={ex.score} />
+                  </div>
+                  {ex.warnReasons.length > 0 && (
+                    <div className="flex items-center gap-1 mt-0.5 text-red-500">
+                      <AlertCircle size={11} />
+                      <span className="text-xs">{ex.warnReasons[0]}</span>
+                    </div>
+                  )}
+                </button>
+              ))
+            )
           )}
         </div>
       </DialogContent>
@@ -787,6 +893,7 @@ export default function PlanEditor() {
         open={pickerDayId !== null}
         onClose={() => setPickerDayId(null)}
         onSelect={handleExerciseSelected}
+        clientId={plan?.clientId}
       />
     </div>
   );

@@ -39,6 +39,8 @@ import type {
   ImportPreviewResponse,
   ImportRequest,
   ImportSummary,
+  ListExerciseRecommendationsParams,
+  ListExerciseRecommendationsResponse,
   ListExercisesParams,
   ListMusclesParams,
   PublicSurveyResponse,
@@ -1276,6 +1278,95 @@ export const useSubmitPublicSurvey = <TError = ErrorType<ErrorResponse>,
       > => {
       return useMutation(getSubmitPublicSurveyMutationOptions(options));
     }
+
+export const getListExerciseRecommendationsUrl = (clientId: number,
+    params?: ListExerciseRecommendationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/clients/${clientId}/exercise-recommendations?${stringifiedParams}` : `/api/clients/${clientId}/exercise-recommendations`
+}
+
+/**
+ * @summary Get scored exercise recommendations for a client based on their latest survey profile
+ */
+export const listExerciseRecommendations = async (clientId: number,
+    params?: ListExerciseRecommendationsParams, options?: RequestInit): Promise<ListExerciseRecommendationsResponse> => {
+
+  return customFetch<ListExerciseRecommendationsResponse>(getListExerciseRecommendationsUrl(clientId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListExerciseRecommendationsQueryKey = (clientId: number,
+    params?: ListExerciseRecommendationsParams,) => {
+    return [
+    `/api/clients/${clientId}/exercise-recommendations`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListExerciseRecommendationsQueryOptions = <TData = Awaited<ReturnType<typeof listExerciseRecommendations>>, TError = ErrorType<ErrorResponse>>(clientId: number,
+    params?: ListExerciseRecommendationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listExerciseRecommendations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListExerciseRecommendationsQueryKey(clientId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listExerciseRecommendations>>> = ({ signal }) => listExerciseRecommendations(clientId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: clientId !== null && clientId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listExerciseRecommendations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListExerciseRecommendationsQueryResult = NonNullable<Awaited<ReturnType<typeof listExerciseRecommendations>>>
+export type ListExerciseRecommendationsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get scored exercise recommendations for a client based on their latest survey profile
+ */
+
+export function useListExerciseRecommendations<TData = Awaited<ReturnType<typeof listExerciseRecommendations>>, TError = ErrorType<ErrorResponse>>(
+ clientId: number,
+    params?: ListExerciseRecommendationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listExerciseRecommendations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListExerciseRecommendationsQueryOptions(clientId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListExercisesUrl = (params?: ListExercisesParams,) => {
   const normalizedParams = new URLSearchParams();

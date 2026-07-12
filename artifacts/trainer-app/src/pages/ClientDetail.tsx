@@ -21,7 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Printer, FileEdit, Phone, Mail, Calendar, ClipboardList, History, StickyNote, Trash2, Pencil, Dumbbell } from "lucide-react";
+import { ArrowLeft, Printer, FileEdit, Phone, Mail, Calendar, ClipboardList, History, StickyNote, Trash2, Pencil, Dumbbell, Sparkles } from "lucide-react";
+import ExerciseRecommendationsTab from "./ExerciseRecommendationsTab";
 import { formatDate } from "@/lib/utils";
 import { clientStatusLabel, surveyStatusLabel } from "@/lib/client-status";
 import { useToast } from "@/hooks/use-toast";
@@ -319,7 +320,11 @@ export default function ClientDetail() {
         <TabsList>
           <TabsTrigger value="overview">Przegląd</TabsTrigger>
           <TabsTrigger value="survey">Wywiad treningowy</TabsTrigger>
-          <TabsTrigger value="history">Historia wywiadów treningowych</TabsTrigger>
+          <TabsTrigger value="history">Historia wywiadów</TabsTrigger>
+          <TabsTrigger value="recommendations" className="gap-1.5">
+            <Sparkles size={13} />
+            Rekomendacje
+          </TabsTrigger>
           <TabsTrigger value="notes">Notatki</TabsTrigger>
           <TabsTrigger value="plans">Plany treningowe</TabsTrigger>
         </TabsList>
@@ -390,6 +395,10 @@ export default function ClientDetail() {
               <SurveyDetails survey={displayedSurvey} bmi={calculateBmi(displayedSurvey.heightCm, displayedSurvey.weightKg)} showBmiRecommendation={false} clientEmail={client.email} />
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="recommendations" className="pt-4">
+          <ExerciseRecommendationsTab clientId={id} hasSurvey={!!client?.hasSurvey} />
         </TabsContent>
 
         <TabsContent value="plans" className="pt-4">

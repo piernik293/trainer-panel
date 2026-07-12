@@ -260,6 +260,32 @@ export interface TrainerNoteInput {
   content: string;
 }
 
+export interface ExerciseRecommendation {
+  id: number;
+  name: string;
+  mainMuscleGroup: string;
+  secondaryMuscleGroups: string[];
+  equipment: string[];
+  trainingLocation: string[];
+  difficultyLevel?: string | null;
+  exerciseType?: string | null;
+  movementPattern?: string | null;
+  exercisePriority?: string | null;
+  /** Match score 0-100. 100 = perfect match across all dimensions. */
+  score: number;
+  /** Positive match signals to surface in the trainer UI. */
+  matchReasons: string[];
+  /** Penalty signals (avoided muscles, etc.) to surface in the trainer UI. */
+  warnReasons: string[];
+}
+
+export interface ListExerciseRecommendationsResponse {
+  clientId: number;
+  /** False when the client has no survey; exercises will be empty. */
+  hasProfile: boolean;
+  exercises: ExerciseRecommendation[];
+}
+
 export interface Exercise {
   id: number;
   name: string;
@@ -674,6 +700,11 @@ export interface ImportSummary {
   failed: number;
   errors: ImportRowError[];
 }
+
+export type ListExerciseRecommendationsParams = {
+limit?: number;
+mainMuscleGroup?: string;
+};
 
 export type ListExercisesParams = {
 search?: string;

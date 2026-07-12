@@ -401,6 +401,41 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /clients/{clientId}/exercise-recommendations:
+    get:
+      operationId: listExerciseRecommendations
+      tags: [recommendations]
+      summary: Get scored exercise recommendations for a client based on their latest survey profile
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: mainMuscleGroup
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Scored exercise recommendations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListExerciseRecommendationsResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /exercises:
     get:
       operationId: listExercises
@@ -1238,6 +1273,80 @@ components:
           minLength: 1
       required:
         - content
+
+    ExerciseRecommendation:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        mainMuscleGroup:
+          type: string
+        secondaryMuscleGroups:
+          type: array
+          items:
+            type: string
+        equipment:
+          type: array
+          items:
+            type: string
+        trainingLocation:
+          type: array
+          items:
+            type: string
+        difficultyLevel:
+          type: string
+          nullable: true
+        exerciseType:
+          type: string
+          nullable: true
+        movementPattern:
+          type: string
+          nullable: true
+        exercisePriority:
+          type: string
+          nullable: true
+        score:
+          type: integer
+          description: Match score 0-100. 100 = perfect match across all dimensions.
+        matchReasons:
+          type: array
+          items:
+            type: string
+          description: Positive match signals to surface in the trainer UI.
+        warnReasons:
+          type: array
+          items:
+            type: string
+          description: Penalty signals (avoided muscles, etc.) to surface in the trainer UI.
+      required:
+        - id
+        - name
+        - mainMuscleGroup
+        - secondaryMuscleGroups
+        - equipment
+        - trainingLocation
+        - score
+        - matchReasons
+        - warnReasons
+
+    ListExerciseRecommendationsResponse:
+      type: object
+      properties:
+        clientId:
+          type: integer
+        hasProfile:
+          type: boolean
+          description: False when the client has no survey; exercises will be empty.
+        exercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExerciseRecommendation"
+      required:
+        - clientId
+        - hasProfile
+        - exercises
 
     Exercise:
       type: object

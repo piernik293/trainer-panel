@@ -587,6 +587,39 @@ export const SubmitPublicSurveyResponse = zod.object({
 
 
 /**
+ * @summary Get scored exercise recommendations for a client based on their latest survey profile
+ */
+export const ListExerciseRecommendationsParams = zod.object({
+  "clientId": zod.coerce.number()
+})
+
+export const ListExerciseRecommendationsQueryParams = zod.object({
+  "limit": zod.coerce.number().optional(),
+  "mainMuscleGroup": zod.coerce.string().optional()
+})
+
+export const ListExerciseRecommendationsResponse = zod.object({
+  "clientId": zod.number(),
+  "hasProfile": zod.boolean().describe('False when the client has no survey; exercises will be empty.'),
+  "exercises": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "mainMuscleGroup": zod.string(),
+  "secondaryMuscleGroups": zod.array(zod.string()),
+  "equipment": zod.array(zod.string()),
+  "trainingLocation": zod.array(zod.string()),
+  "difficultyLevel": zod.string().nullish(),
+  "exerciseType": zod.string().nullish(),
+  "movementPattern": zod.string().nullish(),
+  "exercisePriority": zod.string().nullish(),
+  "score": zod.number().describe('Match score 0-100. 100 = perfect match across all dimensions.'),
+  "matchReasons": zod.array(zod.string()).describe('Positive match signals to surface in the trainer UI.'),
+  "warnReasons": zod.array(zod.string()).describe('Penalty signals (avoided muscles, etc.) to surface in the trainer UI.')
+}))
+})
+
+
+/**
  * @summary List exercises in the trainer's exercise library
  */
 export const ListExercisesQueryParams = zod.object({
