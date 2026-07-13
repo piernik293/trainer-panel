@@ -47,6 +47,7 @@ import type {
   TargetDayAllocationType,
   VolumeDistributionWarningType,
 } from "@workspace/api-zod";
+import { computeAuxiliaryCoreBlock } from "./coreVolumeService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,6 +58,8 @@ export interface VolumeDistributionInput {
   selectedSplitType: SplitType;
   selectedWeeklyVolumes: Array<{ targetId: number; selectedVolume: number }>;
   priorityTargetIds: number[];
+  /** Whether the trainer selected Core / brzuch as a priority. Default false. */
+  corePriority?: boolean;
 }
 
 interface GuidelineRow {
@@ -460,6 +463,7 @@ export async function calculateVolumeDistribution(
     selectedSplitType,
     selectedWeeklyVolumes,
     priorityTargetIds,
+    corePriority = false,
   } = input;
 
   const globalWarnings: VolumeDistributionWarningType[] = [];
@@ -473,6 +477,13 @@ export async function calculateVolumeDistribution(
 
   globalWarnings.push(...splitWarnings);
 
+  const emptyCore = computeAuxiliaryCoreBlock({
+    experienceLevel,
+    isPriority: corePriority,
+    trainingDays: 0,
+    dayWorkloads: new Map(),
+  });
+
   if (!recommended) {
     // Blocking: cannot proceed without valid experience level
     return {
@@ -483,6 +494,7 @@ export async function calculateVolumeDistribution(
       targetDecisions: [],
       warnings: globalWarnings,
       hasBlockingIssues: true,
+      auxiliaryCoreBlock: emptyCore,
     };
   }
 
@@ -544,6 +556,7 @@ export async function calculateVolumeDistribution(
         },
       ],
       hasBlockingIssues: true,
+      auxiliaryCoreBlock: emptyCore,
     };
   }
 
@@ -692,6 +705,17 @@ export async function calculateVolumeDistribution(
 
   const hasBlockingIssues = globalWarnings.some((w) => w.blocking);
 
+  // ── 6. Compute auxiliary core block ──────────────────────────────────────────
+  const dayWorkloads = new Map<number, number>(
+    days.map((d) => [d.dayIndex, d.totalEffectiveTargetVolume]),
+  );
+  const auxiliaryCoreBlock = computeAuxiliaryCoreBlock({
+    experienceLevel,
+    isPriority: corePriority,
+    trainingDays,
+    dayWorkloads,
+  });
+
   return {
     recommendedSplitType: recommended,
     selectedSplitType,
@@ -700,6 +724,7 @@ export async function calculateVolumeDistribution(
     targetDecisions,
     warnings: globalWarnings,
     hasBlockingIssues,
+    auxiliaryCoreBlock,
   };
 }
 

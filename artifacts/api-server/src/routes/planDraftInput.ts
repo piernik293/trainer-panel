@@ -171,7 +171,7 @@ router.post("/plans/draft-distribution/preview", async (req, res): Promise<void>
     return;
   }
 
-  const { clientId, experienceLevel, trainingDays, selectedSplitType, selectedWeeklyVolumes, priorityTargetIds } = parsed.data;
+  const { clientId, experienceLevel, trainingDays, selectedSplitType, selectedWeeklyVolumes, priorityTargetIds, corePriority } = parsed.data;
 
   // Validate experienceLevel is one of the four canonical levels
   if (!(VALID_EXPERIENCE_LEVELS as readonly string[]).includes(experienceLevel)) {
@@ -226,6 +226,7 @@ router.post("/plans/draft-distribution/preview", async (req, res): Promise<void>
     selectedSplitType,
     selectedWeeklyVolumes,
     priorityTargetIds,
+    corePriority,
   });
 
   res.json(result);

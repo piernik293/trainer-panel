@@ -8,8 +8,9 @@
  *   1. recommendSplitType — deterministic rules → recommended split
  *   2. distributeWeeklyVolume — Phase 2 selected values → per-day allocations
  *
- * All allocations are in 0.5-set increments.
+ * All allocations are whole integers.
  * Sum of daily allocations equals selectedWeeklyVolume exactly for every target.
+ * Auxiliary Core block is computed separately and returned alongside targetDecisions.
  */
 
 import * as z from "zod";
@@ -61,6 +62,25 @@ export const SelectedWeeklyVolume = z.object({
 });
 export type SelectedWeeklyVolumeType = z.infer<typeof SelectedWeeklyVolume>;
 
+// ─── Auxiliary Core / brzuch block ────────────────────────────────────────────
+
+export const CoreDayAllocation = z.object({
+  dayIndex: z.number().int().min(0),
+  sets: z.number().int().min(0),
+});
+export type CoreDayAllocationType = z.infer<typeof CoreDayAllocation>;
+
+export const AuxiliaryCoreBlock = z.object({
+  weeklyRecommendedSets: z.number().int().min(0),
+  weeklySelectedSets: z.number().int().min(0),
+  isPriority: z.boolean(),
+  dayAllocations: z.array(CoreDayAllocation),
+  placement: z.enum(["end_of_session"]),
+  reasons: z.array(z.string()),
+  warnings: z.array(VolumeDistributionWarning),
+});
+export type AuxiliaryCoreBlockType = z.infer<typeof AuxiliaryCoreBlock>;
+
 // ─── Request body ─────────────────────────────────────────────────────────────
 
 export const DraftVolumeDistributionBody = z.object({
@@ -77,6 +97,11 @@ export const DraftVolumeDistributionBody = z.object({
    * Up to 3. Empty means no priorities for this session.
    */
   priorityTargetIds: z.array(z.number().int().positive()).max(3).optional().default([]),
+  /**
+   * Whether the trainer selected Core / brzuch as a priority (+2 sets, max 10).
+   * Default false.
+   */
+  corePriority: z.boolean().optional().default(false),
 });
 export type DraftVolumeDistributionBodyType = z.infer<typeof DraftVolumeDistributionBody>;
 
@@ -128,6 +153,7 @@ export const WeeklyVolumeDistributionResponse = z.object({
   targetDecisions: z.array(TargetDistributionDecision),
   warnings: z.array(VolumeDistributionWarning),
   hasBlockingIssues: z.boolean(),
+  auxiliaryCoreBlock: AuxiliaryCoreBlock,
 });
 export type WeeklyVolumeDistributionResponseType = z.infer<
   typeof WeeklyVolumeDistributionResponse

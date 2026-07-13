@@ -1094,6 +1094,44 @@ function Step3Volume({
         <span className="font-medium">{decisions.metadata.experienceLevel}</span>.
       </p>
 
+      {/* Core / brzuch auxiliary block card */}
+      {distributionResult && (
+        <Card className="border-slate-200 bg-slate-50/60 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-sm">Core / brzuch</span>
+                  {distributionResult.auxiliaryCoreBlock.isPriority && (
+                    <Badge className="text-[10px] px-1.5 py-0 bg-yellow-100 text-yellow-800 border-yellow-200 border">
+                      priorytet
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Bezpośrednie serie na mięśnie brzucha i stabilizację tułowia.
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <span className="text-sm font-semibold">
+                  {distributionResult.auxiliaryCoreBlock.weeklySelectedSets} serii/tydz.
+                </span>
+              </div>
+            </div>
+            {distributionResult.auxiliaryCoreBlock.dayAllocations.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-slate-200/70 space-y-1">
+                {distributionResult.auxiliaryCoreBlock.dayAllocations.map((a) => (
+                  <div key={a.dayIndex} className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Dzień {a.dayIndex + 1}</span>
+                    <span className="font-medium">{a.sets} serie</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Phase 3B — Daily volume distribution */}
       <DistributionSection
         result={distributionResult}

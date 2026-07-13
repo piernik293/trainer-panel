@@ -28,6 +28,8 @@ export interface BuildDistributionRequestParams {
   volumeDecisions: WeeklyVolumeDecisionResponseType;
   /** Trainer manual overrides: targetId → override volume */
   volumeOverrides: Record<number, number>;
+  /** Whether the trainer selected Core / brzuch as a priority. Default false. */
+  corePriority?: boolean;
 }
 
 /**
@@ -58,6 +60,7 @@ export function buildDistributionRequest(
     selectedSplitType,
     volumeDecisions,
     volumeOverrides,
+    corePriority = false,
   } = params;
 
   // Precondition: valid experience level
@@ -96,6 +99,7 @@ export function buildDistributionRequest(
     selectedSplitType: selectedSplitType as SplitType,
     selectedWeeklyVolumes,
     priorityTargetIds,
+    corePriority,
   };
 }
 
