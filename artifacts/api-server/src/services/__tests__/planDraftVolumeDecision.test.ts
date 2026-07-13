@@ -66,11 +66,11 @@ const G_BARKI: GuidelineRecord = {
 /**
  * Fixture: Klatka piersiowa (target 8)
  * weeklyPreferredCeiling=15, weeklyAbsoluteCeiling=20
- *   preferredMin = round05(max(1, 15×0.50)) = round05(7.5) = 7.5
+ *   preferredMin = roundInt(max(1, 15×0.50)) = Math.round(7.5) = 8
  */
 const G_KLATKA: GuidelineRecord = {
   targetId: 8,
-  preferredMin: 7.5,
+  preferredMin: 8,
   preferredMax: 15,
   absoluteMax: 20,
 };
@@ -111,7 +111,7 @@ describe("computePreferredFloor", () => {
   it("ceiling 12 → floor  6", () => expect(computePreferredFloor(12)).toBe(6));
   it("ceiling 16 → floor  8", () => expect(computePreferredFloor(16)).toBe(8));
   it("ceiling 20 → floor 10", () => expect(computePreferredFloor(20)).toBe(10));
-  it("ceiling 15 → floor 7.5 (round to 0.5)", () => expect(computePreferredFloor(15)).toBe(7.5));
+  it("ceiling 15 → floor 8 (Math.round to integer)", () => expect(computePreferredFloor(15)).toBe(8));
   it("ceiling  6 → floor  3", () => expect(computePreferredFloor(6)).toBe(3));
   it("ceiling  1 → floor  1 (max(1, …) clamps to 1, not 0.5)", () => expect(computePreferredFloor(1)).toBe(1.0));
   it("ceiling  2 → floor  1 (not below 1)", () => expect(computePreferredFloor(2)).toBe(1));
@@ -435,14 +435,14 @@ describe("computeTargetDecision", () => {
   });
 
   it("second priority → +10% of preferredWidth", () => {
-    // base=5, adj=4*0.10=0.4 → total=5.4 → round05=5.5; stored adj=round05(0.4)=0.5
+    // base=5, adj=4*0.10=0.4 → roundInt=0; total=5+0=5 → roundInt=5
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Początkujący",
       priorityOrder: 2, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: null,
     });
-    expect(d.priorityAdjustment).toBe(0.5);
-    expect(d.recommendedValue).toBe(5.5);
+    expect(d.priorityAdjustment).toBe(0);
+    expect(d.recommendedValue).toBe(5);
   });
 
   it("third priority → +5% of preferredWidth (small enough to round to 0)", () => {
@@ -545,15 +545,16 @@ describe("computeTargetDecision", () => {
     expect(d.warnings.some((w) => w.code === "VOLUME_OVERRIDE_BELOW_MIN")).toBe(false);
   });
 
-  it("Zone B — override rounds to 0.5", () => {
+  it("Zone B — non-integer override rejected with VOLUME_OVERRIDE_NOT_INTEGER", () => {
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Początkujący",
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: 5.3,
     });
-    expect(d.selectedValue).toBe(5.5);
+    expect(d.isOverridden).toBe(false);
     expect(d.trainerOverride).toBe(5.3);
-    expect(d.isOverridden).toBe(true);
+    expect(d.warnings.some((w) => w.code === "VOLUME_OVERRIDE_NOT_INTEGER")).toBe(true);
+    expect(d.warnings.find((w) => w.code === "VOLUME_OVERRIDE_NOT_INTEGER")?.blocking).toBe(false);
   });
 
   it("Zone C — override above preferredMax but within absoluteMax: ACCEPTED + non-blocking warning", () => {
@@ -607,8 +608,8 @@ describe("computeTargetDecision", () => {
   });
 
   it("recommendation stays within preferred range with large preferredWidth (G_KLATKA)", () => {
-    // G_KLATKA: preferredMin=7.5, preferredMax=15, absoluteMax=20, width=7.5
-    // Średniozaawansowany (0.50): base=7.5+7.5*0.50=11.25 → round05=11.5
+    // G_KLATKA: preferredMin=8, preferredMax=15, absoluteMax=20, width=7
+    // Średniozaawansowany (0.50): base=8+7*0.50=11.5 → roundInt=12
     const d = computeTargetDecision({
       target: TARGETS[7]!, guideline: G_KLATKA, experienceLevel: "Średniozaawansowany",
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
@@ -616,7 +617,7 @@ describe("computeTargetDecision", () => {
     });
     expect(d.recommendedValue).toBeGreaterThanOrEqual(G_KLATKA.preferredMin);
     expect(d.recommendedValue).toBeLessThanOrEqual(G_KLATKA.preferredMax);
-    expect(d.recommendedValue).toBe(11.5);
+    expect(d.recommendedValue).toBe(12);
   });
 });
 
@@ -825,8 +826,9 @@ describe("calculateVolumeDecisions (integration)", () => {
     expect(d.baseValue).toBe(12);
     expect(d.preferredMin).toBe(8);
     expect(d.preferredMax).toBe(16);
-    expect(d.recommendedValue).toBe(13.5);
-    expect(d.selectedValue).toBe(13.5);
+    // P1 adj = roundInt(8*0.20) = roundInt(1.6) = 2 → 12+2=14
+    expect(d.recommendedValue).toBe(14);
+    expect(d.selectedValue).toBe(14);
     expect(d.isOverridden).toBe(false);
   }, 10000);
 
@@ -842,7 +844,7 @@ describe("calculateVolumeDecisions (integration)", () => {
     expect(d.recommendedValue).toBe(13.0);
   }, 10000);
 
-  it("Barki P3 Średniozaawansowany → recommendedValue 12.5", async () => {
+  it("Barki P3 Średniozaawansowany → recommendedValue 12", async () => {
     const result = await calculateVolumeDecisions({
       clientId: 1, experienceLevel: "Średniozaawansowany",
       priorityMuscleGroups: ["Klatka piersiowa", "Plecy", "Barki"], excludedMuscleGroups: [],
@@ -851,7 +853,8 @@ describe("calculateVolumeDecisions (integration)", () => {
     });
     const d = result.decisions.find((d) => d.targetId === 6)!;
     expect(d.priorityOrder).toBe(3);
-    expect(d.recommendedValue).toBe(12.5);
+    // P3 adj = roundInt(8*0.05) = roundInt(0.4) = 0 → 12+0=12
+    expect(d.recommendedValue).toBe(12);
   }, 10000);
 
   it("Barki no priority Średniozaawansowany → recommendedValue 12.0", async () => {
@@ -911,9 +914,10 @@ describe("TargetDecisionCard input validation (logic-only)", () => {
     preferredMin: number,
     preferredMax: number,
     absoluteMax: number,
-  ): { error: string | null; zone: "a" | "b" | "c" | "invalid" | null } {
+  ): { error: string | null; zone: "a" | "b" | "c" | "invalid" | "not_integer" | null } {
     const v = parseFloat(raw);
     if (isNaN(v) || raw.trim() === "") return { error: "Nieprawidłowa wartość", zone: "invalid" };
+    if (!Number.isInteger(v)) return { error: "Wartość musi być liczbą całkowitą", zone: "not_integer" };
     if (v < preferredMin) return { error: `Poniżej minimum (${preferredMin})`, zone: "a" };
     if (v > absoluteMax) return { error: `Powyżej limitu absolutnego (${absoluteMax})`, zone: "invalid" };
     if (v > preferredMax) return { error: null, zone: "c" }; // Zone C — amber warning, accepted
@@ -947,5 +951,11 @@ describe("TargetDecisionCard input validation (logic-only)", () => {
   it("non-numeric input → error", () => {
     const r = validateOverride("abc", 4, 8, 12);
     expect(r.error).toBeTruthy();
+  });
+
+  it("non-integer value → error not_integer", () => {
+    const r = validateOverride("5.3", 4, 8, 12);
+    expect(r.error).toBeTruthy();
+    expect(r.zone).toBe("not_integer");
   });
 });

@@ -349,8 +349,8 @@ export function getEligibleDayTypes(broadCategory: string): ReadonlySet<string> 
  *
  * Guarantees:
  *   sum(allocations.values()) === weeklyVolume   (exact)
- *   Every allocation is a multiple of 0.5
- *   Deterministic: first `extra` eligible days (sorted by day index) receive +0.5
+ *   Every allocation is a whole integer
+ *   Deterministic: first `extra` eligible days (sorted by day index) receive +1
  *   sessionMax respected when mathematically possible
  *   sessionMin violations flagged (allocation is NOT inflated)
  *   If no eligible days → use allDayIndices + TARGET_WITHOUT_ELIGIBLE_DAY warning
@@ -397,14 +397,16 @@ export function distributeTargetVolume(params: {
     });
   }
 
-  // Work in half-units (integers) to avoid floating-point accumulation errors
-  const halfTotal = Math.round(weeklyVolume * 2);
+  // Work in whole integers to avoid floating-point accumulation errors.
+  // Planned volume values must be whole integers; internal effective-volume
+  // (effectiveSets, coefficients) may remain decimal.
+  const total = Math.round(weeklyVolume);
   const N = dayIndices.length;
-  const halfMax = Math.round(sessionMax * 2);
-  const halfMin = Math.round(sessionMin * 2);
+  const maxPerDay = Math.round(sessionMax);
+  const minPerDay = Math.round(sessionMin);
 
   // Check whether sessionMax can be respected
-  const sessionMaxExceeded = N * halfMax < halfTotal;
+  const sessionMaxExceeded = N * maxPerDay < total;
   if (sessionMaxExceeded) {
     warnings.push({
       code: "TARGET_SESSION_MAX_EXCEEDED",
@@ -414,18 +416,17 @@ export function distributeTargetVolume(params: {
     });
   }
 
-  // Largest-remainder distribution
-  const base = Math.floor(halfTotal / N);
-  const extra = halfTotal % N;
+  // Largest-remainder distribution in whole integers
+  const base = Math.floor(total / N);
+  const extra = total % N;
 
   let sessionBelowMin = false;
 
   for (let i = 0; i < N; i++) {
-    const halfAlloc = base + (i < extra ? 1 : 0);
-    const alloc = halfAlloc / 2;
+    const alloc = base + (i < extra ? 1 : 0);
     allocations.set(dayIndices[i]!, alloc);
 
-    if (alloc > 0 && halfAlloc < halfMin) {
+    if (alloc > 0 && alloc < minPerDay) {
       sessionBelowMin = true;
     }
   }

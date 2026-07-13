@@ -120,6 +120,14 @@ export function round05(value: number): number {
   return Math.round(value * 2) / 2;
 }
 
+/**
+ * Round to nearest whole integer for planned volume values shown to the trainer.
+ * Internal effective-volume (effectiveSets, coefficients) may remain decimal.
+ */
+export function roundInt(value: number): number {
+  return Math.round(value);
+}
+
 // ─── Preferred floor formula ──────────────────────────────────────────────────
 
 /**
@@ -138,7 +146,7 @@ export function round05(value: number): number {
  *   ceiling 20 → floor 10
  */
 export function computePreferredFloor(weeklyPreferredCeiling: number): number {
-  return round05(Math.max(1, weeklyPreferredCeiling * 0.50));
+  return roundInt(Math.max(1, weeklyPreferredCeiling * 0.50));
 }
 
 // ─── Text normalization ───────────────────────────────────────────────────────
@@ -403,8 +411,8 @@ export function computeTargetDecision(
     });
   }
 
-  // ── 8. Round to 0.5 ───────────────────────────────────────────────────────
-  let recommendedValue = round05(clamped);
+  // ── 8. Round to whole integer ─────────────────────────────────────────────
+  let recommendedValue = roundInt(clamped);
   // Edge case: rounding pushed outside preferred range — re-clamp
   if (recommendedValue < preferredMin) recommendedValue = preferredMin;
   if (recommendedValue > preferredMax) recommendedValue = preferredMax;
@@ -426,7 +434,18 @@ export function computeTargetDecision(
   if (inp.trainerOverride !== null) {
     const ov = inp.trainerOverride;
 
-    if (ov < preferredMin) {
+    if (!Number.isInteger(ov)) {
+      // Non-integer — rejected; trainer must supply a whole number
+      warnings.push({
+        code: "VOLUME_OVERRIDE_NOT_INTEGER",
+        severity: "warning",
+        message: `Ustawienie trenera (${ov}) musi być liczbą całkowitą. Wartość nie została zastosowana.`,
+        blocking: false,
+        suggestedAction: `Wprowadź pełną liczbę całkowitą.`,
+      });
+      trainerOverrideClean = ov;
+
+    } else if (ov < preferredMin) {
       // Zone A — rejected
       warnings.push({
         code: "VOLUME_OVERRIDE_BELOW_MIN",
@@ -438,14 +457,14 @@ export function computeTargetDecision(
       trainerOverrideClean = ov;
 
     } else if (ov <= preferredMax) {
-      // Zone B — accepted, no warning
-      selectedValue = round05(ov);
+      // Zone B — accepted, no warning (already integer)
+      selectedValue = ov;
       trainerOverrideClean = ov;
       isOverridden = true;
 
     } else if (ov <= absoluteMax) {
-      // Zone C — accepted, non-blocking warning
-      selectedValue = round05(ov);
+      // Zone C — accepted, non-blocking warning (already integer)
+      selectedValue = ov;
       trainerOverrideClean = ov;
       isOverridden = true;
       warnings.push({
@@ -478,10 +497,10 @@ export function computeTargetDecision(
     preferredMax,
     absoluteMax,
     rangePosition,
-    baseValue: round05(baseValue),
-    priorityAdjustment: round05(priorityAdjustment),
-    recoveryAdjustment: round05(recoveryAdjustment),
-    availabilityAdjustment: round05(availabilityAdjustment),
+    baseValue: roundInt(baseValue),
+    priorityAdjustment: roundInt(priorityAdjustment),
+    recoveryAdjustment: roundInt(recoveryAdjustment),
+    availabilityAdjustment: roundInt(availabilityAdjustment),
     recommendedValue,
     selectedValue,
     trainerOverride: trainerOverrideClean,

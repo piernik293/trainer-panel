@@ -730,9 +730,14 @@ function DistributionSection({
                               {day.dayType}
                             </Badge>
                           </div>
-                          <span className="text-sm font-semibold shrink-0">
-                            {day.totalEffectiveTargetVolume} serii
-                          </span>
+                          <div className="shrink-0 text-right">
+                            <span className="text-sm font-semibold">
+                              Łączna objętość efektywna targetów: {day.totalEffectiveTargetVolume}
+                            </span>
+                            <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[220px]">
+                              To wartość analityczna uwzględniająca pracę kilku mięśni. Nie jest to liczba serii roboczych do wykonania.
+                            </p>
+                          </div>
                         </div>
                         {nonZero.length > 0 && (
                           <div className="space-y-1 pt-2 border-t border-border/30">
@@ -787,7 +792,7 @@ function TargetDecisionCard({
 }) {
   const selectedValue = overrideValue !== undefined ? overrideValue : decision.selectedValue;
   const isOverridden = overrideValue !== undefined;
-  const step = 0.5;
+  const step = 1;
 
   // Zone detection for visual states
   // Zone B: preferredMin ≤ v ≤ preferredMax   → normal
@@ -804,9 +809,9 @@ function TargetDecisionCard({
   const displayValue = rawInput !== null ? rawInput : String(selectedValue);
 
   function adjust(delta: number) {
-    // Stepper buttons: snap to 0.5 steps.
+    // Stepper buttons: whole integer steps.
     // − stops at preferredMin; + goes up to absoluteMax (Zone C allowed).
-    const next = Math.round((selectedValue + delta) * 2) / 2;
+    const next = Math.round(selectedValue + delta);
     const bounded = Math.max(decision.preferredMin, Math.min(decision.absoluteMax, next));
     setRawInput(null);
     setInputError(null);
@@ -830,9 +835,14 @@ function TargetDecisionCard({
       setInputError(`Limit absolutny: ${decision.absoluteMax} serii`);
       return;
     }
-    // Zone B or C — valid input, apply (rounded to 0.5)
+    // Non-integer — reject; do not silently round
+    if (!Number.isInteger(v)) {
+      setInputError("Wartość musi być liczbą całkowitą");
+      return;
+    }
+    // Zone B or C — valid integer, apply
     setInputError(null);
-    onOverride(decision.targetId, Math.round(v * 2) / 2);
+    onOverride(decision.targetId, v);
   }
 
   function handleInputBlur() {

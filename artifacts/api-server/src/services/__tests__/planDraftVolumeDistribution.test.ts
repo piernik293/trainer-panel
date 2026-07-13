@@ -31,8 +31,8 @@ function sumAllocations(map: Map<number, number>): number {
   return Math.round(s * 2) / 2;
 }
 
-function isHalfUnit(v: number): boolean {
-  return Number.isInteger(Math.round(v * 2));
+function isWholeInteger(v: number): boolean {
+  return Number.isInteger(v);
 }
 
 // All 11 real volume targets from the DB seed (ID order matches seed insertion order)
@@ -370,16 +370,15 @@ describe("distributeTargetVolume", () => {
 
   it("exact weekly sum for uneven distribution (5 / 3 days)", () => {
     const { allocations } = dist(5, 3);
-    // halfTotal=10, N=3, base=3, extra=1 → [1.5, 1.5, 1.5, 0.5...?]
-    // base=3, extra=1 → day0=2.0 day1=1.5 day2=1.5 → sum=5 ✓
+    // total=5, N=3, base=1, extra=2 → day0=2 day1=2 day2=1 → sum=5 ✓
     expect(sumAllocations(allocations)).toBe(5);
   });
 
-  it("all allocations are multiples of 0.5", () => {
+  it("all allocations are whole integers", () => {
     for (const [w, n] of [[7, 3], [10, 3], [5, 4], [13, 6]] as const) {
       const { allocations } = dist(w, n);
       for (const v of allocations.values()) {
-        expect(isHalfUnit(v)).toBe(true);
+        expect(isWholeInteger(v)).toBe(true);
       }
     }
   });
@@ -391,12 +390,12 @@ describe("distributeTargetVolume", () => {
     expect(sumAllocations(allocations)).toBe(6);
   });
 
-  it("uneven distribution: first extra days get +0.5 (7 / 3)", () => {
+  it("uneven distribution: first extra days get +1 (7 / 3)", () => {
     const { allocations } = dist(7, 3);
-    // halfTotal=14, N=3, base=4, extra=2 → days 0,1 get 2.5; day2 gets 2.0
-    expect(allocations.get(0)).toBe(2.5);
-    expect(allocations.get(1)).toBe(2.5);
-    expect(allocations.get(2)).toBe(2.0);
+    // total=7, N=3, base=2, extra=1 → day0 gets 3; days 1,2 get 2
+    expect(allocations.get(0)).toBe(3);
+    expect(allocations.get(1)).toBe(2);
+    expect(allocations.get(2)).toBe(2);
     expect(sumAllocations(allocations)).toBe(7);
   });
 
@@ -576,7 +575,7 @@ describe("calculateVolumeDistribution (integration)", () => {
     );
     for (const decision of result.targetDecisions) {
       for (const alloc of decision.allocations) {
-        expect(isHalfUnit(alloc.allocatedVolume)).toBe(true);
+        expect(isWholeInteger(alloc.allocatedVolume)).toBe(true);
       }
     }
   }, 10000);
