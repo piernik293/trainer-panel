@@ -1,6 +1,10 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { customFetch } from "./custom-fetch";
-import type { WeeklyVolumeDecisionResponseType } from "@workspace/api-zod";
+import type {
+  WeeklyVolumeDecisionResponseType,
+  WeeklyVolumeDistributionResponseType,
+  DraftVolumeDistributionBodyType,
+} from "@workspace/api-zod";
 
 // ─── Exercise search (lightweight) ────────────────────────────────────────────
 
@@ -93,5 +97,25 @@ export function useDraftVolumePreview() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       }),
+  });
+}
+
+// ─── Draft Distribution Preview (Phase 3B) ────────────────────────────────────
+
+export function useDraftDistributionPreview() {
+  return useMutation<
+    WeeklyVolumeDistributionResponseType,
+    Error,
+    DraftVolumeDistributionBodyType
+  >({
+    mutationFn: (body) =>
+      customFetch<WeeklyVolumeDistributionResponseType>(
+        "/api/plans/draft-distribution/preview",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
+      ),
   });
 }

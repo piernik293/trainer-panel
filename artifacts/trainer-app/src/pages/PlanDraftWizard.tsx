@@ -11,11 +11,12 @@
  * Step 5 — Podgląd szkicu         : (Phase 4)
  */
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import {
   useGetClientPlanDraftInput,
   useDraftVolumePreview,
+  useDraftDistributionPreview,
 } from "@workspace/api-client-react";
 import {
   SPLIT_TYPES,
@@ -27,7 +28,13 @@ import {
   type GetClientPlanDraftInputResponseType,
   type WeeklyVolumeTargetDecisionType,
   type WeeklyVolumeDecisionResponseType,
+  type WeeklyVolumeDistributionResponseType,
 } from "@workspace/api-zod";
+import {
+  buildDistributionRequest,
+  checkDistributionConsistency,
+  filterNonZeroAllocations,
+} from "@/lib/distributionHelpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -593,6 +600,166 @@ function Step2Preferences({
   );
 }
 
+// ─── Phase 3B — Daily distribution section ────────────────────────────────────
+
+function DistributionSection({
+  result,
+  isLoading,
+  error,
+  trainingDays,
+  onRecalculate,
+}: {
+  result: WeeklyVolumeDistributionResponseType | null;
+  isLoading: boolean;
+  error: string | null;
+  trainingDays: number;
+  onRecalculate: () => void;
+}) {
+  const consistencyCheck = result ? checkDistributionConsistency(result, trainingDays) : null;
+
+  return (
+    <div className="space-y-3 pt-4">
+      {/* Header + button */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <CalendarDays size={14} />
+          Rozkład objętości na dni
+        </h3>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onRecalculate}
+          disabled={isLoading}
+          className="gap-1.5 text-xs h-7"
+        >
+          {isLoading ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            <RotateCcw size={12} />
+          )}
+          Przelicz rozkład
+        </Button>
+      </div>
+
+      {/* API error */}
+      {error && !isLoading && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 flex items-start gap-2">
+          <AlertCircle size={14} className="text-destructive mt-0.5 shrink-0" />
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      )}
+
+      {/* Loading skeleton */}
+      {isLoading && (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
+          ))}
+        </div>
+      )}
+
+      {/* Result */}
+      {result && !isLoading && (
+        <>
+          {/* Inconsistency warning — shown instead of data, not silently repaired */}
+          {consistencyCheck && !consistencyCheck.isConsistent && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 flex items-start gap-2">
+              <AlertCircle size={14} className="text-destructive mt-0.5 shrink-0" />
+              <p className="text-sm text-destructive">
+                Dane rozkładu są niespójne. Spróbuj przeliczyć ponownie.
+              </p>
+            </div>
+          )}
+
+          {consistencyCheck?.isConsistent && (
+            <>
+              {/* Summary */}
+              <Card className="border-border/50 shadow-sm">
+                <CardContent className="px-4 py-3 space-y-1.5 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Rekomendowany podział</span>
+                    <span className="font-medium">
+                      {SPLIT_TYPE_LABELS[result.recommendedSplitType] ?? result.recommendedSplitType}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Wybrany podział</span>
+                    <span className="font-medium">
+                      {SPLIT_TYPE_LABELS[result.selectedSplitType] ?? result.selectedSplitType}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Liczba dni</span>
+                    <span className="font-medium">{result.trainingDays}</span>
+                  </div>
+                  {result.warnings.length > 0 && (
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-muted-foreground">Ostrzeżenia</span>
+                      <span className="font-medium text-amber-700">{result.warnings.length}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Global distribution warnings */}
+              {result.warnings
+                .filter((w) => w.severity === "error" || w.severity === "warning")
+                .map((w, i) => (
+                  <div
+                    key={i}
+                    className="rounded-lg border border-amber-200 bg-amber-50/50 px-4 py-3 flex items-start gap-2"
+                  >
+                    <AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                    <p className="text-sm text-amber-700">{w.message}</p>
+                  </div>
+                ))}
+
+              {/* Day cards */}
+              <div className="space-y-2">
+                {result.days.map((day) => {
+                  const nonZero = filterNonZeroAllocations(day.targetAllocations);
+                  return (
+                    <Card key={day.dayIndex} className="border-border/50 shadow-sm">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-sm">
+                              Dzień {day.dayIndex + 1}: {day.dayName}
+                            </span>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              {day.dayType}
+                            </Badge>
+                          </div>
+                          <span className="text-sm font-semibold shrink-0">
+                            {day.totalEffectiveTargetVolume} serii
+                          </span>
+                        </div>
+                        {nonZero.length > 0 && (
+                          <div className="space-y-1 pt-2 border-t border-border/30">
+                            {nonZero.map((alloc) => (
+                              <div
+                                key={alloc.targetId}
+                                className="flex items-center justify-between text-xs"
+                              >
+                                <span className="text-muted-foreground">{alloc.targetName}</span>
+                                <span className="font-medium">{alloc.allocatedVolume} serii</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Step 3 — Volume decisions ────────────────────────────────────────────────
 
 const RECOVERY_LABEL: Record<string, string> = {
@@ -833,11 +1000,21 @@ function Step3Volume({
   overrides,
   onOverride,
   onReset,
+  distributionResult,
+  distributionLoading,
+  distributionError,
+  onRecalculate,
+  trainingDays,
 }: {
   decisions: WeeklyVolumeDecisionResponseType;
   overrides: Record<number, number>;
   onOverride: (targetId: number, value: number) => void;
   onReset: (targetId: number) => void;
+  distributionResult: WeeklyVolumeDistributionResponseType | null;
+  distributionLoading: boolean;
+  distributionError: string | null;
+  onRecalculate: () => void;
+  trainingDays: number;
 }) {
   const overrideCount = Object.keys(overrides).length;
   const recoveryProfile = decisions.metadata.recoveryProfile;
@@ -906,6 +1083,15 @@ function Step3Volume({
         Wartości w sesjach efektywnych / tydzień. Zakres oparty o wytyczne objętości dla poziomu{" "}
         <span className="font-medium">{decisions.metadata.experienceLevel}</span>.
       </p>
+
+      {/* Phase 3B — Daily volume distribution */}
+      <DistributionSection
+        result={distributionResult}
+        isLoading={distributionLoading}
+        error={distributionError}
+        trainingDays={trainingDays}
+        onRecalculate={onRecalculate}
+      />
     </div>
   );
 }
@@ -921,9 +1107,12 @@ export default function PlanDraftWizard() {
   const [prefs, setPrefs] = useState<PlanDraftGenerationPreferencesType | null>(null);
   const [volumeDecisions, setVolumeDecisions] = useState<WeeklyVolumeDecisionResponseType | null>(null);
   const [volumeOverrides, setVolumeOverrides] = useState<Record<number, number>>({});
+  const [distributionResult, setDistributionResult] = useState<WeeklyVolumeDistributionResponseType | null>(null);
+  const lastDistributionKeyRef = useRef<string | null>(null);
 
   const { data, isLoading, isError } = useGetClientPlanDraftInput(clientId);
   const volumeMutation = useDraftVolumePreview();
+  const distributionMutation = useDraftDistributionPreview();
 
   // Initialize preferences from default when data first loads
   const effectivePrefs = useMemo<PlanDraftGenerationPreferencesType | null>(() => {
@@ -982,6 +1171,50 @@ export default function PlanDraftWizard() {
       return next;
     });
   }
+
+  // ── Distribution (Phase 3B) ────────────────────────────────────────────────
+
+  /** Build distribution request from current wizard state; null when preconditions unmet. */
+  const distributionRequest = useMemo(() => {
+    if (!volumeDecisions || !effectivePrefs || !typedData) return null;
+    return buildDistributionRequest({
+      clientId,
+      experienceLevel: typedData.input.experienceLevel ?? null,
+      trainingDays: effectivePrefs.trainingDays,
+      selectedSplitType: effectivePrefs.splitType,
+      volumeDecisions,
+      volumeOverrides,
+    });
+  }, [clientId, typedData, effectivePrefs, volumeDecisions, volumeOverrides]);
+
+  /**
+   * Auto-recalculate distribution when any trigger input changes while on
+   * the Objętość step. Duplicate-identical requests are suppressed via a ref.
+   *
+   * Triggers: trainingDays, splitType, priorities, any override change or reset
+   * (all of these change distributionRequest, which drives the effect).
+   */
+  useEffect(() => {
+    if (step !== 2 || !distributionRequest) return;
+    const key = JSON.stringify(distributionRequest);
+    if (key === lastDistributionKeyRef.current) return;
+    lastDistributionKeyRef.current = key;
+    distributionMutation.mutate(distributionRequest, {
+      onSuccess: (result: WeeklyVolumeDistributionResponseType) => setDistributionResult(result),
+      onError: () => setDistributionResult(null),
+    });
+  }, [step, distributionRequest]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Manual "Przelicz rozkład" button handler — forces a re-fire. */
+  const handleRecalculate = useCallback(() => {
+    if (!distributionRequest) return;
+    const key = JSON.stringify(distributionRequest);
+    lastDistributionKeyRef.current = key;
+    distributionMutation.mutate(distributionRequest, {
+      onSuccess: (result: WeeklyVolumeDistributionResponseType) => setDistributionResult(result),
+      onError: () => setDistributionResult(null),
+    });
+  }, [distributionRequest, distributionMutation]);
 
   // ── Loading state ──────────────────────────────────────────────────────────
   if (isLoading) {
@@ -1064,12 +1297,21 @@ export default function PlanDraftWizard() {
           onPrefsChange={handlePrefsChange}
         />
       )}
-      {step === 2 && volumeDecisions && (
+      {step === 2 && volumeDecisions && effectivePrefs && (
         <Step3Volume
           decisions={volumeDecisions}
           overrides={volumeOverrides}
           onOverride={handleVolumeOverride}
           onReset={handleVolumeReset}
+          distributionResult={distributionResult}
+          distributionLoading={distributionMutation.isPending}
+          distributionError={
+            distributionMutation.isError
+              ? "Nie udało się obliczyć rozkładu. Sprawdź dane i spróbuj ponownie."
+              : null
+          }
+          onRecalculate={handleRecalculate}
+          trainingDays={effectivePrefs.trainingDays}
         />
       )}
       {step >= 3 && <LockedStepPlaceholder step={step} />}
