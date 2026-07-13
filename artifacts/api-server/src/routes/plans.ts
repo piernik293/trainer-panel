@@ -275,7 +275,7 @@ router.post("/plans/volume-preview", async (req, res): Promise<void> => {
   // In both cases, validate any frontend-supplied values against the authoritative source.
 
   let authoritativeVersionId: number;
-  let authoritativeLevel: string;
+  let authoritativeLevel: string | null;
 
   if (planId) {
     // FIX 4 — existing plan: load plan's own stored values.
@@ -369,13 +369,13 @@ router.post("/plans/volume-preview", async (req, res): Promise<void> => {
     }
 
     authoritativeVersionId = activeVersion?.id ?? frontendVersionId ?? 1;
-    // Do NOT fall back to "Początkujący" for unknown/missing levels — that
-    // would silently over-prescribe volume.  Use whatever the survey contains
-    // (even if invalid); mapToGuidelineLevel conservatively maps unknown
-    // values to "Brak aktywności fizycznej".  Warnings were already emitted.
-    authoritativeLevel = surveyLevel && isValidExperienceLevel(surveyLevel)
+    // Strict: only use the level when it is one of the four canonical values.
+    // Unknown or missing levels must NOT be mapped to any guideline level —
+    // not "Brak aktywności fizycznej", not "Początkujący".  The null value
+    // signals to the calculation block below that volume cannot be computed.
+    authoritativeLevel = (surveyLevel && isValidExperienceLevel(surveyLevel))
       ? surveyLevel
-      : (frontendLevel ?? surveyLevel ?? "");
+      : null;
 
     // Warn if frontend-supplied values differ from the backend-derived authoritative values.
     if (frontendVersionId !== undefined && frontendVersionId !== authoritativeVersionId) {
@@ -392,6 +392,23 @@ router.post("/plans/volume-preview", async (req, res): Promise<void> => {
         message: `Poziom doświadczenia podany przez klienta ("${frontendLevel}") różni się od poziomu z wywiadu ("${authoritativeLevel}"). Użyto poziomu z wywiadu.`,
       });
     }
+  }
+
+  // ── Guard: do not calculate volume when experience level is unknown ────────
+  // Return a structured "no guidelines" response immediately so the caller
+  // knows exactly why no volume data is available.  Do not call
+  // calculateVolumePreview with a null or invalid level.
+  if (!authoritativeLevel) {
+    res.json({
+      clientId,
+      experienceLevel: null,
+      guidelineLevel: null,
+      hasGuidelines: false,
+      days: [],
+      weekly: [],
+      warnings: routeWarnings,
+    });
+    return;
   }
 
   // ── Calculate ─────────────────────────────────────────────────────────────
@@ -1484,6 +1501,12 @@ router.get("/volume-guidelines", async (req, res): Promise<void> => {
   }
 
   const guidelineLevel = mapToGuidelineLevel(experienceLevel);
+  if (!guidelineLevel) {
+    res.status(400).json({
+      error: `Nieznany poziom doświadczenia: "${experienceLevel}". Oczekiwana jedna z wartości: Brak aktywności fizycznej, Początkujący, Średniozaawansowany, Zaawansowany.`,
+    });
+    return;
+  }
 
   const rows = await db
     .select({

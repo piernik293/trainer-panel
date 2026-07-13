@@ -194,13 +194,14 @@ describe("mapToGuidelineLevel", () => {
     ["Średniozaawansowany",       "Średniozaawansowany"],
     ["Początkujący",              "Początkujący"],
     ["Brak aktywności fizycznej", "Brak aktywności fizycznej"],
-    // Unknown/invalid values must NOT be mapped to "Początkujący".
-    // They fall back to the most conservative level to avoid over-prescribing volume.
-    ["UNKNOWN",                   "Brak aktywności fizycznej"],
-    ["",                          "Brak aktywności fizycznej"],
-    ["advanced",                  "Brak aktywności fizycznej"],
-    ["zaawansowany",              "Brak aktywności fizycznej"],   // case-sensitive
-  ])('"%s" → "%s"', (input, expected) => {
+    // Unknown/invalid values must NOT be mapped to ANY level — not Beginner,
+    // not No Activity.  mapToGuidelineLevel is strict: it returns null for
+    // anything outside the four canonical values.
+    ["UNKNOWN",                   null],
+    ["",                          null],
+    ["advanced",                  null],
+    ["zaawansowany",              null],   // case-sensitive
+  ])('"%s" → %s', (input, expected) => {
     expect(mapToGuidelineLevel(input)).toBe(expected);
   });
 

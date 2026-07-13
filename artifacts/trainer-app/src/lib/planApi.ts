@@ -746,9 +746,11 @@ export interface VolumePreviewInput {
 }
 
 export interface VolumePreviewResult {
+  // experienceLevel and guidelineLevel are null when the client's survey
+  // level is missing or invalid — hasGuidelines will be false in that case.
   clientId: number;
-  experienceLevel: string;
-  guidelineLevel: string;
+  experienceLevel: string | null;
+  guidelineLevel: string | null;
   hasGuidelines: boolean;
   days: DayVolumeResult[];
   weekly: WeeklyMuscleResult[];

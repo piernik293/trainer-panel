@@ -162,7 +162,7 @@ describe("Strict level validation (isValidExperienceLevel)", () => {
     expect(isValidExperienceLevel("Zaawansowany")).toBe(true);
   });
 
-  it("11. Empty value returns MISSING_EXPERIENCE_LEVEL via volume-preview route", async () => {
+  it("11. Missing level: route returns MISSING_EXPERIENCE_LEVEL, guidelineLevel null, hasGuidelines false", async () => {
     // Client 19 has a survey with a null experienceLevel
     const res = await req.post("/api/plans/volume-preview")
       .send({ clientId: 19, days: [] })
@@ -170,22 +170,51 @@ describe("Strict level validation (isValidExperienceLevel)", () => {
     expect(res.status).toBe(200);
     const codes = res.body.warnings.map((w: { code: string }) => w.code);
     expect(codes).toContain("MISSING_EXPERIENCE_LEVEL");
+    // Strict: no guideline level must be guessed
+    expect(res.body.guidelineLevel).toBeNull();
+    expect(res.body.hasGuidelines).toBe(false);
+    expect(res.body.experienceLevel).toBeNull();
   });
 
-  it("12. Unknown value returns INVALID_EXPERIENCE_LEVEL — validation helper rejects it", () => {
+  it("12. Unknown value returns INVALID_EXPERIENCE_LEVEL — isValidExperienceLevel rejects it", () => {
     const unknowns = ["unknown", "Expert", "Brak aktywności", "advanced", ""];
     for (const u of unknowns) {
       expect(isValidExperienceLevel(u)).toBe(false);
     }
   });
 
-  it("13. Lowercase / malformed values do NOT silently map to Beginner", () => {
+  it("13a. Lowercase / malformed values do NOT map to Beginner (return null)", () => {
     const malformed = ["zaawansowany", "brak aktywnosci fizycznej", "początkujący", "UNKNOWN", ""];
     for (const m of malformed) {
-      const result = mapToGuidelineLevel(m);
-      // Must never produce Beginner — that would be a silent promotion
+      expect(mapToGuidelineLevel(m)).toBeNull();
+    }
+  });
+
+  it("13b. Unknown values do NOT map to No Activity (return null, not 'Brak aktywności fizycznej')", () => {
+    const unknowns = ["UNKNOWN", "Expert", "advanced", "zaawansowany", ""];
+    for (const u of unknowns) {
+      const result = mapToGuidelineLevel(u);
+      expect(result).toBeNull();
+      expect(result).not.toBe("Brak aktywności fizycznej");
       expect(result).not.toBe("Początkujący");
     }
+  });
+
+  it("13c. Empty string does not map to any level (strict null)", () => {
+    expect(mapToGuidelineLevel("")).toBeNull();
+  });
+
+  it("13d. No guidelines calculated for invalid/missing input (hasGuidelines: false, guidelineLevel: null)", async () => {
+    // Client 19 has null experienceLevel — should get a structured empty response
+    const res = await req.post("/api/plans/volume-preview")
+      .send({ clientId: 19, days: [] })
+      .set("Content-Type", "application/json");
+    expect(res.status).toBe(200);
+    expect(res.body.hasGuidelines).toBe(false);
+    expect(res.body.guidelineLevel).toBeNull();
+    // No volume data must be returned
+    expect(res.body.weekly).toHaveLength(0);
+    expect(res.body.days).toHaveLength(0);
   });
 });
 
@@ -195,12 +224,15 @@ describe("Volume guideline mapping", () => {
   it("14. No Activity maps to its own guideline rows, not Beginner", () => {
     const result = mapToGuidelineLevel("Brak aktywności fizycznej");
     expect(result).toBe("Brak aktywności fizycznej");
+    expect(result).not.toBeNull();
     expect(result).not.toBe("Początkujący");
   });
 
-  it("15. mapToGuidelineLevel is identity for all four canonical levels", () => {
+  it("15. mapToGuidelineLevel is identity (non-null) for all four canonical levels", () => {
     for (const level of CANONICAL_EXPERIENCE_LEVELS) {
-      expect(mapToGuidelineLevel(level)).toBe(level);
+      const result = mapToGuidelineLevel(level);
+      expect(result).not.toBeNull();
+      expect(result).toBe(level);
     }
   });
 });

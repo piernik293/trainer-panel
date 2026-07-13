@@ -109,8 +109,8 @@ export type ExperienceLevel = (typeof CANONICAL_EXPERIENCE_LEVELS)[number];
 // ─── Experience level → guideline level mapping ───────────────────────────────
 
 /**
- * Maps the raw survey experience level to the guideline profile key stored
- * in volume_guidelines.experienceLevel.
+ * Maps a validated experience level to the guideline profile key stored in
+ * volume_guidelines.experienceLevel.
  *
  * Each of the four canonical levels has its own dedicated row set:
  *   "Brak aktywności fizycznej" — ~50% of Beginner (introductory stage)
@@ -118,14 +118,16 @@ export type ExperienceLevel = (typeof CANONICAL_EXPERIENCE_LEVELS)[number];
  *   "Średniozaawansowany"       — Intermediate
  *   "Zaawansowany"              — Advanced
  *
- * MUST be called with a pre-validated level. Unknown/invalid values are NOT
- * silently mapped to another level — they fall through to the most conservative
- * guideline ("Brak aktywności fizycznej") so the calculation never
- * over-prescribes volume for an unrecognised client profile.
- * The caller is responsible for emitting MISSING_EXPERIENCE_LEVEL or
- * INVALID_EXPERIENCE_LEVEL warnings before calling this function.
+ * STRICT: returns null for any input that is not one of the four canonical
+ * values.  Unknown, missing, or malformed values are NEVER silently mapped to
+ * any guideline level — not "Początkujący", not "Brak aktywności fizycznej",
+ * not any other level.  The caller MUST check for null and return an error
+ * (MISSING_EXPERIENCE_LEVEL / INVALID_EXPERIENCE_LEVEL) to the client.
+ *
+ * "Brak aktywności fizycznej" is a real, explicitly selected client level.
+ * It must not be used as an emergency fallback for invalid inputs.
  */
-export function mapToGuidelineLevel(experienceLevelUsed: string): string {
+export function mapToGuidelineLevel(experienceLevelUsed: string): ExperienceLevel | null {
   switch (experienceLevelUsed) {
     case "Zaawansowany":
       return "Zaawansowany";
@@ -136,9 +138,8 @@ export function mapToGuidelineLevel(experienceLevelUsed: string): string {
     case "Brak aktywności fizycznej":
       return "Brak aktywności fizycznej";
     default:
-      // Unknown or missing level → use the most conservative guideline set.
-      // Never silently promote to a higher-volume level.
-      return "Brak aktywności fizycznej";
+      // Unknown or missing level → null.  Do NOT fall back to any level.
+      return null;
   }
 }
 
@@ -464,6 +465,14 @@ export async function calculatePlanVolume(
   experienceLevelUsed: string,
 ): Promise<VolumeResult> {
   const guidelineLevel = mapToGuidelineLevel(experienceLevelUsed);
+  if (guidelineLevel === null) {
+    // Saved plans must always have a valid level (validated at creation).
+    // If this throws, the plan record is corrupt — do not silently fall back.
+    throw new Error(
+      `Saved plan ${planId} has an unrecognised experience level: "${experienceLevelUsed}". ` +
+      "The level must be one of the four canonical values.",
+    );
+  }
 
   // Load shared lookup structures in parallel.
   const [targetMap, guidelineMap, planExerciseRows] = await Promise.all([
@@ -678,8 +687,10 @@ export interface VolumePreviewInput {
 
 export interface VolumePreviewResult {
   clientId: number;
-  experienceLevel: string;
-  guidelineLevel: string;
+  /** null when the survey level is missing or invalid — volume was not calculated. */
+  experienceLevel: string | null;
+  /** null when the survey level is missing or invalid — no guidelines were loaded. */
+  guidelineLevel: string | null;
   hasGuidelines: boolean;
   days: DayVolumeResult[];
   weekly: WeeklyMuscleResult[];
@@ -698,6 +709,28 @@ export async function calculateVolumePreview(
 ): Promise<VolumePreviewResult> {
   const { clientId, guidelineVersionId, experienceLevelUsed, days } = input;
   const guidelineLevel = mapToGuidelineLevel(experienceLevelUsed);
+
+  // STRICT: do not calculate volume for an invalid or missing level.
+  // "Brak aktywności fizycznej" is a real client level, not an emergency
+  // fallback — unknown values must produce a clear error, not a guess.
+  if (guidelineLevel === null) {
+    return {
+      clientId,
+      experienceLevel: experienceLevelUsed || null,
+      guidelineLevel: null,
+      hasGuidelines: false,
+      days: [],
+      weekly: [],
+      warnings: [{
+        code: experienceLevelUsed ? "INVALID_EXPERIENCE_LEVEL" : "MISSING_EXPERIENCE_LEVEL",
+        scope: "plan",
+        message: experienceLevelUsed
+          ? `Poziom doświadczenia "${experienceLevelUsed}" nie jest obsługiwany. Nie można obliczyć objętości.`
+          : "Nie można obliczyć objętości bez poziomu doświadczenia klienta.",
+      }],
+    };
+  }
+
   const warnings: VolumePreviewWarning[] = [];
 
   // 0. Input validation — warn about structurally invalid entries.
@@ -979,7 +1012,7 @@ export async function calculateVolumePreview(
 
   return {
     clientId,
-    experienceLevel: experienceLevelUsed,
+    experienceLevel: experienceLevelUsed || null,
     guidelineLevel,
     hasGuidelines,
     days: dayResults,
