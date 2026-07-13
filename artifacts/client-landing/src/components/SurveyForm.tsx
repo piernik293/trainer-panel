@@ -885,6 +885,17 @@ export default function SurveyForm() {
                   onOtherReasonChange={setAvoidedExerciseOtherReason}
                 />
               </div>
+              {/* NOTE (append-only model): each form submission creates a new
+                  survey record — nothing is ever overwritten. The trainer always
+                  sees the data from your most recent submission. If you re-fill
+                  this form and leave the avoided-exercises section blank, the
+                  trainer's view will show an empty list for this field (your
+                  previous answer is still stored in history, but no longer
+                  treated as current). Fill in all relevant fields each time
+                  you submit the form. */}
+              <p className="text-xs text-muted-foreground/60 mt-2">
+                Każde wysłanie formularza tworzy nowy wpis. Trener widzi dane z Twojego ostatniego zgłoszenia — wypełnij wszystkie pola na nowo przy każdej aktualizacji.
+              </p>
             </div>
 
             {isIntermediateOrAdvanced && (

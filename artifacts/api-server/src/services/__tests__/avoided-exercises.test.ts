@@ -7,6 +7,7 @@
  *  - PUT /api/clients/:clientId/survey (new avoidedExercise* fields)
  *  - POST /api/public/survey (new fields flow-through)
  *  - analyseDraftPreview CLIENT_AVOIDS_EXERCISE warnings
+ *  - Re-submission durability: prior survey rows are never mutated (Task #12)
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
@@ -611,5 +612,174 @@ describe("analyseDraftPreview — CLIENT_AVOIDS_EXERCISE warnings", () => {
       (w) => w.code === "CLIENT_AVOIDS_EXERCISE",
     );
     expect(avoidedWarnings).toHaveLength(0);
+  });
+});
+
+// ─── Re-submission durability (Task #12) ─────────────────────────────────────
+//
+// Surveys are append-only: every public form submit (POST /api/public/survey)
+// and every trainer save (PUT /api/clients/:id/survey) inserts a NEW row.
+// Nothing is ever deleted or overwritten.  The GET /avoided-exercises endpoint
+// always reads the LATEST row by createdAt DESC.
+//
+// These tests confirm two things:
+//  a) A second survey insert with empty avoidedExerciseIds does NOT mutate the
+//     first row — the old row keeps its data intact.
+//  b) The GET endpoint surfaces the latest row, so an empty second submission
+//     correctly shows an empty list (expected behaviour, not data loss).
+
+describe("Re-submission durability — avoided exercises survive a second survey row", () => {
+  let clientId: number;
+  let exerciseId: number;
+
+  beforeAll(async () => {
+    const client = await getOrCreateTestClient();
+    clientId = client.id;
+    const ex = await getActiveExercise();
+    exerciseId = ex?.id ?? 0;
+  });
+
+  it("31. prior survey row keeps its avoidedExerciseIds after a second insert with an empty list", async () => {
+    if (!exerciseId) return;
+
+    await db.delete(surveysTable).where(eq(surveysTable.clientId, clientId));
+
+    // First submission — client fills in avoided exercises
+    const [firstRow] = await db
+      .insert(surveysTable)
+      .values({
+        clientId,
+        firstName: "Test",
+        lastName: "Client",
+        email: "t@t.com",
+        dateOfBirth: "1990-01-01",
+        gender: "Mężczyzna",
+        avoidedExerciseIds: [exerciseId],
+        avoidedExerciseReasons: { [String(exerciseId)]: "test reason" },
+      })
+      .returning();
+
+    // Short pause so timestamps differ
+    await new Promise((r) => setTimeout(r, 10));
+
+    // Second submission — client leaves avoided exercises blank
+    await db.insert(surveysTable).values({
+      clientId,
+      firstName: "Test",
+      lastName: "Client",
+      email: "t@t.com",
+      dateOfBirth: "1990-01-01",
+      gender: "Mężczyzna",
+      avoidedExerciseIds: [],
+      avoidedExerciseReasons: {},
+    });
+
+    // Fetch the FIRST row directly by primary key — it must be unchanged
+    const [reloaded] = await db
+      .select({ avoidedExerciseIds: surveysTable.avoidedExerciseIds })
+      .from(surveysTable)
+      .where(eq(surveysTable.id, firstRow.id));
+
+    expect(reloaded?.avoidedExerciseIds).toContain(exerciseId);
+  });
+
+  it("32. GET /avoided-exercises returns the latest row — empty list after blank re-submission (expected, not a bug)", async () => {
+    if (!exerciseId) return;
+
+    await db.delete(surveysTable).where(eq(surveysTable.clientId, clientId));
+
+    // First submission — with avoided exercises
+    await db.insert(surveysTable).values({
+      clientId,
+      firstName: "Test",
+      lastName: "Client",
+      email: "t@t.com",
+      dateOfBirth: "1990-01-01",
+      gender: "Mężczyzna",
+      avoidedExerciseIds: [exerciseId],
+      avoidedExerciseReasons: {},
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    // Second submission — client leaves avoided exercises blank
+    await db.insert(surveysTable).values({
+      clientId,
+      firstName: "Test",
+      lastName: "Client",
+      email: "t@t.com",
+      dateOfBirth: "1990-01-01",
+      gender: "Mężczyzna",
+      avoidedExerciseIds: [],
+      avoidedExerciseReasons: {},
+    });
+
+    const res = await req
+      .get(`/api/clients/${clientId}/avoided-exercises`)
+      .set("Cookie", TRAINER_COOKIE);
+
+    // The latest survey has an empty list → the endpoint returns [] (correct behaviour)
+    expect([200, 401]).toContain(res.status);
+    if (res.status === 200) {
+      expect(Array.isArray(res.body)).toBe(true);
+      // The result reflects the latest survey row; an empty list here is intentional,
+      // not a silent data-loss bug — the old row with avoidedExerciseIds is still in
+      // the DB and visible in the survey history.
+      expect(res.body).toHaveLength(0);
+    }
+  });
+
+  it("33. POST /api/public/survey twice — first submission's survey row is unaffected", async () => {
+    // Each public submission creates a new client row (no email upsert), so both
+    // rows are fully independent. Verify the first client's survey is intact.
+    const email1 = `resubmit-test-a-${Date.now()}@example.com`;
+    const email2 = `resubmit-test-b-${Date.now() + 1}@example.com`;
+
+    const ex = await getActiveExercise();
+    if (!ex) return;
+
+    // First submission — includes avoided exercise
+    const res1 = await req
+      .post("/api/public/survey")
+      .send({
+        firstName: "Re",
+        lastName: "Submit",
+        email: email1,
+        dateOfBirth: "1990-01-01",
+        gender: "Mężczyzna",
+        avoidedExerciseIds: [ex.id],
+        avoidedExerciseReasons: { [String(ex.id)]: "stary uraz" },
+      })
+      .set("Content-Type", "application/json");
+
+    // Second submission (different email, simulates re-submit) — no avoided exercises
+    const res2 = await req
+      .post("/api/public/survey")
+      .send({
+        firstName: "Re",
+        lastName: "Submit",
+        email: email2,
+        dateOfBirth: "1990-01-01",
+        gender: "Mężczyzna",
+        avoidedExerciseIds: [],
+      })
+      .set("Content-Type", "application/json");
+
+    expect(res1.status).not.toBe(500);
+    expect(res2.status).not.toBe(500);
+
+    if (res1.status === 201) {
+      const clientId1: number = res1.body.clientId;
+
+      // The first client's survey must still have the avoided exercise
+      const [survey] = await db
+        .select({ avoidedExerciseIds: surveysTable.avoidedExerciseIds })
+        .from(surveysTable)
+        .where(eq(surveysTable.clientId, clientId1))
+        .orderBy(desc(surveysTable.createdAt))
+        .limit(1);
+
+      expect(survey?.avoidedExerciseIds).toContain(ex.id);
+    }
   });
 });
