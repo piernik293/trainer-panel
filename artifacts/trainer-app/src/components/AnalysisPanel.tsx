@@ -438,22 +438,43 @@ const WARN_ICON: Record<AnalysisWarning["severity"], React.FC<{ size: number; cl
 
 function WarningsTab({ warnings }: { warnings: AnalysisWarning[] }) {
   const order: AnalysisWarning["severity"][] = ["warning", "notice", "info"];
+
+  // Partition CLIENT_AVOIDS_EXERCISE out for the dedicated summary block.
+  const avoidedWarnings = warnings.filter((w) => w.code === "CLIENT_AVOIDS_EXERCISE");
+  const otherWarnings   = warnings.filter((w) => w.code !== "CLIENT_AVOIDS_EXERCISE");
+
   const groups = order
-    .map((sev) => ({ sev, items: warnings.filter((w) => w.severity === sev) }))
+    .map((sev) => ({ sev, items: otherWarnings.filter((w) => w.severity === sev) }))
     .filter(({ items }) => items.length > 0);
 
-  if (warnings.length === 0) {
-    return (
-      <Card className="border-dashed border-border/50">
-        <CardContent className="py-8 text-center text-muted-foreground text-sm">
-          Brak ostrzeżeń — plan wygląda dobrze z perspektywy wzorców ruchowych.
-        </CardContent>
-      </Card>
-    );
-  }
+  const hasAny = warnings.length > 0;
 
   return (
     <div className="space-y-3">
+      {/* ── Avoided-exercise summary callout ─────────────────────────────── */}
+      {avoidedWarnings.length > 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/60 overflow-hidden">
+          <div className="px-3 py-1.5 text-xs font-semibold text-amber-700 flex items-center gap-1.5 border-b border-amber-200/60">
+            <AlertTriangle size={13} />
+            Ćwiczenia unikane przez klienta ({avoidedWarnings.length})
+          </div>
+          <div className="divide-y divide-amber-100">
+            {avoidedWarnings.map((w, i) => (
+              <div key={i} className="px-3 py-2 flex items-start gap-2">
+                <AlertTriangle size={12} className="text-amber-500 mt-0.5 shrink-0" />
+                <div className="min-w-0 space-y-0.5">
+                  {w.exerciseName && (
+                    <p className="text-xs font-semibold text-amber-800">{w.exerciseName}</p>
+                  )}
+                  <p className="text-xs text-amber-700 leading-snug">{w.message}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Other warnings grouped by severity ───────────────────────────── */}
       {groups.map(({ sev, items }) => {
         const Icon = WARN_ICON[sev];
         return (
@@ -472,6 +493,14 @@ function WarningsTab({ warnings }: { warnings: AnalysisWarning[] }) {
           </div>
         );
       })}
+
+      {!hasAny && (
+        <Card className="border-dashed border-border/50">
+          <CardContent className="py-8 text-center text-muted-foreground text-sm">
+            Brak ostrzeżeń — plan wygląda dobrze z perspektywy wzorców ruchowych.
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

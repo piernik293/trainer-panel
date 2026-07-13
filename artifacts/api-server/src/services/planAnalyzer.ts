@@ -1155,6 +1155,7 @@ export async function analyseDraftPreview(
           emitted.add(ex.exerciseId);
           const meta = metaMap.get(ex.exerciseId);
           const reason = avoided.reasons[String(ex.exerciseId)] ?? null;
+          const exerciseName = meta?.name ?? `ID ${ex.exerciseId}`;
           result.warnings.push({
             code: "CLIENT_AVOIDS_EXERCISE",
             severity: "notice",
@@ -1162,8 +1163,8 @@ export async function analyseDraftPreview(
             exerciseId: ex.exerciseId,
             exerciseName: meta?.name ?? null,
             message: reason
-              ? `Klient chce unikać tego ćwiczenia. Powód: ${reason}`
-              : "Klient chce unikać tego ćwiczenia.",
+              ? `Klient unika ćwiczenia „${exerciseName}". Powód: ${reason}`
+              : `Klient unika ćwiczenia „${exerciseName}".`,
           });
         }
       }
