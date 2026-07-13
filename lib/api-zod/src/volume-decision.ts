@@ -4,6 +4,14 @@
  * Data contracts for the draft-volume preview endpoint and wizard Step 3.
  * These are computation-only contracts: no workout plan is created, no exercises
  * are selected, and no volume is allocated to any training day.
+ *
+ * Volume thresholds (three distinct boundaries):
+ *   preferredMin  — computed MVP floor: roundToHalf(max(1, weeklyPreferredCeiling × 0.50))
+ *   preferredMax  — weeklyPreferredCeiling from the DB guideline
+ *   absoluteMax   — weeklyAbsoluteCeiling from the DB guideline (hard safety ceiling)
+ *
+ * Automatic recommendations operate exclusively inside [preferredMin, preferredMax].
+ * Trainer overrides may reach up to absoluteMax (with a non-blocking warning).
  */
 
 import * as z from "zod";
@@ -17,13 +25,21 @@ export const VOLUME_DECISION_WARNING_CODES = [
   "MISSING_VOLUME_GUIDELINES",
   "MISSING_RECOVERY_DATA",
   "LIMITED_TRAINING_AVAILABILITY",
-  "PRIORITY_TARGET_NOT_FOUND",
+  // Priority matching
+  "UNKNOWN_PRIORITY_TARGET",       // free text matched nothing after normalization
+  "AMBIGUOUS_PRIORITY_TARGET",     // partial text matched more than one target
+  "DUPLICATED_PRIORITY_TARGET",    // same target appears in multiple priority slots
+  // Excluded group (legacy code kept for backward compat)
   "EXCLUDED_TARGET_NOT_FOUND",
-  "VOLUME_OVERRIDE_BELOW_MIN",
-  "VOLUME_OVERRIDE_ABOVE_MAX",
+  // Override policy (four zones)
+  "VOLUME_OVERRIDE_BELOW_MIN",           // Zone A — below preferredMin, rejected
+  "VOLUME_OVERRIDE_ABOVE_PREFERRED",     // Zone C — above preferredMax but ≤ absoluteMax, accepted with warning
+  "VOLUME_OVERRIDE_ABOVE_ABSOLUTE_MAX",  // Zone D — above absoluteMax, rejected
+  // Other
   "VOLUME_TARGET_CLAMPED",
   "NO_VOLUME_DECISIONS_AVAILABLE",
   "TARGET_DEPRIORITIZED_BY_TRAINER",
+  "EXERCISE_WITHOUT_MUSCLE_ASSIGNMENTS",
 ] as const;
 
 export type VolumeDecisionWarningCode = typeof VOLUME_DECISION_WARNING_CODES[number];
@@ -50,16 +66,21 @@ export const RecoveryProfileSchema = z.enum(RECOVERY_PROFILES);
 /**
  * A single volume target's weekly recommendation produced by the decision engine.
  *
+ * Three threshold values (see module JSDoc for semantics):
+ *   preferredMin  — automatic recommendation lower bound
+ *   preferredMax  — automatic recommendation upper bound (weeklyPreferredCeiling)
+ *   absoluteMax   — hard safety ceiling (weeklyAbsoluteCeiling)
+ *
  * Calculation order (matches spec Step 8):
- *  1. guidelineMin / guidelineMax loaded from volume_guidelines
+ *  1. preferredMin / preferredMax / absoluteMax derived from volume_guidelines
  *  2. rangePosition selected by experience level
- *  3. priorityAdjustment applied (stays within range)
- *  4. (excluded: set to guidelineMin)
+ *  3. priorityAdjustment applied (stays within preferred range)
+ *  4. (excluded: set to preferredMin)
  *  5. recoveryAdjustment applied
  *  6. availabilityAdjustment applied
- *  7. clamped to [guidelineMin, guidelineMax]
+ *  7. clamped to [preferredMin, preferredMax]
  *  8. rounded to 0.5-set precision → recommendedValue
- *  9. trainerOverride replaces selectedValue if present
+ *  9. trainerOverride applied per four-zone policy
  * 10. reasons and warnings generated
  */
 export const WeeklyVolumeTargetDecision = z.object({
@@ -69,24 +90,28 @@ export const WeeklyVolumeTargetDecision = z.object({
 
   // Guideline data
   experienceLevel: z.string().nullable(),
-  guidelineMin: z.number(),   // weekly_preferred_ceiling for the level
-  guidelineMax: z.number(),   // weekly_absolute_ceiling for the level
+  /** Computed floor: roundToHalf(max(1, weeklyPreferredCeiling × 0.50)). Auto-recs never go below this. */
+  preferredMin: z.number(),
+  /** weeklyPreferredCeiling from DB. Automatic recommendations stay at or below this. */
+  preferredMax: z.number(),
+  /** weeklyAbsoluteCeiling from DB. Hard safety ceiling; overrides above this are rejected. */
+  absoluteMax: z.number(),
 
   // Calculation components
-  rangePosition: z.number(),       // 0.00 – 0.50
-  baseValue: z.number(),           // before adjustments
-  priorityAdjustment: z.number(),  // positive delta
-  recoveryAdjustment: z.number(),  // negative delta (or 0)
+  rangePosition: z.number(),         // 0.00 – 0.50
+  baseValue: z.number(),             // before adjustments, within [preferredMin, preferredMax]
+  priorityAdjustment: z.number(),    // positive delta (fraction of preferredWidth)
+  recoveryAdjustment: z.number(),    // negative delta (or 0)
   availabilityAdjustment: z.number(), // negative delta (or 0)
 
   // Outputs
-  recommendedValue: z.number(),    // after all adjustments + clamp + rounding
-  selectedValue: z.number(),       // recommendation OR trainer override (rounded)
-  trainerOverride: z.number().nullable(),  // raw trainer input before rounding
+  recommendedValue: z.number(),      // after all adjustments + clamp + rounding, within [preferredMin, preferredMax]
+  selectedValue: z.number(),         // recommendation OR trainer override (rounded)
+  trainerOverride: z.number().nullable(), // raw trainer input before rounding
 
   // Source and display
   source: z.enum(["calculated", "trainer_override"]),
-  priorityOrder: z.number().nullable(),  // 1, 2, 3 or null
+  priorityOrder: z.number().nullable(), // 1, 2, 3 or null
   isExcluded: z.boolean(),
   isOverridden: z.boolean(),
 
@@ -181,19 +206,19 @@ export const EXPERIENCE_LEVEL_RANGE_POSITIONS: Record<string, number> = {
 
 // ─── Priority adjustment percentages ─────────────────────────────────────────
 
-/** Fraction of the range width added per priority order. */
+/** Fraction of the preferred-range width added per priority order. */
 export const PRIORITY_ADJUSTMENTS: Record<1 | 2 | 3, number> = {
-  1: 0.20,  // first priority: +20% of range width
+  1: 0.20,  // first priority: +20% of preferredWidth
   2: 0.10,  // second priority: +10%
   3: 0.05,  // third priority: +5%
 };
 
 // ─── Recovery adjustment magnitude ───────────────────────────────────────────
 
-/** Fraction of the range width subtracted when recovery is reduced. */
+/** Fraction of the preferred-range width subtracted when recovery is reduced. */
 export const REDUCED_RECOVERY_ADJUSTMENT = 0.20;
 
 // ─── Availability thresholds ──────────────────────────────────────────────────
 
-/** Short availability: reduce non-priority targets by this fraction of range width. */
+/** Short availability: reduce non-priority targets by this fraction of preferred-range width. */
 export const SHORT_AVAILABILITY_ADJUSTMENT = 0.25;

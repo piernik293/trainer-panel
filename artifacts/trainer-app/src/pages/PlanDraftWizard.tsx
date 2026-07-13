@@ -622,6 +622,12 @@ function TargetDecisionCard({
   const isOverridden = overrideValue !== undefined;
   const step = 0.5;
 
+  // Zone detection for visual states
+  // Zone B: preferredMin ≤ v ≤ preferredMax   → normal
+  // Zone C: preferredMax < v ≤ absoluteMax    → amber (accepted, non-blocking warning)
+  const isAbovePreferred =
+    selectedValue > decision.preferredMax && selectedValue <= decision.absoluteMax;
+
   // Local state for text input: tracks raw input string and validation error.
   // We do NOT silently clamp — invalid values show an error and are not applied.
   const [rawInput, setRawInput] = useState<string | null>(null);
@@ -631,9 +637,10 @@ function TargetDecisionCard({
   const displayValue = rawInput !== null ? rawInput : String(selectedValue);
 
   function adjust(delta: number) {
-    // Stepper buttons: snap to 0.5 steps, bounded by the approved range.
+    // Stepper buttons: snap to 0.5 steps.
+    // − stops at preferredMin; + goes up to absoluteMax (Zone C allowed).
     const next = Math.round((selectedValue + delta) * 2) / 2;
-    const bounded = Math.max(decision.guidelineMin, Math.min(decision.guidelineMax, next));
+    const bounded = Math.max(decision.preferredMin, Math.min(decision.absoluteMax, next));
     setRawInput(null);
     setInputError(null);
     onOverride(decision.targetId, bounded);
@@ -646,11 +653,17 @@ function TargetDecisionCard({
       setInputError("Nieprawidłowa wartość");
       return;
     }
-    if (v < decision.guidelineMin || v > decision.guidelineMax) {
-      setInputError(`Zakres: ${decision.guidelineMin}–${decision.guidelineMax}`);
+    // Zone A: below preferredMin → reject
+    if (v < decision.preferredMin) {
+      setInputError(`Minimum: ${decision.preferredMin} serii`);
       return;
     }
-    // Valid — clear error and apply (rounded to 0.5)
+    // Zone D: above absoluteMax → reject
+    if (v > decision.absoluteMax) {
+      setInputError(`Limit absolutny: ${decision.absoluteMax} serii`);
+      return;
+    }
+    // Zone B or C — valid input, apply (rounded to 0.5)
     setInputError(null);
     onOverride(decision.targetId, Math.round(v * 2) / 2);
   }
@@ -664,7 +677,13 @@ function TargetDecisionCard({
   }
 
   return (
-    <Card className={`border-border/50 shadow-sm transition-colors ${decision.isExcluded ? "opacity-60" : ""}`}>
+    <Card
+      className={[
+        "border-border/50 shadow-sm transition-colors",
+        decision.isExcluded ? "opacity-60" : "",
+        isAbovePreferred ? "border-amber-300 bg-amber-50/30" : "",
+      ].join(" ")}
+    >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
@@ -691,14 +710,28 @@ function TargetDecisionCard({
                 </Badge>
               )}
               {isOverridden && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-blue-600 border-blue-200 bg-blue-50">
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] px-1.5 py-0 ${isAbovePreferred ? "text-amber-700 border-amber-300 bg-amber-50" : "text-blue-600 border-blue-200 bg-blue-50"}`}
+                >
                   ustawione ręcznie
                 </Badge>
               )}
             </div>
+            {/* Three-threshold display */}
             <p className="text-xs text-muted-foreground mt-0.5">
-              Zakres: {decision.guidelineMin}–{decision.guidelineMax} serii/tydz.
+              Zakres zalecany:{" "}
+              <span className="font-medium text-foreground">
+                {decision.preferredMin}–{decision.preferredMax}
+              </span>{" "}
+              serii/tydz.
             </p>
+            {decision.absoluteMax > decision.preferredMax && (
+              <p className="text-xs text-muted-foreground">
+                Limit absolutny:{" "}
+                <span className="font-medium">{decision.absoluteMax}</span> serii/tydz.
+              </p>
+            )}
           </div>
 
           {/* Stepper control */}
@@ -707,7 +740,7 @@ function TargetDecisionCard({
               <button
                 type="button"
                 onClick={() => adjust(-step)}
-                disabled={selectedValue <= decision.guidelineMin}
+                disabled={selectedValue <= decision.preferredMin}
                 className="w-7 h-7 rounded border border-border flex items-center justify-center disabled:opacity-40 hover:bg-muted transition-colors"
               >
                 <Minus size={12} />
@@ -719,13 +752,19 @@ function TargetDecisionCard({
                   step={step}
                   onChange={(e) => handleInputChange(e.target.value)}
                   onBlur={handleInputBlur}
-                  className={`h-7 text-center text-sm font-medium px-1 ${inputError ? "border-red-400 focus-visible:ring-red-400" : ""}`}
+                  className={`h-7 text-center text-sm font-medium px-1 ${
+                    inputError
+                      ? "border-red-400 focus-visible:ring-red-400"
+                      : isAbovePreferred
+                        ? "border-amber-400 focus-visible:ring-amber-400"
+                        : ""
+                  }`}
                 />
               </div>
               <button
                 type="button"
                 onClick={() => adjust(step)}
-                disabled={selectedValue >= decision.guidelineMax}
+                disabled={selectedValue >= decision.absoluteMax}
                 className="w-7 h-7 rounded border border-border flex items-center justify-center disabled:opacity-40 hover:bg-muted transition-colors"
               >
                 <Plus size={12} />
@@ -734,15 +773,24 @@ function TargetDecisionCard({
             {inputError && (
               <span className="text-[10px] text-red-500 leading-none">{inputError}</span>
             )}
+            {!inputError && isAbovePreferred && (
+              <span className="text-[10px] text-amber-600 leading-none">powyżej zalecanego</span>
+            )}
           </div>
         </div>
 
         {/* Proposal vs. override indicator */}
         <div className="flex items-center justify-between gap-2">
           <div className="text-xs text-muted-foreground">
-            Propozycja: <span className="font-medium text-foreground">{decision.recommendedValue} serii</span>
+            Propozycja systemu:{" "}
+            <span className="font-medium text-foreground">{decision.recommendedValue} serii</span>
             {isOverridden && (
-              <> → <span className="font-medium text-blue-600">{selectedValue} serii (ręcznie)</span></>
+              <>
+                {" → "}
+                <span className={`font-medium ${isAbovePreferred ? "text-amber-700" : "text-blue-600"}`}>
+                  {selectedValue} serii (ręcznie)
+                </span>
+              </>
             )}
           </div>
           {isOverridden && (
@@ -752,7 +800,7 @@ function TargetDecisionCard({
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <RotateCcw size={10} />
-              Przywróć
+              Przywróć propozycję
             </button>
           )}
         </div>
