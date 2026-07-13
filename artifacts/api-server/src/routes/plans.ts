@@ -7,7 +7,7 @@
  */
 
 import { Router, type IRouter } from "express";
-import { eq, and, inArray, sql, max } from "drizzle-orm";
+import { eq, and, inArray, sql, max, desc } from "drizzle-orm";
 import { z } from "zod";
 import {
   db,
@@ -26,6 +26,8 @@ import {
   calculatePlanVolume,
   calculateVolumePreview,
   mapToGuidelineLevel,
+  isValidExperienceLevel,
+  type VolumePreviewWarning,
 } from "../services/volumeCalculator";
 
 const router: IRouter = Router();
@@ -128,8 +130,11 @@ const VolumePreviewDaySchema = z.object({
 
 const VolumePreviewBody = z.object({
   clientId: z.number().int().positive(),
-  guidelineVersionId: z.number().int().positive(),
-  experienceLevelUsed: z.string().min(1),
+  /** Optional — when provided the plan's stored values are the authoritative source. */
+  planId: z.number().int().positive().optional(),
+  /** Supplied by the frontend for validation; backend re-derives the authoritative value. */
+  guidelineVersionId: z.number().int().positive().optional(),
+  experienceLevelUsed: z.string().optional(),
   days: z.array(VolumePreviewDaySchema),
 });
 
@@ -232,8 +237,14 @@ router.post("/plans/volume-preview", async (req, res): Promise<void> => {
     return;
   }
 
-  const { clientId, guidelineVersionId, experienceLevelUsed, days } = parsed.data;
+  const { clientId, planId, days } = parsed.data;
+  const frontendLevel = parsed.data.experienceLevelUsed;
+  const frontendVersionId = parsed.data.guidelineVersionId;
 
+  // Route-level warnings accumulated before calculation.
+  const routeWarnings: VolumePreviewWarning[] = [];
+
+  // ── Verify client exists ──────────────────────────────────────────────────
   const [client] = await db
     .select({ id: clientsTable.id })
     .from(clientsTable)
@@ -244,16 +255,142 @@ router.post("/plans/volume-preview", async (req, res): Promise<void> => {
     return;
   }
 
+  // ── Determine authoritative guidelineVersionId and experienceLevelUsed ───
+  // Strategy:
+  //   1. If planId is provided → use the plan's stored values (authoritative for existing plan).
+  //   2. Otherwise → derive from the client's most recent Training Interview + active version.
+  // In both cases, validate any frontend-supplied values against the authoritative source.
+
+  let authoritativeVersionId: number;
+  let authoritativeLevel: string;
+
+  if (planId) {
+    // FIX 4 — existing plan: load plan's own stored values.
+    const [existingPlan] = await db
+      .select({
+        id: workoutPlansTable.id,
+        clientId: workoutPlansTable.clientId,
+        guidelineVersionId: workoutPlansTable.guidelineVersionId,
+        experienceLevelUsed: workoutPlansTable.experienceLevelUsed,
+      })
+      .from(workoutPlansTable)
+      .where(eq(workoutPlansTable.id, planId));
+
+    if (!existingPlan) {
+      res.status(404).json({ error: "Plan nie znaleziony" });
+      return;
+    }
+    if (existingPlan.clientId !== clientId) {
+      res.status(403).json({ error: "Plan nie należy do podanego klienta" });
+      return;
+    }
+
+    authoritativeVersionId = existingPlan.guidelineVersionId;
+    authoritativeLevel = existingPlan.experienceLevelUsed;
+
+    // Warn if the frontend sent different values than the plan stores.
+    if (frontendVersionId !== undefined && frontendVersionId !== authoritativeVersionId) {
+      routeWarnings.push({
+        code: "MISSING_GUIDELINE_VERSION",
+        scope: "plan",
+        message: `Wersja wytycznych podana przez klienta (${frontendVersionId}) różni się od wersji zapisanej w planie (${authoritativeVersionId}). Użyto wersji z planu.`,
+      });
+    }
+    if (frontendLevel !== undefined && frontendLevel !== authoritativeLevel) {
+      routeWarnings.push({
+        code: "INVALID_EXPERIENCE_LEVEL",
+        scope: "plan",
+        message: `Poziom doświadczenia podany przez klienta ("${frontendLevel}") różni się od poziomu zapisanego w planie ("${authoritativeLevel}"). Użyto poziomu z planu.`,
+      });
+    }
+  } else {
+    // FIX 3 & 4 — new draft: derive from client's Training Interview + active version.
+    const [latestSurvey] = await db
+      .select({
+        id: surveysTable.id,
+        experienceLevel: surveysTable.experienceLevel,
+      })
+      .from(surveysTable)
+      .where(eq(surveysTable.clientId, clientId))
+      .orderBy(desc(surveysTable.id))
+      .limit(1);
+
+    if (!latestSurvey) {
+      routeWarnings.push({
+        code: "MISSING_CLIENT_SURVEY",
+        scope: "plan",
+        message: "Klient nie ma uzupełnionego wywiadu treningowego. Obliczenia mogą być nieprecyzyjne.",
+      });
+    }
+
+    const surveyLevel = latestSurvey?.experienceLevel ?? null;
+
+    if (!surveyLevel) {
+      routeWarnings.push({
+        code: "MISSING_EXPERIENCE_LEVEL",
+        scope: "plan",
+        message: "Wywiad treningowy klienta nie zawiera poziomu doświadczenia.",
+      });
+    } else if (!isValidExperienceLevel(surveyLevel)) {
+      routeWarnings.push({
+        code: "INVALID_EXPERIENCE_LEVEL",
+        scope: "plan",
+        message: `Poziom doświadczenia klienta ("${surveyLevel}") nie jest obsługiwany przez wytyczne objętościowe.`,
+      });
+    }
+
+    // Load the active guideline version.
+    const [activeVersion] = await db
+      .select({ id: volumeGuidelineVersionsTable.id })
+      .from(volumeGuidelineVersionsTable)
+      .where(eq(volumeGuidelineVersionsTable.isActive, true))
+      .orderBy(volumeGuidelineVersionsTable.id)
+      .limit(1);
+
+    if (!activeVersion) {
+      routeWarnings.push({
+        code: "MISSING_GUIDELINE_VERSION",
+        scope: "plan",
+        message: "Brak aktywnej wersji wytycznych objętościowych w systemie.",
+      });
+    }
+
+    authoritativeVersionId = activeVersion?.id ?? frontendVersionId ?? 1;
+    authoritativeLevel = surveyLevel && isValidExperienceLevel(surveyLevel)
+      ? surveyLevel
+      : (frontendLevel ?? "Początkujący");
+
+    // Warn if frontend-supplied values differ from the backend-derived authoritative values.
+    if (frontendVersionId !== undefined && frontendVersionId !== authoritativeVersionId) {
+      routeWarnings.push({
+        code: "MISSING_GUIDELINE_VERSION",
+        scope: "plan",
+        message: `Wersja wytycznych podana przez klienta (${frontendVersionId}) różni się od aktywnej wersji (${authoritativeVersionId}). Użyto aktywnej wersji.`,
+      });
+    }
+    if (frontendLevel !== undefined && frontendLevel !== authoritativeLevel) {
+      routeWarnings.push({
+        code: "INVALID_EXPERIENCE_LEVEL",
+        scope: "plan",
+        message: `Poziom doświadczenia podany przez klienta ("${frontendLevel}") różni się od poziomu z wywiadu ("${authoritativeLevel}"). Użyto poziomu z wywiadu.`,
+      });
+    }
+  }
+
+  // ── Calculate ─────────────────────────────────────────────────────────────
   const result = await calculateVolumePreview({
     clientId,
-    guidelineVersionId,
-    experienceLevelUsed,
+    guidelineVersionId: authoritativeVersionId,
+    experienceLevelUsed: authoritativeLevel,
     days: days.map((d) => ({
       dayId: d.dayId,
       dayName: d.dayName ?? null,
       exercises: d.exercises,
     })),
   });
+
+  // Prepend route-level warnings (context validation) before engine warnings.
+  result.warnings = [...routeWarnings, ...result.warnings];
 
   res.json(result);
 });

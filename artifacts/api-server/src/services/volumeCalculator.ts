@@ -2,9 +2,8 @@
  * Shared volume calculation service.
  *
  * Single source of truth for:
- * - live editor calculations
- * - weekly volume summary
- * - activation validation
+ * - live editor calculations (calculateVolumePreview)
+ * - weekly volume summary / activation validation (calculatePlanVolume)
  *
  * Algorithm for each (plan exercise, volume target) pair:
  *   contribution = workingSets × max(coefficient of target members assigned to exercise)
@@ -12,6 +11,10 @@
  * This max-coefficient rule prevents one physical set from being counted
  * multiple times for group targets (e.g. Mięśnie naramienne with 3 deltoid heads).
  * For single-member targets it is equivalent to a direct coefficient multiply.
+ *
+ * Both public functions normalise their DB data into the same shape and call
+ * the shared pure core — computeVolumeCore — so the formula is maintained in
+ * exactly one place.
  */
 
 import { eq, inArray, and } from "drizzle-orm";
@@ -79,6 +82,8 @@ export interface VolumeResult {
   targets: VolumeTargetResult[];
   /** Exercises present in the plan that have zero muscle assignments. */
   exercisesWithoutAssignments: { planExerciseId: number; exerciseName: string }[];
+  /** Exercises present in the plan that are inactive in the library. */
+  inactiveExercises: { planExerciseId: number; exerciseName: string }[];
 }
 
 // ─── Experience level → guideline level mapping ───────────────────────────────
@@ -106,6 +111,16 @@ export function mapToGuidelineLevel(experienceLevelUsed: string): string {
   }
 }
 
+/** Returns true when experienceLevelUsed is one of the four canonical values. */
+export function isValidExperienceLevel(level: string): boolean {
+  return [
+    "Zaawansowany",
+    "Średniozaawansowany",
+    "Początkujący",
+    "Brak aktywności fizycznej",
+  ].includes(level);
+}
+
 // ─── Approved target order (for consistent display) ──────────────────────────
 
 const TARGET_ORDER: string[] = [
@@ -122,17 +137,154 @@ const TARGET_ORDER: string[] = [
   "Mięsień dwugłowy ramienia",
 ];
 
-// ─── Main calculation function ────────────────────────────────────────────────
+// ─── Shared-core types ────────────────────────────────────────────────────────
 
-export async function calculatePlanVolume(
-  planId: number,
-  guidelineVersionId: number,
-  experienceLevelUsed: string,
-): Promise<VolumeResult> {
-  const guidelineLevel = mapToGuidelineLevel(experienceLevelUsed);
+/**
+ * Normalised exercise entry used as input to computeVolumeCore.
+ * Both calculatePlanVolume and calculateVolumePreview reduce their
+ * respective data shapes to this common form before calling the core.
+ */
+export interface NormalizedEntry {
+  /** Unique ID within the calculation batch (plan exercise ID or exerciseEntryId). */
+  entryId: number;
+  dayId: number;
+  dayName: string | null;
+  dayOrder: number;
+  exerciseId: number;
+  exerciseName: string;
+  workingSets: number;
+}
 
-  // 1. Load all active volume targets with their member specific_muscle IDs.
-  const targetRows = await db
+/** One exercise's contribution to one volume target in one session. */
+export interface CoreContribution {
+  entryId: number;
+  dayId: number;
+  dayName: string | null;
+  dayOrder: number;
+  exerciseId: number;
+  exerciseName: string;
+  workingSets: number;
+  coefficient: number;
+  effectiveSets: number;
+}
+
+/** Result for one volume target, produced by computeVolumeCore. */
+export interface CoreTargetResult {
+  targetId: number;
+  targetName: string;
+  targetType: string;
+  weeklyEffectiveSets: number;
+  status: VolumeStatus;
+  hasGuideline: boolean;
+  sessionMin: number;
+  sessionMax: number;
+  weeklyPreferredCeiling: number;
+  weeklyAbsoluteCeiling: number;
+  remainingToPreferred: number;
+  remainingToAbsolute: number;
+  contributions: CoreContribution[];
+}
+
+// ─── Shared pure calculation core ─────────────────────────────────────────────
+
+/**
+ * Pure function — no DB access.
+ *
+ * Given pre-loaded, normalised data, computes the effective-set total and
+ * status for every volume target using the max-coefficient algorithm.
+ *
+ * Called by both calculatePlanVolume and calculateVolumePreview.
+ * Any change to the formula here is automatically reflected in both paths.
+ */
+export function computeVolumeCore(
+  entries: NormalizedEntry[],
+  exerciseAssignments: Map<number, Map<number, number>>,
+  targetMap: Map<number, { name: string; type: string; memberMuscleIds: Set<number> }>,
+  guidelineMap: Map<
+    number,
+    {
+      sessionMin: number;
+      sessionMax: number;
+      weeklyPreferredCeiling: number;
+      weeklyAbsoluteCeiling: number;
+    }
+  >,
+  orderedTargetIds: number[],
+): CoreTargetResult[] {
+  return orderedTargetIds.map((targetId) => {
+    const target = targetMap.get(targetId)!;
+    const guideline = guidelineMap.get(targetId);
+    const contributions: CoreContribution[] = [];
+
+    for (const entry of entries) {
+      if (entry.workingSets <= 0) continue;
+
+      const muscleMap = exerciseAssignments.get(entry.exerciseId) ?? new Map<number, number>();
+
+      // Max-coefficient rule: find the highest coefficient among this target's
+      // member muscles that are assigned to this exercise.
+      let maxCoeff = 0;
+      for (const muscleId of target.memberMuscleIds) {
+        const coeff = muscleMap.get(muscleId);
+        if (coeff !== undefined && coeff > maxCoeff) maxCoeff = coeff;
+      }
+
+      if (maxCoeff > 0) {
+        contributions.push({
+          entryId: entry.entryId,
+          dayId: entry.dayId,
+          dayName: entry.dayName,
+          dayOrder: entry.dayOrder,
+          exerciseId: entry.exerciseId,
+          exerciseName: entry.exerciseName,
+          workingSets: entry.workingSets,
+          coefficient: maxCoeff,
+          effectiveSets: entry.workingSets * maxCoeff,
+        });
+      }
+    }
+
+    const weeklyEffectiveSets = contributions.reduce((s, c) => s + c.effectiveSets, 0);
+    const preferred = guideline?.weeklyPreferredCeiling ?? 0;
+    const absolute = guideline?.weeklyAbsoluteCeiling ?? 0;
+
+    // Status boundaries follow the same precedence as the legacy code.
+    let status: VolumeStatus;
+    if (weeklyEffectiveSets > absolute && absolute > 0) {
+      status = "above_absolute";
+    } else if (weeklyEffectiveSets > preferred && preferred > 0) {
+      status = "above_preferred";
+    } else if (weeklyEffectiveSets > 0) {
+      status = "within_preferred";
+    } else {
+      status = "below_preferred";
+    }
+
+    return {
+      targetId,
+      targetName: target.name,
+      targetType: target.type,
+      weeklyEffectiveSets,
+      status,
+      hasGuideline: !!guideline,
+      sessionMin: guideline?.sessionMin ?? 0,
+      sessionMax: guideline?.sessionMax ?? 0,
+      weeklyPreferredCeiling: preferred,
+      weeklyAbsoluteCeiling: absolute,
+      remainingToPreferred: Math.max(0, preferred - weeklyEffectiveSets),
+      remainingToAbsolute: Math.max(0, absolute - weeklyEffectiveSets),
+      contributions,
+    };
+  });
+}
+
+// ─── Shared DB loaders ────────────────────────────────────────────────────────
+
+/** Load all active volume targets with their member muscle IDs. */
+async function loadTargetMap(): Promise<
+  Map<number, { name: string; type: string; memberMuscleIds: Set<number> }>
+> {
+  const rows = await db
     .select({
       targetId: volumeTargetsTable.id,
       targetName: volumeTargetsTable.name,
@@ -146,26 +298,29 @@ export async function calculatePlanVolume(
     )
     .where(eq(volumeTargetsTable.isActive, true));
 
-  // Group by target, collecting member muscle IDs.
-  const targetMap = new Map<
-    number,
-    { name: string; type: string; memberMuscleIds: Set<number> }
-  >();
-  for (const row of targetRows) {
-    if (!targetMap.has(row.targetId)) {
-      targetMap.set(row.targetId, {
-        name: row.targetName,
-        type: row.targetType,
-        memberMuscleIds: new Set(),
-      });
+  const map = new Map<number, { name: string; type: string; memberMuscleIds: Set<number> }>();
+  for (const row of rows) {
+    if (!map.has(row.targetId)) {
+      map.set(row.targetId, { name: row.targetName, type: row.targetType, memberMuscleIds: new Set() });
     }
     if (row.specificMuscleId !== null) {
-      targetMap.get(row.targetId)!.memberMuscleIds.add(row.specificMuscleId);
+      map.get(row.targetId)!.memberMuscleIds.add(row.specificMuscleId);
     }
   }
+  return map;
+}
 
-  // 2. Load guidelines for this version + mapped experience level.
-  const guidelineRows = await db
+/** Load guidelines for a specific version + mapped experience level. */
+async function loadGuidelineMap(
+  guidelineVersionId: number,
+  guidelineLevel: string,
+): Promise<
+  Map<
+    number,
+    { sessionMin: number; sessionMax: number; weeklyPreferredCeiling: number; weeklyAbsoluteCeiling: number }
+  >
+> {
+  const rows = await db
     .select({
       volumeTargetId: volumeGuidelinesTable.volumeTargetId,
       sessionMin: volumeGuidelinesTable.sessionMin,
@@ -181,108 +336,123 @@ export async function calculatePlanVolume(
       ),
     );
 
-  const guidelineMap = new Map<
+  const map = new Map<
     number,
-    {
-      sessionMin: number;
-      sessionMax: number;
-      weeklyPreferredCeiling: number;
-      weeklyAbsoluteCeiling: number;
-    }
+    { sessionMin: number; sessionMax: number; weeklyPreferredCeiling: number; weeklyAbsoluteCeiling: number }
   >();
-  for (const g of guidelineRows) {
-    guidelineMap.set(g.volumeTargetId, {
+  for (const g of rows) {
+    map.set(g.volumeTargetId, {
       sessionMin: Number(g.sessionMin),
       sessionMax: Number(g.sessionMax),
       weeklyPreferredCeiling: Number(g.weeklyPreferredCeiling),
       weeklyAbsoluteCeiling: Number(g.weeklyAbsoluteCeiling),
     });
   }
+  return map;
+}
 
-  // 3. Load all plan exercises with day info and exercise names.
-  const planExerciseRows = await db
+/** Load muscle assignments for a set of exercise IDs. */
+async function loadExerciseAssignments(
+  exerciseIds: number[],
+): Promise<Map<number, Map<number, number>>> {
+  if (exerciseIds.length === 0) return new Map();
+
+  const rows = await db
     .select({
-      id: workoutPlanExercisesTable.id,
-      dayId: workoutPlanExercisesTable.dayId,
-      exerciseId: workoutPlanExercisesTable.exerciseId,
-      workingSets: workoutPlanExercisesTable.workingSets,
-      orderInDay: workoutPlanExercisesTable.orderInDay,
-      dayName: workoutPlanDaysTable.dayName,
-      dayOrder: workoutPlanDaysTable.dayOrder,
-      exerciseName: exercisesTable.name,
+      exerciseId: exerciseMuscleAssignmentsTable.exerciseId,
+      specificMuscleId: exerciseMuscleAssignmentsTable.specificMuscleId,
+      coefficient: exerciseMuscleAssignmentsTable.coefficient,
     })
-    .from(workoutPlanExercisesTable)
-    .innerJoin(
-      workoutPlanDaysTable,
-      eq(workoutPlanExercisesTable.dayId, workoutPlanDaysTable.id),
-    )
-    .innerJoin(
-      exercisesTable,
-      eq(workoutPlanExercisesTable.exerciseId, exercisesTable.id),
-    )
-    .where(eq(workoutPlanDaysTable.planId, planId));
+    .from(exerciseMuscleAssignmentsTable)
+    .where(inArray(exerciseMuscleAssignmentsTable.exerciseId, exerciseIds));
 
-  // 4. Load muscle assignments for all unique exercises in the plan.
-  const uniqueExerciseIds = [...new Set(planExerciseRows.map((pe) => pe.exerciseId))];
-
-  const assignmentRows =
-    uniqueExerciseIds.length > 0
-      ? await db
-          .select({
-            exerciseId: exerciseMuscleAssignmentsTable.exerciseId,
-            specificMuscleId: exerciseMuscleAssignmentsTable.specificMuscleId,
-            coefficient: exerciseMuscleAssignmentsTable.coefficient,
-          })
-          .from(exerciseMuscleAssignmentsTable)
-          .where(inArray(exerciseMuscleAssignmentsTable.exerciseId, uniqueExerciseIds))
-      : [];
-
-  // Build exerciseId → Map<specificMuscleId, coefficient>.
-  const exerciseAssignments = new Map<number, Map<number, number>>();
-  for (const asgn of assignmentRows) {
-    if (!exerciseAssignments.has(asgn.exerciseId)) {
-      exerciseAssignments.set(asgn.exerciseId, new Map());
-    }
-    exerciseAssignments.get(asgn.exerciseId)!.set(asgn.specificMuscleId, asgn.coefficient);
+  const map = new Map<number, Map<number, number>>();
+  for (const asgn of rows) {
+    if (!map.has(asgn.exerciseId)) map.set(asgn.exerciseId, new Map());
+    map.get(asgn.exerciseId)!.set(asgn.specificMuscleId, asgn.coefficient);
   }
+  return map;
+}
 
-  // 5. For each target, compute weekly volume with max-coefficient rule.
+/** Return sorted target IDs using the canonical display order. */
+function orderedIds(targetMap: Map<number, { name: string }>): number[] {
+  return [...targetMap.keys()].sort((a, b) => {
+    const ia = TARGET_ORDER.indexOf(targetMap.get(a)!.name);
+    const ib = TARGET_ORDER.indexOf(targetMap.get(b)!.name);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+}
+
+// ─── calculatePlanVolume ──────────────────────────────────────────────────────
+
+export async function calculatePlanVolume(
+  planId: number,
+  guidelineVersionId: number,
+  experienceLevelUsed: string,
+): Promise<VolumeResult> {
+  const guidelineLevel = mapToGuidelineLevel(experienceLevelUsed);
+
+  // Load shared lookup structures in parallel.
+  const [targetMap, guidelineMap, planExerciseRows] = await Promise.all([
+    loadTargetMap(),
+    loadGuidelineMap(guidelineVersionId, guidelineLevel),
+    db
+      .select({
+        id: workoutPlanExercisesTable.id,
+        dayId: workoutPlanExercisesTable.dayId,
+        exerciseId: workoutPlanExercisesTable.exerciseId,
+        workingSets: workoutPlanExercisesTable.workingSets,
+        orderInDay: workoutPlanExercisesTable.orderInDay,
+        dayName: workoutPlanDaysTable.dayName,
+        dayOrder: workoutPlanDaysTable.dayOrder,
+        exerciseName: exercisesTable.name,
+        isActive: exercisesTable.isActive,
+      })
+      .from(workoutPlanExercisesTable)
+      .innerJoin(workoutPlanDaysTable, eq(workoutPlanExercisesTable.dayId, workoutPlanDaysTable.id))
+      .innerJoin(exercisesTable, eq(workoutPlanExercisesTable.exerciseId, exercisesTable.id))
+      .where(eq(workoutPlanDaysTable.planId, planId)),
+  ]);
+
+  const uniqueExerciseIds = [...new Set(planExerciseRows.map((pe) => pe.exerciseId))];
+  const exerciseAssignments = await loadExerciseAssignments(uniqueExerciseIds);
+
+  // Normalise to NormalizedEntry for the core.
+  const entries: NormalizedEntry[] = planExerciseRows.map((pe) => ({
+    entryId: pe.id,
+    dayId: pe.dayId,
+    dayName: pe.dayName ?? null,
+    dayOrder: pe.dayOrder,
+    exerciseId: pe.exerciseId,
+    exerciseName: pe.exerciseName,
+    workingSets: pe.workingSets,
+  }));
+
+  const coreResults = computeVolumeCore(
+    entries,
+    exerciseAssignments,
+    targetMap,
+    guidelineMap,
+    orderedIds(targetMap),
+  );
+
+  // Map CoreTargetResult → VolumeTargetResult (adds breakdown, perDay, sessionWarnings).
   const targetResults: VolumeTargetResult[] = [];
 
-  for (const [targetId, { name, type, memberMuscleIds }] of targetMap) {
-    const guideline = guidelineMap.get(targetId);
-    if (!guideline) continue; // target has no guideline for this level — skip
+  for (const core of coreResults) {
+    if (!core.hasGuideline) continue; // skip targets without a guideline for this level
 
-    const breakdown: VolumeBreakdownItem[] = [];
-
-    for (const pe of planExerciseRows) {
-      const muscleMap = exerciseAssignments.get(pe.exerciseId) ?? new Map<number, number>();
-
-      // Find max coefficient among this target's member muscles on this exercise.
-      let maxCoeff = 0;
-      for (const muscleId of memberMuscleIds) {
-        const coeff = muscleMap.get(muscleId);
-        if (coeff !== undefined && coeff > maxCoeff) {
-          maxCoeff = coeff;
-        }
-      }
-
-      if (maxCoeff > 0) {
-        breakdown.push({
-          dayId: pe.dayId,
-          dayName: pe.dayName ?? null,
-          dayOrder: pe.dayOrder,
-          planExerciseId: pe.id,
-          exerciseId: pe.exerciseId,
-          exerciseName: pe.exerciseName,
-          workingSets: pe.workingSets,
-          coefficientUsed: maxCoeff,
-          effectiveSets: pe.workingSets * maxCoeff,
-        });
-      }
-    }
-
-    const weeklyEffectiveSets = breakdown.reduce((sum, b) => sum + b.effectiveSets, 0);
+    const breakdown: VolumeBreakdownItem[] = core.contributions.map((c) => ({
+      dayId: c.dayId,
+      dayName: c.dayName,
+      dayOrder: c.dayOrder,
+      planExerciseId: c.entryId,
+      exerciseId: c.exerciseId,
+      exerciseName: c.exerciseName,
+      workingSets: c.workingSets,
+      coefficientUsed: c.coefficient,
+      effectiveSets: c.effectiveSets,
+    }));
 
     // Per-day aggregation.
     const perDayMap = new Map<number, { dayName: string | null; dayOrder: number; sum: number }>();
@@ -306,11 +476,11 @@ export async function calculatePlanVolume(
     const sessionWarnings: string[] = [];
     for (const d of perDay) {
       if (d.effectiveSets > 0) {
-        if (d.effectiveSets < guideline.sessionMin) {
+        if (d.effectiveSets < core.sessionMin) {
           sessionWarnings.push(
             `${d.dayName ?? `Dzień ${d.dayOrder}`}: Objętość na tej jednostce jest niższa niż wartość orientacyjna.`,
           );
-        } else if (d.effectiveSets > guideline.sessionMax) {
+        } else if (d.effectiveSets > core.sessionMax) {
           sessionWarnings.push(
             `${d.dayName ?? `Dzień ${d.dayOrder}`}: Objętość na tej jednostce przekracza wartość orientacyjną.`,
           );
@@ -318,44 +488,23 @@ export async function calculatePlanVolume(
       }
     }
 
-    // Weekly status.
-    const preferred = guideline.weeklyPreferredCeiling;
-    const absolute = guideline.weeklyAbsoluteCeiling;
-    let status: VolumeStatus;
-    if (weeklyEffectiveSets > absolute) {
-      status = "above_absolute";
-    } else if (weeklyEffectiveSets > preferred) {
-      status = "above_preferred";
-    } else if (weeklyEffectiveSets > 0) {
-      status = "within_preferred";
-    } else {
-      status = "below_preferred";
-    }
-
     targetResults.push({
-      targetId,
-      targetName: name,
-      targetType: type,
-      weeklyEffectiveSets,
-      sessionMin: guideline.sessionMin,
-      sessionMax: guideline.sessionMax,
-      weeklyPreferredCeiling: preferred,
-      weeklyAbsoluteCeiling: absolute,
-      status,
+      targetId: core.targetId,
+      targetName: core.targetName,
+      targetType: core.targetType,
+      weeklyEffectiveSets: core.weeklyEffectiveSets,
+      sessionMin: core.sessionMin,
+      sessionMax: core.sessionMax,
+      weeklyPreferredCeiling: core.weeklyPreferredCeiling,
+      weeklyAbsoluteCeiling: core.weeklyAbsoluteCeiling,
+      status: core.status,
       breakdown,
       perDay,
       sessionWarnings,
     });
   }
 
-  // Sort by the canonical approved-target order.
-  targetResults.sort((a, b) => {
-    const ia = TARGET_ORDER.indexOf(a.targetName);
-    const ib = TARGET_ORDER.indexOf(b.targetName);
-    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-  });
-
-  // 6. Identify exercises without any muscle assignments.
+  // Exercises with no muscle assignments at all.
   const exercisesWithoutAssignments = planExerciseRows
     .filter((pe) => {
       const map = exerciseAssignments.get(pe.exerciseId);
@@ -363,7 +512,12 @@ export async function calculatePlanVolume(
     })
     .map((pe) => ({ planExerciseId: pe.id, exerciseName: pe.exerciseName }));
 
-  return { targets: targetResults, exercisesWithoutAssignments };
+  // Inactive exercises.
+  const inactiveExercises = planExerciseRows
+    .filter((pe) => !pe.isActive)
+    .map((pe) => ({ planExerciseId: pe.id, exerciseName: pe.exerciseName }));
+
+  return { targets: targetResults, exercisesWithoutAssignments, inactiveExercises };
 }
 
 // ─── Live-preview types ────────────────────────────────────────────────────────
@@ -459,12 +613,12 @@ export interface VolumePreviewResult {
   warnings: VolumePreviewWarning[];
 }
 
-// ─── Live preview calculation ─────────────────────────────────────────────────
+// ─── calculateVolumePreview ───────────────────────────────────────────────────
 
 /**
  * Calculate training volume from a draft plan snapshot (no DB writes).
- * Uses the same algorithm and data sources as calculatePlanVolume so that
- * the editor and saved-plan views are always consistent.
+ * Calls the same computeVolumeCore as calculatePlanVolume — the formula
+ * is maintained in exactly one place.
  */
 export async function calculateVolumePreview(
   input: VolumePreviewInput,
@@ -477,16 +631,17 @@ export async function calculateVolumePreview(
   const allEntries = days.flatMap((d) => d.exercises);
   const uniqueExerciseIds = [...new Set(allEntries.map((e) => e.exerciseId))];
 
-  // 2. Load exercise records (names + existence check).
+  // 2. Load exercise records (name + isActive).
   const exerciseRecords =
     uniqueExerciseIds.length > 0
       ? await db
-          .select({ id: exercisesTable.id, name: exercisesTable.name })
+          .select({ id: exercisesTable.id, name: exercisesTable.name, isActive: exercisesTable.isActive })
           .from(exercisesTable)
           .where(inArray(exercisesTable.id, uniqueExerciseIds))
       : [];
 
   const exerciseNameMap = new Map<number, string>(exerciseRecords.map((e) => [e.id, e.name]));
+  const exerciseActiveMap = new Map<number, boolean>(exerciseRecords.map((e) => [e.id, e.isActive]));
 
   // Warn about exercise IDs not found in DB.
   for (const day of days) {
@@ -504,33 +659,30 @@ export async function calculateVolumePreview(
     }
   }
 
-  // 3. Load muscle assignments for known exercise IDs.
-  const validExerciseIds = exerciseRecords.map((e) => e.id);
-  const assignmentRows =
-    validExerciseIds.length > 0
-      ? await db
-          .select({
-            exerciseId: exerciseMuscleAssignmentsTable.exerciseId,
-            specificMuscleId: exerciseMuscleAssignmentsTable.specificMuscleId,
-            coefficient: exerciseMuscleAssignmentsTable.coefficient,
-          })
-          .from(exerciseMuscleAssignmentsTable)
-          .where(inArray(exerciseMuscleAssignmentsTable.exerciseId, validExerciseIds))
-      : [];
-
-  const exerciseAssignments = new Map<number, Map<number, number>>();
-  for (const asgn of assignmentRows) {
-    if (!exerciseAssignments.has(asgn.exerciseId)) {
-      exerciseAssignments.set(asgn.exerciseId, new Map());
+  // Warn about inactive exercises (FIX 2). Contribution is still counted.
+  const warnedInactiveExercises = new Set<number>();
+  for (const day of days) {
+    for (const ex of day.exercises) {
+      if (!exerciseNameMap.has(ex.exerciseId)) continue;
+      if (exerciseActiveMap.get(ex.exerciseId) === false && !warnedInactiveExercises.has(ex.exerciseId)) {
+        warnedInactiveExercises.add(ex.exerciseId);
+        warnings.push({
+          code: "INACTIVE_EXERCISE",
+          scope: "exercise",
+          dayId: day.dayId,
+          exerciseEntryId: ex.exerciseEntryId,
+          exerciseId: ex.exerciseId,
+          message: `Ćwiczenie jest nieaktywne w bibliotece, ale pozostaje uwzględnione w objętości istniejącego planu.`,
+        });
+      }
     }
-    exerciseAssignments.get(asgn.exerciseId)!.set(asgn.specificMuscleId, asgn.coefficient);
   }
 
-  // 4. Load targets BEFORE checking assignment coverage (needed to check target membership).
-  // Build preliminary targetMap here (full load happens in step 4 below).
-  // We defer this to after step 4; just collect the unique exercise IDs that need a warning.
+  // 3. Load muscle assignments for known exercise IDs.
+  const validExerciseIds = exerciseRecords.map((e) => e.id);
+  const exerciseAssignments = await loadExerciseAssignments(validExerciseIds);
 
-  // Warn about exercises with no muscle assignments at all.
+  // 4. Warn about exercises with no muscle assignments at all.
   for (const day of days) {
     for (const ex of day.exercises) {
       if (!exerciseNameMap.has(ex.exerciseId)) continue;
@@ -548,74 +700,13 @@ export async function calculateVolumePreview(
     }
   }
 
-  // 4. Load active targets with member muscle IDs (same query as calculatePlanVolume).
-  const targetRows = await db
-    .select({
-      targetId: volumeTargetsTable.id,
-      targetName: volumeTargetsTable.name,
-      targetType: volumeTargetsTable.targetType,
-      specificMuscleId: volumeTargetMembersTable.specificMuscleId,
-    })
-    .from(volumeTargetsTable)
-    .leftJoin(
-      volumeTargetMembersTable,
-      eq(volumeTargetMembersTable.volumeTargetId, volumeTargetsTable.id),
-    )
-    .where(eq(volumeTargetsTable.isActive, true));
+  // 5. Load shared lookup structures in parallel.
+  const [targetMap, guidelineMap] = await Promise.all([
+    loadTargetMap(),
+    loadGuidelineMap(guidelineVersionId, guidelineLevel),
+  ]);
 
-  const targetMap = new Map<
-    number,
-    { name: string; type: string; memberMuscleIds: Set<number> }
-  >();
-  for (const row of targetRows) {
-    if (!targetMap.has(row.targetId)) {
-      targetMap.set(row.targetId, {
-        name: row.targetName,
-        type: row.targetType,
-        memberMuscleIds: new Set(),
-      });
-    }
-    if (row.specificMuscleId !== null) {
-      targetMap.get(row.targetId)!.memberMuscleIds.add(row.specificMuscleId);
-    }
-  }
-
-  // 5. Load guidelines for this version + mapped experience level.
-  const guidelineRows = await db
-    .select({
-      volumeTargetId: volumeGuidelinesTable.volumeTargetId,
-      sessionMin: volumeGuidelinesTable.sessionMin,
-      sessionMax: volumeGuidelinesTable.sessionMax,
-      weeklyPreferredCeiling: volumeGuidelinesTable.weeklyPreferredCeiling,
-      weeklyAbsoluteCeiling: volumeGuidelinesTable.weeklyAbsoluteCeiling,
-    })
-    .from(volumeGuidelinesTable)
-    .where(
-      and(
-        eq(volumeGuidelinesTable.versionId, guidelineVersionId),
-        eq(volumeGuidelinesTable.experienceLevel, guidelineLevel),
-      ),
-    );
-
-  const guidelineMap = new Map<
-    number,
-    {
-      sessionMin: number;
-      sessionMax: number;
-      weeklyPreferredCeiling: number;
-      weeklyAbsoluteCeiling: number;
-    }
-  >();
-  for (const g of guidelineRows) {
-    guidelineMap.set(g.volumeTargetId, {
-      sessionMin: Number(g.sessionMin),
-      sessionMax: Number(g.sessionMax),
-      weeklyPreferredCeiling: Number(g.weeklyPreferredCeiling),
-      weeklyAbsoluteCeiling: Number(g.weeklyAbsoluteCeiling),
-    });
-  }
-
-  const hasGuidelines = guidelineRows.length > 0;
+  const hasGuidelines = guidelineMap.size > 0;
 
   if (!hasGuidelines) {
     warnings.push({
@@ -625,22 +716,21 @@ export async function calculateVolumePreview(
     });
   }
 
-  // 5b. Warn about exercises that have muscle assignments but none map to any volume target.
-  // This mirrors calculatePlanVolume's exercisesWithoutAssignments tracking.
+  // 5b. Warn about exercises whose assignments don't map to any volume target.
   const muscleMemberOfTarget = new Set<number>();
   for (const [, tgt] of targetMap) {
     for (const mId of tgt.memberMuscleIds) muscleMemberOfTarget.add(mId);
   }
-  const warnedExerciseEntries = new Set<number>();
+  const warnedNoTargetEntries = new Set<number>();
   for (const day of days) {
     for (const ex of day.exercises) {
       if (!exerciseNameMap.has(ex.exerciseId)) continue;
       const map = exerciseAssignments.get(ex.exerciseId);
       if (!map || map.size === 0) continue; // already warned above
-      if (warnedExerciseEntries.has(ex.exerciseEntryId)) continue;
+      if (warnedNoTargetEntries.has(ex.exerciseEntryId)) continue;
       const contributesToTarget = [...map.keys()].some((mId) => muscleMemberOfTarget.has(mId));
       if (!contributesToTarget) {
-        warnedExerciseEntries.add(ex.exerciseEntryId);
+        warnedNoTargetEntries.add(ex.exerciseEntryId);
         warnings.push({
           code: "EXERCISE_WITHOUT_MUSCLE_ASSIGNMENTS",
           scope: "exercise",
@@ -653,73 +743,37 @@ export async function calculateVolumePreview(
     }
   }
 
-  // 6. Determine canonical target order.
-  const orderedTargetIds: number[] = [...targetMap.keys()].sort((a, b) => {
-    const ia = TARGET_ORDER.indexOf(targetMap.get(a)!.name);
-    const ib = TARGET_ORDER.indexOf(targetMap.get(b)!.name);
-    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  // 6. Normalise days to NormalizedEntry[] for the core.
+  // Assign a synthetic dayOrder based on array position (preview has no DB dayOrder).
+  const entries: NormalizedEntry[] = [];
+  days.forEach((day, dayIndex) => {
+    for (const ex of day.exercises) {
+      if (!exerciseNameMap.has(ex.exerciseId)) continue;
+      entries.push({
+        entryId: ex.exerciseEntryId,
+        dayId: day.dayId,
+        dayName: day.dayName,
+        dayOrder: dayIndex,
+        exerciseId: ex.exerciseId,
+        exerciseName: exerciseNameMap.get(ex.exerciseId)!,
+        workingSets: ex.workingSets,
+      });
+    }
   });
 
-  // Weekly accumulators per target.
-  const weeklyAcc = new Map<
-    number,
-    { contributions: WeeklyContribution[]; weeklyEffectiveSets: number }
-  >();
-  for (const tid of orderedTargetIds) {
-    weeklyAcc.set(tid, { contributions: [], weeklyEffectiveSets: 0 });
-  }
+  const ordered = orderedIds(targetMap);
+  const coreResults = computeVolumeCore(entries, exerciseAssignments, targetMap, guidelineMap, ordered);
 
-  // 7. Per-day calculation using the same max-coefficient algorithm.
-  const dayResults: DayVolumeResult[] = days.map((day) => {
+  // 7. Build DayVolumeResult[] by pivoting contributions per core target, per day.
+  const dayResults: DayVolumeResult[] = days.map((day, dayIndex) => {
     const dayMuscles: SessionMuscleResult[] = [];
 
-    for (const tid of orderedTargetIds) {
-      const target = targetMap.get(tid)!;
-      const guideline = guidelineMap.get(tid);
-      const contributions: SessionContribution[] = [];
-
-      for (const ex of day.exercises) {
-        if (!exerciseNameMap.has(ex.exerciseId)) continue;
-        if (ex.workingSets <= 0) continue;
-
-        const muscleMap = exerciseAssignments.get(ex.exerciseId) ?? new Map<number, number>();
-        let maxCoeff = 0;
-        for (const muscleId of target.memberMuscleIds) {
-          const coeff = muscleMap.get(muscleId);
-          if (coeff !== undefined && coeff > maxCoeff) maxCoeff = coeff;
-        }
-
-        if (maxCoeff > 0) {
-          const effectiveSets = ex.workingSets * maxCoeff;
-          const exerciseName = exerciseNameMap.get(ex.exerciseId)!;
-          contributions.push({
-            exerciseEntryId: ex.exerciseEntryId,
-            exerciseId: ex.exerciseId,
-            exerciseName,
-            workingSets: ex.workingSets,
-            coefficient: maxCoeff,
-            effectiveSets,
-          });
-          const acc = weeklyAcc.get(tid)!;
-          acc.weeklyEffectiveSets += effectiveSets;
-          acc.contributions.push({
-            exerciseEntryId: ex.exerciseEntryId,
-            exerciseId: ex.exerciseId,
-            exerciseName,
-            dayId: day.dayId,
-            dayName: day.dayName,
-            workingSets: ex.workingSets,
-            coefficient: maxCoeff,
-            effectiveSets,
-          });
-        }
-      }
-
-      const effectiveSets = contributions.reduce((s, c) => s + c.effectiveSets, 0);
-
-      // Skip muscles with no volume in this session.
+    for (const core of coreResults) {
+      const dayContribs = core.contributions.filter((c) => c.dayId === day.dayId);
+      const effectiveSets = dayContribs.reduce((s, c) => s + c.effectiveSets, 0);
       if (effectiveSets === 0) continue;
 
+      const guideline = guidelineMap.get(core.targetId);
       let sessionStatus: SessionStatus;
       if (!guideline) {
         sessionStatus = "no_guideline";
@@ -732,54 +786,50 @@ export async function calculateVolumePreview(
       }
 
       dayMuscles.push({
-        targetId: tid,
-        muscleName: target.name,
+        targetId: core.targetId,
+        muscleName: core.targetName,
         effectiveSets,
-        sessionMin: guideline?.sessionMin ?? 0,
-        sessionMax: guideline?.sessionMax ?? 0,
+        sessionMin: core.sessionMin,
+        sessionMax: core.sessionMax,
         sessionStatus,
-        contributions,
+        contributions: dayContribs.map((c) => ({
+          exerciseEntryId: c.entryId,
+          exerciseId: c.exerciseId,
+          exerciseName: c.exerciseName,
+          workingSets: c.workingSets,
+          coefficient: c.coefficient,
+          effectiveSets: c.effectiveSets,
+        })),
       });
     }
 
     return { dayId: day.dayId, dayName: day.dayName, muscles: dayMuscles };
   });
 
-  // 8. Build weekly results.
-  const weekly: WeeklyMuscleResult[] = orderedTargetIds.map((tid) => {
-    const target = targetMap.get(tid)!;
-    const guideline = guidelineMap.get(tid);
-    const acc = weeklyAcc.get(tid)!;
-    const { weeklyEffectiveSets, contributions } = acc;
-    const preferred = guideline?.weeklyPreferredCeiling ?? 0;
-    const absolute = guideline?.weeklyAbsoluteCeiling ?? 0;
-
-    let status: VolumeStatus;
-    if (weeklyEffectiveSets > absolute && absolute > 0) {
-      status = "above_absolute";
-    } else if (weeklyEffectiveSets > preferred && preferred > 0) {
-      status = "above_preferred";
-    } else if (weeklyEffectiveSets > 0) {
-      status = "within_preferred";
-    } else {
-      status = "below_preferred";
-    }
-
-    return {
-      targetId: tid,
-      muscleName: target.name,
-      effectiveSets: weeklyEffectiveSets,
-      weeklyPreferredCeiling: preferred,
-      weeklyAbsoluteCeiling: absolute,
-      sessionMin: guideline?.sessionMin ?? 0,
-      sessionMax: guideline?.sessionMax ?? 0,
-      remainingToPreferred: Math.max(0, preferred - weeklyEffectiveSets),
-      remainingToAbsolute: Math.max(0, absolute - weeklyEffectiveSets),
-      status,
-      hasGuideline: !!guideline,
-      contributions,
-    };
-  });
+  // 8. Build WeeklyMuscleResult[] from core results.
+  const weekly: WeeklyMuscleResult[] = coreResults.map((core) => ({
+    targetId: core.targetId,
+    muscleName: core.targetName,
+    effectiveSets: core.weeklyEffectiveSets,
+    weeklyPreferredCeiling: core.weeklyPreferredCeiling,
+    weeklyAbsoluteCeiling: core.weeklyAbsoluteCeiling,
+    sessionMin: core.sessionMin,
+    sessionMax: core.sessionMax,
+    remainingToPreferred: core.remainingToPreferred,
+    remainingToAbsolute: core.remainingToAbsolute,
+    status: core.status,
+    hasGuideline: core.hasGuideline,
+    contributions: core.contributions.map((c) => ({
+      exerciseEntryId: c.entryId,
+      exerciseId: c.exerciseId,
+      exerciseName: c.exerciseName,
+      dayId: c.dayId,
+      dayName: c.dayName,
+      workingSets: c.workingSets,
+      coefficient: c.coefficient,
+      effectiveSets: c.effectiveSets,
+    })),
+  }));
 
   return {
     clientId,

@@ -509,8 +509,11 @@ export interface VolumePreviewDay {
 
 export interface VolumePreviewInput {
   clientId: number;
-  guidelineVersionId: number;
-  experienceLevelUsed: string;
+  /** When provided the backend uses the plan's stored values as authoritative source. */
+  planId?: number;
+  /** Supplied for backend validation; backend uses authoritative values from plan/survey. */
+  guidelineVersionId?: number;
+  experienceLevelUsed?: string;
   days: VolumePreviewDay[];
 }
 
@@ -555,6 +558,7 @@ export function useVolumePreview(plan: WorkoutPlan | undefined) {
       try {
         const body: VolumePreviewInput = {
           clientId: plan.clientId,
+          planId: plan.id,
           guidelineVersionId: plan.guidelineVersionId,
           experienceLevelUsed: plan.experienceLevelUsed,
           days: plan.days.map((d) => ({
