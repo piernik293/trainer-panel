@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { customFetch } from "./custom-fetch";
+import type { WeeklyVolumeDecisionResponseType } from "@workspace/api-zod";
 
 // ─── Exercise search (lightweight) ────────────────────────────────────────────
 
@@ -64,5 +65,33 @@ export function useGetClientPlanDraftInput(clientId: number | null | undefined) 
       customFetch<Record<string, unknown>>(`/api/clients/${clientId}/plan-draft-input`),
     enabled: !!clientId,
     staleTime: 60_000,
+  });
+}
+
+// ─── Draft Volume Preview ──────────────────────────────────────────────────────
+
+export interface DraftVolumePreviewRequest {
+  clientId: number;
+  preferences: {
+    trainingDays: number;
+    sessionDurationMinutes: number;
+    splitType: string;
+    blockDurationWeeks: number;
+    trainingGoal: string | null;
+    priorityMuscleGroups: string[];
+    preferredTrainingStyle: string | null;
+    trainerRestrictions: string | null;
+  };
+  trainerVolumeOverrides?: Record<string, number>;
+}
+
+export function useDraftVolumePreview() {
+  return useMutation<WeeklyVolumeDecisionResponseType, Error, DraftVolumePreviewRequest>({
+    mutationFn: (body) =>
+      customFetch<WeeklyVolumeDecisionResponseType>("/api/plans/draft-volume/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
   });
 }

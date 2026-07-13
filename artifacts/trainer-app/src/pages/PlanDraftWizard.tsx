@@ -1,19 +1,22 @@
 /**
- * PlanDraftWizard — Workout Plan Draft Generator, Phase 1
+ * PlanDraftWizard — Workout Plan Draft Generator
  *
- * A 5-step wizard that collects all data required for the Workout Plan Draft Generator.
- * Phase 1: Steps 1 & 2 are functional. Steps 3–5 show "Dostępne w kolejnych etapach".
+ * Phase 2: Step 3 (Objętość) is now fully functional.
+ * Steps 4–5 remain locked.
  *
  * Step 1 — Client & data summary  : read-only normalized view of survey data
  * Step 2 — Plan assumptions       : editable overrides (days, split, duration, etc.)
- * Step 3 — Objętość               : (Phase 2)
+ * Step 3 — Objętość               : 11-target volume recommendation with overrides
  * Step 4 — Dobór ćwiczeń          : (Phase 3)
  * Step 5 — Podgląd szkicu         : (Phase 4)
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useParams, Link, useLocation } from "wouter";
-import { useGetClientPlanDraftInput } from "@workspace/api-client-react";
+import {
+  useGetClientPlanDraftInput,
+  useDraftVolumePreview,
+} from "@workspace/api-client-react";
 import {
   SPLIT_TYPES,
   SPLIT_TYPE_LABELS,
@@ -22,6 +25,8 @@ import {
   type PlanDraftGenerationPreferencesType,
   type PlanDraftInputWarningType,
   type GetClientPlanDraftInputResponseType,
+  type WeeklyVolumeTargetDecisionType,
+  type WeeklyVolumeDecisionResponseType,
 } from "@workspace/api-zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +59,10 @@ import {
   Lock,
   User,
   ClipboardList,
+  Minus,
+  Plus,
+  RotateCcw,
+  Loader2,
 } from "lucide-react";
 
 // ─── Source badge ─────────────────────────────────────────────────────────────
@@ -141,7 +150,7 @@ function InfoRow({
 const STEPS = [
   { label: "Profil klienta", icon: User },
   { label: "Założenia planu", icon: ClipboardList },
-  { label: "Objętość", icon: Gauge, locked: true },
+  { label: "Objętość", icon: Gauge },
   { label: "Ćwiczenia", icon: Dumbbell, locked: true },
   { label: "Podgląd", icon: Sparkles, locked: true },
 ];
@@ -179,9 +188,9 @@ function Stepper({ current }: { current: number }) {
 // ─── Locked step placeholder ──────────────────────────────────────────────────
 
 function LockedStepPlaceholder({ step }: { step: number }) {
-  const labels = ["Objętość treningowa", "Dobór ćwiczeń", "Podgląd szkicu planu"];
-  const phases = ["Faza 2", "Faza 3", "Faza 4"];
-  const idx = step - 2;
+  const labels = ["Dobór ćwiczeń", "Podgląd szkicu planu"];
+  const phases = ["Faza 3", "Faza 4"];
+  const idx = step - 3;
   return (
     <Card className="border-dashed border-border/60 shadow-sm">
       <CardContent className="py-16 text-center">
@@ -191,7 +200,7 @@ function LockedStepPlaceholder({ step }: { step: number }) {
           Dostępne w kolejnych etapach ({phases[idx]}).
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          Uzupełnij założenia planu, aby przygotować dane dla kolejnego etapu.
+          Uzupełnij objętość treningową, aby przygotować dane dla kolejnego etapu.
         </p>
       </CardContent>
     </Card>
@@ -217,7 +226,6 @@ function Step1Summary({
 
   return (
     <div className="space-y-4">
-      {/* Warnings */}
       {warnings.length > 0 && (
         <Card className={`border-border/50 shadow-sm ${hasBlockingWarnings ? "border-destructive/40 bg-destructive/5" : "bg-amber-50/50 border-amber-200"}`}>
           <CardHeader className="pb-2 pt-4 px-4">
@@ -234,7 +242,6 @@ function Step1Summary({
         </Card>
       )}
 
-      {/* Client info */}
       <Card className="border-border/50 shadow-sm">
         <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-border/40">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -263,7 +270,6 @@ function Step1Summary({
         </CardContent>
       </Card>
 
-      {/* Training profile */}
       <Card className="border-border/50 shadow-sm">
         <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-border/40">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -279,7 +285,6 @@ function Step1Summary({
         </CardContent>
       </Card>
 
-      {/* Location & equipment */}
       <Card className="border-border/50 shadow-sm">
         <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-border/40">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -307,7 +312,6 @@ function Step1Summary({
         </CardContent>
       </Card>
 
-      {/* Recovery */}
       <Card className="border-border/50 shadow-sm">
         <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-border/40">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -328,7 +332,6 @@ function Step1Summary({
         </CardContent>
       </Card>
 
-      {/* Priorities */}
       <Card className="border-border/50 shadow-sm">
         <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-border/40">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -398,7 +401,6 @@ function Step2Preferences({
     onPrefsChange({ ...prefs, [key]: value });
   }
 
-  // Auto-adjust split if no longer compatible when days change
   function handleDaysChange(days: number) {
     const newCompatible = getCompatibleSplits(days);
     const currentOk = newCompatible.includes(prefs.splitType);
@@ -420,7 +422,6 @@ function Step2Preferences({
         </div>
       )}
 
-      {/* Training schedule */}
       <Card className="border-border/50 shadow-sm">
         <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-border/40">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -478,7 +479,6 @@ function Step2Preferences({
         </CardContent>
       </Card>
 
-      {/* Split type */}
       <Card className="border-border/50 shadow-sm">
         <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-border/40">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -518,7 +518,6 @@ function Step2Preferences({
         </CardContent>
       </Card>
 
-      {/* Block duration */}
       <Card className="border-border/50 shadow-sm">
         <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-border/40">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -552,7 +551,6 @@ function Step2Preferences({
         </CardContent>
       </Card>
 
-      {/* Training goal & priorities */}
       <Card className="border-border/50 shadow-sm">
         <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-border/40">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -595,6 +593,244 @@ function Step2Preferences({
   );
 }
 
+// ─── Step 3 — Volume decisions ────────────────────────────────────────────────
+
+const RECOVERY_LABEL: Record<string, string> = {
+  good: "Dobra",
+  neutral: "Standardowa",
+  reduced: "Ograniczona",
+};
+
+const RECOVERY_COLOR: Record<string, string> = {
+  good: "text-emerald-600",
+  neutral: "text-muted-foreground",
+  reduced: "text-amber-600",
+};
+
+function TargetDecisionCard({
+  decision,
+  overrideValue,
+  onOverride,
+  onReset,
+}: {
+  decision: WeeklyVolumeTargetDecisionType;
+  overrideValue: number | undefined;
+  onOverride: (targetId: number, value: number) => void;
+  onReset: (targetId: number) => void;
+}) {
+  const selectedValue = overrideValue !== undefined ? overrideValue : decision.selectedValue;
+  const isOverridden = overrideValue !== undefined;
+  const step = 0.5;
+
+  function adjust(delta: number) {
+    const next = Math.round((selectedValue + delta) * 2) / 2;
+    const clamped = Math.max(decision.guidelineMin, Math.min(decision.guidelineMax, next));
+    onOverride(decision.targetId, clamped);
+  }
+
+  function handleInputChange(raw: string) {
+    const v = parseFloat(raw);
+    if (!isNaN(v)) {
+      const clamped = Math.max(decision.guidelineMin, Math.min(decision.guidelineMax, v));
+      onOverride(decision.targetId, Math.round(clamped * 2) / 2);
+    }
+  }
+
+  return (
+    <Card className={`border-border/50 shadow-sm transition-colors ${decision.isExcluded ? "opacity-60" : ""}`}>
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-sm">{decision.targetName}</span>
+              {decision.priorityOrder === 1 && (
+                <Badge className="text-[10px] px-1.5 py-0 bg-yellow-100 text-yellow-800 border-yellow-200 border">
+                  priorytet 1
+                </Badge>
+              )}
+              {decision.priorityOrder === 2 && (
+                <Badge className="text-[10px] px-1.5 py-0 bg-orange-50 text-orange-700 border-orange-200 border">
+                  priorytet 2
+                </Badge>
+              )}
+              {decision.priorityOrder === 3 && (
+                <Badge className="text-[10px] px-1.5 py-0 bg-muted text-muted-foreground border">
+                  priorytet 3
+                </Badge>
+              )}
+              {decision.isExcluded && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
+                  zdepriorytetowana
+                </Badge>
+              )}
+              {isOverridden && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-blue-600 border-blue-200 bg-blue-50">
+                  ustawione ręcznie
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Zakres: {decision.guidelineMin}–{decision.guidelineMax} serii/tydz.
+            </p>
+          </div>
+
+          {/* Stepper control */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => adjust(-step)}
+              disabled={selectedValue <= decision.guidelineMin}
+              className="w-7 h-7 rounded border border-border flex items-center justify-center disabled:opacity-40 hover:bg-muted transition-colors"
+            >
+              <Minus size={12} />
+            </button>
+            <div className="w-16">
+              <Input
+                type="number"
+                value={selectedValue}
+                step={step}
+                min={decision.guidelineMin}
+                max={decision.guidelineMax}
+                onChange={(e) => handleInputChange(e.target.value)}
+                className="h-7 text-center text-sm font-medium px-1"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => adjust(step)}
+              disabled={selectedValue >= decision.guidelineMax}
+              className="w-7 h-7 rounded border border-border flex items-center justify-center disabled:opacity-40 hover:bg-muted transition-colors"
+            >
+              <Plus size={12} />
+            </button>
+          </div>
+        </div>
+
+        {/* Proposal vs. override indicator */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-xs text-muted-foreground">
+            Propozycja: <span className="font-medium text-foreground">{decision.recommendedValue} serii</span>
+            {isOverridden && (
+              <> → <span className="font-medium text-blue-600">{selectedValue} serii (ręcznie)</span></>
+            )}
+          </div>
+          {isOverridden && (
+            <button
+              type="button"
+              onClick={() => onReset(decision.targetId)}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <RotateCcw size={10} />
+              Przywróć
+            </button>
+          )}
+        </div>
+
+        {/* Reasoning pills */}
+        {decision.reasons.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-border/30">
+            {decision.reasons.map((r, i) => (
+              <span key={i} className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                {r}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Warnings */}
+        {decision.warnings.filter(w => w.severity !== "info").map((w, i) => (
+          <div key={i} className="flex items-start gap-1.5 mt-2 pt-2 border-t border-border/30">
+            <AlertTriangle size={11} className="text-amber-500 shrink-0 mt-0.5" />
+            <span className="text-[11px] text-amber-700">{w.message}</span>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function Step3Volume({
+  decisions,
+  overrides,
+  onOverride,
+  onReset,
+}: {
+  decisions: WeeklyVolumeDecisionResponseType;
+  overrides: Record<number, number>;
+  onOverride: (targetId: number, value: number) => void;
+  onReset: (targetId: number) => void;
+}) {
+  const overrideCount = Object.keys(overrides).length;
+  const recoveryProfile = decisions.metadata.recoveryProfile;
+  const warningCount = decisions.summary.targetsWithWarnings;
+
+  return (
+    <div className="space-y-4">
+      {/* Summary bar */}
+      <Card className="border-border/50 shadow-sm">
+        <CardContent className="px-4 py-3">
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={14} className="text-emerald-600" />
+              <span className="text-muted-foreground">
+                {decisions.decisions.length} celów obliczonych
+              </span>
+            </div>
+            {overrideCount > 0 && (
+              <div className="flex items-center gap-2">
+                <Gauge size={14} className="text-blue-600" />
+                <span className="text-blue-600 font-medium">
+                  {overrideCount} ustawionych ręcznie
+                </span>
+              </div>
+            )}
+            {recoveryProfile && (
+              <div className={`flex items-center gap-1.5 ${RECOVERY_COLOR[recoveryProfile] ?? ""}`}>
+                <Shield size={13} />
+                <span className="text-xs">
+                  Regeneracja: {RECOVERY_LABEL[recoveryProfile] ?? recoveryProfile}
+                </span>
+              </div>
+            )}
+            {warningCount > 0 && (
+              <div className="flex items-center gap-1.5 text-amber-600">
+                <AlertTriangle size={13} />
+                <span className="text-xs">{warningCount} ostrzeżeń</span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Global warnings */}
+      {decisions.warnings.filter((w) => w.severity === "error" || w.severity === "warning").map((w, i) => (
+        <div key={i} className="rounded-lg border border-amber-200 bg-amber-50/50 px-4 py-3 flex items-start gap-2">
+          <AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+          <p className="text-sm text-amber-700">{w.message}</p>
+        </div>
+      ))}
+
+      {/* Target decision cards */}
+      <div className="space-y-2">
+        {decisions.decisions.map((d) => (
+          <TargetDecisionCard
+            key={d.targetId}
+            decision={d}
+            overrideValue={overrides[d.targetId]}
+            onOverride={onOverride}
+            onReset={onReset}
+          />
+        ))}
+      </div>
+
+      <p className="text-xs text-muted-foreground text-center pt-2">
+        Wartości w sesjach efektywnych / tydzień. Zakres oparty o wytyczne objętości dla poziomu{" "}
+        <span className="font-medium">{decisions.metadata.experienceLevel}</span>.
+      </p>
+    </div>
+  );
+}
+
 // ─── Main wizard component ────────────────────────────────────────────────────
 
 export default function PlanDraftWizard() {
@@ -604,8 +840,11 @@ export default function PlanDraftWizard() {
 
   const [step, setStep] = useState(0);
   const [prefs, setPrefs] = useState<PlanDraftGenerationPreferencesType | null>(null);
+  const [volumeDecisions, setVolumeDecisions] = useState<WeeklyVolumeDecisionResponseType | null>(null);
+  const [volumeOverrides, setVolumeOverrides] = useState<Record<number, number>>({});
 
   const { data, isLoading, isError } = useGetClientPlanDraftInput(clientId);
+  const volumeMutation = useDraftVolumePreview();
 
   // Initialize preferences from default when data first loads
   const effectivePrefs = useMemo<PlanDraftGenerationPreferencesType | null>(() => {
@@ -615,20 +854,55 @@ export default function PlanDraftWizard() {
     return d.defaultPreferences;
   }, [prefs, data]);
 
+  const typedData = data as unknown as GetClientPlanDraftInputResponseType | undefined;
+  const hasBlockingWarnings = typedData?.warnings.some((w: PlanDraftInputWarningType) => w.blocking) ?? false;
+
   function handlePrefsChange(p: PlanDraftGenerationPreferencesType) {
     setPrefs(p);
-  }
-
-  function handleNext() {
-    if (step < 4) setStep((s) => s + 1);
   }
 
   function handleBack() {
     if (step > 0) setStep((s) => s - 1);
   }
 
-  const typedData = data as unknown as GetClientPlanDraftInputResponseType | undefined;
-  const hasBlockingWarnings = typedData?.warnings.some((w: PlanDraftInputWarningType) => w.blocking) ?? false;
+  // Advance from Step 2 → Step 3: call volume preview API
+  async function handleAdvanceToVolume() {
+    if (!effectivePrefs || !typedData) return;
+    try {
+      const result = await volumeMutation.mutateAsync({
+        clientId,
+        preferences: {
+          trainingDays: effectivePrefs.trainingDays,
+          sessionDurationMinutes: effectivePrefs.sessionDurationMinutes,
+          splitType: effectivePrefs.splitType,
+          blockDurationWeeks: effectivePrefs.blockDurationWeeks,
+          trainingGoal: effectivePrefs.trainingGoal,
+          priorityMuscleGroups: effectivePrefs.priorityMuscleGroups,
+          preferredTrainingStyle: effectivePrefs.preferredTrainingStyle,
+          trainerRestrictions: effectivePrefs.trainerRestrictions,
+        },
+        trainerVolumeOverrides: Object.fromEntries(
+          Object.entries(volumeOverrides).map(([k, v]) => [k, v]),
+        ),
+      });
+      setVolumeDecisions(result);
+      setStep(2);
+    } catch (e) {
+      // volumeMutation.error will display the error
+    }
+  }
+
+  function handleVolumeOverride(targetId: number, value: number) {
+    setVolumeOverrides((prev) => ({ ...prev, [targetId]: value }));
+  }
+
+  function handleVolumeReset(targetId: number) {
+    setVolumeOverrides((prev) => {
+      const next = { ...prev };
+      delete next[targetId];
+      return next;
+    });
+  }
 
   // ── Loading state ──────────────────────────────────────────────────────────
   if (isLoading) {
@@ -711,7 +985,25 @@ export default function PlanDraftWizard() {
           onPrefsChange={handlePrefsChange}
         />
       )}
-      {step >= 2 && <LockedStepPlaceholder step={step} />}
+      {step === 2 && volumeDecisions && (
+        <Step3Volume
+          decisions={volumeDecisions}
+          overrides={volumeOverrides}
+          onOverride={handleVolumeOverride}
+          onReset={handleVolumeReset}
+        />
+      )}
+      {step >= 3 && <LockedStepPlaceholder step={step} />}
+
+      {/* Mutation error for volume fetch */}
+      {volumeMutation.isError && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 flex items-start gap-2">
+          <AlertCircle size={14} className="text-destructive mt-0.5 shrink-0" />
+          <p className="text-sm text-destructive">
+            Nie udało się obliczyć objętości. Sprawdź dane klienta i spróbuj ponownie.
+          </p>
+        </div>
+      )}
 
       {/* Navigation */}
       <div className="flex items-center justify-between pt-2">
@@ -719,30 +1011,49 @@ export default function PlanDraftWizard() {
           variant="outline"
           onClick={step === 0 ? () => navigate(`/clients/${clientId}`) : handleBack}
           className="gap-2"
+          disabled={volumeMutation.isPending}
         >
           <ArrowLeft size={14} />
           {step === 0 ? "Anuluj" : "Wstecz"}
         </Button>
 
         <div className="flex gap-3">
-          {step < 1 && (
-            <Button onClick={handleNext} className="gap-2">
+          {step === 0 && (
+            <Button onClick={() => setStep(1)} className="gap-2">
               Dalej
               <ArrowRight size={14} />
             </Button>
           )}
           {step === 1 && (
             <Button
-              onClick={handleNext}
-              disabled={step >= 1}
+              onClick={handleAdvanceToVolume}
+              disabled={hasBlockingWarnings || volumeMutation.isPending}
               className="gap-2"
-              title="Dostępne w kolejnych etapach"
             >
-              <Lock size={14} />
-              Zapisz założenia
+              {volumeMutation.isPending ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Obliczanie…
+                </>
+              ) : (
+                <>
+                  Oblicz objętość
+                  <ArrowRight size={14} />
+                </>
+              )}
             </Button>
           )}
-          {step >= 2 && (
+          {step === 2 && (
+            <Button
+              disabled
+              className="gap-2 opacity-50"
+              title="Dobór ćwiczeń dostępny w kolejnym etapie"
+            >
+              <Lock size={14} />
+              Kolejny etap wkrótce
+            </Button>
+          )}
+          {step >= 3 && (
             <Button disabled className="gap-2 opacity-50">
               <Lock size={14} />
               Dostępne w kolejnych etapach
