@@ -212,6 +212,10 @@ export const GetClientSurveyResponse = zod.object({
   "cardioFrequency": zod.string().nullish(),
   "preferredCardioType": zod.string().nullish(),
   "avoidsAdvancedMethods": zod.boolean().nullish(),
+  "avoidedExerciseIds": zod.array(zod.number()).nullish(),
+  "avoidedExerciseReasons": zod.record(zod.string(), zod.string()).nullish(),
+  "avoidedExerciseOtherText": zod.string().nullish(),
+  "avoidedExerciseOtherReason": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -269,7 +273,11 @@ export const UpsertClientSurveyBody = zod.object({
   "cardioPreference": zod.string().optional(),
   "cardioFrequency": zod.string().optional(),
   "preferredCardioType": zod.string().optional(),
-  "avoidsAdvancedMethods": zod.boolean().optional()
+  "avoidsAdvancedMethods": zod.boolean().optional(),
+  "avoidedExerciseIds": zod.array(zod.number().int().positive()).optional(),
+  "avoidedExerciseReasons": zod.record(zod.string(), zod.string().max(500)).optional(),
+  "avoidedExerciseOtherText": zod.string().max(1000).nullish(),
+  "avoidedExerciseOtherReason": zod.string().max(500).nullish()
 })
 
 export const UpsertClientSurveyResponse = zod.object({
@@ -307,6 +315,10 @@ export const UpsertClientSurveyResponse = zod.object({
   "cardioFrequency": zod.string().nullish(),
   "preferredCardioType": zod.string().nullish(),
   "avoidsAdvancedMethods": zod.boolean().nullish(),
+  "avoidedExerciseIds": zod.array(zod.number()).nullish(),
+  "avoidedExerciseReasons": zod.record(zod.string(), zod.string()).nullish(),
+  "avoidedExerciseOtherText": zod.string().nullish(),
+  "avoidedExerciseOtherReason": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -354,6 +366,10 @@ export const ListClientSurveysResponseItem = zod.object({
   "cardioFrequency": zod.string().nullish(),
   "preferredCardioType": zod.string().nullish(),
   "avoidsAdvancedMethods": zod.boolean().nullish(),
+  "avoidedExerciseIds": zod.array(zod.number()).nullish(),
+  "avoidedExerciseReasons": zod.record(zod.string(), zod.string()).nullish(),
+  "avoidedExerciseOtherText": zod.string().nullish(),
+  "avoidedExerciseOtherReason": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -403,6 +419,10 @@ export const GetClientSurveyByIdResponse = zod.object({
   "cardioFrequency": zod.string().nullish(),
   "preferredCardioType": zod.string().nullish(),
   "avoidsAdvancedMethods": zod.boolean().nullish(),
+  "avoidedExerciseIds": zod.array(zod.number()).nullish(),
+  "avoidedExerciseReasons": zod.record(zod.string(), zod.string()).nullish(),
+  "avoidedExerciseOtherText": zod.string().nullish(),
+  "avoidedExerciseOtherReason": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -576,7 +596,11 @@ export const SubmitPublicSurveyBody = zod.object({
   "cardioPreference": zod.string().optional(),
   "cardioFrequency": zod.string().optional(),
   "preferredCardioType": zod.string().optional(),
-  "avoidsAdvancedMethods": zod.boolean().optional()
+  "avoidsAdvancedMethods": zod.boolean().optional(),
+  "avoidedExerciseIds": zod.array(zod.number().int().positive()).optional(),
+  "avoidedExerciseReasons": zod.record(zod.string(), zod.string().max(500)).optional(),
+  "avoidedExerciseOtherText": zod.string().max(1000).nullish(),
+  "avoidedExerciseOtherReason": zod.string().max(500).nullish()
 })
 
 export const SubmitPublicSurveyResponse = zod.object({

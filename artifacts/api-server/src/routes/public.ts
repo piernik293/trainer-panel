@@ -117,6 +117,10 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     cardioFrequency,
     preferredCardioType,
     avoidsAdvancedMethods,
+    avoidedExerciseIds,
+    avoidedExerciseReasons,
+    avoidedExerciseOtherText,
+    avoidedExerciseOtherReason,
   } = parsed.data;
 
   // `dateOfBirth` is a plain "YYYY-MM-DD" string (see @workspace/api-zod's
@@ -168,6 +172,10 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     cardioFrequency,
     preferredCardioType,
     avoidsAdvancedMethods,
+    avoidedExerciseIds: avoidedExerciseIds ?? [],
+    avoidedExerciseReasons: avoidedExerciseReasons ?? {},
+    avoidedExerciseOtherText: avoidedExerciseOtherText ?? null,
+    avoidedExerciseOtherReason: avoidedExerciseOtherReason ?? null,
   });
 
   // Fire-and-forget email notification

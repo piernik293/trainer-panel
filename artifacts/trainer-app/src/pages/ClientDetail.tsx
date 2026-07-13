@@ -13,6 +13,7 @@ import {
   useDeleteClientNote,
   getListClientNotesQueryKey,
   getListClientsQueryKey,
+  useGetClientAvoidedExercises,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -585,6 +586,12 @@ function SurveyTab({ client, survey, surveyLoading, id, bmi, showBmiRecommendati
 }
 
 function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientEmail }: any) {
+  const { data: avoidedExercises } = useGetClientAvoidedExercises(survey?.clientId);
+
+  // Separate real exercises from the "other" entry (id === 0)
+  const avoidedExList = (avoidedExercises ?? []).filter((e) => e.id > 0);
+  const avoidedOther = (avoidedExercises ?? []).find((e) => e.id === 0);
+
   return (
     <div className="space-y-6 print-page-break-before">
       {clientName && (
@@ -659,8 +666,46 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
         <SurveyBlock label="Partie priorytetowe (opis)" value={survey.preferredMuscles} className="border-l-2 border-primary" />
         <SurveyBlock label="Partie do pominięcia" value={survey.avoidedMuscles} />
         <SurveyBlock label="Ulubione ćwiczenia" value={survey.favoriteExercises} />
-        <SurveyBlock label="Czego unikać" value={survey.avoidedExercises} />
       </div>
+
+      {/* ── Unikane ćwiczenia (nowa struktura) ─────────────────────────── */}
+      {(avoidedExList.length > 0 || avoidedOther) && (
+        <div className="bg-card border border-amber-200/60 rounded-xl p-5 shadow-sm col-span-full print-break-inside-avoid">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            Ćwiczenia do unikania
+          </h4>
+          <div className="space-y-2">
+            {avoidedExList.map((ex) => (
+              <div key={ex.id} className="flex items-start gap-2">
+                <span className={`text-sm font-medium ${ex.isActive ? "text-foreground" : "text-muted-foreground line-through"}`}>
+                  {ex.name}
+                </span>
+                {!ex.isActive && (
+                  <Badge variant="secondary" className="text-xs shrink-0">nieaktywne</Badge>
+                )}
+                {ex.reason && (
+                  <span className="text-xs text-muted-foreground">— {ex.reason}</span>
+                )}
+              </div>
+            ))}
+            {avoidedOther && (avoidedOther.otherText || avoidedOther.otherReason) && (
+              <div className="border-t border-border/40 pt-2 mt-2">
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Opis słowny</p>
+                {avoidedOther.otherText && (
+                  <p className="text-sm text-foreground">{avoidedOther.otherText}</p>
+                )}
+                {avoidedOther.otherReason && (
+                  <p className="text-xs text-muted-foreground mt-0.5">{avoidedOther.otherReason}</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Fallback: legacy free-text field from old surveys */}
+      {!avoidedExList.length && !avoidedOther && survey.avoidedExercises && (
+        <SurveyBlock label="Czego unikać (legacy)" value={survey.avoidedExercises} />
+      )}
 
       {(survey.priorityMuscle1 || survey.priorityMuscle2 || survey.priorityMuscle3) && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

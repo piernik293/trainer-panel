@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp, uniqueIndex, index, boolean, date } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, uniqueIndex, index, boolean, date, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { clientsTable } from "./clients";
@@ -47,6 +47,11 @@ export const surveysTable = pgTable("surveys", {
   preferredCardioType: text("preferred_cardio_type"),
   // Czy klient ma przeciwwskazania do metod intensyfikacji (pytanie tak/nie, poprzedzające listę checkboxów)
   avoidsAdvancedMethods: boolean("avoids_advanced_methods"),
+  // Ćwiczenia, których klient chce unikać — powiązanie z Exercise Library
+  avoidedExerciseIds: integer("avoided_exercise_ids").array().notNull().default([]),
+  avoidedExerciseReasons: jsonb("avoided_exercise_reasons").$type<Record<string, string>>().notNull().default({}),
+  avoidedExerciseOtherText: text("avoided_exercise_other_text"),
+  avoidedExerciseOtherReason: text("avoided_exercise_other_reason"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

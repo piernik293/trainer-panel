@@ -154,6 +154,14 @@ export interface Survey {
   preferredCardioType?: string | null;
   /** @nullable */
   avoidsAdvancedMethods?: boolean | null;
+  /** @nullable */
+  avoidedExerciseIds?: number[] | null;
+  /** @nullable */
+  avoidedExerciseReasons?: Record<string, string> | null;
+  /** @nullable */
+  avoidedExerciseOtherText?: string | null;
+  /** @nullable */
+  avoidedExerciseOtherReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -218,6 +226,10 @@ export interface SurveyInput {
   age?: number;
   dateOfBirth?: string;
   gender?: SurveyInputGender;
+  avoidedExerciseIds?: number[];
+  avoidedExerciseReasons?: Record<string, string>;
+  avoidedExerciseOtherText?: string | null;
+  avoidedExerciseOtherReason?: string | null;
   /**
      * @minimum 50
      * @maximum 260
@@ -548,6 +560,10 @@ export interface PublicSurveySubmission {
   age?: number;
   dateOfBirth: string;
   gender: PublicSurveySubmissionGender;
+  avoidedExerciseIds?: number[];
+  avoidedExerciseReasons?: Record<string, string>;
+  avoidedExerciseOtherText?: string | null;
+  avoidedExerciseOtherReason?: string | null;
   /**
      * @minimum 50
      * @maximum 260

@@ -19,8 +19,8 @@
  * guideline data.  The two analyses are fully independent.
  */
 
-import { db, exercisesTable, workoutPlanDaysTable, workoutPlanExercisesTable } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { db, exercisesTable, workoutPlanDaysTable, workoutPlanExercisesTable, surveysTable } from "@workspace/db";
+import { eq, inArray, desc } from "drizzle-orm";
 
 // ─── Movement category key type ───────────────────────────────────────────────
 
@@ -1110,6 +1110,30 @@ export function normalizePlanAnalysisInput(
 
 // ─── Public entry points ───────────────────────────────────────────────────────
 
+/**
+ * Load the client's avoided exercise IDs and reasons from their latest survey.
+ * Returns null when the client has no survey or no avoided exercises.
+ */
+async function loadClientAvoidedExercises(
+  clientId: number,
+): Promise<{ ids: Set<number>; reasons: Record<string, string> } | null> {
+  const [survey] = await db
+    .select({
+      avoidedExerciseIds: surveysTable.avoidedExerciseIds,
+      avoidedExerciseReasons: surveysTable.avoidedExerciseReasons,
+    })
+    .from(surveysTable)
+    .where(eq(surveysTable.clientId, clientId))
+    .orderBy(desc(surveysTable.createdAt))
+    .limit(1);
+
+  if (!survey || survey.avoidedExerciseIds.length === 0) return null;
+  return {
+    ids: new Set(survey.avoidedExerciseIds),
+    reasons: (survey.avoidedExerciseReasons ?? {}) as Record<string, string>,
+  };
+}
+
 /** Analyse an unsaved draft plan snapshot (same core as analyseSavedPlan). */
 export async function analyseDraftPreview(
   input: AnalysisPreviewInput,
@@ -1119,7 +1143,34 @@ export async function analyseDraftPreview(
   ];
   const metaMap = await loadExerciseMetadata(exerciseIds);
   const { entries, warnings } = normalizePlanAnalysisInput(input.days, metaMap);
-  return calculatePlanAnalysisCore(entries, warnings);
+  const result = calculatePlanAnalysisCore(entries, warnings);
+
+  // Append CLIENT_AVOIDS_EXERCISE notices (non-blocking, deduplicated per exercise)
+  const avoided = await loadClientAvoidedExercises(input.clientId);
+  if (avoided) {
+    const emitted = new Set<number>();
+    for (const day of input.days) {
+      for (const ex of day.exercises) {
+        if (avoided.ids.has(ex.exerciseId) && !emitted.has(ex.exerciseId)) {
+          emitted.add(ex.exerciseId);
+          const meta = metaMap.get(ex.exerciseId);
+          const reason = avoided.reasons[String(ex.exerciseId)] ?? null;
+          result.warnings.push({
+            code: "CLIENT_AVOIDS_EXERCISE",
+            severity: "notice",
+            scope: "exercise",
+            exerciseId: ex.exerciseId,
+            exerciseName: meta?.name ?? null,
+            message: reason
+              ? `Klient chce unikać tego ćwiczenia. Powód: ${reason}`
+              : "Klient chce unikać tego ćwiczenia.",
+          });
+        }
+      }
+    }
+  }
+
+  return result;
 }
 
 /** Analyse a saved plan directly from the database. */

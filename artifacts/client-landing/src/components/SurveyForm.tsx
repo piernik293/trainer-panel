@@ -5,6 +5,7 @@ import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSubmitPublicSurvey } from "@workspace/api-client-react";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { AvoidedExercisesPicker, type SelectedExercise } from "./AvoidedExercisesPicker";
 import { cn } from "@/lib/utils";
 
 import {
@@ -256,6 +257,12 @@ export default function SurveyForm() {
 
   const [equipmentItems, setEquipmentItems] = useState<string[]>([]);
   const [equipmentOther, setEquipmentOther] = useState<string>("");
+
+  // ── Avoided exercises state (outside RHF — complex object, not a plain field) ─
+  const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
+  const [avoidedExerciseOtherText, setAvoidedExerciseOtherText] = useState("");
+  const [avoidedExerciseOtherReason, setAvoidedExerciseOtherReason] = useState("");
+
   useEffect(() => {
     form.setValue("equipment", buildEquipmentString(equipmentItems, equipmentOther));
     form.trigger("equipment");
@@ -284,6 +291,14 @@ export default function SurveyForm() {
       age: calculateAge(rest.dateOfBirth) ?? undefined,
       avoidsAdvancedMethods: avoidsAdvancedMethodsBool,
       advancedMethodsToAvoid: avoidsAdvancedMethodsBool === true ? advancedMethodsToAvoid : [],
+      avoidedExerciseIds: selectedExercises.map((e) => e.id),
+      avoidedExerciseReasons: Object.fromEntries(
+        selectedExercises
+          .filter((e) => e.reason.trim())
+          .map((e) => [String(e.id), e.reason.trim()]),
+      ),
+      avoidedExerciseOtherText: avoidedExerciseOtherText.trim() || undefined,
+      avoidedExerciseOtherReason: avoidedExerciseOtherReason.trim() || undefined,
     };
     mutation.mutate(
       { data: payload as Parameters<typeof mutation.mutate>[0]["data"] },
@@ -852,6 +867,26 @@ export default function SurveyForm() {
                 </FormItem>
               )} />
             )}
+            {/* ── Ćwiczenia do unikania — widoczne dla wszystkich poziomów ─ */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-muted-foreground">
+                Czy są ćwiczenia, których nie chcesz wykonywać?
+              </label>
+              <p className="text-xs text-muted-foreground/70">
+                Wyszukaj po nazwie lub opisz ćwiczenie, jeśli nie znasz jego nazwy.
+              </p>
+              <div className="mt-3">
+                <AvoidedExercisesPicker
+                  selectedExercises={selectedExercises}
+                  onSelectedChange={setSelectedExercises}
+                  otherText={avoidedExerciseOtherText}
+                  onOtherTextChange={setAvoidedExerciseOtherText}
+                  otherReason={avoidedExerciseOtherReason}
+                  onOtherReasonChange={setAvoidedExerciseOtherReason}
+                />
+              </div>
+            </div>
+
             {isIntermediateOrAdvanced && (
               <>
                 <FormField control={form.control} name="avoidedMuscles" render={({field}) => (
@@ -860,14 +895,6 @@ export default function SurveyForm() {
                     <FormDescription className="text-xs text-muted-foreground/70">
                       Np. {MUSCLE_GROUPS.join(", ")}.
                     </FormDescription>
-                    <FormControl>
-                      <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
-                    </FormControl>
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="avoidedExercises" render={({field}) => (
-                  <FormItem>
-                    <FormLabel className="text-muted-foreground">Czy są ćwiczenia, których nie chcesz wykonywać?</FormLabel>
                     <FormControl>
                       <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
                     </FormControl>

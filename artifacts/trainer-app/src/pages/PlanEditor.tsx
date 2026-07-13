@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext, createContext, useMemo } from "react";
 import { useParams, Link } from "wouter";
 import {
   DndContext,
@@ -21,6 +21,8 @@ import {
   useListExercises,
   useListExerciseRecommendations,
   getListExerciseRecommendationsQueryKey,
+  useGetClientAvoidedExercises,
+  type ClientAvoidedExercise,
 } from "@workspace/api-client-react";
 import {
   useGetPlan,
@@ -92,6 +94,23 @@ import {
   LayoutList,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+// ─── AvoidedExercisesContext ──────────────────────────────────────────────────
+// Holds a map of exerciseId → reason (null when no reason) for exercises that
+// the client wants to avoid.  Provided by PlanEditor; consumed by ExercisePicker
+// and ExerciseRow without prop-drilling through DaySection / SortableExerciseRow.
+
+interface AvoidedExercisesContextValue {
+  avoidedMap: Map<number, string | null>;
+  otherText: string | null;
+  otherReason: string | null;
+}
+
+const AvoidedExercisesContext = createContext<AvoidedExercisesContextValue>({
+  avoidedMap: new Map(),
+  otherText: null,
+  otherReason: null,
+});
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -188,6 +207,7 @@ function ExercisePicker({
 }) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"all" | "recommended">("all");
+  const { avoidedMap } = useContext(AvoidedExercisesContext);
 
   const { data: allExercises } = useListExercises({ isActive: true } as any);
   const { data: recommendations } = useListExerciseRecommendations(
@@ -265,8 +285,13 @@ function ExercisePicker({
                   className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm"
                   onClick={() => handleSelect(ex.id, ex.name)}
                 >
-                  <span className="font-medium">{ex.name}</span>
-                  <span className="text-muted-foreground ml-2 text-xs">{ex.mainMuscleGroup}</span>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <span className="font-medium">{ex.name}</span>
+                    <span className="text-muted-foreground text-xs">{ex.mainMuscleGroup}</span>
+                    {avoidedMap.has(ex.id) && (
+                      <span className="text-xs text-amber-600 font-medium">⚠ klient unika</span>
+                    )}
+                  </div>
                 </button>
               ))
             )
@@ -668,6 +693,10 @@ function ExerciseRow({
   dragHandleAttributes?: Record<string, unknown>;
 }) {
   const { toast } = useToast();
+  const { avoidedMap } = useContext(AvoidedExercisesContext);
+  const isAvoided = avoidedMap.has(ex.exerciseId);
+  const avoidedReason = avoidedMap.get(ex.exerciseId) ?? null;
+
   const [editing, setEditing] = useState(false);
   const [moving, setMoving] = useState(false);
 
@@ -733,6 +762,15 @@ function ExerciseRow({
           {/* Content */}
           <div className="flex-1 min-w-0">
             <span className="font-medium text-sm">{ex.exerciseName}</span>
+            {isAvoided && (
+              <p className="text-xs text-amber-600 mt-0.5 flex items-center gap-1">
+                <AlertCircle size={10} />
+                Klient chce unikać tego ćwiczenia
+                {avoidedReason && (
+                  <span className="text-muted-foreground">— {avoidedReason}</span>
+                )}
+              </p>
+            )}
             <p className="text-muted-foreground text-xs mt-0.5 leading-snug">
               {summaryParts.join(" · ")}
             </p>
@@ -1476,6 +1514,24 @@ export default function PlanEditor() {
   const { data: plan, isLoading, error } = useGetPlan(planId);
   const { preview, isLoadingPreview } = useVolumePreview(plan);
   const { analysisResult, isLoadingAnalysis } = useAnalysisPreview(plan);
+
+  // Avoided exercises — fetched regardless of plan load state (hook rule: no conditional calls)
+  const { data: avoidedExercisesData } = useGetClientAvoidedExercises(plan?.clientId);
+  const avoidedCtxValue = useMemo<AvoidedExercisesContextValue>(() => {
+    const avoidedMap = new Map<number, string | null>();
+    let otherText: string | null = null;
+    let otherReason: string | null = null;
+    for (const ex of avoidedExercisesData ?? []) {
+      if (ex.id > 0) {
+        avoidedMap.set(ex.id, ex.reason ?? null);
+      } else {
+        otherText = ex.otherText ?? null;
+        otherReason = ex.otherReason ?? null;
+      }
+    }
+    return { avoidedMap, otherText, otherReason };
+  }, [avoidedExercisesData]);
+
   const updatePlan = useUpdatePlan(planId, plan?.clientId);
   const addDay = useAddPlanDay(planId, plan?.clientId);
   const addExercise = useAddPlanExercise(planId);
@@ -1589,6 +1645,7 @@ export default function PlanEditor() {
   };
 
   return (
+    <AvoidedExercisesContext.Provider value={avoidedCtxValue}>
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex flex-col gap-3">
@@ -1774,5 +1831,6 @@ export default function PlanEditor() {
         clientId={plan?.clientId}
       />
     </div>
+    </AvoidedExercisesContext.Provider>
   );
 }

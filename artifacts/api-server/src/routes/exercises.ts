@@ -178,6 +178,34 @@ function parseIsActiveFilter(raw: unknown): boolean | undefined {
   return undefined;
 }
 
+// ─── Lightweight search (used by SurveyForm picker — no full descriptions) ────
+// Must be registered before /exercises/:id to avoid route ambiguity.
+
+router.get("/exercises/search", async (req, res): Promise<void> => {
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const rawLimit = parseInt(typeof req.query.limit === "string" ? req.query.limit : "20", 10);
+  const limit = Math.min(50, Math.max(1, isNaN(rawLimit) ? 20 : rawLimit));
+
+  const rows = await db
+    .select({
+      id: exercisesTable.id,
+      name: exercisesTable.name,
+      mainMuscleGroup: exercisesTable.mainMuscleGroup,
+      equipment: exercisesTable.equipment,
+      movementPattern: exercisesTable.movementPattern,
+      isActive: exercisesTable.isActive,
+    })
+    .from(exercisesTable)
+    .where(eq(exercisesTable.isActive, true))
+    .orderBy(exercisesTable.name);
+
+  const results = q
+    ? rows.filter((e) => normalizeForComparison(e.name).includes(normalizeForComparison(q)))
+    : rows;
+
+  res.json(results.slice(0, limit));
+});
+
 // ─── List ─────────────────────────────────────────────────────────────────────
 
 router.get("/exercises", async (req, res): Promise<void> => {
