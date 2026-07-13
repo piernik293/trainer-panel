@@ -50,7 +50,7 @@ import {
   validateReps,
   validateRir,
 } from "@/lib/exerciseDraftHelpers";
-import { MAIN_MUSCLE_GROUPS } from "@/lib/exercise-constants";
+import { MAIN_MUSCLE_GROUPS, EQUIPMENT_OPTIONS } from "@/lib/exercise-constants";
 import { filterNonZeroAllocations } from "@/lib/distributionHelpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,7 +142,7 @@ export default function Step4Exercises({
       <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
         <Info size={13} className="shrink-0 mt-0.5" />
         <span>
-          Objętość efektywna jest wartością analityczną. Rzeczywiste serie robocze wynikają z dobranych ćwiczeń.
+          To wartość analityczna. Rzeczywiste serie robocze wynikają z dobranych ćwiczeń.
         </span>
       </div>
 
@@ -517,13 +517,15 @@ function ExerciseSelectorDialog({
 }: ExerciseSelectorDialogProps) {
   const [search, setSearch] = useState("");
   const [filterMuscle, setFilterMuscle] = useState<string>("__all__");
+  const [filterEquipment, setFilterEquipment] = useState<string>("__all__");
   const [pendingAvoided, setPendingAvoided] = useState<Exercise | null>(null);
 
   const queryParams = useMemo(() => ({
     isActive: true,
     ...(filterMuscle !== "__all__" ? { mainMuscleGroup: filterMuscle } : {}),
+    ...(filterEquipment !== "__all__" ? { equipment: filterEquipment } : {}),
     ...(search.trim() ? { search: search.trim() } : {}),
-  }), [search, filterMuscle]);
+  }), [search, filterMuscle, filterEquipment]);
 
   const { data: exercises = [], isLoading } = useListExercises(queryParams);
 
@@ -595,20 +597,32 @@ function ExerciseSelectorDialog({
             className="text-sm"
           />
 
-          {/* Muscle group filter */}
-          <Select value={filterMuscle} onValueChange={setFilterMuscle}>
-            <SelectTrigger className="text-sm">
-              <SelectValue placeholder="Filtruj wg partii mięśniowej" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">Wszystkie partie</SelectItem>
-              {MAIN_MUSCLE_GROUPS.map((g) => (
-                <SelectItem key={g} value={g}>
-                  {g}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Filters row */}
+          <div className="grid grid-cols-2 gap-2">
+            <Select value={filterMuscle} onValueChange={setFilterMuscle}>
+              <SelectTrigger className="text-sm">
+                <SelectValue placeholder="Partia mięśniowa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Wszystkie partie</SelectItem>
+                {MAIN_MUSCLE_GROUPS.map((g) => (
+                  <SelectItem key={g} value={g}>{g}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterEquipment} onValueChange={setFilterEquipment}>
+              <SelectTrigger className="text-sm">
+                <SelectValue placeholder="Sprzęt" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Cały sprzęt</SelectItem>
+                {EQUIPMENT_OPTIONS.map((e) => (
+                  <SelectItem key={e} value={e}>{e}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Results */}
           <ScrollArea className="h-72 rounded-md border border-border/50">

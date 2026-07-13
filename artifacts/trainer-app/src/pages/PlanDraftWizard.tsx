@@ -1299,6 +1299,8 @@ export default function PlanDraftWizard() {
   const isExerciseStepUnlocked = useMemo(() => {
     if (!volumeDecisions || !distributionResult || !effectivePrefs) return false;
     if (distributionResult.hasBlockingIssues) return false;
+    // Require the separate Core block to be present
+    if (!distributionResult.auxiliaryCoreBlock) return false;
     const consistency = checkDistributionConsistency(distributionResult, effectivePrefs.trainingDays);
     return consistency.isConsistent;
   }, [volumeDecisions, distributionResult, effectivePrefs]);
