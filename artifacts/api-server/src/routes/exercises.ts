@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ilike, inArray } from "drizzle-orm";
+import { eq, and, ilike, inArray, count, sql } from "drizzle-orm";
 import {
   db,
   exercisesTable,
@@ -263,6 +263,18 @@ type ImportRowInput = {
   [key: string]: unknown;
 };
 
+type RelationInput = { exerciseName: string };
+
+type ImportRowFull = ImportRowInput & {
+  muscleAssignments?: MuscleAssignmentInput[];
+  substitutions?: RelationInput[];
+  progressions?: RelationInput[];
+  regressions?: RelationInput[];
+};
+
+/** Transaction type — same interface as db but scoped to the current transaction. */
+type TxType = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 function validateImportRow(row: ImportRowInput, idx: number): string[] {
   const errors: string[] = [];
 
@@ -296,6 +308,91 @@ function validateImportRow(row: ImportRowInput, idx: number): string[] {
   return errors;
 }
 
+/**
+ * Insert or replace muscle assignments inside a transaction.
+ * Clears existing rows for the exercise first (safe for update strategy).
+ * Throws MUSCLE_NOT_FOUND if any specificMuscleName is not in the canonical table.
+ */
+async function processMuscleAssignmentsTx(
+  tx: TxType,
+  exerciseId: number,
+  exerciseName: string,
+  assignments: MuscleAssignmentInput[],
+): Promise<void> {
+  if (!assignments.length) return;
+
+  await tx
+    .delete(exerciseMuscleAssignmentsTable)
+    .where(eq(exerciseMuscleAssignmentsTable.exerciseId, exerciseId));
+
+  const muscleNames = [...new Set(assignments.map((a) => a.specificMuscleName).filter(Boolean))];
+  const muscles = await tx
+    .select({ id: specificMusclesTable.id, name: specificMusclesTable.name })
+    .from(specificMusclesTable)
+    .where(inArray(specificMusclesTable.name, muscleNames));
+  const muscleIdMap = new Map(muscles.map((m) => [m.name, m.id]));
+
+  for (const assignment of assignments) {
+    const muscleId = muscleIdMap.get(assignment.specificMuscleName);
+    if (!muscleId) {
+      throw Object.assign(
+        new Error(`Muscle "${assignment.specificMuscleName}" for "${exerciseName}" not found`),
+        { code: "MUSCLE_NOT_FOUND", exerciseName, muscleName: assignment.specificMuscleName },
+      );
+    }
+    await tx.insert(exerciseMuscleAssignmentsTable).values({
+      exerciseId,
+      specificMuscleId: muscleId,
+      coefficient: Math.min(1.0, Math.max(0.01, Number(assignment.coefficient))),
+      isPrimary: Boolean(assignment.isPrimary),
+    });
+  }
+}
+
+/**
+ * Generate a unique slug using tx so new slugs from within the batch are visible.
+ */
+async function generateUniqueSlugTx(
+  tx: TxType,
+  name: string,
+  excludeId?: number,
+): Promise<string> {
+  const base = slugify(name) || "cwiczenie";
+  let candidate = base;
+  let suffix = 2;
+  while (true) {
+    const [existing] = await tx
+      .select({ id: exercisesTable.id })
+      .from(exercisesTable)
+      .where(eq(exercisesTable.slug, candidate));
+    if (!existing || existing.id === excludeId) return candidate;
+    candidate = `${base}-${suffix}`;
+    suffix++;
+  }
+}
+
+async function withUniqueSlugRetryTx<T>(
+  tx: TxType,
+  name: string,
+  operation: (slug: string) => Promise<T>,
+  excludeId?: number,
+  attempts = 3,
+): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i++) {
+    const slug = await generateUniqueSlugTx(tx, name, excludeId);
+    try {
+      return await operation(slug);
+    } catch (error) {
+      if (isUniqueViolation(error)) { lastError = error; continue; }
+      throw error;
+    }
+  }
+  throw lastError;
+}
+
+// ─── Preview ──────────────────────────────────────────────────────────────────
+
 router.post("/exercises/import/preview", async (req, res): Promise<void> => {
   const parsed = PreviewExerciseImportBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
@@ -305,7 +402,6 @@ router.post("/exercises/import/preview", async (req, res): Promise<void> => {
   const duplicates: Array<{ rowIndex: number; exerciseName: string; existingId: number }> = [];
   let validCount = 0;
 
-  // Check all rows for validation errors.
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i] as ImportRowInput;
     const rowErrors = validateImportRow(row, i);
@@ -316,28 +412,51 @@ router.post("/exercises/import/preview", async (req, res): Promise<void> => {
     }
   }
 
-  // Duplicate detection: find existing exercises matching any imported name.
-  const validNames = rows
-    .filter((_, i) => !errors.some((e) => e.rowIndex === i))
-    .map((r) => (r as ImportRowInput).name?.trim().toLowerCase())
-    .filter(Boolean) as string[];
+  // Resolve existing exercises once for duplicate + relation target checks.
+  const existing = await db.select({ id: exercisesTable.id, name: exercisesTable.name }).from(exercisesTable);
+  const nameMap = new Map(existing.map((e) => [e.name.toLowerCase(), e.id]));
+  // Also add names from this batch so cross-row relation targets are visible.
+  for (const row of rows) {
+    const name = (row as ImportRowInput).name?.trim();
+    if (name) nameMap.set(name.toLowerCase(), nameMap.get(name.toLowerCase()) ?? -1);
+  }
 
-  if (validNames.length > 0) {
-    const existing = await db.select({ id: exercisesTable.id, name: exercisesTable.name }).from(exercisesTable);
-    const nameMap = new Map(existing.map((e) => [e.name.toLowerCase(), e.id]));
+  // Duplicate detection
+  for (let i = 0; i < rows.length; i++) {
+    if (errors.some((e) => e.rowIndex === i)) continue;
+    const name = (rows[i] as ImportRowInput).name?.trim() ?? "";
+    const existingId = existing.find((e) => e.name.toLowerCase() === name.toLowerCase())?.id;
+    if (existingId) duplicates.push({ rowIndex: i, exerciseName: name, existingId });
+  }
 
-    for (let i = 0; i < rows.length; i++) {
-      if (errors.some((e) => e.rowIndex === i)) continue;
-      const name = (rows[i] as ImportRowInput).name?.trim() ?? "";
-      const existingId = nameMap.get(name.toLowerCase());
-      if (existingId) {
-        duplicates.push({ rowIndex: i, exerciseName: name, existingId });
+  // Relation target validation — report missing targets as errors
+  for (let i = 0; i < rows.length; i++) {
+    if (errors.some((e) => e.rowIndex === i)) continue;
+    const row = rows[i] as ImportRowFull;
+    const rowName = row.name?.trim() ?? `row ${i}`;
+    const relErrors: string[] = [];
+
+    const checkRel = (label: string, rels: RelationInput[] | undefined) => {
+      for (const rel of rels ?? []) {
+        if (!nameMap.has(rel.exerciseName.toLowerCase().trim())) {
+          relErrors.push(`${label} target nie istnieje: "${rel.exerciseName}"`);
+        }
       }
+    };
+    checkRel("Substitution", row.substitutions);
+    checkRel("Progression", row.progressions);
+    checkRel("Regression", row.regressions);
+
+    if (relErrors.length > 0) {
+      errors.push({ rowIndex: i, exerciseName: rowName, errors: relErrors });
+      validCount--;
     }
   }
 
   res.json(PreviewExerciseImportResponse.parse({ validCount, errors, duplicates }));
 });
+
+// ─── Atomic import ────────────────────────────────────────────────────────────
 
 router.post("/exercises/import", async (req, res): Promise<void> => {
   const parsed = ImportExercisesBody.safeParse(req.body);
@@ -345,62 +464,233 @@ router.post("/exercises/import", async (req, res): Promise<void> => {
 
   const { rows, duplicateStrategy, skipInvalidRows } = parsed.data;
 
-  let imported = 0;
-  let updated = 0;
-  let skipped = 0;
-  let failed = 0;
-  const failedErrors: Array<{ rowIndex: number; exerciseName?: string; errors: string[] }> = [];
-
-  // Fetch existing exercises once for duplicate detection.
-  const existing = await db.select({ id: exercisesTable.id, name: exercisesTable.name }).from(exercisesTable);
-  const nameMap = new Map(existing.map((e) => [e.name.toLowerCase(), e.id]));
+  // ── Stage 0: pre-validate all rows before opening a transaction ─────────────
+  const validRows: ImportRowFull[] = [];
+  const preErrors: Array<{ rowIndex: number; exerciseName?: string; errors: string[] }> = [];
 
   for (let i = 0; i < rows.length; i++) {
-    const row = rows[i] as ImportRowInput;
+    const row = rows[i] as ImportRowFull;
     const rowErrors = validateImportRow(row, i);
-
     if (rowErrors.length > 0) {
-      if (skipInvalidRows) {
-        skipped++;
-        continue;
-      } else {
-        failed++;
-        failedErrors.push({ rowIndex: i, exerciseName: row.name, errors: rowErrors });
-        continue;
-      }
-    }
-
-    const name = (row.name ?? "").trim();
-    const existingId = nameMap.get(name.toLowerCase());
-
-    try {
-      if (existingId && duplicateStrategy === "skip") {
-        skipped++;
-      } else if (existingId && duplicateStrategy === "update") {
-        const { name: _n, muscleAssignments: _ma, ...rest } = row as ImportRowInput & { muscleAssignments?: MuscleAssignmentInput[] };
-        await db.update(exercisesTable).set({ ...rest as object, updatedAt: new Date() }).where(eq(exercisesTable.id, existingId));
-        await processMuscleAssignments(existingId, row.muscleAssignments as MuscleAssignmentInput[] | undefined);
-        updated++;
-      } else {
-        // "create" strategy or no duplicate — insert new.
-        const slugSource = name;
-        const insertedRows = await withUniqueSlugRetry(slugSource, (slug) =>
-          db.insert(exercisesTable).values({ ...(row as Partial<typeof exercisesTable.$inferInsert>), name, slug } as typeof exercisesTable.$inferInsert).returning({ id: exercisesTable.id }),
-        );
-        imported++;
-        const insertedId = insertedRows[0]?.id;
-        if (insertedId) {
-          nameMap.set(name.toLowerCase(), insertedId);
-          await processMuscleAssignments(insertedId, row.muscleAssignments as MuscleAssignmentInput[] | undefined);
-        }
-      }
-    } catch (err) {
-      failed++;
-      failedErrors.push({ rowIndex: i, exerciseName: name, errors: ["Błąd bazy danych podczas importu tego wiersza"] });
+      if (skipInvalidRows) continue; // silently drop
+      preErrors.push({ rowIndex: i, exerciseName: row.name, errors: rowErrors });
+    } else {
+      validRows.push(row);
     }
   }
 
-  res.json(ImportExercisesResponse.parse({ imported, updated, skipped, failed, errors: failedErrors }));
+  if (preErrors.length > 0) {
+    res.status(422).json({
+      error: "VALIDATION_FAILURE",
+      message: `${preErrors.length} row(s) failed validation. No transaction started.`,
+      errors: preErrors,
+    });
+    return;
+  }
+
+  // ── Atomic transaction ──────────────────────────────────────────────────────
+  try {
+    const result = await db.transaction(async (tx) => {
+      // Build global name→id map from ALL existing exercises.
+      const allExisting = await tx
+        .select({ id: exercisesTable.id, name: exercisesTable.name })
+        .from(exercisesTable);
+      const globalNameToId = new Map(allExisting.map((e) => [e.name.toLowerCase(), e.id]));
+
+      let imported = 0, updated = 0, skipped = 0;
+      // exerciseId → row (all exercises being processed, including skipped duplicates).
+      const processedExercises = new Map<number, ImportRowFull>();
+      // Ids of exercises that were inserted or updated (need completeness check).
+      const modifiedIds: number[] = [];
+
+      // ── Step 1: Exercises ────────────────────────────────────────────────────
+      for (const row of validRows) {
+        const name = (row.name ?? "").trim();
+        const existingId = globalNameToId.get(name.toLowerCase());
+
+        if (existingId !== undefined && duplicateStrategy === "skip") {
+          skipped++;
+          processedExercises.set(existingId, row); // still process relations
+
+        } else if (existingId !== undefined && duplicateStrategy === "update") {
+          const {
+            name: _n, muscleAssignments: _ma,
+            substitutions: _s, progressions: _p, regressions: _r,
+            ...exerciseFields
+          } = row;
+          await tx
+            .update(exercisesTable)
+            .set({ ...(exerciseFields as object), updatedAt: new Date() })
+            .where(eq(exercisesTable.id, existingId));
+          updated++;
+          processedExercises.set(existingId, row);
+          modifiedIds.push(existingId);
+
+        } else {
+          // Insert new exercise (no duplicate, or "create" strategy).
+          const {
+            muscleAssignments: _ma, substitutions: _s,
+            progressions: _p, regressions: _r,
+            ...exerciseFields
+          } = row;
+          const insertedRows = await withUniqueSlugRetryTx(tx, name, (slug) =>
+            tx.insert(exercisesTable)
+              .values({ ...(exerciseFields as Partial<typeof exercisesTable.$inferInsert>), name, slug } as typeof exercisesTable.$inferInsert)
+              .returning({ id: exercisesTable.id }),
+          );
+          const newId = insertedRows[0]?.id;
+          if (!newId) {
+            throw Object.assign(
+              new Error(`Failed to get inserted ID for "${name}"`),
+              { code: "INTERNAL_ERROR" },
+            );
+          }
+          imported++;
+          globalNameToId.set(name.toLowerCase(), newId);
+          processedExercises.set(newId, row);
+          modifiedIds.push(newId);
+        }
+      }
+
+      // ── Step 2: Muscle assignments (inserted/updated exercises only) ──────────
+      for (const exerciseId of modifiedIds) {
+        const row = processedExercises.get(exerciseId)!;
+        if (row.muscleAssignments?.length) {
+          await processMuscleAssignmentsTx(tx, exerciseId, row.name ?? "", row.muscleAssignments);
+        }
+      }
+
+      // ── Step 3: Completeness verification — fail fast, roll back all ─────────
+      for (const exerciseId of modifiedIds) {
+        const [ex] = await tx
+          .select()
+          .from(exercisesTable)
+          .where(eq(exercisesTable.id, exerciseId));
+
+        const [stats] = await tx
+          .select({
+            total: count(exerciseMuscleAssignmentsTable.id),
+            primaryCount: sql<number>`COUNT(CASE WHEN ${exerciseMuscleAssignmentsTable.isPrimary} = true THEN 1 END)::int`,
+          })
+          .from(exerciseMuscleAssignmentsTable)
+          .where(eq(exerciseMuscleAssignmentsTable.exerciseId, exerciseId));
+
+        const completeness = computeCompleteness(ex, {
+          total: Number(stats?.total ?? 0),
+          primaryCount: Number(stats?.primaryCount ?? 0),
+        });
+
+        if (!completeness.isComplete) {
+          throw Object.assign(
+            new Error(`"${ex.name}" failed completeness check`),
+            { code: "COMPLETENESS_FAILURE", exerciseName: ex.name, missingFields: completeness.missingFields },
+          );
+        }
+      }
+
+      // ── Steps 4–6: Relations (substitutions → progressions → regressions) ────
+      // onConflictDoNothing makes relation insertion idempotent across re-imports.
+      let substitutionsImported = 0;
+      let progressionsImported = 0;
+      let regressionsImported = 0;
+
+      for (const [exerciseId, row] of processedExercises) {
+        const rowName = (row.name ?? "").trim();
+
+        // Step 4: Substitutions
+        for (let si = 0; si < (row.substitutions?.length ?? 0); si++) {
+          const sub = row.substitutions![si];
+          const targetId = globalNameToId.get(sub.exerciseName.toLowerCase().trim());
+          if (targetId === undefined) {
+            throw Object.assign(
+              new Error(`Substitution target "${sub.exerciseName}" not found for "${rowName}"`),
+              { code: "RELATION_NOT_FOUND", relationType: "substitution", sourceName: rowName, targetName: sub.exerciseName },
+            );
+          }
+          await tx.insert(exerciseSubstitutionsTable)
+            .values({ exerciseId, substituteExerciseId: targetId, sortOrder: si })
+            .onConflictDoNothing();
+          substitutionsImported++;
+        }
+
+        // Step 5: Progressions
+        for (let pi = 0; pi < (row.progressions?.length ?? 0); pi++) {
+          const prog = row.progressions![pi];
+          const targetId = globalNameToId.get(prog.exerciseName.toLowerCase().trim());
+          if (targetId === undefined) {
+            throw Object.assign(
+              new Error(`Progression target "${prog.exerciseName}" not found for "${rowName}"`),
+              { code: "RELATION_NOT_FOUND", relationType: "progression", sourceName: rowName, targetName: prog.exerciseName },
+            );
+          }
+          await tx.insert(exerciseProgressionsTable)
+            .values({ exerciseId, linkedExerciseId: targetId, direction: "progression", sortOrder: pi })
+            .onConflictDoNothing();
+          progressionsImported++;
+        }
+
+        // Step 6: Regressions
+        for (let ri = 0; ri < (row.regressions?.length ?? 0); ri++) {
+          const reg = row.regressions![ri];
+          const targetId = globalNameToId.get(reg.exerciseName.toLowerCase().trim());
+          if (targetId === undefined) {
+            throw Object.assign(
+              new Error(`Regression target "${reg.exerciseName}" not found for "${rowName}"`),
+              { code: "RELATION_NOT_FOUND", relationType: "regression", sourceName: rowName, targetName: reg.exerciseName },
+            );
+          }
+          await tx.insert(exerciseProgressionsTable)
+            .values({ exerciseId, linkedExerciseId: targetId, direction: "regression", sortOrder: ri })
+            .onConflictDoNothing();
+          regressionsImported++;
+        }
+      }
+
+      return {
+        imported, updated, skipped, failed: 0, errors: [],
+        substitutionsImported, progressionsImported, regressionsImported,
+      };
+    });
+
+    res.json(ImportExercisesResponse.parse(result));
+
+  } catch (err: unknown) {
+    const e = err as {
+      code?: string; message?: string;
+      exerciseName?: string; missingFields?: string[];
+      relationType?: string; sourceName?: string; targetName?: string;
+      muscleName?: string;
+    };
+
+    if (e.code === "COMPLETENESS_FAILURE") {
+      res.status(422).json({
+        error: "COMPLETENESS_FAILURE",
+        exerciseName: e.exerciseName,
+        missingFields: e.missingFields,
+        message: `Import rolled back: "${e.exerciseName}" failed completeness check. All ${e.missingFields?.length ?? 0} missing field(s) must be resolved.`,
+      });
+    } else if (e.code === "RELATION_NOT_FOUND") {
+      res.status(422).json({
+        error: "RELATION_NOT_FOUND",
+        relationType: e.relationType,
+        sourceName: e.sourceName,
+        targetName: e.targetName,
+        message: `Import rolled back: ${e.relationType} target "${e.targetName}" for "${e.sourceName}" not found in the database or current batch.`,
+      });
+    } else if (e.code === "MUSCLE_NOT_FOUND") {
+      res.status(422).json({
+        error: "MUSCLE_NOT_FOUND",
+        exerciseName: e.exerciseName,
+        muscleName: e.muscleName,
+        message: `Import rolled back: muscle "${e.muscleName}" for "${e.exerciseName}" not found in the canonical muscle table.`,
+      });
+    } else {
+      res.status(500).json({
+        error: "IMPORT_FAILED",
+        message: e.message ?? "Unknown database error. Full batch rolled back.",
+      });
+    }
+  }
 });
 
 // ─── Single exercise CRUD ─────────────────────────────────────────────────────

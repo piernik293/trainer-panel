@@ -1138,7 +1138,10 @@ export const PreviewExerciseImportBody = zod.object({
     "specificMuscleName": zod.string(),
     "isPrimary": zod.boolean(),
     "coefficient": zod.number()
-  })).optional()
+  })).optional(),
+  "substitutions": zod.array(zod.object({ "exerciseName": zod.string() })).optional(),
+  "progressions": zod.array(zod.object({ "exerciseName": zod.string() })).optional(),
+  "regressions": zod.array(zod.object({ "exerciseName": zod.string() })).optional()
 }).describe('One row of exercise data for bulk import'))
 })
 
@@ -1198,7 +1201,10 @@ export const ImportExercisesBody = zod.object({
     "specificMuscleName": zod.string(),
     "isPrimary": zod.boolean(),
     "coefficient": zod.number()
-  })).optional()
+  })).optional(),
+  "substitutions": zod.array(zod.object({ "exerciseName": zod.string() })).optional(),
+  "progressions": zod.array(zod.object({ "exerciseName": zod.string() })).optional(),
+  "regressions": zod.array(zod.object({ "exerciseName": zod.string() })).optional()
 }).describe('One row of exercise data for bulk import')),
   "duplicateStrategy": zod.enum(['skip', 'update', 'create']),
   "skipInvalidRows": zod.boolean().optional()
@@ -1209,6 +1215,9 @@ export const ImportExercisesResponse = zod.object({
   "updated": zod.number(),
   "skipped": zod.number(),
   "failed": zod.number(),
+  "substitutionsImported": zod.number(),
+  "progressionsImported": zod.number(),
+  "regressionsImported": zod.number(),
   "errors": zod.array(zod.object({
   "rowIndex": zod.number(),
   "exerciseName": zod.string().optional(),
