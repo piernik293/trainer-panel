@@ -144,9 +144,6 @@ describe("GET /api/clients/:clientId/avoided-exercises", () => {
     await db.delete(surveysTable).where(eq(surveysTable.clientId, clientId));
     await db.insert(surveysTable).values({
       clientId,
-      firstName: "Test",
-      lastName: "Client",
-      email: "t@t.com",
       dateOfBirth: "1990-01-01",
       gender: "Mężczyzna",
       avoidedExerciseIds: [],
@@ -170,9 +167,6 @@ describe("GET /api/clients/:clientId/avoided-exercises", () => {
     await db.delete(surveysTable).where(eq(surveysTable.clientId, clientId));
     await db.insert(surveysTable).values({
       clientId,
-      firstName: "Test",
-      lastName: "Client",
-      email: "t@t.com",
       dateOfBirth: "1990-01-01",
       gender: "Mężczyzna",
       avoidedExerciseIds: [ex.id],
@@ -195,9 +189,6 @@ describe("GET /api/clients/:clientId/avoided-exercises", () => {
     await db.delete(surveysTable).where(eq(surveysTable.clientId, clientId));
     await db.insert(surveysTable).values({
       clientId,
-      firstName: "Test",
-      lastName: "Client",
-      email: "t@t.com",
       dateOfBirth: "1990-01-01",
       gender: "Mężczyzna",
       avoidedExerciseIds: [],
@@ -227,9 +218,6 @@ describe("GET /api/clients/:clientId/avoided-exercises", () => {
     // Insert old survey (no avoided exercises)
     await db.insert(surveysTable).values({
       clientId,
-      firstName: "Test",
-      lastName: "Client",
-      email: "t@t.com",
       dateOfBirth: "1990-01-01",
       gender: "Mężczyzna",
       avoidedExerciseIds: [],
@@ -240,9 +228,6 @@ describe("GET /api/clients/:clientId/avoided-exercises", () => {
     // Insert newer survey WITH avoided exercise
     await db.insert(surveysTable).values({
       clientId,
-      firstName: "Test",
-      lastName: "Client",
-      email: "t@t.com",
       dateOfBirth: "1990-01-01",
       gender: "Mężczyzna",
       avoidedExerciseIds: [ex.id],
@@ -475,9 +460,6 @@ describe("analyseDraftPreview — CLIENT_AVOIDS_EXERCISE warnings", () => {
     await db.delete(surveysTable).where(eq(surveysTable.clientId, clientId));
     await db.insert(surveysTable).values({
       clientId,
-      firstName: "Test",
-      lastName: "Client",
-      email: "t@t.com",
       dateOfBirth: "1990-01-01",
       gender: "Mężczyzna",
       avoidedExerciseIds: ids,
