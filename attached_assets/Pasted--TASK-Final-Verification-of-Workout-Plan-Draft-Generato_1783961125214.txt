@@ -1,0 +1,133 @@
+# TASK — Final Verification of Workout Plan Draft Generator Phase 1
+
+Do not add new features.
+Do not implement Phase 2.
+Do not generate a workout plan.
+
+Perform final verification of the completed Phase 1 implementation.
+
+Verify:
+
+1. Opening the generator wizard does not create:
+   - a workout plan,
+   - workout plan days,
+   - workout plan exercises,
+   - volume decisions.
+
+2. Database migration exists and is non-destructive:
+
+   lib/db/migrations/0002_add_plan_generator_fields.sql
+
+3. Migration only adds:
+
+   - split_type
+   - block_duration_weeks
+
+4. Existing plans remain valid.
+
+5. Existing plans resolve:
+
+   - splitType = null when not configured,
+   - blockDurationWeeks = 6 according to the approved application behaviour.
+
+6. API validation rejects:
+
+   - blockDurationWeeks below 4,
+   - blockDurationWeeks above 12,
+   - unknown splitType values.
+
+7. API accepts all eight canonical split types.
+
+8. Missing or invalid experience level:
+
+   - returns the correct warning,
+   - never maps to Brak aktywności fizycznej,
+   - never maps to Początkujący.
+
+9. Client A data never appears after switching to Client B.
+
+10. Trainer overrides:
+
+   - survive Step 1 → Step 2 → Step 1 navigation,
+   - do not modify Training Interview data,
+   - can be reset to the interview value.
+
+11. Steps 3–5:
+
+   - remain unavailable,
+   - do not display fake volume,
+   - do not display fake exercises,
+   - do not create placeholder plans.
+
+12. Verify the actual trainer-facing UI for:
+
+   - client profile entry point,
+   - Workout Builder entry point,
+   - five-step stepper,
+   - source badges,
+   - missing-data warnings,
+   - basic settings,
+   - advanced settings,
+   - responsive layout.
+
+13. Run the complete automated test suite.
+
+14. Run TypeScript checks for:
+
+   - api-server,
+   - trainer-app,
+   - client-landing,
+   - api-zod,
+   - api-client-react.
+
+15. Run actual production builds:
+
+   - API production build,
+   - trainer-app production build,
+   - client-landing production build if affected.
+
+Do not report tsc --noEmit as a production build.
+
+16. Start:
+
+   - API server,
+   - trainer application,
+   - client landing if affected.
+
+17. Verify unchanged:
+
+   - 87 active exercises,
+   - 44 volume-guideline rows,
+   - 11 volume targets,
+   - four experience levels,
+   - existing clients,
+   - existing plans,
+   - Phase 2 volume calculations,
+   - Phase 3 plan analysis,
+   - avoided-exercise warnings.
+
+Provide a final report with:
+
+- migration result,
+- database row counts before and after opening the wizard,
+- API validation result,
+- state-isolation result,
+- override result,
+- UI runtime result,
+- automated-test result,
+- TypeScript result,
+- API production-build result,
+- trainer-app production-build result,
+- client-landing build result,
+- runtime startup result,
+- confirmation that no plan was generated,
+- confirmation that no volume was allocated,
+- confirmation that no exercise was selected automatically.
+
+Finish with exactly one verdict:
+
+PHASE 1 VERIFIED
+
+or
+
+PHASE 1 VERIFICATION FAILED
