@@ -145,4 +145,18 @@ export const SUITABLE_EXPERIENCE_LEVEL_OPTIONS = [
   "Zaawansowany",
 ] as const;
 
+/**
+ * Canonical experience-level hierarchy — single frontend source of truth.
+ *
+ * Display order: introductory first ("Brak aktywności fizycznej"), advanced
+ * last ("Zaawansowany").  Exactly four values — do NOT add more.
+ *
+ * Use this constant wherever experience levels are listed, filtered or
+ * validated.  Do not maintain a separate hardcoded array elsewhere in the
+ * frontend.
+ */
+export const CANONICAL_EXPERIENCE_LEVELS = SUITABLE_EXPERIENCE_LEVEL_OPTIONS;
+
+export type ExperienceLevel = (typeof CANONICAL_EXPERIENCE_LEVELS)[number];
+
 export const RATING_OPTIONS = [1, 2, 3, 4, 5] as const;

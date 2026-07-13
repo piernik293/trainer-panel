@@ -86,6 +86,26 @@ export interface VolumeResult {
   inactiveExercises: { planExerciseId: number; exerciseName: string }[];
 }
 
+// ─── Canonical experience-level definitions ───────────────────────────────────
+
+/**
+ * Canonical list of accepted experience levels, in display order.
+ *
+ * "Brak aktywności fizycznej" is first (introductory stage).
+ * "Zaawansowany" is fourth and final — do NOT add a fifth level.
+ *
+ * This is the single backend source of truth used by isValidExperienceLevel,
+ * mapToGuidelineLevel, and all route-level validation.
+ */
+export const CANONICAL_EXPERIENCE_LEVELS = [
+  "Brak aktywności fizycznej",
+  "Początkujący",
+  "Średniozaawansowany",
+  "Zaawansowany",
+] as const;
+
+export type ExperienceLevel = (typeof CANONICAL_EXPERIENCE_LEVELS)[number];
+
 // ─── Experience level → guideline level mapping ───────────────────────────────
 
 /**
@@ -124,12 +144,7 @@ export function mapToGuidelineLevel(experienceLevelUsed: string): string {
 
 /** Returns true when experienceLevelUsed is one of the four canonical values. */
 export function isValidExperienceLevel(level: string): boolean {
-  return [
-    "Zaawansowany",
-    "Średniozaawansowany",
-    "Początkujący",
-    "Brak aktywności fizycznej",
-  ].includes(level);
+  return (CANONICAL_EXPERIENCE_LEVELS as readonly string[]).includes(level);
 }
 
 // ─── Assignment validation ────────────────────────────────────────────────────

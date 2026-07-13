@@ -284,11 +284,88 @@ function penaliseAvoidedMuscles(ex: Exercise, sv: Survey): ScoreBreakdown {
   return { dimension: "avoidedMuscles", points: 0, reason: null };
 }
 
+/**
+ * No-Activity introductory stage fit.
+ *
+ * Only fires when the client level is "Brak aktywności fizycznej".
+ * Scores positively for exercises with low technical complexity, low joint
+ * stress, low neurological fatigue and low DOMS potential — all traits that
+ * make an exercise safe and learnable for a previously inactive person.
+ * Penalises and warns for exercises that are unsuitable at this stage.
+ *
+ * Points (only active for "Brak aktywności fizycznej" clients):
+ *   jointStress    "Niskie" → +6  |  "Wysokie" → −8  + warn
+ *   learningDiff   ≤ 2     → +6  |  ≥ 4       → −8  + warn
+ *   neuroFatigue   ≤ 2     → +4  |  ≥ 4       → −6  + warn
+ *   domsPotential  ≤ 2     → +3  |  ≥ 4       → −5  + warn
+ *
+ * MAX_RAW_SCORE is intentionally not increased by the +19 ceiling — the
+ * score formula's Math.min(100, …) cap handles any over-shot naturally,
+ * and non-No-Activity clients always return 0 from this dimension.
+ */
+function scoreNoActivityFit(ex: Exercise, sv: Survey): ScoreBreakdown {
+  if (norm(sv.experienceLevel ?? "") !== "brak aktywności fizycznej") {
+    return { dimension: "noActivityFit", points: 0, reason: null };
+  }
+
+  let points = 0;
+  const warnings: string[] = [];
+
+  // Joint stress
+  if (ex.jointStress === "Niskie") {
+    points += 6;
+  } else if (ex.jointStress === "Wysokie") {
+    points -= 8;
+    warnings.push("wysokie obciążenie stawów");
+  }
+
+  // Learning difficulty (numeric 1–5; lower = easier to learn)
+  const ld = ex.learningDifficulty;
+  if (ld != null) {
+    if (ld <= 2)       { points += 6; }
+    else if (ld >= 4)  { points -= 8; warnings.push("wysoka trudność techniczna"); }
+  }
+
+  // Neurological fatigue (numeric 1–5)
+  const nf = ex.neurologicalFatigue;
+  if (nf != null) {
+    if (nf <= 2)       { points += 4; }
+    else if (nf >= 4)  { points -= 6; warnings.push("duże zmęczenie układu nerwowego"); }
+  }
+
+  // DOMS potential (numeric 1–5)
+  const dp = ex.domsPotential;
+  if (dp != null) {
+    if (dp <= 2)       { points += 3; }
+    else if (dp >= 4)  { points -= 5; warnings.push("wysokie ryzyko silnych zakwasów"); }
+  }
+
+  if (warnings.length > 0) {
+    return {
+      dimension: "noActivityFit",
+      points,
+      reason: `Ćwiczenie nie jest optymalne dla etapu wprowadzającego (${warnings.join(", ")}).`,
+    };
+  }
+  if (points > 0) {
+    return {
+      dimension: "noActivityFit",
+      points,
+      reason: "Odpowiednie parametry dla etapu wprowadzającego",
+    };
+  }
+  return { dimension: "noActivityFit", points, reason: null };
+}
+
 // ─── Main public function ─────────────────────────────────────────────────────
 
 /**
  * Maximum achievable raw score when all positive dimensions fire.
  * Update when adding new positive-scoring dimensions.
+ *
+ * Note: scoreNoActivityFit can add up to +19 for "Brak aktywności fizycznej"
+ * clients but contributes 0 for all other levels, so it is excluded from
+ * MAX_RAW_SCORE — the Math.min(100, …) cap handles any overshoot naturally.
  */
 const MAX_RAW_SCORE =
   25 + // experienceLevel
@@ -315,6 +392,7 @@ export function scoreExercise(exercise: Exercise, survey: Survey): ExerciseScore
     scorePriorityMuscles(exercise, survey),
     scoreExercisePriority(exercise),
     scoreDifficultyMatch(exercise, survey),
+    scoreNoActivityFit(exercise, survey),
     penaliseAvoidedMuscles(exercise, survey),
   ];
 
