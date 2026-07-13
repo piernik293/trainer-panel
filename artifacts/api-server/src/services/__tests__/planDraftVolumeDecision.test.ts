@@ -267,6 +267,46 @@ describe("getPriorityOrder", () => {
     const order = getPriorityOrder(11, ["Barki", "Plecy", "Biceps", "Triceps"], TARGETS);
     expect(order).toBe(3); // only first 3 count
   });
+
+  // ── Gap 3 test cases ─────────────────────────────────────────────────────────
+
+  it("duplicate group at P1 and P2 — first occurrence wins (P1)", () => {
+    // "Klatka piersiowa" appears twice; chest (id=8) should receive P1 from first match
+    const order = getPriorityOrder(8, ["Klatka piersiowa", "Klatka piersiowa", "Barki"], TARGETS);
+    expect(order).toBe(1);
+  });
+
+  it("unknown group in priority list — unmatched target returns null", () => {
+    // "Nieznana partia" matches no broadCategory or name → chest (id=8) not matched
+    const order = getPriorityOrder(8, ["Nieznana partia"], TARGETS);
+    expect(order).toBeNull();
+  });
+
+  it("Triceps (broadCategory of id=7) does not accidentally match Łydki (id=3)", () => {
+    // "Mięsień trójgłowy ramienia" (Triceps) and "Mięsień trójgłowy łydki" (Łydki) share
+    // the prefix "trójgłowy" in their names, but have distinct broadCategories.
+    // Querying by broadCategory "Triceps" must resolve only id=7.
+    const ids = matchMuscleGroupToTargetIds("Triceps", TARGETS);
+    expect(ids).toContain(7);
+    expect(ids).not.toContain(3);
+    // Reciprocal: querying "Łydki" must resolve only id=3
+    const idsLydki = matchMuscleGroupToTargetIds("Łydki", TARGETS);
+    expect(idsLydki).toContain(3);
+    expect(idsLydki).not.toContain(7);
+  });
+
+  it("matching is case-insensitive — lowercase 'barki' resolves id=6", () => {
+    const ids = matchMuscleGroupToTargetIds("barki", TARGETS);
+    expect(ids).toContain(6);
+  });
+
+  it("matching is NOT diacritic-normalised — stripped ASCII does not match Polish name", () => {
+    // "Miesnie naramienne" lacks diacritics (ę→e, ś→s); the engine does not strip accents,
+    // so this returns an empty array. This is a known limitation: survey entries that drop
+    // Polish diacritics will silently produce no priority assignment.
+    const ids = matchMuscleGroupToTargetIds("Miesnie naramienne", TARGETS);
+    expect(ids).toHaveLength(0);
+  });
 });
 
 // ─── Availability classification ──────────────────────────────────────────────
