@@ -39,9 +39,24 @@ export const EQUIPMENT_OPTIONS = [
 export const TRAINING_LOCATION_OPTIONS = [
   "Siłownia",
   "Dom",
-  "Siłownia plenerowa",
   "Plener",
 ] as const;
+
+/**
+ * Maps canonical stored location values to their user-facing display labels.
+ *
+ * The database and API always use the canonical key ("Plener").
+ * The trainer always sees the display label ("Siłownia plenerowa").
+ * Use this map everywhere a location label is shown in the UI.
+ */
+export const LOCATION_DISPLAY_LABELS: Record<string, string> = {
+  Plener: "Siłownia plenerowa",
+};
+
+/** Return the display label for a stored location value. Falls back to the value itself. */
+export function getLocationDisplayLabel(value: string): string {
+  return LOCATION_DISPLAY_LABELS[value] ?? value;
+}
 
 export const DIFFICULTY_LEVEL_OPTIONS = [
   "Początkujący",

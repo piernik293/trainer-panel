@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Pencil, Ban, RotateCcw, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { EXECUTION_LABELS } from "@/lib/exercise-constants";
+import { EXECUTION_LABELS, getLocationDisplayLabel } from "@/lib/exercise-constants";
 
 // ─── DetailBlock ──────────────────────────────────────────────────────────────
 
@@ -191,7 +191,7 @@ export default function ExerciseDetail() {
         />
         <DetailBlock
           label="Miejsce treningu"
-          value={exercise.trainingLocation.length > 0 ? exercise.trainingLocation.join(", ") : undefined}
+          value={exercise.trainingLocation.length > 0 ? exercise.trainingLocation.map(getLocationDisplayLabel).join(", ") : undefined}
         />
       </div>
 

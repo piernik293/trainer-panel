@@ -15,6 +15,8 @@ import {
   TRAINING_LOCATION_OPTIONS,
   EXERCISE_TYPE_OPTIONS,
   MOVEMENT_PATTERN_OPTIONS,
+  LOCATION_DISPLAY_LABELS,
+  getLocationDisplayLabel,
 } from "@/lib/exercise-constants";
 
 export default function ExerciseList() {
@@ -153,7 +155,9 @@ export default function ExerciseList() {
               <SelectContent>
                 <SelectItem value="all">Wszystkie miejsca</SelectItem>
                 {TRAINING_LOCATION_OPTIONS.map((l) => (
-                  <SelectItem key={l} value={l}>{l}</SelectItem>
+                  <SelectItem key={l} value={l}>
+                    {LOCATION_DISPLAY_LABELS[l] ?? l}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -265,7 +269,9 @@ export default function ExerciseList() {
                       </TableCell>
                       <TableCell className="text-sm">{exercise.difficultyLevel || "-"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {exercise.trainingLocation.length > 0 ? exercise.trainingLocation.join(", ") : "-"}
+                        {exercise.trainingLocation.length > 0
+                          ? exercise.trainingLocation.map(getLocationDisplayLabel).join(", ")
+                          : "-"}
                       </TableCell>
                       <TableCell>
                         <Badge

@@ -60,6 +60,20 @@ function norm(s: string): string {
 }
 
 /**
+ * Map location alias values to the canonical stored form used in exercises.
+ * Client surveys may store "Siłownia plenerowa" while exercises use the
+ * canonical value "Plener".  Normalising both sides before comparison ensures
+ * the recommendation engine scores the match correctly.
+ */
+const LOCATION_CANONICAL: Record<string, string> = {
+  "siłownia plenerowa": "plener",
+};
+function canonicalLocation(s: string): string {
+  const n = norm(s);
+  return LOCATION_CANONICAL[n] ?? n;
+}
+
+/**
  * Loose equipment match: "Sztanga olimpijska" should match client equipment
  * entry "Sztanga". Checks for substring inclusion in both directions.
  */
@@ -135,7 +149,7 @@ function scoreTrainingLocation(ex: Exercise, sv: Survey): ScoreBreakdown {
   const clientLoc = sv.trainingLocation?.trim();
   if (!clientLoc) return { dimension: "trainingLocation", points: 0, reason: null };
   const locations = ex.trainingLocation ?? [];
-  if (locations.some((l) => norm(l) === norm(clientLoc))) {
+  if (locations.some((l) => canonicalLocation(l) === canonicalLocation(clientLoc))) {
     return {
       dimension: "trainingLocation",
       points: 20,

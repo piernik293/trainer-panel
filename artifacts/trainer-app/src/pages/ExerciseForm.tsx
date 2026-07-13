@@ -37,6 +37,7 @@ import {
   TRAINING_GOAL_OPTIONS,
   SUITABLE_EXPERIENCE_LEVEL_OPTIONS,
   RATING_OPTIONS,
+  LOCATION_DISPLAY_LABELS,
 } from "@/lib/exercise-constants";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
@@ -124,12 +125,15 @@ function ToggleGroupField({
   value,
   onChange,
   hint,
+  labelMap,
 }: {
   label: string;
   options: readonly string[];
   value: string[];
   onChange: (next: string[]) => void;
   hint?: string;
+  /** Optional map from stored value → display label. Falls back to the stored value. */
+  labelMap?: Record<string, string>;
 }) {
   const toggle = (option: string) => {
     onChange(value.includes(option) ? value.filter((v) => v !== option) : [...value, option]);
@@ -146,7 +150,7 @@ function ToggleGroupField({
             className="flex items-center gap-2 text-sm border border-border/50 rounded-md px-3 py-2 cursor-pointer hover:bg-muted/30 transition-colors"
           >
             <Checkbox checked={value.includes(option)} onCheckedChange={() => toggle(option)} />
-            {option}
+            {labelMap?.[option] ?? option}
           </label>
         ))}
       </div>
@@ -389,6 +393,7 @@ function ExerciseFormBody({
                   options={TRAINING_LOCATION_OPTIONS}
                   value={field.value}
                   onChange={field.onChange}
+                  labelMap={LOCATION_DISPLAY_LABELS}
                 />
               )}
             />

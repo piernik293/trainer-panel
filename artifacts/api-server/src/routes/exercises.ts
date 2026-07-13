@@ -306,7 +306,23 @@ const VALID_EQUIPMENT = new Set([
   "Poręcze", "Ławka", "Gumy oporowe", "TRX", "Masa własnego ciała",
   "Piłka", "Brak sprzętu", "Inny",
 ]);
-const VALID_LOCATION = new Set(["Siłownia", "Dom", "Siłownia plenerowa", "Plener"]);
+const VALID_LOCATION = new Set(["Siłownia", "Dom", "Plener"]);
+
+/**
+ * Normalize legacy / alias location values in an import row before validation
+ * and insertion.  "Siłownia plenerowa" is silently mapped to the canonical
+ * stored value "Plener" so bulk-import files created before the consolidation
+ * continue to work without modification.
+ */
+function normalizeImportLocations<T extends { trainingLocation?: string[] }>(row: T): T {
+  if (!Array.isArray(row.trainingLocation)) return row;
+  return {
+    ...row,
+    trainingLocation: row.trainingLocation.map((l) =>
+      l?.trim() === "Siłownia plenerowa" ? "Plener" : l,
+    ),
+  };
+}
 
 type ImportRowInput = {
   name?: string;
@@ -459,7 +475,7 @@ router.post("/exercises/import/preview", async (req, res): Promise<void> => {
   let validCount = 0;
 
   for (let i = 0; i < rows.length; i++) {
-    const row = rows[i] as ImportRowInput;
+    const row = normalizeImportLocations(rows[i] as ImportRowInput);
     const rowErrors = validateImportRow(row, i);
     if (rowErrors.length > 0) {
       errors.push({ rowIndex: i, exerciseName: row.name, errors: rowErrors });
@@ -528,7 +544,7 @@ router.post("/exercises/import", async (req, res): Promise<void> => {
   const preErrors: Array<{ rowIndex: number; exerciseName?: string; errors: string[] }> = [];
 
   for (let i = 0; i < rows.length; i++) {
-    const row = rows[i] as ImportRowFull;
+    const row = normalizeImportLocations(rows[i] as ImportRowFull);
     const rowErrors = validateImportRow(row, i);
     if (rowErrors.length > 0) {
       if (skipInvalidRows) continue; // silently drop

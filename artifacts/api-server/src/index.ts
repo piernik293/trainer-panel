@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { maybeRunSeed } from "./seeds/volumeGuidelines";
+import { normalizeExerciseLocations } from "./seeds/normalizeLocations";
 
 const rawPort = process.env["PORT"];
 
@@ -22,6 +23,12 @@ async function startServer() {
     logger.info("Volume guidelines seed check complete");
   } catch (err) {
     logger.warn({ err }, "Seed check failed (non-fatal, will retry next restart)");
+  }
+
+  try {
+    await normalizeExerciseLocations();
+  } catch (err) {
+    logger.warn({ err }, "Exercise location normalization failed (non-fatal)");
   }
 
   app.listen(port, (err) => {
