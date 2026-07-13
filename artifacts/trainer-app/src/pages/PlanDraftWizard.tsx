@@ -71,6 +71,8 @@ import {
   RotateCcw,
   Loader2,
 } from "lucide-react";
+import Step4Exercises from "./Step4Exercises";
+import type { ExerciseDraftByDay } from "@/lib/exerciseDraftHelpers";
 
 // ─── Source badge ─────────────────────────────────────────────────────────────
 
@@ -162,13 +164,14 @@ const STEPS = [
   { label: "Podgląd", icon: Sparkles, locked: true },
 ];
 
-function Stepper({ current }: { current: number }) {
+function Stepper({ current, exerciseStepUnlocked }: { current: number; exerciseStepUnlocked: boolean }) {
   return (
     <nav className="flex items-center gap-0">
       {STEPS.map((step, i) => {
         const isActive = i === current;
         const isDone = i < current;
-        const isLocked = step.locked && !isDone;
+        const effectiveLocked = step.locked && !(i === 3 && exerciseStepUnlocked);
+        const isLocked = effectiveLocked && !isDone;
         const Icon = step.icon;
 
         return (
@@ -181,6 +184,7 @@ function Stepper({ current }: { current: number }) {
               `}
             >
               {isLocked ? <Lock size={13} /> : isDone ? <CheckCircle2 size={13} /> : <Icon size={13} />}
+
               <span className="hidden sm:inline">{step.label}</span>
               <span className="sm:hidden">{i + 1}</span>
             </div>
@@ -1174,6 +1178,7 @@ export default function PlanDraftWizard() {
   const [volumeDecisions, setVolumeDecisions] = useState<WeeklyVolumeDecisionResponseType | null>(null);
   const [volumeOverrides, setVolumeOverrides] = useState<Record<number, number>>({});
   const [distributionResult, setDistributionResult] = useState<WeeklyVolumeDistributionResponseType | null>(null);
+  const [exerciseDraft, setExerciseDraft] = useState<ExerciseDraftByDay>({});
   const lastDistributionKeyRef = useRef<string | null>(null);
 
   const { data, isLoading, isError } = useGetClientPlanDraftInput(clientId);
@@ -1282,6 +1287,22 @@ export default function PlanDraftWizard() {
     });
   }, [distributionRequest, distributionMutation]);
 
+  // ── Exercise step unlock ───────────────────────────────────────────────────
+
+  /**
+   * "Ćwiczenia" unlocks when:
+   *   - volume decisions exist
+   *   - distribution result is present and has no blocking issues
+   *   - distribution is internally consistent
+   * If any earlier step becomes invalid, this returns false and the step locks again.
+   */
+  const isExerciseStepUnlocked = useMemo(() => {
+    if (!volumeDecisions || !distributionResult || !effectivePrefs) return false;
+    if (distributionResult.hasBlockingIssues) return false;
+    const consistency = checkDistributionConsistency(distributionResult, effectivePrefs.trainingDays);
+    return consistency.isConsistent;
+  }, [volumeDecisions, distributionResult, effectivePrefs]);
+
   // ── Loading state ──────────────────────────────────────────────────────────
   if (isLoading) {
     return (
@@ -1351,7 +1372,7 @@ export default function PlanDraftWizard() {
 
       {/* Stepper */}
       <div className="overflow-x-auto">
-        <Stepper current={step} />
+        <Stepper current={step} exerciseStepUnlocked={isExerciseStepUnlocked} />
       </div>
 
       {/* Step content */}
@@ -1380,7 +1401,25 @@ export default function PlanDraftWizard() {
           trainingDays={effectivePrefs.trainingDays}
         />
       )}
-      {step >= 3 && <LockedStepPlaceholder step={step} />}
+      {step === 3 && isExerciseStepUnlocked && distributionResult && (
+        <Step4Exercises
+          distributionResult={distributionResult}
+          exerciseDraft={exerciseDraft}
+          onDraftChange={setExerciseDraft}
+          clientId={clientId}
+        />
+      )}
+      {step === 3 && !isExerciseStepUnlocked && (
+        <Card className="border-dashed border-border/60 shadow-sm">
+          <CardContent className="py-10 text-center">
+            <AlertCircle className="w-8 h-8 mx-auto mb-3 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">
+              Uzupełnij lub popraw wcześniejsze etapy, aby kontynuować dobór ćwiczeń.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+      {step >= 4 && <LockedStepPlaceholder step={step} />}
 
       {/* Mutation error for volume fetch */}
       {volumeMutation.isError && (
@@ -1432,15 +1471,31 @@ export default function PlanDraftWizard() {
           )}
           {step === 2 && (
             <Button
-              disabled
-              className="gap-2 opacity-50"
-              title="Dobór ćwiczeń dostępny w kolejnym etapie"
+              onClick={() => { if (isExerciseStepUnlocked) setStep(3); }}
+              disabled={!isExerciseStepUnlocked}
+              className="gap-2"
+              title={!isExerciseStepUnlocked ? "Przelicz rozkład, aby przejść do doboru ćwiczeń" : ""}
             >
-              <Lock size={14} />
-              Kolejny etap wkrótce
+              {isExerciseStepUnlocked ? (
+                <>
+                  Dobierz ćwiczenia
+                  <ArrowRight size={14} />
+                </>
+              ) : (
+                <>
+                  <Lock size={14} />
+                  Przelicz rozkład, aby kontynuować
+                </>
+              )}
             </Button>
           )}
-          {step >= 3 && (
+          {step === 3 && (
+            <Button disabled className="gap-2 opacity-50">
+              <Lock size={14} />
+              Podgląd dostępny wkrótce
+            </Button>
+          )}
+          {step >= 4 && (
             <Button disabled className="gap-2 opacity-50">
               <Lock size={14} />
               Dostępne w kolejnych etapach
