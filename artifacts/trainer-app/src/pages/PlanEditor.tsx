@@ -36,12 +36,15 @@ import {
   useDuplicatePlanExercise,
   useReorderPlanExercises,
   useActivatePlan,
+  useVolumePreview,
   VOLUME_STATUS_LABEL,
   type PlanDay,
   type PlanExercise,
   type VolumeTargetResult,
+  type VolumePreviewResult,
   type WorkoutPlan,
 } from "@/lib/planApi";
+import { VolumePanel } from "@/components/VolumePanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -646,6 +649,7 @@ function ExerciseRow({
   total,
   onMoveUp,
   onMoveDown,
+  volumeImpact,
   dragHandleListeners,
   dragHandleAttributes,
 }: {
@@ -657,6 +661,7 @@ function ExerciseRow({
   total: number;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  volumeImpact?: Array<{ muscleName: string; effectiveSets: number }>;
   dragHandleListeners?: Record<string, unknown>;
   dragHandleAttributes?: Record<string, unknown>;
 }) {
@@ -681,6 +686,9 @@ function ExerciseRow({
       { onError: (err) => toast({ title: err.message, variant: "destructive" }) },
     );
   };
+
+  const [showImpact, setShowImpact] = useState(false);
+  const hasImpact = volumeImpact && volumeImpact.length > 0;
 
   if (editing) {
     return (
@@ -708,52 +716,89 @@ function ExerciseRow({
 
   return (
     <>
-      <div className="flex items-start gap-1.5 py-2 px-1 rounded hover:bg-muted/30 transition-colors group">
-        {/* Drag handle */}
-        <button
-          className="mt-0.5 p-0.5 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing shrink-0 touch-none"
-          aria-label="Przeciągnij aby zmienić kolejność"
-          {...(dragHandleListeners as React.HTMLAttributes<HTMLButtonElement>)}
-          {...(dragHandleAttributes as React.HTMLAttributes<HTMLButtonElement>)}
-        >
-          <GripVertical size={14} />
-        </button>
+      <div className="py-2 px-1 rounded hover:bg-muted/30 transition-colors group">
+        <div className="flex items-start gap-1.5">
+          {/* Drag handle */}
+          <button
+            className="mt-0.5 p-0.5 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing shrink-0 touch-none"
+            aria-label="Przeciągnij aby zmienić kolejność"
+            {...(dragHandleListeners as React.HTMLAttributes<HTMLButtonElement>)}
+            {...(dragHandleAttributes as React.HTMLAttributes<HTMLButtonElement>)}
+          >
+            <GripVertical size={14} />
+          </button>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <span className="font-medium text-sm">{ex.exerciseName}</span>
-          <p className="text-muted-foreground text-xs mt-0.5 leading-snug">
-            {summaryParts.join(" · ")}
-          </p>
-          {ex.notes && (
-            <p className="text-xs text-muted-foreground italic mt-0.5">🔒 {ex.notes}</p>
-          )}
-          {ex.clientInstructions && (
-            <p className="text-xs text-blue-600/70 mt-0.5">👤 {ex.clientInstructions}</p>
-          )}
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <span className="font-medium text-sm">{ex.exerciseName}</span>
+            <p className="text-muted-foreground text-xs mt-0.5 leading-snug">
+              {summaryParts.join(" · ")}
+            </p>
+            {ex.notes && (
+              <p className="text-xs text-muted-foreground italic mt-0.5">🔒 {ex.notes}</p>
+            )}
+            {ex.clientInstructions && (
+              <p className="text-xs text-blue-600/70 mt-0.5">👤 {ex.clientInstructions}</p>
+            )}
+            {/* Volume impact toggle */}
+            {volumeImpact !== undefined && (
+              <button
+                onClick={() => setShowImpact((v) => !v)}
+                className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showImpact ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+                <span>Wpływ na objętość</span>
+                {hasImpact && !showImpact && (
+                  <span className="text-muted-foreground/60">
+                    ({volumeImpact.map((m) => `${m.muscleName.split(" ").slice(-1)[0]}: ${m.effectiveSets.toFixed(1)}`).join(", ")})
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onMoveUp} disabled={index === 0} title="Przesuń wyżej">
+              <ChevronUp size={12} />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onMoveDown} disabled={index === total - 1} title="Przesuń niżej">
+              <ChevronDown size={12} />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditing(true)} title="Edytuj">
+              <Pencil size={12} />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleDuplicate} disabled={duplicateExercise.isPending} title="Duplikuj">
+              <Copy size={12} />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setMoving(true)} title="Przenieś do innego dnia">
+              <ArrowRight size={12} />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={handleDelete} title="Usuń">
+              <Trash2 size={12} />
+            </Button>
+          </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onMoveUp} disabled={index === 0} title="Przesuń wyżej">
-            <ChevronUp size={12} />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onMoveDown} disabled={index === total - 1} title="Przesuń niżej">
-            <ChevronDown size={12} />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditing(true)} title="Edytuj">
-            <Pencil size={12} />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleDuplicate} disabled={duplicateExercise.isPending} title="Duplikuj">
-            <Copy size={12} />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setMoving(true)} title="Przenieś do innego dnia">
-            <ArrowRight size={12} />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={handleDelete} title="Usuń">
-            <Trash2 size={12} />
-          </Button>
-        </div>
+        {/* Expanded volume impact */}
+        {showImpact && volumeImpact !== undefined && (
+          <div className="ml-5 mt-1.5 pl-2 border-l-2 border-primary/20 space-y-0.5">
+            {hasImpact ? (
+              volumeImpact.map((m, i) => (
+                <div key={i} className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{m.muscleName}</span>
+                  <span className="font-semibold text-foreground tabular-nums">
+                    {m.effectiveSets.toFixed(2)} eff.
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground italic">
+                Brak przypisanych partii mięśniowych.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <MoveExerciseDialog
@@ -807,6 +852,7 @@ function DaySection({
   daysTotal,
   onMoveUp,
   onMoveDown,
+  preview,
   dragHandleListeners,
   dragHandleAttributes,
 }: {
@@ -818,6 +864,7 @@ function DaySection({
   daysTotal: number;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  preview?: VolumePreviewResult;
   dragHandleListeners?: Record<string, unknown>;
   dragHandleAttributes?: Record<string, unknown>;
 }) {
@@ -1037,19 +1084,41 @@ function DaySection({
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleExerciseDragEnd}>
             <SortableContext items={day.exercises.map((e) => e.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-0.5">
-                {day.exercises.map((ex, idx) => (
-                  <SortableExerciseRow
-                    key={ex.id}
-                    ex={ex}
-                    planId={planId}
-                    dayId={day.id}
-                    allDays={allDays}
-                    index={idx}
-                    total={day.exercises.length}
-                    onMoveUp={() => handleExerciseMoveUp(idx)}
-                    onMoveDown={() => handleExerciseMoveDown(idx)}
-                  />
-                ))}
+                {day.exercises.map((ex, idx) => {
+                  // Build per-exercise volume impact from preview data.
+                  const volumeImpact: Array<{ muscleName: string; effectiveSets: number }> | undefined =
+                    preview
+                      ? (() => {
+                          const impact: Array<{ muscleName: string; effectiveSets: number }> = [];
+                          const previewDay = preview.days.find((d) => d.dayId === day.id);
+                          if (previewDay) {
+                            for (const m of previewDay.muscles) {
+                              for (const c of m.contributions) {
+                                if (c.exerciseEntryId === ex.id) {
+                                  impact.push({ muscleName: m.muscleName, effectiveSets: c.effectiveSets });
+                                }
+                              }
+                            }
+                          }
+                          return impact;
+                        })()
+                      : undefined;
+
+                  return (
+                    <SortableExerciseRow
+                      key={ex.id}
+                      ex={ex}
+                      planId={planId}
+                      dayId={day.id}
+                      allDays={allDays}
+                      index={idx}
+                      total={day.exercises.length}
+                      onMoveUp={() => handleExerciseMoveUp(idx)}
+                      onMoveDown={() => handleExerciseMoveDown(idx)}
+                      volumeImpact={volumeImpact}
+                    />
+                  );
+                })}
               </div>
             </SortableContext>
           </DndContext>
@@ -1067,7 +1136,9 @@ function DaySection({
 
 // ─── SortableDaySection ───────────────────────────────────────────────────────
 
-function SortableDaySection(props: Omit<React.ComponentProps<typeof DaySection>, "dragHandleListeners" | "dragHandleAttributes">) {
+function SortableDaySection(
+  props: Omit<React.ComponentProps<typeof DaySection>, "dragHandleListeners" | "dragHandleAttributes">,
+) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: props.day.id,
   });
@@ -1396,6 +1467,7 @@ export default function PlanEditor() {
   const [pickerDayId, setPickerDayId] = useState<number | null>(null);
 
   const { data: plan, isLoading, error } = useGetPlan(planId);
+  const { preview, isLoadingPreview } = useVolumePreview(plan);
   const updatePlan = useUpdatePlan(planId, plan?.clientId);
   const addDay = useAddPlanDay(planId, plan?.clientId);
   const addExercise = useAddPlanExercise(planId);
@@ -1655,6 +1727,7 @@ export default function PlanEditor() {
                       daysTotal={plan.days.length}
                       onMoveUp={() => handleDayMoveUp(idx)}
                       onMoveDown={() => handleDayMoveDown(idx)}
+                      preview={preview ?? undefined}
                     />
                   ))}
                 </div>
@@ -1669,25 +1742,12 @@ export default function PlanEditor() {
             {/* Plan summary */}
             <PlanSummaryCard plan={plan} />
 
-            {/* Weekly volume */}
-            <div>
-              <h2 className="text-lg font-semibold flex items-center gap-2 mb-3">
-                <BarChart3 size={18} className="text-primary" />
-                Tygodniowa objętość
-              </h2>
-              <div className="space-y-1.5">
-                {plan.volume.targets.map((target) => (
-                  <VolumeTargetCard key={target.targetId} target={target} />
-                ))}
-              </div>
-              {plan.volume.targets.length === 0 && (
-                <Card className="border-dashed border-border/50 shadow-sm">
-                  <CardContent className="py-8 text-center text-muted-foreground text-sm">
-                    Dodaj ćwiczenia, aby zobaczyć wyliczoną objętość.
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+            {/* Live volume analysis panel */}
+            <VolumePanel
+              plan={plan}
+              preview={preview}
+              isLoadingPreview={isLoadingPreview}
+            />
           </div>
         </div>
       </div>

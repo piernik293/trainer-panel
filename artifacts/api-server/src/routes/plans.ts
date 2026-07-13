@@ -22,7 +22,11 @@ import {
   volumeTargetsTable,
   volumeTargetMembersTable,
 } from "@workspace/db";
-import { calculatePlanVolume, mapToGuidelineLevel } from "../services/volumeCalculator";
+import {
+  calculatePlanVolume,
+  calculateVolumePreview,
+  mapToGuidelineLevel,
+} from "../services/volumeCalculator";
 
 const router: IRouter = Router();
 
@@ -108,6 +112,25 @@ const ReorderDaysBody = z.object({
 
 const ReorderExercisesBody = z.object({
   order: z.array(z.object({ id: z.number().int(), orderInDay: z.number().int().min(1) })),
+});
+
+const VolumePreviewExerciseSchema = z.object({
+  exerciseEntryId: z.number().int(),
+  exerciseId: z.number().int().positive(),
+  workingSets: z.number().int().min(1),
+});
+
+const VolumePreviewDaySchema = z.object({
+  dayId: z.number().int(),
+  dayName: z.string().nullable().optional(),
+  exercises: z.array(VolumePreviewExerciseSchema),
+});
+
+const VolumePreviewBody = z.object({
+  clientId: z.number().int().positive(),
+  guidelineVersionId: z.number().int().positive(),
+  experienceLevelUsed: z.string().min(1),
+  days: z.array(VolumePreviewDaySchema),
 });
 
 // ─── Helper: build the full plan response ────────────────────────────────────
@@ -198,6 +221,42 @@ async function getPlanFull(planId: number) {
     volume,
   };
 }
+
+// ─── POST /plans/volume-preview ──────────────────────────────────────────────
+// Must be registered before any /plans/:id routes.
+
+router.post("/plans/volume-preview", async (req, res): Promise<void> => {
+  const parsed = VolumePreviewBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { clientId, guidelineVersionId, experienceLevelUsed, days } = parsed.data;
+
+  const [client] = await db
+    .select({ id: clientsTable.id })
+    .from(clientsTable)
+    .where(eq(clientsTable.id, clientId));
+
+  if (!client) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
+    return;
+  }
+
+  const result = await calculateVolumePreview({
+    clientId,
+    guidelineVersionId,
+    experienceLevelUsed,
+    days: days.map((d) => ({
+      dayId: d.dayId,
+      dayName: d.dayName ?? null,
+      exercises: d.exercises,
+    })),
+  });
+
+  res.json(result);
+});
 
 // ─── GET /clients/:clientId/plans ─────────────────────────────────────────────
 

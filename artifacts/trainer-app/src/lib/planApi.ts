@@ -3,6 +3,7 @@
  * Uses native fetch against /api (same base as generated client).
  */
 
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -414,4 +415,185 @@ export function useActivatePlan(planId: number, clientId?: number) {
       apiFetch<WorkoutPlan>(`/plans/${planId}/activate`, { method: "POST", body: "{}" }),
     onSuccess: invalidate,
   });
+}
+
+// ─── Volume preview types ─────────────────────────────────────────────────────
+
+export type SessionStatus = "below_min" | "within_range" | "above_max" | "no_guideline";
+
+export const SESSION_STATUS_LABEL: Record<SessionStatus, string> = {
+  below_min: "Poniżej zalecanej objętości",
+  within_range: "W zalecanym zakresie",
+  above_max: "Powyżej zalecanej objętości na jednostkę",
+  no_guideline: "Brak wytycznych",
+};
+
+export const SESSION_STATUS_COLOR: Record<SessionStatus, string> = {
+  below_min: "bg-muted text-muted-foreground border-muted",
+  within_range: "bg-green-100 text-green-700 border-green-200",
+  above_max: "bg-amber-100 text-amber-700 border-amber-200",
+  no_guideline: "bg-muted text-muted-foreground border-muted",
+};
+
+export interface SessionContribution {
+  exerciseEntryId: number;
+  exerciseId: number;
+  exerciseName: string;
+  workingSets: number;
+  coefficient: number;
+  effectiveSets: number;
+}
+
+export interface SessionMuscleResult {
+  targetId: number;
+  muscleName: string;
+  effectiveSets: number;
+  sessionMin: number;
+  sessionMax: number;
+  sessionStatus: SessionStatus;
+  contributions: SessionContribution[];
+}
+
+export interface DayVolumeResult {
+  dayId: number;
+  dayName: string | null;
+  muscles: SessionMuscleResult[];
+}
+
+export interface WeeklyContribution {
+  exerciseEntryId: number;
+  exerciseId: number;
+  exerciseName: string;
+  dayId: number;
+  dayName: string | null;
+  workingSets: number;
+  coefficient: number;
+  effectiveSets: number;
+}
+
+export interface WeeklyMuscleResult {
+  targetId: number;
+  muscleName: string;
+  effectiveSets: number;
+  weeklyPreferredCeiling: number;
+  weeklyAbsoluteCeiling: number;
+  sessionMin: number;
+  sessionMax: number;
+  remainingToPreferred: number;
+  remainingToAbsolute: number;
+  status: VolumeStatus;
+  hasGuideline: boolean;
+  contributions: WeeklyContribution[];
+}
+
+export interface VolumePreviewWarning {
+  code: string;
+  scope: "plan" | "day" | "exercise";
+  dayId?: number | null;
+  exerciseEntryId?: number | null;
+  exerciseId?: number | null;
+  message: string;
+}
+
+export interface VolumePreviewExercise {
+  exerciseEntryId: number;
+  exerciseId: number;
+  workingSets: number;
+}
+
+export interface VolumePreviewDay {
+  dayId: number;
+  dayName: string | null;
+  exercises: VolumePreviewExercise[];
+}
+
+export interface VolumePreviewInput {
+  clientId: number;
+  guidelineVersionId: number;
+  experienceLevelUsed: string;
+  days: VolumePreviewDay[];
+}
+
+export interface VolumePreviewResult {
+  clientId: number;
+  experienceLevel: string;
+  guidelineLevel: string;
+  hasGuidelines: boolean;
+  days: DayVolumeResult[];
+  weekly: WeeklyMuscleResult[];
+  warnings: VolumePreviewWarning[];
+}
+
+// ─── Volume preview hook ──────────────────────────────────────────────────────
+
+/**
+ * Calls POST /plans/volume-preview with 400 ms debounce.
+ * Cancels stale in-flight requests via AbortController.
+ * The plan reference from TanStack Query is stable between renders and only
+ * changes when a mutation updates the cache, so the effect fires exactly when
+ * the plan content changes.
+ */
+export function useVolumePreview(plan: WorkoutPlan | undefined) {
+  const [preview, setPreview] = useState<VolumePreviewResult | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const reqIdRef = useRef(0);
+
+  useEffect(() => {
+    if (!plan) return;
+
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    timerRef.current = setTimeout(async () => {
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const myId = ++reqIdRef.current;
+      setIsLoadingPreview(true);
+
+      try {
+        const body: VolumePreviewInput = {
+          clientId: plan.clientId,
+          guidelineVersionId: plan.guidelineVersionId,
+          experienceLevelUsed: plan.experienceLevelUsed,
+          days: plan.days.map((d) => ({
+            dayId: d.id,
+            dayName: d.dayName,
+            exercises: d.exercises.map((e) => ({
+              exerciseEntryId: e.id,
+              exerciseId: e.exerciseId,
+              workingSets: e.workingSets,
+            })),
+          })),
+        };
+
+        const res = await fetch("/api/plans/volume-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+
+        if (myId !== reqIdRef.current) return; // stale — discard
+
+        if (res.ok) {
+          const data: VolumePreviewResult = await res.json();
+          if (myId !== reqIdRef.current) return; // stale after parse
+          setPreview(data);
+        }
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        // On network error keep the last valid preview visible.
+      } finally {
+        if (myId === reqIdRef.current) setIsLoadingPreview(false);
+      }
+    }, 400);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [plan]);
+
+  return { preview, isLoadingPreview };
 }
