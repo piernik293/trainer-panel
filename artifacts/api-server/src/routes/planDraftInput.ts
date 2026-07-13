@@ -1,5 +1,5 @@
 /**
- * Plan Draft Input routes — Phase 1 & 2 of the Workout Plan Draft Generator.
+ * Plan Draft Input routes — Phase 1, 2 & 3A of the Workout Plan Draft Generator.
  *
  * Phase 1:
  *   GET  /clients/:clientId/plan-draft-input
@@ -14,6 +14,12 @@
  *     Calculates recommended weekly effective volumes for all 11 volume targets
  *     based on Phase 1 inputs and wizard Step 2 preferences.
  *     Read-only — no database writes, no plan created.
+ *
+ * Phase 3A:
+ *   POST /plans/draft-distribution/preview
+ *     Recommends a split type, generates day templates, and distributes the
+ *     Phase 2 selected weekly volumes across training days.
+ *     Read-only — no database writes, no plan created.
  */
 
 import { Router, type IRouter } from "express";
@@ -24,10 +30,14 @@ import {
   VALID_EXPERIENCE_LEVELS,
   getCompatibleSplits,
   DraftVolumePreviewBody,
+  DraftVolumeDistributionBody,
   type PlanDraftInputWarningType,
 } from "@workspace/api-zod";
+import { eq } from "drizzle-orm";
+import { db, volumeTargetsTable } from "@workspace/db";
 import { loadPlanDraftInput } from "../services/planDraftInputService";
 import { calculateVolumeDecisions } from "../services/planDraftVolumeDecisionService";
+import { calculateVolumeDistribution } from "../services/planDraftVolumeDistributionService";
 
 const router: IRouter = Router();
 
@@ -148,6 +158,75 @@ router.post("/plans/draft-volume/preview", async (req, res): Promise<void> => {
   };
 
   const result = await calculateVolumeDecisions(decisionInput);
+
+  res.json(result);
+});
+
+// ─── POST /plans/draft-distribution/preview ────────────────────────────────────
+
+router.post("/plans/draft-distribution/preview", async (req, res): Promise<void> => {
+  const parsed = DraftVolumeDistributionBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { clientId, experienceLevel, trainingDays, selectedSplitType, selectedWeeklyVolumes, priorityTargetIds } = parsed.data;
+
+  // Validate experienceLevel is one of the four canonical levels
+  if (!(VALID_EXPERIENCE_LEVELS as readonly string[]).includes(experienceLevel)) {
+    res.status(400).json({
+      error: `Nieznany poziom doświadczenia: "${experienceLevel}". Oczekiwano: ${VALID_EXPERIENCE_LEVELS.join(", ")}.`,
+    });
+    return;
+  }
+
+  // Load active volume target IDs from DB to validate the request
+  const activeTargets = await db
+    .select({ id: volumeTargetsTable.id })
+    .from(volumeTargetsTable)
+    .where(eq(volumeTargetsTable.isActive, true));
+
+  const activeIds = new Set(activeTargets.map((t) => t.id));
+
+  // Reject unknown target IDs
+  const unknownIds = selectedWeeklyVolumes
+    .map((v) => v.targetId)
+    .filter((id) => !activeIds.has(id));
+  if (unknownIds.length > 0) {
+    res.status(400).json({ error: `Nieznane target ID: ${unknownIds.join(", ")}` });
+    return;
+  }
+
+  // Validate that each active target appears exactly once
+  const requestIds = selectedWeeklyVolumes.map((v) => v.targetId);
+  const duplicates = requestIds.filter((id, idx) => requestIds.indexOf(id) !== idx);
+  if (duplicates.length > 0) {
+    res.status(400).json({ error: `Zduplikowane target ID: ${[...new Set(duplicates)].join(", ")}` });
+    return;
+  }
+
+  const missingIds = [...activeIds].filter((id) => !requestIds.includes(id));
+  if (missingIds.length > 0) {
+    res.status(400).json({ error: `Brakujące target ID: ${missingIds.join(", ")}` });
+    return;
+  }
+
+  // Verify clientId exists (lightweight check)
+  const draftInput = await loadPlanDraftInput(clientId);
+  if (!draftInput) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
+    return;
+  }
+
+  const result = await calculateVolumeDistribution({
+    clientId,
+    experienceLevel,
+    trainingDays,
+    selectedSplitType,
+    selectedWeeklyVolumes,
+    priorityTargetIds,
+  });
 
   res.json(result);
 });
