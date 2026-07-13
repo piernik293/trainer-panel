@@ -106,6 +106,7 @@ export interface VolumeResult {
 export interface WorkoutPlan {
   id: number;
   clientId: number;
+  clientName: string | null;
   surveyId: number;
   guidelineVersionId: number;
   experienceLevelUsed: string;

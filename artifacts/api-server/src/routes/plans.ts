@@ -12,6 +12,7 @@ import { z } from "zod";
 import {
   db,
   surveysTable,
+  clientsTable,
   exercisesTable,
   volumeGuidelineVersionsTable,
   workoutPlansTable,
@@ -119,6 +120,13 @@ async function getPlanFull(planId: number) {
 
   if (!plan) return null;
 
+  // Fetch client name (safe fallback if client record is missing).
+  const [client] = await db
+    .select({ firstName: clientsTable.firstName, lastName: clientsTable.lastName })
+    .from(clientsTable)
+    .where(eq(clientsTable.id, plan.clientId));
+  const clientName = client ? `${client.firstName} ${client.lastName}` : null;
+
   const days = await db
     .select()
     .from(workoutPlanDaysTable)
@@ -182,6 +190,7 @@ async function getPlanFull(planId: number) {
 
   return {
     ...plan,
+    clientName,
     days: days.map((d) => ({
       ...d,
       exercises: exercisesByDay.get(d.id) ?? [],
@@ -423,26 +432,59 @@ router.patch("/plans/:id/days/reorder", async (req, res): Promise<void> => {
     return;
   }
 
-  // Two-step reorder to avoid unique-constraint conflicts (if any remain in prod):
-  // Step 1: Set all to large negative values (unique per row).
-  for (const { id } of parsed.data.order) {
-    await db
-      .update(workoutPlanDaysTable)
-      .set({ dayOrder: -id })
-      .where(and(eq(workoutPlanDaysTable.id, id), eq(workoutPlanDaysTable.planId, planId)));
-  }
-  // Step 2: Set to final desired values.
-  for (const { id, dayOrder } of parsed.data.order) {
-    await db
-      .update(workoutPlanDaysTable)
-      .set({ dayOrder })
-      .where(and(eq(workoutPlanDaysTable.id, id), eq(workoutPlanDaysTable.planId, planId)));
+  const { order } = parsed.data;
+
+  // Reject duplicate IDs.
+  const ids = order.map((o) => o.id);
+  if (new Set(ids).size !== ids.length) {
+    res.status(400).json({ error: "Zduplikowane ID dni w żądaniu." });
+    return;
   }
 
-  await db
-    .update(workoutPlansTable)
-    .set({ updatedAt: new Date() })
-    .where(eq(workoutPlansTable.id, planId));
+  // Verify all IDs belong to this plan and that ALL plan days are included
+  // (partial reorder would leave non-included days with stale values, creating gaps/dupes).
+  const existingDays = await db
+    .select({ id: workoutPlanDaysTable.id })
+    .from(workoutPlanDaysTable)
+    .where(eq(workoutPlanDaysTable.planId, planId));
+  if (existingDays.length !== ids.length) {
+    res.status(400).json({ error: "Żądanie musi zawierać wszystkie dni planu." });
+    return;
+  }
+  const existingDayIds = new Set(existingDays.map((d) => d.id));
+  if (ids.some((id) => !existingDayIds.has(id))) {
+    res.status(400).json({ error: "Niektóre ID dni nie należą do tego planu." });
+    return;
+  }
+
+  // Execute reorder inside a single transaction.
+  // Final order values are normalized to 1, 2, 3 … N by array position (ignoring
+  // client-provided dayOrder numbers) so gaps and duplicates can never persist.
+  await db.transaction(async (tx) => {
+    // Step 1: temporary negative values — avoids any ordering conflicts mid-flight.
+    for (const { id } of order) {
+      const rows = await tx
+        .update(workoutPlanDaysTable)
+        .set({ dayOrder: -id })
+        .where(and(eq(workoutPlanDaysTable.id, id), eq(workoutPlanDaysTable.planId, planId)))
+        .returning({ id: workoutPlanDaysTable.id });
+      if (rows.length !== 1) {
+        throw new Error(`Nie można zaktualizować dnia o ID ${id}.`);
+      }
+    }
+    // Step 2: normalized final values (1-based position in the request array).
+    for (let i = 0; i < order.length; i++) {
+      await tx
+        .update(workoutPlanDaysTable)
+        .set({ dayOrder: i + 1 })
+        .where(and(eq(workoutPlanDaysTable.id, order[i].id), eq(workoutPlanDaysTable.planId, planId)));
+    }
+    // Update plan's updatedAt inside the same transaction.
+    await tx
+      .update(workoutPlansTable)
+      .set({ updatedAt: new Date() })
+      .where(eq(workoutPlansTable.id, planId));
+  });
 
   const full = await getPlanFull(planId);
   res.json(full);
@@ -695,24 +737,68 @@ router.patch(
       return;
     }
 
-    // Two-step reorder to avoid potential unique-constraint issues.
-    for (const { id } of parsed.data.order) {
-      await db
-        .update(workoutPlanExercisesTable)
-        .set({ orderInDay: -id })
-        .where(and(eq(workoutPlanExercisesTable.id, id), eq(workoutPlanExercisesTable.dayId, dayId)));
-    }
-    for (const { id, orderInDay } of parsed.data.order) {
-      await db
-        .update(workoutPlanExercisesTable)
-        .set({ orderInDay })
-        .where(and(eq(workoutPlanExercisesTable.id, id), eq(workoutPlanExercisesTable.dayId, dayId)));
+    const { order } = parsed.data;
+
+    // Reject duplicate IDs.
+    const ids = order.map((o) => o.id);
+    if (new Set(ids).size !== ids.length) {
+      res.status(400).json({ error: "Zduplikowane ID ćwiczeń w żądaniu." });
+      return;
     }
 
-    await db
-      .update(workoutPlansTable)
-      .set({ updatedAt: new Date() })
-      .where(eq(workoutPlansTable.id, planId));
+    // Verify the day belongs to this plan.
+    const [day] = await db
+      .select({ id: workoutPlanDaysTable.id })
+      .from(workoutPlanDaysTable)
+      .where(and(eq(workoutPlanDaysTable.id, dayId), eq(workoutPlanDaysTable.planId, planId)));
+    if (!day) {
+      res.status(404).json({ error: "Dzień nie znaleziony w tym planie." });
+      return;
+    }
+
+    // Verify all exercise IDs belong to this day and that ALL day exercises are included
+    // (partial reorder would leave non-included exercises with stale values).
+    const existingExercises = await db
+      .select({ id: workoutPlanExercisesTable.id })
+      .from(workoutPlanExercisesTable)
+      .where(eq(workoutPlanExercisesTable.dayId, dayId));
+    if (existingExercises.length !== ids.length) {
+      res.status(400).json({ error: "Żądanie musi zawierać wszystkie ćwiczenia z danego dnia." });
+      return;
+    }
+    const existingExIds = new Set(existingExercises.map((e) => e.id));
+    if (ids.some((id) => !existingExIds.has(id))) {
+      res.status(400).json({ error: "Niektóre ID ćwiczeń nie należą do tego dnia." });
+      return;
+    }
+
+    // Execute reorder inside a single transaction.
+    // Final values normalized to 1, 2, 3 … N by array position.
+    await db.transaction(async (tx) => {
+      // Step 1: temporary negative values.
+      for (const { id } of order) {
+        const rows = await tx
+          .update(workoutPlanExercisesTable)
+          .set({ orderInDay: -id })
+          .where(and(eq(workoutPlanExercisesTable.id, id), eq(workoutPlanExercisesTable.dayId, dayId)))
+          .returning({ id: workoutPlanExercisesTable.id });
+        if (rows.length !== 1) {
+          throw new Error(`Nie można zaktualizować ćwiczenia o ID ${id}.`);
+        }
+      }
+      // Step 2: normalized final values.
+      for (let i = 0; i < order.length; i++) {
+        await tx
+          .update(workoutPlanExercisesTable)
+          .set({ orderInDay: i + 1 })
+          .where(and(eq(workoutPlanExercisesTable.id, order[i].id), eq(workoutPlanExercisesTable.dayId, dayId)));
+      }
+      // Update plan's updatedAt inside the same transaction.
+      await tx
+        .update(workoutPlansTable)
+        .set({ updatedAt: new Date() })
+        .where(eq(workoutPlansTable.id, planId));
+    });
 
     const full = await getPlanFull(planId);
     res.json(full);
@@ -904,6 +990,122 @@ router.delete(
 
 // ─── POST /plans/:id/activate ─────────────────────────────────────────────────
 
+// ─── Structured validation helper for plan activation ────────────────────────
+
+interface ActivationMissingField {
+  scope: "plan" | "day" | "exercise";
+  dayId: number | null;
+  exerciseEntryId: number | null;
+  field: string;
+  label: string;
+  message: string;
+}
+
+function buildActivationMissingFields(
+  plan: { title: string; status: string },
+  fullPlan: NonNullable<Awaited<ReturnType<typeof getPlanFull>>>,
+): ActivationMissingField[] {
+  const missing: ActivationMissingField[] = [];
+
+  // ── Plan level ─────────────────────────────────────────────────────────────
+  if (!plan.title?.trim()) {
+    missing.push({ scope: "plan", dayId: null, exerciseEntryId: null, field: "title", label: "Nazwa planu", message: "Plan musi mieć nazwę." });
+  }
+  if (fullPlan.days.length === 0) {
+    missing.push({ scope: "plan", dayId: null, exerciseEntryId: null, field: "days", label: "Dni treningowe", message: "Plan musi zawierać co najmniej jeden dzień treningowy." });
+  }
+
+  // ── Day level ──────────────────────────────────────────────────────────────
+  for (const day of fullPlan.days) {
+    if (!day.dayName?.trim()) {
+      missing.push({ scope: "day", dayId: day.id, exerciseEntryId: null, field: "dayName", label: "Nazwa dnia", message: `Dzień ${day.dayOrder} musi mieć nazwę.` });
+    }
+    if (day.exercises.length === 0) {
+      missing.push({ scope: "day", dayId: day.id, exerciseEntryId: null, field: "exercises", label: "Ćwiczenia", message: `Dzień "${day.dayName ?? `Dzień ${day.dayOrder}`}" musi zawierać co najmniej jedno ćwiczenie.` });
+    }
+
+    // ── Exercise level ─────────────────────────────────────────────────────
+    for (const ex of day.exercises) {
+      const name = ex.exerciseName;
+
+      // Working sets
+      if (!ex.workingSets || ex.workingSets < 1) {
+        missing.push({ scope: "exercise", dayId: day.id, exerciseEntryId: ex.id, field: "workingSets", label: "Serie robocze", message: `"${name}": wymagana jest co najmniej 1 seria robocza.` });
+      }
+
+      // Repetition prescription
+      if (!ex.repType) {
+        missing.push({ scope: "exercise", dayId: day.id, exerciseEntryId: ex.id, field: "repType", label: "Typ powtórzeń", message: `"${name}": wymagane jest określenie sposobu liczenia powtórzeń.` });
+      } else {
+        switch (ex.repType) {
+          case "exact":
+            if (!ex.repsExact || ex.repsExact < 1) {
+              missing.push({ scope: "exercise", dayId: day.id, exerciseEntryId: ex.id, field: "repsExact", label: "Liczba powtórzeń", message: `"${name}": wymagana jest dokładna liczba powtórzeń.` });
+            }
+            break;
+          case "range":
+            if (!ex.repRangeMin || !ex.repRangeMax) {
+              missing.push({ scope: "exercise", dayId: day.id, exerciseEntryId: ex.id, field: "repRange", label: "Zakres powtórzeń", message: `"${name}": wymagane są min. i maks. liczba powtórzeń.` });
+            } else if (ex.repRangeMin > ex.repRangeMax) {
+              missing.push({ scope: "exercise", dayId: day.id, exerciseEntryId: ex.id, field: "repRange", label: "Zakres powtórzeń", message: `"${name}": minimalna liczba powtórzeń nie może przekraczać maksymalnej.` });
+            }
+            break;
+          case "time":
+            if (!ex.repTimeSeconds || ex.repTimeSeconds < 1) {
+              missing.push({ scope: "exercise", dayId: day.id, exerciseEntryId: ex.id, field: "repTimeSeconds", label: "Czas trwania", message: `"${name}": wymagany jest czas trwania serii.` });
+            }
+            break;
+          case "distance":
+            if (!ex.repDistanceMeters || ex.repDistanceMeters < 1) {
+              missing.push({ scope: "exercise", dayId: day.id, exerciseEntryId: ex.id, field: "repDistanceMeters", label: "Dystans", message: `"${name}": wymagany jest dystans (w metrach).` });
+            }
+            break;
+          case "open":
+            if (!ex.repOpenInstruction?.trim()) {
+              missing.push({ scope: "exercise", dayId: day.id, exerciseEntryId: ex.id, field: "repOpenInstruction", label: "Instrukcja AMRAP", message: `"${name}": wymagana jest instrukcja dla otwartego typu powtórzeń.` });
+            }
+            break;
+        }
+      }
+
+      // RIR bounds (0–5)
+      if (ex.rir != null && (ex.rir < 0 || ex.rir > 5)) {
+        missing.push({ scope: "exercise", dayId: day.id, exerciseEntryId: ex.id, field: "rir", label: "RIR", message: `"${name}": RIR musi być wartością od 0 do 5.` });
+      }
+
+      // RPE bounds (1–10)
+      if (ex.rpe != null && ex.rpe !== "") {
+        const rpeVal = parseFloat(ex.rpe);
+        if (isNaN(rpeVal) || rpeVal < 1 || rpeVal > 10) {
+          missing.push({ scope: "exercise", dayId: day.id, exerciseEntryId: ex.id, field: "rpe", label: "RPE", message: `"${name}": RPE musi być wartością od 1 do 10.` });
+        }
+      }
+
+      // Rest time non-negative
+      if (ex.restSeconds != null && ex.restSeconds < 0) {
+        missing.push({ scope: "exercise", dayId: day.id, exerciseEntryId: ex.id, field: "restSeconds", label: "Czas odpoczynku", message: `"${name}": czas odpoczynku nie może być ujemny.` });
+      }
+    }
+  }
+
+  // ── Muscle assignments from volume calculation ──────────────────────────────
+  for (const unassigned of fullPlan.volume.exercisesWithoutAssignments) {
+    const dayWithEx = fullPlan.days.find((d) =>
+      d.exercises.some((e) => e.id === unassigned.planExerciseId),
+    );
+    missing.push({
+      scope: "exercise",
+      dayId: dayWithEx?.id ?? null,
+      exerciseEntryId: unassigned.planExerciseId,
+      field: "muscleAssignments",
+      label: "Przypisania mięśni",
+      message: `"${unassigned.exerciseName}": brak przypisanych mięśni do obliczeń objętości.`,
+    });
+  }
+
+  return missing;
+}
+
 router.post("/plans/:id/activate", async (req, res): Promise<void> => {
   const planId = Number(req.params.id);
   if (!Number.isFinite(planId)) {
@@ -926,47 +1128,26 @@ router.post("/plans/:id/activate", async (req, res): Promise<void> => {
     return;
   }
 
-  // Verify survey snapshot still exists (FK should protect this, but verify explicitly).
-  const [survey] = await db
-    .select({ id: surveysTable.id })
-    .from(surveysTable)
-    .where(eq(surveysTable.id, plan.surveyId));
-
-  if (!survey) {
-    res.status(422).json({ error: "Wywiad treningowy powiązany z planem został usunięty" });
+  // Load the full plan once (includes days, exercises, and pre-calculated volume).
+  const fullPlan = await getPlanFull(planId);
+  if (!fullPlan) {
+    res.status(404).json({ error: "Plan nie znaleziony" });
     return;
   }
 
-  // Verify guideline version exists.
-  const [version] = await db
-    .select({ id: volumeGuidelineVersionsTable.id })
-    .from(volumeGuidelineVersionsTable)
-    .where(eq(volumeGuidelineVersionsTable.id, plan.guidelineVersionId));
-
-  if (!version) {
-    res.status(422).json({ error: "Wersja wytycznych objętości nie istnieje" });
-    return;
-  }
-
-  // Server-side volume validation.
-  const volumeResult = await calculatePlanVolume(
-    planId,
-    plan.guidelineVersionId,
-    plan.experienceLevelUsed,
-  );
-
-  // Block if any exercise has zero muscle assignments.
-  if (volumeResult.exercisesWithoutAssignments.length > 0) {
-    const names = volumeResult.exercisesWithoutAssignments.map((e) => e.exerciseName).join(", ");
+  // ── Structured validation ─────────────────────────────────────────────────
+  const missingFields = buildActivationMissingFields(plan, fullPlan);
+  if (missingFields.length > 0) {
     res.status(422).json({
-      error: `Aktywacja zablokowana: następujące ćwiczenia nie mają przypisanych mięśni: ${names}`,
-      exercisesWithoutAssignments: volumeResult.exercisesWithoutAssignments,
+      error: "PLAN_ACTIVATION_VALIDATION_FAILED",
+      message: "Nie można aktywować niekompletnego planu.",
+      missingFields,
     });
     return;
   }
 
-  // Block if any approved target exceeds weeklyAbsoluteCeiling.
-  const violations = volumeResult.targets.filter((t) => t.status === "above_absolute");
+  // ── Volume ceiling check ──────────────────────────────────────────────────
+  const violations = fullPlan.volume.targets.filter((t) => t.status === "above_absolute");
   if (violations.length > 0) {
     res.status(422).json({
       error: "Aktywacja zablokowana: przekroczono absolutny limit tygodniowy",

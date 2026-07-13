@@ -1228,6 +1228,12 @@ function PlanSummaryCard({ plan }: { plan: WorkoutPlan }) {
             {new Date(plan.updatedAt).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" })}
           </span>
         </div>
+        <div className="flex justify-between gap-2">
+          <span className="text-muted-foreground shrink-0">Przypisany klient</span>
+          <span className="font-medium text-right text-xs">
+            {plan.clientName ?? "Nie znaleziono klienta"}
+          </span>
+        </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Poziom doświadczenia</span>
           <span className="text-xs font-medium text-right">{plan.experienceLevelUsed}</span>
@@ -1430,11 +1436,23 @@ export default function PlanEditor() {
       onSuccess: () => toast({ title: "Plan aktywowany!" }),
       onError: (err) => {
         const detail = (err as any)?.data;
-        let msg = err.message;
-        if (detail?.violations) {
-          msg += "\n" + detail.violations.map((v: any) => `• ${v.targetName}: ${v.weeklyEffectiveSets} serii (limit: ${v.weeklyAbsoluteCeiling})`).join("\n");
+        if (detail?.error === "PLAN_ACTIVATION_VALIDATION_FAILED" && Array.isArray(detail?.missingFields) && detail.missingFields.length > 0) {
+          const items = (detail.missingFields as Array<{ label: string; message: string }>)
+            .map((f) => `• ${f.label}: ${f.message}`)
+            .join("\n");
+          toast({
+            title: "Nie można aktywować niekompletnego planu",
+            description: items,
+            variant: "destructive",
+          });
+        } else if (detail?.violations) {
+          const items = (detail.violations as Array<{ targetName: string; weeklyEffectiveSets: number; weeklyAbsoluteCeiling: number }>)
+            .map((v) => `• ${v.targetName}: ${v.weeklyEffectiveSets} serii (limit: ${v.weeklyAbsoluteCeiling})`)
+            .join("\n");
+          toast({ title: err.message, description: items, variant: "destructive" });
+        } else {
+          toast({ title: err.message, variant: "destructive" });
         }
-        toast({ title: msg, variant: "destructive" });
       },
     });
   };
