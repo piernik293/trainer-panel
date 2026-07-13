@@ -48,6 +48,34 @@ function slugify(name: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
+/**
+ * Normalises an exercise name for duplicate comparison ONLY.
+ * The original name is always preserved in the database.
+ *
+ * Normalises:
+ *   - leading / trailing whitespace
+ *   - repeated internal whitespace → single space
+ *   - letter casing → lowercase
+ *   - Polish diacritics (ą→a, ę→e, ó→o, ś→s, ź→z, ć→c, ń→n, ż→z)
+ *     ł is not decomposable via NFD and is mapped explicitly (ł→l)
+ *   - common punctuation variants (en/em dash→hyphen, curly quotes→straight)
+ *
+ * Does NOT merge semantically different names:
+ *   "Wyciskanie hantli siedząc" ≠ "Wyciskanie hantli stojąc" after normalisation.
+ */
+function normalizeForComparison(name: string): string {
+  return name
+    .trim()
+    .replace(/\s+/g, " ")              // collapse repeated spaces
+    .toLowerCase()
+    .replace(/ł/g, "l")               // ł does not decompose in NFD
+    .normalize("NFD")                  // decompose ą ę ó ś ź ć ń ż into base + combining
+    .replace(/[\u0300-\u036f]/g, "")  // strip combining diacritical marks
+    .replace(/[\u2013\u2014]/g, "-")  // en dash / em dash → hyphen
+    .replace(/[\u2018\u2019\u0060]/g, "'")  // curly apostrophes / backtick → straight
+    .replace(/[\u201c\u201d\u201e]/g, '"'); // curly / low-9 quotes → straight
+}
+
 async function generateUniqueSlug(name: string, excludeId?: number): Promise<string> {
   const base = slugify(name) || "cwiczenie";
   let candidate = base;
@@ -414,18 +442,21 @@ router.post("/exercises/import/preview", async (req, res): Promise<void> => {
 
   // Resolve existing exercises once for duplicate + relation target checks.
   const existing = await db.select({ id: exercisesTable.id, name: exercisesTable.name }).from(exercisesTable);
-  const nameMap = new Map(existing.map((e) => [e.name.toLowerCase(), e.id]));
+  const nameMap = new Map(existing.map((e) => [normalizeForComparison(e.name), e.id]));
   // Also add names from this batch so cross-row relation targets are visible.
   for (const row of rows) {
     const name = (row as ImportRowInput).name?.trim();
-    if (name) nameMap.set(name.toLowerCase(), nameMap.get(name.toLowerCase()) ?? -1);
+    if (name) {
+      const key = normalizeForComparison(name);
+      nameMap.set(key, nameMap.get(key) ?? -1);
+    }
   }
 
   // Duplicate detection
   for (let i = 0; i < rows.length; i++) {
     if (errors.some((e) => e.rowIndex === i)) continue;
     const name = (rows[i] as ImportRowInput).name?.trim() ?? "";
-    const existingId = existing.find((e) => e.name.toLowerCase() === name.toLowerCase())?.id;
+    const existingId = existing.find((e) => normalizeForComparison(e.name) === normalizeForComparison(name))?.id;
     if (existingId) duplicates.push({ rowIndex: i, exerciseName: name, existingId });
   }
 
@@ -438,7 +469,7 @@ router.post("/exercises/import/preview", async (req, res): Promise<void> => {
 
     const checkRel = (label: string, rels: RelationInput[] | undefined) => {
       for (const rel of rels ?? []) {
-        if (!nameMap.has(rel.exerciseName.toLowerCase().trim())) {
+        if (!nameMap.has(normalizeForComparison(rel.exerciseName))) {
           relErrors.push(`${label} target nie istnieje: "${rel.exerciseName}"`);
         }
       }
@@ -495,7 +526,7 @@ router.post("/exercises/import", async (req, res): Promise<void> => {
       const allExisting = await tx
         .select({ id: exercisesTable.id, name: exercisesTable.name })
         .from(exercisesTable);
-      const globalNameToId = new Map(allExisting.map((e) => [e.name.toLowerCase(), e.id]));
+      const globalNameToId = new Map(allExisting.map((e) => [normalizeForComparison(e.name), e.id]));
 
       let imported = 0, updated = 0, skipped = 0;
       // exerciseId → row (all exercises being processed, including skipped duplicates).
@@ -506,7 +537,7 @@ router.post("/exercises/import", async (req, res): Promise<void> => {
       // ── Step 1: Exercises ────────────────────────────────────────────────────
       for (const row of validRows) {
         const name = (row.name ?? "").trim();
-        const existingId = globalNameToId.get(name.toLowerCase());
+        const existingId = globalNameToId.get(normalizeForComparison(name));
 
         if (existingId !== undefined && duplicateStrategy === "skip") {
           skipped++;
@@ -546,7 +577,7 @@ router.post("/exercises/import", async (req, res): Promise<void> => {
             );
           }
           imported++;
-          globalNameToId.set(name.toLowerCase(), newId);
+          globalNameToId.set(normalizeForComparison(name), newId);
           processedExercises.set(newId, row);
           modifiedIds.push(newId);
         }
@@ -600,7 +631,7 @@ router.post("/exercises/import", async (req, res): Promise<void> => {
         // Step 4: Substitutions
         for (let si = 0; si < (row.substitutions?.length ?? 0); si++) {
           const sub = row.substitutions![si];
-          const targetId = globalNameToId.get(sub.exerciseName.toLowerCase().trim());
+          const targetId = globalNameToId.get(normalizeForComparison(sub.exerciseName));
           if (targetId === undefined) {
             throw Object.assign(
               new Error(`Substitution target "${sub.exerciseName}" not found for "${rowName}"`),
@@ -616,7 +647,7 @@ router.post("/exercises/import", async (req, res): Promise<void> => {
         // Step 5: Progressions
         for (let pi = 0; pi < (row.progressions?.length ?? 0); pi++) {
           const prog = row.progressions![pi];
-          const targetId = globalNameToId.get(prog.exerciseName.toLowerCase().trim());
+          const targetId = globalNameToId.get(normalizeForComparison(prog.exerciseName));
           if (targetId === undefined) {
             throw Object.assign(
               new Error(`Progression target "${prog.exerciseName}" not found for "${rowName}"`),
@@ -632,7 +663,7 @@ router.post("/exercises/import", async (req, res): Promise<void> => {
         // Step 6: Regressions
         for (let ri = 0; ri < (row.regressions?.length ?? 0); ri++) {
           const reg = row.regressions![ri];
-          const targetId = globalNameToId.get(reg.exerciseName.toLowerCase().trim());
+          const targetId = globalNameToId.get(normalizeForComparison(reg.exerciseName));
           if (targetId === undefined) {
             throw Object.assign(
               new Error(`Regression target "${reg.exerciseName}" not found for "${rowName}"`),
