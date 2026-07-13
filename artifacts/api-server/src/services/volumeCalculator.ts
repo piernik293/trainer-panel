@@ -121,6 +121,53 @@ export function isValidExperienceLevel(level: string): boolean {
   ].includes(level);
 }
 
+// ─── Assignment validation ────────────────────────────────────────────────────
+
+/** Raw row as returned by the exercise_muscle_assignments DB query. */
+export interface RawAssignmentRow {
+  exerciseId: number;
+  specificMuscleId: number;
+  coefficient: number;
+}
+
+/** Result of validateAssignments: valid map + rows that failed validation. */
+export interface ValidatedAssignments {
+  /** exerciseId → (specificMuscleId → coefficient) for valid assignments only. */
+  assignments: Map<number, Map<number, number>>;
+  /** Rows that failed coefficient validation (NOT included in assignments). */
+  invalidRows: RawAssignmentRow[];
+}
+
+/**
+ * Partition raw assignment rows into a valid assignments map and a list of
+ * invalid rows.
+ *
+ * A coefficient is valid iff it is a finite number in the range (0, 1].
+ * Invalid coefficients are never silently substituted with 0 or 1 — they are
+ * returned as invalidRows so the caller can emit INVALID_MUSCLE_COEFFICIENT
+ * warnings.
+ *
+ * Pure function — no DB access, safe to unit-test in isolation.
+ */
+export function validateAssignments(rows: RawAssignmentRow[]): ValidatedAssignments {
+  const assignments = new Map<number, Map<number, number>>();
+  const invalidRows: RawAssignmentRow[] = [];
+
+  for (const row of rows) {
+    const coeff = Number(row.coefficient);
+    if (!isFinite(coeff) || coeff <= 0 || coeff > 1) {
+      invalidRows.push(row);
+      continue;
+    }
+    if (!assignments.has(row.exerciseId)) {
+      assignments.set(row.exerciseId, new Map());
+    }
+    assignments.get(row.exerciseId)!.set(row.specificMuscleId, coeff);
+  }
+
+  return { assignments, invalidRows };
+}
+
 // ─── Approved target order (for consistent display) ──────────────────────────
 
 const TARGET_ORDER: string[] = [
@@ -627,6 +674,33 @@ export async function calculateVolumePreview(
   const guidelineLevel = mapToGuidelineLevel(experienceLevelUsed);
   const warnings: VolumePreviewWarning[] = [];
 
+  // 0. Input validation — warn about structurally invalid entries.
+  //    (The route's Zod schema normally prevents these; these checks guard
+  //    against direct function calls with out-of-range data.)
+  for (const day of days) {
+    for (const ex of day.exercises) {
+      if (!ex.exerciseId || ex.exerciseId <= 0) {
+        warnings.push({
+          code: "EXERCISE_ENTRY_WITHOUT_EXERCISE_ID",
+          scope: "exercise",
+          dayId: day.dayId,
+          exerciseEntryId: ex.exerciseEntryId,
+          exerciseId: null,
+          message: `Wpis ćwiczenia (entryId=${ex.exerciseEntryId}) nie zawiera prawidłowego ID ćwiczenia i zostanie pominięty.`,
+        });
+      } else if (!Number.isInteger(ex.workingSets) || ex.workingSets <= 0) {
+        warnings.push({
+          code: "INVALID_WORKING_SETS",
+          scope: "exercise",
+          dayId: day.dayId,
+          exerciseEntryId: ex.exerciseEntryId,
+          exerciseId: ex.exerciseId,
+          message: `Ćwiczenie ID ${ex.exerciseId} ma nieprawidłową liczbę serii roboczych (${ex.workingSets}) — musi być dodatnią liczbą całkowitą.`,
+        });
+      }
+    }
+  }
+
   // 1. Collect unique exercise IDs across all days.
   const allEntries = days.flatMap((d) => d.exercises);
   const uniqueExerciseIds = [...new Set(allEntries.map((e) => e.exerciseId))];
@@ -678,9 +752,32 @@ export async function calculateVolumePreview(
     }
   }
 
-  // 3. Load muscle assignments for known exercise IDs.
+  // 3. Load muscle assignments with coefficient validation.
+  //    Uses validateAssignments (pure) so INVALID_MUSCLE_COEFFICIENT warnings
+  //    can be emitted without silently substituting 0 or 1.
   const validExerciseIds = exerciseRecords.map((e) => e.id);
-  const exerciseAssignments = await loadExerciseAssignments(validExerciseIds);
+  const rawAssignmentRows: RawAssignmentRow[] =
+    validExerciseIds.length > 0
+      ? await db
+          .select({
+            exerciseId: exerciseMuscleAssignmentsTable.exerciseId,
+            specificMuscleId: exerciseMuscleAssignmentsTable.specificMuscleId,
+            coefficient: exerciseMuscleAssignmentsTable.coefficient,
+          })
+          .from(exerciseMuscleAssignmentsTable)
+          .where(inArray(exerciseMuscleAssignmentsTable.exerciseId, validExerciseIds))
+      : [];
+
+  const { assignments: exerciseAssignments, invalidRows } = validateAssignments(rawAssignmentRows);
+
+  for (const row of invalidRows) {
+    warnings.push({
+      code: "INVALID_MUSCLE_COEFFICIENT",
+      scope: "exercise",
+      exerciseId: row.exerciseId,
+      message: `Ćwiczenie ID ${row.exerciseId} ma nieprawidłowy współczynnik mięśniowy (${row.coefficient}) dla mięśnia ID ${row.specificMuscleId} — musi być w zakresie (0, 1]. Przypisanie zostanie pominięte.`,
+    });
+  }
 
   // 4. Warn about exercises with no muscle assignments at all.
   for (const day of days) {
@@ -739,6 +836,29 @@ export async function calculateVolumePreview(
           exerciseId: ex.exerciseId,
           message: `Ćwiczenie "${exerciseNameMap.get(ex.exerciseId)}" ma przypisane mięśnie, lecz żadne z nich nie należy do grup docelowych objętości i nie zostało uwzględnione.`,
         });
+      }
+    }
+  }
+
+  // 5c. MISSING_MUSCLE_TARGET: warn about individual muscle assignments that are
+  //     not a member of any active volume target.  Fires for each unique
+  //     (exerciseId, specificMuscleId) pair so the trainer knows exactly which
+  //     muscles aren't being tracked — even when the exercise still contributes
+  //     through other muscles.  Deduped across days.
+  const warnedMissingTargetPairs = new Set<string>();
+  for (const [exerciseId, muscleMap] of exerciseAssignments) {
+    for (const [specificMuscleId] of muscleMap) {
+      if (!muscleMemberOfTarget.has(specificMuscleId)) {
+        const key = `${exerciseId}:${specificMuscleId}`;
+        if (!warnedMissingTargetPairs.has(key)) {
+          warnedMissingTargetPairs.add(key);
+          warnings.push({
+            code: "MISSING_MUSCLE_TARGET",
+            scope: "exercise",
+            exerciseId,
+            message: `Mięsień ID ${specificMuscleId} (w ćwiczeniu "${exerciseNameMap.get(exerciseId) ?? String(exerciseId)}") nie należy do żadnej grupy docelowej objętości i nie wpływa na obliczenia.`,
+          });
+        }
       }
     }
   }

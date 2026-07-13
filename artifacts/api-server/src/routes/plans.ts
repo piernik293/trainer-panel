@@ -229,6 +229,18 @@ async function getPlanFull(planId: number) {
 
 // ─── POST /plans/volume-preview ──────────────────────────────────────────────
 // Must be registered before any /plans/:id routes.
+//
+// Ownership protection (current state):
+//   • clientId is validated — the client must exist in the database (404 if not).
+//   • planId (optional) — when supplied, the route verifies plan.clientId ===
+//     body.clientId so a caller cannot read volume data for another client's
+//     saved plan (returns 403 on mismatch).
+//   • Trainer-level ownership (restrict each trainer to their own clients) is NOT
+//     enforced here because no authentication system exists in this project yet.
+//     When session-based auth is added, inject the session trainerId and add
+//     a WHERE trainer_id = :trainerId clause to both the client-existence query
+//     and the plan-ownership query above.  Reuse the existing middleware pattern
+//     rather than creating a new auth system.
 
 router.post("/plans/volume-preview", async (req, res): Promise<void> => {
   const parsed = VolumePreviewBody.safeParse(req.body);
