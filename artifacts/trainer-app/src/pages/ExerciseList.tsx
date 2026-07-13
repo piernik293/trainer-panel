@@ -11,7 +11,6 @@ import { PlusCircle, Search, Dumbbell, Upload, CheckCircle, AlertCircle } from "
 import {
   MAIN_MUSCLE_GROUPS,
   EQUIPMENT_OPTIONS,
-  DIFFICULTY_LEVEL_OPTIONS,
   TRAINING_LOCATION_OPTIONS,
   EXERCISE_TYPE_OPTIONS,
   MOVEMENT_PATTERN_OPTIONS,
@@ -23,13 +22,16 @@ export default function ExerciseList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [muscleFilter, setMuscleFilter] = useState<string>("all");
   const [equipmentFilter, setEquipmentFilter] = useState<string>("all");
-  const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
+  /**
+   * Unified level/purpose filter.
+   * "adaptive" → suitableForNoActivity = true (not the same as Początkujący).
+   * Other values are passed as difficultyLevel directly.
+   */
+  const [levelFilter, setLevelFilter] = useState<string>("all");
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [exerciseTypeFilter, setExerciseTypeFilter] = useState<string>("all");
   const [movementPatternFilter, setMovementPatternFilter] = useState<string>("all");
   const [secondaryMuscleFilter, setSecondaryMuscleFilter] = useState<string>("all");
-  /** Phase A: "Program adaptacyjny" filter — shows only suitableForNoActivity = true exercises. */
-  const [adaptiveProgramFilter, setAdaptiveProgramFilter] = useState(false);
   const [completenessFilter, setCompletenessFilter] = useState<string>("all");
   const [importOpen, setImportOpen] = useState(false);
 
@@ -43,12 +45,12 @@ export default function ExerciseList() {
     search: searchTerm || undefined,
     mainMuscleGroup: muscleFilter !== "all" ? muscleFilter : undefined,
     equipment: equipmentFilter !== "all" ? equipmentFilter : undefined,
-    difficultyLevel: difficultyFilter !== "all" ? difficultyFilter : undefined,
+    difficultyLevel: (levelFilter !== "all" && levelFilter !== "adaptive") ? levelFilter : undefined,
     trainingLocation: locationFilter !== "all" ? locationFilter : undefined,
     exerciseType: exerciseTypeFilter !== "all" ? exerciseTypeFilter : undefined,
     movementPattern: movementPatternFilter !== "all" ? movementPatternFilter : undefined,
     secondaryMuscleGroup: secondaryMuscleFilter !== "all" ? secondaryMuscleFilter : undefined,
-    suitableForNoActivity: adaptiveProgramFilter ? true : undefined,
+    suitableForNoActivity: levelFilter === "adaptive" ? true : undefined,
     isComplete: parseIsCompleteParam(completenessFilter),
   });
 
@@ -56,11 +58,10 @@ export default function ExerciseList() {
     searchTerm !== "" ||
     muscleFilter !== "all" ||
     equipmentFilter !== "all" ||
-    difficultyFilter !== "all" ||
+    levelFilter !== "all" ||
     locationFilter !== "all" ||
     exerciseTypeFilter !== "all" ||
     movementPatternFilter !== "all" ||
-    adaptiveProgramFilter ||
     secondaryMuscleFilter !== "all" ||
     completenessFilter !== "all";
 
@@ -68,11 +69,10 @@ export default function ExerciseList() {
     setSearchTerm("");
     setMuscleFilter("all");
     setEquipmentFilter("all");
-    setDifficultyFilter("all");
+    setLevelFilter("all");
     setLocationFilter("all");
     setExerciseTypeFilter("all");
     setMovementPatternFilter("all");
-    setAdaptiveProgramFilter(false);
     setSecondaryMuscleFilter("all");
     setCompletenessFilter("all");
   };
@@ -141,15 +141,16 @@ export default function ExerciseList() {
               </SelectContent>
             </Select>
 
-            <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-              <SelectTrigger className="w-full sm:w-[170px] bg-background">
-                <SelectValue placeholder="Poziom trudności" />
+            <Select value={levelFilter} onValueChange={setLevelFilter}>
+              <SelectTrigger className="w-full sm:w-[260px] bg-background">
+                <SelectValue placeholder="Poziom / przeznaczenie" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Wszystkie poziomy</SelectItem>
-                {DIFFICULTY_LEVEL_OPTIONS.map((d) => (
-                  <SelectItem key={d} value={d}>{d}</SelectItem>
-                ))}
+                <SelectItem value="all">Wszystkie</SelectItem>
+                <SelectItem value="adaptive">Program adaptacyjny — brak aktywności</SelectItem>
+                <SelectItem value="Początkujący">Początkujący</SelectItem>
+                <SelectItem value="Średniozaawansowany">Średniozaawansowany</SelectItem>
+                <SelectItem value="Zaawansowany">Zaawansowany</SelectItem>
               </SelectContent>
             </Select>
 
@@ -203,20 +204,6 @@ export default function ExerciseList() {
                 {MOVEMENT_PATTERN_OPTIONS.map((p) => (
                   <SelectItem key={p} value={p}>{p}</SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-
-            {/* Phase A — "Program adaptacyjny" filter: suitableForNoActivity = true only */}
-            <Select
-              value={adaptiveProgramFilter ? "adaptive" : "all"}
-              onValueChange={(v) => setAdaptiveProgramFilter(v === "adaptive")}
-            >
-              <SelectTrigger className="w-full sm:w-[215px] bg-background">
-                <SelectValue placeholder="Zakres ćwiczeń" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Wszystkie ćwiczenia</SelectItem>
-                <SelectItem value="adaptive">⚡ Program adaptacyjny</SelectItem>
               </SelectContent>
             </Select>
 
