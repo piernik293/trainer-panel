@@ -163,16 +163,29 @@ const PATTERN_TO_SUBPATTERN: Record<string, SubPatternKey> = {
   "Przyciąganie poziome": "horizontal_pull",
 };
 
-/** Normalize the movementCategory DB field to a canonical key. */
+/**
+ * Normalize the movementCategory DB field to a canonical key.
+ * Accepts both English keys (legacy) and Polish canonical values
+ * (as stored by the Exercise Form / Bulk Import using MOVEMENT_CATEGORY_OPTIONS).
+ */
 const MOVCAT_FIELD_TO_KEY: Record<string, MovementCategoryKey> = {
+  // English (legacy / analysis-internal)
   push: "push", Push: "push",
   pull: "pull", Pull: "pull",
-  squat: "squat", Squat: "squat", Przysiad: "squat",
+  squat: "squat", Squat: "squat",
   hinge: "hinge", Hinge: "hinge",
-  lunge: "lunge", Lunge: "lunge", Wykrok: "lunge",
+  lunge: "lunge", Lunge: "lunge",
   core: "core", Core: "core",
   carry: "carry", Carry: "carry",
-  rotation: "rotation", Rotation: "rotation", Rotacja: "rotation",
+  rotation: "rotation", Rotation: "rotation",
+  // Polish canonical (MOVEMENT_CATEGORY_OPTIONS in exercise-constants.ts)
+  Pchanie: "push",
+  Ciągnięcie: "pull",
+  Przysiad: "squat",
+  Zawiasowe: "hinge",
+  Wykrok: "lunge",
+  Dźwiganie: "carry",
+  Rotacja: "rotation",
 };
 
 // ─── Normalization helpers (pure, exported for tests) ─────────────────────────

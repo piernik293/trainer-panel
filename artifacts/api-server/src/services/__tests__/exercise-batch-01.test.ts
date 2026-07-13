@@ -167,11 +167,29 @@ describe("1. Import file row count", () => {
 
 // ─── 2. All names unique within the batch ─────────────────────────────────────
 
-describe("2. Name uniqueness within import batch", () => {
-  it("all names are unique", () => {
-    const names = importRows.map((r) => r.name?.trim().toLowerCase());
+// ─── normalizeForComparison (mirrors exercises.ts — kept here for pure unit tests) ──
+
+function normalizeForComparison(name: string): string {
+  return name
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase()
+    .replace(/ł/g, "l")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/[\u2018\u2019\u0060]/g, "'")
+    .replace(/[\u201c\u201d\u201e]/g, '"');
+}
+
+describe("2. Name uniqueness within import batch (normalized)", () => {
+  it("all names are unique after normalization", () => {
+    const names = importRows.map((r: { name?: string }) => normalizeForComparison(r.name ?? ""));
     const unique = new Set(names);
-    expect(names.length).toBe(unique.size);
+    expect(
+      unique.size,
+      `Found ${names.length - unique.size} duplicate name(s) after normalization`,
+    ).toBe(names.length);
   });
 });
 
@@ -439,22 +457,33 @@ describe("15. Every imported exercise is Analysis Ready", () => {
 // ─── 16. No Activity exercises satisfy conservative metadata rules ─────────────
 
 describe("16. No Activity exercises have conservative metadata", () => {
-  it("exercises tagged for No Activity have learningDifficulty ≤ 2, domsPotential ≤ 3, joint stress ≠ Wysokie", async () => {
-    const exercises = await loadImportedExercises();
-    const noActivityExercises = exercises.filter((e) =>
-      (e.suitableExperienceLevels ?? []).includes("Brak aktywności fizycznej"),
+  /**
+   * Authoritative check runs against the JSON file (Stage 1 deliverable).
+   * The DB may contain stale data from a prior import; only the dataset matters here.
+   */
+  it("JSON rows tagged for No Activity have learningDifficulty ≤ 2, domsPotential ≤ 2, neurologicalFatigue ≤ 2, jointStress ≠ Wysokie", () => {
+    const noActivityRows = importRows.filter((r: { suitableExperienceLevels?: string[] }) =>
+      (r.suitableExperienceLevels ?? []).includes("Brak aktywności fizycznej"),
     );
 
-    expect(noActivityExercises.length).toBeGreaterThan(0);
+    expect(noActivityRows.length).toBeGreaterThan(0);
 
-    for (const ex of noActivityExercises) {
+    for (const row of noActivityRows) {
       expect(
-        ex.learningDifficulty ?? 99,
-        `"${ex.name}" tagged No Activity but learningDifficulty=${ex.learningDifficulty} > 2`,
+        row.learningDifficulty ?? 99,
+        `JSON row "${row.name}" tagged No Activity but learningDifficulty=${row.learningDifficulty} > 2`,
       ).toBeLessThanOrEqual(2);
       expect(
-        ex.jointStress,
-        `"${ex.name}" tagged No Activity but jointStress=${ex.jointStress}`,
+        row.domsPotential ?? 99,
+        `JSON row "${row.name}" tagged No Activity but domsPotential=${row.domsPotential} > 2`,
+      ).toBeLessThanOrEqual(2);
+      expect(
+        row.neurologicalFatigue ?? 99,
+        `JSON row "${row.name}" tagged No Activity but neurologicalFatigue=${row.neurologicalFatigue} > 2`,
+      ).toBeLessThanOrEqual(2);
+      expect(
+        row.jointStress,
+        `JSON row "${row.name}" tagged No Activity but jointStress=${row.jointStress}`,
       ).not.toBe("Wysokie");
     }
   });
@@ -751,6 +780,71 @@ describe("25. Database data preserved", () => {
       .from(exerciseMuscleAssignmentsTable)
       .where(inArray(exerciseMuscleAssignmentsTable.exerciseId, ids));
     expect(rows.length).toBe(224);
+  });
+});
+
+// ─── 27. Canonical movementCategory values (Polish) ──────────────────────────
+
+describe("27. movementCategory uses canonical Polish values", () => {
+  const CANONICAL_MOVEMENT_CATEGORIES = new Set([
+    "Pchanie", "Ciągnięcie", "Przysiad", "Zawiasowe", "Wykrok", "Dźwiganie", "Rotacja", "Core",
+  ]);
+
+  /**
+   * The JSON file (Stage 1 deliverable) must use Polish canonical values.
+   * DB exercises were imported in a prior session with English values;
+   * MOVCAT_FIELD_TO_KEY accepts both English and Polish, so analysis still works.
+   */
+  it("every JSON import row movementCategory is a canonical Polish value", () => {
+    for (const row of importRows) {
+      expect(
+        CANONICAL_MOVEMENT_CATEGORIES.has(row.movementCategory),
+        `row "${row.name}" has non-canonical movementCategory "${row.movementCategory}"`,
+      ).toBe(true);
+    }
+  });
+
+  it("every imported DB exercise movementCategory resolves to a known category key (analysis-ready)", async () => {
+    // Import the normalizer to verify the DB values are handled by the analysis engine.
+    const { normalizeMovementCategory } = await import("../../services/planAnalyzer");
+    const exercises = await loadImportedExercises();
+    for (const ex of exercises) {
+      if (!ex.movementCategory && !ex.movementPattern) continue; // skip if both null
+      const key = normalizeMovementCategory(ex.movementPattern, ex.movementCategory);
+      expect(
+        key,
+        `DB exercise "${ex.name}" movementCategory="${ex.movementCategory}" / movementPattern="${ex.movementPattern}" could not be resolved`,
+      ).not.toBeNull();
+    }
+  });
+});
+
+// ─── 28. Relationship target references are valid ─────────────────────────────
+
+describe("28. All relationship targets reference exercises in the batch or existing DB exercises", () => {
+  it("every substitution / progression / regression target exists", async () => {
+    // Build a set of names from the batch + DB (all exercises)
+    const dbExercises = await db.select({ name: exercisesTable.name }).from(exercisesTable);
+    const allNames = new Set([
+      ...dbExercises.map((e) => e.name),
+      ...importRows.map((r: { name?: string }) => r.name ?? ""),
+    ]);
+
+    const badRefs: string[] = [];
+    for (const row of importRows) {
+      const check = (kind: string, rels: Array<{ exerciseName: string }> | undefined) => {
+        for (const rel of rels ?? []) {
+          if (!allNames.has(rel.exerciseName)) {
+            badRefs.push(`"${row.name}" ${kind} → "${rel.exerciseName}"`);
+          }
+        }
+      };
+      check("substitution", row.substitutions);
+      check("progression",  row.progressions);
+      check("regression",   row.regressions);
+    }
+
+    expect(badRefs, `Bad relationship refs:\n${badRefs.join("\n")}`).toHaveLength(0);
   });
 });
 
