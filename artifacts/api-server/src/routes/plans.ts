@@ -369,9 +369,13 @@ router.post("/plans/volume-preview", async (req, res): Promise<void> => {
     }
 
     authoritativeVersionId = activeVersion?.id ?? frontendVersionId ?? 1;
+    // Do NOT fall back to "Początkujący" for unknown/missing levels — that
+    // would silently over-prescribe volume.  Use whatever the survey contains
+    // (even if invalid); mapToGuidelineLevel conservatively maps unknown
+    // values to "Brak aktywności fizycznej".  Warnings were already emitted.
     authoritativeLevel = surveyLevel && isValidExperienceLevel(surveyLevel)
       ? surveyLevel
-      : (frontendLevel ?? "Początkujący");
+      : (frontendLevel ?? surveyLevel ?? "");
 
     // Warn if frontend-supplied values differ from the backend-derived authoritative values.
     if (frontendVersionId !== undefined && frontendVersionId !== authoritativeVersionId) {
@@ -524,7 +528,22 @@ router.post("/clients/:clientId/plans", async (req, res): Promise<void> => {
     return;
   }
 
-  const experienceLevelUsed = survey.experienceLevel ?? "Początkujący";
+  // Validate the experience level before writing it to the plan.
+  // Silently mapping null → "Początkujący" would assign incorrect volume
+  // guidelines to the client.  The trainer must complete the survey first.
+  if (!survey.experienceLevel) {
+    res.status(400).json({
+      error: "Wywiad treningowy klienta nie zawiera poziomu doświadczenia. Uzupełnij wywiad treningowy przed utworzeniem planu.",
+    });
+    return;
+  }
+  if (!isValidExperienceLevel(survey.experienceLevel)) {
+    res.status(400).json({
+      error: `Nieznany poziom doświadczenia w wywiadzie treningowym: "${survey.experienceLevel}". Oczekiwana jedna z wartości: Brak aktywności fizycznej, Początkujący, Średniozaawansowany, Zaawansowany.`,
+    });
+    return;
+  }
+  const experienceLevelUsed = survey.experienceLevel;
 
   // Get the active guideline version.
   const [activeVersion] = await db

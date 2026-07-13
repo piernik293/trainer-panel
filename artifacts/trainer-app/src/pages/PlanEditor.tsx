@@ -1311,6 +1311,11 @@ function PlanSummaryCard({ plan }: { plan: WorkoutPlan }) {
           <span className="text-muted-foreground">Poziom doświadczenia</span>
           <span className="text-xs font-medium text-right">{plan.experienceLevelUsed}</span>
         </div>
+        {plan.experienceLevelUsed === "Brak aktywności fizycznej" && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5 leading-snug">
+            Etap wprowadzający — priorytetem jest technika, kontrola ruchu i przygotowanie motoryczne.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

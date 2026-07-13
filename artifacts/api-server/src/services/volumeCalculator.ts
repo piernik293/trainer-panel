@@ -92,9 +92,18 @@ export interface VolumeResult {
  * Maps the raw survey experience level to the guideline profile key stored
  * in volume_guidelines.experienceLevel.
  *
- * Each level has its own dedicated row set in the guidelines table.
- * "Brak aktywności fizycznej" uses its own reduced ceilings (~50% of Beginner).
- * Unknown values fall back to "Początkujący" as a safe default.
+ * Each of the four canonical levels has its own dedicated row set:
+ *   "Brak aktywności fizycznej" — ~50% of Beginner (introductory stage)
+ *   "Początkujący"              — Beginner
+ *   "Średniozaawansowany"       — Intermediate
+ *   "Zaawansowany"              — Advanced
+ *
+ * MUST be called with a pre-validated level. Unknown/invalid values are NOT
+ * silently mapped to another level — they fall through to the most conservative
+ * guideline ("Brak aktywności fizycznej") so the calculation never
+ * over-prescribes volume for an unrecognised client profile.
+ * The caller is responsible for emitting MISSING_EXPERIENCE_LEVEL or
+ * INVALID_EXPERIENCE_LEVEL warnings before calling this function.
  */
 export function mapToGuidelineLevel(experienceLevelUsed: string): string {
   switch (experienceLevelUsed) {
@@ -107,7 +116,9 @@ export function mapToGuidelineLevel(experienceLevelUsed: string): string {
     case "Brak aktywności fizycznej":
       return "Brak aktywności fizycznej";
     default:
-      return "Początkujący";
+      // Unknown or missing level → use the most conservative guideline set.
+      // Never silently promote to a higher-volume level.
+      return "Brak aktywności fizycznej";
   }
 }
 

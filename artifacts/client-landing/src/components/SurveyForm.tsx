@@ -503,7 +503,7 @@ export default function SurveyForm() {
               <FormControl>
                 <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}>
                   {[
-                    { level: "Brak aktywności fizycznej", desc: "Obecnie nie trenuję lub od bardzo dawna nie podejmuję regularnej aktywności fizycznej. Chcę dopiero rozpocząć swoją przygodę z treningiem." },
+                    { level: "Brak aktywności fizycznej", desc: "Nie podejmuję regularnej aktywności fizycznej, nigdy wcześniej nie realizowałem/-am uporządkowanego treningu oporowego lub wracam po długiej przerwie. Chcę spokojnie zacząć, nauczyć się podstawowych wzorców ruchowych i stopniowo przygotować organizm do regularnego wysiłku." },
                     { level: "Początkujący", desc: "Mam niewielkie doświadczenie treningowe. Nadal uczę się podstawowych ćwiczeń, poprawnej techniki oraz zasad treningowych i nie czuję się jeszcze pewnie w samodzielnym planowaniu treningów." },
                     { level: "Średniozaawansowany", desc: "Trenuję regularnie i swobodnie wykonuję większość podstawowych ćwiczeń. Rozumiem podstawowe zasady treningowe, potrafię kontrolować technikę i świadomie realizuję plan treningowy." },
                     { level: "Zaawansowany", desc: "Posiadam duże doświadczenie treningowe, bardzo dobrze znam swoje możliwości oraz świadomie wykorzystuję różne metody treningowe do osiągania konkretnych celów." },

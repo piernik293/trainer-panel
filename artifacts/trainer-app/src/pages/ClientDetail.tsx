@@ -623,6 +623,11 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
           <SurveyBlock label="Inny cel:" value={survey.trainingGoalOther} />
         )}
         <SurveyBlock label="Poziom doświadczenia" value={survey.experienceLevel} />
+        {survey.experienceLevel === "Brak aktywności fizycznej" && (
+          <p className="sm:col-span-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+            Etap wprowadzający — priorytetem jest technika, kontrola ruchu i przygotowanie motoryczne.
+          </p>
+        )}
         <SurveyBlock label="Staż treningowy" value={survey.trainingDuration} />
         <SurveyBlock label="Preferowana liczba treningów tygodniowo" value={survey.desiredWeeklyFrequency?.toString()} />
         <SurveyBlock label="Czas trwania sesji" value={survey.sessionDuration} />
