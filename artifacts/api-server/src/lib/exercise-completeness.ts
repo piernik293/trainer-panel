@@ -5,6 +5,10 @@
  * Keeping this in its own module avoids circular imports and lets future
  * systems (AI plan generation, substitution engine) query completeness without
  * importing from a route file.
+ *
+ * Two readiness functions are exported:
+ *   computeCompleteness       — general trainer-facing completeness (existing).
+ *   computeAnalysisReadiness  — Phase 3 movement analysis readiness (new).
  */
 
 import { inArray, count, sql } from "drizzle-orm";
@@ -45,6 +49,35 @@ export function computeCompleteness(
   if (!hasIntelligence) missing.push("Inteligencja ćwiczenia");
 
   return { isComplete: missing.length === 0, missingFields: missing };
+}
+
+/**
+ * Phase 3 movement-analysis readiness.
+ *
+ * Checks exactly the fields that planAnalyzer.ts needs to compute movement
+ * categories, sub-patterns, compound/isolation distribution, bilateral/
+ * unilateral distribution and plane-of-motion coverage.
+ *
+ * This is intentionally separate from computeCompleteness — an exercise can
+ * be generally incomplete (missing description, coaching tips, equipment) yet
+ * still be analysis-ready if the five structural fields are present.
+ *
+ * Returned missingAnalysisFields uses the same Polish labels used elsewhere
+ * in the application so the UI can display them directly.
+ */
+export function computeAnalysisReadiness(exercise: ExerciseRow): {
+  isAnalysisReady: boolean;
+  missingAnalysisFields: string[];
+} {
+  const missing: string[] = [];
+
+  if (!exercise.movementPattern)  missing.push("Wzorzec ruchowy");
+  if (!exercise.movementCategory) missing.push("Kategoria ruchu");
+  if (!exercise.exerciseType)     missing.push("Typ ćwiczenia");
+  if (!exercise.execution)        missing.push("Rodzaj wykonania");
+  if (!exercise.planeOfMotion)    missing.push("Płaszczyzna ruchu");
+
+  return { isAnalysisReady: missing.length === 0, missingAnalysisFields: missing };
 }
 
 /** Fetch muscle-assignment aggregate stats for a set of exercise IDs in one query. */

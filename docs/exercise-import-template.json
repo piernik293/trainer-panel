@@ -1,0 +1,152 @@
+{
+  "_meta": {
+    "description": "Reusable template for bulk exercise import into the Exercise Library.",
+    "version": "1.0",
+    "canonical_values": {
+      "movementCategory": ["Push", "Pull", "Squat", "Hinge", "Lunge", "Core", "Carry", "Rotation"],
+      "movementPattern_push_horizontal": ["Pchanie poziome", "Wypychanie poziome", "Wyciskanie poziome"],
+      "movementPattern_push_vertical":   ["Pchanie pionowe",  "Wypychanie pionowe",  "Wyciskanie pionowe"],
+      "movementPattern_pull_vertical":   ["Przyciąganie pionowe"],
+      "movementPattern_pull_horizontal": ["Przyciąganie poziome", "Wiosłowanie"],
+      "movementPattern_squat":  ["Przysiad", "Zgięcie kolana", "Wyprost kolana"],
+      "movementPattern_hinge":  ["Zawiasowe", "Hip hinge", "Martwy ciąg", "Wzorzec zawiasowy"],
+      "movementPattern_lunge":  ["Wykrok", "Wypad", "Lunge"],
+      "movementPattern_core":   ["Anti-ekstensja", "Anti-rotacja", "Zgięcie tułowia", "Stabilizacja tułowia", "Stabilizacja"],
+      "movementPattern_carry":  ["Chód farmera", "Farmer carry"],
+      "movementPattern_rotation": ["Rotacja", "Obrót"],
+      "exerciseType":   ["Złożone", "Izolowane"],
+      "execution":      ["Obustronne", "Jednostronne"],
+      "planeOfMotion":  ["Strzałkowa", "Czołowa", "Poprzeczna"],
+      "jointStress":    ["Niskie", "Średnie", "Wysokie"],
+      "exercisePriority": ["Bardzo wysoki", "Wysoki", "Średni", "Niski"],
+      "canBePerformedToFailure": ["Tak", "Nie", "Z ostrożnością"],
+      "requiresSpotter": [true, false],
+      "suitableExperienceLevels": [
+        "Brak aktywności fizycznej",
+        "Początkujący",
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "learningDifficulty": "integer 1–5 (1 = very easy, 5 = very hard)",
+      "neurologicalFatigue": "integer 1–5 (1 = minimal CNS demand, 5 = maximal)",
+      "domsPotential": "integer 1–5 (1 = minimal soreness, 5 = extreme soreness)",
+      "equipment_examples": ["Sztanga", "Hantle", "Maszyna", "Kabel", "Ciężar własnego ciała", "Kettlebell", "TRX", "Guma oporowa"],
+      "trainingLocation_examples": ["Siłownia", "Dom", "Na zewnątrz"],
+      "resistanceType_examples": ["Sztanga", "Hantle", "Maszyna", "Kabel", "Ciężar własnego ciała", "Kettlebell"],
+      "trainingGoals_examples": ["Siła", "Masa mięśniowa", "Wytrzymałość siłowa", "Stabilizacja", "Mobilność", "Redukcja tkanki tłuszczowej"],
+      "difficultyLevel_examples": ["Początkujący", "Średniozaawansowany", "Zaawansowany"]
+    },
+    "rules": {
+      "coefficient_range": "0 < coefficient <= 1.0 — primary muscle is normally 1.0",
+      "primary_muscle": "exactly one primary muscle per exercise (is_primary: true)",
+      "volume_targets": "muscle assignments must map into EXISTING volume targets; do not create new targets",
+      "max_coefficient_per_target": "when multiple specific muscles belong to the same volume target, the maximum coefficient for that target is the one used in volume calculations",
+      "idempotency": "import script must be safe to run twice — check by name+slug before inserting",
+      "no_destructive_reseed": "never delete existing exercises; only INSERT or UPDATE existing ones"
+    }
+  },
+  "exercises": [
+    {
+      "_comment": "Copy and fill this template for each new exercise. Remove _comment fields before importing.",
+      "name": "REQUIRED — Polish name of the exercise",
+      "slug": "required-url-safe-slug",
+      "mainMuscleGroup": "REQUIRED — e.g. Klatka piersiowa",
+      "secondaryMuscleGroups": ["Triceps", "Barki"],
+      "equipment": ["Sztanga"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Średniozaawansowany",
+
+      "movementPattern": "REQUIRED — use canonical Polish value from canonical_values above",
+      "movementCategory": "REQUIRED — Push | Pull | Squat | Hinge | Lunge | Core | Carry | Rotation",
+      "exerciseType": "REQUIRED — Złożone | Izolowane",
+      "execution": "REQUIRED — Obustronne | Jednostronne",
+      "planeOfMotion": "REQUIRED — Strzałkowa | Czołowa | Poprzeczna",
+
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Siła", "Masa mięśniowa"],
+      "resistanceType": "Sztanga",
+
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+
+      "jointStress": "REQUIRED — Niskie | Średnie | Wysokie",
+      "learningDifficulty": 3,
+      "neurologicalFatigue": 3,
+      "domsPotential": 3,
+      "exercisePriority": "REQUIRED — Bardzo wysoki | Wysoki | Średni | Niski",
+
+      "description": "Polish description of the exercise.",
+      "executionInstructions": "Step-by-step Polish instructions.",
+      "commonMistakes": "Common mistakes in Polish.",
+      "coachingTips": "Coaching tips in Polish.",
+      "breathingTips": "Breathing instructions in Polish (optional).",
+      "safetyNotes": "Safety notes in Polish (optional).",
+
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "REQUIRED — exact name matching specific_muscles table",
+          "isPrimary": true,
+          "coefficient": 1.0
+        },
+        {
+          "specificMuscleName": "Secondary muscle name",
+          "isPrimary": false,
+          "coefficient": 0.5
+        }
+      ],
+
+      "progressions": ["Name of harder variation"],
+      "regressions": ["Name of easier variation"],
+      "substitutions": ["Alternative exercise name"]
+    }
+  ],
+
+  "reference_exercises": {
+    "_comment": "Approved baseline values for the 5 existing exercises. Use as reference.",
+    "Wyciskanie sztangi leżąc": {
+      "id": 1,
+      "movementCategory": "Push", "movementPattern": "Pchanie poziome",
+      "exerciseType": "Złożone", "execution": "Obustronne", "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "jointStress": "Średnie", "learningDifficulty": 3, "neurologicalFatigue": 3,
+      "domsPotential": 3, "exercisePriority": "Wysoki", "requiresSpotter": true,
+      "canBePerformedToFailure": "Z ostrożnością", "resistanceType": "Sztanga"
+    },
+    "Podciąganie na drążku": {
+      "id": 2,
+      "movementCategory": "Pull", "movementPattern": "Przyciąganie pionowe",
+      "exerciseType": "Złożone", "execution": "Obustronne", "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "jointStress": "Średnie", "learningDifficulty": 4, "neurologicalFatigue": 3,
+      "domsPotential": 3, "exercisePriority": "Wysoki", "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością", "resistanceType": "Ciężar własnego ciała"
+    },
+    "Przysiad ze sztangą": {
+      "id": 3,
+      "movementCategory": "Squat", "movementPattern": "Przysiad",
+      "exerciseType": "Złożone", "execution": "Obustronne", "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "jointStress": "Wysokie", "learningDifficulty": 4, "neurologicalFatigue": 4,
+      "domsPotential": 4, "exercisePriority": "Wysoki", "requiresSpotter": true,
+      "canBePerformedToFailure": "Z ostrożnością", "resistanceType": "Sztanga"
+    },
+    "Wyciskanie hantli nad głowę": {
+      "id": 4,
+      "movementCategory": "Push", "movementPattern": "Pchanie pionowe",
+      "exerciseType": "Złożone", "execution": "Obustronne", "planeOfMotion": "Czołowa",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "jointStress": "Średnie", "learningDifficulty": 2, "neurologicalFatigue": 2,
+      "domsPotential": 2, "exercisePriority": "Wysoki", "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością", "resistanceType": "Hantle"
+    },
+    "Plank": {
+      "id": 5,
+      "movementCategory": "Core", "movementPattern": "Anti-ekstensja",
+      "exerciseType": "Izolowane", "execution": "Obustronne", "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Brak aktywności fizycznej", "Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "jointStress": "Niskie", "learningDifficulty": 1, "neurologicalFatigue": 1,
+      "domsPotential": 1, "exercisePriority": "Wysoki", "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością", "resistanceType": "Ciężar własnego ciała"
+    }
+  }
+}
