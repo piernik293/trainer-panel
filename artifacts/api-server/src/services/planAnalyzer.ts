@@ -845,7 +845,7 @@ export function calculatePlanAnalysisCore(
       code: "UNILATERAL_ABSENT",
       severity: "info",
       scope: "plan",
-      message: "Plan nie zawiera ćwiczeń jednostronnych (unilateral). Przy planie obejmującym więcej niż 2 dni treningowe warto rozważyć ich włączenie.",
+      message: "Plan nie zawiera ćwiczeń jednostronnych (unilateralnych). Przy planie obejmującym więcej niż 2 dni treningowe warto rozważyć ich włączenie.",
     });
   }
 
@@ -1055,7 +1055,7 @@ export function normalizePlanAnalysisInput(
           scope: "exercise",
           exerciseId: ex.exerciseId,
           exerciseName: meta.name,
-          message: `Ćwiczenie „${meta.name}" nie ma określonego trybu wykonania (obustronne/jednostronne) — pominięte w analizie bilateralnej.`,
+          message: `Ćwiczenie „${meta.name}" nie ma określonego trybu wykonania (Obustronne (bilateralne) / Jednostronne (unilateralne)) — pominięte w analizie bilateralnej.`,
         });
       }
 

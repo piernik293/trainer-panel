@@ -99,6 +99,16 @@ export const EXECUTION_OPTIONS = [
   "Jednostronne",
 ] as const;
 
+/**
+ * Maps canonical DB execution values to their user-facing display labels.
+ * Database records always store the canonical value ("Obustronne" / "Jednostronne").
+ * Use this map everywhere a label is shown to the trainer.
+ */
+export const EXECUTION_LABELS: Record<string, string> = {
+  "Obustronne":   "Obustronne (bilateralne)",
+  "Jednostronne": "Jednostronne (unilateralne)",
+};
+
 export const RESISTANCE_TYPE_OPTIONS = [
   "Sztanga",
   "Hantle",

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Pencil, Ban, RotateCcw, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { EXECUTION_LABELS } from "@/lib/exercise-constants";
 
 // ─── DetailBlock ──────────────────────────────────────────────────────────────
 
@@ -268,7 +269,7 @@ export default function ExerciseDetail() {
           />
           <DetailBlock label="Kategoria ruchu" value={exercise.movementCategory} />
           <DetailBlock label="Płaszczyzna ruchu" value={exercise.planeOfMotion} />
-          <DetailBlock label="Wykonanie" value={exercise.execution} />
+          <DetailBlock label="Wykonanie" value={exercise.execution ? (EXECUTION_LABELS[exercise.execution] ?? exercise.execution) : undefined} />
           <DetailBlock label="Typ oporu" value={exercise.resistanceType} />
           <DetailBlock
             label="Wymaga asekuracji"

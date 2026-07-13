@@ -299,15 +299,15 @@ function StructureTab({ analysis }: { analysis: PlanAnalysisResult }) {
       <div className="space-y-2">
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tryb wykonania</h3>
         <TwoColBar
-          leftLabel="Obustronne"
-          rightLabel="Jednostronne"
+          leftLabel="Obustronne (bilateralne)"
+          rightLabel="Jednostronne (unilateralne)"
           leftValue={ex.bilateralSets}
           rightValue={ex.unilateralSets}
           unknownValue={ex.unknownSets}
         />
         <div className="grid grid-cols-3 gap-2 mt-1">
-          <MiniStat label="Obustronne" value={ex.bilateralEntries} sub={`${ex.bilateralSets} serii`} />
-          <MiniStat label="Jednostronne" value={ex.unilateralEntries} sub={`${ex.unilateralSets} serii`} />
+          <MiniStat label="Obustronne (bilateralne)" value={ex.bilateralEntries} sub={`${ex.bilateralSets} serii`} />
+          <MiniStat label="Jednostronne (unilateralne)" value={ex.unilateralEntries} sub={`${ex.unilateralSets} serii`} />
           <MiniStat label="Bez klasyfikacji" value={ex.unknownEntries} sub={`${ex.unknownSets} serii`} />
         </div>
         {ex.daysWithUnilateral > 0 && (

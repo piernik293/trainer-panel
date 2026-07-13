@@ -29,6 +29,7 @@ import {
   MOVEMENT_CATEGORY_OPTIONS,
   PLANE_OF_MOTION_OPTIONS,
   EXECUTION_OPTIONS,
+  EXECUTION_LABELS,
   RESISTANCE_TYPE_OPTIONS,
   CAN_PERFORM_TO_FAILURE_OPTIONS,
   JOINT_STRESS_OPTIONS,
@@ -159,12 +160,15 @@ function SelectField({
   value,
   onChange,
   placeholder,
+  labels,
 }: {
   label: string;
   options: readonly string[];
   value: string | undefined;
   onChange: (v: string) => void;
   placeholder?: string;
+  /** Optional map from canonical option value → display label shown to the user. */
+  labels?: Record<string, string>;
 }) {
   return (
     <FormItem>
@@ -177,7 +181,7 @@ function SelectField({
         </FormControl>
         <SelectContent>
           {options.map((o) => (
-            <SelectItem key={o} value={o}>{o}</SelectItem>
+            <SelectItem key={o} value={o}>{labels?.[o] ?? o}</SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -612,6 +616,7 @@ function ExerciseFormBody({
                     options={EXECUTION_OPTIONS}
                     value={field.value}
                     onChange={field.onChange}
+                    labels={EXECUTION_LABELS}
                   />
                 )}
               />
