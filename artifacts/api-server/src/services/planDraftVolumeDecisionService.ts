@@ -419,9 +419,15 @@ export function computeTargetDecision(
   reasons.push(`wartość mieści się w zatwierdzonym zakresie (${guidelineMin}–${guidelineMax})`);
 
   // ── 9. Trainer override ────────────────────────────────────────────────────
+  //
+  // Policy (MVP):
+  //  • In-range override  → accepted: selectedValue = round05(ov), isOverridden = true
+  //  • Out-of-range override → REJECTED: warn, keep selectedValue = recommendedValue,
+  //    isOverridden = false. Raw input is still stored in trainerOverride for display.
+  //    We do NOT silently clamp — the trainer must explicitly correct the value.
   let selectedValue = recommendedValue;
   let trainerOverrideClean: number | null = null;
-  const isOverridden = inp.trainerOverride !== null;
+  let isOverridden = false;
 
   if (inp.trainerOverride !== null) {
     const ov = inp.trainerOverride;
@@ -429,23 +435,27 @@ export function computeTargetDecision(
       warnings.push({
         code: "VOLUME_OVERRIDE_BELOW_MIN",
         severity: "warning",
-        message: `Ustawienie trenera (${ov}) jest poniżej minimalnego zakresu (${guidelineMin}).`,
+        message: `Ustawienie trenera (${ov}) jest poniżej minimalnego zakresu (${guidelineMin}). Wartość nie została zastosowana.`,
         blocking: false,
+        suggestedAction: `Ustaw wartość w zakresie ${guidelineMin}–${guidelineMax}.`,
       });
-      selectedValue = guidelineMin;
       trainerOverrideClean = ov;
+      // selectedValue stays at recommendedValue — override rejected
     } else if (ov > guidelineMax) {
       warnings.push({
         code: "VOLUME_OVERRIDE_ABOVE_MAX",
         severity: "warning",
-        message: `Ustawienie trenera (${ov}) przekracza maksymalny zakres (${guidelineMax}).`,
+        message: `Ustawienie trenera (${ov}) przekracza maksymalny zakres (${guidelineMax}). Wartość nie została zastosowana.`,
         blocking: false,
+        suggestedAction: `Ustaw wartość w zakresie ${guidelineMin}–${guidelineMax}.`,
       });
-      selectedValue = guidelineMax;
       trainerOverrideClean = ov;
+      // selectedValue stays at recommendedValue — override rejected
     } else {
+      // In-range → accepted
       selectedValue = round05(ov);
       trainerOverrideClean = ov;
+      isOverridden = true;
     }
   }
 

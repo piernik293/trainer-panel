@@ -622,17 +622,44 @@ function TargetDecisionCard({
   const isOverridden = overrideValue !== undefined;
   const step = 0.5;
 
+  // Local state for text input: tracks raw input string and validation error.
+  // We do NOT silently clamp — invalid values show an error and are not applied.
+  const [rawInput, setRawInput] = useState<string | null>(null);
+  const [inputError, setInputError] = useState<string | null>(null);
+
+  // Displayed value in the input box: raw typing takes priority; otherwise the current selectedValue.
+  const displayValue = rawInput !== null ? rawInput : String(selectedValue);
+
   function adjust(delta: number) {
+    // Stepper buttons: snap to 0.5 steps, bounded by the approved range.
     const next = Math.round((selectedValue + delta) * 2) / 2;
-    const clamped = Math.max(decision.guidelineMin, Math.min(decision.guidelineMax, next));
-    onOverride(decision.targetId, clamped);
+    const bounded = Math.max(decision.guidelineMin, Math.min(decision.guidelineMax, next));
+    setRawInput(null);
+    setInputError(null);
+    onOverride(decision.targetId, bounded);
   }
 
   function handleInputChange(raw: string) {
+    setRawInput(raw);
     const v = parseFloat(raw);
-    if (!isNaN(v)) {
-      const clamped = Math.max(decision.guidelineMin, Math.min(decision.guidelineMax, v));
-      onOverride(decision.targetId, Math.round(clamped * 2) / 2);
+    if (isNaN(v) || raw.trim() === "") {
+      setInputError("Nieprawidłowa wartość");
+      return;
+    }
+    if (v < decision.guidelineMin || v > decision.guidelineMax) {
+      setInputError(`Zakres: ${decision.guidelineMin}–${decision.guidelineMax}`);
+      return;
+    }
+    // Valid — clear error and apply (rounded to 0.5)
+    setInputError(null);
+    onOverride(decision.targetId, Math.round(v * 2) / 2);
+  }
+
+  function handleInputBlur() {
+    // If the field was left with an error, restore the last valid value.
+    if (inputError !== null) {
+      setRawInput(null);
+      setInputError(null);
     }
   }
 
@@ -675,34 +702,38 @@ function TargetDecisionCard({
           </div>
 
           {/* Stepper control */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={() => adjust(-step)}
-              disabled={selectedValue <= decision.guidelineMin}
-              className="w-7 h-7 rounded border border-border flex items-center justify-center disabled:opacity-40 hover:bg-muted transition-colors"
-            >
-              <Minus size={12} />
-            </button>
-            <div className="w-16">
-              <Input
-                type="number"
-                value={selectedValue}
-                step={step}
-                min={decision.guidelineMin}
-                max={decision.guidelineMax}
-                onChange={(e) => handleInputChange(e.target.value)}
-                className="h-7 text-center text-sm font-medium px-1"
-              />
+          <div className="flex flex-col items-end gap-0.5 shrink-0">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => adjust(-step)}
+                disabled={selectedValue <= decision.guidelineMin}
+                className="w-7 h-7 rounded border border-border flex items-center justify-center disabled:opacity-40 hover:bg-muted transition-colors"
+              >
+                <Minus size={12} />
+              </button>
+              <div className="w-16">
+                <Input
+                  type="number"
+                  value={displayValue}
+                  step={step}
+                  onChange={(e) => handleInputChange(e.target.value)}
+                  onBlur={handleInputBlur}
+                  className={`h-7 text-center text-sm font-medium px-1 ${inputError ? "border-red-400 focus-visible:ring-red-400" : ""}`}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => adjust(step)}
+                disabled={selectedValue >= decision.guidelineMax}
+                className="w-7 h-7 rounded border border-border flex items-center justify-center disabled:opacity-40 hover:bg-muted transition-colors"
+              >
+                <Plus size={12} />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => adjust(step)}
-              disabled={selectedValue >= decision.guidelineMax}
-              className="w-7 h-7 rounded border border-border flex items-center justify-center disabled:opacity-40 hover:bg-muted transition-colors"
-            >
-              <Plus size={12} />
-            </button>
+            {inputError && (
+              <span className="text-[10px] text-red-500 leading-none">{inputError}</span>
+            )}
           </div>
         </div>
 

@@ -479,7 +479,8 @@ describe("computeTargetDecision", () => {
     expect(d.isOverridden).toBe(true);
   });
 
-  it("trainer override below guidelineMin is clamped and warns", () => {
+  it("trainer override below guidelineMin is rejected with warning", () => {
+    // Beginner, Barki, no priority → recommendedValue = round05(8 + 0.25*4) = 9
     const d = computeTargetDecision({
       target: TARGETS[5]!,
       guideline: GUIDELINE_BEGINNER,
@@ -490,12 +491,17 @@ describe("computeTargetDecision", () => {
       availability: "standard",
       trainerOverride: 2,
     });
-    expect(d.selectedValue).toBe(8); // clamped to guidelineMin
+    // Rejected: selectedValue stays at recommendedValue, not clamped to guidelineMin
+    expect(d.selectedValue).toBe(9); // recommendedValue, not clamped
+    expect(d.isOverridden).toBe(false); // override was rejected, not applied
+    expect(d.source).toBe("calculated");
+    expect(d.trainerOverride).toBe(2); // raw input still recorded for display
     const warn = d.warnings.find((w) => w.code === "VOLUME_OVERRIDE_BELOW_MIN");
     expect(warn).toBeDefined();
   });
 
-  it("trainer override above guidelineMax is clamped and warns", () => {
+  it("trainer override above guidelineMax is rejected with warning", () => {
+    // Beginner, Barki, no priority → recommendedValue = 9
     const d = computeTargetDecision({
       target: TARGETS[5]!,
       guideline: GUIDELINE_BEGINNER,
@@ -506,7 +512,11 @@ describe("computeTargetDecision", () => {
       availability: "standard",
       trainerOverride: 20,
     });
-    expect(d.selectedValue).toBe(12); // clamped to guidelineMax
+    // Rejected: selectedValue stays at recommendedValue, not clamped to guidelineMax
+    expect(d.selectedValue).toBe(9); // recommendedValue, not clamped
+    expect(d.isOverridden).toBe(false); // override was rejected, not applied
+    expect(d.source).toBe("calculated");
+    expect(d.trainerOverride).toBe(20); // raw input still recorded
     const warn = d.warnings.find((w) => w.code === "VOLUME_OVERRIDE_ABOVE_MAX");
     expect(warn).toBeDefined();
   });
@@ -600,7 +610,8 @@ describe("calculateVolumeDecisions (integration)", () => {
     expect(err?.blocking).toBe(true);
   }, 10000);
 
-  it("applies trainer overrides from input", async () => {
+  it("applies valid in-range trainer overrides from input", async () => {
+    // Barki (target 6) for Średniozaawansowany: range [16, 20]. Override 18 is in-range.
     const result = await calculateVolumeDecisions({
       clientId: 1,
       experienceLevel: "Średniozaawansowany",
@@ -613,13 +624,46 @@ describe("calculateVolumeDecisions (integration)", () => {
       recoveryQuality: null,
       trainingDays: 4,
       sessionDuration: 60,
-      trainerOverrides: { "6": 11 }, // Barki override to 11
+      trainerOverrides: { "6": 18 }, // Barki override to 18 (in-range for [16, 20])
     });
     const barkiDecision = result.decisions.find((d) => d.targetId === 6);
     expect(barkiDecision).toBeDefined();
     expect(barkiDecision?.isOverridden).toBe(true);
     expect(barkiDecision?.source).toBe("trainer_override");
+    expect(barkiDecision?.selectedValue).toBe(18);
     expect(result.summary.targetsOverridden).toBe(1);
+  }, 10000);
+
+  it("rejects out-of-range trainer override and keeps recommendedValue", async () => {
+    // Barki (target 6) for Średniozaawansowany: range [16, 20]. Override 11 is below min.
+    const result = await calculateVolumeDecisions({
+      clientId: 1,
+      experienceLevel: "Średniozaawansowany",
+      priorityMuscleGroups: [],
+      excludedMuscleGroups: [],
+      sleep: null,
+      stress: null,
+      physicalWork: false,
+      dailyActivity: null,
+      recoveryQuality: null,
+      trainingDays: 4,
+      sessionDuration: 60,
+      trainerOverrides: { "6": 11 }, // below guidelineMin 16 → rejected
+    });
+    const barkiDecision = result.decisions.find((d) => d.targetId === 6);
+    expect(barkiDecision).toBeDefined();
+    // Override rejected: not applied
+    expect(barkiDecision?.isOverridden).toBe(false);
+    expect(barkiDecision?.source).toBe("calculated");
+    // selectedValue == recommendedValue (not the rejected override value)
+    expect(barkiDecision?.selectedValue).toBe(barkiDecision?.recommendedValue);
+    // Raw input still recorded for display
+    expect(barkiDecision?.trainerOverride).toBe(11);
+    // Warning emitted
+    const warn = barkiDecision?.warnings.find((w) => w.code === "VOLUME_OVERRIDE_BELOW_MIN");
+    expect(warn).toBeDefined();
+    // Does not count as overridden in summary
+    expect(result.summary.targetsOverridden).toBe(0);
   }, 10000);
 
   it("decisions are returned in canonical TARGET_ORDER", async () => {
