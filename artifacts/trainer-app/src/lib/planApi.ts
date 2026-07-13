@@ -417,6 +417,234 @@ export function useActivatePlan(planId: number, clientId?: number) {
   });
 }
 
+// ─── Plan analysis types ──────────────────────────────────────────────────────
+
+export type MovementCategoryKey =
+  | "push" | "pull" | "squat" | "hinge" | "lunge" | "core" | "carry" | "rotation";
+
+export type SubPatternKey =
+  | "vertical_push" | "horizontal_push" | "vertical_pull" | "horizontal_pull" | null;
+
+export type BalanceStatus =
+  | "balanced" | "push_dominant" | "strongly_push_dominant"
+  | "pull_dominant" | "strongly_pull_dominant" | "insufficient_data";
+
+export type SquatHingeStatus =
+  | "balanced" | "squat_dominant" | "strongly_squat_dominant"
+  | "hinge_dominant" | "strongly_hinge_dominant" | "insufficient_data";
+
+export interface PushPullBalance {
+  pushSets: number;
+  pullSets: number;
+  ratio: number | null;
+  status: BalanceStatus;
+  severity: "success" | "warning" | "error" | "info";
+  message: string;
+}
+
+export interface SquatHingeBalance {
+  squatSets: number;
+  hingeSets: number;
+  ratio: number | null;
+  status: SquatHingeStatus;
+  severity: "success" | "warning" | "error" | "info";
+  message: string;
+}
+
+export interface CategoryContributor {
+  entryId: number;
+  exerciseId: number;
+  exerciseName: string;
+  dayId: number;
+  dayName: string | null;
+  workingSets: number;
+  subPattern: SubPatternKey;
+}
+
+export interface CategoryDaySummary {
+  dayId: number;
+  dayName: string | null;
+  workingSets: number;
+  exerciseEntries: number;
+}
+
+export interface CategoryAnalysis {
+  category: MovementCategoryKey;
+  label: string;
+  workingSets: number;
+  exerciseEntries: number;
+  percentageOfPlanSets: number;
+  daysPresent: number;
+  dayBreakdown: CategoryDaySummary[];
+  exercises: CategoryContributor[];
+}
+
+export interface DayAnalysis {
+  dayId: number;
+  dayName: string | null;
+  dayOrder: number;
+  totalWorkingSets: number;
+  exerciseCount: number;
+  categoryBreakdown: Array<{ category: MovementCategoryKey; label: string; workingSets: number; exerciseEntries: number }>;
+  compoundSets: number;
+  isolationSets: number;
+  compoundEntries: number;
+  isolationEntries: number;
+  bilateralSets: number;
+  unilateralSets: number;
+  bilateralEntries: number;
+  unilateralEntries: number;
+  planesPresent: string[];
+  repeatedPatterns: Array<{ pattern: string; exerciseCount: number; workingSets: number; exerciseNames: string[] }>;
+}
+
+export interface WeeklyDistributionEntry {
+  category: MovementCategoryKey;
+  label: string;
+  totalSets: number;
+  daysCount: number;
+  maxSetsInOneDay: number;
+  maxSetsDayName: string | null;
+  concentrationPercentage: number;
+}
+
+export interface AnalysisWarning {
+  code: string;
+  severity: "info" | "notice" | "warning";
+  scope: "plan" | "day" | "exercise";
+  dayId?: number | null;
+  exerciseEntryId?: number | null;
+  exerciseId?: number | null;
+  exerciseName?: string | null;
+  message: string;
+}
+
+export interface PlanAnalysisResult {
+  summary: {
+    totalWorkingSets: number;
+    totalExerciseEntries: number;
+    analysedExerciseEntries: number;
+    incompleteExerciseEntries: number;
+  };
+  balance: {
+    pushPull: PushPullBalance;
+    squatHinge: SquatHingeBalance;
+  };
+  movementCategories: CategoryAnalysis[];
+  exerciseTypes: {
+    compoundEntries: number;
+    isolationEntries: number;
+    compoundSets: number;
+    isolationSets: number;
+    compoundPercentage: number;
+    isolationPercentage: number;
+    unknownEntries: number;
+    unknownSets: number;
+  };
+  executionTypes: {
+    bilateralEntries: number;
+    unilateralEntries: number;
+    bilateralSets: number;
+    unilateralSets: number;
+    bilateralPercentage: number;
+    unilateralPercentage: number;
+    daysWithUnilateral: number;
+    unknownEntries: number;
+    unknownSets: number;
+  };
+  planesOfMotion: {
+    sagittalSets: number;
+    frontalSets: number;
+    transverseSets: number;
+    sagittalEntries: number;
+    frontalEntries: number;
+    transverseEntries: number;
+    unknownSets: number;
+    unknownEntries: number;
+  };
+  weeklyDistribution: WeeklyDistributionEntry[];
+  days: DayAnalysis[];
+  warnings: AnalysisWarning[];
+}
+
+// ─── Analysis preview hook ────────────────────────────────────────────────────
+
+/**
+ * Calls POST /plans/analysis-preview with 500 ms debounce.
+ * Mirrors useVolumePreview: AbortController + monotonic reqId prevent stale
+ * responses from overwriting newer results.
+ *
+ * Re-fires when: exercises added/removed/reordered, working sets changed,
+ * exercise reference changed, days added/removed/reordered.
+ * Does NOT re-fire for: notes, tempo, RIR, RPE, load prescriptions.
+ */
+export function useAnalysisPreview(plan: WorkoutPlan | undefined) {
+  const [analysisResult, setAnalysisResult] = useState<PlanAnalysisResult | null>(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+  const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef  = useRef<AbortController | null>(null);
+  const reqIdRef  = useRef(0);
+
+  useEffect(() => {
+    if (!plan) return;
+
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    timerRef.current = setTimeout(async () => {
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const myId = ++reqIdRef.current;
+      setIsLoadingAnalysis(true);
+
+      try {
+        const body = {
+          clientId: plan.clientId,
+          planId:   plan.id,
+          goal:     plan.goal ?? null,
+          days: plan.days.map((d) => ({
+            dayId:    d.id,
+            dayName:  d.dayName,
+            dayOrder: d.dayOrder,
+            exercises: d.exercises.map((e) => ({
+              exerciseEntryId: e.id,
+              exerciseId:      e.exerciseId,
+              workingSets:     e.workingSets,
+              orderInDay:      e.orderInDay,
+            })),
+          })),
+        };
+
+        const res = await fetch("/api/plans/analysis-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body:   JSON.stringify(body),
+          signal: controller.signal,
+        });
+
+        if (myId !== reqIdRef.current) return; // stale — discard
+
+        if (res.ok) {
+          const data: PlanAnalysisResult = await res.json();
+          if (myId !== reqIdRef.current) return; // stale after parse
+          setAnalysisResult(data);
+        }
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        // On network error keep the last valid result visible.
+      } finally {
+        if (myId === reqIdRef.current) setIsLoadingAnalysis(false);
+      }
+    }, 500);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [plan]);
+
+  return { analysisResult, isLoadingAnalysis };
+}
+
 // ─── Volume preview types ─────────────────────────────────────────────────────
 
 export type SessionStatus = "below_min" | "within_range" | "above_max" | "no_guideline";

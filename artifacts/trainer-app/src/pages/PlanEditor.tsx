@@ -37,6 +37,7 @@ import {
   useReorderPlanExercises,
   useActivatePlan,
   useVolumePreview,
+  useAnalysisPreview,
   VOLUME_STATUS_LABEL,
   type PlanDay,
   type PlanExercise,
@@ -45,6 +46,7 @@ import {
   type WorkoutPlan,
 } from "@/lib/planApi";
 import { VolumePanel } from "@/components/VolumePanel";
+import { AnalysisPanel } from "@/components/AnalysisPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1468,6 +1470,7 @@ export default function PlanEditor() {
 
   const { data: plan, isLoading, error } = useGetPlan(planId);
   const { preview, isLoadingPreview } = useVolumePreview(plan);
+  const { analysisResult, isLoadingAnalysis } = useAnalysisPreview(plan);
   const updatePlan = useUpdatePlan(planId, plan?.clientId);
   const addDay = useAddPlanDay(planId, plan?.clientId);
   const addExercise = useAddPlanExercise(planId);
@@ -1747,6 +1750,12 @@ export default function PlanEditor() {
               plan={plan}
               preview={preview}
               isLoadingPreview={isLoadingPreview}
+            />
+
+            {/* Live movement analysis panel */}
+            <AnalysisPanel
+              analysis={analysisResult}
+              isLoading={isLoadingAnalysis}
             />
           </div>
         </div>

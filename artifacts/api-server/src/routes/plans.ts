@@ -29,6 +29,7 @@ import {
   isValidExperienceLevel,
   type VolumePreviewWarning,
 } from "../services/volumeCalculator";
+import { analyseDraftPreview, type AnalysisPreviewInput } from "../services/planAnalyzer";
 
 const router: IRouter = Router();
 
@@ -404,6 +405,76 @@ router.post("/plans/volume-preview", async (req, res): Promise<void> => {
   // Prepend route-level warnings (context validation) before engine warnings.
   result.warnings = [...routeWarnings, ...result.warnings];
 
+  res.json(result);
+});
+
+// ─── POST /plans/analysis-preview ────────────────────────────────────────────
+// Must be registered before any /plans/:id routes.
+//
+// Authorization note: same scope as volume-preview — clientId existence checked,
+// planId ownership verified when supplied.  Trainer-level ownership not enforced
+// until an auth system exists (see volume-preview comment for details).
+
+const AnalysisPreviewExerciseSchema = z.object({
+  exerciseEntryId: z.number().int(),
+  exerciseId:      z.number().int().positive(),
+  workingSets:     z.number().int().min(1),
+  orderInDay:      z.number().int().optional(),
+});
+
+const AnalysisPreviewDaySchema = z.object({
+  dayId:    z.number().int(),
+  dayName:  z.string().nullable().optional(),
+  dayOrder: z.number().int().optional().default(0),
+  exercises: z.array(AnalysisPreviewExerciseSchema),
+});
+
+const AnalysisPreviewBody = z.object({
+  clientId: z.number().int().positive(),
+  planId:   z.number().int().positive().optional(),
+  goal:     z.string().nullable().optional(),
+  days:     z.array(AnalysisPreviewDaySchema),
+});
+
+router.post("/plans/analysis-preview", async (req, res): Promise<void> => {
+  const parsed = AnalysisPreviewBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { clientId, planId, goal, days } = parsed.data;
+
+  // Verify client exists.
+  const [client] = await db
+    .select({ id: clientsTable.id })
+    .from(clientsTable)
+    .where(eq(clientsTable.id, clientId));
+
+  if (!client) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
+    return;
+  }
+
+  // If planId is supplied, verify it belongs to this client.
+  if (planId !== undefined) {
+    const [existingPlan] = await db
+      .select({ id: workoutPlansTable.id, clientId: workoutPlansTable.clientId })
+      .from(workoutPlansTable)
+      .where(eq(workoutPlansTable.id, planId));
+
+    if (!existingPlan) {
+      res.status(404).json({ error: "Plan nie znaleziony" });
+      return;
+    }
+    if (existingPlan.clientId !== clientId) {
+      res.status(403).json({ error: "Plan nie należy do podanego klienta" });
+      return;
+    }
+  }
+
+  const input: AnalysisPreviewInput = { clientId, planId, goal, days };
+  const result = await analyseDraftPreview(input);
   res.json(result);
 });
 

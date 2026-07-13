@@ -1,0 +1,430 @@
+# TASK — Finalize Experience-Level Hierarchy and “Brak aktywności fizycznej” Training Profile
+
+This task standardizes the client experience-level system and defines the exact behaviour for clients classified as:
+
+"Brak aktywności fizycznej"
+
+Do NOT add any new experience levels.
+
+Do NOT create a level after "Zaawansowany".
+
+Do NOT silently map unknown values to another level.
+
+Preserve all existing application functionality.
+
+============================================================
+CANONICAL EXPERIENCE-LEVEL ORDER
+============================================================
+
+The application must support exactly four experience levels, in this exact order:
+
+1. Brak aktywności fizycznej
+2. Początkujący
+3. Średniozaawansowany
+4. Zaawansowany
+
+There is no fifth level.
+
+There is no level after "Zaawansowany".
+
+Do not add:
+
+- Ekspert
+- Profesjonalista
+- Elitarny
+- Bardzo zaawansowany
+- Any other additional level
+
+All parts of the application must use the same canonical values and order:
+
+- Wywiad treningowy
+- Client profile
+- Plan Editor
+- Volume Calculator
+- Exercise Recommendation Engine
+- Future automatic plan generation
+- Filters
+- API types
+- Database values
+
+============================================================
+TRAINING INTERVIEW DESCRIPTION
+============================================================
+
+Keep "Brak aktywności fizycznej" as the first option in the Wywiad treningowy.
+
+Use the same meaning as already established in the interview.
+
+Recommended Polish description:
+
+"Klient nie podejmuje regularnej aktywności fizycznej, nigdy wcześniej nie realizował uporządkowanego treningu oporowego lub wraca po długiej przerwie. Wymaga spokojnego wprowadzenia, nauki podstawowych wzorców ruchowych oraz stopniowego przygotowania organizmu do regularnego wysiłku."
+
+Do not merge this level with "Początkujący".
+
+"Brak aktywności fizycznej" and "Początkujący" must remain separate categories.
+
+============================================================
+STRICT EXPERIENCE-LEVEL VALIDATION
+============================================================
+
+Accepted values:
+
+- Brak aktywności fizycznej
+- Początkujący
+- Średniozaawansowany
+- Zaawansowany
+
+Expected behaviour:
+
+"Brak aktywności fizycznej"
+→ use No Activity rules
+
+"Początkujący"
+→ use Beginner rules
+
+"Średniozaawansowany"
+→ use Intermediate rules
+
+"Zaawansowany"
+→ use Advanced rules
+
+Unknown or malformed value:
+
+"unknown"
+"Expert"
+"zaawansowany"
+""
+null
+
+must NOT be silently mapped to "Początkujący".
+
+Return:
+
+- MISSING_EXPERIENCE_LEVEL for an empty or missing value
+- INVALID_EXPERIENCE_LEVEL for an unsupported value
+
+Do not guess the client’s level.
+
+============================================================
+VOLUME FOR “BRAK AKTYWNOŚCI FIZYCZNEJ”
+============================================================
+
+"Brak aktywności fizycznej" must use its own independent volume-guideline rows.
+
+It must not use Beginner guideline rows.
+
+The intended volume is approximately 50% lower than the Beginner level.
+
+Use the already approved dedicated No Activity guideline values stored in the database.
+
+Do not calculate the reduction dynamically in the frontend.
+
+Do not overwrite or reinterpret the existing approved values if they are already present.
+
+Verify:
+
+- 11 dedicated muscle-target rows exist for "Brak aktywności fizycznej"
+- the level is mapped to itself
+- the Volume Calculator loads these rows
+- Beginner values remain unchanged
+- Intermediate values remain unchanged
+- Advanced values remain unchanged
+
+The final database should still contain:
+
+11 targets × 4 levels = 44 guideline rows
+
+============================================================
+MAIN PURPOSE OF THE NO-ACTIVITY STAGE
+============================================================
+
+The primary goal of the "Brak aktywności fizycznej" stage is NOT maximal hypertrophy, maximal strength or high fatigue.
+
+The main goals are:
+
+1. Very good learning of exercise technique
+2. Learning safe basic movement patterns
+3. Improving body awareness
+4. Improving motor control
+5. Preparing joints, muscles and connective tissues for regular training
+6. Building basic coordination
+7. Building basic stability
+8. Improving tolerance to physical effort
+9. Developing training regularity
+10. Gradual preparation for the Beginner level
+
+The system should prioritize movement quality over training intensity.
+
+============================================================
+TRAINING CHARACTERISTICS
+============================================================
+
+For clients classified as "Brak aktywności fizycznej", recommendations and future plan-generation logic should prefer:
+
+- Simple exercises
+- Stable exercise variations
+- Easy-to-learn movement patterns
+- Controlled tempo
+- Full technical control
+- Low to moderate fatigue
+- Conservative working-set volume
+- Longer recovery when needed
+- Simple progression
+- Clear coaching instructions
+- Exercises that are easy to regress
+
+Preferred fundamental patterns:
+
+- Squat
+- Hip hinge
+- Horizontal push
+- Horizontal pull
+- Vertical pull regression
+- Basic lunge or split-stance pattern
+- Carry
+- Anti-extension core
+- Anti-rotation core
+- Basic locomotion and coordination work
+
+Use the simplest safe variation suitable for the client.
+
+Examples:
+
+- Box squat before an advanced barbell squat
+- Goblet squat before a heavy back squat
+- Hip hinge drill before a loaded Romanian deadlift
+- Machine or supported row before a technically difficult free-weight row
+- Incline push-up before a difficult floor push-up
+- Assisted pulldown before an unassisted pull-up
+- Dead bug before advanced hanging abdominal exercises
+
+============================================================
+MOTOR PREPARATION
+============================================================
+
+This stage should include a strong motor-preparation component.
+
+The application should support or recommend:
+
+- Basic mobility preparation
+- Basic joint-control work
+- Balance exercises
+- Coordination exercises
+- Core stability
+- Scapular control
+- Pelvic control
+- Breathing control
+- Simple unilateral preparation
+- Basic range-of-motion work
+
+These elements should prepare the client for future resistance training.
+
+Do not turn the plan into an advanced athletic-performance program.
+
+Keep motor preparation simple, safe and appropriate for a previously inactive person.
+
+============================================================
+EXERCISE RECOMMENDATION PRIORITIES
+============================================================
+
+For "Brak aktywności fizycznej", the Exercise Recommendation Engine should rank higher exercises with:
+
+- SuitableExperienceLevel including "Brak aktywności fizycznej"
+- Low learning difficulty
+- Low or medium joint stress
+- Low neurological fatigue
+- Low or moderate DOMS potential
+- Stable body position
+- Simple movement pattern
+- Easy regression options
+- Clear coaching cues
+- No spotter requirement where possible
+- Low technical complexity
+
+Rank lower or warn for exercises with:
+
+- High learning difficulty
+- High joint stress
+- High neurological fatigue
+- High DOMS potential
+- Advanced balance requirements
+- High technical complexity
+- High injury consequence after a technical mistake
+- Mandatory spotter requirement
+- Advanced bodyweight strength requirement
+
+Do not automatically block manual trainer selection.
+
+Show a warning and keep the trainer in control.
+
+============================================================
+INTENSITY AND ADVANCED METHODS
+============================================================
+
+For "Brak aktywności fizycznej", do not recommend by default:
+
+- Drop sets
+- Rest-pause
+- Forced repetitions
+- Cluster sets
+- Myo-reps
+- Frequent training to failure
+- Very high RPE
+- RIR 0 as a default
+- Complex supersets
+- Advanced tempo overload
+- Advanced Olympic-lifting variations
+- Highly unstable exercise variations
+
+Recommended default effort:
+
+- Leave several repetitions in reserve
+- Focus on repeatable technique
+- Stop the set when technique visibly deteriorates
+- Use gradual progression
+
+Do not hardcode one universal RIR value for every exercise.
+
+============================================================
+PROGRESSION TO BEGINNER
+============================================================
+
+The No Activity level should prepare the client to move to "Początkujący".
+
+Do not automatically change the experience level only because time has passed.
+
+The trainer remains responsible for changing the level.
+
+The application may later show a recommendation to review the level when the client:
+
+- Performs basic movement patterns safely
+- Maintains stable technique
+- Tolerates the current volume well
+- Recovers without excessive soreness
+- Trains regularly
+- Understands basic exercise instructions
+- Can progress load or repetitions safely
+
+Do not automatically increase the volume to Beginner values without trainer approval.
+
+============================================================
+UI REQUIREMENTS
+============================================================
+
+Use Polish user-facing labels.
+
+Display the experience levels in this exact order:
+
+1. Brak aktywności fizycznej
+2. Początkujący
+3. Średniozaawansowany
+4. Zaawansowany
+
+In the client profile and plan context, clearly display:
+
+Poziom doświadczenia:
+Brak aktywności fizycznej
+
+Optional helper:
+
+"Etap wprowadzający — priorytetem jest technika, kontrola ruchu i przygotowanie motoryczne."
+
+Do not display "Brak aktywności fizycznej" as a subtype of "Początkujący".
+
+============================================================
+DO NOT MODIFY
+============================================================
+
+Do NOT:
+
+- Add a fifth experience level
+- Add a level after Advanced
+- Map unknown values to Beginner
+- Map No Activity to Beginner
+- Change approved Beginner guideline values
+- Change approved Intermediate guideline values
+- Change approved Advanced guideline values
+- Change muscle coefficients
+- Change exercise muscle assignments
+- Rewrite the Volume Calculator
+- Automatically increase client volume
+- Automatically promote the client to Beginner
+- Implement full automatic workout generation
+- Implement AI
+- Delete or reseed database data
+
+============================================================
+TESTING REQUIREMENTS
+============================================================
+
+Verify:
+
+1. The interview shows exactly four levels.
+2. "Brak aktywności fizycznej" appears before "Początkujący".
+3. "Zaawansowany" is the final level.
+4. No additional level exists after "Zaawansowany".
+5. No Activity is stored as its own canonical value.
+6. No Activity maps to its own volume guidelines.
+7. No Activity does not map to Beginner.
+8. The dedicated reduced volume rows are used.
+9. Beginner values remain unchanged.
+10. Intermediate values remain unchanged.
+11. Advanced values remain unchanged.
+12. Unknown value returns INVALID_EXPERIENCE_LEVEL.
+13. Missing value returns MISSING_EXPERIENCE_LEVEL.
+14. Recommendation scoring prioritizes low-complexity exercises for No Activity.
+15. Advanced intensity methods are not recommended by default.
+16. Technique-focused helper text is visible.
+17. TypeScript checks pass.
+18. API build passes.
+19. Trainer-app build passes.
+20. Existing database data remains present.
+
+============================================================
+EXPECTED RESULT
+============================================================
+
+The application must have one clear four-level hierarchy:
+
+Brak aktywności fizycznej
+→ Początkujący
+→ Średniozaawansowany
+→ Zaawansowany
+
+"Brak aktywności fizycznej" must be a separate introductory stage with:
+
+- approximately half the Beginner volume,
+- strong technique focus,
+- basic motor preparation,
+- simple exercise selection,
+- conservative fatigue,
+- gradual progression,
+- no automatic promotion.
+
+The stage should prepare the client for safe entry into the Beginner level.
+
+============================================================
+REQUIRED FINAL REPORT
+============================================================
+
+After implementation provide:
+
+1. Files changed
+2. Final experience-level order
+3. Survey description used
+4. Validation rules
+5. Evidence that unknown values do not fall back to Beginner
+6. Evidence that No Activity uses dedicated reduced volume
+7. Recommendation-priority changes
+8. Technique and motor-preparation behaviour
+9. Confirmation that no fifth level was added
+10. TypeScript results
+11. Build results
+12. Database row-count verification
+13. Confirmation that existing data was preserved
+
+Finish with:
+
+- PASS
+- PASS WITH WARNINGS
+- FAIL
