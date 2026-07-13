@@ -15,11 +15,28 @@ export interface PlanExercise {
   orderInDay: number;
   workingSets: number;
   warmUpSets: number;
+  // Repetition prescription
+  repType: string | null;
+  repsExact: number | null;
   repRangeMin: number | null;
   repRangeMax: number | null;
+  repTimeSeconds: number | null;
+  repDistanceMeters: number | null;
+  repOpenInstruction: string | null;
+  // Load prescription
+  loadType: string | null;
+  loadValue: string | null;
+  loadInstruction: string | null;
+  // Intensity
+  rir: number | null;
+  rpe: string | null;
   rirOrRpe: string | null;
+  // Technique
+  tempo: string | null;
   restSeconds: number | null;
+  // Notes
   notes: string | null;
+  clientInstructions: string | null;
 }
 
 export interface PlanDay {
@@ -27,6 +44,10 @@ export interface PlanDay {
   planId: number;
   dayOrder: number;
   dayName: string | null;
+  subtitle: string | null;
+  description: string | null;
+  estimatedDurationMinutes: number | null;
+  trainerNotes: string | null;
   exercises: PlanExercise[];
 }
 
@@ -89,6 +110,11 @@ export interface WorkoutPlan {
   guidelineVersionId: number;
   experienceLevelUsed: string;
   title: string;
+  goal: string | null;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  trainerNotes: string | null;
   status: "draft" | "active" | "archived";
   createdAt: string;
   updatedAt: string;
@@ -104,10 +130,37 @@ export interface WorkoutPlanSummary {
   guidelineVersionId: number;
   experienceLevelUsed: string;
   title: string;
+  goal: string | null;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  trainerNotes: string | null;
   status: "draft" | "active" | "archived";
   createdAt: string;
   updatedAt: string;
   activatedAt: string | null;
+}
+
+export interface ExercisePrescription {
+  workingSets?: number;
+  warmUpSets?: number;
+  repType?: string | null;
+  repsExact?: number | null;
+  repRangeMin?: number | null;
+  repRangeMax?: number | null;
+  repTimeSeconds?: number | null;
+  repDistanceMeters?: number | null;
+  repOpenInstruction?: string | null;
+  loadType?: string | null;
+  loadValue?: string | null;
+  loadInstruction?: string | null;
+  rir?: number | null;
+  rpe?: string | null;
+  rirOrRpe?: string | null;
+  tempo?: string | null;
+  restSeconds?: number | null;
+  notes?: string | null;
+  clientInstructions?: string | null;
 }
 
 // ─── Query key factories ──────────────────────────────────────────────────────
@@ -139,6 +192,19 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   return data as T;
 }
 
+// ─── Invalidation helper ──────────────────────────────────────────────────────
+
+function usePlanInvalidator(planId: number, clientId?: number) {
+  const queryClient = useQueryClient();
+  return (updatedPlan: WorkoutPlan) => {
+    queryClient.setQueryData(planKeys.detail(planId), updatedPlan);
+    const cid = clientId ?? updatedPlan.clientId;
+    if (cid) {
+      queryClient.invalidateQueries({ queryKey: planKeys.list(cid) });
+    }
+  };
+}
+
 // ─── Query hooks ──────────────────────────────────────────────────────────────
 
 export function useListClientPlans(clientId: number) {
@@ -157,71 +223,75 @@ export function useGetPlan(planId: number) {
   });
 }
 
-// ─── Mutation helpers ─────────────────────────────────────────────────────────
-
-/** After any plan mutation, invalidate both the detail query and the list. */
-function usePlanInvalidator(planId: number, clientId?: number) {
-  const qc = useQueryClient();
-  return () => {
-    qc.invalidateQueries({ queryKey: planKeys.detail(planId) });
-    if (clientId) qc.invalidateQueries({ queryKey: planKeys.list(clientId) });
-  };
-}
-
 // ─── Mutation hooks ───────────────────────────────────────────────────────────
 
 export function useCreatePlan(clientId: number) {
-  const qc = useQueryClient();
-  return useMutation<WorkoutPlan, Error, { title: string; surveyId: number }>({
+  const queryClient = useQueryClient();
+  return useMutation<WorkoutPlan, Error, { title: string; surveyId: number; goal?: string; description?: string }>({
     mutationFn: (body) =>
-      apiFetch<WorkoutPlan>(`/clients/${clientId}/plans`, {
-        method: "POST",
-        body: JSON.stringify(body),
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: planKeys.list(clientId) });
+      apiFetch<WorkoutPlan>(`/clients/${clientId}/plans`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: (plan) => {
+      queryClient.invalidateQueries({ queryKey: planKeys.list(clientId) });
+      queryClient.setQueryData(planKeys.detail(plan.id), plan);
     },
   });
 }
 
 export function useUpdatePlan(planId: number, clientId?: number) {
   const invalidate = usePlanInvalidator(planId, clientId);
-  return useMutation<WorkoutPlan, Error, { title?: string; status?: "draft" | "archived" }>({
+  return useMutation<
+    WorkoutPlan,
+    Error,
+    {
+      title?: string;
+      status?: "draft" | "archived";
+      goal?: string | null;
+      description?: string | null;
+      startDate?: string | null;
+      endDate?: string | null;
+      trainerNotes?: string | null;
+    }
+  >({
     mutationFn: (body) =>
-      apiFetch<WorkoutPlan>(`/plans/${planId}`, {
-        method: "PATCH",
-        body: JSON.stringify(body),
-      }),
+      apiFetch<WorkoutPlan>(`/plans/${planId}`, { method: "PATCH", body: JSON.stringify(body) }),
     onSuccess: invalidate,
   });
 }
 
 export function useDeletePlan(clientId: number) {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation<void, Error, number>({
-    mutationFn: (planId) =>
-      apiFetch<void>(`/plans/${planId}`, { method: "DELETE" }),
+    mutationFn: (planId) => apiFetch<void>(`/plans/${planId}`, { method: "DELETE" }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: planKeys.list(clientId) });
+      queryClient.invalidateQueries({ queryKey: planKeys.list(clientId) });
     },
   });
 }
 
 export function useAddPlanDay(planId: number, clientId?: number) {
   const invalidate = usePlanInvalidator(planId, clientId);
-  return useMutation<WorkoutPlan, Error, { dayName?: string }>({
+  return useMutation<WorkoutPlan, Error, { dayName?: string; subtitle?: string | null }>({
     mutationFn: (body) =>
-      apiFetch<WorkoutPlan>(`/plans/${planId}/days`, {
-        method: "POST",
-        body: JSON.stringify(body),
-      }),
+      apiFetch<WorkoutPlan>(`/plans/${planId}/days`, { method: "POST", body: JSON.stringify(body) }),
     onSuccess: invalidate,
   });
 }
 
 export function useUpdatePlanDay(planId: number) {
   const invalidate = usePlanInvalidator(planId);
-  return useMutation<WorkoutPlan, Error, { dayId: number; dayName?: string | null; dayOrder?: number }>({
+  return useMutation<
+    WorkoutPlan,
+    Error,
+    {
+      dayId: number;
+      dayName?: string | null;
+      subtitle?: string | null;
+      description?: string | null;
+      estimatedDurationMinutes?: number | null;
+      trainerNotes?: string | null;
+      dayOrder?: number;
+    }
+  >({
     mutationFn: ({ dayId, ...body }) =>
       apiFetch<WorkoutPlan>(`/plans/${planId}/days/${dayId}`, {
         method: "PATCH",
@@ -240,27 +310,50 @@ export function useDeletePlanDay(planId: number) {
   });
 }
 
+export function useDuplicatePlanDay(planId: number) {
+  const invalidate = usePlanInvalidator(planId);
+  return useMutation<WorkoutPlan, Error, number>({
+    mutationFn: (dayId) =>
+      apiFetch<WorkoutPlan>(`/plans/${planId}/days/${dayId}/duplicate`, { method: "POST", body: "{}" }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useReorderPlanDays(planId: number) {
+  const invalidate = usePlanInvalidator(planId);
+  return useMutation<WorkoutPlan, Error, Array<{ id: number; dayOrder: number }>>({
+    mutationFn: (order) =>
+      apiFetch<WorkoutPlan>(`/plans/${planId}/days/reorder`, {
+        method: "PATCH",
+        body: JSON.stringify({ order }),
+      }),
+    onSuccess: invalidate,
+  });
+}
+
 export function useAddPlanExercise(planId: number) {
+  const invalidate = usePlanInvalidator(planId);
+  return useMutation<WorkoutPlan, Error, { dayId: number; exerciseId: number; workingSets?: number }>({
+    mutationFn: ({ dayId, ...body }) =>
+      apiFetch<WorkoutPlan>(`/plans/${planId}/days/${dayId}/exercises`, {
+        method: "POST",
+        body: JSON.stringify({ workingSets: 3, ...body }),
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useReorderPlanExercises(planId: number) {
   const invalidate = usePlanInvalidator(planId);
   return useMutation<
     WorkoutPlan,
     Error,
-    {
-      dayId: number;
-      exerciseId: number;
-      workingSets: number;
-      warmUpSets?: number;
-      repRangeMin?: number | null;
-      repRangeMax?: number | null;
-      rirOrRpe?: string | null;
-      restSeconds?: number | null;
-      notes?: string | null;
-    }
+    { dayId: number; order: Array<{ id: number; orderInDay: number }> }
   >({
-    mutationFn: ({ dayId, ...body }) =>
-      apiFetch<WorkoutPlan>(`/plans/${planId}/days/${dayId}/exercises`, {
-        method: "POST",
-        body: JSON.stringify(body),
+    mutationFn: ({ dayId, order }) =>
+      apiFetch<WorkoutPlan>(`/plans/${planId}/days/${dayId}/exercises/reorder`, {
+        method: "PATCH",
+        body: JSON.stringify({ order }),
       }),
     onSuccess: invalidate,
   });
@@ -271,16 +364,9 @@ export function useUpdatePlanExercise(planId: number) {
   return useMutation<
     WorkoutPlan,
     Error,
-    {
+    ExercisePrescription & {
       dayId: number;
       planExerciseId: number;
-      workingSets?: number;
-      warmUpSets?: number;
-      repRangeMin?: number | null;
-      repRangeMax?: number | null;
-      rirOrRpe?: string | null;
-      restSeconds?: number | null;
-      notes?: string | null;
       orderInDay?: number;
       dayId_target?: number;
     }
@@ -292,6 +378,18 @@ export function useUpdatePlanExercise(planId: number) {
         { method: "PATCH", body: JSON.stringify(payload) },
       );
     },
+    onSuccess: invalidate,
+  });
+}
+
+export function useDuplicatePlanExercise(planId: number) {
+  const invalidate = usePlanInvalidator(planId);
+  return useMutation<WorkoutPlan, Error, { dayId: number; planExerciseId: number }>({
+    mutationFn: ({ dayId, planExerciseId }) =>
+      apiFetch<WorkoutPlan>(
+        `/plans/${planId}/days/${dayId}/exercises/${planExerciseId}/duplicate`,
+        { method: "POST", body: "{}" },
+      ),
     onSuccess: invalidate,
   });
 }

@@ -30,44 +30,83 @@ const router: IRouter = Router();
 const CreatePlanBody = z.object({
   title: z.string().min(1, "Tytuł planu jest wymagany"),
   surveyId: z.number().int().positive(),
+  goal: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
+  trainerNotes: z.string().nullable().optional(),
 });
 
 const UpdatePlanBody = z.object({
   title: z.string().min(1).optional(),
   status: z.enum(["draft", "archived"]).optional(),
+  goal: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
+  trainerNotes: z.string().nullable().optional(),
 });
 
 const CreatePlanDayBody = z.object({
   dayName: z.string().optional(),
+  subtitle: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  estimatedDurationMinutes: z.number().int().positive().nullable().optional(),
+  trainerNotes: z.string().nullable().optional(),
 });
 
 const UpdatePlanDayBody = z.object({
   dayName: z.string().nullable().optional(),
+  subtitle: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  estimatedDurationMinutes: z.number().int().positive().nullable().optional(),
+  trainerNotes: z.string().nullable().optional(),
   dayOrder: z.number().int().positive().optional(),
 });
 
-const CreatePlanExerciseBody = z.object({
-  exerciseId: z.number().int().positive(),
+const ExercisePrescriptionFields = z.object({
   workingSets: z.number().int().min(1),
   warmUpSets: z.number().int().min(0).optional().default(0),
+  // Repetition prescription
+  repType: z.enum(["exact", "range", "time", "distance", "open"]).nullable().optional(),
+  repsExact: z.number().int().positive().nullable().optional(),
   repRangeMin: z.number().int().positive().nullable().optional(),
   repRangeMax: z.number().int().positive().nullable().optional(),
+  repTimeSeconds: z.number().int().positive().nullable().optional(),
+  repDistanceMeters: z.number().int().positive().nullable().optional(),
+  repOpenInstruction: z.string().nullable().optional(),
+  // Load prescription
+  loadType: z.string().nullable().optional(),
+  loadValue: z.string().nullable().optional(),
+  loadInstruction: z.string().nullable().optional(),
+  // Intensity
+  rir: z.number().int().min(0).max(5).nullable().optional(),
+  rpe: z.string().nullable().optional(),
   rirOrRpe: z.string().nullable().optional(),
+  // Technique
+  tempo: z.string().nullable().optional(),
   restSeconds: z.number().int().positive().nullable().optional(),
+  // Notes
   notes: z.string().nullable().optional(),
+  clientInstructions: z.string().nullable().optional(),
 });
 
-const UpdatePlanExerciseBody = z.object({
-  workingSets: z.number().int().min(1).optional(),
-  warmUpSets: z.number().int().min(0).optional(),
-  repRangeMin: z.number().int().positive().nullable().optional(),
-  repRangeMax: z.number().int().positive().nullable().optional(),
-  rirOrRpe: z.string().nullable().optional(),
-  restSeconds: z.number().int().positive().nullable().optional(),
-  notes: z.string().nullable().optional(),
+const CreatePlanExerciseBody = ExercisePrescriptionFields.extend({
+  exerciseId: z.number().int().positive(),
+});
+
+const UpdatePlanExerciseBody = ExercisePrescriptionFields.partial().extend({
   orderInDay: z.number().int().min(1).optional(),
   /** Move exercise to a different day */
   dayId: z.number().int().positive().optional(),
+});
+
+const ReorderDaysBody = z.object({
+  order: z.array(z.object({ id: z.number().int(), dayOrder: z.number().int().min(1) })),
+});
+
+const ReorderExercisesBody = z.object({
+  order: z.array(z.object({ id: z.number().int(), orderInDay: z.number().int().min(1) })),
 });
 
 // ─── Helper: build the full plan response ────────────────────────────────────
@@ -99,11 +138,28 @@ async function getPlanFull(planId: number) {
             orderInDay: workoutPlanExercisesTable.orderInDay,
             workingSets: workoutPlanExercisesTable.workingSets,
             warmUpSets: workoutPlanExercisesTable.warmUpSets,
+            // Repetition prescription
+            repType: workoutPlanExercisesTable.repType,
+            repsExact: workoutPlanExercisesTable.repsExact,
             repRangeMin: workoutPlanExercisesTable.repRangeMin,
             repRangeMax: workoutPlanExercisesTable.repRangeMax,
+            repTimeSeconds: workoutPlanExercisesTable.repTimeSeconds,
+            repDistanceMeters: workoutPlanExercisesTable.repDistanceMeters,
+            repOpenInstruction: workoutPlanExercisesTable.repOpenInstruction,
+            // Load prescription
+            loadType: workoutPlanExercisesTable.loadType,
+            loadValue: workoutPlanExercisesTable.loadValue,
+            loadInstruction: workoutPlanExercisesTable.loadInstruction,
+            // Intensity
+            rir: workoutPlanExercisesTable.rir,
+            rpe: workoutPlanExercisesTable.rpe,
             rirOrRpe: workoutPlanExercisesTable.rirOrRpe,
+            // Technique
+            tempo: workoutPlanExercisesTable.tempo,
             restSeconds: workoutPlanExercisesTable.restSeconds,
+            // Notes
             notes: workoutPlanExercisesTable.notes,
+            clientInstructions: workoutPlanExercisesTable.clientInstructions,
           })
           .from(workoutPlanExercisesTable)
           .innerJoin(exercisesTable, eq(workoutPlanExercisesTable.exerciseId, exercisesTable.id))
@@ -167,7 +223,7 @@ router.post("/clients/:clientId/plans", async (req, res): Promise<void> => {
     return;
   }
 
-  const { title, surveyId } = parsed.data;
+  const { title, surveyId, goal, description, startDate, endDate, trainerNotes } = parsed.data;
 
   // Verify survey belongs to this client.
   const [survey] = await db
@@ -203,6 +259,11 @@ router.post("/clients/:clientId/plans", async (req, res): Promise<void> => {
       guidelineVersionId: activeVersion.id,
       experienceLevelUsed,
       title,
+      goal: goal ?? null,
+      description: description ?? null,
+      startDate: startDate ?? null,
+      endDate: endDate ?? null,
+      trainerNotes: trainerNotes ?? null,
       status: "draft",
     })
     .returning({ id: workoutPlansTable.id });
@@ -259,6 +320,11 @@ router.patch("/plans/:id", async (req, res): Promise<void> => {
   };
   if (parsed.data.title !== undefined) updates.title = parsed.data.title;
   if (parsed.data.status !== undefined) updates.status = parsed.data.status;
+  if (parsed.data.goal !== undefined) updates.goal = parsed.data.goal;
+  if (parsed.data.description !== undefined) updates.description = parsed.data.description;
+  if (parsed.data.startDate !== undefined) updates.startDate = parsed.data.startDate;
+  if (parsed.data.endDate !== undefined) updates.endDate = parsed.data.endDate;
+  if (parsed.data.trainerNotes !== undefined) updates.trainerNotes = parsed.data.trainerNotes;
 
   await db.update(workoutPlansTable).set(updates).where(eq(workoutPlansTable.id, planId));
 
@@ -327,6 +393,10 @@ router.post("/plans/:id/days", async (req, res): Promise<void> => {
     planId,
     dayOrder: nextOrder,
     dayName: parsed.data.dayName ?? defaultName,
+    subtitle: parsed.data.subtitle ?? null,
+    description: parsed.data.description ?? null,
+    estimatedDurationMinutes: parsed.data.estimatedDurationMinutes ?? null,
+    trainerNotes: parsed.data.trainerNotes ?? null,
   });
 
   await db
@@ -336,6 +406,46 @@ router.post("/plans/:id/days", async (req, res): Promise<void> => {
 
   const full = await getPlanFull(planId);
   res.status(201).json(full);
+});
+
+// ─── PATCH /plans/:id/days/reorder ────────────────────────────────────────────
+
+router.patch("/plans/:id/days/reorder", async (req, res): Promise<void> => {
+  const planId = Number(req.params.id);
+  if (!Number.isFinite(planId)) {
+    res.status(400).json({ error: "Nieprawidłowe ID planu" });
+    return;
+  }
+
+  const parsed = ReorderDaysBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  // Two-step reorder to avoid unique-constraint conflicts (if any remain in prod):
+  // Step 1: Set all to large negative values (unique per row).
+  for (const { id } of parsed.data.order) {
+    await db
+      .update(workoutPlanDaysTable)
+      .set({ dayOrder: -id })
+      .where(and(eq(workoutPlanDaysTable.id, id), eq(workoutPlanDaysTable.planId, planId)));
+  }
+  // Step 2: Set to final desired values.
+  for (const { id, dayOrder } of parsed.data.order) {
+    await db
+      .update(workoutPlanDaysTable)
+      .set({ dayOrder })
+      .where(and(eq(workoutPlanDaysTable.id, id), eq(workoutPlanDaysTable.planId, planId)));
+  }
+
+  await db
+    .update(workoutPlansTable)
+    .set({ updatedAt: new Date() })
+    .where(eq(workoutPlansTable.id, planId));
+
+  const full = await getPlanFull(planId);
+  res.json(full);
 });
 
 // ─── PATCH /plans/:id/days/:dayId ────────────────────────────────────────────
@@ -366,6 +476,10 @@ router.patch("/plans/:id/days/:dayId", async (req, res): Promise<void> => {
 
   const updates: Partial<typeof workoutPlanDaysTable.$inferInsert> = {};
   if (parsed.data.dayName !== undefined) updates.dayName = parsed.data.dayName;
+  if (parsed.data.subtitle !== undefined) updates.subtitle = parsed.data.subtitle;
+  if (parsed.data.description !== undefined) updates.description = parsed.data.description;
+  if (parsed.data.estimatedDurationMinutes !== undefined) updates.estimatedDurationMinutes = parsed.data.estimatedDurationMinutes;
+  if (parsed.data.trainerNotes !== undefined) updates.trainerNotes = parsed.data.trainerNotes;
   if (parsed.data.dayOrder !== undefined) updates.dayOrder = parsed.data.dayOrder;
 
   if (Object.keys(updates).length > 0) {
@@ -415,6 +529,73 @@ router.delete("/plans/:id/days/:dayId", async (req, res): Promise<void> => {
   res.json(full);
 });
 
+// ─── POST /plans/:id/days/:dayId/duplicate ────────────────────────────────────
+
+router.post("/plans/:id/days/:dayId/duplicate", async (req, res): Promise<void> => {
+  const planId = Number(req.params.id);
+  const dayId = Number(req.params.dayId);
+  if (!Number.isFinite(planId) || !Number.isFinite(dayId)) {
+    res.status(400).json({ error: "Nieprawidłowe ID" });
+    return;
+  }
+
+  const [day] = await db
+    .select()
+    .from(workoutPlanDaysTable)
+    .where(and(eq(workoutPlanDaysTable.id, dayId), eq(workoutPlanDaysTable.planId, planId)));
+
+  if (!day) {
+    res.status(404).json({ error: "Dzień nie znaleziony" });
+    return;
+  }
+
+  // Determine next day order.
+  const [maxRow] = await db
+    .select({ maxOrder: max(workoutPlanDaysTable.dayOrder) })
+    .from(workoutPlanDaysTable)
+    .where(eq(workoutPlanDaysTable.planId, planId));
+
+  const nextOrder = (maxRow?.maxOrder ?? 0) + 1;
+
+  // Insert the duplicated day.
+  const [newDay] = await db
+    .insert(workoutPlanDaysTable)
+    .values({
+      planId,
+      dayOrder: nextOrder,
+      dayName: `${day.dayName ?? `Dzień ${day.dayOrder}`} (kopia)`,
+      subtitle: day.subtitle,
+      description: day.description,
+      estimatedDurationMinutes: day.estimatedDurationMinutes,
+      trainerNotes: day.trainerNotes,
+    })
+    .returning({ id: workoutPlanDaysTable.id });
+
+  // Copy all exercises from the original day.
+  const srcExercises = await db
+    .select()
+    .from(workoutPlanExercisesTable)
+    .where(eq(workoutPlanExercisesTable.dayId, dayId))
+    .orderBy(workoutPlanExercisesTable.orderInDay);
+
+  if (srcExercises.length > 0) {
+    await db.insert(workoutPlanExercisesTable).values(
+      srcExercises.map(({ id: _id, dayId: _dayId, ...rest }) => ({
+        ...rest,
+        dayId: newDay.id,
+      })),
+    );
+  }
+
+  await db
+    .update(workoutPlansTable)
+    .set({ updatedAt: new Date() })
+    .where(eq(workoutPlansTable.id, planId));
+
+  const full = await getPlanFull(planId);
+  res.status(201).json(full);
+});
+
 // ─── POST /plans/:id/days/:dayId/exercises ────────────────────────────────────
 
 router.post("/plans/:id/days/:dayId/exercises", async (req, res): Promise<void> => {
@@ -460,18 +641,31 @@ router.post("/plans/:id/days/:dayId/exercises", async (req, res): Promise<void> 
     .where(eq(workoutPlanExercisesTable.dayId, dayId));
 
   const nextOrder = (maxRow?.maxOrder ?? 0) + 1;
+  const d = parsed.data;
 
   await db.insert(workoutPlanExercisesTable).values({
     dayId,
-    exerciseId: parsed.data.exerciseId,
+    exerciseId: d.exerciseId,
     orderInDay: nextOrder,
-    workingSets: parsed.data.workingSets,
-    warmUpSets: parsed.data.warmUpSets ?? 0,
-    repRangeMin: parsed.data.repRangeMin ?? null,
-    repRangeMax: parsed.data.repRangeMax ?? null,
-    rirOrRpe: parsed.data.rirOrRpe ?? null,
-    restSeconds: parsed.data.restSeconds ?? null,
-    notes: parsed.data.notes ?? null,
+    workingSets: d.workingSets,
+    warmUpSets: d.warmUpSets ?? 0,
+    repType: d.repType ?? null,
+    repsExact: d.repsExact ?? null,
+    repRangeMin: d.repRangeMin ?? null,
+    repRangeMax: d.repRangeMax ?? null,
+    repTimeSeconds: d.repTimeSeconds ?? null,
+    repDistanceMeters: d.repDistanceMeters ?? null,
+    repOpenInstruction: d.repOpenInstruction ?? null,
+    loadType: d.loadType ?? null,
+    loadValue: d.loadValue ?? null,
+    loadInstruction: d.loadInstruction ?? null,
+    rir: d.rir ?? null,
+    rpe: d.rpe ?? null,
+    rirOrRpe: d.rirOrRpe ?? null,
+    tempo: d.tempo ?? null,
+    restSeconds: d.restSeconds ?? null,
+    notes: d.notes ?? null,
+    clientInstructions: d.clientInstructions ?? null,
   });
 
   await db
@@ -482,6 +676,48 @@ router.post("/plans/:id/days/:dayId/exercises", async (req, res): Promise<void> 
   const full = await getPlanFull(planId);
   res.status(201).json(full);
 });
+
+// ─── PATCH /plans/:id/days/:dayId/exercises/reorder ──────────────────────────
+
+router.patch(
+  "/plans/:id/days/:dayId/exercises/reorder",
+  async (req, res): Promise<void> => {
+    const planId = Number(req.params.id);
+    const dayId = Number(req.params.dayId);
+    if (!Number.isFinite(planId) || !Number.isFinite(dayId)) {
+      res.status(400).json({ error: "Nieprawidłowe ID" });
+      return;
+    }
+
+    const parsed = ReorderExercisesBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+
+    // Two-step reorder to avoid potential unique-constraint issues.
+    for (const { id } of parsed.data.order) {
+      await db
+        .update(workoutPlanExercisesTable)
+        .set({ orderInDay: -id })
+        .where(and(eq(workoutPlanExercisesTable.id, id), eq(workoutPlanExercisesTable.dayId, dayId)));
+    }
+    for (const { id, orderInDay } of parsed.data.order) {
+      await db
+        .update(workoutPlanExercisesTable)
+        .set({ orderInDay })
+        .where(and(eq(workoutPlanExercisesTable.id, id), eq(workoutPlanExercisesTable.dayId, dayId)));
+    }
+
+    await db
+      .update(workoutPlansTable)
+      .set({ updatedAt: new Date() })
+      .where(eq(workoutPlansTable.id, planId));
+
+    const full = await getPlanFull(planId);
+    res.json(full);
+  },
+);
 
 // ─── PATCH /plans/:id/days/:dayId/exercises/:exerciseId ──────────────────────
 
@@ -534,16 +770,29 @@ router.patch(
       }
     }
 
+    const d = parsed.data;
     const updates: Partial<typeof workoutPlanExercisesTable.$inferInsert> = {};
-    if (parsed.data.workingSets !== undefined) updates.workingSets = parsed.data.workingSets;
-    if (parsed.data.warmUpSets !== undefined) updates.warmUpSets = parsed.data.warmUpSets;
-    if (parsed.data.repRangeMin !== undefined) updates.repRangeMin = parsed.data.repRangeMin;
-    if (parsed.data.repRangeMax !== undefined) updates.repRangeMax = parsed.data.repRangeMax;
-    if (parsed.data.rirOrRpe !== undefined) updates.rirOrRpe = parsed.data.rirOrRpe;
-    if (parsed.data.restSeconds !== undefined) updates.restSeconds = parsed.data.restSeconds;
-    if (parsed.data.notes !== undefined) updates.notes = parsed.data.notes;
-    if (parsed.data.orderInDay !== undefined) updates.orderInDay = parsed.data.orderInDay;
-    if (parsed.data.dayId !== undefined) updates.dayId = parsed.data.dayId;
+    if (d.workingSets !== undefined) updates.workingSets = d.workingSets;
+    if (d.warmUpSets !== undefined) updates.warmUpSets = d.warmUpSets;
+    if (d.repType !== undefined) updates.repType = d.repType;
+    if (d.repsExact !== undefined) updates.repsExact = d.repsExact;
+    if (d.repRangeMin !== undefined) updates.repRangeMin = d.repRangeMin;
+    if (d.repRangeMax !== undefined) updates.repRangeMax = d.repRangeMax;
+    if (d.repTimeSeconds !== undefined) updates.repTimeSeconds = d.repTimeSeconds;
+    if (d.repDistanceMeters !== undefined) updates.repDistanceMeters = d.repDistanceMeters;
+    if (d.repOpenInstruction !== undefined) updates.repOpenInstruction = d.repOpenInstruction;
+    if (d.loadType !== undefined) updates.loadType = d.loadType;
+    if (d.loadValue !== undefined) updates.loadValue = d.loadValue;
+    if (d.loadInstruction !== undefined) updates.loadInstruction = d.loadInstruction;
+    if (d.rir !== undefined) updates.rir = d.rir;
+    if (d.rpe !== undefined) updates.rpe = d.rpe;
+    if (d.rirOrRpe !== undefined) updates.rirOrRpe = d.rirOrRpe;
+    if (d.tempo !== undefined) updates.tempo = d.tempo;
+    if (d.restSeconds !== undefined) updates.restSeconds = d.restSeconds;
+    if (d.notes !== undefined) updates.notes = d.notes;
+    if (d.clientInstructions !== undefined) updates.clientInstructions = d.clientInstructions;
+    if (d.orderInDay !== undefined) updates.orderInDay = d.orderInDay;
+    if (d.dayId !== undefined) updates.dayId = d.dayId;
 
     if (Object.keys(updates).length > 0) {
       await db
@@ -559,6 +808,55 @@ router.patch(
 
     const full = await getPlanFull(planId);
     res.json(full);
+  },
+);
+
+// ─── POST /plans/:id/days/:dayId/exercises/:exerciseId/duplicate ──────────────
+
+router.post(
+  "/plans/:id/days/:dayId/exercises/:exerciseId/duplicate",
+  async (req, res): Promise<void> => {
+    const planId = Number(req.params.id);
+    const dayId = Number(req.params.dayId);
+    const planExerciseId = Number(req.params.exerciseId);
+    if (!Number.isFinite(planId) || !Number.isFinite(dayId) || !Number.isFinite(planExerciseId)) {
+      res.status(400).json({ error: "Nieprawidłowe ID" });
+      return;
+    }
+
+    const [planEx] = await db
+      .select()
+      .from(workoutPlanExercisesTable)
+      .where(
+        and(
+          eq(workoutPlanExercisesTable.id, planExerciseId),
+          eq(workoutPlanExercisesTable.dayId, dayId),
+        ),
+      );
+
+    if (!planEx) {
+      res.status(404).json({ error: "Ćwiczenie w planie nie znalezione" });
+      return;
+    }
+
+    // Next order in day.
+    const [maxRow] = await db
+      .select({ maxOrder: max(workoutPlanExercisesTable.orderInDay) })
+      .from(workoutPlanExercisesTable)
+      .where(eq(workoutPlanExercisesTable.dayId, dayId));
+
+    const nextOrder = (maxRow?.maxOrder ?? 0) + 1;
+
+    const { id: _id, ...exData } = planEx;
+    await db.insert(workoutPlanExercisesTable).values({ ...exData, orderInDay: nextOrder });
+
+    await db
+      .update(workoutPlansTable)
+      .set({ updatedAt: new Date() })
+      .where(eq(workoutPlansTable.id, planId));
+
+    const full = await getPlanFull(planId);
+    res.status(201).json(full);
   },
 );
 

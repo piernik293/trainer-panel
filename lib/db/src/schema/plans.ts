@@ -6,6 +6,7 @@ import {
   boolean,
   timestamp,
   numeric,
+  date,
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
@@ -92,6 +93,16 @@ export const workoutPlansTable = pgTable("workout_plans", {
    *  level at calculation time (Brak aktywności fizycznej → Początkujący). */
   experienceLevelUsed: text("experience_level_used").notNull(),
   title: text("title").notNull(),
+  /** Training goal for this plan (free text, separate from survey goal) */
+  goal: text("goal"),
+  /** Plan description / overview */
+  description: text("description"),
+  /** Plan start date (ISO date string YYYY-MM-DD) */
+  startDate: date("start_date"),
+  /** Plan end date (ISO date string YYYY-MM-DD) */
+  endDate: date("end_date"),
+  /** Private trainer notes — must not be shown to client */
+  trainerNotes: text("trainer_notes"),
   /** 'draft' | 'active' | 'archived' */
   status: text("status").notNull().default("draft"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -110,8 +121,18 @@ export const workoutPlanDaysTable = pgTable("workout_plan_days", {
     .references(() => workoutPlansTable.id, { onDelete: "cascade" }),
   dayOrder: integer("day_order").notNull(),
   dayName: text("day_name"),
+  /** Short subtitle, e.g. "Góra ciała" */
+  subtitle: text("subtitle"),
+  /** Optional day description */
+  description: text("description"),
+  /** Estimated session duration in minutes */
+  estimatedDurationMinutes: integer("estimated_duration_minutes"),
+  /** Private trainer notes for this day */
+  trainerNotes: text("trainer_notes"),
 }, (table) => [
-  uniqueIndex("wpd_plan_day_order_idx").on(table.planId, table.dayOrder),
+  // Changed from uniqueIndex to index to allow safe bulk reordering.
+  // Application code maintains order integrity.
+  index("wpd_plan_day_order_idx").on(table.planId, table.dayOrder),
 ]);
 
 // ─── Workout plan exercises ───────────────────────────────────────────────────
@@ -127,13 +148,53 @@ export const workoutPlanExercisesTable = pgTable("workout_plan_exercises", {
   orderInDay: integer("order_in_day").notNull(),
   workingSets: integer("working_sets").notNull(),
   warmUpSets: integer("warm_up_sets").notNull().default(0),
+
+  // ── Repetition prescription ───────────────────────────────────────────────
+  /** 'exact' | 'range' | 'time' | 'distance' | 'open' */
+  repType: text("rep_type"),
+  /** For repType='exact': number of reps */
+  repsExact: integer("reps_exact"),
+  /** For repType='range': min reps (also used as legacy min) */
   repRangeMin: integer("rep_range_min"),
+  /** For repType='range': max reps (also used as legacy max) */
   repRangeMax: integer("rep_range_max"),
+  /** For repType='time': duration in seconds */
+  repTimeSeconds: integer("rep_time_seconds"),
+  /** For repType='distance': distance in metres */
+  repDistanceMeters: integer("rep_distance_meters"),
+  /** For repType='open': free text instruction (e.g. 'AMRAP') */
+  repOpenInstruction: text("rep_open_instruction"),
+
+  // ── Load prescription ─────────────────────────────────────────────────────
+  /** 'fixed' | 'percent_1rm' | 'bodyweight' | 'bw_plus' | 'assisted' | 'custom' */
+  loadType: text("load_type"),
+  /** Numeric load value (kg, %, extra kg) stored as text for flexibility */
+  loadValue: text("load_value"),
+  /** Free text instruction for loadType='custom' */
+  loadInstruction: text("load_instruction"),
+
+  // ── Intensity ─────────────────────────────────────────────────────────────
+  /** Reps in Reserve (0–5) */
+  rir: integer("rir"),
+  /** Rate of Perceived Exertion (1–10, stored as text for half-values) */
+  rpe: text("rpe"),
+  /** Legacy combined RIR/RPE free text (kept for backward compat) */
   rirOrRpe: text("rir_or_rpe"),
+
+  // ── Technique ─────────────────────────────────────────────────────────────
+  /** Four-part tempo notation, e.g. "3-1-1-0" */
+  tempo: text("tempo"),
+  /** Rest between sets in seconds */
   restSeconds: integer("rest_seconds"),
+
+  // ── Notes ─────────────────────────────────────────────────────────────────
+  /** Private trainer notes */
   notes: text("notes"),
+  /** Client-facing instructions — shown to client in the future portal */
+  clientInstructions: text("client_instructions"),
 }, (table) => [
-  uniqueIndex("wpe_day_order_idx").on(table.dayId, table.orderInDay),
+  // Changed from uniqueIndex to index to allow safe bulk reordering.
+  index("wpe_day_order_idx").on(table.dayId, table.orderInDay),
 ]);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
