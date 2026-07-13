@@ -123,11 +123,19 @@ router.post("/plans/draft-volume/preview", async (req, res): Promise<void> => {
     return;
   }
 
-  // Build the internal decision input from Phase 1 + wizard preferences
+  // Build the internal decision input from Phase 1 + wizard preferences.
+  //
+  // Priority source of truth: preferences.priorityMuscleGroups (trainer's wizard input).
+  // The trainer may change priorities in Step 2; those changes must be sent to the engine.
+  // draftInput.input.priorityMuscleGroups (client's survey) seeds the wizard default only;
+  // it must NOT override what the trainer actually submitted in the request body.
+  //
+  // Excluded groups: no wizard UI for overriding these → always from the client's survey.
+  // Experience level: not editable in the wizard → always from the client's survey.
   const decisionInput = {
     clientId,
     experienceLevel: draftInput.input.experienceLevel,
-    priorityMuscleGroups: draftInput.input.priorityMuscleGroups,
+    priorityMuscleGroups: preferences.priorityMuscleGroups,
     excludedMuscleGroups: draftInput.input.excludedMuscleGroups,
     sleep: draftInput.input.sleepHours,
     stress: draftInput.input.stressLevel,

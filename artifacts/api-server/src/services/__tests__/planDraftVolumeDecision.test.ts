@@ -792,6 +792,81 @@ describe("calculateVolumeDecisions (integration)", () => {
     expect(result.warnings.some((w) => w.code === "UNKNOWN_PRIORITY_TARGET")).toBe(false);
   }, 10000);
 
+  // ── Priority end-to-end: Barki / Mięśnie naramienne (target 6), Średniozaawansowany ────────────
+  //
+  // DB for this target at Średniozaawansowany: weeklyPreferredCeiling=16, weeklyAbsoluteCeiling=20
+  //   preferredMin = computePreferredFloor(16) = round05(max(1, 16*0.50)) = round05(8) = 8
+  //   preferredMax = 16
+  //   absoluteMax  = 20
+  //   preferredWidth = 8
+  //
+  // Experience level: Średniozaawansowany → rangePosition = 0.50
+  //   baseValue = 8 + 8*0.50 = 12
+  //
+  // Priority adjustments (raw, applied before rounding):
+  //   P1: +8*0.20 = +1.6 → preClamp=13.6 → round05=13.5
+  //   P2: +8*0.10 = +0.8 → preClamp=12.8 → round05=13.0
+  //   P3: +8*0.05 = +0.4 → preClamp=12.4 → round05=12.5
+  //   no priority:        preClamp=12.0 → round05=12.0
+  //
+  // This tests the FULL end-to-end path through calculateVolumeDecisions.
+  // The route must pass preferences.priorityMuscleGroups (trainer's wizard input),
+  // NOT draftInput.input.priorityMuscleGroups (client's stored survey data).
+
+  it("Barki P1 Średniozaawansowany → recommendedValue 13.5", async () => {
+    const result = await calculateVolumeDecisions({
+      clientId: 1, experienceLevel: "Średniozaawansowany",
+      priorityMuscleGroups: ["Barki"], excludedMuscleGroups: [],
+      sleep: null, stress: null, physicalWork: false, dailyActivity: null, recoveryQuality: null,
+      trainingDays: 4, sessionDuration: 60, trainerOverrides: {},
+    });
+    const d = result.decisions.find((d) => d.targetId === 6)!;
+    expect(d.priorityOrder).toBe(1);
+    expect(d.baseValue).toBe(12);
+    expect(d.preferredMin).toBe(8);
+    expect(d.preferredMax).toBe(16);
+    expect(d.recommendedValue).toBe(13.5);
+    expect(d.selectedValue).toBe(13.5);
+    expect(d.isOverridden).toBe(false);
+  }, 10000);
+
+  it("Barki P2 Średniozaawansowany → recommendedValue 13.0", async () => {
+    const result = await calculateVolumeDecisions({
+      clientId: 1, experienceLevel: "Średniozaawansowany",
+      priorityMuscleGroups: ["Klatka piersiowa", "Barki"], excludedMuscleGroups: [],
+      sleep: null, stress: null, physicalWork: false, dailyActivity: null, recoveryQuality: null,
+      trainingDays: 4, sessionDuration: 60, trainerOverrides: {},
+    });
+    const d = result.decisions.find((d) => d.targetId === 6)!;
+    expect(d.priorityOrder).toBe(2);
+    expect(d.recommendedValue).toBe(13.0);
+  }, 10000);
+
+  it("Barki P3 Średniozaawansowany → recommendedValue 12.5", async () => {
+    const result = await calculateVolumeDecisions({
+      clientId: 1, experienceLevel: "Średniozaawansowany",
+      priorityMuscleGroups: ["Klatka piersiowa", "Plecy", "Barki"], excludedMuscleGroups: [],
+      sleep: null, stress: null, physicalWork: false, dailyActivity: null, recoveryQuality: null,
+      trainingDays: 4, sessionDuration: 60, trainerOverrides: {},
+    });
+    const d = result.decisions.find((d) => d.targetId === 6)!;
+    expect(d.priorityOrder).toBe(3);
+    expect(d.recommendedValue).toBe(12.5);
+  }, 10000);
+
+  it("Barki no priority Średniozaawansowany → recommendedValue 12.0", async () => {
+    const result = await calculateVolumeDecisions({
+      clientId: 1, experienceLevel: "Średniozaawansowany",
+      priorityMuscleGroups: [], excludedMuscleGroups: [],
+      sleep: null, stress: null, physicalWork: false, dailyActivity: null, recoveryQuality: null,
+      trainingDays: 4, sessionDuration: 60, trainerOverrides: {},
+    });
+    const d = result.decisions.find((d) => d.targetId === 6)!;
+    expect(d.priorityOrder).toBeNull();
+    expect(d.baseValue).toBe(12);
+    expect(d.recommendedValue).toBe(12.0);
+  }, 10000);
+
   it("decisions are returned in canonical TARGET_ORDER", async () => {
     const result = await calculateVolumeDecisions({
       clientId: 1, experienceLevel: "Początkujący",
