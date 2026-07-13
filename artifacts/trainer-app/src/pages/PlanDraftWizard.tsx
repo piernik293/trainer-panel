@@ -600,6 +600,13 @@ function Step2Preferences({
   );
 }
 
+// ─── Split recommendation reason texts ───────────────────────────────────────
+
+const SPLIT_RECOMMENDATION_REASONS: Partial<Record<string, string>> = {
+  upper_lower:
+    "Rekomendacja wynika z 4 dni treningowych, możliwości trenowania każdej głównej partii 2 razy w tygodniu oraz prostego rozłożenia objętości.",
+};
+
 // ─── Phase 3B — Daily distribution section ────────────────────────────────────
 
 function DistributionSection({
@@ -682,6 +689,11 @@ function DistributionSection({
                       {SPLIT_TYPE_LABELS[result.recommendedSplitType] ?? result.recommendedSplitType}
                     </span>
                   </div>
+                  {SPLIT_RECOMMENDATION_REASONS[result.recommendedSplitType] && (
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      {SPLIT_RECOMMENDATION_REASONS[result.recommendedSplitType]}
+                    </p>
+                  )}
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-muted-foreground">Wybrany podział</span>
                     <span className="font-medium">
@@ -747,9 +759,15 @@ function DistributionSection({
                                 className="flex items-center justify-between text-xs"
                               >
                                 <span className="text-muted-foreground">{alloc.targetName}</span>
-                                <span className="font-medium">{alloc.allocatedVolume} serii</span>
+                                <span className="font-medium">{alloc.allocatedVolume} pkt. obj. efektywnej</span>
                               </div>
                             ))}
+                            <p className="text-[10px] text-muted-foreground pt-1 italic">
+                              Serie robocze do wykonania: dostępne po doborze ćwiczeń
+                            </p>
+                            <p className="text-[10px] text-muted-foreground italic">
+                              Podział na objętość bezpośrednią i pośrednią będzie dostępny po doborze ćwiczeń.
+                            </p>
                           </div>
                         )}
                       </CardContent>

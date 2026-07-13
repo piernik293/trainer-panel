@@ -189,11 +189,10 @@ export function recommendSplitType(
       recommended = "upper_lower_full_body";
     }
   } else if (trainingDays === 4) {
-    if (experienceLevel === NO_ACTIVITY || experienceLevel === BEGINNER) {
-      recommended = "upper_lower";
-    } else {
-      recommended = "push_pull_lower_full_body";
-    }
+    // All levels: upper_lower — simple 4-day structure, every major body part
+    // trained twice per week, easy weekly volume balancing.
+    // push_pull_lower_full_body remains available as a trainer-selected option.
+    recommended = "upper_lower";
   } else if (trainingDays === 5) {
     recommended = "upper_lower_full_body";
   } else {

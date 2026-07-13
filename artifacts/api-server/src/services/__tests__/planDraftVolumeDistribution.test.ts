@@ -101,11 +101,11 @@ describe("recommendSplitType", () => {
     it("Początkujący → upper_lower", () => {
       expect(recommendSplitType("Początkujący", 4).recommended).toBe("upper_lower");
     });
-    it("Średniozaawansowany → push_pull_lower_full_body", () => {
-      expect(recommendSplitType("Średniozaawansowany", 4).recommended).toBe("push_pull_lower_full_body");
+    it("Średniozaawansowany → upper_lower", () => {
+      expect(recommendSplitType("Średniozaawansowany", 4).recommended).toBe("upper_lower");
     });
-    it("Zaawansowany → push_pull_lower_full_body", () => {
-      expect(recommendSplitType("Zaawansowany", 4).recommended).toBe("push_pull_lower_full_body");
+    it("Zaawansowany → upper_lower", () => {
+      expect(recommendSplitType("Zaawansowany", 4).recommended).toBe("upper_lower");
     });
   });
 
@@ -230,8 +230,8 @@ describe("recommendSplitType", () => {
       // 4 days
       [NO_ACTIVITY,  4, "upper_lower"],
       [BEGINNER,     4, "upper_lower"],
-      [INTERMEDIATE, 4, "push_pull_lower_full_body"],
-      [ADVANCED,     4, "push_pull_lower_full_body"],
+      [INTERMEDIATE, 4, "upper_lower"],
+      [ADVANCED,     4, "upper_lower"],
       // 5 days — all levels → upper_lower_full_body
       [NO_ACTIVITY,  5, "upper_lower_full_body"],
       [BEGINNER,     5, "upper_lower_full_body"],
