@@ -15,7 +15,6 @@ import {
   TRAINING_LOCATION_OPTIONS,
   EXERCISE_TYPE_OPTIONS,
   MOVEMENT_PATTERN_OPTIONS,
-  MOVEMENT_COMPLEXITY_OPTIONS,
   LOCATION_DISPLAY_LABELS,
   getLocationDisplayLabel,
 } from "@/lib/exercise-constants";
@@ -28,8 +27,9 @@ export default function ExerciseList() {
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [exerciseTypeFilter, setExerciseTypeFilter] = useState<string>("all");
   const [movementPatternFilter, setMovementPatternFilter] = useState<string>("all");
-  const [movementComplexityFilter, setMovementComplexityFilter] = useState<string>("all");
   const [secondaryMuscleFilter, setSecondaryMuscleFilter] = useState<string>("all");
+  /** Phase A: "Program adaptacyjny" filter — shows only suitableForNoActivity = true exercises. */
+  const [adaptiveProgramFilter, setAdaptiveProgramFilter] = useState(false);
   const [completenessFilter, setCompletenessFilter] = useState<string>("all");
   const [importOpen, setImportOpen] = useState(false);
 
@@ -48,7 +48,7 @@ export default function ExerciseList() {
     exerciseType: exerciseTypeFilter !== "all" ? exerciseTypeFilter : undefined,
     movementPattern: movementPatternFilter !== "all" ? movementPatternFilter : undefined,
     secondaryMuscleGroup: secondaryMuscleFilter !== "all" ? secondaryMuscleFilter : undefined,
-    movementComplexity: movementComplexityFilter !== "all" ? movementComplexityFilter : undefined,
+    suitableForNoActivity: adaptiveProgramFilter ? true : undefined,
     isComplete: parseIsCompleteParam(completenessFilter),
   });
 
@@ -60,7 +60,7 @@ export default function ExerciseList() {
     locationFilter !== "all" ||
     exerciseTypeFilter !== "all" ||
     movementPatternFilter !== "all" ||
-    movementComplexityFilter !== "all" ||
+    adaptiveProgramFilter ||
     secondaryMuscleFilter !== "all" ||
     completenessFilter !== "all";
 
@@ -72,7 +72,7 @@ export default function ExerciseList() {
     setLocationFilter("all");
     setExerciseTypeFilter("all");
     setMovementPatternFilter("all");
-    setMovementComplexityFilter("all");
+    setAdaptiveProgramFilter(false);
     setSecondaryMuscleFilter("all");
     setCompletenessFilter("all");
   };
@@ -206,15 +206,17 @@ export default function ExerciseList() {
               </SelectContent>
             </Select>
 
-            <Select value={movementComplexityFilter} onValueChange={setMovementComplexityFilter}>
-              <SelectTrigger className="w-full sm:w-[175px] bg-background">
-                <SelectValue placeholder="Złożoność ruchu" />
+            {/* Phase A — "Program adaptacyjny" filter: suitableForNoActivity = true only */}
+            <Select
+              value={adaptiveProgramFilter ? "adaptive" : "all"}
+              onValueChange={(v) => setAdaptiveProgramFilter(v === "adaptive")}
+            >
+              <SelectTrigger className="w-full sm:w-[215px] bg-background">
+                <SelectValue placeholder="Zakres ćwiczeń" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Wszystkie złożoności</SelectItem>
-                {MOVEMENT_COMPLEXITY_OPTIONS.map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
+                <SelectItem value="all">Wszystkie ćwiczenia</SelectItem>
+                <SelectItem value="adaptive">⚡ Program adaptacyjny</SelectItem>
               </SelectContent>
             </Select>
 
