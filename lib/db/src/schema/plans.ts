@@ -108,6 +108,14 @@ export const workoutPlansTable = pgTable("workout_plans", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   activatedAt: timestamp("activated_at"),
+
+  // ── Generator fields (Phase 1) ────────────────────────────────────────────
+  /** Training split canonical key — null for plans created before the generator.
+   *  Allowed: full_body | full_body_ab | upper_lower | upper_lower_full_body |
+   *           push_pull_legs | push_pull_lower_full_body | specialization | custom */
+  splitType: text("split_type"),
+  /** Mesocycle length in weeks (4–12). Null treated as 6 in application code. */
+  blockDurationWeeks: integer("block_duration_weeks").default(6),
 }, (table) => [
   index("workout_plans_client_id_idx").on(table.clientId),
 ]);

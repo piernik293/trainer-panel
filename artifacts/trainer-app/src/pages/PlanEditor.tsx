@@ -1704,7 +1704,13 @@ export default function PlanEditor() {
             </p>
           </div>
 
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+            <Button variant="outline" asChild className="gap-1" size="sm">
+              <Link href={`/clients/${plan.clientId}/plans/generate`}>
+                <Sparkles size={14} />
+                Generuj szkic
+              </Link>
+            </Button>
             {plan.status === "draft" && (
               <>
                 <Button

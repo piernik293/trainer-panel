@@ -53,6 +53,9 @@ const UpdatePlanBody = z.object({
   startDate: z.string().nullable().optional(),
   endDate: z.string().nullable().optional(),
   trainerNotes: z.string().nullable().optional(),
+  // Generator fields
+  splitType: z.enum(["full_body","full_body_ab","upper_lower","upper_lower_full_body","push_pull_legs","push_pull_lower_full_body","specialization","custom"]).nullable().optional(),
+  blockDurationWeeks: z.number().int().min(4).max(12).nullable().optional(),
 });
 
 const CreatePlanDayBody = z.object({

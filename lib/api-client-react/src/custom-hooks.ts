@@ -50,3 +50,19 @@ export function useGetClientAvoidedExercises(clientId: number | null | undefined
     staleTime: 30_000,
   });
 }
+
+// ─── Plan Draft Input ──────────────────────────────────────────────────────────
+
+export function getClientPlanDraftInputQueryKey(clientId: number) {
+  return ["clients", clientId, "plan-draft-input"] as const;
+}
+
+export function useGetClientPlanDraftInput(clientId: number | null | undefined) {
+  return useQuery({
+    queryKey: getClientPlanDraftInputQueryKey(clientId ?? 0),
+    queryFn: () =>
+      customFetch<Record<string, unknown>>(`/api/clients/${clientId}/plan-draft-input`),
+    enabled: !!clientId,
+    staleTime: 60_000,
+  });
+}

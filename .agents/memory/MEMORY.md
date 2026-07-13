@@ -9,3 +9,5 @@
 - [Workout Builder 2.0 schema decisions](workout-builder-schema.md) — order columns use plain index (not unique); new columns nullable; planApi.ts custom hooks are canonical; DND via @dnd-kit; explicit save only for plan metadata.
 - [Volume preview endpoint placement](volume-preview-route.md) — POST /plans/volume-preview must be registered BEFORE parameterized /plans/:id routes in plans.ts; uses same calculateVolumePreview fn from volumeCalculator.ts.
 - [calculateVolumePreview inactive-exercise warning](volume-preview-warnings.md) — exercises with DB assignments that map to no volume target member must explicitly warn (code EXERCISE_WITHOUT_MUSCLE_ASSIGNMENTS); not covered by the "no assignments" check alone.
+- [api-zod composite build required after adding exports](api-zod-composite-build.md) — new files in lib/api-zod/src/ need `npx tsc --build lib/api-zod` before downstream packages resolve new exports.
+- [trainer-app api-zod dependency setup](trainer-app-api-zod-dependency.md) — trainer-app needs explicit package.json dep + tsconfig reference to import from @workspace/api-zod.

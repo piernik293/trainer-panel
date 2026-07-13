@@ -15,6 +15,7 @@ import { ExerciseNew, ExerciseEdit } from '@/pages/ExerciseForm';
 import ExerciseDetail from '@/pages/ExerciseDetail';
 import PlanCreate from '@/pages/PlanCreate';
 import PlanEditor from '@/pages/PlanEditor';
+import PlanDraftWizard from '@/pages/PlanDraftWizard';
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ function Router() {
         <Route path="/clients/new" component={ClientNew} />
         <Route path="/clients/:id/survey" component={SurveyForm} />
         <Route path="/clients/:id/plans/new" component={PlanCreate} />
+        <Route path="/clients/:id/plans/generate" component={PlanDraftWizard} />
         <Route path="/clients/:id" component={ClientDetail} />
         <Route path="/exercises/new" component={ExerciseNew} />
         <Route path="/exercises/:id/edit" component={ExerciseEdit} />

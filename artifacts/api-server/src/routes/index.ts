@@ -9,6 +9,7 @@ import exercisesRouter from "./exercises";
 import musclesRouter from "./muscles";
 import plansRouter from "./plans";
 import recommendationsRouter from "./recommendations";
+import planDraftInputRouter from "./planDraftInput";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(exercisesRouter);
 router.use(musclesRouter);
 router.use(plansRouter);
 router.use(recommendationsRouter);
+router.use(planDraftInputRouter);
 
 export default router;

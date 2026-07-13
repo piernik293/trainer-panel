@@ -98,12 +98,20 @@ function PlansTab({ clientId }: { clientId: number }) {
           <Dumbbell className="w-4 h-4" />
           Plany treningowe
         </CardTitle>
-        <Button asChild size="sm" className="gap-1">
-          <Link href={`/clients/${clientId}/plans/new`}>
-            <ClipboardList size={14} />
-            Nowy plan
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild size="sm" variant="outline" className="gap-1">
+            <Link href={`/clients/${clientId}/plans/new`}>
+              <ClipboardList size={14} />
+              Nowy plan
+            </Link>
+          </Button>
+          <Button asChild size="sm" className="gap-1">
+            <Link href={`/clients/${clientId}/plans/generate`}>
+              <Sparkles size={14} />
+              Generuj szkic
+            </Link>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="pt-4">
         {isLoading ? (
