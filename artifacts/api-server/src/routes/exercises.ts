@@ -1,10 +1,12 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ilike } from "drizzle-orm";
+import { eq, and, ilike, inArray } from "drizzle-orm";
 import {
   db,
   exercisesTable,
   exerciseSubstitutionsTable,
   exerciseProgressionsTable,
+  specificMusclesTable,
+  exerciseMuscleAssignmentsTable,
 } from "@workspace/db";
 import { computeCompleteness, fetchMuscleStats } from "../lib/exercise-completeness";
 import {
@@ -98,6 +100,48 @@ async function withUniqueSlugRetry<T>(
     }
   }
   throw lastError;
+}
+
+// ─── Muscle-assignment import helper ─────────────────────────────────────────
+
+type MuscleAssignmentInput = {
+  specificMuscleName: string;
+  isPrimary: boolean;
+  coefficient: number;
+};
+
+/**
+ * Look up each muscle by name and insert exercise_muscle_assignments rows.
+ * Unknown muscle names are silently skipped (the exercise import still succeeds).
+ */
+async function processMuscleAssignments(
+  exerciseId: number,
+  assignments: MuscleAssignmentInput[] | undefined,
+): Promise<void> {
+  if (!Array.isArray(assignments) || assignments.length === 0) return;
+
+  const muscleNames = [...new Set(assignments.map((a) => a.specificMuscleName).filter(Boolean))];
+  if (muscleNames.length === 0) return;
+
+  const muscles = await db
+    .select({ id: specificMusclesTable.id, name: specificMusclesTable.name })
+    .from(specificMusclesTable)
+    .where(inArray(specificMusclesTable.name, muscleNames));
+
+  const muscleIdMap = new Map(muscles.map((m) => [m.name, m.id]));
+
+  const toInsert = assignments
+    .filter((a) => muscleIdMap.has(a.specificMuscleName))
+    .map((a) => ({
+      exerciseId,
+      specificMuscleId: muscleIdMap.get(a.specificMuscleName)!,
+      coefficient: Math.min(1.0, Math.max(0.01, Number(a.coefficient))),
+      isPrimary: Boolean(a.isPrimary),
+    }));
+
+  if (toInsert.length > 0) {
+    await db.insert(exerciseMuscleAssignmentsTable).values(toInsert);
+  }
 }
 
 function parseIsActiveFilter(raw: unknown): boolean | undefined {
@@ -194,6 +238,7 @@ const VALID_MOVEMENT_PATTERN = new Set([
   "Przysiad", "Zawias biodrowy", "Wykrok", "Zgięcie kolana", "Wyprost kolana",
   "Odwodzenie", "Przywodzenie", "Zgięcie łokcia", "Wyprost łokcia",
   "Stabilizacja tułowia", "Zgięcie tułowia", "Rotacja", "Lokomocja", "Inne",
+  "Anti-ekstensja", "Anti-rotacja",
 ]);
 const VALID_MUSCLE_GROUPS = new Set([
   "Klatka piersiowa", "Plecy", "Barki", "Biceps", "Triceps", "Przedramiona",
@@ -332,19 +377,22 @@ router.post("/exercises/import", async (req, res): Promise<void> => {
       if (existingId && duplicateStrategy === "skip") {
         skipped++;
       } else if (existingId && duplicateStrategy === "update") {
-        const { name: _n, ...rest } = row;
+        const { name: _n, muscleAssignments: _ma, ...rest } = row as ImportRowInput & { muscleAssignments?: MuscleAssignmentInput[] };
         await db.update(exercisesTable).set({ ...rest as object, updatedAt: new Date() }).where(eq(exercisesTable.id, existingId));
+        await processMuscleAssignments(existingId, row.muscleAssignments as MuscleAssignmentInput[] | undefined);
         updated++;
       } else {
         // "create" strategy or no duplicate — insert new.
         const slugSource = name;
-        await withUniqueSlugRetry(slugSource, (slug) =>
-          db.insert(exercisesTable).values({ ...(row as Partial<typeof exercisesTable.$inferInsert>), name, slug } as typeof exercisesTable.$inferInsert).returning(),
+        const insertedRows = await withUniqueSlugRetry(slugSource, (slug) =>
+          db.insert(exercisesTable).values({ ...(row as Partial<typeof exercisesTable.$inferInsert>), name, slug } as typeof exercisesTable.$inferInsert).returning({ id: exercisesTable.id }),
         );
         imported++;
-        // Add to map so subsequent rows with the same name are treated as duplicates.
-        const [inserted] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(eq(exercisesTable.name, name)).orderBy(exercisesTable.id).limit(1);
-        if (inserted) nameMap.set(name.toLowerCase(), inserted.id);
+        const insertedId = insertedRows[0]?.id;
+        if (insertedId) {
+          nameMap.set(name.toLowerCase(), insertedId);
+          await processMuscleAssignments(insertedId, row.muscleAssignments as MuscleAssignmentInput[] | undefined);
+        }
       }
     } catch (err) {
       failed++;

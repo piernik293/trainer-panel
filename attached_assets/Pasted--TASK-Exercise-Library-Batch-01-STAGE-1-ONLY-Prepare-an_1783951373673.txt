@@ -1,0 +1,574 @@
+# TASK — Exercise Library Batch 01
+# STAGE 1 ONLY: Prepare and Validate Import Dataset
+
+Prepare the first curated Exercise Library import dataset.
+
+This task is STAGE 1 ONLY.
+
+Do NOT import any exercises into the live database.
+Do NOT modify existing database records.
+Do NOT reset, reseed or migrate the database.
+Do NOT create temporary exercise records.
+Do NOT modify the existing 5 exercises.
+Do NOT change existing exercise IDs.
+Do NOT change volume guidelines, coefficients or volume formulas.
+
+The purpose of this task is to:
+
+1. audit the current Exercise Library schema,
+2. verify canonical values,
+3. verify equipment and training-location storage,
+4. create a reviewable JSON file,
+5. validate the complete dataset,
+6. stop before database import.
+
+============================================================
+MAIN OUTPUT
+============================================================
+
+Create:
+
+docs/exercise-import-batch-01.json
+
+The file must contain exactly the 82 exercises listed in this task.
+
+The JSON must use the exact format currently accepted by the existing Bulk Import system.
+
+Do not invent a new import format when an existing one is already supported.
+
+============================================================
+STEP 1 — AUDIT CURRENT IMPORT SYSTEM
+============================================================
+
+Before generating the JSON, inspect:
+
+- Exercise database schema
+- Exercise API schemas
+- Bulk Import schemas
+- frontend import types
+- canonical constants and enums
+- completeness validation
+- analysis-readiness validation
+- muscle-assignment validation
+- duplicate-name validation
+
+Report the exact accepted values for:
+
+- movementCategory
+- movementPattern
+- exerciseType
+- execution
+- planeOfMotion
+- equipment
+- trainingLocation
+- resistanceType
+- difficultyLevel
+- jointStress
+- exercisePriority
+- canBePerformedToFailure
+- suitableExperienceLevels
+- trainingGoals
+
+Do not create spelling variants.
+
+============================================================
+STEP 2 — VERIFY EQUIPMENT AND TRAINING LOCATION
+============================================================
+
+Audit the current end-to-end handling of:
+
+- equipment
+- trainingLocation
+
+Check:
+
+Database
+→ API
+→ backend types
+→ frontend types
+→ Exercise Form
+→ Exercise Details
+→ Exercise Library filters
+→ Bulk Import
+→ completeness validation
+
+The previous audit suggested that the existing exercises may not contain these fields even though the UI displays equipment or locations.
+
+Determine whether:
+
+- the values are actually missing,
+- another field is being displayed,
+- the API omits them,
+- arrays are serialized incorrectly,
+- completeness checks incorrect property names,
+- frontend fallback values are displayed.
+
+Do not change live exercise data during Stage 1.
+
+A verified code mapping bug may be fixed only when:
+
+- it does not modify existing exercise records,
+- it does not change exercise IDs,
+- it does not change unrelated functionality,
+- automated tests are added.
+
+Report the result clearly.
+
+============================================================
+STEP 3 — CREATE THE DATASET
+============================================================
+
+Create exactly 82 records.
+
+Each record must contain all fields required by the current import schema.
+
+Required data should include, where supported:
+
+- name
+- active
+- description
+- mainMuscleGroup
+- secondaryMuscleGroups
+- movementPattern
+- movementCategory
+- exerciseType
+- execution
+- planeOfMotion
+- equipment
+- trainingLocation
+- resistanceType
+- difficultyLevel
+- suitableExperienceLevels
+- trainingGoals
+- learningDifficulty
+- jointStress
+- neurologicalFatigue
+- domsPotential
+- exercisePriority
+- requiresSpotter
+- canBePerformedToFailure
+- executionInstructions
+- commonMistakes
+- coachingTips
+- breathingTips
+- safetyNotes
+- recommendedRangeOfMotion
+- muscleAssignments
+- substitutions
+- progressions
+- regressions
+
+Every record must be:
+
+- Complete
+- Analysis Ready
+- valid for Bulk Import
+- free from duplicate names
+- compatible with the existing database
+
+============================================================
+EXERCISE LIST — EXACTLY 82 RECORDS
+============================================================
+
+LOWER BODY — 25
+
+1. Przysiad goblet z hantlem
+2. Przysiad do skrzyni
+3. Przysiad do skrzyni z masą własnego ciała
+4. Hack squat na maszynie
+5. Wypychanie nóg na suwnicy 45°
+6. Przysiad na suwnicy Smitha
+7. Przysiad bułgarski
+8. Przysiad wykroczny z podparciem
+9. Wykrok w tył
+10. Wykroki chodzone
+11. Wejście na podest
+12. Prostowanie nóg na maszynie
+13. Martwy ciąg rumuński ze sztangą
+14. Martwy ciąg rumuński z hantlami
+15. Martwy ciąg z trap barem
+16. Martwy ciąg z kettlebell
+17. Hip thrust
+18. Glute bridge
+19. Uginanie nóg siedząc na maszynie
+20. Uginanie nóg leżąc na maszynie
+21. Pull-through na wyciągu
+22. Wspięcia na palce stojąc
+23. Wspięcia na palce siedząc
+24. Odwodzenie nóg na maszynie
+25. Przywodzenie nóg na maszynie
+
+CHEST — 10
+
+26. Wyciskanie hantli na ławce skośnej dodatniej
+27. Wyciskanie sztangi na ławce skośnej dodatniej
+28. Wyciskanie na maszynie siedząc
+29. Pompki na podwyższeniu
+30. Pompki klasyczne
+31. Pompki na kolanach
+32. Rozpiętki na maszynie Pec Deck
+33. Rozpiętki na bramie na wysokości klatki
+34. Rozpiętki na bramie z dołu do góry
+35. Rozpiętki na bramie z góry w dół
+
+BACK — 14
+
+36. Ściąganie drążka wyciągu górnego chwytem neutralnym
+37. Ściąganie drążka wyciągu górnego szerokim nachwytem
+38. Ściąganie drążka wyciągu górnego podchwytem
+39. Podciąganie na maszynie wspomagającej
+40. Podciąganie na drążku chwytem neutralnym
+41. Wiosłowanie siedząc na wyciągu chwytem neutralnym
+42. Wiosłowanie hantlami z podparciem klatki
+43. Wiosłowanie na maszynie
+44. Wiosłowanie jednorącz hantlem
+45. Wiosłowanie T-bar z podparciem klatki
+46. Wiosłowanie na TRX
+47. Wiosłowanie gumą oporową
+48. Ściąganie prostych ramion na wyciągu
+49. Face pull
+
+SHOULDERS — 10
+
+50. Wyciskanie na maszynie nad głowę
+51. Arnold press
+52. Wyciskanie hantli siedząc
+53. Unoszenie hantli bokiem
+54. Unoszenie ramienia bokiem na wyciągu
+55. Unoszenie ramion bokiem na maszynie
+56. Odwrotne rozpiętki na maszynie Pec Deck
+57. Odwrotne rozpiętki z hantlami
+58. Odwrotne rozpiętki na linkach
+59. Unoszenie hantli w przód
+
+ARMS — 12
+
+60. Uginanie ramion ze sztangą
+61. Uginanie ramion ze sztangą EZ
+62. Uginanie ramion z hantlami
+63. Uginanie młotkowe z hantlami
+64. Uginanie ramion z hantlami na ławce skośnej
+65. Uginanie ramion na modlitewniku
+66. Uginanie ramion na wyciągu
+67. Prostowanie ramion z liną na wyciągu
+68. Prostowanie ramion z drążkiem na wyciągu
+69. Prostowanie ramion nad głową z liną
+70. Wyciskanie francuskie sztangą EZ
+71. Wyciskanie sztangi wąskim chwytem
+
+CORE, CARRY AND MOTOR PREPARATION — 11
+
+72. Dead bug
+73. Bird dog
+74. Plank boczny
+75. Pallof press
+76. Spięcia brzucha na wyciągu
+77. Odwrotne spięcia brzucha
+78. Unoszenie kolan w zwisie
+79. Ab wheel rollout
+80. Spacer farmera
+81. Spacer walizkowy
+82. Bear crawl
+
+============================================================
+EXECUTION LABELS
+============================================================
+
+Keep canonical stored values unchanged:
+
+- Obustronne
+- Jednostronne
+
+User-facing labels may be displayed as:
+
+- Obustronne (bilateralne)
+- Jednostronne (unilateralne)
+
+Do not store the text with parentheses in the database or import JSON unless the current canonical schema explicitly requires it.
+
+============================================================
+EXPERIENCE LEVELS
+============================================================
+
+Use exactly four canonical levels:
+
+- Brak aktywności fizycznej
+- Początkujący
+- Średniozaawansowany
+- Zaawansowany
+
+Do not create additional levels.
+
+Do not use No Activity as a fallback for missing or invalid data.
+
+Do not mark every exercise as suitable for Brak aktywności fizycznej.
+
+Exercises suitable for this level should normally have:
+
+- learningDifficulty 1–2
+- jointStress Niskie or Średnie
+- neurologicalFatigue 1–2
+- domsPotential 1–2
+- stable execution
+- simple instructions
+- no mandatory spotter where possible
+
+Advanced exercises such as:
+
+- Ab wheel rollout
+- Unoszenie kolan w zwisie
+- Podciąganie bez wspomagania
+- Przysiad bułgarski bez podparcia
+- Wyciskanie sztangi wąskim chwytem
+
+should not automatically be assigned to Brak aktywności fizycznej.
+
+============================================================
+MUSCLE ASSIGNMENTS
+============================================================
+
+Use existing canonical muscles.
+
+Do not create duplicate muscle records.
+
+Do not create new volume targets.
+
+Typical coefficients:
+
+- primary muscle: 1.00
+- major secondary muscle: 0.50
+- minor secondary muscle: 0.25
+
+Requirements:
+
+- at least one primary muscle
+- normally one primary assignment
+- coefficient greater than 0
+- coefficient not greater than 1.00
+- no meaningless stabilizer assignments
+- no separate volume target for Mięsień obły większy
+- existing max-coefficient-per-target logic must remain unchanged
+
+Do not modify coefficients of the existing 5 exercises.
+
+============================================================
+MOVEMENT CLASSIFICATION
+============================================================
+
+Use existing canonical categories:
+
+- Push
+- Pull
+- Squat
+- Hinge
+- Lunge
+- Carry
+- Rotation
+- Core
+
+Use precise existing movement patterns.
+
+Examples:
+
+- horizontal press → Push / Pchanie poziome
+- overhead press → Push / Pchanie pionowe
+- pulldown → Pull / Przyciąganie pionowe
+- row → Pull / Przyciąganie poziome
+- squat variation → Squat / Przysiad
+- RDL → Hinge / Zawias biodrowy
+- lunge or split squat → Lunge
+- farmer walk → Carry
+- Pallof press → Core / Anti-rotacja
+- Dead bug → Core / Anti-ekstensja
+
+Do not modify Phase 3 formulas to force classification.
+
+============================================================
+COACHING CONTENT
+============================================================
+
+Every exercise must have original Polish content:
+
+- short description
+- step-by-step execution instructions
+- common mistakes
+- coaching tips
+- breathing tips
+- safety notes
+
+Do not copy one generic text into multiple records.
+
+Content must match:
+
+- grip
+- stance
+- machine adjustment
+- bench angle
+- cable height
+- unilateral or bilateral execution
+- supported or unsupported variation
+- appropriate range of motion
+
+============================================================
+RELATIONSHIPS
+============================================================
+
+Add substitutions, progressions and regressions only where relationships are clear.
+
+Do not use database IDs in the JSON.
+
+Resolve exercise relationships by canonical normalized name.
+
+Do not reference exercises outside:
+
+- the existing Exercise Library,
+- this 82-exercise batch.
+
+Do not create circular progression chains.
+
+============================================================
+DUPLICATE DETECTION
+============================================================
+
+Validate duplicates using normalized names.
+
+Normalization should compare:
+
+- leading and trailing spaces
+- repeated spaces
+- letter casing
+- punctuation differences
+- Polish diacritics for comparison only
+
+Do not merge genuinely different exercise variations.
+
+These must remain separate:
+
+- Wyciskanie hantli siedząc
+- Wyciskanie hantli stojąc
+- Wyciskanie hantli na ławce skośnej
+
+============================================================
+VALIDATION
+============================================================
+
+Run the existing Bulk Import preview without importing.
+
+Validate:
+
+1. JSON contains exactly 82 records.
+2. Every name is unique.
+3. No record duplicates an existing exercise.
+4. Every record matches the import schema.
+5. Every record is Complete.
+6. Every record is Analysis Ready.
+7. Every record has equipment.
+8. Every record has trainingLocation.
+9. Every record uses only canonical values.
+10. Every record has suitableExperienceLevels.
+11. Only the four canonical experience levels are used.
+12. Every record has at least one primary muscle.
+13. Every coefficient is valid.
+14. Every referenced muscle exists.
+15. Every referenced related exercise exists.
+16. No new volume target is required.
+17. No existing exercise ID is changed.
+18. No database row is created or modified.
+19. Running validation repeatedly produces the same result.
+20. The JSON is valid and parseable.
+
+Fix all validation errors.
+
+Do not use “skip invalid rows”.
+
+============================================================
+AUTOMATED TESTS
+============================================================
+
+Add tests verifying:
+
+- exactly 82 records
+- unique normalized names
+- canonical values only
+- valid experience levels
+- complete metadata
+- analysis readiness
+- equipment presence
+- training-location presence
+- valid muscle assignments
+- valid coefficients
+- valid relationship references
+- conservative No Activity tagging
+- no duplicate existing exercise
+- no database modifications during Stage 1
+- original 5 exercise IDs remain unchanged
+- 44 volume-guideline rows remain unchanged
+
+Run:
+
+- all automated tests
+- TypeScript checks
+- API production build
+- trainer-app production build
+
+Do not claim production build success based only on:
+
+tsc --noEmit
+
+Run the actual configured production build commands.
+
+============================================================
+STOP CONDITION
+============================================================
+
+After the dataset is created and validated:
+
+STOP.
+
+Do not start Stage 2.
+Do not import into the database.
+Do not ask the system for automatic approval.
+Wait for explicit trainer approval.
+
+============================================================
+REQUIRED FINAL REPORT
+============================================================
+
+Provide:
+
+1. Canonical-value audit
+2. Equipment and training-location audit
+3. Any verified mapping bug
+4. Files changed
+5. Dataset path
+6. Record count
+7. Complete list of 82 exercise names
+8. Duplicate-check result
+9. Bulk Import preview result
+10. Completeness result
+11. Analysis-readiness result
+12. Muscle-assignment summary
+13. Coefficient validation
+14. No Activity suitability summary
+15. Equipment distribution
+16. Training-location distribution
+17. Movement-category distribution
+18. Exercise-type distribution
+19. Execution-type distribution
+20. Plane-of-motion distribution
+21. Relationship validation
+22. Automated-test results
+23. TypeScript results
+24. API production build result
+25. Trainer-app production build result
+26. Confirmation that the database was not modified
+27. Confirmation that original exercise IDs remain unchanged
+28. Confirmation that 44 guideline rows remain unchanged
+29. Remaining warnings or limitations
+
+Finish with exactly one verdict:
+
+- READY FOR TRAINER REVIEW
+- NOT READY FOR TRAINER REVIEW
+
+Do not use PASS because database import has not yet been performed.

@@ -1133,7 +1133,12 @@ export const PreviewExerciseImportBody = zod.object({
   "learningDifficulty": zod.number().optional(),
   "neurologicalFatigue": zod.number().optional(),
   "domsPotential": zod.number().optional(),
-  "exercisePriority": zod.string().optional()
+  "exercisePriority": zod.string().optional(),
+  "muscleAssignments": zod.array(zod.object({
+    "specificMuscleName": zod.string(),
+    "isPrimary": zod.boolean(),
+    "coefficient": zod.number()
+  })).optional()
 }).describe('One row of exercise data for bulk import'))
 })
 
@@ -1188,7 +1193,12 @@ export const ImportExercisesBody = zod.object({
   "learningDifficulty": zod.number().optional(),
   "neurologicalFatigue": zod.number().optional(),
   "domsPotential": zod.number().optional(),
-  "exercisePriority": zod.string().optional()
+  "exercisePriority": zod.string().optional(),
+  "muscleAssignments": zod.array(zod.object({
+    "specificMuscleName": zod.string(),
+    "isPrimary": zod.boolean(),
+    "coefficient": zod.number()
+  })).optional()
 }).describe('One row of exercise data for bulk import')),
   "duplicateStrategy": zod.enum(['skip', 'update', 'create']),
   "skipInvalidRows": zod.boolean().optional()
