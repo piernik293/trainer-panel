@@ -379,6 +379,24 @@ function Step1Summary({
   );
 }
 
+// ─── Step 2 — Adaptive program defaults ───────────────────────────────────────
+
+/**
+ * Default plan preferences for "Program adaptacyjny 4–8 tygodni".
+ * Applied when the trainer clicks "Zastosuj" for a "Start adaptacyjny" client.
+ * No data is persisted — this is a UI convenience preset only.
+ */
+const ADAPTIVE_PROGRAM_DEFAULTS: PlanDraftGenerationPreferencesType = {
+  trainingDays: 3,
+  sessionDurationMinutes: 45,
+  splitType: "full_body",
+  blockDurationWeeks: 6,   // midpoint of the 4–8 week range
+  trainingGoal: "Zdrowie ogólne",
+  priorityMuscleGroups: [],
+  preferredTrainingStyle: null,
+  trainerRestrictions: null,
+};
+
 // ─── Step 2 — Plan assumptions ────────────────────────────────────────────────
 
 function Step2Preferences({
@@ -416,9 +434,33 @@ function Step2Preferences({
   }
 
   const hasSurveyLevel = !!data.input.experienceLevel;
+  const isAdaptiveSegment = data.input.experienceLevel === "Brak aktywności fizycznej";
 
   return (
     <div className="space-y-4">
+      {isAdaptiveSegment && (
+        <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2">
+            <Sparkles size={15} className="text-sky-500 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-sky-700">Program adaptacyjny 4–8 tygodni</p>
+              <p className="text-xs text-sky-600 mt-0.5">
+                Klient z segmentu „Start adaptacyjny" — zalecane ustawienia dla budowania nawyku treningowego
+                (3×/tydzień, Full Body, 6 tygodni, 45 min).
+              </p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-sky-200 text-sky-700 hover:bg-sky-100 shrink-0 mt-0.5"
+            onClick={() => onPrefsChange(ADAPTIVE_PROGRAM_DEFAULTS)}
+          >
+            Zastosuj
+          </Button>
+        </div>
+      )}
       {!hasSurveyLevel && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 flex items-start gap-2">
           <AlertCircle size={15} className="text-destructive mt-0.5 shrink-0" />

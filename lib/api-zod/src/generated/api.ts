@@ -654,9 +654,11 @@ export const ListExercisesQueryParams = zod.object({
   "trainingLocation": zod.coerce.string().optional(),
   "exerciseType": zod.coerce.string().optional(),
   "movementPattern": zod.coerce.string().optional(),
+  "movementComplexity": zod.coerce.string().optional(),
   "secondaryMuscleGroup": zod.coerce.string().optional(),
   "isActive": zod.coerce.boolean().optional(),
-  "isComplete": zod.coerce.boolean().optional()
+  "isComplete": zod.coerce.boolean().optional(),
+  "suitableForNoActivity": zod.coerce.boolean().optional()
 })
 
 export const ListExercisesResponseItem = zod.object({
@@ -694,6 +696,8 @@ export const ListExercisesResponseItem = zod.object({
   "neurologicalFatigue": zod.number().nullish(),
   "domsPotential": zod.number().nullish(),
   "exercisePriority": zod.string().nullish(),
+  "suitableForNoActivity": zod.boolean().nullish(),
+  "movementComplexity": zod.string().nullish(),
   "isActive": zod.boolean(),
   "isComplete": zod.boolean(),
   "missingFields": zod.array(zod.string()),
@@ -744,6 +748,8 @@ export const CreateExerciseBody = zod.object({
   "neurologicalFatigue": zod.number().optional(),
   "domsPotential": zod.number().optional(),
   "exercisePriority": zod.string().optional(),
+  "suitableForNoActivity": zod.boolean().optional(),
+  "movementComplexity": zod.string().optional(),
   "isActive": zod.boolean().optional()
 })
 
@@ -782,6 +788,8 @@ export const CreateExerciseResponse = zod.object({
   "neurologicalFatigue": zod.number().nullish(),
   "domsPotential": zod.number().nullish(),
   "exercisePriority": zod.string().nullish(),
+  "suitableForNoActivity": zod.boolean().nullish(),
+  "movementComplexity": zod.string().nullish(),
   "isActive": zod.boolean(),
   "isComplete": zod.boolean(),
   "missingFields": zod.array(zod.string()),
@@ -832,6 +840,8 @@ export const GetExerciseResponse = zod.object({
   "neurologicalFatigue": zod.number().nullish(),
   "domsPotential": zod.number().nullish(),
   "exercisePriority": zod.string().nullish(),
+  "suitableForNoActivity": zod.boolean().nullish(),
+  "movementComplexity": zod.string().nullish(),
   "isActive": zod.boolean(),
   "isComplete": zod.boolean(),
   "missingFields": zod.array(zod.string()),
@@ -885,6 +895,8 @@ export const UpdateExerciseBody = zod.object({
   "neurologicalFatigue": zod.number().optional(),
   "domsPotential": zod.number().optional(),
   "exercisePriority": zod.string().optional(),
+  "suitableForNoActivity": zod.boolean().optional(),
+  "movementComplexity": zod.string().optional(),
   "isActive": zod.boolean().optional()
 })
 
@@ -923,6 +935,8 @@ export const UpdateExerciseResponse = zod.object({
   "neurologicalFatigue": zod.number().nullish(),
   "domsPotential": zod.number().nullish(),
   "exercisePriority": zod.string().nullish(),
+  "suitableForNoActivity": zod.boolean().nullish(),
+  "movementComplexity": zod.string().nullish(),
   "isActive": zod.boolean(),
   "isComplete": zod.boolean(),
   "missingFields": zod.array(zod.string()),

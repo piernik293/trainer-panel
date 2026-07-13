@@ -37,11 +37,13 @@ export default function ClientList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [surveyFilter, setSurveyFilter] = useState<string>("all");
+  const [segmentFilter, setSegmentFilter] = useState<string>("all");
   const { data: clients, isLoading } = useListClients();
   const queryClient = useQueryClient();
   const deleteClient = useDeleteClient();
 
-  const hasActiveFilters = searchTerm !== "" || statusFilter !== "all" || surveyFilter !== "all";
+  const hasActiveFilters =
+    searchTerm !== "" || statusFilter !== "all" || surveyFilter !== "all" || segmentFilter !== "all";
 
   const filteredClients = clients?.filter((client) => {
     const term = searchTerm.toLowerCase();
@@ -53,14 +55,20 @@ export default function ClientList() {
 
     const matchesStatus = statusFilter === "all" || client.status === statusFilter;
     const matchesSurvey = surveyFilter === "all" || client.surveyStatus === surveyFilter;
+    const matchesSegment =
+      segmentFilter === "all" ||
+      (segmentFilter === "start_adaptacyjny" &&
+        (client as { experienceLevel?: string | null }).experienceLevel ===
+          "Brak aktywności fizycznej");
 
-    return matchesSearch && matchesStatus && matchesSurvey;
+    return matchesSearch && matchesStatus && matchesSurvey && matchesSegment;
   });
 
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
     setSurveyFilter("all");
+    setSegmentFilter("all");
   };
 
   const handleDelete = (id: number, name: string) => {
@@ -128,6 +136,16 @@ export default function ClientList() {
             </SelectContent>
           </Select>
 
+          <Select value={segmentFilter} onValueChange={setSegmentFilter}>
+            <SelectTrigger className="w-full sm:w-[210px] bg-background">
+              <SelectValue placeholder="Segment klienta" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Wszystkie segmenty</SelectItem>
+              <SelectItem value="start_adaptacyjny">Start adaptacyjny</SelectItem>
+            </SelectContent>
+          </Select>
+
           {hasActiveFilters && (
             <Button variant="ghost" onClick={clearFilters} className="text-muted-foreground">
               Wyczyść filtry
@@ -189,12 +207,19 @@ export default function ClientList() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={client.surveyStatus === "not_started" ? "outline" : "default"}
-                          className={client.surveyStatus === "not_started" ? "text-muted-foreground" : surveyBadgeVariant(client.surveyStatus)}
-                        >
-                          {surveyStatusLabel(client.surveyStatus)}
-                        </Badge>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Badge
+                            variant={client.surveyStatus === "not_started" ? "outline" : "default"}
+                            className={client.surveyStatus === "not_started" ? "text-muted-foreground" : surveyBadgeVariant(client.surveyStatus)}
+                          >
+                            {surveyStatusLabel(client.surveyStatus)}
+                          </Badge>
+                          {(client as { experienceLevel?: string | null }).experienceLevel === "Brak aktywności fizycznej" && (
+                            <Badge variant="outline" className="text-xs px-1.5 border-sky-200 text-sky-600 bg-sky-50">
+                              Start adaptacyjny · Nie rozpoczęto
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(client.createdAt)}
@@ -257,6 +282,11 @@ export default function ClientList() {
                     >
                       {surveyStatusLabel(client.surveyStatus)}
                     </Badge>
+                    {(client as { experienceLevel?: string | null }).experienceLevel === "Brak aktywności fizycznej" && (
+                      <Badge variant="outline" className="text-xs px-1.5 border-sky-200 text-sky-600 bg-sky-50">
+                        Start adaptacyjny
+                      </Badge>
+                    )}
                     <span className="text-xs text-muted-foreground ml-auto">{formatDate(client.createdAt)}</span>
                   </div>
                 </div>

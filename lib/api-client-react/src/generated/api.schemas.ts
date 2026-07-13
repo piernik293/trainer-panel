@@ -358,6 +358,10 @@ export interface Exercise {
   domsPotential?: number | null;
   /** @nullable */
   exercisePriority?: string | null;
+  /** @nullable */
+  suitableForNoActivity?: boolean | null;
+  /** @nullable */
+  movementComplexity?: string | null;
   isActive: boolean;
   isComplete: boolean;
   missingFields: string[];
@@ -401,6 +405,8 @@ export interface ExerciseInput {
   neurologicalFatigue?: number;
   domsPotential?: number;
   exercisePriority?: string;
+  suitableForNoActivity?: boolean;
+  movementComplexity?: string;
   isActive?: boolean;
 }
 
@@ -440,6 +446,8 @@ export interface ExerciseUpdate {
   neurologicalFatigue?: number;
   domsPotential?: number;
   exercisePriority?: string;
+  suitableForNoActivity?: boolean;
+  movementComplexity?: string;
   isActive?: boolean;
 }
 
@@ -730,9 +738,11 @@ difficultyLevel?: string;
 trainingLocation?: string;
 exerciseType?: string;
 movementPattern?: string;
+movementComplexity?: string;
 secondaryMuscleGroup?: string;
 isActive?: boolean;
 isComplete?: boolean;
+suitableForNoActivity?: boolean;
 };
 
 export type ListMusclesParams = {

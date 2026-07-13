@@ -15,6 +15,7 @@ import {
   TRAINING_LOCATION_OPTIONS,
   EXERCISE_TYPE_OPTIONS,
   MOVEMENT_PATTERN_OPTIONS,
+  MOVEMENT_COMPLEXITY_OPTIONS,
   LOCATION_DISPLAY_LABELS,
   getLocationDisplayLabel,
 } from "@/lib/exercise-constants";
@@ -27,6 +28,7 @@ export default function ExerciseList() {
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [exerciseTypeFilter, setExerciseTypeFilter] = useState<string>("all");
   const [movementPatternFilter, setMovementPatternFilter] = useState<string>("all");
+  const [movementComplexityFilter, setMovementComplexityFilter] = useState<string>("all");
   const [secondaryMuscleFilter, setSecondaryMuscleFilter] = useState<string>("all");
   const [completenessFilter, setCompletenessFilter] = useState<string>("all");
   const [importOpen, setImportOpen] = useState(false);
@@ -46,6 +48,7 @@ export default function ExerciseList() {
     exerciseType: exerciseTypeFilter !== "all" ? exerciseTypeFilter : undefined,
     movementPattern: movementPatternFilter !== "all" ? movementPatternFilter : undefined,
     secondaryMuscleGroup: secondaryMuscleFilter !== "all" ? secondaryMuscleFilter : undefined,
+    movementComplexity: movementComplexityFilter !== "all" ? movementComplexityFilter : undefined,
     isComplete: parseIsCompleteParam(completenessFilter),
   });
 
@@ -57,6 +60,7 @@ export default function ExerciseList() {
     locationFilter !== "all" ||
     exerciseTypeFilter !== "all" ||
     movementPatternFilter !== "all" ||
+    movementComplexityFilter !== "all" ||
     secondaryMuscleFilter !== "all" ||
     completenessFilter !== "all";
 
@@ -68,6 +72,7 @@ export default function ExerciseList() {
     setLocationFilter("all");
     setExerciseTypeFilter("all");
     setMovementPatternFilter("all");
+    setMovementComplexityFilter("all");
     setSecondaryMuscleFilter("all");
     setCompletenessFilter("all");
   };
@@ -197,6 +202,18 @@ export default function ExerciseList() {
                 <SelectItem value="all">Wszystkie wzorce</SelectItem>
                 {MOVEMENT_PATTERN_OPTIONS.map((p) => (
                   <SelectItem key={p} value={p}>{p}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={movementComplexityFilter} onValueChange={setMovementComplexityFilter}>
+              <SelectTrigger className="w-full sm:w-[175px] bg-background">
+                <SelectValue placeholder="Złożoność ruchu" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Wszystkie złożoności</SelectItem>
+                {MOVEMENT_COMPLEXITY_OPTIONS.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

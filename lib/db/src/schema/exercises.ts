@@ -46,6 +46,12 @@ export const exercisesTable = pgTable("exercises", {
   domsPotential: integer("doms_potential"), // 1–5
   exercisePriority: text("exercise_priority"), // "Bardzo wysoki" | "Wysoki" | "Średni" | "Niski"
 
+  // Phase A — Adaptation support
+  /** true = confirmed suitable for "Brak aktywności fizycznej" clients (Start adaptacyjny segment) */
+  suitableForNoActivity: boolean("suitable_for_no_activity"),
+  /** "Prosta" | "Umiarkowana" | "Złożona" — derived from learningDifficulty, overridden for suitableForNoActivity */
+  movementComplexity: text("movement_complexity"),
+
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

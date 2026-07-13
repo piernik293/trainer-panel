@@ -38,6 +38,7 @@ import {
   SUITABLE_EXPERIENCE_LEVEL_OPTIONS,
   RATING_OPTIONS,
   LOCATION_DISPLAY_LABELS,
+  MOVEMENT_COMPLEXITY_OPTIONS,
 } from "@/lib/exercise-constants";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
@@ -78,6 +79,9 @@ const exerciseSchema = z.object({
   neurologicalFatigue: z.coerce.number().int().min(1).max(5).optional().or(z.literal("")),
   domsPotential: z.coerce.number().int().min(1).max(5).optional().or(z.literal("")),
   exercisePriority: z.string().optional(),
+  // Phase A — Adaptation support
+  movementComplexity: z.string().optional(),
+  suitableForNoActivity: z.boolean().optional(),
 });
 
 type ExerciseFormValues = z.infer<typeof exerciseSchema>;
@@ -115,6 +119,8 @@ const emptyDefaults: ExerciseFormValues = {
   neurologicalFatigue: "",
   domsPotential: "",
   exercisePriority: "",
+  movementComplexity: "",
+  suitableForNoActivity: false,
 };
 
 // ─── Reusable sub-components ─────────────────────────────────────────────────
@@ -677,6 +683,20 @@ function ExerciseFormBody({
                   />
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="movementComplexity"
+                render={({ field }) => (
+                  <SelectField
+                    label="Złożoność ruchu"
+                    options={MOVEMENT_COMPLEXITY_OPTIONS}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Wybierz złożoność"
+                  />
+                )}
+              />
             </div>
 
             <FormField
@@ -691,6 +711,24 @@ function ExerciseFormBody({
                     />
                     <FormLabel className="cursor-pointer font-normal">
                       Wymaga asekuracji (spotter)
+                    </FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="suitableForNoActivity"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={field.value ?? false}
+                      onCheckedChange={(checked) => field.onChange(!!checked)}
+                    />
+                    <FormLabel className="cursor-pointer font-normal">
+                      Odpowiednie dla segmentu „Start adaptacyjny" (brak aktywności fizycznej)
                     </FormLabel>
                   </div>
                 </FormItem>
@@ -858,6 +896,8 @@ export function ExerciseEdit() {
     neurologicalFatigue: toNum(exercise.neurologicalFatigue),
     domsPotential: toNum(exercise.domsPotential),
     exercisePriority: toStr(exercise.exercisePriority),
+    movementComplexity: toStr(exercise.movementComplexity),
+    suitableForNoActivity: exercise.suitableForNoActivity ?? false,
   };
 
   return (

@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { maybeRunSeed } from "./seeds/volumeGuidelines";
 import { normalizeExerciseLocations } from "./seeds/normalizeLocations";
+import { seedExerciseAdaptationFields } from "./seeds/exerciseAdaptation";
 
 const rawPort = process.env["PORT"];
 
@@ -29,6 +30,12 @@ async function startServer() {
     await normalizeExerciseLocations();
   } catch (err) {
     logger.warn({ err }, "Exercise location normalization failed (non-fatal)");
+  }
+
+  try {
+    await seedExerciseAdaptationFields();
+  } catch (err) {
+    logger.warn({ err }, "Exercise adaptation seed failed (non-fatal)");
   }
 
   app.listen(port, (err) => {

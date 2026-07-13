@@ -215,12 +215,13 @@ router.get("/exercises", async (req, res): Promise<void> => {
     return;
   }
 
-  const { search, mainMuscleGroup, equipment, difficultyLevel, trainingLocation, exerciseType, movementPattern, secondaryMuscleGroup } = query.data;
-  // The generated query schema coerces "isActive" and "isComplete" with
-  // zod.coerce.boolean(), which treats any non-empty string as true.
-  // Parse both from raw query ourselves so `?isActive=false` is honoured.
+  const { search, mainMuscleGroup, equipment, difficultyLevel, trainingLocation, exerciseType, movementPattern, secondaryMuscleGroup, movementComplexity } = query.data;
+  // The generated query schema coerces boolean params with zod.coerce.boolean(),
+  // which treats any non-empty string (including "false") as true.
+  // Parse all boolean filters from raw query ourselves so ?param=false is honoured.
   const isActive = parseIsActiveFilter(req.query.isActive);
   const isCompleteFilter = parseIsActiveFilter(req.query.isComplete);
+  const suitableForNoActivityFilter = parseIsActiveFilter(req.query.suitableForNoActivity);
 
   const conditions = [
     search ? ilike(exercisesTable.name, `%${search}%`) : undefined,
@@ -228,7 +229,11 @@ router.get("/exercises", async (req, res): Promise<void> => {
     difficultyLevel ? eq(exercisesTable.difficultyLevel, difficultyLevel) : undefined,
     exerciseType ? eq(exercisesTable.exerciseType, exerciseType) : undefined,
     movementPattern ? eq(exercisesTable.movementPattern, movementPattern) : undefined,
+    movementComplexity ? eq(exercisesTable.movementComplexity, movementComplexity) : undefined,
     typeof isActive === "boolean" ? eq(exercisesTable.isActive, isActive) : undefined,
+    typeof suitableForNoActivityFilter === "boolean"
+      ? eq(exercisesTable.suitableForNoActivity, suitableForNoActivityFilter)
+      : undefined,
   ].filter((c): c is NonNullable<typeof c> => c !== undefined);
 
   let exercises = await db

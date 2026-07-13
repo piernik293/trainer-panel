@@ -43,6 +43,13 @@ export const TRAINING_LOCATION_OPTIONS = [
 ] as const;
 
 /**
+ * Movement complexity tiers — stored as `movementComplexity` on exercises.
+ * Assigned from learningDifficulty (1→Prosta, 2–3→Umiarkowana, 4–5→Złożona).
+ * All suitableForNoActivity exercises override to "Prosta".
+ */
+export const MOVEMENT_COMPLEXITY_OPTIONS = ["Prosta", "Umiarkowana", "Złożona"] as const;
+
+/**
  * Maps canonical stored location values to their user-facing display labels.
  *
  * The database and API always use the canonical key ("Plener").
