@@ -1,4 +1,7 @@
 - [React Hook Form + Radix Select prefill](rhf-select-prefill.md) — a mounted Select's `form.reset()` in a useEffect can silently fail to update the displayed value; key the form component on the loaded record's id instead.
+- [api-zod index.ts export collision](api-zod-index-collision.md) — never re-export `./generated/types` from api-zod index; Zod schemas in api.ts already provide types and same-name TS interfaces cause TS2308.
+- [Drizzle date() insert requires string](drizzle-date-insert-type.md) — Drizzle v0.45+ date() columns reject Date objects in inserts; convert with `.toISOString().split("T")[0]`.
+- [TanStack Query v5 enabled pattern](tanstack-query-v5-enabled-pattern.md) — `UseQueryOptions` requires `queryKey` in v5; always pass `getXyzQueryKey(...)` alongside `enabled`.
 - [Zod coerce.date() breaks native date inputs](zod-coerce-date-html-input.md) — API responses using `z.coerce.date()` serialize as full ISO timestamps, not `YYYY-MM-DD`, which breaks `<input type="date">` binding.
 - [orval zod date vs date-time](orval-date-only-fields.md) — orval's zod client can't tell OpenAPI `format: date` from `date-time`; fixed via a postprocess script + shared `dateOnly` schema, not per-route patches.
 - [Dual survey form parity](dual-survey-form-parity.md) — client-landing and trainer-app have separate, non-shared survey forms; conditional/required field changes must be ported to both + both API validation routes.

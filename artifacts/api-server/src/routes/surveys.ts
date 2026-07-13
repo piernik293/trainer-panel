@@ -117,7 +117,7 @@ router.put("/clients/:clientId/survey", async (req, res): Promise<void> => {
   }
   const normalizedData = {
     ...rest,
-    dateOfBirth,
+    dateOfBirth: dateOfBirthDate ? dateOfBirthDate.toISOString().split("T")[0] : undefined,
     age: dateOfBirthDate ? calculateAge(dateOfBirthDate) : rest.age,
   };
 

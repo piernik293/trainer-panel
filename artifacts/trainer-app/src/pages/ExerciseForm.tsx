@@ -747,8 +747,8 @@ function toStr(v: string | null | undefined): string {
   return v ?? "";
 }
 
-function toNum(v: number | null | undefined): string {
-  return v != null ? String(v) : "";
+function toNum(v: number | null | undefined): number | "" {
+  return v ?? "";
 }
 
 // ─── ExerciseNew ──────────────────────────────────────────────────────────────

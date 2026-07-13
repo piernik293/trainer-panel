@@ -151,7 +151,7 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     advancedMethodsToAvoid: advancedMethodsToAvoid ?? [],
     additionalInfo,
     age: calculatedAge,
-    dateOfBirth,
+    dateOfBirth: dateOfBirthDate.toISOString().split("T")[0],
     gender,
     heightCm,
     weightKg,

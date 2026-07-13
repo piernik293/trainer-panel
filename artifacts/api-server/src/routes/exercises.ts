@@ -339,7 +339,7 @@ router.post("/exercises/import", async (req, res): Promise<void> => {
         // "create" strategy or no duplicate — insert new.
         const slugSource = name;
         await withUniqueSlugRetry(slugSource, (slug) =>
-          db.insert(exercisesTable).values({ ...(row as object), name, slug }).returning(),
+          db.insert(exercisesTable).values({ ...(row as Partial<typeof exercisesTable.$inferInsert>), name, slug } as typeof exercisesTable.$inferInsert).returning(),
         );
         imported++;
         // Add to map so subsequent rows with the same name are treated as duplicates.

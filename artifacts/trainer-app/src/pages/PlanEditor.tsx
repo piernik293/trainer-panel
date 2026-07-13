@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
-import { useListExercises, useListExerciseRecommendations } from "@workspace/api-client-react";
+import { useListExercises, useListExerciseRecommendations, getListExerciseRecommendationsQueryKey } from "@workspace/api-client-react";
 import {
   useGetPlan,
   useUpdatePlan,
@@ -96,7 +96,7 @@ function ExercisePicker({
   const { data: recommendations } = useListExerciseRecommendations(
     clientId ?? 0,
     {},
-    { query: { enabled: !!clientId && tab === "recommended" } },
+    { query: { enabled: !!clientId && tab === "recommended", queryKey: getListExerciseRecommendationsQueryKey(clientId ?? 0, {}) } },
   );
 
   const showTabs = !!clientId;

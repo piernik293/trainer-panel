@@ -1,0 +1,295 @@
+# TASK — Stabilize Monorepo Builds, Generated Types and TypeScript Checks
+
+This is a stabilization task.
+
+Do NOT add new product features.
+Do NOT redesign any UI.
+Do NOT modify business logic unless required to fix an actual type inconsistency.
+Do NOT change the existing behaviour of the application.
+
+The application currently works at runtime, but TypeScript checks fail because internal workspace package `dist` outputs and generated API types are stale.
+
+The known affected packages are:
+
+- @workspace/db
+- @workspace/api-zod
+- @workspace/api-client-react
+
+The known additional type gap is that exercise API responses include computed fields:
+
+- isComplete
+- missingFields
+
+but these fields are not currently represented in the OpenAPI Exercise schema.
+
+============================================================
+OBJECTIVE
+============================================================
+
+Make the monorepo fully type-safe and reproducible.
+
+Expected final result:
+
+- Internal workspace packages are rebuilt from current source
+- Generated OpenAPI/Zod/client types match the actual API
+- `isComplete` and `missingFields` are included in the official Exercise response type
+- API server TypeScript check passes
+- Trainer app TypeScript check passes
+- Existing runtime behaviour remains unchanged
+- Existing database data remains untouched
+
+============================================================
+STEP 0 — SAFETY CHECK
+============================================================
+
+Before modifying anything:
+
+1. Inspect the current git status.
+2. Create a git commit or restore point for the current working implementation.
+3. Record the existing build and typecheck errors.
+4. Do not reset, delete or overwrite existing feature work.
+5. Do not delete the database or reseed existing user data.
+
+Do not proceed with destructive operations.
+
+============================================================
+STEP 1 — INSPECT PACKAGE BUILD CONFIGURATION
+============================================================
+
+Inspect:
+
+- root package.json
+- pnpm-workspace.yaml
+- package.json files for:
+  - @workspace/db
+  - @workspace/api-zod
+  - @workspace/api-client-react
+  - api-server
+  - trainer-app
+- tsconfig files
+- package export definitions
+- build output directories
+- OpenAPI generation scripts
+- Orval configuration
+- Zod generation configuration
+
+Confirm:
+
+- which packages publish from `dist`
+- which packages are resolved directly from `src` at runtime
+- the correct dependency build order
+- the correct existing commands for generation and compilation
+
+Use the project's existing scripts where available.
+
+Do not invent duplicate build systems.
+
+============================================================
+STEP 2 — REBUILD INTERNAL WORKSPACE PACKAGES
+============================================================
+
+Rebuild the workspace packages in dependency order.
+
+Expected order:
+
+1. @workspace/db
+2. @workspace/api-zod
+3. @workspace/api-client-react
+
+Before rebuilding, remove only stale generated/build output belonging to these packages if required.
+
+Do not remove source files.
+
+Verify that the rebuilt `dist` directories contain exports for all currently implemented entities, including where applicable:
+
+- exerciseSubstitutionsTable
+- exerciseProgressionsTable
+- volumeGuidelineVersionsTable
+- workoutPlansTable
+- plan-related tables
+- all new Exercise Library fields
+- bulk import hooks and types
+- recommendation response types
+
+After each package build, verify that its public exports match its source exports.
+
+============================================================
+STEP 3 — FIX THE OPENAPI EXERCISE RESPONSE TYPE
+============================================================
+
+The API returns computed completeness fields on exercise responses:
+
+- isComplete
+- missingFields
+
+Add these fields to the official OpenAPI Exercise schema.
+
+Use appropriate types:
+
+- `isComplete`: boolean
+- `missingFields`: array of strings
+
+These are response fields computed by the server.
+
+Do not store them as database columns.
+
+Do not duplicate the completeness logic.
+
+The existing dynamic completeness calculation must remain the single source of truth.
+
+Ensure these fields are present in every API response type where an Exercise object is returned.
+
+============================================================
+STEP 4 — REGENERATE API TYPES
+============================================================
+
+After updating OpenAPI:
+
+1. Regenerate Zod/OpenAPI schemas using the existing project scripts.
+2. Regenerate the React API client using the existing Orval configuration.
+3. Rebuild:
+   - @workspace/api-zod
+   - @workspace/api-client-react
+4. Verify that generated exports include:
+   - Exercise.isComplete
+   - Exercise.missingFields
+   - ListExerciseRecommendationsResponse
+   - usePreviewExerciseImport
+   - useImportExercises
+   - ImportExerciseRow
+   - ImportPreviewResponse
+   - all other currently used generated types and hooks
+
+Do not manually edit generated files unless the project explicitly requires it.
+
+Prefer fixing the source OpenAPI specification and regenerating outputs.
+
+============================================================
+STEP 5 — RUN TYPE CHECKS
+============================================================
+
+Run the appropriate TypeScript checks for:
+
+- @workspace/db
+- @workspace/api-zod
+- @workspace/api-client-react
+- api-server
+- trainer-app
+- the entire workspace, if a root typecheck script exists
+
+The final required result is:
+
+- zero TypeScript errors caused by stale workspace outputs
+- zero missing-export errors
+- zero missing-property errors for new Exercise Library fields
+- zero missing-property errors for `isComplete` and `missingFields`
+- zero missing generated hook/type errors
+
+Do not suppress errors using:
+
+- `any`
+- `@ts-ignore`
+- `@ts-expect-error`
+- disabled strictness
+- skipped type checking
+- unsafe casts without justification
+
+Fix the source of each type mismatch.
+
+============================================================
+STEP 6 — BUILD AND RUNTIME REGRESSION CHECK
+============================================================
+
+After TypeScript passes:
+
+1. Build or start the API server.
+2. Build or start the trainer app.
+3. Confirm no startup errors.
+4. Confirm the database connects without schema changes.
+5. Confirm existing data remains present.
+
+Smoke-test these areas:
+
+- Exercise Library list opens
+- Existing exercise details open
+- Existing exercises can be edited
+- New exercise form opens
+- Completeness fields display correctly
+- Bulk Import modal opens
+- Recommendation endpoint responds
+- Recommendation UI opens
+- Training Interview still loads
+- Plan Editor still loads
+- Volume Calculator still works
+- “Brak aktywności fizycznej” still uses its dedicated guidelines
+
+Do not change the database schema during this task unless an actual missing schema element is discovered and documented first.
+
+============================================================
+STEP 7 — VERIFY PACKAGE REPRODUCIBILITY
+============================================================
+
+Confirm that a clean workspace build can reproduce the same result.
+
+The correct build order should be represented in existing root scripts or workspace dependency configuration.
+
+If the project currently requires developers to remember a manual build order, add or improve a root-level script such as an existing equivalent of:
+
+- generate
+- build:libs
+- typecheck
+- build
+
+Use names consistent with the existing project.
+
+Do not create unnecessary duplicate scripts.
+
+The goal is that future changes to DB schema or OpenAPI types do not leave stale `dist` files unnoticed.
+
+============================================================
+OUT OF SCOPE
+============================================================
+
+Do NOT implement during this task:
+
+- missing recommendation scoring dimensions
+- related exercise recommendations
+- same-equipment suggestions
+- same-pattern suggestions
+- same-muscle suggestions
+- automatic workout generation
+- AI planning
+- progressive overload
+- injury adaptation
+- Workout Builder 2.0
+- new Exercise Library features
+- new database migration architecture
+
+These can be separate future tasks.
+
+============================================================
+REQUIRED FINAL REPORT
+============================================================
+
+After completing the stabilization, provide a structured report containing:
+
+1. Files changed
+2. Commands executed
+3. Workspace packages rebuilt
+4. Generated files refreshed
+5. OpenAPI changes
+6. TypeScript result for each package
+7. Build result
+8. Runtime smoke-test result
+9. Any remaining errors or warnings
+10. Confirmation that no existing functionality or database data was removed
+
+Include the final output of the relevant typecheck commands.
+
+Finish with one verdict:
+
+- PASS
+- PASS WITH WARNINGS
+- FAIL
+
+Do not claim PASS unless both the API server and trainer app pass their TypeScript checks and still start successfully.

@@ -16,7 +16,7 @@
  */
 import { useState } from "react";
 import { Link } from "wouter";
-import { useListExerciseRecommendations } from "@workspace/api-client-react";
+import { useListExerciseRecommendations, getListExerciseRecommendationsQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -102,10 +102,11 @@ interface Props {
 export default function ExerciseRecommendationsTab({ clientId, hasSurvey }: Props) {
   const [muscleFilter, setMuscleFilter] = useState<string>("all");
 
+  const params = muscleFilter !== "all" ? { mainMuscleGroup: muscleFilter } : {};
   const { data, isLoading } = useListExerciseRecommendations(
     clientId,
-    muscleFilter !== "all" ? { mainMuscleGroup: muscleFilter } : {},
-    { query: { enabled: hasSurvey } },
+    params,
+    { query: { enabled: hasSurvey, queryKey: getListExerciseRecommendationsQueryKey(clientId, params) } },
   );
 
   if (!hasSurvey) return <NoProfile />;
