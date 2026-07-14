@@ -167,10 +167,12 @@ export type PlanDraftInputSourceMapType = z.infer<typeof PlanDraftInputSourceMap
 export function getCompatibleSplits(days: number | null): SplitType[] {
   if (!days || days < 1) return ["custom"];
   if (days <= 2) return ["full_body_ab", "custom"];
-  if (days === 3) return ["full_body", "upper_lower_full_body", "custom"];
+  // 3 days: classic Push / Pull / Legs is a natural fit alongside full-body variants
+  if (days === 3) return ["full_body", "upper_lower_full_body", "push_pull_legs", "custom"];
   if (days === 4) return ["upper_lower", "push_pull_lower_full_body", "custom"];
-  if (days === 5) return ["push_pull_legs", "specialization", "custom"];
-  // 6-7
+  // 5 days: PPL repeats the first day → unbalanced; use upper/lower variants instead
+  if (days === 5) return ["upper_lower_full_body", "specialization", "custom"];
+  // 6-7 days: PPL divides evenly (Push/Pull/Legs × 2)
   return ["push_pull_legs", "specialization", "custom"];
 }
 

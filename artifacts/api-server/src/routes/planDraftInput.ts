@@ -84,14 +84,30 @@ router.post("/plans/draft-input/validate", async (req, res): Promise<void> => {
   }
 
   // Validate split type compatibility with training days
-  const compatible = getCompatibleSplits(preferences.trainingDays);
-  if (!compatible.includes(preferences.splitType) && preferences.splitType !== "custom") {
+  // PPL requires exactly 3 or 6 (or 7) days — 4 or 5 days repeat the first day, creating an
+  // unbalanced structure (e.g. Push/Pull/Legs/Push). This is a blocking error.
+  if (
+    preferences.splitType === "push_pull_legs" &&
+    preferences.trainingDays !== 3 &&
+    preferences.trainingDays !== 6 &&
+    preferences.trainingDays !== 7
+  ) {
     warnings.push({
-      code: "SPLIT_INCOMPATIBLE_WITH_DAYS",
-      severity: "warning",
-      message: `Podział "${preferences.splitType}" nie jest rekomendowany dla ${preferences.trainingDays} dni treningowych.`,
-      blocking: false,
+      code: "SPLIT_INCOMPATIBLE_WITH_TRAINING_DAYS",
+      severity: "error",
+      message: "Push / Pull / Legs wymaga 3 lub 6 dni treningowych.",
+      blocking: true,
     });
+  } else {
+    const compatible = getCompatibleSplits(preferences.trainingDays);
+    if (!compatible.includes(preferences.splitType) && preferences.splitType !== "custom") {
+      warnings.push({
+        code: "SPLIT_INCOMPATIBLE_WITH_DAYS",
+        severity: "warning",
+        message: `Podział "${preferences.splitType}" nie jest rekomendowany dla ${preferences.trainingDays} dni treningowych.`,
+        blocking: false,
+      });
+    }
   }
 
   // Validate block duration

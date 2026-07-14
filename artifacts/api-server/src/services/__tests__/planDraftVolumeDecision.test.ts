@@ -468,6 +468,101 @@ describe("computeTargetDecision", () => {
     expect(d.warnings.some((w) => w.code === "TARGET_DEPRIORITIZED_BY_TRAINER")).toBe(true);
   });
 
+  // ── Broad-category priority group-size fix ────────────────────────────────
+
+  /**
+   * "Plecy" maps to TWO targets: latissimus (id 9) and trapezius (id 10).
+   * When both receive priorityGroupSize=2, each target's bonus is halved,
+   * so the combined uplift equals ONE full priority-1 bonus — not two.
+   *
+   * G_KLATKA is reused for both targets as a convenient large-width guideline:
+   *   preferredMin=8, preferredMax=15, absoluteMax=20, preferredWidth=7
+   *   full bonus (groupSize=1): 7 × 0.20 = 1.4 → roundInt = 1
+   *   half bonus (groupSize=2): 7 × 0.20 / 2 = 0.7 → roundInt = 1 (rounds up at 0.5)
+   *
+   * Use a wider guideline to make the halving clearly visible:
+   *   preferredWidth=10: full = 10×0.20=2.0; half = 1.0
+   */
+  const G_WIDE: GuidelineRecord = {
+    targetId: 9,
+    preferredMin: 6,
+    preferredMax: 16,  // width = 10
+    absoluteMax: 22,
+  };
+
+  it("broad Back priority (groupSize=1): single-target gets full +20% bonus", () => {
+    // full bonus = 10 × 0.20 = 2.0; roundInt(2.0) = 2
+    // base (Średniozaawansowany, 50%) = 6 + 10×0.50 = 11; 11 + 2 = 13
+    const d = computeTargetDecision({
+      target: TARGETS[8]!,          // latissimus (id=9, Plecy)
+      guideline: { ...G_WIDE, targetId: 9 },
+      experienceLevel: "Średniozaawansowany",
+      priorityOrder: 1, priorityGroupSize: 1,
+      isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
+      availability: "standard", trainerOverride: null,
+    });
+    expect(d.priorityAdjustment).toBe(2);
+    expect(d.recommendedValue).toBe(13);
+  });
+
+  it("broad Back priority (groupSize=2): each target gets half the bonus, not the full bonus", () => {
+    // half bonus = 10 × 0.20 / 2 = 1.0; roundInt(1.0) = 1
+    // base = 11; 11 + 1 = 12
+    const dLat = computeTargetDecision({
+      target: TARGETS[8]!,          // latissimus (id=9)
+      guideline: { ...G_WIDE, targetId: 9 },
+      experienceLevel: "Średniozaawansowany",
+      priorityOrder: 1, priorityGroupSize: 2,
+      isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
+      availability: "standard", trainerOverride: null,
+    });
+    const dTrap = computeTargetDecision({
+      target: TARGETS[9]!,          // trapezius (id=10)
+      guideline: { ...G_WIDE, targetId: 10 },
+      experienceLevel: "Średniozaawansowany",
+      priorityOrder: 1, priorityGroupSize: 2,
+      isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
+      availability: "standard", trainerOverride: null,
+    });
+    // Each individual bonus is halved
+    expect(dLat.priorityAdjustment).toBe(1);
+    expect(dTrap.priorityAdjustment).toBe(1);
+    // Combined bonus equals one full bonus (2), not two full bonuses (4)
+    expect(dLat.priorityAdjustment + dTrap.priorityAdjustment).toBe(2);
+    // Each target's recommended value is lower than with groupSize=1
+    expect(dLat.recommendedValue).toBe(12);
+    expect(dTrap.recommendedValue).toBe(12);
+  });
+
+  it("broad Back priority: combined uplift with groupSize=2 equals single-target uplift with groupSize=1", () => {
+    // This is the core invariant: one "Plecy" priority ≡ one bonus, regardless of how many
+    // internal targets "Plecy" maps to.
+    const withGroupSize1 = computeTargetDecision({
+      target: TARGETS[8]!, guideline: { ...G_WIDE, targetId: 9 },
+      experienceLevel: "Średniozaawansowany",
+      priorityOrder: 1, priorityGroupSize: 1,
+      isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
+      availability: "standard", trainerOverride: null,
+    });
+    const withGroupSize2a = computeTargetDecision({
+      target: TARGETS[8]!, guideline: { ...G_WIDE, targetId: 9 },
+      experienceLevel: "Średniozaawansowany",
+      priorityOrder: 1, priorityGroupSize: 2,
+      isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
+      availability: "standard", trainerOverride: null,
+    });
+    const withGroupSize2b = computeTargetDecision({
+      target: TARGETS[9]!, guideline: { ...G_WIDE, targetId: 10 },
+      experienceLevel: "Średniozaawansowany",
+      priorityOrder: 1, priorityGroupSize: 2,
+      isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
+      availability: "standard", trainerOverride: null,
+    });
+    const singleBonus = withGroupSize1.priorityAdjustment;
+    const combinedBonus = withGroupSize2a.priorityAdjustment + withGroupSize2b.priorityAdjustment;
+    expect(combinedBonus).toBe(singleBonus);
+  });
+
   it("reduced recovery → lowers value by 20% of preferredWidth", () => {
     const reducedRecovery: RecoveryProfileResult = { profile: "reduced", hasData: true, factors: ["słaba jakość regeneracji"] };
     // base=5, recovery=-4*0.20=-0.8 (raw). stored adj=round05(-0.8)=-1.0

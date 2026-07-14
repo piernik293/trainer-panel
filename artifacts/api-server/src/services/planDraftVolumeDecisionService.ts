@@ -297,6 +297,14 @@ export interface SingleTargetDecisionInput {
   guideline: GuidelineRecord | null;
   experienceLevel: string | null;
   priorityOrder: 1 | 2 | 3 | null;
+  /**
+   * How many targets share this priority slot via a broad category match.
+   * When "Plecy" → [latissimus, trapezius], both share the same slot (size=2).
+   * The priority bonus is divided by this value so the total bonus applied per
+   * category equals one full bonus, not N independent bonuses.
+   * Defaults to 1 (single-target priority — no change to existing behaviour).
+   */
+  priorityGroupSize?: number;
   isExcluded: boolean;
   recoveryResult: RecoveryProfileResult;
   availability: AvailabilityLevel;
@@ -351,7 +359,11 @@ export function computeTargetDecision(
   let priorityAdjustment = 0;
   if (inp.priorityOrder !== null && !inp.isExcluded) {
     const pct = PRIORITY_ADJUSTMENTS[inp.priorityOrder];
-    priorityAdjustment = preferredWidth * pct;
+    // When a broad category (e.g. "Plecy") maps to N internal targets, divide the
+    // bonus evenly so the total priority uplift per category equals one full bonus,
+    // not N independent bonuses.
+    const groupSize = Math.max(1, inp.priorityGroupSize ?? 1);
+    priorityAdjustment = (preferredWidth * pct) / groupSize;
     reasons.push(
       `${inp.priorityOrder === 1 ? "pierwszy" : inp.priorityOrder === 2 ? "drugi" : "trzeci"} priorytet klienta`,
     );
@@ -830,6 +842,25 @@ export async function calculateVolumeDecisions(
     });
   }
 
+  // ── Priority group-size map ────────────────────────────────────────────────
+  // For each broad-category priority slot, record how many targets it matched.
+  // A slot "Plecy" → [latissimus, trapezius] has size 2; each target receives
+  // 1/2 of the full bonus so the total uplift per category equals ONE bonus.
+  const priorityGroupSizeMap = new Map<number, number>(); // targetId → group size
+  for (let i = 0; i < Math.min(input.priorityMuscleGroups.length, 3); i++) {
+    const group = input.priorityMuscleGroups[i]!;
+    if (!group) continue;
+    const { ids, status } = resolveGroup(group, targets);
+    if (status === "found" && ids.length > 0) {
+      for (const id of ids) {
+        if (!priorityGroupSizeMap.has(id)) {
+          // Only first matching priority slot wins; record its group size.
+          priorityGroupSizeMap.set(id, ids.length);
+        }
+      }
+    }
+  }
+
   // ── Compute decisions ──────────────────────────────────────────────────────
   const decisions: WeeklyVolumeTargetDecisionType[] = [];
   let targetsWithWarnings = 0;
@@ -838,6 +869,7 @@ export async function calculateVolumeDecisions(
   for (const target of targets) {
     const guideline = guidelineMap.get(target.id) ?? null;
     const priorityOrder = getPriorityOrder(target.id, input.priorityMuscleGroups, targets);
+    const priorityGroupSize = priorityGroupSizeMap.get(target.id) ?? 1;
     const excluded = isExcludedTarget(target.id, input.excludedMuscleGroups, targets);
     const trainerOverride = input.trainerOverrides[String(target.id)] ?? null;
 
@@ -846,6 +878,7 @@ export async function calculateVolumeDecisions(
       guideline,
       experienceLevel: input.experienceLevel,
       priorityOrder,
+      priorityGroupSize,
       isExcluded: excluded,
       recoveryResult,
       availability,

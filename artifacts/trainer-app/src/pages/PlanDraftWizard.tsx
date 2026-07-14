@@ -604,6 +604,26 @@ function Step2Preferences({
   );
 }
 
+// ─── Polish set pluralization ─────────────────────────────────────────────────
+
+/**
+ * Returns the correct Polish noun form for a set count.
+ *   1        → "seria"
+ *   2, 3, 4  → "serie"
+ *   5+       → "serii"
+ *
+ * Handles teens (11–14) correctly — they take "serii".
+ */
+function pluralizeSets(n: number): string {
+  const abs = Math.abs(Math.round(n));
+  if (abs === 1) return "seria";
+  const lastTwo = abs % 100;
+  const lastOne = abs % 10;
+  if (lastTwo >= 11 && lastTwo <= 14) return "serii";
+  if (lastOne >= 2 && lastOne <= 4) return "serie";
+  return "serii";
+}
+
 // ─── Split recommendation reason texts ───────────────────────────────────────
 
 const SPLIT_RECOMMENDATION_REASONS: Partial<Record<string, string>> = {
@@ -734,6 +754,10 @@ function DistributionSection({
               <div className="space-y-2">
                 {result.days.map((day) => {
                   const nonZero = filterNonZeroAllocations(day.targetAllocations);
+                  const coreAlloc = result.auxiliaryCoreBlock.dayAllocations.find(
+                    (a) => a.dayIndex === day.dayIndex,
+                  );
+                  const hasCoreAlloc = coreAlloc && coreAlloc.sets > 0;
                   return (
                     <Card key={day.dayIndex} className="border-border/50 shadow-sm">
                       <CardContent className="p-4">
@@ -755,7 +779,7 @@ function DistributionSection({
                             </p>
                           </div>
                         </div>
-                        {nonZero.length > 0 && (
+                        {(nonZero.length > 0 || hasCoreAlloc) && (
                           <div className="space-y-1 pt-2 border-t border-border/30">
                             {nonZero.map((alloc) => (
                               <div
@@ -766,6 +790,14 @@ function DistributionSection({
                                 <span className="font-medium">{alloc.allocatedVolume} pkt. obj. efektywnej</span>
                               </div>
                             ))}
+                            {hasCoreAlloc && (
+                              <div className="flex items-center justify-between text-xs pt-1 mt-0.5 border-t border-amber-100">
+                                <span className="text-amber-700 font-medium">Core / brzuch</span>
+                                <span className="font-medium text-amber-700">
+                                  {coreAlloc.sets} {pluralizeSets(coreAlloc.sets)}
+                                </span>
+                              </div>
+                            )}
                             <p className="text-[10px] text-muted-foreground pt-1 italic">
                               Serie robocze do wykonania: dostępne po doborze ćwiczeń
                             </p>
@@ -1004,15 +1036,16 @@ function TargetDecisionCard({
           )}
         </div>
 
-        {/* Reasoning pills */}
+        {/* Reasoning — separate list items, not concatenated */}
         {decision.reasons.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-border/30">
+          <ul className="mt-2 pt-2 border-t border-border/30 space-y-0.5">
             {decision.reasons.map((r, i) => (
-              <span key={i} className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-                {r}
-              </span>
+              <li key={i} className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                <span className="mt-px shrink-0 text-muted-foreground/40">·</span>
+                <span>{r}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
 
         {/* Warnings */}
@@ -1145,7 +1178,7 @@ function Step3Volume({
                 {distributionResult.auxiliaryCoreBlock.dayAllocations.map((a) => (
                   <div key={a.dayIndex} className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Dzień {a.dayIndex + 1}</span>
-                    <span className="font-medium">{a.sets} serie</span>
+                    <span className="font-medium">{a.sets} {pluralizeSets(a.sets)}</span>
                   </div>
                 ))}
               </div>

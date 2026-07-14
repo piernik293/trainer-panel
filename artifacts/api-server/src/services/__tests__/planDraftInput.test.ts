@@ -134,22 +134,33 @@ describe("getCompatibleSplits()", () => {
     expect(splits).toContain("custom");
   });
 
-  it("12. 3 days → full_body and upper_lower_full_body", () => {
+  it("12. 3 days → full_body, upper_lower_full_body, and push_pull_legs", () => {
     const splits = getCompatibleSplits(3);
     expect(splits).toContain("full_body");
     expect(splits).toContain("upper_lower_full_body");
+    // Classic 3-day PPL is a valid match
+    expect(splits).toContain("push_pull_legs");
   });
 
-  it("13. 4 days → upper_lower and push_pull_lower_full_body", () => {
+  it("13. 4 days → upper_lower and push_pull_lower_full_body (no PPL)", () => {
     const splits = getCompatibleSplits(4);
     expect(splits).toContain("upper_lower");
     expect(splits).toContain("push_pull_lower_full_body");
+    // PPL with 4 days creates Push/Pull/Legs/Push — unbalanced
+    expect(splits).not.toContain("push_pull_legs");
   });
 
-  it("14. 5 days → push_pull_legs and specialization", () => {
+  it("14. 5 days → upper_lower_full_body and specialization (no PPL)", () => {
+    // PPL with 5 days creates Push/Pull/Legs/Push/Pull — unbalanced repeat
     const splits = getCompatibleSplits(5);
-    expect(splits).toContain("push_pull_legs");
+    expect(splits).toContain("upper_lower_full_body");
     expect(splits).toContain("specialization");
+    expect(splits).not.toContain("push_pull_legs");
+  });
+
+  it("14b. 6 days → push_pull_legs (divides evenly: PPL×2)", () => {
+    const splits = getCompatibleSplits(6);
+    expect(splits).toContain("push_pull_legs");
   });
 
   it("15. null days → only custom", () => {
