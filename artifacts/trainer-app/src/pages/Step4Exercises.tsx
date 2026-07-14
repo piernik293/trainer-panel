@@ -84,6 +84,7 @@ import {
 import DayRecommendations, { type AddFromRecommendationPayload } from "@/components/DayRecommendations";
 import { WeeklyVolumeCoverage, DayVolumeCoverage } from "@/components/VolumeCoverageSection";
 import type { DraftVolumePreviewResult } from "@/hooks/useVolumeCoverage";
+import { pluralizeSets } from "@/lib/coreCoverageHelpers";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -212,7 +213,7 @@ export default function Step4Exercises({
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-sm">
-                    Dzień {day.dayIndex + 1}: {day.dayName}
+                    Dzień {day.dayIndex + 1} — {day.dayName}
                   </span>
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                     {day.dayType}
@@ -238,9 +239,8 @@ export default function Step4Exercises({
                     </div>
                   ))}
                   {coreAlloc && coreAlloc.sets > 0 && (
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground italic">Core / brzuch (pomocnicze)</span>
-                      <span className="text-muted-foreground">{coreAlloc.sets} serie</span>
+                    <div className="text-xs text-muted-foreground italic">
+                      Core / brzuch{" "}—{" "}<span className="not-italic">{pluralizeSets(coreAlloc.sets)}</span>
                     </div>
                   )}
                 </div>

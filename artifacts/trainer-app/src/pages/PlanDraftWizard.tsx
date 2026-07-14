@@ -1032,12 +1032,12 @@ function TargetDecisionCard({
         <div className="flex items-center justify-between gap-2">
           <div className="text-xs text-muted-foreground">
             Propozycja systemu:{" "}
-            <span className="font-medium text-foreground">{decision.recommendedValue} serii</span>
+            <span className="font-medium text-foreground">{decision.recommendedValue} {pluralizeSets(decision.recommendedValue)}</span>
             {isOverridden && (
               <>
                 {" → "}
                 <span className={`font-medium ${isAbovePreferred ? "text-amber-700" : "text-blue-600"}`}>
-                  {selectedValue} serii (ręcznie)
+                  {selectedValue} {pluralizeSets(selectedValue)} (ręcznie)
                 </span>
               </>
             )}
@@ -1163,7 +1163,7 @@ function Step3Volume({
       </div>
 
       <p className="text-xs text-muted-foreground text-center pt-2">
-        Wartości w sesjach efektywnych / tydzień. Zakres oparty o wytyczne objętości dla poziomu{" "}
+        Wartości w punktach objętości efektywnej na tydzień. Zakres oparty o wytyczne objętości dla poziomu{" "}
         <span className="font-medium">{decisions.metadata.experienceLevel}</span>.
       </p>
 
@@ -1187,16 +1187,15 @@ function Step3Volume({
               </div>
               <div className="shrink-0 text-right">
                 <span className="text-sm font-semibold">
-                  {distributionResult.auxiliaryCoreBlock.weeklySelectedSets} serii/tydz.
+                  {distributionResult.auxiliaryCoreBlock.weeklySelectedSets}{" "}{pluralizeSets(distributionResult.auxiliaryCoreBlock.weeklySelectedSets)}/tydz.
                 </span>
               </div>
             </div>
             {distributionResult.auxiliaryCoreBlock.dayAllocations.length > 0 && (
               <div className="mt-3 pt-3 border-t border-slate-200/70 space-y-1">
                 {distributionResult.auxiliaryCoreBlock.dayAllocations.map((a) => (
-                  <div key={a.dayIndex} className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Dzień {a.dayIndex + 1}</span>
-                    <span className="font-medium">{a.sets} {pluralizeSets(a.sets)}</span>
+                  <div key={a.dayIndex} className="text-xs text-muted-foreground">
+                    Dzień {a.dayIndex + 1}{" "}—{" "}<span className="font-medium text-foreground">{a.sets} {pluralizeSets(a.sets)}</span>
                   </div>
                 ))}
               </div>
