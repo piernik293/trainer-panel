@@ -190,6 +190,72 @@ export function updateDraftExerciseField<K extends keyof DraftExercise>(
   return { ...draft, [dayIndex]: updated };
 }
 
+// ─── Prescription validation ──────────────────────────────────────────────────
+
+/**
+ * A single structural problem found in one exercise prescription.
+ * Volume coverage issues are NOT prescription issues — they are advisory only
+ * and must never block Step 5.
+ */
+export interface PrescriptionIssue {
+  dayIndex: number;
+  localId: string;
+  exerciseName: string;
+  field: "exerciseId" | "sets" | "reps" | "rir" | "rest";
+  message: string;
+}
+
+/**
+ * Validates every exercise prescription in the draft for structural correctness.
+ *
+ * Returns one PrescriptionIssue per invalid field per exercise.
+ * An empty array means every prescription is structurally valid.
+ *
+ * Volume coverage is NOT validated here — uncovered or over-covered targets
+ * are advisory-only and must never block Step 5 (the plan preview).
+ */
+export function validatePrescription(draft: ExerciseDraftByDay): PrescriptionIssue[] {
+  const issues: PrescriptionIssue[] = [];
+
+  for (const [dayIndexStr, exercises] of Object.entries(draft)) {
+    const dayIndex = Number(dayIndexStr);
+    for (const ex of exercises) {
+      if (!ex.exerciseId || ex.exerciseId <= 0) {
+        issues.push({
+          dayIndex,
+          localId: ex.localId,
+          exerciseName: ex.exerciseName,
+          field: "exerciseId",
+          message: "Brak identyfikatora ćwiczenia.",
+        });
+      }
+      const setsError = validateSets(ex.sets);
+      if (setsError) {
+        issues.push({ dayIndex, localId: ex.localId, exerciseName: ex.exerciseName, field: "sets", message: setsError });
+      }
+      const repsError = validateReps(ex.repsMin, ex.repsMax);
+      if (repsError) {
+        issues.push({ dayIndex, localId: ex.localId, exerciseName: ex.exerciseName, field: "reps", message: repsError });
+      }
+      const rirError = validateRir(ex.rir);
+      if (rirError) {
+        issues.push({ dayIndex, localId: ex.localId, exerciseName: ex.exerciseName, field: "rir", message: rirError });
+      }
+      if (!Number.isInteger(ex.restSeconds) || ex.restSeconds < 1) {
+        issues.push({
+          dayIndex,
+          localId: ex.localId,
+          exerciseName: ex.exerciseName,
+          field: "rest",
+          message: "Czas przerwy musi być dodatnią liczbą całkowitą.",
+        });
+      }
+    }
+  }
+
+  return issues;
+}
+
 /**
  * Reorder exercises within a single day by moving the item at `oldIndex`
  * to `newIndex`.

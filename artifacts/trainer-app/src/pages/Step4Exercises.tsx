@@ -83,7 +83,7 @@ import {
 } from "lucide-react";
 import DayRecommendations, { type AddFromRecommendationPayload } from "@/components/DayRecommendations";
 import { WeeklyVolumeCoverage, DayVolumeCoverage } from "@/components/VolumeCoverageSection";
-import { useVolumeCoverage } from "@/hooks/useVolumeCoverage";
+import type { DraftVolumePreviewResult } from "@/hooks/useVolumeCoverage";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -92,6 +92,9 @@ interface Step4ExercisesProps {
   exerciseDraft: ExerciseDraftByDay;
   onDraftChange: (draft: ExerciseDraftByDay) => void;
   clientId: number;
+  /** Coverage result lifted from PlanDraftWizard (shared with Step 5). */
+  previewResult: DraftVolumePreviewResult | null;
+  coverageLoading: boolean;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -101,18 +104,13 @@ export default function Step4Exercises({
   exerciseDraft,
   onDraftChange,
   clientId,
+  previewResult,
+  coverageLoading,
 }: Step4ExercisesProps) {
   const [selectorForDay, setSelectorForDay] = useState<number | null>(null);
   const [recOpenForDay, setRecOpenForDay] = useState<number | null>(null);
 
   const { data: avoidedExercises = [] } = useGetClientAvoidedExercises(clientId);
-
-  // Live volume coverage (debounced, read-only — no DB writes)
-  const { previewResult, isLoading: coverageLoading } = useVolumeCoverage(
-    clientId,
-    exerciseDraft,
-    distributionResult,
-  );
 
   /** Add an exercise chosen from the recommendation panel (no full Exercise type needed). */
   const handleAddFromRecommendation = useCallback(

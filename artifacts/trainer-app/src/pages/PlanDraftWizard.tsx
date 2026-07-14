@@ -8,7 +8,7 @@
  * Step 2 — Plan assumptions       : editable overrides (days, split, duration, etc.)
  * Step 3 — Objętość               : 11-target volume recommendation with overrides
  * Step 4 — Dobór ćwiczeń          : (Phase 3)
- * Step 5 — Podgląd szkicu         : (Phase 4)
+ * Step 5 — Podgląd szkicu         : (Phase 4C — read-only preview, frontend-only)
  */
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
@@ -72,7 +72,14 @@ import {
   Loader2,
 } from "lucide-react";
 import Step4Exercises from "./Step4Exercises";
-import type { ExerciseDraftByDay } from "@/lib/exerciseDraftHelpers";
+import Step5Preview from "./Step5Preview";
+import {
+  type ExerciseDraftByDay,
+  validatePrescription,
+  getExerciseStepValidation,
+  EXERCISE_SELECTION_VALID,
+} from "@/lib/exerciseDraftHelpers";
+import { useVolumeCoverage } from "@/hooks/useVolumeCoverage";
 
 // ─── Source badge ─────────────────────────────────────────────────────────────
 
@@ -164,13 +171,24 @@ const STEPS = [
   { label: "Podgląd", icon: Sparkles, locked: true },
 ];
 
-function Stepper({ current, exerciseStepUnlocked }: { current: number; exerciseStepUnlocked: boolean }) {
+function Stepper({
+  current,
+  exerciseStepUnlocked,
+  previewStepUnlocked,
+}: {
+  current: number;
+  exerciseStepUnlocked: boolean;
+  previewStepUnlocked: boolean;
+}) {
   return (
     <nav className="flex items-center gap-0">
       {STEPS.map((step, i) => {
         const isActive = i === current;
         const isDone = i < current;
-        const effectiveLocked = step.locked && !(i === 3 && exerciseStepUnlocked);
+        const effectiveLocked =
+          step.locked &&
+          !(i === 3 && exerciseStepUnlocked) &&
+          !(i === 4 && previewStepUnlocked);
         const isLocked = effectiveLocked && !isDone;
         const Icon = step.icon;
 
@@ -1212,6 +1230,13 @@ export default function PlanDraftWizard() {
   const [volumeOverrides, setVolumeOverrides] = useState<Record<number, number>>({});
   const [distributionResult, setDistributionResult] = useState<WeeklyVolumeDistributionResponseType | null>(null);
   const [exerciseDraft, setExerciseDraft] = useState<ExerciseDraftByDay>({});
+
+  // Live volume coverage — lifted here so Step 5 reuses the same result without recalculation
+  const { previewResult, isLoading: coverageLoading } = useVolumeCoverage(
+    clientId,
+    exerciseDraft,
+    distributionResult,
+  );
   const lastDistributionKeyRef = useRef<string | null>(null);
 
   const { data, isLoading, isError } = useGetClientPlanDraftInput(clientId);
@@ -1338,6 +1363,19 @@ export default function PlanDraftWizard() {
     return consistency.isConsistent;
   }, [volumeDecisions, distributionResult, effectivePrefs]);
 
+  /**
+   * "Podgląd" unlocks when the exercise step is valid AND every exercise
+   * prescription is structurally correct.
+   *
+   * Volume coverage warnings are advisory-only — they must never block Step 5.
+   */
+  const isPreviewStepUnlocked = useMemo(() => {
+    if (!isExerciseStepUnlocked || !distributionResult) return false;
+    const validation = getExerciseStepValidation(distributionResult.days, exerciseDraft);
+    if (validation.code !== EXERCISE_SELECTION_VALID) return false;
+    return validatePrescription(exerciseDraft).length === 0;
+  }, [isExerciseStepUnlocked, distributionResult, exerciseDraft]);
+
   // ── Loading state ──────────────────────────────────────────────────────────
   if (isLoading) {
     return (
@@ -1407,7 +1445,11 @@ export default function PlanDraftWizard() {
 
       {/* Stepper */}
       <div className="overflow-x-auto">
-        <Stepper current={step} exerciseStepUnlocked={isExerciseStepUnlocked} />
+        <Stepper
+          current={step}
+          exerciseStepUnlocked={isExerciseStepUnlocked}
+          previewStepUnlocked={isPreviewStepUnlocked}
+        />
       </div>
 
       {/* Step content */}
@@ -1442,6 +1484,8 @@ export default function PlanDraftWizard() {
           exerciseDraft={exerciseDraft}
           onDraftChange={setExerciseDraft}
           clientId={clientId}
+          previewResult={previewResult}
+          coverageLoading={coverageLoading}
         />
       )}
       {step === 3 && !isExerciseStepUnlocked && (
@@ -1454,7 +1498,19 @@ export default function PlanDraftWizard() {
           </CardContent>
         </Card>
       )}
-      {step >= 4 && <LockedStepPlaceholder step={step} />}
+      {step === 4 && distributionResult && effectivePrefs && (
+        <Step5Preview
+          typedData={typedData}
+          effectivePrefs={effectivePrefs}
+          distributionResult={distributionResult}
+          exerciseDraft={exerciseDraft}
+          previewResult={previewResult}
+          coverageLoading={coverageLoading}
+          clientId={clientId}
+          onBack={() => setStep(3)}
+        />
+      )}
+      {step > 4 && <LockedStepPlaceholder step={step} />}
 
       {/* Mutation error for volume fetch */}
       {volumeMutation.isError && (
@@ -1525,15 +1581,33 @@ export default function PlanDraftWizard() {
             </Button>
           )}
           {step === 3 && (
-            <Button disabled className="gap-2 opacity-50">
-              <Lock size={14} />
-              Podgląd dostępny wkrótce
+            <Button
+              onClick={() => { if (isPreviewStepUnlocked) setStep(4); }}
+              disabled={!isPreviewStepUnlocked}
+              className="gap-2"
+              title={
+                !isPreviewStepUnlocked
+                  ? "Uzupełnij wszystkie dni treningowe i popraw nieprawidłowe parametry ćwiczeń, aby przejść do podglądu."
+                  : undefined
+              }
+            >
+              {isPreviewStepUnlocked ? (
+                <>
+                  Podgląd
+                  <ArrowRight size={14} />
+                </>
+              ) : (
+                <>
+                  <Lock size={14} />
+                  Uzupełnij ćwiczenia, aby przejść do podglądu
+                </>
+              )}
             </Button>
           )}
           {step >= 4 && (
-            <Button disabled className="gap-2 opacity-50">
+            <Button disabled className="gap-2 opacity-50 cursor-not-allowed">
               <Lock size={14} />
-              Dostępne w kolejnych etapach
+              Zapis planu — kolejny etap
             </Button>
           )}
         </div>

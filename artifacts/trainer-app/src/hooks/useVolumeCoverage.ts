@@ -145,7 +145,7 @@ const DEBOUNCE_MS = 400;
 export function useVolumeCoverage(
   clientId: number,
   exerciseDraft: ExerciseDraftByDay,
-  distributionResult: WeeklyVolumeDistributionResponseType,
+  distributionResult: WeeklyVolumeDistributionResponseType | null,
 ): { previewResult: DraftVolumePreviewResult | null; isLoading: boolean } {
   const [result, setResult] = useState<DraftVolumePreviewResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -165,6 +165,11 @@ export function useVolumeCoverage(
     const ctrl = new AbortController();
 
     const timer = setTimeout(() => {
+      if (!distributionResultRef.current) {
+        // No distribution yet — nothing to calculate
+        setIsLoading(false);
+        return;
+      }
       const body = buildPreviewBody(
         clientId,
         exerciseDraftRef.current,
