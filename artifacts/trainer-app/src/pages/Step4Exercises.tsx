@@ -84,7 +84,7 @@ import {
 import DayRecommendations, { type AddFromRecommendationPayload } from "@/components/DayRecommendations";
 import { WeeklyVolumeCoverage, DayVolumeCoverage } from "@/components/VolumeCoverageSection";
 import type { DraftVolumePreviewResult } from "@/hooks/useVolumeCoverage";
-import { pluralizeSets } from "@/lib/coreCoverageHelpers";
+import { pluralizeSets, computeEligibleTargetNeeds } from "@/lib/coreCoverageHelpers";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -206,6 +206,12 @@ export default function Step4Exercises({
 
         const isRecOpen = recOpenForDay === day.dayIndex;
 
+        // Phase 4B3: compute uncovered targets for this day (null when coverage not yet loaded)
+        const coverageNeeds =
+          previewResult !== null
+            ? computeEligibleTargetNeeds(day, distributionResult, previewResult, exerciseDraft)
+            : null;
+
         return (
           <Card key={day.dayIndex} className="border-border/50 shadow-sm">
             <CardContent className="p-4 space-y-3">
@@ -305,6 +311,11 @@ export default function Step4Exercises({
                     onAdd={(payload) =>
                       handleAddFromRecommendation(day.dayIndex, payload)
                     }
+                    eligibleNeeds={coverageNeeds?.normalNeeds ?? null}
+                    coreEligible={coverageNeeds?.coreEligible ?? false}
+                    coreDailyPlanned={coverageNeeds?.coreDailyPlanned ?? 0}
+                    coreDailyActual={coverageNeeds?.coreDailyActual ?? 0}
+                    coverageLoading={coverageLoading}
                   />
                 </div>
               )}

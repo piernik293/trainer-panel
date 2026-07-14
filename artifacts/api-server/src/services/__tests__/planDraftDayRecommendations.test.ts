@@ -311,3 +311,265 @@ describe("local draft only — no workout DB records", () => {
     expect(a).toEqual(b);
   });
 });
+
+// ─── selectByUncoveredTargets (Phase 4B3) ─────────────────────────────────────
+
+import {
+  selectByUncoveredTargets,
+  type ExerciseWithCoveredTargets,
+  type UncoveredTargetNeed,
+} from "../planDraftDayRecommendationsService";
+
+function makeEnrichedExercise(
+  overrides: Partial<ScoredAndFilteredExercise> & { coveredTargetIds?: Set<number> } = {},
+): ExerciseWithCoveredTargets {
+  const { coveredTargetIds = new Set<number>(), ...rest } = overrides;
+  return { ...makeExercise(rest), coveredTargetIds };
+}
+
+const LAT_ID = 1;
+const TRAP_ID = 2;
+const PEC_ID = 3;
+
+const latNeed: UncoveredTargetNeed = { targetId: LAT_ID, targetName: "Latissimus dorsi", allocationOrder: 0 };
+const trapNeed: UncoveredTargetNeed = { targetId: TRAP_ID, targetName: "Trapezius", allocationOrder: 1 };
+
+describe("selectByUncoveredTargets()", () => {
+  // ── Case 7–8: Latissimus / Trapezius independence ───────────────────────────
+
+  it("case 7-8: exercises for Lat and Trap are independently eligible when both uncovered", () => {
+    const pool = [
+      makeEnrichedExercise({ id: 1, name: "Pull-up", mainMuscleGroup: "Plecy", coveredTargetIds: new Set([LAT_ID]), score: 80 }),
+      makeEnrichedExercise({ id: 2, name: "Shrug", mainMuscleGroup: "Plecy", coveredTargetIds: new Set([TRAP_ID]), score: 75 }),
+    ];
+    const result = selectByUncoveredTargets(pool, [latNeed, trapNeed], false, 3, 8);
+    const ids = result.map((r) => r.id);
+    expect(ids).toContain(1);
+    expect(ids).toContain(2);
+  });
+
+  // ── Case 9: Exact assignment requirement ────────────────────────────────────
+
+  it("case 9: exercise with no muscle assignments (empty coveredTargetIds) is excluded", () => {
+    const pool = [
+      makeEnrichedExercise({
+        id: 1, name: "Lat Pulldown", mainMuscleGroup: "Plecy",
+        coveredTargetIds: new Set(), score: 90,
+      }),
+    ];
+    const result = selectByUncoveredTargets(pool, [latNeed], false, 3, 8);
+    expect(result).toHaveLength(0);
+  });
+
+  // ── Case 10: One exercise covering two targets appears once ─────────────────
+
+  it("case 10: exercise matching two uncovered targets appears only once in result", () => {
+    const pool = [
+      makeEnrichedExercise({
+        id: 1, name: "Barbell Row", mainMuscleGroup: "Plecy",
+        coveredTargetIds: new Set([LAT_ID, TRAP_ID]), score: 90,
+      }),
+    ];
+    const result = selectByUncoveredTargets(pool, [latNeed, trapNeed], false, 3, 8);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe(1);
+  });
+
+  // ── Case 11: Multi-target label accumulation ─────────────────────────────────
+
+  it("case 11: exercise matching two targets shows all matching target names in matchingTargets", () => {
+    const pool = [
+      makeEnrichedExercise({
+        id: 1, name: "Barbell Row", mainMuscleGroup: "Plecy",
+        coveredTargetIds: new Set([LAT_ID, TRAP_ID]), score: 90,
+      }),
+    ];
+    const result = selectByUncoveredTargets(pool, [latNeed, trapNeed], false, 3, 8);
+    expect(result[0]?.matchingTargets).toContain("Latissimus dorsi");
+    expect(result[0]?.matchingTargets).toContain("Trapezius");
+  });
+
+  // ── Case 12: Zero-coverage first (orderedNeeds order is honoured) ───────────
+
+  it("case 12: orderedNeeds order determines selection priority (zero-actual first)", () => {
+    // orderedNeeds: LAT first (zero actual → higher priority), then TRAP
+    // Pool has 4 exercises per target, cap is 3 → last ones cut
+    const latPool = Array.from({ length: 4 }, (_, i) =>
+      makeEnrichedExercise({ id: i + 1, name: `Lat${i + 1}`, mainMuscleGroup: "Plecy", coveredTargetIds: new Set([LAT_ID]), score: 90 - i }),
+    );
+    const trapPool = Array.from({ length: 4 }, (_, i) =>
+      makeEnrichedExercise({ id: i + 10, name: `Trap${i + 1}`, mainMuscleGroup: "Plecy", coveredTargetIds: new Set([TRAP_ID]), score: 70 - i }),
+    );
+    const result = selectByUncoveredTargets([...latPool, ...trapPool], [latNeed, trapNeed], false, 3, 8);
+    const ids = result.map((r) => r.id);
+    // 3 from Lat, 3 from Trap = 6 total (within maxTotal=8)
+    expect(ids).toContain(1); // Lat1 ✓
+    expect(ids).not.toContain(4); // Lat4 exceeds cap ✗
+    expect(ids).toContain(10); // Trap1 ✓
+    expect(ids).not.toContain(13); // Trap4 exceeds cap ✗
+    expect(result).toHaveLength(6);
+  });
+
+  // ── Case 13: Remaining-% ordering (orderedNeeds respected) ──────────────────
+
+  it("case 13: needs passed in orderedNeeds order control which target captures the first cap slots", () => {
+    // TRAP is passed first in orderedNeeds (frontend determined it has higher remaining%)
+    const pool = [
+      ...Array.from({ length: 4 }, (_, i) =>
+        makeEnrichedExercise({ id: i + 1, name: `LatEx${i + 1}`, coveredTargetIds: new Set([LAT_ID]), score: 90 - i }),
+      ),
+      ...Array.from({ length: 4 }, (_, i) =>
+        makeEnrichedExercise({ id: i + 10, name: `TrapEx${i + 1}`, coveredTargetIds: new Set([TRAP_ID]), score: 50 - i }),
+      ),
+    ];
+    const result = selectByUncoveredTargets(pool, [trapNeed, latNeed], false, 3, 8);
+    const ids = result.map((r) => r.id);
+    expect(ids).toContain(10); // TrapEx1 — Trap selected first
+    expect(ids).not.toContain(13); // TrapEx4 exceeds cap
+    expect(ids).toContain(1); // LatEx1 — Lat gets second cap slots
+    expect(ids).not.toContain(4); // LatEx4 exceeds cap
+  });
+
+  // ── Cases 19–20: Core exercises ──────────────────────────────────────────────
+
+  it("case 19: includeCore=true selects exercises with mainMuscleGroup === 'Brzuch'", () => {
+    const pool = [
+      makeEnrichedExercise({
+        id: 1, name: "Crunch", mainMuscleGroup: "Brzuch",
+        coveredTargetIds: new Set(), score: 75,
+      }),
+    ];
+    const result = selectByUncoveredTargets(pool, [], true, 3, 8);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe(1);
+    expect(result[0]?.matchingTargets).toContain("Core / brzuch");
+  });
+
+  it("case 20: includeCore=false excludes Brzuch exercises from Core path", () => {
+    const pool = [
+      makeEnrichedExercise({
+        id: 1, name: "Crunch", mainMuscleGroup: "Brzuch",
+        coveredTargetIds: new Set(), score: 75,
+      }),
+    ];
+    const result = selectByUncoveredTargets(pool, [], false, 3, 8);
+    expect(result).toHaveLength(0);
+  });
+
+  // ── Case 23: Score values unchanged ─────────────────────────────────────────
+
+  it("case 23: exercise scores are not modified by selectByUncoveredTargets", () => {
+    const originalScore = 77;
+    const pool = [
+      makeEnrichedExercise({ id: 1, name: "Pull-up", coveredTargetIds: new Set([LAT_ID]), score: originalScore }),
+    ];
+    const result = selectByUncoveredTargets(pool, [latNeed], false, 3, 8);
+    expect(result[0]?.score).toBe(originalScore);
+  });
+
+  // ── Cases 24–25: Pure function / no side-effects ──────────────────────────────
+
+  it("cases 24-25: selectByUncoveredTargets is a pure function (same input → same output, no mutations)", () => {
+    const pool = [
+      makeEnrichedExercise({ id: 1, name: "Pull-up", coveredTargetIds: new Set([LAT_ID]), score: 80 }),
+    ];
+    const needs = [latNeed];
+    const a = selectByUncoveredTargets(pool, needs, false, 3, 8);
+    const b = selectByUncoveredTargets(pool, needs, false, 3, 8);
+    expect(a).toEqual(b);
+    // Inputs are not mutated
+    expect(pool[0]?.score).toBe(80);
+    expect(needs[0]?.targetId).toBe(LAT_ID);
+  });
+
+  // ── Avoided + score ordering preserved ───────────────────────────────────────
+
+  it("non-avoided appears before avoided at equal score (ordering preserved)", () => {
+    const pool = [
+      makeEnrichedExercise({ id: 1, name: "Z Avoided", coveredTargetIds: new Set([LAT_ID]), score: 80, isAvoided: true }),
+      makeEnrichedExercise({ id: 2, name: "A NotAvoided", coveredTargetIds: new Set([LAT_ID]), score: 80, isAvoided: false }),
+    ];
+    const result = selectByUncoveredTargets(pool, [latNeed], false, 3, 8);
+    expect(result[0]?.id).toBe(2);
+    expect(result[1]?.id).toBe(1);
+    // Scores not modified
+    expect(result[0]?.score).toBe(80);
+    expect(result[1]?.score).toBe(80);
+  });
+
+  // ── Hard cap at maxTotal ──────────────────────────────────────────────────────
+
+  it("result contains no more than maxTotal exercises", () => {
+    const needs: UncoveredTargetNeed[] = [1, 2, 3, 4].map((tid) => ({
+      targetId: tid,
+      targetName: `Target${tid}`,
+      allocationOrder: tid - 1,
+    }));
+    const pool: ExerciseWithCoveredTargets[] = [];
+    for (let t = 1; t <= 4; t++) {
+      for (let i = 0; i < 3; i++) {
+        pool.push(makeEnrichedExercise({
+          id: t * 10 + i,
+          name: `T${t}E${i}`,
+          coveredTargetIds: new Set([t]),
+          score: 90 - i,
+        }));
+      }
+    }
+    const result = selectByUncoveredTargets(pool, needs, false, 3, 8);
+    expect(result.length).toBeLessThanOrEqual(8);
+  });
+
+  // ── mainMuscleGroup preserved ─────────────────────────────────────────────────
+
+  it("result includes the correct mainMuscleGroup from the pool exercise", () => {
+    const pool = [
+      makeEnrichedExercise({
+        id: 1, name: "Row", mainMuscleGroup: "Plecy",
+        coveredTargetIds: new Set([LAT_ID]), score: 80,
+      }),
+    ];
+    const result = selectByUncoveredTargets(pool, [latNeed], false, 3, 8);
+    expect(result[0]?.mainMuscleGroup).toBe("Plecy");
+  });
+
+  // ── Core-only path: includeCore=true + empty orderedNeeds ───────────────────
+
+  it("Core-only path: includeCore=true with empty orderedNeeds returns only Brzuch exercises", () => {
+    const pool = [
+      makeEnrichedExercise({ id: 1, name: "Crunch", mainMuscleGroup: "Brzuch", coveredTargetIds: new Set(), score: 80 }),
+      makeEnrichedExercise({ id: 2, name: "Plank", mainMuscleGroup: "Plecy", coveredTargetIds: new Set(), score: 75 }),
+    ];
+    const result = selectByUncoveredTargets(pool, [], true, 3, 8);
+    const ids = result.map((r) => r.id);
+    expect(ids).toContain(1);    // Brzuch exercise included
+    expect(ids).not.toContain(2); // non-Brzuch excluded
+    expect(result[0]?.matchingTargets).toContain("Core / brzuch");
+  });
+
+  it("Core-only path: non-uncovered (broad-category) exercises are NOT returned", () => {
+    // This guards against the legacy broad-category fallback firing when only Core is uncovered.
+    const pool = [
+      makeEnrichedExercise({ id: 1, name: "Bench Press", mainMuscleGroup: "Klatka piersiowa", coveredTargetIds: new Set(), score: 90 }),
+      makeEnrichedExercise({ id: 2, name: "Crunch", mainMuscleGroup: "Brzuch", coveredTargetIds: new Set(), score: 70 }),
+    ];
+    // orderedNeeds is empty (all normal targets covered); only Core still needs sets
+    const result = selectByUncoveredTargets(pool, [], true, 3, 8);
+    const ids = result.map((r) => r.id);
+    expect(ids).not.toContain(1); // Bench Press must NOT appear (not uncovered)
+    expect(ids).toContain(2);      // Crunch must appear (Core uncovered)
+  });
+
+  // ── Returns empty when no match ───────────────────────────────────────────────
+
+  it("returns empty array when pool is empty", () => {
+    expect(selectByUncoveredTargets([], [latNeed], false, 3, 8)).toEqual([]);
+  });
+
+  it("returns empty array when no exercise covers any uncovered target", () => {
+    const pool = [
+      makeEnrichedExercise({ id: 1, coveredTargetIds: new Set([PEC_ID]) }),
+    ];
+    expect(selectByUncoveredTargets(pool, [latNeed, trapNeed], false, 3, 8)).toEqual([]);
+  });
+});

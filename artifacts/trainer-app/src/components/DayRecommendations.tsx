@@ -1,18 +1,15 @@
 /**
  * DayRecommendations — inline recommendation panel for one workout day.
  *
- * Fetches from the plan-draft day-recommendations endpoint (thin adapter over
- * the existing Exercise Recommendation Engine). All scoring comes from the
- * server; zero scoring logic lives here.
+ * Phase 4B3 update: recommends exercises only for uncovered volume targets.
  *
- * Features:
- * - Compact loading / empty / error states with retry.
- * - Missing location/equipment data warning.
- * - Per-exercise: name, matching targets, equipment, score label, match/warn
- *   reasons, "Dodaj do dnia" button.
- * - Avoided exercise: shows warning, requires "Zastosuj mimo ostrzeżenia"
- *   confirmation before adding.
- * - Avoided status is a tie-breaker only — score is not modified here.
+ * Shows:
+ * - A compact "Rekomendacje dla brakującej objętości" header with per-target
+ *   need summary (Plan / Zrealizowano / Pozostało) when uncovered needs exist.
+ * - "Trwa aktualizacja brakującej objętości." while coverage is recalculating.
+ * - "Zaplanowana objętość tego dnia została pokryta." when all targets are
+ *   covered for the day.
+ * - The manual "Dodaj ćwiczenie" action always remains available to the trainer.
  */
 
 import { useState } from "react";
@@ -22,18 +19,22 @@ import { Badge } from "@/components/ui/badge";
 import {
   AlertTriangle,
   AlertCircle,
+  CheckCircle2,
   Loader2,
   Plus,
   RefreshCw,
   Info,
 } from "lucide-react";
 import { DRAFT_EXERCISE_DEFAULTS } from "@/lib/exerciseDraftHelpers";
+import type { EligibleTargetNeed } from "@/lib/coreCoverageHelpers";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface DayRecExercise {
   id: number;
   name: string;
+  /** The exercise's own mainMuscleGroup from the DB. */
+  mainMuscleGroup: string;
   matchingTargets: string[];
   equipment: string[];
   trainingLocation: string[];
@@ -71,6 +72,8 @@ function useDayRecommendations(
   clientId: number,
   broadCategories: string[],
   alreadyAddedIds: number[],
+  uncoveredTargetIds: number[],
+  includeCore: boolean,
   enabled: boolean,
 ) {
   const params = new URLSearchParams();
@@ -78,16 +81,30 @@ function useDayRecommendations(
   if (alreadyAddedIds.length > 0) {
     params.set("alreadyAdded", alreadyAddedIds.join(","));
   }
+  // Phase 4B3: exact-targetId path
+  if (uncoveredTargetIds.length > 0) {
+    params.set("uncoveredTargetIds", uncoveredTargetIds.join(","));
+  }
+  if (includeCore) {
+    params.set("includeCore", "true");
+  }
+
   const url = `/api/clients/${clientId}/plan-draft/day-recommendations?${params}`;
 
   return useQuery<DayRecResponse>({
-    queryKey: ["dayRec", clientId, broadCategories.join(","), alreadyAddedIds.join(",")],
+    queryKey: [
+      "dayRec",
+      clientId,
+      uncoveredTargetIds.join(","),
+      String(includeCore),
+      alreadyAddedIds.join(","),
+    ],
     queryFn: async () => {
       const resp = await fetch(url);
       if (!resp.ok) throw new Error("Nie udało się pobrać rekomendacji.");
       return resp.json() as Promise<DayRecResponse>;
     },
-    enabled: enabled && broadCategories.length > 0,
+    enabled,
     staleTime: 60_000,
     retry: 1,
   });
@@ -97,9 +114,18 @@ function useDayRecommendations(
 
 interface DayRecommendationsProps {
   clientId: number;
+  /** Broad categories — kept for backward compat and "no targets" guard. */
   broadCategories: string[];
   alreadyAddedIds: number[];
   onAdd: (payload: AddFromRecommendationPayload) => void;
+  // ── Phase 4B3 ──
+  /** null = coverage result not yet loaded. */
+  eligibleNeeds: EligibleTargetNeed[] | null;
+  coreEligible: boolean;
+  coreDailyPlanned: number;
+  coreDailyActual: number;
+  /** True while coverage is being recalculated (debounce in progress). */
+  coverageLoading: boolean;
 }
 
 export default function DayRecommendations({
@@ -107,14 +133,31 @@ export default function DayRecommendations({
   broadCategories,
   alreadyAddedIds,
   onAdd,
+  eligibleNeeds,
+  coreEligible,
+  coreDailyPlanned,
+  coreDailyActual,
+  coverageLoading,
 }: DayRecommendationsProps) {
   const [pendingAvoided, setPendingAvoided] = useState<DayRecExercise | null>(null);
+
+  // Derive request params from eligible needs
+  const uncoveredTargetIds = eligibleNeeds?.map((n) => n.targetId) ?? [];
+
+  // States
+  const hasTargets = broadCategories.length > 0;
+  const isUpdating = coverageLoading || eligibleNeeds === null;
+  const isCompleted = !isUpdating && uncoveredTargetIds.length === 0 && !coreEligible;
+  // Only fire when targets exist, coverage is settled, and there's actually uncovered volume
+  const canFetch = hasTargets && !isUpdating && !isCompleted;
 
   const { data, isLoading, isError, refetch } = useDayRecommendations(
     clientId,
     broadCategories,
     alreadyAddedIds,
-    true,
+    uncoveredTargetIds,
+    coreEligible,
+    canFetch,
   );
 
   function handleAddClick(exercise: DayRecExercise) {
@@ -126,20 +169,17 @@ export default function DayRecommendations({
   }
 
   function doAdd(exercise: DayRecExercise) {
-    // mainMuscleGroup is not in the recommendation response — derive from
-    // the first matching target (which is the broad category = mainMuscleGroup).
-    const mainMuscleGroup = exercise.matchingTargets[0] ?? "";
     onAdd({
       id: exercise.id,
       name: exercise.name,
-      mainMuscleGroup,
+      mainMuscleGroup: exercise.mainMuscleGroup,
       equipment: exercise.equipment,
     });
     setPendingAvoided(null);
   }
 
   // ── No muscle targets for this day ─────────────────────────────────────────
-  if (broadCategories.length === 0) {
+  if (!hasTargets) {
     return (
       <div className="rounded-lg bg-muted/40 px-3 py-3 flex items-start gap-2 text-xs text-muted-foreground">
         <Info size={13} className="shrink-0 mt-0.5" />
@@ -148,51 +188,106 @@ export default function DayRecommendations({
     );
   }
 
-  // ── Loading ────────────────────────────────────────────────────────────────
-  if (isLoading) {
+  // ── Coverage updating ───────────────────────────────────────────────────────
+  if (isUpdating) {
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground py-2 px-1">
         <Loader2 size={13} className="animate-spin shrink-0" />
-        <span>Wczytuję rekomendacje…</span>
+        <span>Trwa aktualizacja brakującej objętości…</span>
       </div>
     );
   }
 
-  // ── Error ──────────────────────────────────────────────────────────────────
-  if (isError || !data) {
+  // ── Completed day ───────────────────────────────────────────────────────────
+  if (isCompleted) {
     return (
-      <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 space-y-1.5">
-        <div className="flex items-center gap-1.5 text-xs text-destructive">
-          <AlertCircle size={13} className="shrink-0" />
-          <span>Nie udało się pobrać rekomendacji.</span>
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 flex items-start gap-2 text-xs text-emerald-800">
+        <CheckCircle2 size={13} className="shrink-0 mt-0.5 text-emerald-600" />
+        <div>
+          <p className="font-medium">Zaplanowana objętość tego dnia została pokryta.</p>
+          <p className="mt-0.5 text-emerald-700">
+            Możesz nadal dodawać ćwiczenia ręcznie, jeśli chcesz.
+          </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-6 text-[11px] gap-1.5"
-          onClick={() => refetch()}
-        >
-          <RefreshCw size={11} />
-          Spróbuj ponownie
-        </Button>
       </div>
     );
   }
 
-  // ── No profile ─────────────────────────────────────────────────────────────
-  if (!data.hasProfile) {
-    return (
-      <div className="rounded-lg bg-muted/40 px-3 py-3 flex items-start gap-2 text-xs text-muted-foreground">
-        <Info size={13} className="shrink-0 mt-0.5" />
-        <span>Brak wywiadu treningowego — rekomendacje niedostępne.</span>
-      </div>
-    );
-  }
-
+  // ── Recommendations with uncovered-volume summary ───────────────────────────
   return (
     <div className="space-y-2">
+      {/* Compact uncovered-volume summary */}
+      {(eligibleNeeds!.length > 0 || coreEligible) && (
+        <div className="rounded-lg border border-border/40 bg-muted/30 px-3 py-2.5 space-y-1.5">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+            Rekomendacje dla brakującej objętości
+          </p>
+          <div className="space-y-1">
+            {eligibleNeeds!.map((need) => (
+              <div key={need.targetId} className="flex items-start justify-between gap-2 text-[11px]">
+                <span className="font-medium text-foreground leading-tight">{need.targetName}</span>
+                <span className="shrink-0 text-right text-muted-foreground leading-tight">
+                  Plan {need.plannedDaily.toFixed(1)}{" "}
+                  · Zrealiz. {need.actualDaily.toFixed(1)}{" "}
+                  · <span className="text-amber-700 font-medium">
+                    Brak {need.dailyRemaining.toFixed(1)} pkt.
+                  </span>
+                </span>
+              </div>
+            ))}
+            {coreEligible && (
+              <div className="flex items-start justify-between gap-2 text-[11px]">
+                <span className="font-medium text-foreground leading-tight">Core / brzuch</span>
+                <span className="shrink-0 text-right text-muted-foreground leading-tight">
+                  Plan {coreDailyPlanned} serie{" "}
+                  · Zrealiz. {coreDailyActual}{" "}
+                  · <span className="text-amber-700 font-medium">
+                    Brak {Math.max(0, coreDailyPlanned - coreDailyActual)} serie
+                  </span>
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Loading recommendations */}
+      {isLoading && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground py-2 px-1">
+          <Loader2 size={13} className="animate-spin shrink-0" />
+          <span>Wczytuję rekomendacje…</span>
+        </div>
+      )}
+
+      {/* Error */}
+      {isError && !isLoading && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs text-destructive">
+            <AlertCircle size={13} className="shrink-0" />
+            <span>Nie udało się pobrać rekomendacji.</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 text-[11px] gap-1.5"
+            onClick={() => refetch()}
+          >
+            <RefreshCw size={11} />
+            Spróbuj ponownie
+          </Button>
+        </div>
+      )}
+
+      {/* No profile */}
+      {!isLoading && !isError && data && !data.hasProfile && (
+        <div className="rounded-lg bg-muted/40 px-3 py-3 flex items-start gap-2 text-xs text-muted-foreground">
+          <Info size={13} className="shrink-0 mt-0.5" />
+          <span>Brak wywiadu treningowego — rekomendacje niedostępne.</span>
+        </div>
+      )}
+
       {/* Missing location/equipment data warning */}
-      {!data.hasLocationData && (
+      {data && data.hasProfile && !data.hasLocationData && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 flex items-start gap-2 text-xs text-amber-800">
           <AlertTriangle size={13} className="shrink-0 mt-0.5" />
           <span>
@@ -235,14 +330,14 @@ export default function DayRecommendations({
       )}
 
       {/* Empty state */}
-      {data.exercises.length === 0 && (
+      {data && data.hasProfile && data.exercises.length === 0 && !isLoading && (
         <div className="rounded-lg bg-muted/40 px-3 py-3 text-xs text-muted-foreground text-center">
           Brak ćwiczeń spełniających aktualne kryteria sprzętu, miejsca treningu i profilu klienta.
         </div>
       )}
 
       {/* Recommendation cards */}
-      {data.exercises.map((ex) => {
+      {data?.exercises.map((ex) => {
         const label = scoreLabel(ex.score);
         return (
           <div
@@ -299,7 +394,7 @@ export default function DayRecommendations({
               </ul>
             )}
 
-            {/* Warn reasons (engine-provided + avoided) */}
+            {/* Warn reasons */}
             {(ex.warnReasons.length > 0 || ex.isAvoided) && (
               <div className="space-y-0.5">
                 {ex.isAvoided && (
@@ -332,7 +427,7 @@ export default function DayRecommendations({
       })}
 
       {/* Score note */}
-      {data.exercises.length > 0 && (
+      {data && data.exercises.length > 0 && (
         <p className="text-[10px] text-muted-foreground px-1">
           Rekomendacje oparte na profilu klienta (poziom doświadczenia, sprzęt, cel
           treningowy). Wynik 0–100.

@@ -8,12 +8,13 @@
  * logic is delegated to planDraftDayRecommendationsService.
  *
  * Query params:
- *   broadCategories  — comma-separated muscle broad-category names for the day
- *                      (e.g. "Klatka piersiowa,Plecy").  Maps directly to
- *                      exercise.mainMuscleGroup values.
- *   alreadyAdded     — comma-separated exercise IDs already in this day.
- *                      Excluded from results (same exercise may still be used
- *                      on a different day).
+ *   broadCategories     — comma-separated muscle broad-category names for the day.
+ *                         Used when uncoveredTargetIds is absent (backward-compat).
+ *   alreadyAdded        — comma-separated exercise IDs already in this day.
+ *   uncoveredTargetIds  — (Phase 4B3) comma-separated volumeTarget IDs that still
+ *                         need volume on this day. When present, replaces the
+ *                         broadCategories matching with exact targetId matching.
+ *   includeCore         — (Phase 4B3) "true" to include Core / brzuch exercises.
  *
  * Automatic hard exclusions (no trainer configuration required):
  *   - inactive exercises (DB filter)
@@ -24,15 +25,20 @@
  *
  * Response:
  *   { hasProfile, hasLocationData, exercises: DayRecommendationExercise[] }
- *
- *   hasLocationData = false when training location or equipment is missing from
- *   the survey — caller should surface the "missing data" warning to the trainer.
  */
 
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
-import { db, clientsTable, surveysTable, exercisesTable } from "@workspace/db";
+import {
+  db,
+  clientsTable,
+  surveysTable,
+  exercisesTable,
+  exerciseMuscleAssignmentsTable,
+  volumeTargetMembersTable,
+  volumeTargetsTable,
+} from "@workspace/db";
 import { desc } from "drizzle-orm";
 import { scoreExercise } from "../lib/recommendation-engine";
 import { computeCompleteness, fetchMuscleStats } from "../lib/exercise-completeness";
@@ -40,7 +46,10 @@ import {
   isLocationCompatible,
   isEquipmentCompatible,
   selectDayRecommendations,
+  selectByUncoveredTargets,
   type ScoredAndFilteredExercise,
+  type ExerciseWithCoveredTargets,
+  type UncoveredTargetNeed,
 } from "../services/planDraftDayRecommendationsService";
 
 const router: IRouter = Router();
@@ -55,6 +64,10 @@ const ParamsSchema = z.object({
 const QuerySchema = z.object({
   broadCategories: z.string().optional(),
   alreadyAdded: z.string().optional(),
+  /** Phase 4B3: comma-separated volumeTarget IDs still needing volume. */
+  uncoveredTargetIds: z.string().optional(),
+  /** Phase 4B3: include Core / brzuch exercises. */
+  includeCore: z.string().optional(),
 });
 
 router.get(
@@ -86,6 +99,14 @@ router.get(
         .filter((n) => !isNaN(n)),
     );
 
+    // Phase 4B3 params
+    const uncoveredTargetIdsRaw = (query.data.uncoveredTargetIds ?? "")
+      .split(",")
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !isNaN(n) && n > 0);
+
+    const includeCoreFlag = query.data.includeCore === "true";
+
     // ── Verify client ──────────────────────────────────────────────────────────
     const [client] = await db
       .select({ id: clientsTable.id })
@@ -110,12 +131,9 @@ router.get(
       return;
     }
 
-    // hasLocationData = both training location AND equipment are present in survey.
-    // When false the UI should warn that recommendations are not filtered.
     const hasLocationData =
       !!(survey.trainingLocation?.trim()) && !!(survey.equipment?.trim());
 
-    // Avoided exercise IDs are stored as an integer array on the survey row.
     const avoidedExerciseIds = new Set<number>(survey.avoidedExerciseIds ?? []);
 
     // ── Fetch active exercises (DB hard filter for isActive) ───────────────────
@@ -137,16 +155,10 @@ router.get(
     const pool: ScoredAndFilteredExercise[] = [];
 
     for (const ex of completeExercises) {
-      // Exclude exercises already added to this day (same exercise may appear on other days).
       if (alreadyAddedIds.has(ex.id)) continue;
-
-      // Hard-exclude exercises incompatible with the client's training location.
       if (!isLocationCompatible(ex.trainingLocation ?? [], survey.trainingLocation)) continue;
-
-      // Hard-exclude exercises incompatible with the client's available equipment.
       if (!isEquipmentCompatible(ex.equipment ?? [], survey.equipment)) continue;
 
-      // Delegate scoring entirely to the existing engine — no scoring logic here.
       const { score, matchReasons, warnReasons } = scoreExercise(ex, survey);
 
       pool.push({
@@ -159,7 +171,6 @@ router.get(
         score,
         matchReasons,
         warnReasons,
-        // Avoided status is metadata only — does NOT change the score.
         isAvoided: avoidedExerciseIds.has(ex.id),
       });
     }
@@ -167,7 +178,105 @@ router.get(
     // Sort pool by score descending, then name ascending (deterministic).
     pool.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, "pl"));
 
-    // ── Select, deduplicate, and limit ─────────────────────────────────────────
+    // ── Phase 4B3: Uncovered-target path ───────────────────────────────────────
+    // Activate when either specific targets are uncovered OR Core still needs sets.
+    // Both conditions can be true simultaneously; either alone is sufficient.
+    if (uncoveredTargetIdsRaw.length > 0 || includeCoreFlag) {
+      // 1. Fetch specificMuscleId → targetId mapping for uncovered targets only.
+      //    Skipped when no normal targets are uncovered (Core-only path).
+      //    Guard against inArray([]) which is invalid SQL.
+      const targetMemberRows =
+        uncoveredTargetIdsRaw.length > 0
+          ? await db
+              .select({
+                specificMuscleId: volumeTargetMembersTable.specificMuscleId,
+                volumeTargetId: volumeTargetMembersTable.volumeTargetId,
+              })
+              .from(volumeTargetMembersTable)
+              .where(inArray(volumeTargetMembersTable.volumeTargetId, uncoveredTargetIdsRaw))
+          : [];
+
+      const muscleToTargets = new Map<number, Set<number>>();
+      for (const row of targetMemberRows) {
+        if (!muscleToTargets.has(row.specificMuscleId)) {
+          muscleToTargets.set(row.specificMuscleId, new Set());
+        }
+        muscleToTargets.get(row.specificMuscleId)!.add(row.volumeTargetId);
+      }
+
+      // 2. Fetch muscle assignments for pool exercises.
+      const poolExerciseIds = pool.map((ex) => ex.id);
+      const assignmentRows =
+        poolExerciseIds.length > 0
+          ? await db
+              .select({
+                exerciseId: exerciseMuscleAssignmentsTable.exerciseId,
+                specificMuscleId: exerciseMuscleAssignmentsTable.specificMuscleId,
+                coefficient: exerciseMuscleAssignmentsTable.coefficient,
+              })
+              .from(exerciseMuscleAssignmentsTable)
+              .where(inArray(exerciseMuscleAssignmentsTable.exerciseId, poolExerciseIds))
+          : [];
+
+      // 3. Build exerciseId → Set<uncoveredTargetId> (coefficient > 0 only).
+      const exerciseCoveredTargets = new Map<number, Set<number>>();
+      for (const row of assignmentRows) {
+        const coeff = Number(row.coefficient);
+        if (!isFinite(coeff) || coeff <= 0) continue;
+        const targets = muscleToTargets.get(row.specificMuscleId);
+        if (!targets || targets.size === 0) continue;
+        if (!exerciseCoveredTargets.has(row.exerciseId)) {
+          exerciseCoveredTargets.set(row.exerciseId, new Set());
+        }
+        const existing = exerciseCoveredTargets.get(row.exerciseId)!;
+        for (const tid of targets) existing.add(tid);
+      }
+
+      // 4. Fetch target names for display in matchingTargets badges.
+      //    Guard against inArray([]) which is invalid SQL.
+      const targetNameRows =
+        uncoveredTargetIdsRaw.length > 0
+          ? await db
+              .select({ id: volumeTargetsTable.id, name: volumeTargetsTable.name })
+              .from(volumeTargetsTable)
+              .where(inArray(volumeTargetsTable.id, uncoveredTargetIdsRaw))
+          : [];
+      const targetNameMap = new Map(targetNameRows.map((r) => [r.id, r.name]));
+
+      // 5. Build ordered needs — preserving frontend's priority order.
+      const orderedNeeds: UncoveredTargetNeed[] = uncoveredTargetIdsRaw.map((tid, idx) => ({
+        targetId: tid,
+        targetName: targetNameMap.get(tid) ?? `Target ${tid}`,
+        allocationOrder: idx,
+      }));
+
+      // 6. Enrich pool and filter to exercises with at least one match.
+      const enrichedPool: ExerciseWithCoveredTargets[] = pool
+        .filter((ex) => {
+          const covered = exerciseCoveredTargets.get(ex.id) ?? new Set<number>();
+          const matchesTarget = covered.size > 0;
+          const isCore = includeCoreFlag && ex.mainMuscleGroup === "Brzuch";
+          return matchesTarget || isCore;
+        })
+        .map((ex) => ({
+          ...ex,
+          coveredTargetIds: exerciseCoveredTargets.get(ex.id) ?? new Set<number>(),
+        }));
+
+      // 7. Select, deduplicate, and limit.
+      const selected = selectByUncoveredTargets(
+        enrichedPool,
+        orderedNeeds,
+        includeCoreFlag,
+        MAX_PER_TARGET,
+        MAX_TOTAL,
+      );
+
+      res.json({ hasProfile: true, hasLocationData, exercises: selected });
+      return;
+    }
+
+    // ── Original path: broad-category matching ─────────────────────────────────
     const selected = selectDayRecommendations(
       pool,
       broadCategories,
