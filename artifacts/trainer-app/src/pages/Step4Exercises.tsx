@@ -82,6 +82,8 @@ import {
   Info,
 } from "lucide-react";
 import DayRecommendations, { type AddFromRecommendationPayload } from "@/components/DayRecommendations";
+import { WeeklyVolumeCoverage, DayVolumeCoverage } from "@/components/VolumeCoverageSection";
+import { useVolumeCoverage } from "@/hooks/useVolumeCoverage";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -104,6 +106,13 @@ export default function Step4Exercises({
   const [recOpenForDay, setRecOpenForDay] = useState<number | null>(null);
 
   const { data: avoidedExercises = [] } = useGetClientAvoidedExercises(clientId);
+
+  // Live volume coverage (debounced, read-only — no DB writes)
+  const { previewResult, isLoading: coverageLoading } = useVolumeCoverage(
+    clientId,
+    exerciseDraft,
+    distributionResult,
+  );
 
   /** Add an exercise chosen from the recommendation panel (no full Exercise type needed). */
   const handleAddFromRecommendation = useCallback(
@@ -169,6 +178,14 @@ export default function Step4Exercises({
         </span>
       </div>
 
+      {/* Weekly volume coverage summary */}
+      <WeeklyVolumeCoverage
+        distributionResult={distributionResult}
+        exerciseDraft={exerciseDraft}
+        previewResult={previewResult}
+        isLoading={coverageLoading}
+      />
+
       {/* One card per day */}
       {distributionResult.days.map((day) => {
         const dayExercises = exerciseDraft[day.dayIndex] ?? [];
@@ -230,6 +247,15 @@ export default function Step4Exercises({
                   )}
                 </div>
               )}
+
+              {/* Per-day volume coverage (planned vs actual) */}
+              <DayVolumeCoverage
+                day={day}
+                exerciseDraft={exerciseDraft}
+                previewResult={previewResult}
+                isLoading={coverageLoading}
+                auxiliaryCoreBlock={distributionResult.auxiliaryCoreBlock}
+              />
 
               {/* Exercise list */}
               <DayExerciseList
