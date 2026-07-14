@@ -13,7 +13,7 @@
  * - Core exercises always remain at the bottom of a day.
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   DndContext,
   closestCenter,
@@ -75,11 +75,13 @@ import {
   AlertCircle,
   AlertTriangle,
   GripVertical,
+  Lightbulb,
   Plus,
   Trash2,
   Loader2,
   Info,
 } from "lucide-react";
+import DayRecommendations, { type AddFromRecommendationPayload } from "@/components/DayRecommendations";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -99,8 +101,29 @@ export default function Step4Exercises({
   clientId,
 }: Step4ExercisesProps) {
   const [selectorForDay, setSelectorForDay] = useState<number | null>(null);
+  const [recOpenForDay, setRecOpenForDay] = useState<number | null>(null);
 
   const { data: avoidedExercises = [] } = useGetClientAvoidedExercises(clientId);
+
+  /** Add an exercise chosen from the recommendation panel (no full Exercise type needed). */
+  const handleAddFromRecommendation = useCallback(
+    (dayIndex: number, payload: AddFromRecommendationPayload) => {
+      const next = addExerciseToDay(exerciseDraft, dayIndex, {
+        exerciseId: payload.id,
+        exerciseName: payload.name,
+        mainMuscleGroup: payload.mainMuscleGroup,
+        equipment: payload.equipment,
+        isCore: false,
+        sets: DRAFT_EXERCISE_DEFAULTS.sets,
+        repsMin: DRAFT_EXERCISE_DEFAULTS.repsMin,
+        repsMax: DRAFT_EXERCISE_DEFAULTS.repsMax,
+        rir: DRAFT_EXERCISE_DEFAULTS.rir,
+        restSeconds: DRAFT_EXERCISE_DEFAULTS.restSeconds,
+      });
+      onDraftChange(next);
+    },
+    [exerciseDraft, onDraftChange],
+  );
 
   function handleAdd(dayIndex: number, exercise: Exercise) {
     const next = addExerciseToDay(exerciseDraft, dayIndex, {
@@ -154,6 +177,19 @@ export default function Step4Exercises({
           (a) => a.dayIndex === day.dayIndex,
         );
 
+        // Broad categories for this day — maps targetId → broadCategory via targetDecisions
+        const broadCategories = nonZeroTargets
+          .map((alloc) =>
+            distributionResult.targetDecisions.find((d) => d.targetId === alloc.targetId)
+              ?.broadCategory,
+          )
+          .filter((c): c is string => Boolean(c));
+
+        // IDs of exercises already in this day (excluded from recommendations)
+        const alreadyAddedIds = dayExercises.map((e) => e.exerciseId);
+
+        const isRecOpen = recOpenForDay === day.dayIndex;
+
         return (
           <Card key={day.dayIndex} className="border-border/50 shadow-sm">
             <CardContent className="p-4 space-y-3">
@@ -205,16 +241,49 @@ export default function Step4Exercises({
                 onReorder={handleReorder}
               />
 
-              {/* Add exercise button */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full gap-2 border-dashed"
-                onClick={() => setSelectorForDay(day.dayIndex)}
-              >
-                <Plus size={14} />
-                Dodaj ćwiczenie
-              </Button>
+              {/* Action buttons row */}
+              <div className="grid grid-cols-2 gap-2">
+                {/* Manual exercise selector */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-dashed"
+                  onClick={() => setSelectorForDay(day.dayIndex)}
+                >
+                  <Plus size={14} />
+                  Dodaj ćwiczenie
+                </Button>
+
+                {/* Recommendation toggle */}
+                <Button
+                  variant={isRecOpen ? "secondary" : "outline"}
+                  size="sm"
+                  className="gap-2"
+                  onClick={() =>
+                    setRecOpenForDay(isRecOpen ? null : day.dayIndex)
+                  }
+                >
+                  <Lightbulb size={14} />
+                  {isRecOpen ? "Ukryj rekomendacje" : "Pokaż rekomendacje"}
+                </Button>
+              </div>
+
+              {/* Inline recommendations panel */}
+              {isRecOpen && (
+                <div className="border-t border-border/30 pt-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
+                    Rekomendacje dla tego dnia
+                  </p>
+                  <DayRecommendations
+                    clientId={clientId}
+                    broadCategories={broadCategories}
+                    alreadyAddedIds={alreadyAddedIds}
+                    onAdd={(payload) =>
+                      handleAddFromRecommendation(day.dayIndex, payload)
+                    }
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
         );
