@@ -38,15 +38,26 @@ export interface AutoFillDayTarget {
 }
 
 /**
- * One exercise from the recommendation API response (structural subset of
- * DayRecommendationExercise from DayRecommendations.tsx).
+ * One exercise from the recommendation API response, enriched with exact
+ * targetIds by runAutoFill before being passed to selectExercisesForDay.
+ *
+ * The API returns only `matchingTargets` (names). `matchingTargetIds` is
+ * populated by runAutoFill by cross-referencing the `orderedTargets` that were
+ * sent in the request — this is the authoritative ID source, not the name strings.
+ * selectExercisesForDay uses only matchingTargetIds, never matchingTargets.
  */
 export interface AutoFillRecExercise {
   id: number;
   name: string;
   mainMuscleGroup: string;
-  /** Target names that this exercise covers (set by the backend). */
+  /** Target names from the API response (used only for enrichment). */
   matchingTargets: string[];
+  /**
+   * Exact volume-target IDs this exercise covers for the current day.
+   * Populated by runAutoFill from orderedTargets before selectExercisesForDay
+   * is called. Empty until enriched.
+   */
+  matchingTargetIds: number[];
   equipment: string[];
   isAvoided: boolean;
 }
@@ -161,15 +172,16 @@ export function buildDayFetchUrl(
  *
  * Algorithm (spec section 2):
  *   1. For each uncovered target (in orderedTargets priority order):
+ *      - Skip if already resolved by a previously selected multi-target exercise.
  *      - Skip if limits reached.
- *      - Find the first recommendation that:
- *          a) has the target name in its matchingTargets (exact-target match),
- *          b) is not already selected in this pass (deduplication),
- *          c) is not avoided by the client.
- *      - Mark as resolved (found) or unresolved (not found).
+ *      - Find the first recommendation where matchingTargetIds.includes(target.targetId)
+ *        and the exercise is not already selected and not avoided.
+ *      - When an exercise is selected, mark EVERY uncovered target whose
+ *        targetId appears in rec.matchingTargetIds as resolved (multi-target
+ *        deduplication: one exercise, many covered targets).
  *   2. If coreEligible and no Core exercise yet added and limits allow:
  *      - Find the first Brzuch exercise that is not already selected.
- *   3. One exercise added at most once even if it covers multiple targets.
+ *   3. Uses rec.matchingTargetIds (exact IDs) — never rec.matchingTargets (names).
  *
  * Does NOT modify the draft. Does NOT make any HTTP calls.
  * Pure function — same input always produces same output.
@@ -184,6 +196,7 @@ export function selectExercisesForDay(
   avoidedExerciseIds: ReadonlySet<number>,
 ): AutoFillDayResult {
   const addedIds = new Set<number>();
+  const resolvedTargetIdSet = new Set<number>();
   const toAdd: AutoFillExerciseToAdd[] = [];
   const resolvedTargets: AutoFillDayTarget[] = [];
   const unresolvedTargets: AutoFillDayTarget[] = [];
@@ -193,8 +206,11 @@ export function selectExercisesForDay(
   let currentCount = existingExerciseCount;
   let currentSets = existingSetCount;
 
-  // Phase 1 — normal targets
+  // Phase 1 — normal targets (exact targetId matching)
   for (const target of orderedTargets) {
+    // Already resolved by a multi-target exercise selected for an earlier target
+    if (resolvedTargetIdSet.has(target.targetId)) continue;
+
     // Safety limit check
     if (
       currentCount >= MAX_DAY_EXERCISES ||
@@ -209,7 +225,8 @@ export function selectExercisesForDay(
     for (const rec of recommendations) {
       if (rec.isAvoided || avoidedExerciseIds.has(rec.id)) continue;
       if (addedIds.has(rec.id)) continue;
-      if (!rec.matchingTargets.includes(target.targetName)) continue;
+      // Exact targetId match — never depends on name strings
+      if (!rec.matchingTargetIds.includes(target.targetId)) continue;
 
       toAdd.push({
         exerciseId: rec.id,
@@ -219,9 +236,17 @@ export function selectExercisesForDay(
         isCore: false,
       });
       addedIds.add(rec.id);
-      resolvedTargets.push(target);
       currentCount++;
       currentSets += DRAFT_EXERCISE_DEFAULTS.sets;
+
+      // Resolve all uncovered targets this exercise covers (multi-target handling)
+      for (const t of orderedTargets) {
+        if (rec.matchingTargetIds.includes(t.targetId) && !resolvedTargetIdSet.has(t.targetId)) {
+          resolvedTargetIdSet.add(t.targetId);
+          resolvedTargets.push(t);
+        }
+      }
+
       found = true;
       break;
     }
@@ -369,13 +394,28 @@ export async function runAutoFill(
     };
   }
 
+  // Enrich each exercise with exact targetIds derived from this day's orderedTargets.
+  // The API returns only matchingTargets (names). matchingTargetIds is computed here
+  // by cross-referencing the names against the orderedTargets that were sent in the
+  // request — the same DB rows, so the mapping is 1-to-1. selectExercisesForDay
+  // uses only matchingTargetIds; it never reads matchingTargets.
+  const enriched = daysToProcess.map((day, i) => {
+    const nameToId = new Map(day.orderedTargets.map((t) => [t.targetName, t.targetId]));
+    return (responsesExercises[i] ?? []).map((ex) => ({
+      ...ex,
+      matchingTargetIds: ex.matchingTargets
+        .map((name) => nameToId.get(name))
+        .filter((id): id is number => id !== undefined),
+    }));
+  });
+
   // Pure selection — no side effects
   const dayResults = daysToProcess.map((day, i) =>
     selectExercisesForDay(
       day.dayIndex,
       day.orderedTargets,
       day.coreEligible,
-      responsesExercises[i],
+      enriched[i]!,
       day.existingExerciseCount,
       day.existingSetCount,
       avoidedExerciseIds,

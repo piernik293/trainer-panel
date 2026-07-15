@@ -17,6 +17,8 @@
  * - failed request leaves the draft unchanged (runAutoFill atomic guarantee)
  * - no write endpoint is called (fetcher URL inspection)
  * - Step 5 rules are unchanged (pure fn has no effect on validation)
+ * - exact targetId matching (name with wrong ID is rejected, exact ID is accepted)
+ * - multi-target: exercise covering two uncovered IDs resolves both, added once
  */
 
 import { describe, it, expect, vi } from "vitest";
@@ -35,16 +37,22 @@ import { DRAFT_EXERCISE_DEFAULTS } from "../exerciseDraftHelpers";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
+/**
+ * Build an AutoFillRecExercise with explicit matchingTargetIds.
+ * targets drives both matchingTargets (names) and matchingTargetIds — the
+ * same fields that runAutoFill populates after enrichment.
+ */
 function makeRec(
   id: number,
-  targetNames: string[],
-  overrides: Partial<AutoFillRecExercise> = {},
+  targets: Array<{ targetId: number; targetName: string }>,
+  overrides: Partial<Omit<AutoFillRecExercise, "id" | "matchingTargets" | "matchingTargetIds">> = {},
 ): AutoFillRecExercise {
   return {
     id,
     name: `Exercise ${id}`,
     mainMuscleGroup: "Plecy",
-    matchingTargets: targetNames,
+    matchingTargets: targets.map((t) => t.targetName),
+    matchingTargetIds: targets.map((t) => t.targetId),
     equipment: [],
     isAvoided: false,
     ...overrides,
@@ -56,7 +64,8 @@ function makeCoreRec(id: number): AutoFillRecExercise {
     id,
     name: `Core ${id}`,
     mainMuscleGroup: "Brzuch",
-    matchingTargets: ["Core / brzuch"],
+    matchingTargets: [],
+    matchingTargetIds: [],
     equipment: [],
     isAvoided: false,
   };
@@ -72,7 +81,7 @@ const NO_AVOIDED = new Set<number>();
 
 describe("selectExercisesForDay()", () => {
   it("selects first non-avoided recommendation for each uncovered target", () => {
-    const recs = [makeRec(10, ["Latissimus dorsi"]), makeRec(20, ["Trapezius"])];
+    const recs = [makeRec(10, [latTarget]), makeRec(20, [trapTarget])];
     const result = selectExercisesForDay(0, [latTarget, trapTarget], false, recs, 0, 0, NO_AVOIDED);
     const ids = result.toAdd.map((e) => e.exerciseId);
     expect(ids).toContain(10);
@@ -82,26 +91,90 @@ describe("selectExercisesForDay()", () => {
     expect(result.unresolvedTargets).toHaveLength(0);
   });
 
-  it("multi-target exercise is added once even if it covers two targets", () => {
-    const rec = makeRec(10, ["Latissimus dorsi", "Trapezius"]);
-    const result = selectExercisesForDay(0, [latTarget, trapTarget], false, [rec], 0, 0, NO_AVOIDED);
-    // Both lat and trap resolved by the same exercise
-    expect(result.toAdd).toHaveLength(1);
-    expect(result.toAdd[0]?.exerciseId).toBe(10);
-    // Lat is resolved (first target in iteration), Trap is unresolved (rec already used)
-    expect(result.resolvedTargets).toHaveLength(1);
+  // ── Exact targetId matching ───────────────────────────────────────────────
+
+  it("matching target name with wrong targetId is rejected", () => {
+    // rec has matchingTargetIds: [99] but the day needs targetId 1
+    // name "Latissimus dorsi" matches, but ID does not → must be rejected
+    const wrongIdRec: AutoFillRecExercise = {
+      id: 10,
+      name: "Exercise 10",
+      mainMuscleGroup: "Plecy",
+      matchingTargets: ["Latissimus dorsi"],  // same name as latTarget
+      matchingTargetIds: [99],                // different ID
+      equipment: [],
+      isAvoided: false,
+    };
+    const result = selectExercisesForDay(0, [latTarget], false, [wrongIdRec], 0, 0, NO_AVOIDED);
+    expect(result.toAdd).toHaveLength(0);
     expect(result.unresolvedTargets).toHaveLength(1);
+    expect(result.unresolvedTargets[0]?.targetId).toBe(1);
   });
 
+  it("exact matching targetId is accepted", () => {
+    // rec has matchingTargetIds: [1] which matches latTarget.targetId exactly
+    const correctIdRec: AutoFillRecExercise = {
+      id: 10,
+      name: "Exercise 10",
+      mainMuscleGroup: "Plecy",
+      matchingTargets: ["Latissimus dorsi"],
+      matchingTargetIds: [1],  // exact match for latTarget.targetId
+      equipment: [],
+      isAvoided: false,
+    };
+    const result = selectExercisesForDay(0, [latTarget], false, [correctIdRec], 0, 0, NO_AVOIDED);
+    expect(result.toAdd).toHaveLength(1);
+    expect(result.toAdd[0]?.exerciseId).toBe(10);
+    expect(result.resolvedTargets).toHaveLength(1);
+    expect(result.resolvedTargets[0]?.targetId).toBe(1);
+    expect(result.unresolvedTargets).toHaveLength(0);
+  });
+
+  // ── Multi-target exercise handling ────────────────────────────────────────
+
+  it("one exercise supporting two uncovered targetIds is added only once", () => {
+    const rec = makeRec(10, [latTarget, trapTarget]);
+    const result = selectExercisesForDay(0, [latTarget, trapTarget], false, [rec], 0, 0, NO_AVOIDED);
+    expect(result.toAdd).toHaveLength(1);
+    expect(result.toAdd[0]?.exerciseId).toBe(10);
+  });
+
+  it("both supported targetIds are marked handled when a multi-target exercise is selected", () => {
+    const rec = makeRec(10, [latTarget, trapTarget]);
+    const result = selectExercisesForDay(0, [latTarget, trapTarget], false, [rec], 0, 0, NO_AVOIDED);
+    const resolvedIds = result.resolvedTargets.map((t) => t.targetId);
+    expect(resolvedIds).toContain(1);
+    expect(resolvedIds).toContain(2);
+  });
+
+  it("neither supported target remains unresolved after a multi-target exercise is selected", () => {
+    const rec = makeRec(10, [latTarget, trapTarget]);
+    const result = selectExercisesForDay(0, [latTarget, trapTarget], false, [rec], 0, 0, NO_AVOIDED);
+    expect(result.unresolvedTargets).toHaveLength(0);
+  });
+
+  it("no additional exercise is added for a target already handled by a multi-target pick", () => {
+    // rec10 covers both lat and trap; rec20 also covers trap
+    // After rec10 is selected for lat, trap must not generate a second exercise
+    const rec10 = makeRec(10, [latTarget, trapTarget]);
+    const rec20 = makeRec(20, [trapTarget]);
+    const result = selectExercisesForDay(0, [latTarget, trapTarget], false, [rec10, rec20], 0, 0, NO_AVOIDED);
+    expect(result.toAdd).toHaveLength(1);
+    expect(result.toAdd[0]?.exerciseId).toBe(10);
+    expect(result.unresolvedTargets).toHaveLength(0);
+  });
+
+  // ── Existing tests ────────────────────────────────────────────────────────
+
   it("avoided exercise is not added (isAvoided flag)", () => {
-    const avoidedRec = makeRec(10, ["Latissimus dorsi"], { isAvoided: true });
+    const avoidedRec = makeRec(10, [latTarget], { isAvoided: true });
     const result = selectExercisesForDay(0, [latTarget], false, [avoidedRec], 0, 0, NO_AVOIDED);
     expect(result.toAdd).toHaveLength(0);
     expect(result.unresolvedTargets).toHaveLength(1);
   });
 
   it("avoided exercise is not added (avoidedExerciseIds set)", () => {
-    const rec = makeRec(10, ["Latissimus dorsi"]);
+    const rec = makeRec(10, [latTarget]);
     const avoidedIds = new Set([10]);
     const result = selectExercisesForDay(0, [latTarget], false, [rec], 0, 0, avoidedIds);
     expect(result.toAdd).toHaveLength(0);
@@ -119,7 +192,7 @@ describe("selectExercisesForDay()", () => {
   });
 
   it("Core exercise is added once with isCore=true at the end of toAdd", () => {
-    const normalRec = makeRec(10, ["Latissimus dorsi"]);
+    const normalRec = makeRec(10, [latTarget]);
     const coreRec = makeCoreRec(50);
     const result = selectExercisesForDay(0, [latTarget], true, [normalRec, coreRec], 0, 0, NO_AVOIDED);
     const coreAdded = result.toAdd.filter((e) => e.isCore);
@@ -145,7 +218,7 @@ describe("selectExercisesForDay()", () => {
   });
 
   it("enforces max exercises per day (MAX_DAY_EXERCISES = 8)", () => {
-    const recs = [makeRec(1, ["Latissimus dorsi"]), makeRec(2, ["Trapezius"]), makeRec(3, ["Klatka piersiowa"])];
+    const recs = [makeRec(1, [latTarget]), makeRec(2, [trapTarget]), makeRec(3, [pecTarget])];
     // Already 8 exercises → no room for any
     const result = selectExercisesForDay(0, [latTarget, trapTarget, pecTarget], false, recs, MAX_DAY_EXERCISES, 0, NO_AVOIDED);
     expect(result.toAdd).toHaveLength(0);
@@ -154,7 +227,7 @@ describe("selectExercisesForDay()", () => {
   });
 
   it("enforces max sets per day (MAX_DAY_SETS = 24)", () => {
-    const recs = [makeRec(1, ["Latissimus dorsi"])];
+    const recs = [makeRec(1, [latTarget])];
     // 24 sets already → DRAFT_EXERCISE_DEFAULTS.sets (3) would exceed limit
     const result = selectExercisesForDay(0, [latTarget], false, recs, 0, MAX_DAY_SETS, NO_AVOIDED);
     expect(result.toAdd).toHaveLength(0);
@@ -163,9 +236,9 @@ describe("selectExercisesForDay()", () => {
 
   it("adds exercises up to the limit and reports remaining as unresolved", () => {
     const recs = [
-      makeRec(1, ["Latissimus dorsi"]),
-      makeRec(2, ["Trapezius"]),
-      makeRec(3, ["Klatka piersiowa"]),
+      makeRec(1, [latTarget]),
+      makeRec(2, [trapTarget]),
+      makeRec(3, [pecTarget]),
     ];
     // Room for exactly 1 more exercise (7 existing, limit 8)
     const result = selectExercisesForDay(0, [latTarget, trapTarget, pecTarget], false, recs, MAX_DAY_EXERCISES - 1, 0, NO_AVOIDED);
@@ -175,7 +248,7 @@ describe("selectExercisesForDay()", () => {
   });
 
   it("unresolved target reported when no recommendation matches", () => {
-    const recs = [makeRec(10, ["Trapezius"])]; // no rec for Lat
+    const recs = [makeRec(10, [trapTarget])]; // no rec for lat
     const result = selectExercisesForDay(0, [latTarget], false, recs, 0, 0, NO_AVOIDED);
     expect(result.unresolvedTargets).toHaveLength(1);
     expect(result.unresolvedTargets[0]?.targetId).toBe(1);
@@ -184,14 +257,14 @@ describe("selectExercisesForDay()", () => {
 
   it("existing exercises are preserved (selectExercisesForDay does not modify them)", () => {
     // This function only returns what to ADD — it never removes or reorders existing exercises
-    const recs = [makeRec(10, ["Latissimus dorsi"])];
+    const recs = [makeRec(10, [latTarget])];
     const result = selectExercisesForDay(0, [latTarget], false, recs, 2, 6, NO_AVOIDED);
     // Result only has additions — no reference to existing exercises
     expect(result.toAdd.every((e) => e.exerciseId === 10)).toBe(true);
   });
 
   it("pure function: same input produces same output", () => {
-    const recs = [makeRec(10, ["Latissimus dorsi"]), makeCoreRec(50)];
+    const recs = [makeRec(10, [latTarget]), makeCoreRec(50)];
     const a = selectExercisesForDay(0, [latTarget], true, recs, 0, 0, NO_AVOIDED);
     const b = selectExercisesForDay(0, [latTarget], true, recs, 0, 0, NO_AVOIDED);
     expect(a).toEqual(b);
@@ -201,6 +274,17 @@ describe("selectExercisesForDay()", () => {
     // Purely synchronous — no fetch/XHR/write calls possible
     const result = selectExercisesForDay(0, [latTarget], false, [], 0, 0, NO_AVOIDED);
     expect(result).toBeDefined();
+  });
+
+  it("recommendation scores remain unchanged (score field is not in AutoFillDayResult)", () => {
+    // Scores are not consumed or modified by selectExercisesForDay.
+    // AutoFillExerciseToAdd has no score field — confirmed by absence.
+    const rec = makeRec(10, [latTarget]);
+    (rec as AutoFillRecExercise & { score?: number }).score = 99; // hypothetical field
+    const result = selectExercisesForDay(0, [latTarget], false, [rec], 0, 0, NO_AVOIDED);
+    for (const exercise of result.toAdd) {
+      expect("score" in exercise).toBe(false);
+    }
   });
 });
 
@@ -313,7 +397,7 @@ describe("runAutoFill()", () => {
     const urls: string[] = [];
     const fetcher = vi.fn(async (url: string) => {
       urls.push(url);
-      return [makeRec(10, ["Latissimus dorsi"])];
+      return [makeRec(10, [latTarget])];
     });
 
     await runAutoFill({ clientId: 1, daysToProcess: days, skippedDayCount: 0, avoidedExerciseIds: NO_AVOIDED }, fetcher);
@@ -321,7 +405,7 @@ describe("runAutoFill()", () => {
   });
 
   it("covered day sends no request (not in daysToProcess)", async () => {
-    const fetcher = vi.fn(async () => [makeRec(10, ["Latissimus dorsi"])]);
+    const fetcher = vi.fn(async () => [makeRec(10, [latTarget])]);
     // skippedDayCount=2 means 2 days were already covered and NOT in daysToProcess
     await runAutoFill({ clientId: 1, daysToProcess: [makeDay()], skippedDayCount: 2, avoidedExerciseIds: NO_AVOIDED }, fetcher);
     expect(fetcher).toHaveBeenCalledTimes(1); // only 1 day processed, 2 were skipped
@@ -352,12 +436,35 @@ describe("runAutoFill()", () => {
   });
 
   it("returns success with dayResults when all requests succeed", async () => {
-    const fetcher = vi.fn(async () => [makeRec(10, ["Latissimus dorsi"])]);
+    const fetcher = vi.fn(async () => [makeRec(10, [latTarget])]);
     const result = await runAutoFill({ clientId: 1, daysToProcess: [makeDay()], skippedDayCount: 0, avoidedExerciseIds: NO_AVOIDED }, fetcher);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.dayResults).toHaveLength(1);
       expect(result.summary.totalAdded).toBe(1);
+    }
+  });
+
+  it("enriches exercises with matchingTargetIds from orderedTargets before selecting", async () => {
+    // Fetcher returns a rec with matchingTargets by name only (raw API shape).
+    // runAutoFill must enrich matchingTargetIds so selectExercisesForDay resolves by ID.
+    const rawRec: AutoFillRecExercise = {
+      id: 10,
+      name: "Pull-down",
+      mainMuscleGroup: "Plecy",
+      matchingTargets: ["Latissimus dorsi"],
+      matchingTargetIds: [],          // empty — as returned by the API
+      equipment: [],
+      isAvoided: false,
+    };
+    const fetcher = vi.fn(async () => [rawRec]);
+    const day = makeDay({ orderedTargets: [latTarget] });
+    const result = await runAutoFill({ clientId: 1, daysToProcess: [day], skippedDayCount: 0, avoidedExerciseIds: NO_AVOIDED }, fetcher);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      // rec was enriched: matchingTargetIds=[1] matched latTarget.targetId=1
+      expect(result.dayResults[0]?.toAdd).toHaveLength(1);
+      expect(result.dayResults[0]?.toAdd[0]?.exerciseId).toBe(10);
     }
   });
 
@@ -376,7 +483,7 @@ describe("runAutoFill()", () => {
     const fetcher = vi.fn(async () => {
       callCount++;
       if (callCount === 2) throw new Error("Fail on second");
-      return [makeRec(10, ["Latissimus dorsi"])];
+      return [makeRec(10, [latTarget])];
     });
     const days = [makeDay({ dayIndex: 0 }), makeDay({ dayIndex: 1, orderedTargets: [trapTarget] })];
     const result = await runAutoFill({ clientId: 1, daysToProcess: days, skippedDayCount: 0, avoidedExerciseIds: NO_AVOIDED }, fetcher);
@@ -398,7 +505,7 @@ describe("runAutoFill()", () => {
   });
 
   it("recommendation scores are not in the result (scores are unchanged — not touched)", async () => {
-    const rec = makeRec(10, ["Latissimus dorsi"]);
+    const rec = makeRec(10, [latTarget]);
     (rec as AutoFillRecExercise & { score?: number }).score = 99; // hypothetical
     const fetcher = vi.fn(async () => [rec]);
     const result = await runAutoFill({ clientId: 1, daysToProcess: [makeDay()], skippedDayCount: 0, avoidedExerciseIds: NO_AVOIDED }, fetcher);
