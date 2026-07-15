@@ -100,7 +100,7 @@ export function buildCoverageKey(exerciseDraft: ExerciseDraftByDay): string {
           (a, b) =>
             a.exerciseId - b.exerciseId || a.localId.localeCompare(b.localId),
         )
-        .map((e) => `${e.exerciseId}:${e.sets}`)
+        .map((e) => `${e.exerciseId}:${e.localId}:${e.sets}`)
         .join(",");
       return `${dayIndex}[${exPart}]`;
     })
@@ -116,7 +116,7 @@ export function buildCoverageKey(exerciseDraft: ExerciseDraftByDay): string {
  * No plan ID is sent so the route derives experience level and guideline version
  * from the client's latest survey automatically.
  */
-function buildPreviewBody(
+export function buildPreviewBody(
   clientId: number,
   exerciseDraft: ExerciseDraftByDay,
   distributionResult: WeeklyVolumeDistributionResponseType,

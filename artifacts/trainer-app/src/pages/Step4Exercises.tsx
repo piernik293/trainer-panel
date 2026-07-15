@@ -13,7 +13,7 @@
  * - Core exercises always remain at the bottom of a day.
  */
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -625,15 +625,33 @@ function SortableDraftExerciseCard({
   const [repsError, setRepsError] = useState<string | null>(null);
   const [rirError, setRirError] = useState<string | null>(null);
 
+  // Controlled display value for the sets input.
+  // Allows the user to type freely (e.g. "10" as two keystrokes) while the
+  // draft is only updated on blur. Syncs back to the authoritative draft
+  // value whenever exercise.sets changes from an external source (e.g. auto-fill).
+  const [setsDisplayValue, setSetsDisplayValue] = useState(String(exercise.sets));
+  useEffect(() => {
+    setSetsDisplayValue(String(exercise.sets));
+  }, [exercise.sets]);
+
+  function handleSetsChange(raw: string) {
+    setSetsDisplayValue(raw);
+  }
+
   function handleSetsBlur(raw: string) {
     const n = parseInt(raw, 10);
     if (isNaN(n)) {
       setSetsError("Wpisz liczbę całkowitą.");
+      setSetsDisplayValue(String(exercise.sets)); // revert to current draft value
       return;
     }
     const err = validateSets(n);
     setSetsError(err);
-    if (!err) onFieldChange("sets", n);
+    if (!err) {
+      onFieldChange("sets", n);
+    } else {
+      setSetsDisplayValue(String(exercise.sets)); // revert on invalid range
+    }
   }
 
   function handleRepsMinBlur(raw: string) {
@@ -726,9 +744,10 @@ function SortableDraftExerciseCard({
             min={1}
             max={6}
             step={1}
-            defaultValue={exercise.sets}
-            className="h-7 text-xs"
+            value={setsDisplayValue}
+            onChange={(e) => handleSetsChange(e.target.value)}
             onBlur={(e) => handleSetsBlur(e.target.value)}
+            className="h-7 text-xs"
           />
         </div>
 
