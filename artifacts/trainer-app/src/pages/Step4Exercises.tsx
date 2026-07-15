@@ -85,6 +85,12 @@ import DayRecommendations, { type AddFromRecommendationPayload } from "@/compone
 import { WeeklyVolumeCoverage, DayVolumeCoverage } from "@/components/VolumeCoverageSection";
 import type { DraftVolumePreviewResult } from "@/hooks/useVolumeCoverage";
 import { pluralizeSets, computeEligibleTargetNeeds } from "@/lib/coreCoverageHelpers";
+import {
+  runAutoFill,
+  type AutoFillSummary,
+  type RunAutoFillDayInput,
+} from "@/lib/autoFill";
+import { CheckCircle2, Sparkles, X } from "lucide-react";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -110,6 +116,11 @@ export default function Step4Exercises({
 }: Step4ExercisesProps) {
   const [selectorForDay, setSelectorForDay] = useState<number | null>(null);
   const [recOpenForDay, setRecOpenForDay] = useState<number | null>(null);
+
+  type AutoFillState = "idle" | "loading" | "success" | "error";
+  const [autoFillState, setAutoFillState] = useState<AutoFillState>("idle");
+  const [autoFillSummary, setAutoFillSummary] = useState<AutoFillSummary | null>(null);
+  const [autoFillError, setAutoFillError] = useState<string | null>(null);
 
   const { data: avoidedExercises = [] } = useGetClientAvoidedExercises(clientId);
 
@@ -167,6 +178,100 @@ export default function Step4Exercises({
     onDraftChange(reorderExercisesInDay(exerciseDraft, dayIndex, oldIndex, newIndex));
   }
 
+  const handleAutoFill = useCallback(async () => {
+    if (!previewResult || coverageLoading) return;
+    setAutoFillState("loading");
+    setAutoFillSummary(null);
+    setAutoFillError(null);
+
+    const daysToProcess: RunAutoFillDayInput[] = [];
+    let skippedDayCount = 0;
+
+    for (const day of distributionResult.days) {
+      const coverageNeeds = computeEligibleTargetNeeds(day, distributionResult, previewResult, exerciseDraft);
+      if (coverageNeeds.allDaysCovered) {
+        skippedDayCount++;
+        continue;
+      }
+
+      const existingExercises = exerciseDraft[day.dayIndex] ?? [];
+      const nonZeroTargets = filterNonZeroAllocations(day.targetAllocations);
+      const broadCats = nonZeroTargets
+        .map((alloc) => distributionResult.targetDecisions.find((d) => d.targetId === alloc.targetId)?.broadCategory)
+        .filter((c): c is string => Boolean(c));
+
+      daysToProcess.push({
+        dayIndex: day.dayIndex,
+        broadCategories: broadCats,
+        orderedTargets: coverageNeeds.normalNeeds.map((n) => ({
+          targetId: n.targetId,
+          targetName: n.targetName,
+        })),
+        coreEligible: coverageNeeds.coreEligible,
+        existingExerciseCount: existingExercises.length,
+        existingSetCount: existingExercises.reduce((sum, e) => sum + e.sets, 0),
+        alreadyAddedExerciseIds: existingExercises.map((e) => e.exerciseId),
+      });
+    }
+
+    if (daysToProcess.length === 0) {
+      setAutoFillState("success");
+      setAutoFillSummary({
+        totalAdded: 0,
+        daysUpdated: 0,
+        daysCovered: skippedDayCount,
+        resolvedTargets: [],
+        unresolvedTargets: [],
+        coreAddedCount: 0,
+        limitWarnings: [],
+      });
+      return;
+    }
+
+    const avoidedIds = new Set(avoidedExercises.map((a) => a.id));
+
+    const result = await runAutoFill(
+      { clientId, daysToProcess, skippedDayCount, avoidedExerciseIds: avoidedIds },
+      async (url) => {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json() as { exercises: unknown[] };
+        return data.exercises as Parameters<typeof runAutoFill>[1] extends (url: string) => Promise<infer T> ? T : never;
+      },
+    );
+
+    if (!result.ok) {
+      setAutoFillState("error");
+      setAutoFillError(result.error);
+      return;
+    }
+
+    // Atomic draft application — only runs after ALL requests succeed
+    let newDraft = { ...exerciseDraft };
+    for (const dayResult of result.dayResults) {
+      for (const toAdd of dayResult.toAdd) {
+        newDraft = addExerciseToDay(newDraft, dayResult.dayIndex, {
+          exerciseId: toAdd.exerciseId,
+          exerciseName: toAdd.exerciseName,
+          mainMuscleGroup: toAdd.mainMuscleGroup,
+          equipment: toAdd.equipment,
+          isCore: toAdd.isCore,
+          sets: DRAFT_EXERCISE_DEFAULTS.sets,
+          repsMin: DRAFT_EXERCISE_DEFAULTS.repsMin,
+          repsMax: DRAFT_EXERCISE_DEFAULTS.repsMax,
+          rir: DRAFT_EXERCISE_DEFAULTS.rir,
+          restSeconds: DRAFT_EXERCISE_DEFAULTS.restSeconds,
+        });
+      }
+    }
+
+    onDraftChange(newDraft);
+    setAutoFillState("success");
+    setAutoFillSummary(result.summary);
+  }, [distributionResult, exerciseDraft, previewResult, coverageLoading, clientId, avoidedExercises, onDraftChange]);
+
+  const hasAnyExercise = Object.values(exerciseDraft).some((day) => day.length > 0);
+
   return (
     <div className="space-y-4">
       {/* Helper note */}
@@ -176,6 +281,95 @@ export default function Step4Exercises({
           To wartość analityczna. Rzeczywiste serie robocze wynikają z dobranych ćwiczeń.
         </span>
       </div>
+
+      {/* Auto-fill button */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="default"
+          size="sm"
+          className="gap-2"
+          onClick={handleAutoFill}
+          disabled={autoFillState === "loading" || !previewResult || coverageLoading}
+        >
+          {autoFillState === "loading" ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Sparkles size={14} />
+          )}
+          {autoFillState === "loading"
+            ? "Przygotowuję propozycję…"
+            : hasAnyExercise
+            ? "Uzupełnij brakujące ćwiczenia"
+            : "Ułóż wstępną propozycję całego planu"}
+        </Button>
+        {(autoFillState === "success" || autoFillState === "error") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 text-muted-foreground"
+            onClick={() => {
+              setAutoFillState("idle");
+              setAutoFillSummary(null);
+              setAutoFillError(null);
+            }}
+          >
+            <X size={14} />
+          </Button>
+        )}
+      </div>
+
+      {/* Auto-fill error */}
+      {autoFillState === "error" && autoFillError && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-3 flex items-start gap-2 text-sm text-destructive">
+          <AlertCircle size={14} className="shrink-0 mt-0.5" />
+          <span>{autoFillError}</span>
+        </div>
+      )}
+
+      {/* Auto-fill success summary */}
+      {autoFillState === "success" && autoFillSummary && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
+            <p className="text-sm font-semibold text-emerald-800">
+              Wstępna propozycja planu została przygotowana
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-emerald-700">
+            <span>Dodano ćwiczeń: <span className="font-medium text-emerald-900">{autoFillSummary.totalAdded}</span></span>
+            <span>Dni zaktualizowanych: <span className="font-medium text-emerald-900">{autoFillSummary.daysUpdated}</span></span>
+            {autoFillSummary.daysCovered > 0 && (
+              <span>Dni już pokrytych: <span className="font-medium text-emerald-900">{autoFillSummary.daysCovered}</span></span>
+            )}
+            {autoFillSummary.coreAddedCount > 0 && (
+              <span>Core / brzuch dodano: <span className="font-medium text-emerald-900">{autoFillSummary.coreAddedCount}×</span></span>
+            )}
+            {autoFillSummary.resolvedTargets.length > 0 && (
+              <span className="col-span-2">
+                Pokryte cele: <span className="font-medium text-emerald-900">{autoFillSummary.resolvedTargets.map((t) => t.targetName).join(", ")}</span>
+              </span>
+            )}
+            {autoFillSummary.unresolvedTargets.length > 0 && (
+              <span className="col-span-2 text-amber-700">
+                Nierozwiązane cele: <span className="font-medium">{autoFillSummary.unresolvedTargets.map((t) => t.targetName).join(", ")}</span>
+              </span>
+            )}
+          </div>
+          {autoFillSummary.limitWarnings.length > 0 && (
+            <div className="space-y-0.5 pt-1 border-t border-emerald-200">
+              {autoFillSummary.limitWarnings.map((w, i) => (
+                <div key={i} className="flex items-start gap-1 text-[11px] text-amber-700">
+                  <AlertTriangle size={11} className="shrink-0 mt-0.5" />
+                  <span>{w}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-[10px] text-emerald-600 pt-0.5">
+            To wstępna propozycja — możesz edytować wszystkie ćwiczenia.
+          </p>
+        </div>
+      )}
 
       {/* Weekly volume coverage summary */}
       <WeeklyVolumeCoverage
