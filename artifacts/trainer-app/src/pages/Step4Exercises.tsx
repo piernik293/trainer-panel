@@ -88,7 +88,9 @@ import { pluralizeSets, computeEligibleTargetNeeds } from "@/lib/coreCoverageHel
 import {
   runAutoFill,
   type AutoFillSummary,
+  type AutoFillVolumeSnapshot,
   type RunAutoFillDayInput,
+  type TrialPreviewBody,
 } from "@/lib/autoFill";
 import { CheckCircle2, Sparkles, X } from "lucide-react";
 
@@ -230,13 +232,84 @@ export default function Step4Exercises({
 
     const avoidedIds = new Set(avoidedExercises.map((a) => a.id));
 
+    // Convert previewResult to the minimal AutoFillVolumeSnapshot format
+    const volumeSnapshot: AutoFillVolumeSnapshot = {
+      weekly: previewResult.weekly.map((w) => ({
+        targetId: w.targetId,
+        effectiveSets: w.effectiveSets,
+        weeklyPreferredCeiling: w.weeklyPreferredCeiling,
+        hasGuideline: w.hasGuideline,
+        isManuallyOvershot:
+          w.hasGuideline &&
+          (w.status === "above_preferred" || w.status === "above_absolute"),
+      })),
+      days: previewResult.days.map((d) => ({
+        dayId: d.dayId,
+        muscles: d.muscles.map((m) => ({
+          targetId: m.targetId,
+          effectiveSets: m.effectiveSets,
+          sessionMax: m.sessionMax,
+          isDailyOvershot: m.sessionStatus === "above_max",
+          contributions: m.contributions.map((c) => ({
+            exerciseId: c.exerciseId,
+            coefficient: c.coefficient,
+          })),
+        })),
+      })),
+    };
+
     const result = await runAutoFill(
-      { clientId, daysToProcess, skippedDayCount, avoidedExerciseIds: avoidedIds },
+      {
+        clientId,
+        daysToProcess,
+        skippedDayCount,
+        avoidedExerciseIds: avoidedIds,
+        allDistributionDays: distributionResult.days.map((d) => ({
+          dayIndex: d.dayIndex,
+          dayName: d.dayName ?? null,
+        })),
+        currentDraft: exerciseDraft,
+        currentPreviewResult: volumeSnapshot,
+      },
       async (url) => {
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json() as { exercises: unknown[] };
         return data.exercises as Parameters<typeof runAutoFill>[1] extends (url: string) => Promise<infer T> ? T : never;
+      },
+      async (body: TrialPreviewBody) => {
+        const resp = await fetch("/api/plans/volume-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!resp.ok) throw new Error(`Trial preview HTTP ${resp.status}`);
+        // Transform DraftVolumePreviewResult → AutoFillVolumeSnapshot
+        const raw = await resp.json() as {
+          weekly: Array<{ targetId: number; effectiveSets: number; weeklyPreferredCeiling: number; hasGuideline: boolean; status: string }>;
+          days: Array<{ dayId: number; muscles: Array<{ targetId: number; effectiveSets: number; sessionMax: number; sessionStatus: string; contributions: Array<{ exerciseId: number; coefficient: number }> }> }>;
+        };
+        return {
+          weekly: raw.weekly.map((w) => ({
+            targetId: w.targetId,
+            effectiveSets: w.effectiveSets,
+            weeklyPreferredCeiling: w.weeklyPreferredCeiling,
+            hasGuideline: w.hasGuideline,
+            isManuallyOvershot:
+              w.hasGuideline &&
+              (w.status === "above_preferred" || w.status === "above_absolute"),
+          })),
+          days: raw.days.map((d) => ({
+            dayId: d.dayId,
+            muscles: d.muscles.map((m) => ({
+              targetId: m.targetId,
+              effectiveSets: m.effectiveSets,
+              sessionMax: m.sessionMax,
+              isDailyOvershot: m.sessionStatus === "above_max",
+              contributions: m.contributions,
+            })),
+          })),
+        } satisfies AutoFillVolumeSnapshot;
       },
     );
 
@@ -256,7 +329,7 @@ export default function Step4Exercises({
           mainMuscleGroup: toAdd.mainMuscleGroup,
           equipment: toAdd.equipment,
           isCore: toAdd.isCore,
-          sets: DRAFT_EXERCISE_DEFAULTS.sets,
+          sets: toAdd.sets,
           repsMin: DRAFT_EXERCISE_DEFAULTS.repsMin,
           repsMax: DRAFT_EXERCISE_DEFAULTS.repsMax,
           rir: DRAFT_EXERCISE_DEFAULTS.rir,
