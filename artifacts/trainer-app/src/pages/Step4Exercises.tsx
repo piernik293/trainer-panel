@@ -634,23 +634,28 @@ function SortableDraftExerciseCard({
     setSetsDisplayValue(String(exercise.sets));
   }, [exercise.sets]);
 
+  // Immediately commit valid set counts to the draft so Core coverage and the
+  // normal-target coverage key both update without requiring a blur.
   function handleSetsChange(raw: string) {
     setSetsDisplayValue(raw);
+    const n = parseInt(raw, 10);
+    if (!isNaN(n)) {
+      const err = validateSets(n);
+      setSetsError(err);
+      if (!err) {
+        onFieldChange("sets", n); // live draft update → coverage refreshes immediately
+      }
+    }
   }
 
+  // On blur: revert the display to the authoritative draft value if the field
+  // holds an incomplete or out-of-range entry.  The draft itself is already up
+  // to date via handleSetsChange, so we never call onFieldChange here.
   function handleSetsBlur(raw: string) {
     const n = parseInt(raw, 10);
-    if (isNaN(n)) {
-      setSetsError("Wpisz liczbę całkowitą.");
-      setSetsDisplayValue(String(exercise.sets)); // revert to current draft value
-      return;
-    }
-    const err = validateSets(n);
-    setSetsError(err);
-    if (!err) {
-      onFieldChange("sets", n);
-    } else {
-      setSetsDisplayValue(String(exercise.sets)); // revert on invalid range
+    if (isNaN(n) || validateSets(n)) {
+      setSetsError(validateSets(n) ?? "Wpisz liczbę całkowitą.");
+      setSetsDisplayValue(String(exercise.sets)); // revert display to draft value
     }
   }
 
