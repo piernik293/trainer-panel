@@ -213,6 +213,9 @@ export default function Step4Exercises({
         existingExerciseCount: existingExercises.length,
         existingSetCount: existingExercises.reduce((sum, e) => sum + e.sets, 0),
         alreadyAddedExerciseIds: existingExercises.map((e) => e.exerciseId),
+        step3DailyAllocations: new Map(
+          day.targetAllocations.map((a) => [a.targetId, a.allocatedVolume]),
+        ),
       });
     }
 
