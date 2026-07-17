@@ -23,6 +23,7 @@
 
 import { CORE_MUSCLE_GROUP } from "./coreCoverageHelpers";
 import type { ExerciseDraftByDay } from "./exerciseDraftHelpers";
+import { trainerPriorityRank } from "./trainerPriority";
 
 // ─── Safety limits ─────────────────────────────────────────────────────────────
 
@@ -324,14 +325,19 @@ interface EvalRejected {
   cause: RejectionCause;
 }
 
-/** Score tuple (6 elements): all lower = better.
- *  [numRemainingUnresolved, totalWeeklyRemaining, totalDailyRemaining,
- *   setsPreference, recOriginalRank, varietyPenalty]
+/** Score tuple (7 elements): all lower = better.
+ *  [0] numRemainingUnresolved  — fewer unresolved targets wins
+ *  [1] totalWeeklyRemaining    — less weekly deficit wins
+ *  [2] totalDailyRemaining     — less daily deficit wins
+ *  [3] setsPreference          — 3→0, 4→1, 2→2
+ *  [4] trainerPriorityRank     — compound first, higher priority first (Stage 3)
+ *  [5] recOriginalRank         — API score + freshness order
+ *  [6] varietyPenalty          — 0=fresh, 1=already used in another day
  */
-type ScoreTuple = readonly [number, number, number, number, number, number];
+type ScoreTuple = readonly [number, number, number, number, number, number, number];
 
 function scoreBetter(a: ScoreTuple, b: ScoreTuple): boolean {
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 7; i++) {
     if (a[i]! < b[i]!) return true;
     if (a[i]! > b[i]!) return false;
   }
@@ -630,6 +636,7 @@ export function selectExercisesForDay(
             eval_.partialScore[1]!,
             eval_.partialScore[2]!,
             eval_.partialScore[3]!,
+            trainerPriorityRank(rec),
             originalRank,
             varietyPenalty,
           ];
@@ -684,6 +691,7 @@ export function selectExercisesForDay(
             eval_.partialScore[1]!,
             eval_.partialScore[2]!,
             eval_.partialScore[3]!,
+            trainerPriorityRank(rec),
             originalRank,
             varietyPenalty,
           ];

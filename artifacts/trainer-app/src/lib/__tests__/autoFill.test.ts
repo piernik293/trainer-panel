@@ -1195,3 +1195,125 @@ describe("selectExercisesForDay() — unchanged safety constraints", () => {
     expect(result.toAdd).toHaveLength(0);
   });
 });
+
+// ─── Stage 3: trainerPriorityRank integration ─────────────────────────────────
+
+describe("Stage 3 — trainerPriorityRank in ScoreTuple", () => {
+  /**
+   * Equal-volume scenario: compound and isolation produce identical volume
+   * scores (ScoreTuple indices 0–3). The compound should win at index 4
+   * (trainerPriorityRank) even though the isolation is listed first in the
+   * recommendations array (giving it a lower originalRank / index 5).
+   */
+  it("equal volume → compound selected over isolation listed first", () => {
+    // Isolation listed first → lower originalRank (would win at index 5).
+    const isolationRec = makeRec(1, [latTarget], {
+      exerciseType: "Izolowane",
+      neurologicalFatigue: null,
+    });
+    // Compound listed second → higher originalRank.
+    const compoundRec = makeRec(2, [latTarget], {
+      exerciseType: "Złożone",
+      neurologicalFatigue: 5,
+    });
+
+    // ceiling=3, coeff=1.0 for both.
+    // sets=3 → newWeekly=3 for both: numRemainingUnresolved and
+    // totalWeeklyRemaining are identical → ScoreTuple indices 0–3 are equal.
+    // trainerPriorityRank: compound=0+2=2, isolation=30+2=32 → compound wins at index 4.
+    // After compound committed (sets=3): weeklyBase=3.0 ≥ ceiling(3)−0.5=2.5 → RESOLVED.
+    // Second pass skips the resolved target → isolation is never selected.
+    const weeklyTargets = new Map([[latTarget.targetId, makeWeekly(latTarget.targetId, 0, 3)]]);
+    const coefficients = new Map([
+      [1, new Map([[latTarget.targetId, 1.0]])],
+      [2, new Map([[latTarget.targetId, 1.0]])],
+    ]);
+
+    const result = selectExercisesForDay(
+      0, [latTarget], false,
+      [isolationRec, compoundRec], // isolation first in input
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+    );
+
+    expect(result.toAdd).toHaveLength(1);
+    expect(result.toAdd[0]?.exerciseId).toBe(2); // compound wins despite lower originalRank
+  });
+
+  /**
+   * Better-volume scenario: the isolation covers more of the target than the
+   * compound does. The isolation should win at ScoreTuple index 1
+   * (totalWeeklyRemaining) before trainerPriorityRank is ever consulted,
+   * even though the compound is listed first (lower originalRank).
+   */
+  it("better volume → isolation selected over compound when it covers more", () => {
+    // Compound listed first → lower originalRank (would win index 5 tie-breaker).
+    const compoundRec = makeRec(1, [latTarget], {
+      exerciseType: "Złożone",
+      neurologicalFatigue: 5,
+    });
+    // Isolation listed second but has much higher contribution coefficient.
+    const isolationRec = makeRec(2, [latTarget], {
+      exerciseType: "Izolowane",
+      neurologicalFatigue: null,
+    });
+
+    // ceiling=3, coeff: compound=0.3, isolation=1.0.
+    // sets=3: compound → newWeekly=0.9 < 2.5 → numRemainingUnresolved=1
+    //         isolation → newWeekly=3.0 ≥ 2.5 → numRemainingUnresolved=0
+    // Isolation wins at index 0 (numRemainingUnresolved); trainerPriorityRank never consulted.
+    // After isolation committed (sets=3): weeklyBase=3.0 ≥ 2.5 → RESOLVED.
+    // Second pass skips resolved target → compound is never selected.
+    const weeklyTargets = new Map([[latTarget.targetId, makeWeekly(latTarget.targetId, 0, 3)]]);
+    const coefficients = new Map([
+      [1, new Map([[latTarget.targetId, 0.3]])],
+      [2, new Map([[latTarget.targetId, 1.0]])],
+    ]);
+
+    const result = selectExercisesForDay(
+      0, [latTarget], false,
+      [compoundRec, isolationRec], // compound first in input
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+    );
+
+    expect(result.toAdd).toHaveLength(1);
+    expect(result.toAdd[0]?.exerciseId).toBe(2); // isolation wins on volume despite lower rank
+  });
+
+  /**
+   * Safety behaviour unchanged: trainerPriorityRank does not allow a compound
+   * to bypass the weekly ceiling. If the compound would overshoot the ceiling
+   * and the isolation fits safely, the isolation is selected.
+   */
+  it("safety limits unchanged — compound rejected on overshoot, isolation accepted", () => {
+    // ceiling=10, effectiveSets=9.0. Target is NOT yet resolved: 9.0 < 9.5.
+    // Compound coeff=2.0: all set counts would push far above ceiling+0.5=10.5 → all rejected.
+    //   sets=2 → 9+4=13 > 10.5, sets=3 → 15 > 10.5, sets=4 → 17 > 10.5.
+    // Isolation coeff=0.1: all set counts stay within ceiling+0.5 → accepted.
+    //   sets=3 → 9+0.3=9.3 ≤ 10.5. trainerPriorityRank cannot rescue the compound.
+    const compoundRec = makeRec(1, [latTarget], {
+      exerciseType: "Złożone",
+      neurologicalFatigue: 5,
+    });
+    const isolationRec = makeRec(2, [latTarget], {
+      exerciseType: "Izolowane",
+    });
+
+    const weeklyTargets = new Map([[latTarget.targetId, makeWeekly(latTarget.targetId, 9.0, 10)]]);
+    const coefficients = new Map([
+      [1, new Map([[latTarget.targetId, 2.0]])], // all set counts overshoot → rejected
+      [2, new Map([[latTarget.targetId, 0.1]])], // fits safely within ceiling+0.5
+    ]);
+
+    const result = selectExercisesForDay(
+      0, [latTarget], false,
+      [compoundRec, isolationRec],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+    );
+
+    expect(result.toAdd).toHaveLength(1);
+    expect(result.toAdd[0]?.exerciseId).toBe(2); // isolation selected; compound rejected on safety
+  });
+});
