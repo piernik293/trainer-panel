@@ -338,7 +338,7 @@ interface EvalRejected {
  *  [6] recOriginalRank         — API score + freshness order
  *  [7] varietyPenalty          — 0=fresh, 1=already used in another day
  */
-type ScoreTuple = readonly [number, number, number, number, number, number, number, number];
+export type ScoreTuple = readonly [number, number, number, number, number, number, number, number];
 
 function scoreBetter(a: ScoreTuple, b: ScoreTuple): boolean {
   for (let i = 0; i < 8; i++) {
@@ -353,18 +353,114 @@ function setsPreference(sets: AllowedSets): number {
   return sets === 3 ? 0 : sets === 4 ? 1 : 2;
 }
 
+// ─── ContributionSafetyResult ─────────────────────────────────────────────────
+
+/**
+ * Discriminated result returned by checkContributionSafety.
+ * Consumed by evaluateCandidate (new-exercise scoring) and
+ * findBestConsolidation (set-increase evaluation).
+ */
+export type ContributionSafetyResult =
+  | {
+      safe: true;
+      numRemainingUnresolved: number;
+      totalWeeklyRemaining: number;
+      totalDailyRemaining: number;
+    }
+  | { safe: false; cause: RejectionCause };
+
+// ─── checkContributionSafety ──────────────────────────────────────────────────
+
+/**
+ * Shared, action-agnostic contribution safety evaluator.
+ *
+ * Validates a volume delta against all safety rules:
+ *   1. Manual overshoot protection.
+ *   2. Weekly ceiling protection (ceiling + 0.5 tolerance).
+ *   3. Daily overshoot protection (isDailyOvershot flag).
+ *   4. Daily session maximum (sessionMax + 0.5 tolerance).
+ *   5. Daily redistribution limit (step3Alloc + 2.0 deviation cap).
+ *
+ * Also computes numRemainingUnresolved, totalWeeklyRemaining, and
+ * totalDailyRemaining, which are consumed by both new-exercise scoring
+ * (evaluateCandidate) and consolidation selection (findBestConsolidation).
+ *
+ * Used by both new-exercise evaluation and consolidation delta evaluation so
+ * that all safety rules live in exactly one place.
+ */
+export function checkContributionSafety(
+  effectiveDelta: number,
+  coeffs: ReadonlyMap<number, number>,
+  weeklyTargets: ReadonlyMap<number, AutoFillWeeklyTarget>,
+  weeklyBaseFn: (id: number) => number,
+  dailyContextMap: ReadonlyMap<number, { effectiveSets: number; sessionMax: number; isDailyOvershot: boolean }>,
+  dailyBaseFn: (id: number) => number,
+  step3DailyAllocations: ReadonlyMap<number, number>,
+  orderedTargets: ReadonlyArray<AutoFillDayTarget>,
+): ContributionSafetyResult {
+  let totalWeeklyRemaining = 0;
+  let totalDailyRemaining = 0;
+
+  for (const [targetId, coeff] of coeffs) {
+    if (coeff <= 0) continue;
+
+    // ── Weekly ────────────────────────────────────────────────────────────────
+    const wt = weeklyTargets.get(targetId);
+    if (wt?.hasGuideline) {
+      if (wt.isManuallyOvershot) {
+        return { safe: false, cause: "manual_overshoot" };
+      }
+      const newWeekly = weeklyBaseFn(targetId) + coeff * effectiveDelta;
+      if (newWeekly > wt.weeklyPreferredCeiling + OVERSHOOT_TOLERANCE) {
+        const isPrimary = orderedTargets.some((t) => t.targetId === targetId);
+        return { safe: false, cause: isPrimary ? "weekly_overshoot" : "other_target_overshoot" };
+      }
+      totalWeeklyRemaining += Math.max(0, wt.weeklyPreferredCeiling - newWeekly);
+    }
+
+    // ── Daily session max ─────────────────────────────────────────────────────
+    const dc = dailyContextMap.get(targetId);
+    if (dc) {
+      if (dc.isDailyOvershot) return { safe: false, cause: "daily_session_max" };
+      const newDaily = dailyBaseFn(targetId) + coeff * effectiveDelta;
+      if (newDaily > dc.sessionMax + OVERSHOOT_TOLERANCE) return { safe: false, cause: "daily_session_max" };
+      totalDailyRemaining += Math.max(0, dc.sessionMax - newDaily);
+    }
+
+    // ── Daily redistribution limit ────────────────────────────────────────────
+    const step3Alloc = step3DailyAllocations.get(targetId);
+    if (step3Alloc !== undefined) {
+      const newDaily = dailyBaseFn(targetId) + coeff * effectiveDelta;
+      if (newDaily > step3Alloc + DAILY_MAX_POSITIVE_DEVIATION) {
+        return { safe: false, cause: "daily_redistribution" };
+      }
+    }
+  }
+
+  // Count targets that would still be unresolved after this delta
+  let numRemainingUnresolved = 0;
+  for (const target of orderedTargets) {
+    const wt = weeklyTargets.get(target.targetId);
+    if (!wt?.hasGuideline) continue;
+    const coeff = coeffs.get(target.targetId) ?? 0;
+    const newWeekly = weeklyBaseFn(target.targetId) + coeff * effectiveDelta;
+    if (newWeekly < wt.weeklyPreferredCeiling - RESOLVE_TOLERANCE) numRemainingUnresolved++;
+  }
+
+  return { safe: true, numRemainingUnresolved, totalWeeklyRemaining, totalDailyRemaining };
+}
+
 // ─── evaluateCandidate ────────────────────────────────────────────────────────
 
 /**
  * Evaluates one (candidate, sets) combination against ALL affected targets.
  *
- * Safety filters (hard reject):
+ * New-exercise-specific rules (hard reject):
  *   1. No contribution vector (empty coeffs map).
- *   2. Contributes to a manually-overshot weekly target.
- *   3. New weekly volume > ceiling + 0.5 for any guideline target.
- *   4. Contributes to an already-exceeded daily session max.
- *   5. New daily volume > sessionMax + 0.5.
- *   6. New daily volume > step3Alloc + 2.0 (redistribution limit).
+ *
+ * All other safety rules (manual overshoot, weekly ceiling, daily session max,
+ * redistribution limit) are delegated to checkContributionSafety so they are
+ * maintained in one place and reused by consolidation evaluation.
  *
  * Returns a partial score (without recRank and varietyPenalty) if accepted.
  */
@@ -378,62 +474,79 @@ function evaluateCandidate(
   step3DailyAllocations: ReadonlyMap<number, number>,
   orderedTargets: ReadonlyArray<AutoFillDayTarget>,
 ): EvalAccepted | EvalRejected {
-  // Rule: no contribution vector → exclude
+  // Rule 1: no contribution vector → exclude (new-exercise only)
   if (coeffs.size === 0) return { rejected: true, cause: "no_coeff" };
 
-  let totalWeeklyRemaining = 0;
-  let totalDailyRemaining = 0;
-
-  for (const [targetId, coeff] of coeffs) {
-    if (coeff <= 0) continue;
-
-    // ── Weekly ────────────────────────────────────────────────────────────────
-    const wt = weeklyTargets.get(targetId);
-    if (wt?.hasGuideline) {
-      if (wt.isManuallyOvershot) {
-        return { rejected: true, cause: "manual_overshoot" };
-      }
-      const newWeekly = weeklyBaseFn(targetId) + coeff * sets;
-      if (newWeekly > wt.weeklyPreferredCeiling + OVERSHOOT_TOLERANCE) {
-        const isPrimary = orderedTargets.some((t) => t.targetId === targetId);
-        return { rejected: true, cause: isPrimary ? "weekly_overshoot" : "other_target_overshoot" };
-      }
-      totalWeeklyRemaining += Math.max(0, wt.weeklyPreferredCeiling - newWeekly);
-    }
-
-    // ── Daily session max ─────────────────────────────────────────────────────
-    const dc = dailyContextMap.get(targetId);
-    if (dc) {
-      if (dc.isDailyOvershot) return { rejected: true, cause: "daily_session_max" };
-      const newDaily = dailyBaseFn(targetId) + coeff * sets;
-      if (newDaily > dc.sessionMax + OVERSHOOT_TOLERANCE) return { rejected: true, cause: "daily_session_max" };
-      totalDailyRemaining += Math.max(0, dc.sessionMax - newDaily);
-    }
-
-    // ── Daily redistribution limit ────────────────────────────────────────────
-    const step3Alloc = step3DailyAllocations.get(targetId);
-    if (step3Alloc !== undefined) {
-      const newDaily = dailyBaseFn(targetId) + coeff * sets;
-      if (newDaily > step3Alloc + DAILY_MAX_POSITIVE_DEVIATION) {
-        return { rejected: true, cause: "daily_redistribution" };
-      }
-    }
-  }
-
-  // Count targets that would still be unresolved after this addition
-  let numRemainingUnresolved = 0;
-  for (const target of orderedTargets) {
-    const wt = weeklyTargets.get(target.targetId);
-    if (!wt?.hasGuideline) continue;
-    const coeff = coeffs.get(target.targetId) ?? 0;
-    const newWeekly = weeklyBaseFn(target.targetId) + coeff * sets;
-    if (newWeekly < wt.weeklyPreferredCeiling - RESOLVE_TOLERANCE) numRemainingUnresolved++;
-  }
+  const safety = checkContributionSafety(
+    sets, coeffs, weeklyTargets, weeklyBaseFn, dailyContextMap, dailyBaseFn,
+    step3DailyAllocations, orderedTargets,
+  );
+  if (!safety.safe) return { rejected: true, cause: safety.cause };
 
   return {
     rejected: false,
-    partialScore: [numRemainingUnresolved, totalWeeklyRemaining, totalDailyRemaining, setsPreference(sets)],
+    partialScore: [safety.numRemainingUnresolved, safety.totalWeeklyRemaining, safety.totalDailyRemaining, setsPreference(sets)],
   };
+}
+
+// ─── Stage 5: Fragmentation tie-breaker ──────────────────────────────────────
+
+export type FragmentationAction = "EXPAND" | "CONSOLIDATE" | "NO_ACTION";
+
+/**
+ * Returns true when the expansion candidate provides a concrete benefit that a
+ * consolidation (set increase on an existing exercise) cannot provide.
+ *
+ * Two concrete advantages are recognised:
+ *   1. score[0] — expansion resolves more remaining targets than consolidation would.
+ *   2. score[4] — expansion adds a movement category not yet in the session (penalty === 0).
+ *
+ * This helper is owned by the selection logic, not Stage 5, because it
+ * understands ScoreTuple semantics. Stage 5 (resolveFragmentationAction) only
+ * receives the boolean result, keeping it free of ScoreTuple knowledge.
+ *
+ * Indices [1]–[3] and [5]–[7] determined which expansion candidate is best
+ * (via scoreBetter); they do not express expansion-vs-consolidation advantage
+ * and are not consulted here.
+ */
+export function hasClearExpansionAdvantage(
+  expansion: { score: ScoreTuple },
+  consolidation: { numRemainingUnresolved: number },
+): boolean {
+  // Expansion resolves more volume targets than consolidation would
+  if (expansion.score[0] < consolidation.numRemainingUnresolved) return true;
+  // Expansion adds a movement category not yet represented in the session
+  if (expansion.score[4] === 0) return true;
+  return false;
+}
+
+/**
+ * Stage 5 pure tie-breaker.
+ *
+ * Receives three booleans and returns one FragmentationAction. Does not
+ * know about ScoreTuple, target IDs, movement categories, recommendation
+ * rank, trainer priority, or penalties.
+ *
+ * Consolidation is the final fallback: it fires only when expansion has no
+ * concrete advantage over adding sets to an already-committed exercise.
+ *
+ * Decision rules (applied in order):
+ *   1. No candidates             → NO_ACTION
+ *   2. Expansion only            → EXPAND
+ *   3. Consolidation only        → CONSOLIDATE
+ *   4. Both, advantage = true    → EXPAND
+ *   5. Both, advantage = false   → CONSOLIDATE (simpler program)
+ */
+export function resolveFragmentationAction(options: {
+  hasExpansion: boolean;
+  hasConsolidation: boolean;
+  expansionHasClearAdvantage: boolean;
+}): FragmentationAction {
+  const { hasExpansion, hasConsolidation, expansionHasClearAdvantage } = options;
+  if (!hasExpansion && !hasConsolidation) return "NO_ACTION";
+  if (!hasConsolidation) return "EXPAND";
+  if (!hasExpansion) return "CONSOLIDATE";
+  return expansionHasClearAdvantage ? "EXPAND" : "CONSOLIDATE";
 }
 
 // ─── computeDiagnosticReason ──────────────────────────────────────────────────
@@ -606,18 +719,16 @@ export function selectExercisesForDay(
       });
   }
 
-  // ── Phase 1: Multi-pass target selection ──────────────────────────────────
+  // ── Stage 5 closures ──────────────────────────────────────────────────────
 
-  let didImprove = true;
-  while (didImprove && canAddMore()) {
-    didImprove = false;
-
-    let globalBest: {
-      rec: AutoFillRecExercise;
-      sets: AllowedSets;
-      score: ScoreTuple;
-    } | null = null;
-
+  /**
+   * Finds the globally best new-exercise candidate across all unresolved targets.
+   * Pure refactor of the former Phase 1 inner loop — behavior is identical.
+   * Extracted so the result can be compared against a consolidation candidate
+   * before any action is taken.
+   */
+  function findBestExpansion(): { rec: AutoFillRecExercise; sets: AllowedSets; score: ScoreTuple } | null {
+    let best: { rec: AutoFillRecExercise; sets: AllowedSets; score: ScoreTuple } | null = null;
     const sorted = sortedWithRank(recommendations);
 
     for (const target of orderedTargets) {
@@ -655,15 +766,128 @@ export function selectExercisesForDay(
             varietyPenalty,
           ];
 
-          if (globalBest === null || scoreBetter(score, globalBest.score)) {
-            globalBest = { rec, sets, score };
+          if (best === null || scoreBetter(score, best.score)) {
+            best = { rec, sets, score };
           }
         }
       }
     }
 
-    if (globalBest !== null) {
-      commitExercise(globalBest.rec, globalBest.sets, false);
+    return best;
+  }
+
+  /**
+   * Finds the best safe set-increase on an already-committed exercise.
+   * Decision-only: does not mutate any state.
+   *
+   * Rules:
+   *   - Skips core exercises and exercises already at 4 sets.
+   *   - Tries delta = 1 then delta = 2; rejects if sets + delta > 4 or
+   *     currentSets + delta > MAX_DAY_SETS.
+   *   - Rejects candidates that fail checkContributionSafety.
+   *   - Missing or empty coefficient maps are skipped.
+   *
+   * Candidate preference: lower numRemainingUnresolved → lower delta →
+   * earlier index in toAdd (naturally preserved by ascending iteration order).
+   */
+  function findBestConsolidation(): { index: number; delta: number; numRemainingUnresolved: number } | null {
+    // Consolidation only makes sense when there is still volume to contribute toward.
+    // If every ordered target is already resolved, adding more sets gains nothing.
+    const hasAnyUnresolved = orderedTargets.some((t) => !isVolumeResolved(t.targetId));
+    if (!hasAnyUnresolved) return null;
+
+    let best: { index: number; delta: number; numRemainingUnresolved: number } | null = null;
+
+    for (let i = 0; i < toAdd.length; i++) {
+      const entry = toAdd[i]!;
+      if (entry.isCore) continue;
+      if (entry.sets === 4) continue;
+
+      const coeffs = candidateCoefficients.get(entry.exerciseId);
+      if (!coeffs || coeffs.size === 0) continue;
+
+      for (const delta of [1, 2] as const) {
+        if (entry.sets + delta > 4) continue;
+        if (currentSets + delta > MAX_DAY_SETS) continue;
+
+        const safety = checkContributionSafety(
+          delta, coeffs, weeklyTargets, weeklyBase, dailyContext, dailyBase,
+          step3DailyAllocations, orderedTargets,
+        );
+        if (!safety.safe) continue;
+
+        const candidate = { index: i, delta, numRemainingUnresolved: safety.numRemainingUnresolved };
+
+        if (best === null) {
+          best = candidate;
+        } else if (
+          candidate.numRemainingUnresolved < best.numRemainingUnresolved ||
+          (candidate.numRemainingUnresolved === best.numRemainingUnresolved && candidate.delta < best.delta)
+        ) {
+          best = candidate;
+        }
+        // Equal numRemainingUnresolved and delta: ascending i means the earlier
+        // index is already in best — no update needed.
+      }
+    }
+
+    return best;
+  }
+
+  /**
+   * Applies an already-decided consolidation atomically.
+   *
+   * Updates exactly:
+   *   - toAdd[index].sets     += delta
+   *   - currentSets           += delta
+   *   - weeklyAddedThisDay    += coeff * delta  (per contributing target)
+   *   - dailyAddedThisDay     += coeff * delta  (per contributing target)
+   *
+   * Does NOT update: currentCount, addedIds, patternsAddedThisDay.
+   * Does NOT perform safety checks or make decisions.
+   */
+  function applyConsolidation(candidate: { index: number; delta: number }): void {
+    const entry = toAdd[candidate.index]!;
+    entry.sets += candidate.delta;
+    currentSets += candidate.delta;
+
+    const coeffs = candidateCoefficients.get(entry.exerciseId);
+    if (coeffs) {
+      for (const [targetId, coeff] of coeffs) {
+        if (coeff > 0) {
+          const contribution = coeff * candidate.delta;
+          weeklyAddedThisDay.set(targetId, (weeklyAddedThisDay.get(targetId) ?? 0) + contribution);
+          dailyAddedThisDay.set(targetId, (dailyAddedThisDay.get(targetId) ?? 0) + contribution);
+        }
+      }
+    }
+  }
+
+  // ── Phase 1: Multi-pass target selection with Stage 5 fragmentation tie-breaker
+
+  let didImprove = true;
+  while (didImprove && canAddMore()) {
+    didImprove = false;
+
+    const expansion = findBestExpansion();
+    const consolidation = findBestConsolidation();
+
+    const expansionHasClearAdvantage =
+      expansion !== null && consolidation !== null
+        ? hasClearExpansionAdvantage(expansion, consolidation)
+        : false;
+
+    const action = resolveFragmentationAction({
+      hasExpansion: expansion !== null,
+      hasConsolidation: consolidation !== null,
+      expansionHasClearAdvantage,
+    });
+
+    if (action === "EXPAND") {
+      commitExercise(expansion!.rec, expansion!.sets, false);
+      didImprove = true;
+    } else if (action === "CONSOLIDATE") {
+      applyConsolidation(consolidation!);
       didImprove = true;
     }
   }

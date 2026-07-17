@@ -12,3 +12,4 @@
 - [calculateVolumePreview inactive-exercise warning](volume-preview-warnings.md) — exercises with DB assignments that map to no volume target member must explicitly warn (code EXERCISE_WITHOUT_MUSCLE_ASSIGNMENTS); not covered by the "no assignments" check alone.
 - [api-zod composite build required after adding exports](api-zod-composite-build.md) — new files in lib/api-zod/src/ need `npx tsc --build lib/api-zod` before downstream packages resolve new exports.
 - [trainer-app api-zod dependency setup](trainer-app-api-zod-dependency.md) — trainer-app needs explicit package.json dep + tsconfig reference to import from @workspace/api-zod.
+- [Stage 5 consolidation guard](stage5-consolidation-guard.md) — findBestConsolidation must guard against all-targets-resolved; consolidation-only tests require two targets and a tie-breaker setup.
