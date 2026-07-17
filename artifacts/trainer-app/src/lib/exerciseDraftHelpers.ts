@@ -18,6 +18,14 @@ export type ExerciseStepValidationCode =
 
 // ─── Draft types ──────────────────────────────────────────────────────────────
 
+// ─── Manual override types ─────────────────────────────────────────────────────
+
+/**
+ * Fields that a trainer can manually override on an exercise in the draft.
+ * Used as keys in `DraftExercise.manualOverrides`.
+ */
+export type ManualOverrideField = "tempo" | "rir" | "weight" | "exercise";
+
 /** A single exercise assigned to a workout day in the local generator draft. */
 export interface DraftExercise {
   /** Client-side stable ID — NOT a database ID. Unique within the session. */
@@ -43,6 +51,20 @@ export interface DraftExercise {
   rir: number;
   /** Rest between sets in seconds. Whole integer. */
   restSeconds: number;
+  /**
+   * Lifting tempo string (e.g. "3-0-1-0": eccentric-pause-concentric-pause).
+   * undefined = no tempo prescribed.
+   */
+  tempo?: string;
+  /**
+   * Target load in kilograms. undefined = no load prescribed.
+   */
+  weight?: number;
+  /**
+   * Sparse map of fields that were explicitly set by the trainer.
+   * Only present keys count as overridden; absent key means auto/default.
+   */
+  manualOverrides?: Partial<Record<ManualOverrideField, true>>;
 }
 
 /** Exercises keyed by day index (from distributionResult.days[i].dayIndex). */
@@ -187,6 +209,112 @@ export function updateDraftExerciseField<K extends keyof DraftExercise>(
   const updated = existing.map((e) =>
     e.localId === localId ? { ...e, [field]: value } : e,
   );
+  return { ...draft, [dayIndex]: updated };
+}
+
+// ─── Manual parameter update functions ───────────────────────────────────────
+
+/**
+ * Exercise identity data required when replacing an exercise.
+ * Prescription fields (sets, reps, rir, rest, tempo, weight) are NOT included —
+ * they are always preserved from the original entry.
+ */
+export interface ReplaceExerciseData {
+  exerciseId: number;
+  exerciseName: string;
+  mainMuscleGroup: string;
+  equipment: string[];
+  isCore: boolean;
+}
+
+/**
+ * Set or clear the tempo on one exercise and mark it as manually overridden.
+ * All other fields and all other exercises are preserved unchanged.
+ * Returns a new draft (immutable).
+ */
+export function updateExerciseTempo(
+  draft: ExerciseDraftByDay,
+  dayIndex: number,
+  localId: string,
+  tempo: string | undefined,
+): ExerciseDraftByDay {
+  const existing = draft[dayIndex] ?? [];
+  const updated = existing.map((e) =>
+    e.localId !== localId
+      ? e
+      : { ...e, tempo, manualOverrides: { ...e.manualOverrides, tempo: true as const } },
+  );
+  return { ...draft, [dayIndex]: updated };
+}
+
+/**
+ * Update the RIR on one exercise and mark it as manually overridden.
+ * All other fields and all other exercises are preserved unchanged.
+ * Returns a new draft (immutable).
+ */
+export function updateExerciseRir(
+  draft: ExerciseDraftByDay,
+  dayIndex: number,
+  localId: string,
+  rir: number,
+): ExerciseDraftByDay {
+  const existing = draft[dayIndex] ?? [];
+  const updated = existing.map((e) =>
+    e.localId !== localId
+      ? e
+      : { ...e, rir, manualOverrides: { ...e.manualOverrides, rir: true as const } },
+  );
+  return { ...draft, [dayIndex]: updated };
+}
+
+/**
+ * Set or clear the target load on one exercise and mark it as manually overridden.
+ * All other fields and all other exercises are preserved unchanged.
+ * Returns a new draft (immutable).
+ */
+export function updateExerciseWeight(
+  draft: ExerciseDraftByDay,
+  dayIndex: number,
+  localId: string,
+  weight: number | undefined,
+): ExerciseDraftByDay {
+  const existing = draft[dayIndex] ?? [];
+  const updated = existing.map((e) =>
+    e.localId !== localId
+      ? e
+      : { ...e, weight, manualOverrides: { ...e.manualOverrides, weight: true as const } },
+  );
+  return { ...draft, [dayIndex]: updated };
+}
+
+/**
+ * Replace the exercise identity (id, name, muscle group, equipment, isCore) while
+ * preserving all prescription parameters (sets, repsMin, repsMax, rir, restSeconds,
+ * tempo, weight) from the original entry.
+ *
+ * Marks the entry as manually replaced via `manualOverrides.exercise`.
+ * The localId and order are unchanged.
+ * Returns a new draft (immutable).
+ */
+export function replaceExercise(
+  draft: ExerciseDraftByDay,
+  dayIndex: number,
+  localId: string,
+  newExercise: ReplaceExerciseData,
+): ExerciseDraftByDay {
+  const existing = draft[dayIndex] ?? [];
+  const updated = existing.map((e) => {
+    if (e.localId !== localId) return e;
+    return {
+      ...e,
+      exerciseId: newExercise.exerciseId,
+      exerciseName: newExercise.exerciseName,
+      mainMuscleGroup: newExercise.mainMuscleGroup,
+      equipment: newExercise.equipment,
+      isCore: newExercise.isCore,
+      manualOverrides: { ...e.manualOverrides, exercise: true as const },
+    };
+  });
   return { ...draft, [dayIndex]: updated };
 }
 
