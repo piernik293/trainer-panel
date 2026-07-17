@@ -49,6 +49,9 @@ import {
   validateSets,
   validateReps,
   validateRir,
+  updateExerciseTempo,
+  updateExerciseRir,
+  updateExerciseWeight,
 } from "@/lib/exerciseDraftHelpers";
 import { MAIN_MUSCLE_GROUPS, EQUIPMENT_OPTIONS } from "@/lib/exercise-constants";
 import { filterNonZeroAllocations } from "@/lib/distributionHelpers";
@@ -174,6 +177,18 @@ export default function Step4Exercises({
     value: DraftExercise[K],
   ) {
     onDraftChange(updateDraftExerciseField(exerciseDraft, dayIndex, localId, field, value));
+  }
+
+  function handleTempoChange(dayIndex: number, localId: string, tempo: string | undefined) {
+    onDraftChange(updateExerciseTempo(exerciseDraft, dayIndex, localId, tempo));
+  }
+
+  function handleRirManualChange(dayIndex: number, localId: string, rir: number) {
+    onDraftChange(updateExerciseRir(exerciseDraft, dayIndex, localId, rir));
+  }
+
+  function handleWeightChange(dayIndex: number, localId: string, weight: number | undefined) {
+    onDraftChange(updateExerciseWeight(exerciseDraft, dayIndex, localId, weight));
   }
 
   function handleReorder(dayIndex: number, oldIndex: number, newIndex: number) {
@@ -539,6 +554,9 @@ export default function Step4Exercises({
                 onRemove={handleRemove}
                 onFieldChange={handleFieldChange}
                 onReorder={handleReorder}
+                onTempoChange={handleTempoChange}
+                onRirManualChange={handleRirManualChange}
+                onWeightChange={handleWeightChange}
               />
 
               {/* Action buttons row */}
@@ -616,6 +634,9 @@ interface DayExerciseListProps {
   onRemove: (dayIndex: number, localId: string) => void;
   onFieldChange: <K extends keyof DraftExercise>(dayIndex: number, localId: string, field: K, value: DraftExercise[K]) => void;
   onReorder: (dayIndex: number, oldIndex: number, newIndex: number) => void;
+  onTempoChange: (dayIndex: number, localId: string, tempo: string | undefined) => void;
+  onRirManualChange: (dayIndex: number, localId: string, rir: number) => void;
+  onWeightChange: (dayIndex: number, localId: string, weight: number | undefined) => void;
 }
 
 function DayExerciseList({
@@ -625,6 +646,9 @@ function DayExerciseList({
   onRemove,
   onFieldChange,
   onReorder,
+  onTempoChange,
+  onRirManualChange,
+  onWeightChange,
 }: DayExerciseListProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -664,6 +688,9 @@ function DayExerciseList({
                 avoidedReason={avoided?.reason ?? null}
                 onRemove={() => onRemove(dayIndex, ex.localId)}
                 onFieldChange={(field, value) => onFieldChange(dayIndex, ex.localId, field, value)}
+                onTempoChange={(tempo) => onTempoChange(dayIndex, ex.localId, tempo)}
+                onRirManualChange={(rir) => onRirManualChange(dayIndex, ex.localId, rir)}
+                onWeightChange={(weight) => onWeightChange(dayIndex, ex.localId, weight)}
               />
             );
           })}
@@ -680,6 +707,9 @@ interface SortableDraftExerciseCardProps {
   avoidedReason: string | null;
   onRemove: () => void;
   onFieldChange: <K extends keyof DraftExercise>(field: K, value: DraftExercise[K]) => void;
+  onTempoChange: (tempo: string | undefined) => void;
+  onRirManualChange: (rir: number) => void;
+  onWeightChange: (weight: number | undefined) => void;
 }
 
 function SortableDraftExerciseCard({
@@ -687,6 +717,9 @@ function SortableDraftExerciseCard({
   avoidedReason,
   onRemove,
   onFieldChange,
+  onTempoChange,
+  onRirManualChange,
+  onWeightChange,
 }: SortableDraftExerciseCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: exercise.localId });
@@ -756,7 +789,19 @@ function SortableDraftExerciseCard({
     if (isNaN(n)) { setRirError("Wpisz liczbę całkowitą."); return; }
     const err = validateRir(n);
     setRirError(err);
-    if (!err) onFieldChange("rir", n);
+    if (!err) onRirManualChange(n);
+  }
+
+  function handleTempoBlur(raw: string) {
+    const trimmed = raw.trim();
+    onTempoChange(trimmed === "" ? undefined : trimmed);
+  }
+
+  function handleWeightBlur(raw: string) {
+    const trimmed = raw.trim();
+    if (trimmed === "") { onWeightChange(undefined); return; }
+    const n = parseFloat(trimmed);
+    if (!isNaN(n) && n >= 0) onWeightChange(n);
   }
 
   function handleRestBlur(raw: string) {
@@ -882,6 +927,35 @@ function SortableDraftExerciseCard({
             defaultValue={exercise.restSeconds}
             className="h-7 text-xs"
             onBlur={(e) => handleRestBlur(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Tempo + Weight row */}
+      <div className="px-3 pb-3 grid grid-cols-2 gap-2 text-xs">
+        {/* Tempo */}
+        <div className="space-y-0.5">
+          <Label className="text-[10px] text-muted-foreground">Tempo</Label>
+          <Input
+            type="text"
+            placeholder="np. 3-0-1-0"
+            defaultValue={exercise.tempo ?? ""}
+            className="h-7 text-xs"
+            onBlur={(e) => handleTempoBlur(e.target.value)}
+          />
+        </div>
+
+        {/* Weight */}
+        <div className="space-y-0.5">
+          <Label className="text-[10px] text-muted-foreground">Ciężar (kg)</Label>
+          <Input
+            type="number"
+            min={0}
+            step={0.5}
+            placeholder="—"
+            defaultValue={exercise.weight !== undefined ? String(exercise.weight) : ""}
+            className="h-7 text-xs"
+            onBlur={(e) => handleWeightBlur(e.target.value)}
           />
         </div>
       </div>
