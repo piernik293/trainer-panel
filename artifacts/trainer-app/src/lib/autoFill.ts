@@ -92,6 +92,15 @@ export interface AutoFillExerciseToAdd {
   isCore: boolean;
   /** Always 2, 3, or 4 (a member of ALLOWED_SET_COUNTS). */
   sets: number;
+  // ── Stage 2: classification metadata for session ordering ─────────────────
+  /** Maps to DB `exercise_type`. "Złożone" | "Izolowane" or null. */
+  exerciseType?: string | null;
+  /** Maps to DB `neurological_fatigue`. Integer 1–5 or null. */
+  neurologicalFatigue?: number | null;
+  /** Maps to DB `learning_difficulty`. Integer 1–5 or null. */
+  learningDifficulty?: number | null;
+  /** Maps to DB `exercise_priority`. Polish priority string or null. */
+  exercisePriority?: string | null;
 }
 
 export interface AutoFillDayResult {
@@ -545,6 +554,11 @@ export function selectExercisesForDay(
       equipment: rec.equipment,
       isCore,
       sets,
+      // Stage 2: carry classification metadata through for session ordering
+      exerciseType: rec.exerciseType ?? null,
+      neurologicalFatigue: rec.neurologicalFatigue ?? null,
+      learningDifficulty: rec.learningDifficulty ?? null,
+      exercisePriority: rec.exercisePriority ?? null,
     });
     addedIds.add(rec.id);
     currentCount++;

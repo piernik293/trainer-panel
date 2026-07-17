@@ -88,6 +88,7 @@ import DayRecommendations, { type AddFromRecommendationPayload } from "@/compone
 import { WeeklyVolumeCoverage, DayVolumeCoverage } from "@/components/VolumeCoverageSection";
 import type { DraftVolumePreviewResult } from "@/hooks/useVolumeCoverage";
 import { pluralizeSets, computeEligibleTargetNeeds } from "@/lib/coreCoverageHelpers";
+import { orderExercisesForSession } from "@/lib/exerciseOrdering";
 import {
   runAutoFill,
   type AutoFillSummary,
@@ -340,7 +341,7 @@ export default function Step4Exercises({
     // Atomic draft application — only runs after ALL requests succeed
     let newDraft = { ...exerciseDraft };
     for (const dayResult of result.dayResults) {
-      for (const toAdd of dayResult.toAdd) {
+      for (const toAdd of orderExercisesForSession(dayResult.toAdd)) {
         newDraft = addExerciseToDay(newDraft, dayResult.dayIndex, {
           exerciseId: toAdd.exerciseId,
           exerciseName: toAdd.exerciseName,
