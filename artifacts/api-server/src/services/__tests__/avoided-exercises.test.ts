@@ -649,9 +649,6 @@ describe("Re-submission durability — avoided exercises survive a second survey
       .insert(surveysTable)
       .values({
         clientId,
-        firstName: "Test",
-        lastName: "Client",
-        email: "t@t.com",
         dateOfBirth: "1990-01-01",
         gender: "Mężczyzna",
         avoidedExerciseIds: [exerciseId],
@@ -665,9 +662,6 @@ describe("Re-submission durability — avoided exercises survive a second survey
     // Second submission — client leaves avoided exercises blank
     await db.insert(surveysTable).values({
       clientId,
-      firstName: "Test",
-      lastName: "Client",
-      email: "t@t.com",
       dateOfBirth: "1990-01-01",
       gender: "Mężczyzna",
       avoidedExerciseIds: [],
@@ -691,9 +685,6 @@ describe("Re-submission durability — avoided exercises survive a second survey
     // First submission — with avoided exercises
     await db.insert(surveysTable).values({
       clientId,
-      firstName: "Test",
-      lastName: "Client",
-      email: "t@t.com",
       dateOfBirth: "1990-01-01",
       gender: "Mężczyzna",
       avoidedExerciseIds: [exerciseId],
@@ -705,9 +696,6 @@ describe("Re-submission durability — avoided exercises survive a second survey
     // Second submission — client leaves avoided exercises blank
     await db.insert(surveysTable).values({
       clientId,
-      firstName: "Test",
-      lastName: "Client",
-      email: "t@t.com",
       dateOfBirth: "1990-01-01",
       gender: "Mężczyzna",
       avoidedExerciseIds: [],

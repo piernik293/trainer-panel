@@ -102,6 +102,8 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     neurologicalFatigue: 3,
     domsPotential: 3,
     exercisePriority: "Wysoki",
+    suitableForNoActivity: null,
+    movementComplexity: null,
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
