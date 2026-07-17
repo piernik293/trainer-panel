@@ -1196,6 +1196,191 @@ describe("selectExercisesForDay() — unchanged safety constraints", () => {
   });
 });
 
+// ─── Stage 4: movementPatternPenalty integration ──────────────────────────────
+
+describe("Stage 4 — movementPatternPenalty in ScoreTuple", () => {
+  /**
+   * Equal-volume, equal-tier scenario: a push exercise and a pull exercise both
+   * cover the target equally well. The pull exercise has no prior representation
+   * in the day (penalty=0); the push has already been committed once (penalty=1).
+   * The pull should win at ScoreTuple index 4 (movementPatternPenalty).
+   */
+  it("equal volume → underrepresented movement category wins", () => {
+    // Both exercises are isolations with the same exerciseType → identical trainerPriorityRank.
+    // ceiling=4, coeff=1.0 for both → identical volume scores.
+    // Push exercise is listed first (lower originalRank) — but we pre-commit a push
+    // exercise with id=99 so patternsAddedThisDay["push"]=1 when evaluation starts.
+    // Pull exercise (id=2) has penalty=0 → wins at index 4.
+
+    const pushRec = makeRec(1, [latTarget], {
+      exerciseType: "Izolowane",
+      movementCategoryKey: "push",
+    });
+    const pullRec = makeRec(2, [latTarget], {
+      exerciseType: "Izolowane",
+      movementCategoryKey: "pull",
+    });
+    // A pre-existing push exercise (id=99) that also covers latTarget.
+    // It will be selected first (it's listed first; same volume, same tier, penalty=0 for push
+    // since patternsAddedThisDay is empty at that point), causing push penalty to become 1.
+    // Then on the second pass, only latTarget is still unresolved (ceiling=8 → 1 set ≠ resolved).
+    // pushRec (id=1) gets penalty=1, pullRec (id=2) gets penalty=0 → pull wins.
+    const prePushRec = makeRec(99, [latTarget], {
+      exerciseType: "Izolowane",
+      movementCategoryKey: "push",
+    });
+
+    const weeklyTargets = new Map([[latTarget.targetId, makeWeekly(latTarget.targetId, 0, 8)]]);
+    const coefficients = new Map([
+      [1, new Map([[latTarget.targetId, 1.0]])],
+      [2, new Map([[latTarget.targetId, 1.0]])],
+      [99, new Map([[latTarget.targetId, 1.0]])],
+    ]);
+
+    const result = selectExercisesForDay(
+      0, [latTarget], false,
+      [prePushRec, pushRec, pullRec], // prePush listed first → wins pass 1
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+    );
+
+    // Pass 1: prePushRec (id=99) committed → patternsAddedThisDay["push"]=1.
+    // Pass 2: pushRec penalty=1, pullRec penalty=0 → pullRec (id=2) wins.
+    expect(result.toAdd.length).toBeGreaterThanOrEqual(2);
+    const ids = result.toAdd.map((e) => e.exerciseId);
+    expect(ids).toContain(99); // pre-push committed in pass 1
+    expect(ids).toContain(2);  // pull wins pass 2 over push
+    // The push (id=1) should NOT have been selected in pass 2 (pull was preferred).
+    const passIndex = ids.indexOf(2);
+    const push1Index = ids.indexOf(1);
+    // pull was selected before push (or push not selected at all)
+    if (push1Index !== -1) {
+      expect(passIndex).toBeLessThan(push1Index);
+    }
+  });
+
+  /**
+   * Volume still dominates: even though a push exercise is overrepresented,
+   * if it covers more unresolved volume targets than the pull exercise, it wins
+   * at ScoreTuple index 0 (numRemainingUnresolved) before index 4 is consulted.
+   */
+  it("volume still dominates movement balance", () => {
+    // Target: bicTarget (id=2) is unresolved.
+    // pushRec covers BOTH latTarget AND bicTarget (numRemainingUnresolved=0 for bicTarget).
+    // pullRec covers ONLY latTarget (numRemainingUnresolved=1 — bicTarget still open).
+    // Even though push has already been committed once (penalty=1), volume wins at index 0.
+    const pushRec = makeRec(1, [latTarget, bicTarget], {
+      exerciseType: "Izolowane",
+      movementCategoryKey: "push",
+    });
+    const pullRec = makeRec(2, [latTarget], {
+      exerciseType: "Izolowane",
+      movementCategoryKey: "pull",
+    });
+    const prePushRec = makeRec(99, [gluteTarget], {
+      exerciseType: "Izolowane",
+      movementCategoryKey: "push",
+    });
+
+    const weeklyTargets = new Map([
+      [latTarget.targetId, makeWeekly(latTarget.targetId, 0, 4)],
+      [bicTarget.targetId, makeWeekly(bicTarget.targetId, 0, 4)],
+      [gluteTarget.targetId, makeWeekly(gluteTarget.targetId, 0, 4)],
+    ]);
+    const coefficients = new Map([
+      [1, new Map([[latTarget.targetId, 1.0], [bicTarget.targetId, 1.0]])],
+      [2, new Map([[latTarget.targetId, 1.0]])],
+      [99, new Map([[gluteTarget.targetId, 1.0]])],
+    ]);
+
+    const result = selectExercisesForDay(
+      0, [latTarget, bicTarget, gluteTarget], false,
+      [prePushRec, pushRec, pullRec],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+    );
+
+    // prePushRec committed first (gluteTarget). Then for remaining (latTarget, bicTarget):
+    // pushRec resolves both → numRemainingUnresolved=0; pullRec resolves only lat → 1.
+    // Volume wins at index 0 → pushRec selected despite push penalty=1.
+    const ids = result.toAdd.map((e) => e.exerciseId);
+    expect(ids).toContain(1); // push selected despite movement penalty — volume dominates
+  });
+
+  /**
+   * trainerPriorityRank still breaks ties after movement balance is equal:
+   * two exercises with equal volume AND equal movement penalty; the compound
+   * should win at ScoreTuple index 5 (trainerPriorityRank).
+   */
+  it("trainerPriority still breaks ties after movement balance", () => {
+    // Both exercises have movementCategoryKey="pull" and patternsAddedThisDay is empty
+    // → both get penalty=0 → index 4 is tied.
+    // Index 5 (trainerPriorityRank): compound < isolation → compound wins.
+    const pullIsolation = makeRec(1, [latTarget], {
+      exerciseType: "Izolowane",
+      movementCategoryKey: "pull",
+    });
+    const pullCompound = makeRec(2, [latTarget], {
+      exerciseType: "Złożone",
+      neurologicalFatigue: 5,
+      movementCategoryKey: "pull",
+    });
+
+    const weeklyTargets = new Map([[latTarget.targetId, makeWeekly(latTarget.targetId, 0, 3)]]);
+    const coefficients = new Map([
+      [1, new Map([[latTarget.targetId, 1.0]])],
+      [2, new Map([[latTarget.targetId, 1.0]])],
+    ]);
+
+    const result = selectExercisesForDay(
+      0, [latTarget], false,
+      [pullIsolation, pullCompound], // isolation listed first → lower originalRank
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+    );
+
+    expect(result.toAdd).toHaveLength(1);
+    expect(result.toAdd[0]?.exerciseId).toBe(2); // compound wins on trainerPriorityRank
+  });
+
+  /**
+   * Safety behaviour unchanged: movementPatternPenalty does not allow an exercise
+   * to bypass the weekly ceiling. Ceiling-overshooting exercises are still rejected
+   * regardless of their movement penalty score.
+   */
+  it("safety limits unchanged — ceiling rejection unaffected by movement penalty", () => {
+    // ceiling=10, effectiveSets=9.3. Target NOT resolved: 9.3 < 9.5.
+    // pushRec coeff=2.0: sets=2 → 9.3+4=13.3 > 10.5 → REJECTED on all set counts.
+    // pullRec coeff=0.1: sets=3 → 9.3+0.3=9.6 ≤ 10.5 → ACCEPTED.
+    // Even though push has penalty=0 (fresh), the ceiling guard fires first.
+    const pushRec = makeRec(1, [latTarget], {
+      exerciseType: "Złożone",
+      neurologicalFatigue: 5,
+      movementCategoryKey: "push",
+    });
+    const pullRec = makeRec(2, [latTarget], {
+      exerciseType: "Izolowane",
+      movementCategoryKey: "pull",
+    });
+
+    const weeklyTargets = new Map([[latTarget.targetId, makeWeekly(latTarget.targetId, 9.3, 10)]]);
+    const coefficients = new Map([
+      [1, new Map([[latTarget.targetId, 2.0]])],
+      [2, new Map([[latTarget.targetId, 0.1]])],
+    ]);
+
+    const result = selectExercisesForDay(
+      0, [latTarget], false,
+      [pushRec, pullRec],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+    );
+
+    expect(result.toAdd).toHaveLength(1);
+    expect(result.toAdd[0]?.exerciseId).toBe(2); // pull selected; push rejected on safety
+  });
+});
+
 // ─── Stage 3: trainerPriorityRank integration ─────────────────────────────────
 
 describe("Stage 3 — trainerPriorityRank in ScoreTuple", () => {

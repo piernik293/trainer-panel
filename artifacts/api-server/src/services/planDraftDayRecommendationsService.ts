@@ -35,6 +35,8 @@ export interface ScoredAndFilteredExercise {
   exercisePriority?: string | null;
   /** Maps to DB `movement_pattern`. Extension point for Stage 2+. */
   movementPattern?: string | null;
+  /** Stage 4: canonical movement category key resolved from movement_pattern + movement_category. */
+  movementCategoryKey?: string | null;
 }
 
 export interface DayRecommendationExercise {
@@ -61,6 +63,8 @@ export interface DayRecommendationExercise {
   exercisePriority?: string | null;
   /** Maps to DB `movement_pattern`. Extension point for Stage 2+. */
   movementPattern?: string | null;
+  /** Stage 4: canonical movement category key resolved from movement_pattern + movement_category. */
+  movementCategoryKey?: string | null;
 }
 
 // ─── Phase 4B3: Uncovered-target types ───────────────────────────────────────
@@ -257,6 +261,8 @@ export function selectDayRecommendations(
       learningDifficulty: ex.learningDifficulty ?? null,
       exercisePriority: ex.exercisePriority ?? null,
       movementPattern: ex.movementPattern ?? null,
+      // Stage 4: canonical movement category key
+      movementCategoryKey: ex.movementCategoryKey ?? null,
     });
   }
 
@@ -370,6 +376,8 @@ export function selectByUncoveredTargets(
       learningDifficulty: ex.learningDifficulty ?? null,
       exercisePriority: ex.exercisePriority ?? null,
       movementPattern: ex.movementPattern ?? null,
+      // Stage 4: canonical movement category key
+      movementCategoryKey: ex.movementCategoryKey ?? null,
     });
   }
 

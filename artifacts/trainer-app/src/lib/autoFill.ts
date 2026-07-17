@@ -24,6 +24,7 @@
 import { CORE_MUSCLE_GROUP } from "./coreCoverageHelpers";
 import type { ExerciseDraftByDay } from "./exerciseDraftHelpers";
 import { trainerPriorityRank } from "./trainerPriority";
+import { movementPatternPenalty } from "./movementBalance";
 
 // ─── Safety limits ─────────────────────────────────────────────────────────────
 
@@ -83,6 +84,8 @@ export interface AutoFillRecExercise {
   exercisePriority?: string | null;
   /** Maps to DB `movement_pattern`. Extension point for Stage 2+. */
   movementPattern?: string | null;
+  /** Stage 4: canonical movement category key ("push"|"pull"|"squat"|"hinge"|...) resolved by the API. */
+  movementCategoryKey?: string | null;
 }
 
 export interface AutoFillExerciseToAdd {
@@ -325,19 +328,20 @@ interface EvalRejected {
   cause: RejectionCause;
 }
 
-/** Score tuple (7 elements): all lower = better.
+/** Score tuple (8 elements): all lower = better.
  *  [0] numRemainingUnresolved  — fewer unresolved targets wins
  *  [1] totalWeeklyRemaining    — less weekly deficit wins
  *  [2] totalDailyRemaining     — less daily deficit wins
  *  [3] setsPreference          — 3→0, 4→1, 2→2
- *  [4] trainerPriorityRank     — compound first, higher priority first (Stage 3)
- *  [5] recOriginalRank         — API score + freshness order
- *  [6] varietyPenalty          — 0=fresh, 1=already used in another day
+ *  [4] movementPatternPenalty  — exercises of same category already this day (Stage 4)
+ *  [5] trainerPriorityRank     — compound first, higher priority first (Stage 3)
+ *  [6] recOriginalRank         — API score + freshness order
+ *  [7] varietyPenalty          — 0=fresh, 1=already used in another day
  */
-type ScoreTuple = readonly [number, number, number, number, number, number, number];
+type ScoreTuple = readonly [number, number, number, number, number, number, number, number];
 
 function scoreBetter(a: ScoreTuple, b: ScoreTuple): boolean {
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 8; i++) {
     if (a[i]! < b[i]!) return true;
     if (a[i]! > b[i]!) return false;
   }
@@ -530,6 +534,8 @@ export function selectExercisesForDay(
 
   const weeklyAddedThisDay = new Map<number, number>();
   const dailyAddedThisDay = new Map<number, number>();
+  /** Stage 4: exercise count per canonical movement category committed this day. */
+  const patternsAddedThisDay = new Map<string, number>();
 
   const weeklyBase = (id: number): number =>
     (weeklyTargets.get(id)?.effectiveSets ?? 0)
@@ -569,6 +575,13 @@ export function selectExercisesForDay(
     addedIds.add(rec.id);
     currentCount++;
     currentSets += sets;
+    // Stage 4: track exercise count per movement category (not sets)
+    if (rec.movementCategoryKey) {
+      patternsAddedThisDay.set(
+        rec.movementCategoryKey,
+        (patternsAddedThisDay.get(rec.movementCategoryKey) ?? 0) + 1,
+      );
+    }
     const coeffs = candidateCoefficients.get(rec.id);
     if (coeffs) {
       for (const [tid, coeff] of coeffs) {
@@ -636,6 +649,7 @@ export function selectExercisesForDay(
             eval_.partialScore[1]!,
             eval_.partialScore[2]!,
             eval_.partialScore[3]!,
+            movementPatternPenalty(rec.movementCategoryKey, patternsAddedThisDay),
             trainerPriorityRank(rec),
             originalRank,
             varietyPenalty,
@@ -691,6 +705,7 @@ export function selectExercisesForDay(
             eval_.partialScore[1]!,
             eval_.partialScore[2]!,
             eval_.partialScore[3]!,
+            movementPatternPenalty(rec.movementCategoryKey, patternsAddedThisDay),
             trainerPriorityRank(rec),
             originalRank,
             varietyPenalty,

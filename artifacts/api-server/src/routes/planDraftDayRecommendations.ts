@@ -51,6 +51,7 @@ import {
   type ExerciseWithCoveredTargets,
   type UncoveredTargetNeed,
 } from "../services/planDraftDayRecommendationsService";
+import { normalizeMovementCategory } from "../services/planAnalyzer";
 
 const router: IRouter = Router();
 
@@ -180,6 +181,11 @@ router.get(
         learningDifficulty: ex.learningDifficulty ?? null,
         exercisePriority: ex.exercisePriority ?? null,
         movementPattern: ex.movementPattern ?? null,
+        // Stage 4: resolve canonical movement category key once at the API boundary.
+        movementCategoryKey: normalizeMovementCategory(
+          ex.movementPattern ?? null,
+          ex.movementCategory ?? null,
+        ),
       });
     }
 
