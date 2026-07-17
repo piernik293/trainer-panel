@@ -172,6 +172,14 @@ router.get(
         matchReasons,
         warnReasons,
         isAvoided: avoidedExerciseIds.has(ex.id),
+        // Stage 1: classification metadata — already fetched as part of the full
+        // exercise row; passed through unchanged so Auto Fill and future engines
+        // can consume them without an additional DB query.
+        exerciseType: ex.exerciseType ?? null,
+        neurologicalFatigue: ex.neurologicalFatigue ?? null,
+        learningDifficulty: ex.learningDifficulty ?? null,
+        exercisePriority: ex.exercisePriority ?? null,
+        movementPattern: ex.movementPattern ?? null,
       });
     }
 

@@ -71,6 +71,17 @@ export interface AutoFillRecExercise {
   matchingTargetIds: number[];
   equipment: string[];
   isAvoided: boolean;
+  // ── Stage 1: classification metadata (all optional — existing fixtures remain valid) ──
+  /** Maps to DB `exercise_type`. "Złożone" | "Izolowane" or null. */
+  exerciseType?: string | null;
+  /** Maps to DB `neurological_fatigue`. Integer 1–5 or null. */
+  neurologicalFatigue?: number | null;
+  /** Maps to DB `learning_difficulty`. Integer 1–5 or null. */
+  learningDifficulty?: number | null;
+  /** Maps to DB `exercise_priority`. Polish priority string or null. */
+  exercisePriority?: string | null;
+  /** Maps to DB `movement_pattern`. Extension point for Stage 2+. */
+  movementPattern?: string | null;
 }
 
 export interface AutoFillExerciseToAdd {

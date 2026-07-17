@@ -24,6 +24,17 @@ export interface ScoredAndFilteredExercise {
   matchReasons: string[];
   warnReasons: string[];
   isAvoided: boolean;
+  // ── Stage 1: classification metadata pass-through ──────────────────────────
+  /** Maps to DB `exercise_type`. "Złożone" | "Izolowane" or null. */
+  exerciseType?: string | null;
+  /** Maps to DB `neurological_fatigue`. Integer 1–5 or null. */
+  neurologicalFatigue?: number | null;
+  /** Maps to DB `learning_difficulty`. Integer 1–5 or null. */
+  learningDifficulty?: number | null;
+  /** Maps to DB `exercise_priority`. Polish priority string or null. */
+  exercisePriority?: string | null;
+  /** Maps to DB `movement_pattern`. Extension point for Stage 2+. */
+  movementPattern?: string | null;
 }
 
 export interface DayRecommendationExercise {
@@ -39,6 +50,17 @@ export interface DayRecommendationExercise {
   matchReasons: string[];
   warnReasons: string[];
   isAvoided: boolean;
+  // ── Stage 1: classification metadata pass-through ──────────────────────────
+  /** Maps to DB `exercise_type`. "Złożone" | "Izolowane" or null. */
+  exerciseType?: string | null;
+  /** Maps to DB `neurological_fatigue`. Integer 1–5 or null. */
+  neurologicalFatigue?: number | null;
+  /** Maps to DB `learning_difficulty`. Integer 1–5 or null. */
+  learningDifficulty?: number | null;
+  /** Maps to DB `exercise_priority`. Polish priority string or null. */
+  exercisePriority?: string | null;
+  /** Maps to DB `movement_pattern`. Extension point for Stage 2+. */
+  movementPattern?: string | null;
 }
 
 // ─── Phase 4B3: Uncovered-target types ───────────────────────────────────────
@@ -229,6 +251,12 @@ export function selectDayRecommendations(
       matchReasons: ex.matchReasons,
       warnReasons: ex.warnReasons,
       isAvoided: ex.isAvoided,
+      // Stage 1: classification metadata pass-through
+      exerciseType: ex.exerciseType ?? null,
+      neurologicalFatigue: ex.neurologicalFatigue ?? null,
+      learningDifficulty: ex.learningDifficulty ?? null,
+      exercisePriority: ex.exercisePriority ?? null,
+      movementPattern: ex.movementPattern ?? null,
     });
   }
 
@@ -336,6 +364,12 @@ export function selectByUncoveredTargets(
       matchReasons: ex.matchReasons,
       warnReasons: ex.warnReasons,
       isAvoided: ex.isAvoided,
+      // Stage 1: classification metadata pass-through
+      exerciseType: ex.exerciseType ?? null,
+      neurologicalFatigue: ex.neurologicalFatigue ?? null,
+      learningDifficulty: ex.learningDifficulty ?? null,
+      exercisePriority: ex.exercisePriority ?? null,
+      movementPattern: ex.movementPattern ?? null,
     });
   }
 
