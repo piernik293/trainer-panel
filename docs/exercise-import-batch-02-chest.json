@@ -1,0 +1,764 @@
+{
+  "duplicateStrategy": "skip",
+  "skipInvalidRows": false,
+  "_meta": {
+    "batch": "02-chest",
+    "description": "Chest exercise library expansion — 10 new exercises. Verified against batch-01 to avoid duplicates. All existing chest exercises retained as-is.",
+    "existingChestExercises": [
+      "Wyciskanie sztangi leżąc (id=1, reference exercise — not in batch-01)",
+      "Wyciskanie hantli na ławce skośnej dodatniej",
+      "Wyciskanie sztangi na ławce skośnej dodatniej",
+      "Wyciskanie na maszynie siedząc",
+      "Pompki na podwyższeniu",
+      "Pompki klasyczne",
+      "Pompki na kolanach",
+      "Rozpiętki na maszynie Pec Deck",
+      "Rozpiętki na bramie na wysokości klatki",
+      "Rozpiętki na bramie z dołu do góry",
+      "Rozpiętki na bramie z góry w dół"
+    ],
+    "duplicatesRemoved": 0,
+    "inconsistenciesFound": [
+      "movementCategory in template lists English values (Push, Pull, Squat…) but all production data uses Polish (Pchanie, Przyciąganie, Przysiad…). This batch follows the production standard.",
+      "movementPattern value 'Przywodzenie' is used by isolation chest exercises in batch-01 but is absent from the template's canonical_values list.",
+      "Template requires a 'slug' field but batch-01 omits it entirely; this batch follows batch-01 convention (no slug)."
+    ],
+    "schemaImprovementsRecommended": [
+      "Add 'Przywodzenie' to canonical movementPattern list in the template — it is used by Pec Deck, all cable flies, and DB flies.",
+      "Replace English movementCategory canonical values in the template with Polish equivalents to match production data.",
+      "Clarify whether 'slug' is mandatory or optional — template says required but no batch data includes it.",
+      "Consider adding 'Talerz' (weight plate) to canonical equipment and resistanceType lists — Svend Press requires it.",
+      "Consider adding 'Poręcze' (parallel bars / dip station) to canonical equipment list — used by chest and triceps dips."
+    ]
+  },
+  "rows": [
+    {
+      "name": "Wyciskanie hantli leżąc",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": [
+        "Triceps",
+        "Barki"
+      ],
+      "equipment": [
+        "Hantle",
+        "Ławka"
+      ],
+      "trainingLocation": [
+        "Siłownia"
+      ],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Wyciskanie hantli leżąc na płaskiej ławce to klasyczne ćwiczenie wielostawowe na klatkę piersiową, dające większy zakres ruchu i lepsze rozciągnięcie mięśnia piersiowego niż wersja ze sztangą. Hantle pozwalają każdej ręce pracować niezależnie, wyrównując asymetrię siłową.",
+      "executionInstructions": "Usiądź na ławce, kładąc hantle na udach. Odchyl się do tyłu, unosząc hantle do pozycji startowej — dłonie skierowane ku przodowi, hantle na poziomie klatki piersiowej, łokcie pod kątem ok. 60–75° do tułowia. Wyciśnij hantle ku górze i lekko do środka, nie łącząc ich w górze. Powoli opuść do pełnego rozciągnięcia klatki.",
+      "commonMistakes": "Zbyt szerokie ustawienie łokci (90° do tułowia) nadmiernie obciąża bark. Odbijanie hantli od klatki piersiowej skraca zakres ruchu. Nadmierne łączenie hantli na górze blokuje napięcie mięśniowe.",
+      "coachingTips": "Wyobraź sobie, że obejmujesz baryłkę — łuki łokci lekko ku klatce zachowają napięcie w mięśniu piersiowym przez cały ruch. Czuj rozciągnięcie w dolnym punkcie.",
+      "breathingTips": "Wdech podczas opuszczania hantli, wydech podczas wyciskania.",
+      "safetyNotes": "Przy dużych ciężarach poproś o pomoc przy ustawieniu hantli lub użyj specjalnego sprzętu do podawania hantli. Kontroluj ruch powrotny, by nie stracić grips na ciężarze.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": [
+        "Początkujący",
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Siła",
+        "Masa mięśniowa"
+      ],
+      "resistanceType": "Hantle",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Średnie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 3,
+      "domsPotential": 3,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień piersiowy większy",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień trójgłowy ramienia",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięsień naramienny (głowa przednia)",
+          "isPrimary": false,
+          "coefficient": 0.5
+        }
+      ],
+      "substitutions": [
+        {
+          "exerciseName": "Wyciskanie sztangi leżąc"
+        },
+        {
+          "exerciseName": "Wyciskanie na maszynie siedząc"
+        }
+      ],
+      "progressions": [
+        {
+          "exerciseName": "Wyciskanie sztangi leżąc"
+        }
+      ],
+      "regressions": [
+        {
+          "exerciseName": "Wyciskanie na maszynie siedząc"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie sztangi na ławce skośnej ujemnej",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": [
+        "Triceps",
+        "Barki"
+      ],
+      "equipment": [
+        "Sztanga",
+        "Ławka"
+      ],
+      "trainingLocation": [
+        "Siłownia"
+      ],
+      "difficultyLevel": "Zaawansowany",
+      "description": "Wyciskanie sztangi na ławce skośnej ujemnej (decline) akcentuje dolną i środkową część klatki piersiowej poprzez kąt nachylenia ławki ok. 20–30° w dół. Angażuje dolne włókna mostkowo-żebrowe mięśnia piersiowego większego.",
+      "executionInstructions": "Ustaw ławkę pod kątem ok. 20–30° w dół. Przytwierdź nogi do podpórek. Chwyć sztangę nachwytem nieco szerzej niż szerokość barków. Opuść sztangę do dolnej klatki piersiowej, utrzymując łokcie pod kątem 45–75°. Wyciśnij do góry bez blokowania łokci.",
+      "commonMistakes": "Zbyt duże nachylenie (ponad 30°) przenosi zbyt wiele napięcia na triceps. Podnoszenie głowy lub tyłka z ławki podczas wyciskania. Zbyt szybkie opuszczanie sztangi.",
+      "coachingTips": "Ćwiczenie jest stosunkowo niedoceniane — pozwala na większe obciążenie niż bench płaski przy mniejszym zaangażowaniu stabilizatorów barku. Skupiaj uwagę na dolnych włóknach klatki.",
+      "breathingTips": "Wdech podczas opuszczania sztangi, wydech podczas wyciskania.",
+      "safetyNotes": "Zawsze używaj asekuranta lub specjalnych bezpieczników przy powadze ciężaru. Logistyka opuszczania się na ławce wymaga uwagi — najpierw usiądź, potem połóż się.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": [
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Siła",
+        "Masa mięśniowa"
+      ],
+      "resistanceType": "Sztanga",
+      "requiresSpotter": true,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Średnie",
+      "learningDifficulty": 3,
+      "neurologicalFatigue": 3,
+      "domsPotential": 3,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień piersiowy większy",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień trójgłowy ramienia",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięsień naramienny (głowa przednia)",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ],
+      "substitutions": [
+        {
+          "exerciseName": "Wyciskanie hantli na ławce skośnej ujemnej"
+        },
+        {
+          "exerciseName": "Dipy na poręczach"
+        }
+      ],
+      "regressions": [
+        {
+          "exerciseName": "Wyciskanie hantli na ławce skośnej ujemnej"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie hantli na ławce skośnej ujemnej",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": [
+        "Triceps",
+        "Barki"
+      ],
+      "equipment": [
+        "Hantle",
+        "Ławka"
+      ],
+      "trainingLocation": [
+        "Siłownia"
+      ],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Wyciskanie hantli na ławce skośnej ujemnej angażuje dolną część klatki piersiowej, jednocześnie oferując większy zakres ruchu niż wersja ze sztangą. Niezależna praca każdej ręki poprawia balans siłowy.",
+      "executionInstructions": "Ustaw ławkę pod kątem ok. 20–30° w dół. Przytwierdź nogi. Usiądź z hantlami na kolanach, a następnie połóż się, unosząc hantle do pozycji startowej na poziomie dolnej klatki. Wyciśnij ku górze i lekko do środka. Powoli opuść do pełnego rozciągnięcia.",
+      "commonMistakes": "Zbyt ciężki ciężar utrudniający kontrolę w pozycji decline. Odrywanie nóg od podpórek podczas ćwiczenia.",
+      "coachingTips": "Lżejsze ciężary niż przy wersji ze sztangą — koncentruj się na czuciu mięśniowym i zakresie ruchu, nie na maksymalnym obciążeniu.",
+      "breathingTips": "Wdech podczas opuszczania hantli, wydech podczas wyciskania.",
+      "safetyNotes": "Ostrożnie przy wstawaniu — poczekaj chwilę przed podniesieniem się, by uniknąć zawrotów głowy z powodu zmiany pozycji ciała.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": [
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Masa mięśniowa"
+      ],
+      "resistanceType": "Hantle",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Średnie",
+      "learningDifficulty": 3,
+      "neurologicalFatigue": 2,
+      "domsPotential": 3,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień piersiowy większy",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień trójgłowy ramienia",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięsień naramienny (głowa przednia)",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ],
+      "substitutions": [
+        {
+          "exerciseName": "Wyciskanie sztangi na ławce skośnej ujemnej"
+        },
+        {
+          "exerciseName": "Dipy na poręczach"
+        }
+      ],
+      "progressions": [
+        {
+          "exerciseName": "Wyciskanie sztangi na ławce skośnej ujemnej"
+        }
+      ]
+    },
+    {
+      "name": "Wyciskanie na suwnicy Smitha leżąc",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": [
+        "Triceps",
+        "Barki"
+      ],
+      "equipment": [
+        "Maszyna",
+        "Ławka"
+      ],
+      "trainingLocation": [
+        "Siłownia"
+      ],
+      "difficultyLevel": "Początkujący",
+      "description": "Wyciskanie na suwnicy Smitha w pozycji leżącej to prowadzona wersja wyciskania sztangi, w której prowadnica maszyny stabilizuje tor ruchu. Pozwala na bezpieczniejszy trening bez asekuranta i łatwiejsze skupienie się na klatce piersiowej.",
+      "executionInstructions": "Ustaw ławkę płaską pod suwnicy Smitha tak, by sztanga znajdowała się nad klatką piersiową. Połóż się i chwyć sztangę nachwytem nieco szerzej niż barki. Odblokuj sztangę obrotem. Opuść do klatki piersiowej, utrzymując łokcie pod kątem ok. 60°. Wyciśnij do góry i zablokuj obrotem po zakończeniu serii.",
+      "commonMistakes": "Ustawienie ławki za daleko do przodu lub za tyłu zmienia kąt pracy klatki. Brak odblokowywania zatrzasku bezpieczeństwa przed każdą serią.",
+      "coachingTips": "Suwnica Smitha ogranicza naturalny tor ruchu — ustaw się tak, by sztanga opuszczała się pionowo na środkową klatkę. Cofnij łopatki, by chronić bark.",
+      "breathingTips": "Wdech podczas opuszczania, wydech podczas wyciskania.",
+      "safetyNotes": "Nawet bez asekuranta zachowaj ostrożność — zawsze miej dostęp do zatrzasków bezpieczeństwa w zasięgu rąk podczas serii.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": [
+        "Początkujący",
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Siła",
+        "Masa mięśniowa"
+      ],
+      "resistanceType": "Maszyna",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 2,
+      "domsPotential": 3,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień piersiowy większy",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień trójgłowy ramienia",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięsień naramienny (głowa przednia)",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ],
+      "substitutions": [
+        {
+          "exerciseName": "Wyciskanie sztangi leżąc"
+        },
+        {
+          "exerciseName": "Wyciskanie na maszynie siedząc"
+        }
+      ],
+      "regressions": [
+        {
+          "exerciseName": "Wyciskanie na maszynie siedząc"
+        }
+      ],
+      "progressions": [
+        {
+          "exerciseName": "Wyciskanie sztangi leżąc"
+        }
+      ]
+    },
+    {
+      "name": "Pompki z obciążeniem",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": [
+        "Triceps",
+        "Barki"
+      ],
+      "equipment": [
+        "Masa własnego ciała",
+        "Hantle"
+      ],
+      "trainingLocation": [
+        "Siłownia",
+        "Dom"
+      ],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Pompki z obciążeniem to progresja pompek klasycznych z dodatkowym ciężarem (talerz lub kamizelka obciążeniowa ułożone na plecach), umożliwiająca zwiększenie oporu w ćwiczeniu z masą własnego ciała. Idealny most między pompkami a wyciskaniem leżąc.",
+      "executionInstructions": "Przyjmij pozycję pompek klasycznych. Umieść talerz wagowy lub hantla pionowo na środku pleców (poproś partnera lub użyj kamizelki obciążeniowej). Utrzymuj napięte core. Wykonaj pompkę pełnym zakresem ruchu, dbając o prostą linię ciała.",
+      "commonMistakes": "Opadanie miednicy pod ciężarem dodatkowego obciążenia. Zbyt krótki zakres ruchu gdy ciężar jest duży. Nieodpowiednie mocowanie talerza powodujące jego zsuwanie.",
+      "coachingTips": "Zacznij od lekkiego talerza (5–10 kg) i stopniowo zwiększaj. Kamizelka obciążeniowa jest bezpieczniejsza niż luźny talerz na plecach.",
+      "breathingTips": "Wdech podczas opuszczania, wydech podczas wypychania.",
+      "safetyNotes": "Przy użyciu luźnego talerza zawsze poproś partnera o pomoc w ustawieniu i zdjęciu go. Nie używaj zbyt dużych obciążeń, które destabilizują postawę.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": [
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Siła",
+        "Masa mięśniowa"
+      ],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 2,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień piersiowy większy",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień trójgłowy ramienia",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięsień naramienny (głowa przednia)",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ],
+      "substitutions": [
+        {
+          "exerciseName": "Pompki klasyczne"
+        },
+        {
+          "exerciseName": "Wyciskanie hantli leżąc"
+        }
+      ],
+      "regressions": [
+        {
+          "exerciseName": "Pompki klasyczne"
+        }
+      ]
+    },
+    {
+      "name": "Dipy na poręczach",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": [
+        "Triceps",
+        "Barki"
+      ],
+      "equipment": [
+        "Poręcze"
+      ],
+      "trainingLocation": [
+        "Siłownia",
+        "Siłownia plenerowa"
+      ],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Dipy na poręczach z pochylonym tułowiem to jedno z najskuteczniejszych ćwiczeń na dolną i środkową klatkę piersiową. Pochylenie tułowia ok. 20–30° do przodu przenosi ciężar pracy z tricepsów na mięsień piersiowy. Ćwiczenie wielostawowe z masą własnego ciała.",
+      "executionInstructions": "Chwyć poręcze i unieś się do pozycji wyprostowanej. Pochyl tułów ok. 20–30° do przodu i delikatnie ugnij kolana z nogami skrzyżowanymi z tyłu. Zgięj łokcie i opuść ciało, dopóki ramię górne nie będzie równoległe do podłoża lub niżej. Wypchnij się do pozycji wyjściowej bez blokowania łokci.",
+      "commonMistakes": "Pionowy tułów (jak przy dipach tricepsowych) przenosi napięcie z klatki na triceps. Zbyt głębokie opuszczenie przy słabej mobilności barku zwiększa ryzyko urazu. Kołysanie i zamach nogami.",
+      "coachingTips": "Im bardziej pochylasz tułów, tym więcej pracuje klatka. Jeśli celem jest klatka, skupiaj się na rozciągnięciu mięśnia piersiowego w dolnym punkcie ruchu.",
+      "breathingTips": "Wdech podczas opuszczania, wydech podczas wypychania.",
+      "safetyNotes": "Dipy są wymagające dla stawu barkowego — unikaj ćwiczenia, jeśli masz problemy z barkami. Nie przeciągaj zakresu ruchu poniżej komfortowego dla Twojego barku.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": [
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Siła",
+        "Masa mięśniowa"
+      ],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Wysokie",
+      "learningDifficulty": 3,
+      "neurologicalFatigue": 3,
+      "domsPotential": 3,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień piersiowy większy",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień trójgłowy ramienia",
+          "isPrimary": false,
+          "coefficient": 0.6
+        },
+        {
+          "specificMuscleName": "Mięsień naramienny (głowa przednia)",
+          "isPrimary": false,
+          "coefficient": 0.5
+        }
+      ],
+      "substitutions": [
+        {
+          "exerciseName": "Dipy wspomagane na maszynie"
+        },
+        {
+          "exerciseName": "Wyciskanie sztangi na ławce skośnej ujemnej"
+        }
+      ],
+      "regressions": [
+        {
+          "exerciseName": "Dipy wspomagane na maszynie"
+        }
+      ]
+    },
+    {
+      "name": "Dipy wspomagane na maszynie",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": [
+        "Triceps",
+        "Barki"
+      ],
+      "equipment": [
+        "Maszyna"
+      ],
+      "trainingLocation": [
+        "Siłownia"
+      ],
+      "difficultyLevel": "Początkujący",
+      "description": "Dipy wspomagane na maszynie to bezpieczna wersja dipów z kontrciężarem odciążającym część masy ciała. Idealne ćwiczenie przejściowe do dipów z pełną masą ciała, dostępne dla osób które nie są jeszcze w stanie wykonać dipów klasycznych.",
+      "executionInstructions": "Ustaw kontrciężar na maszynie — im większy, tym łatwiejsze ćwiczenie. Wklęknij lub postaw stopy na platformie (zależnie od modelu maszyny). Pochyl tułów lekko do przodu, by zaakcentować klatkę. Opuść do momentu, gdy ramię górne będzie równoległe do podłoża. Wypchnij się do góry.",
+      "commonMistakes": "Zbyt mały kontrciężar zanim osoba ma siłę do dipów. Pionowa sylwetka, która przenosi pracę na triceps zamiast klatki.",
+      "coachingTips": "Stopniowo zmniejszaj kontrciężar co kilka tygodni, dążąc do dipów z masą własnego ciała. Zawsze pochylaj tułów do przodu dla pracy klatki.",
+      "breathingTips": "Wdech podczas opuszczania, wydech podczas wypychania.",
+      "safetyNotes": "Sprawdź, czy kontrciężar jest właściwie ustawiony przed wykonaniem pierwszego powtórzenia. Maszyna wspomagająca daje fałszywe poczucie bezpieczeństwa — kontroluj zakres ruchu.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": [
+        "Brak aktywności fizycznej",
+        "Początkujący",
+        "Średniozaawansowany"
+      ],
+      "trainingGoals": [
+        "Masa mięśniowa",
+        "Zdrowie ogólne"
+      ],
+      "resistanceType": "Maszyna",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 2,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień piersiowy większy",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień trójgłowy ramienia",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięsień naramienny (głowa przednia)",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ],
+      "substitutions": [
+        {
+          "exerciseName": "Pompki na podwyższeniu"
+        },
+        {
+          "exerciseName": "Wyciskanie na maszynie siedząc"
+        }
+      ],
+      "progressions": [
+        {
+          "exerciseName": "Dipy na poręczach"
+        }
+      ]
+    },
+    {
+      "name": "Svend Press",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": [
+        "Barki"
+      ],
+      "equipment": [
+        "Talerz"
+      ],
+      "trainingLocation": [
+        "Siłownia",
+        "Dom"
+      ],
+      "difficultyLevel": "Początkujący",
+      "description": "Svend Press to ćwiczenie izolowane na klatkę piersiową, polegające na wyciskaniu talerza (lub dwóch talerzy) trzymanego dłońmi i wyciskaniu go przed siebie przy jednoczesnym aktywnym ściskaniu. Wymuszony izometryczny skurcz mięśnia piersiowego czyni go wyjątkowym uzupełnieniem treningu klatki.",
+      "executionInstructions": "Stań swobodnie lub usiądź. Chwyć talerz wagowy oburącz, ściskając go dłońmi z obu stron. Trzymaj talerz przy środkowej klatce piersiowej. Wyciśnij go przed siebie, utrzymując ciągłe napięcie i ścisk dłonią przez cały czas trwania ruchu. Powoli wróć do klatki.",
+      "commonMistakes": "Zaprzestanie ściskania talerza w połowie ruchu, co eliminuje korzyść izolowania klatki. Unoszenie ramion do uszu podczas ćwiczenia.",
+      "coachingTips": "Cały sens ćwiczenia tkwi w nieprzerwanym ściskaniu talerza — wyobraź sobie, że próbujesz go zgnieść. Lekki ciężar (2–5 kg) w zupełności wystarczy.",
+      "breathingTips": "Wydech podczas wypychania talerza przed siebie, wdech podczas powrotu.",
+      "safetyNotes": "Używaj małych, kompaktowych talerzy, które łatwo chwycić. Unikaj zbyt ciężkich talerzy — ćwiczenie jest skuteczne przy lekkim obciążeniu.",
+      "movementPattern": "Przywodzenie",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": [
+        "Początkujący",
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Masa mięśniowa"
+      ],
+      "resistanceType": "Talerz",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień piersiowy większy",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień naramienny (głowa przednia)",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ],
+      "substitutions": [
+        {
+          "exerciseName": "Rozpiętki na maszynie Pec Deck"
+        },
+        {
+          "exerciseName": "Rozpiętki na bramie na wysokości klatki"
+        }
+      ]
+    },
+    {
+      "name": "Rozpiętki z hantlami leżąc",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": [
+        "Barki"
+      ],
+      "equipment": [
+        "Hantle",
+        "Ławka"
+      ],
+      "trainingLocation": [
+        "Siłownia"
+      ],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Rozpiętki z hantlami leżąc na płaskiej ławce to klasyczne ćwiczenie izolowane na klatkę piersiową, zapewniające duży zakres ruchu i głębokie rozciągnięcie mięśnia piersiowego. Inaczej niż w prasach, ruch jest łukowy — hantle poruszają się po torze koła.",
+      "executionInstructions": "Połóż się na płaskiej ławce, trzymając hantle nad klatką z dłońmi skierowanymi ku sobie, łokcie lekko ugięte. Opuść hantle na boki po łuku, opuszczając je do poziomu klatki piersiowej lub nieco niżej. Wyobraź sobie, że obejmujesz baryłkę i przyciągnij hantle z powrotem do góry tym samym łukiem.",
+      "commonMistakes": "Prostowanie łokci i zamienianie ćwiczenia w wyciskanie. Zbyt ciężki ciężar powodujący utratę kontroli na dole ruchu i przeciążenie barku. Zbyt małe rozciągnięcie skraca zakresy pracy klatki.",
+      "coachingTips": "Utrzymuj łokcie stale lekko ugięte — nie prostuj ich ani nie zginaj bardziej niż na starcie. Czuj rozciągnięcie w klatce na dole, a skurcz na górze.",
+      "breathingTips": "Wdech podczas opuszczania hantli na boki, wydech podczas powrotu ku górze.",
+      "safetyNotes": "Mięsień piersiowy jest bardzo narażony na naciągnięcie przy zbyt głębokim rozpiętku z dużym ciężarem. Trzymaj obciążenie umiarkowane i kontroluj każde powtórzenie.",
+      "movementPattern": "Przywodzenie",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": [
+        "Początkujący",
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Masa mięśniowa"
+      ],
+      "resistanceType": "Hantle",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Średnie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 2,
+      "domsPotential": 3,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień piersiowy większy",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień naramienny (głowa przednia)",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ],
+      "substitutions": [
+        {
+          "exerciseName": "Rozpiętki na bramie na wysokości klatki"
+        },
+        {
+          "exerciseName": "Rozpiętki na maszynie Pec Deck"
+        }
+      ],
+      "progressions": [
+        {
+          "exerciseName": "Rozpiętki z hantlami na ławce skośnej"
+        }
+      ]
+    },
+    {
+      "name": "Rozpiętki z hantlami na ławce skośnej",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": [
+        "Barki"
+      ],
+      "equipment": [
+        "Hantle",
+        "Ławka"
+      ],
+      "trainingLocation": [
+        "Siłownia"
+      ],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Rozpiętki z hantlami na ławce skośnej dodatniej akcentują górną część klatki piersiowej (włókna obojczykowe mięśnia piersiowego większego) przez zmianę kąta pracy. To uzupełnienie rozpiętki płaskiej dla pełnego rozwinięcia klatki.",
+      "executionInstructions": "Ustaw ławkę pod kątem 30–45°. Połóż się trzymając hantle nad klatką z dłońmi ku sobie, łokcie lekko ugięte. Opuść hantle na boki po łuku, opuszczając do poziomu klatki lub nieco niżej. Wróć łukiem do góry, skupiając napięcie na górnej klatce.",
+      "commonMistakes": "Zbyt duże nachylenie ławki (ponad 45°) przenosi zbyt wiele pracy na barki. Prostowanie łokci i zamiana w ćwiczenie wyciskaniowe. Zbyt ciężkie hantle utrudniające kontrolę.",
+      "coachingTips": "Kąt 30° daje najlepszy balans między górną klatką a barkami. Przy 45° barki przejmują coraz więcej pracy — sprawdzaj subiektywne czucie mięśniowe.",
+      "breathingTips": "Wdech podczas opuszczania hantli na boki, wydech podczas powrotu.",
+      "safetyNotes": "Mięsień piersiowy (szczególnie przyczepi) jest podatny na naciągnięcia przy rozpiętce. Zachowaj umiarkowany ciężar i pełną kontrolę.",
+      "movementPattern": "Przywodzenie",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": [
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Masa mięśniowa"
+      ],
+      "resistanceType": "Hantle",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Średnie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 2,
+      "domsPotential": 3,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień piersiowy większy",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień naramienny (głowa przednia)",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ],
+      "substitutions": [
+        {
+          "exerciseName": "Rozpiętki na bramie z dołu do góry"
+        },
+        {
+          "exerciseName": "Rozpiętki z hantlami leżąc"
+        }
+      ],
+      "regressions": [
+        {
+          "exerciseName": "Rozpiętki z hantlami leżąc"
+        }
+      ]
+    }
+  ]
+}
