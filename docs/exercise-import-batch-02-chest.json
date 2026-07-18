@@ -569,7 +569,7 @@
         "Barki"
       ],
       "equipment": [
-        "Talerz"
+        "Inny"
       ],
       "trainingLocation": [
         "Siłownia",
@@ -595,7 +595,7 @@
       "trainingGoals": [
         "Masa mięśniowa"
       ],
-      "resistanceType": "Talerz",
+      "resistanceType": "Inny",
       "requiresSpotter": false,
       "canBePerformedToFailure": "Tak",
       "jointStress": "Niskie",
