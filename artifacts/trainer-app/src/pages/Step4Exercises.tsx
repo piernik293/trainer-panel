@@ -211,8 +211,32 @@ export default function Step4Exercises({
     const daysToProcess: RunAutoFillDayInput[] = [];
     let skippedDayCount = 0;
 
-    // Stage 7A: apply stricter per-session limits for inactive clients
+    // Stage 7A / Stage 8A: per-level session constraint overrides
     const isBrakAktywnosci = experienceLevel === "Brak aktywności fizycznej";
+    const isPoczatkujacy = experienceLevel === "Początkujący";
+    const isSrednioOrZaawansowany =
+      experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
+
+    // Compute overrides once; spread into each day below.
+    // Brak aktywności fizycznej: poolSize=20, max=5, min=4, sets=[2,3], cap=45 min
+    // Początkujący:              max=5, min=4
+    // Średniozaawansowany/Zaawansowany: min=5 (max stays at default 8)
+    const levelOverrides = {
+      ...(isBrakAktywnosci && {
+        poolSize: 20,
+        maxDayExercises: 5,
+        minDayExercises: 4,
+        allowedSetCounts: [2, 3] as const,
+        maxSessionMinutes: 45,
+      }),
+      ...(isPoczatkujacy && {
+        maxDayExercises: 5,
+        minDayExercises: 4,
+      }),
+      ...(isSrednioOrZaawansowany && {
+        minDayExercises: 5,
+      }),
+    };
 
     for (const day of distributionResult.days) {
       const coverageNeeds = computeEligibleTargetNeeds(day, distributionResult, previewResult, exerciseDraft);
@@ -241,16 +265,8 @@ export default function Step4Exercises({
         step3DailyAllocations: new Map(
           day.targetAllocations.map((a) => [a.targetId, a.allocatedVolume]),
         ),
-        // Stage 7A: "Brak aktywności fizycznej" clients get a smaller, safer session.
-        // poolSize=20 gives the generator enough candidates to cover 5 movement patterns.
-        // maxDayExercises=5, allowedSetCounts=[2,3], maxSessionMinutes=45 enforce
-        // the adaptive-programme session constraints from ADAPTIVE_PROGRAM_DEFAULTS.
-        ...(isBrakAktywnosci && {
-          poolSize: 20,
-          maxDayExercises: 5,
-          allowedSetCounts: [2, 3] as const,
-          maxSessionMinutes: 45,
-        }),
+        // Stage 7A / Stage 8A: per-level session constraint overrides (computed above).
+        ...levelOverrides,
       });
     }
 

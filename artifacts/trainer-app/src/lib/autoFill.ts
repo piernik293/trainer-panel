@@ -171,6 +171,14 @@ export interface RunAutoFillDayInput {
    * above this limit in minutes. When undefined no duration cap is applied.
    */
   maxSessionMinutes?: number;
+  /**
+   * Minimum exercises that should be present in this session (existing + auto-filled).
+   * The generator attempts to reach this count whenever safe candidates remain.
+   * Exercises are only added beyond resolved volume targets when they pass all safety
+   * checks and genuinely improve session quality (new movement patterns, uncovered
+   * muscle groups). When undefined defaults to 0 (no minimum enforced).
+   */
+  minDayExercises?: number;
 }
 
 export interface AutoFillWeeklyTarget {
@@ -674,6 +682,7 @@ export function selectExercisesForDay(
   maxDayExercises?: number,
   allowedSetCounts?: ReadonlyArray<2 | 3 | 4>,
   maxSessionMinutes?: number,
+  minDayExercises?: number,
 ): AutoFillDayResult {
   const addedIds = new Set<number>();
   const toAdd: AutoFillExerciseToAdd[] = [];
@@ -705,10 +714,12 @@ export function selectExercisesForDay(
     return weeklyBase(targetId) >= wt.weeklyPreferredCeiling - RESOLVE_TOLERANCE;
   };
 
-  // Stage 7A: resolve per-level effective constraints (callers may supply overrides)
+  // Stage 7A / Stage 8A: resolve per-level effective constraints (callers may supply overrides)
   const effectiveMaxExercises = maxDayExercises ?? MAX_DAY_EXERCISES;
   const effectiveSetCounts: ReadonlyArray<2 | 3 | 4> = allowedSetCounts ?? ALLOWED_SET_COUNTS;
   const effectiveMaxSessionMinutes = maxSessionMinutes ?? Infinity;
+  /** Stage 8A: generator tries to reach this count; stops if no safe candidate remains. */
+  const effectiveMinExercises = minDayExercises ?? 0;
 
   /**
    * Returns true if committing (projectedExercises, projectedSets) total would push the
@@ -968,6 +979,68 @@ export function selectExercisesForDay(
     }
   }
 
+  // ── findBestFillExercise ──────────────────────────────────────────────────
+  //
+  // Stage 8A: used by Phase 1.5 (minimum fill).
+  //
+  // Selects the globally best exercise from the full recommendation pool,
+  // regardless of whether any volume target is still unresolved. Unlike
+  // findBestExpansion it does not filter by orderedTargets — any candidate
+  // that passes safety checks is eligible. Core exercises are excluded (Phase 2).
+  //
+  // Ranking uses the identical ScoreTuple and comparator as findBestExpansion so
+  // that exercises are still ordered by volume impact, movement pattern novelty,
+  // and trainer priority. In practice, when all volume targets are already resolved,
+  // score[0] = 0 and score[1]/score[2] ≈ 0 for every candidate, so score[4]
+  // (movementPatternPenalty) and score[5] (trainerPriorityRank) become the
+  // effective differentiators — compound lifts adding new movement patterns win.
+
+  function findBestFillExercise(): { rec: AutoFillRecExercise; sets: AllowedSets; score: ScoreTuple } | null {
+    let best: { rec: AutoFillRecExercise; sets: AllowedSets; score: ScoreTuple } | null = null;
+    const sorted = sortedWithRank(recommendations);
+
+    for (const { rec, originalRank } of sorted) {
+      if (rec.isAvoided || avoidedExerciseIds.has(rec.id)) continue;
+      if (addedIds.has(rec.id)) continue;
+      // Core exercises are reserved for Phase 2.
+      if (rec.mainMuscleGroup === CORE_MUSCLE_GROUP) continue;
+
+      const coeffs: ReadonlyMap<number, number> = candidateCoefficients.get(rec.id) ?? new Map();
+      // No contribution vector → skip (same rule as evaluateCandidate).
+      if (coeffs.size === 0) continue;
+
+      for (const sets of effectiveSetCounts) {
+        if (currentSets + sets > MAX_DAY_SETS) continue;
+        // Stage 7A: duration gate applies during fill as well.
+        if (wouldExceedDuration(currentCount + 1, currentSets + sets)) continue;
+
+        const eval_ = evaluateCandidate(
+          sets, coeffs, weeklyTargets, weeklyBase, dailyContext, dailyBase,
+          step3DailyAllocations, orderedTargets,
+        );
+        if (eval_.rejected) continue;
+
+        const varietyPenalty = exercisesUsedInOtherDays.has(rec.id) ? 1 : 0;
+        const score: ScoreTuple = [
+          eval_.partialScore[0]!,
+          eval_.partialScore[1]!,
+          eval_.partialScore[2]!,
+          eval_.partialScore[3]!,
+          movementPatternPenalty(rec.movementCategoryKey, patternsAddedThisDay),
+          trainerPriorityRank(rec),
+          originalRank,
+          varietyPenalty,
+        ];
+
+        if (best === null || compareCandidatesWithFatigue({ rec, score }, best)) {
+          best = { rec, sets, score };
+        }
+      }
+    }
+
+    return best;
+  }
+
   // ── Phase 1: Multi-pass target selection with Stage 5 fragmentation tie-breaker
 
   let didImprove = true;
@@ -999,6 +1072,23 @@ export function selectExercisesForDay(
 
   if (!canAddMore() && orderedTargets.some((t) => !isVolumeResolved(t.targetId))) {
     limitHit = true;
+  }
+
+  // ── Phase 1.5: Minimum fill ───────────────────────────────────────────────
+  //
+  // Stage 8A: runs only when minDayExercises is set and Phase 1 ended below it.
+  //
+  // After volume targets are resolved Phase 1 stops (didImprove = false). This
+  // phase continues adding exercises until the minimum count is reached or no
+  // safe candidate remains. Every candidate still passes the full safety pipeline
+  // (evaluateCandidate → checkContributionSafety + overshoot / redistribution
+  // guards) and the session duration cap, so the minimum is never met by forcing
+  // exercises that would worsen the plan.
+
+  while (canAddMore() && currentCount < effectiveMinExercises) {
+    const fill = findBestFillExercise();
+    if (fill === null) break; // no safe candidate left — stop gracefully
+    commitExercise(fill.rec, fill.sets, false);
   }
 
   // ── Phase 2: Core ─────────────────────────────────────────────────────────
@@ -1302,6 +1392,7 @@ export async function runAutoFill(
       day.maxDayExercises,
       day.allowedSetCounts,
       day.maxSessionMinutes,
+      day.minDayExercises,
     );
 
     dayResults.push(result);

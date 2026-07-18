@@ -2517,6 +2517,308 @@ describe("Stage 7A-4 — maxSessionMinutes duration cap", () => {
 
 // ── Stage 7A-5: Combined "Brak aktywności" profile ───────────────────────────
 
+// ── Stage 8A: minDayExercises minimum fill ───────────────────────────────────
+
+describe("Stage 8A — minDayExercises minimum fill constraint", () => {
+  // Helper: exercise covering an untracked target (no guideline in weeklyTargets).
+  // Passes evaluateCandidate because coeffs.size > 0; safety checks skip unknown targets.
+  function makeFillerRec(
+    id: number,
+    untrackedTargetId: number,
+    overrides: Partial<Omit<AutoFillRecExercise, "id" | "matchingTargets" | "matchingTargetIds">> = {},
+  ): { rec: AutoFillRecExercise; coeff: [number, ReadonlyMap<number, number>] } {
+    return {
+      rec: makeRec(id, [], { movementCategoryKey: `cat${id}`, ...overrides }),
+      coeff: [id, new Map([[untrackedTargetId, 1.0]])] as [number, ReadonlyMap<number, number>],
+    };
+  }
+
+  it("Phase 1.5 fills to minDayExercises after Phase 1 resolves all volume targets", () => {
+    // Phase 1 resolves T1 with a single exercise. Phase 1.5 must add 3 more (min=4).
+    const T1 = makeT(1);
+    const weeklyTargets = new Map([[1, makeWeekly(1, 0, 3)]]);
+    const rec1 = makeRec(1, [T1], { movementCategoryKey: "squat" });
+    const f2 = makeFillerRec(2, 10);
+    const f3 = makeFillerRec(3, 11);
+    const f4 = makeFillerRec(4, 12);
+
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([
+      [1, new Map([[1, 1.0]])],
+      f2.coeff,
+      f3.coeff,
+      f4.coeff,
+    ]);
+
+    const result = selectExercisesForDay(
+      0, [T1], false, [rec1, f2.rec, f3.rec, f4.rec],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      8,         // maxDayExercises
+      undefined, // allowedSetCounts
+      undefined, // maxSessionMinutes
+      4,         // minDayExercises
+    );
+
+    // Phase 1: rec1 resolves T1. Phase 1.5: f2, f3, f4 fill to 4.
+    expect(result.toAdd).toHaveLength(4);
+    expect(result.toAdd[0]!.exerciseId).toBe(1);
+    // The three fill exercises are a subset of {2, 3, 4}
+    const fillIds = result.toAdd.slice(1).map((e) => e.exerciseId);
+    expect(fillIds.sort()).toEqual([2, 3, 4]);
+  });
+
+  it("stops below minDayExercises when all remaining candidates have no contribution vector", () => {
+    // rec1 resolves T1. rec2 has no coefficient entry → evaluateCandidate rejects it.
+    const T1 = makeT(1);
+    const weeklyTargets = new Map([[1, makeWeekly(1, 0, 3)]]);
+    const rec1 = makeRec(1, [T1]);
+    const rec2 = makeRec(2, []); // no coefficient entry
+
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([
+      [1, new Map([[1, 1.0]])],
+      // rec2 intentionally absent → candidateCoefficients.get(2) = undefined → size 0 → rejected
+    ]);
+
+    const result = selectExercisesForDay(
+      0, [T1], false, [rec1, rec2],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      8, undefined, undefined, 4,
+    );
+
+    // Only rec1 added. Phase 1.5 cannot fill — no safe candidate.
+    expect(result.toAdd).toHaveLength(1);
+    expect(result.toAdd[0]!.exerciseId).toBe(1);
+  });
+
+  it("stops below minDayExercises when all remaining candidates would cause overshoot", () => {
+    // T1 ceiling=3. rec1 adds 3 sets (coeff=1.0) → T1 resolved at 3.0.
+    // rec2 also targets T1 with coeff=1.0 → any set count pushes above ceiling+0.5 → rejected.
+    const T1 = makeT(1);
+    const weeklyTargets = new Map([[1, makeWeekly(1, 0, 3)]]);
+    const rec1 = makeRec(1, [T1]);
+    const rec2 = makeRec(2, [T1]); // also targets T1 — would overshoot
+
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([
+      [1, new Map([[1, 1.0]])],
+      [2, new Map([[1, 1.0]])], // T1 coeff=1.0, but T1 is already full after rec1
+    ]);
+
+    const result = selectExercisesForDay(
+      0, [T1], false, [rec1, rec2],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      8, undefined, undefined, 3, // minDayExercises=3, but only 1 can be safely added
+    );
+
+    // rec1 resolves T1. rec2 would push T1 to 3+2=5 (> 3.5 ceiling+0.5) → rejected.
+    expect(result.toAdd).toHaveLength(1);
+    expect(result.toAdd[0]!.exerciseId).toBe(1);
+  });
+
+  it("counts existing exercises toward minDayExercises (existingExerciseCount reduces fill needed)", () => {
+    // 3 existing exercises + T1 unresolved → Phase 1 adds rec1 → currentCount=4.
+    // Phase 1.5: 4 >= minDayExercises=4 → does not run.
+    const T1 = makeT(1);
+    const weeklyTargets = new Map([[1, makeWeekly(1, 0, 3)]]);
+    const rec1 = makeRec(1, [T1]);
+    const f2 = makeFillerRec(2, 10);
+    const f3 = makeFillerRec(3, 11);
+
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([
+      [1, new Map([[1, 1.0]])],
+      f2.coeff,
+      f3.coeff,
+    ]);
+
+    const result = selectExercisesForDay(
+      0, [T1], false, [rec1, f2.rec, f3.rec],
+      3, 9, NO_AVOIDED, // 3 existing exercises already in session
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      8, undefined, undefined, 4,
+    );
+
+    // Phase 1 adds only rec1 (currentCount goes 3→4, which equals min). Phase 1.5 skips.
+    expect(result.toAdd).toHaveLength(1);
+    expect(result.toAdd[0]!.exerciseId).toBe(1);
+  });
+
+  it("does not run Phase 1.5 when existingExerciseCount already meets or exceeds minimum", () => {
+    // 5 existing exercises; minDayExercises=4 — already above minimum.
+    const T1 = makeT(1);
+    const weeklyTargets = new Map([[1, makeWeekly(1, 0, 3)]]);
+    const rec1 = makeRec(1, [T1]);
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([[1, new Map([[1, 1.0]])]]);
+
+    const result = selectExercisesForDay(
+      0, [T1], false, [rec1],
+      5, 15, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      8, undefined, undefined, 4,
+    );
+
+    // Phase 1 still adds rec1 (resolves T1 volume target). Phase 1.5 skipped (5+1=6 > 4).
+    expect(result.toAdd).toHaveLength(1);
+  });
+
+  it("Phase 1.5 is capped by maxDayExercises even when below minDayExercises", () => {
+    // maxDayExercises=2, minDayExercises=4 → impossible combination; max wins.
+    const T1 = makeT(1);
+    const weeklyTargets = new Map([[1, makeWeekly(1, 0, 3)]]);
+    const rec1 = makeRec(1, [T1]);
+    const f2 = makeFillerRec(2, 10);
+    const f3 = makeFillerRec(3, 11);
+    const f4 = makeFillerRec(4, 12);
+
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([
+      [1, new Map([[1, 1.0]])],
+      f2.coeff,
+      f3.coeff,
+      f4.coeff,
+    ]);
+
+    const result = selectExercisesForDay(
+      0, [T1], false, [rec1, f2.rec, f3.rec, f4.rec],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      2, // maxDayExercises — binding ceiling
+      undefined, undefined,
+      4, // minDayExercises — cannot be satisfied
+    );
+
+    // Phase 1 adds rec1 (count=1). Phase 1.5 adds one more (count=2 = max). Then stops.
+    expect(result.toAdd.length).toBeLessThanOrEqual(2);
+  });
+
+  it("Phase 1.5 respects the session duration cap", () => {
+    // Tiny duration cap (1 minute = 60 s). estimateSessionDurationSeconds(1, 2) = 300+120+0+0=420s > 60s.
+    // So canAddMore() returns false immediately → Phase 1.5 cannot add anything.
+    const T1 = makeT(1);
+    const f2 = makeFillerRec(2, 10);
+
+    // No weekly targets for T1 so Phase 1 skips (no guidelines).
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([f2.coeff]);
+
+    const result = selectExercisesForDay(
+      0, [T1], false, [f2.rec],
+      0, 0, NO_AVOIDED,
+      EMPTY_WEEKLY, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      8,    // maxDayExercises
+      undefined,
+      1,    // maxSessionMinutes = 1 → blocks any addition
+      3,    // minDayExercises
+    );
+
+    expect(result.toAdd).toHaveLength(0);
+  });
+
+  it("Phase 1 naturally exceeds minimum — Phase 1.5 does not run", () => {
+    // 6 volume targets, each with a unique exercise. Phase 1 adds all 6. min=4.
+    const targets = Array.from({ length: 6 }, (_, i) => makeT(i + 1));
+    const { recs, weeklyTargets, coefficients } = makeExclusivePool(targets);
+
+    const result = selectExercisesForDay(
+      0, targets, false, recs,
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      8, undefined, undefined, 4,
+    );
+
+    // Phase 1 resolves all 6 targets → 6 exercises added; min=4 not binding.
+    expect(result.toAdd).toHaveLength(6);
+  });
+
+  it("Phase 1.5 does not add core exercises (reserved for Phase 2)", () => {
+    // One filler rec whose mainMuscleGroup is CORE_MUSCLE_GROUP.
+    // Phase 1.5 must skip it. coreEligible=true so Phase 2 can pick it up.
+    const T1 = makeT(1);
+    const weeklyTargets = new Map([[1, makeWeekly(1, 0, 3)]]);
+    const rec1 = makeRec(1, [T1]);
+    const coreRec = makeCoreRec(99);
+
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([
+      [1, new Map([[1, 1.0]])],
+      [99, new Map([[20, 1.0]])], // core exercise with a coefficient
+    ]);
+
+    const result = selectExercisesForDay(
+      0, [T1], true, [rec1, coreRec],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      8, undefined, undefined, 3, // min=3 → Phase 1.5 would try to add 1 more
+    );
+
+    // Phase 1 adds rec1 (count=1). Phase 1.5 tries: coreRec skipped. No other candidate → stops.
+    // Phase 2 adds coreRec (coreEligible=true, count=2).
+    // Total: rec1 + coreRec = 2. Phase 1.5 did NOT add the core exercise.
+    const nonCore = result.toAdd.filter((e) => !e.isCore);
+    const core = result.toAdd.filter((e) => e.isCore);
+    expect(nonCore).toHaveLength(1); // rec1
+    expect(core).toHaveLength(1);   // coreRec via Phase 2
+    expect(core[0]!.exerciseId).toBe(99);
+  });
+
+  it("Początkujący profile: maxDayExercises=5, minDayExercises=4", () => {
+    // 6 exercises available; only 5 added (max). Of those, at least 4 should be added
+    // even if some targets resolve early (min=4 pulls in fill exercises).
+    const targets = Array.from({ length: 3 }, (_, i) => makeT(i + 1));
+    const { recs: volumeRecs, weeklyTargets, coefficients: volumeCoeffs } = makeExclusivePool(targets);
+
+    const f4 = makeFillerRec(4, 10);
+    const f5 = makeFillerRec(5, 11);
+    const f6 = makeFillerRec(6, 12);
+    const allRecs = [...volumeRecs, f4.rec, f5.rec, f6.rec];
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([
+      ...volumeCoeffs,
+      f4.coeff,
+      f5.coeff,
+      f6.coeff,
+    ]);
+
+    const result = selectExercisesForDay(
+      0, targets, false, allRecs,
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      5, // maxDayExercises (Początkujący)
+      undefined, undefined,
+      4, // minDayExercises (Początkujący)
+    );
+
+    // Phase 1 resolves 3 targets (3 exercises). Phase 1.5 adds 1 more filler → total 4.
+    // Min satisfied; max not yet reached (4 < 5) but no further improvement from Phase 1.
+    // Phase 1.5 stops at min=4 because Phase 1 already added all volume targets.
+    expect(result.toAdd.length).toBeGreaterThanOrEqual(4);
+    expect(result.toAdd.length).toBeLessThanOrEqual(5);
+  });
+
+  it("Średniozaawansowany / Zaawansowany profile: minDayExercises=5, maxDayExercises=8", () => {
+    // 3 volume targets resolved by Phase 1. Phase 1.5 fills 2 more to reach min=5.
+    const targets = Array.from({ length: 3 }, (_, i) => makeT(i + 1));
+    const { recs: volumeRecs, weeklyTargets, coefficients: volumeCoeffs } = makeExclusivePool(targets);
+
+    const f4 = makeFillerRec(4, 10);
+    const f5 = makeFillerRec(5, 11);
+    const allRecs = [...volumeRecs, f4.rec, f5.rec];
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([
+      ...volumeCoeffs,
+      f4.coeff,
+      f5.coeff,
+    ]);
+
+    const result = selectExercisesForDay(
+      0, targets, false, allRecs,
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      8, // maxDayExercises (Średnio/Zaawansowany)
+      undefined, undefined,
+      5, // minDayExercises (Średnio/Zaawansowany)
+    );
+
+    // Phase 1 adds 3 exercises. Phase 1.5 adds 2 fillers. Total = 5.
+    expect(result.toAdd).toHaveLength(5);
+  });
+});
+
 describe("Stage 7A-5 — combined Brak aktywności fizycznej profile", () => {
   it("respects all four constraints simultaneously: maxDayExercises=5, [2,3], maxSessionMinutes=45", () => {
     // 6 targets, each with ceiling=3. Without restrictions all 6 would be added.
