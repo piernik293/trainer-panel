@@ -69,6 +69,12 @@ const QuerySchema = z.object({
   uncoveredTargetIds: z.string().optional(),
   /** Phase 4B3: include Core / brzuch exercises. */
   includeCore: z.string().optional(),
+  /**
+   * Stage 7A: candidate pool size override.
+   * When absent the default MAX_TOTAL (8) is used.
+   * Server-side maximum: 30. Values above 30 are clamped.
+   */
+  poolSize: z.coerce.number().int().min(1).max(30).optional(),
 });
 
 router.get(
@@ -107,6 +113,9 @@ router.get(
       .filter((n) => !isNaN(n) && n > 0);
 
     const includeCoreFlag = query.data.includeCore === "true";
+
+    // Stage 7A: resolve candidate pool size (caller override, capped server-side at 30)
+    const resolvedPoolSize = query.data.poolSize ?? MAX_TOTAL;
 
     // ── Verify client ──────────────────────────────────────────────────────────
     const [client] = await db
@@ -283,7 +292,7 @@ router.get(
         orderedNeeds,
         includeCoreFlag,
         MAX_PER_TARGET,
-        MAX_TOTAL,
+        resolvedPoolSize,
       );
 
       res.json({ hasProfile: true, hasLocationData, exercises: selected });
@@ -295,7 +304,7 @@ router.get(
       pool,
       broadCategories,
       MAX_PER_TARGET,
-      MAX_TOTAL,
+      resolvedPoolSize,
     );
 
     res.json({

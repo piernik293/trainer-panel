@@ -1485,6 +1485,7 @@ export default function PlanDraftWizard() {
           clientId={clientId}
           previewResult={previewResult}
           coverageLoading={coverageLoading}
+          experienceLevel={typedData?.input.experienceLevel ?? null}
         />
       )}
       {step === 3 && !isExerciseStepUnlocked && (

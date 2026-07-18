@@ -2184,3 +2184,388 @@ describe("Stage 6 — fatigue management integration", () => {
     expect(result.toAdd).toHaveLength(3);
   });
 });
+
+// ─── Stage 7A: Per-level session constraints ──────────────────────────────────
+//
+// All four sub-features: poolSize, maxDayExercises, allowedSetCounts, maxSessionMinutes.
+// Duration formula (DURATION_ESTIMATE_ASSUMPTIONS):
+//   estimatedSeconds = 300 + totalSets×120 + max(0,totalExercises−1)×60
+// Spot-check (used in several tests below):
+//   1 exercise × 2 sets = 300 + 240 +   0 = 540s = 9.0 min
+//   1 exercise × 3 sets = 300 + 360 +   0 = 660s = 11.0 min
+//   2 exercises × {2+2} = 300 + 480 +  60 = 840s = 14.0 min
+
+function makeT(id: number): AutoFillDayTarget { return { targetId: id, targetName: `T${id}` }; }
+
+/** Build a pool of N exercises, each exclusively covering its own target (targetId === exerciseId). */
+function makeExclusivePool(
+  targets: AutoFillDayTarget[],
+): {
+  recs: ReturnType<typeof makeRec>[];
+  weeklyTargets: Map<number, AutoFillWeeklyTarget>;
+  coefficients: Map<number, ReadonlyMap<number, number>>;
+} {
+  const recs = targets.map((t) =>
+    makeRec(t.targetId, [t], {
+      mainMuscleGroup: "chest",
+      neurologicalFatigue: 5,
+      secondaryMuscleGroups: [],
+      movementCategoryKey: null,
+    }),
+  );
+  const weeklyTargets = new Map(targets.map((t) => [t.targetId, makeWeekly(t.targetId, 0, 3)]));
+  const coefficients = new Map<number, ReadonlyMap<number, number>>(
+    targets.map((t) => [t.targetId, new Map([[t.targetId, 1.0]])]),
+  );
+  return { recs, weeklyTargets, coefficients };
+}
+
+// ── Stage 7A-1: buildDayFetchUrl poolSize ────────────────────────────────────
+
+describe("Stage 7A-1 — buildDayFetchUrl poolSize param", () => {
+  it("includes poolSize query param when provided", () => {
+    const url = buildDayFetchUrl(1, ["Plecy"], [], false, [], 20);
+    expect(url).toContain("poolSize=20");
+  });
+
+  it("omits poolSize query param when not provided", () => {
+    const url = buildDayFetchUrl(1, ["Plecy"], [], false, []);
+    expect(url).not.toContain("poolSize");
+  });
+
+  it("pools size is forwarded as a query string value, not a path segment", () => {
+    const url = buildDayFetchUrl(1, ["Plecy"], [], false, [], 20);
+    expect(url).toMatch(/\?.*poolSize=20/);
+  });
+});
+
+// ── Stage 7A-2: maxDayExercises ──────────────────────────────────────────────
+
+describe("Stage 7A-2 — maxDayExercises limits selection count", () => {
+  it("stops after maxDayExercises=5 even when 6 exercises are available", () => {
+    const targets = Array.from({ length: 6 }, (_, i) => makeT(i + 1));
+    const { recs, weeklyTargets, coefficients } = makeExclusivePool(targets);
+
+    const result = selectExercisesForDay(
+      0, targets, false, recs,
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      5, // maxDayExercises
+    );
+
+    expect(result.toAdd).toHaveLength(5);
+  });
+
+  it("counts existing exercises toward maxDayExercises — only 2 slots remain when 3 already exist", () => {
+    const targets = Array.from({ length: 3 }, (_, i) => makeT(i + 1));
+    const { recs, weeklyTargets, coefficients } = makeExclusivePool(targets);
+
+    const result = selectExercisesForDay(
+      0, targets, false, recs,
+      3, 9, // existingExerciseCount=3 (×3 sets each), limit=5 → only 2 more
+      NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      5, // maxDayExercises
+    );
+
+    expect(result.toAdd).toHaveLength(2);
+  });
+
+  it("default MAX_DAY_EXERCISES=8 remains in effect when no override supplied", () => {
+    // 9 targets, no override → at most 8 added (daily-set cap at 24 may kick in first)
+    const targets = Array.from({ length: 9 }, (_, i) => makeT(i + 1));
+    const { recs, weeklyTargets, coefficients } = makeExclusivePool(targets);
+
+    const result = selectExercisesForDay(
+      0, targets, false, recs,
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      // no maxDayExercises
+    );
+
+    expect(result.toAdd.length).toBeLessThanOrEqual(MAX_DAY_EXERCISES);
+  });
+});
+
+// ── Stage 7A-3: allowedSetCounts=[2,3] ───────────────────────────────────────
+
+describe("Stage 7A-3 — allowedSetCounts=[2,3] restricts set assignments", () => {
+  it("selected exercise gets at most 3 sets when allowedSetCounts=[2,3]", () => {
+    const target = makeT(1);
+    // High ceiling (12) so no volume rule blocks 4 sets — only allowedSetCounts matters.
+    const weeklyTargets = new Map([[target.targetId, makeWeekly(target.targetId, 0, 12)]]);
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([
+      [1, new Map([[target.targetId, 1.0]])],
+    ]);
+    const rec = makeRec(1, [target], {
+      mainMuscleGroup: "chest", neurologicalFatigue: 5, secondaryMuscleGroups: [], movementCategoryKey: null,
+    });
+
+    const result = selectExercisesForDay(
+      0, [target], false, [rec],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      undefined, [2, 3], // allowedSetCounts
+    );
+
+    expect(result.toAdd).toHaveLength(1);
+    expect(result.toAdd[0]!.sets).toBeLessThanOrEqual(3);
+    // setsPreference: 3→0 (best) — so 3 is chosen, not 2
+    expect(result.toAdd[0]!.sets).toBe(3);
+  });
+
+  it("no exercise in the result has sets=4 when allowedSetCounts=[2,3]", () => {
+    const targets = Array.from({ length: 3 }, (_, i) => makeT(i + 1));
+    // Wide ceilings to ensure volume rules never block 4 sets
+    const weeklyTargets = new Map(targets.map((t) => [t.targetId, makeWeekly(t.targetId, 0, 12)]));
+    const coefficients = new Map<number, ReadonlyMap<number, number>>(
+      targets.map((t) => [t.targetId, new Map([[t.targetId, 1.0]])]),
+    );
+    const recs = targets.map((t) =>
+      makeRec(t.targetId, [t], {
+        mainMuscleGroup: "chest", neurologicalFatigue: 5,
+        secondaryMuscleGroups: [], movementCategoryKey: null,
+      }),
+    );
+
+    const result = selectExercisesForDay(
+      0, targets, false, recs,
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      undefined, [2, 3], // allowedSetCounts
+    );
+
+    for (const ex of result.toAdd) {
+      expect(ex.sets).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it("consolidation cannot raise a 3-set exercise to 4 sets when allowedSetCounts=[2,3]", () => {
+    // Stage 7A changed findBestConsolidation to use Math.max(...effectiveSetCounts).
+    // With [2,3], maxAllowedSets=3, so entry.sets >= 3 → skipped (cannot consolidate to 4).
+    // This test verifies no exercise silently ends up with 4 sets via consolidation.
+
+    // To trigger the consolidation path: add two targets but only one exercise is available,
+    // forcing the generator to commit one exercise and then try consolidation for the rest.
+    // We use a scenario where consolidation WOULD fire with default [2,3,4] (target still unresolved)
+    // but with [2,3] the exercise is at 3 sets (maxAllowed) and therefore skipped.
+    const T1 = makeT(1);
+    const T2 = makeT(2);
+    // Both targets share coeff 0.5 so the exercise contributes to both
+    const weeklyTargets = new Map([
+      [T1.targetId, makeWeekly(T1.targetId, 0, 6)],
+      [T2.targetId, makeWeekly(T2.targetId, 0, 6)],
+    ]);
+    const sharedCoeff = new Map([[T1.targetId, 0.5], [T2.targetId, 0.5]]);
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([
+      [1, sharedCoeff],
+    ]);
+    // Only one exercise available — covers both targets with 0.5 coefficient each
+    const rec = makeRec(1, [T1, T2], {
+      mainMuscleGroup: "chest", neurologicalFatigue: 5,
+      secondaryMuscleGroups: [], movementCategoryKey: null,
+    });
+
+    const result = selectExercisesForDay(
+      0, [T1, T2], false, [rec],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      undefined, [2, 3],
+    );
+
+    // The exercise should be at most 3 sets — consolidation cannot push it to 4
+    for (const ex of result.toAdd) {
+      expect(ex.sets).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it("default ALLOWED_SET_COUNTS=[2,3,4] allows 4 sets when the volume metric favours it", () => {
+    // With ceiling=12, coeff=1.0:
+    //   3 sets → totalWeeklyRemaining = 9 (worse at score index [1])
+    //   4 sets → totalWeeklyRemaining = 8 (better  at score index [1])
+    // setsPreference (index [3]) is only consulted after indices [0–2] are tied.
+    // With ceiling=12 index [1] is NOT tied, so 4 sets wins — confirming the
+    // full set range [2,3,4] is intact and Stage 7A has not altered default behaviour.
+    const target = makeT(1);
+    const weeklyTargets = new Map([[target.targetId, makeWeekly(target.targetId, 0, 12)]]);
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([
+      [1, new Map([[target.targetId, 1.0]])],
+    ]);
+    const rec = makeRec(1, [target], {
+      mainMuscleGroup: "chest", neurologicalFatigue: 5, secondaryMuscleGroups: [], movementCategoryKey: null,
+    });
+
+    const result = selectExercisesForDay(
+      0, [target], false, [rec],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      // no allowedSetCounts — full [2,3,4] range in effect
+    );
+
+    expect(result.toAdd).toHaveLength(1);
+    // 4 sets is chosen: totalWeeklyRemaining(4)=8 < totalWeeklyRemaining(3)=9
+    // This would be BLOCKED when allowedSetCounts=[2,3] is in effect (Stage 7A)
+    expect(result.toAdd[0]!.sets).toBe(4);
+  });
+
+  it("ALLOWED_SET_COUNTS export still equals [2,3,4] (regression guard)", () => {
+    expect([...ALLOWED_SET_COUNTS]).toEqual([2, 3, 4]);
+  });
+});
+
+// ── Stage 7A-4: maxSessionMinutes (duration cap) ─────────────────────────────
+
+describe("Stage 7A-4 — maxSessionMinutes duration cap", () => {
+  it("stops at 1 exercise when adding a 2nd would exceed maxSessionMinutes=9", () => {
+    // 1 ex × 2 sets → 540s = 9.0 min (allowed, = cap not > cap)
+    // 2 ex × 4 sets → 840s = 14 min (rejected, > 9)
+    const T1 = makeT(1);
+    const T2 = makeT(2);
+    const weeklyTargets = new Map([
+      [T1.targetId, makeWeekly(T1.targetId, 0, 3)],
+      [T2.targetId, makeWeekly(T2.targetId, 0, 3)],
+    ]);
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([
+      [1, new Map([[T1.targetId, 1.0]])],
+      [2, new Map([[T2.targetId, 1.0]])],
+    ]);
+    const recs = [
+      makeRec(1, [T1], { mainMuscleGroup: "chest", neurologicalFatigue: 5, secondaryMuscleGroups: [], movementCategoryKey: null }),
+      makeRec(2, [T2], { mainMuscleGroup: "chest", neurologicalFatigue: 5, secondaryMuscleGroups: [], movementCategoryKey: null }),
+    ];
+
+    const result = selectExercisesForDay(
+      0, [T1, T2], false, recs,
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      undefined, [2, 3], 9, // maxSessionMinutes=9
+    );
+
+    // canAddMore() for 2nd exercise: 2 ex × (2+2) sets = 840s = 14 min > 9 → false
+    expect(result.toAdd).toHaveLength(1);
+  });
+
+  it("prevents adding any exercise when existing exercises already fill the session cap", () => {
+    // existing: 1 exercise, 2 sets → 540s = 9.0 min
+    // cap=10: canAddMore (2 ex, 4 sets) → 840s = 14 min > 10 → false
+    const target = makeT(1);
+    const weeklyTargets = new Map([[target.targetId, makeWeekly(target.targetId, 0, 6)]]);
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([
+      [1, new Map([[target.targetId, 1.0]])],
+    ]);
+    const rec = makeRec(1, [target], {
+      mainMuscleGroup: "chest", neurologicalFatigue: 5, secondaryMuscleGroups: [], movementCategoryKey: null,
+    });
+
+    const result = selectExercisesForDay(
+      0, [target], false, [rec],
+      1, 2, // existingExerciseCount=1, existingSetCount=2
+      NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      undefined, undefined, 10, // maxSessionMinutes=10
+    );
+
+    // canAddMore: 2 ex × 4 sets = 840s = 14 min > 10 → false immediately
+    expect(result.toAdd).toHaveLength(0);
+  });
+
+  it("3-set expansion is rejected by duration cap when it would push session over limit", () => {
+    // With maxSessionMinutes=9 and allowedSetCounts=[2,3]:
+    //   sets=2 → 540s = 9 min (exactly at cap → not > cap → allowed)
+    //   sets=3 → 660s = 11 min > 9 → rejected
+    // So the exercise is committed at 2 sets, not 3.
+    const target = makeT(1);
+    const weeklyTargets = new Map([[target.targetId, makeWeekly(target.targetId, 0, 12)]]);
+    const coefficients = new Map<number, ReadonlyMap<number, number>>([
+      [1, new Map([[target.targetId, 1.0]])],
+    ]);
+    const rec = makeRec(1, [target], {
+      mainMuscleGroup: "chest", neurologicalFatigue: 5, secondaryMuscleGroups: [], movementCategoryKey: null,
+    });
+
+    const result = selectExercisesForDay(
+      0, [target], false, [rec],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      undefined, [2, 3], 9, // maxSessionMinutes=9
+    );
+
+    expect(result.toAdd).toHaveLength(1);
+    // 3 sets would exceed 9 min; 2 sets is exactly 9 min → allowed
+    expect(result.toAdd[0]!.sets).toBe(2);
+  });
+
+  it("no duration cap when maxSessionMinutes is undefined — exercises added normally", () => {
+    const targets = Array.from({ length: 3 }, (_, i) => makeT(i + 1));
+    const { recs, weeklyTargets, coefficients } = makeExclusivePool(targets);
+
+    const result = selectExercisesForDay(
+      0, targets, false, recs,
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      // no maxSessionMinutes
+    );
+
+    expect(result.toAdd).toHaveLength(3);
+  });
+});
+
+// ── Stage 7A-5: Combined "Brak aktywności" profile ───────────────────────────
+
+describe("Stage 7A-5 — combined Brak aktywności fizycznej profile", () => {
+  it("respects all four constraints simultaneously: maxDayExercises=5, [2,3], maxSessionMinutes=45", () => {
+    // 6 targets, each with ceiling=3. Without restrictions all 6 would be added.
+    // maxDayExercises=5 cuts to 5. With [2,3] and generous 45-min cap, all 5 should still fit.
+    const targets = Array.from({ length: 6 }, (_, i) => makeT(i + 1));
+    const { recs, weeklyTargets, coefficients } = makeExclusivePool(targets);
+
+    const result = selectExercisesForDay(
+      0, targets, false, recs,
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      5, [2, 3], 45,
+    );
+
+    // maxDayExercises=5 is binding — 5 exercises
+    expect(result.toAdd).toHaveLength(5);
+    // All exercises within the set cap
+    for (const ex of result.toAdd) {
+      expect(ex.sets).toBeLessThanOrEqual(3);
+    }
+    // Spot-check: 5 exercises × 3 sets = 300+15×120+4×60 = 2340s = 39 min < 45 → all within cap
+    // (If this assertion fails the duration formula or assumptions changed)
+    expect(result.toAdd.reduce((sum, ex) => sum + ex.sets, 0)).toBeLessThanOrEqual(15);
+  });
+
+  it("does not affect other experience levels — all defaults remain in effect", () => {
+    // No overrides at all → MAX_DAY_EXERCISES=8, ALLOWED_SET_COUNTS=[2,3,4], no duration cap
+    const targets = Array.from({ length: 4 }, (_, i) => makeT(i + 1));
+    const weeklyTargets = new Map(targets.map((t) => [t.targetId, makeWeekly(t.targetId, 0, 12)]));
+    const coefficients = new Map<number, ReadonlyMap<number, number>>(
+      targets.map((t) => [t.targetId, new Map([[t.targetId, 1.0]])]),
+    );
+    const recs = targets.map((t) =>
+      makeRec(t.targetId, [t], {
+        mainMuscleGroup: "chest", neurologicalFatigue: 5,
+        secondaryMuscleGroups: [], movementCategoryKey: null,
+      }),
+    );
+
+    const result = selectExercisesForDay(
+      0, targets, false, recs,
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      // no Stage 7A overrides
+    );
+
+    // All 4 exercises are added (no artificial limit from Stage 7A)
+    expect(result.toAdd).toHaveLength(4);
+    // With ceiling=12 and coeff=1.0, totalWeeklyRemaining makes 4 sets win over 3.
+    // This verifies the full [2,3,4] set range is preserved when no override is supplied.
+    for (const ex of result.toAdd) {
+      expect([2, 3, 4]).toContain(ex.sets);
+      // 4 sets wins due to lower totalWeeklyRemaining (8 vs 9) — not 3
+      expect(ex.sets).toBe(4);
+    }
+  });
+});

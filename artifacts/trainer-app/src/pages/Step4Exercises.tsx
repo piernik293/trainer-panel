@@ -108,6 +108,11 @@ interface Step4ExercisesProps {
   /** Coverage result lifted from PlanDraftWizard (shared with Step 5). */
   previewResult: DraftVolumePreviewResult | null;
   coverageLoading: boolean;
+  /**
+   * Client's experience level from the survey (typedData.input.experienceLevel).
+   * Used by auto-fill to apply "Brak aktywności fizycznej" session limits.
+   */
+  experienceLevel: string | null;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -119,6 +124,7 @@ export default function Step4Exercises({
   clientId,
   previewResult,
   coverageLoading,
+  experienceLevel,
 }: Step4ExercisesProps) {
   const [selectorForDay, setSelectorForDay] = useState<number | null>(null);
   const [recOpenForDay, setRecOpenForDay] = useState<number | null>(null);
@@ -205,6 +211,9 @@ export default function Step4Exercises({
     const daysToProcess: RunAutoFillDayInput[] = [];
     let skippedDayCount = 0;
 
+    // Stage 7A: apply stricter per-session limits for inactive clients
+    const isBrakAktywnosci = experienceLevel === "Brak aktywności fizycznej";
+
     for (const day of distributionResult.days) {
       const coverageNeeds = computeEligibleTargetNeeds(day, distributionResult, previewResult, exerciseDraft);
       if (coverageNeeds.allDaysCovered) {
@@ -232,6 +241,16 @@ export default function Step4Exercises({
         step3DailyAllocations: new Map(
           day.targetAllocations.map((a) => [a.targetId, a.allocatedVolume]),
         ),
+        // Stage 7A: "Brak aktywności fizycznej" clients get a smaller, safer session.
+        // poolSize=20 gives the generator enough candidates to cover 5 movement patterns.
+        // maxDayExercises=5, allowedSetCounts=[2,3], maxSessionMinutes=45 enforce
+        // the adaptive-programme session constraints from ADAPTIVE_PROGRAM_DEFAULTS.
+        ...(isBrakAktywnosci && {
+          poolSize: 20,
+          maxDayExercises: 5,
+          allowedSetCounts: [2, 3] as const,
+          maxSessionMinutes: 45,
+        }),
       });
     }
 

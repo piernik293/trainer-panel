@@ -26,6 +26,7 @@ import type { ExerciseDraftByDay } from "./exerciseDraftHelpers";
 import { trainerPriorityRank } from "./trainerPriority";
 import { movementPatternPenalty } from "./movementBalance";
 import { computeFatiguePenalty } from "./fatigueManagement";
+import { estimateSessionDurationSeconds } from "./sessionDurationEstimator";
 
 // ─── Safety limits ─────────────────────────────────────────────────────────────
 
@@ -146,6 +147,30 @@ export interface RunAutoFillDayInput {
    * Used to enforce the +2 positive-deviation redistribution limit.
    */
   step3DailyAllocations: ReadonlyMap<number, number>;
+  // ── Stage 7A: per-level overrides ─────────────────────────────────────────
+  /**
+   * Requested recommendation candidate pool size sent to the API.
+   * When undefined the API uses its own default (MAX_TOTAL = 8).
+   * Server enforces a maximum of 30.
+   */
+  poolSize?: number;
+  /**
+   * Maximum exercises that may be added to this session (existing + auto-filled).
+   * When undefined defaults to MAX_DAY_EXERCISES (8).
+   */
+  maxDayExercises?: number;
+  /**
+   * Restrict working-set assignments to this subset of ALLOWED_SET_COUNTS.
+   * When undefined defaults to ALLOWED_SET_COUNTS ([2, 3, 4]).
+   * Applied to expansion, core selection, and consolidation.
+   */
+  allowedSetCounts?: ReadonlyArray<2 | 3 | 4>;
+  /**
+   * Reject any candidate that would push the estimated session duration
+   * (per DURATION_ESTIMATE_ASSUMPTIONS in sessionDurationEstimator.ts)
+   * above this limit in minutes. When undefined no duration cap is applied.
+   */
+  maxSessionMinutes?: number;
 }
 
 export interface AutoFillWeeklyTarget {
@@ -212,6 +237,7 @@ export function buildDayFetchUrl(
   uncoveredTargetIds: number[],
   coreEligible: boolean,
   alreadyAddedIds: number[],
+  poolSize?: number,
 ): string {
   const params = new URLSearchParams();
   params.set("broadCategories", broadCategories.join(","));
@@ -223,6 +249,9 @@ export function buildDayFetchUrl(
   }
   if (coreEligible) {
     params.set("includeCore", "true");
+  }
+  if (poolSize !== undefined) {
+    params.set("poolSize", String(poolSize));
   }
   return `/api/clients/${clientId}/plan-draft/day-recommendations?${params}`;
 }
@@ -642,6 +671,9 @@ export function selectExercisesForDay(
   weeklyAddedByPreviousDays: ReadonlyMap<number, number> = new Map(),
   exercisesUsedInOtherDays: ReadonlySet<number> = new Set(),
   step3DailyAllocations: ReadonlyMap<number, number> = new Map(),
+  maxDayExercises?: number,
+  allowedSetCounts?: ReadonlyArray<2 | 3 | 4>,
+  maxSessionMinutes?: number,
 ): AutoFillDayResult {
   const addedIds = new Set<number>();
   const toAdd: AutoFillExerciseToAdd[] = [];
@@ -673,8 +705,30 @@ export function selectExercisesForDay(
     return weeklyBase(targetId) >= wt.weeklyPreferredCeiling - RESOLVE_TOLERANCE;
   };
 
-  const canAddMore = (): boolean =>
-    currentCount < MAX_DAY_EXERCISES && currentSets + Math.min(...ALLOWED_SET_COUNTS) <= MAX_DAY_SETS;
+  // Stage 7A: resolve per-level effective constraints (callers may supply overrides)
+  const effectiveMaxExercises = maxDayExercises ?? MAX_DAY_EXERCISES;
+  const effectiveSetCounts: ReadonlyArray<2 | 3 | 4> = allowedSetCounts ?? ALLOWED_SET_COUNTS;
+  const effectiveMaxSessionMinutes = maxSessionMinutes ?? Infinity;
+
+  /**
+   * Returns true if committing (projectedExercises, projectedSets) total would push the
+   * estimated session duration over effectiveMaxSessionMinutes.
+   * Short-circuits to false when no cap is active (avoids the estimator call).
+   * See sessionDurationEstimator.ts for the formula and its documented assumptions.
+   */
+  function wouldExceedDuration(projectedExercises: number, projectedSets: number): boolean {
+    if (effectiveMaxSessionMinutes === Infinity) return false;
+    return estimateSessionDurationSeconds(projectedExercises, projectedSets) / 60 > effectiveMaxSessionMinutes;
+  }
+
+  const canAddMore = (): boolean => {
+    if (currentCount >= effectiveMaxExercises) return false;
+    const minSets = Math.min(...effectiveSetCounts);
+    if (currentSets + minSets > MAX_DAY_SETS) return false;
+    // Check that even the minimum-set addition won't exceed the session duration cap.
+    if (wouldExceedDuration(currentCount + 1, currentSets + minSets)) return false;
+    return true;
+  };
 
   function commitExercise(rec: AutoFillRecExercise, sets: number, isCore: boolean): void {
     toAdd.push({
@@ -789,8 +843,10 @@ export function selectExercisesForDay(
         const primaryCoeff = coeffs.get(target.targetId) ?? 0;
         if (primaryCoeff <= 0 && coeffs.size > 0) continue;
 
-        for (const sets of ALLOWED_SET_COUNTS) {
+        for (const sets of effectiveSetCounts) {
           if (currentSets + sets > MAX_DAY_SETS) continue;
+          // Stage 7A: duration gate — skip this set count if it would push session over cap
+          if (wouldExceedDuration(currentCount + 1, currentSets + sets)) continue;
 
           const eval_ = evaluateCandidate(
             sets, coeffs, weeklyTargets, weeklyBase, dailyContext, dailyBase,
@@ -842,17 +898,21 @@ export function selectExercisesForDay(
 
     let best: { index: number; delta: number; numRemainingUnresolved: number } | null = null;
 
+    // Stage 7A: compute effective ceiling once for the whole consolidation pass
+    const maxAllowedSets = Math.max(...effectiveSetCounts);
     for (let i = 0; i < toAdd.length; i++) {
       const entry = toAdd[i]!;
       if (entry.isCore) continue;
-      if (entry.sets === 4) continue;
+      if (entry.sets >= maxAllowedSets) continue;
 
       const coeffs = candidateCoefficients.get(entry.exerciseId);
       if (!coeffs || coeffs.size === 0) continue;
 
       for (const delta of [1, 2] as const) {
-        if (entry.sets + delta > 4) continue;
+        if (entry.sets + delta > maxAllowedSets) continue;
         if (currentSets + delta > MAX_DAY_SETS) continue;
+        // Stage 7A: duration gate for consolidation (exercise count unchanged)
+        if (wouldExceedDuration(currentCount, currentSets + delta)) continue;
 
         const safety = checkContributionSafety(
           delta, coeffs, weeklyTargets, weeklyBase, dailyContext, dailyBase,
@@ -958,8 +1018,10 @@ export function selectExercisesForDay(
 
         const coeffs: ReadonlyMap<number, number> = candidateCoefficients.get(rec.id) ?? new Map();
 
-        for (const sets of ALLOWED_SET_COUNTS) {
+        for (const sets of effectiveSetCounts) {
           if (currentSets + sets > MAX_DAY_SETS) continue;
+          // Stage 7A: duration gate for core exercise
+          if (wouldExceedDuration(currentCount + 1, currentSets + sets)) continue;
 
           const eval_ = evaluateCandidate(
             sets, coeffs, weeklyTargets, weeklyBase, dailyContext, dailyBase,
@@ -1151,6 +1213,7 @@ export async function runAutoFill(
       day.orderedTargets.map((t) => t.targetId),
       day.coreEligible,
       day.alreadyAddedExerciseIds,
+      day.poolSize,
     ),
   );
 
@@ -1235,6 +1298,9 @@ export async function runAutoFill(
       weeklyAddedCumulative,
       exercisesUsedInOtherDays,
       day.step3DailyAllocations,
+      day.maxDayExercises,
+      day.allowedSetCounts,
+      day.maxSessionMinutes,
     );
 
     dayResults.push(result);

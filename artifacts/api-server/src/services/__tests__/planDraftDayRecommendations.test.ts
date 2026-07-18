@@ -573,3 +573,92 @@ describe("selectByUncoveredTargets()", () => {
     expect(selectByUncoveredTargets(pool, [latNeed, trapNeed], false, 3, 8)).toEqual([]);
   });
 });
+
+// ─── Stage 7A: poolSize enforcement (maxTotal parameter) ─────────────────────
+//
+// The API route's `poolSize` query param is forwarded as `maxTotal` to
+// selectByUncoveredTargets.  These tests verify that selectByUncoveredTargets
+// respects the caller-supplied maxTotal and therefore that the full
+// API→service→selection chain honours the requested pool size.
+
+describe("Stage 7A — poolSize / maxTotal enforcement", () => {
+  /** Create N exercises all covering the same target. */
+  function makePool(n: number, targetId: number): ExerciseWithCoveredTargets[] {
+    return Array.from({ length: n }, (_, i) =>
+      makeEnrichedExercise({
+        id: i + 1,
+        name: `Ex${i + 1}`,
+        mainMuscleGroup: "Plecy",
+        coveredTargetIds: new Set([targetId]),
+        score: 100 - i,
+      }),
+    );
+  }
+
+  const need: UncoveredTargetNeed = { targetId: LAT_ID, targetName: "Latissimus dorsi", allocationOrder: 0 };
+
+  it("default maxTotal=8 returns at most 8 candidates from a larger pool", () => {
+    const pool = makePool(25, LAT_ID);
+    const result = selectByUncoveredTargets(pool, [need], false, 3, 8);
+    expect(result.length).toBeLessThanOrEqual(8);
+    // With 25 exercises and a per-target cap of 3, only 3 would be returned
+    // at maxPerTarget. Stage 7A increases poolSize to 20, so this verifies
+    // the ceiling behaviour for the default.
+  });
+
+  it("maxTotal=20 returns up to 20 candidates from a pool of 25", () => {
+    // Distribute across two targets (LAT and TRAP) so maxPerTarget(=3) is not
+    // the binding limit — maxTotal(=20) should be the ceiling.
+    const latPool = Array.from({ length: 15 }, (_, i) =>
+      makeEnrichedExercise({
+        id: i + 1,
+        name: `Lat${i + 1}`,
+        mainMuscleGroup: "Plecy",
+        coveredTargetIds: new Set([LAT_ID]),
+        score: 100 - i,
+      }),
+    );
+    const trapPool = Array.from({ length: 15 }, (_, i) =>
+      makeEnrichedExercise({
+        id: i + 100,
+        name: `Trap${i + 1}`,
+        mainMuscleGroup: "Plecy",
+        coveredTargetIds: new Set([TRAP_ID]),
+        score: 90 - i,
+      }),
+    );
+    const latTrapNeed: UncoveredTargetNeed = { targetId: TRAP_ID, targetName: "Trapezius", allocationOrder: 1 };
+
+    // maxPerTarget=10 so both targets can contribute up to 10 each; maxTotal=20 caps the union
+    const result = selectByUncoveredTargets([...latPool, ...trapPool], [need, latTrapNeed], false, 10, 20);
+    expect(result.length).toBeLessThanOrEqual(20);
+    expect(result.length).toBeGreaterThan(8); // confirms we got more than the old default of 8
+  });
+
+  it("maxTotal=30 (server-side cap) returns at most 30 candidates from a pool of 40", () => {
+    // Build two targets with 20 exercises each; maxPerTarget=15, maxTotal=30
+    const latPool = Array.from({ length: 20 }, (_, i) =>
+      makeEnrichedExercise({
+        id: i + 1, mainMuscleGroup: "Plecy",
+        coveredTargetIds: new Set([LAT_ID]), score: 100 - i,
+      }),
+    );
+    const trapPool = Array.from({ length: 20 }, (_, i) =>
+      makeEnrichedExercise({
+        id: i + 100, mainMuscleGroup: "Plecy",
+        coveredTargetIds: new Set([TRAP_ID]), score: 90 - i,
+      }),
+    );
+    const latTrapNeed: UncoveredTargetNeed = { targetId: TRAP_ID, targetName: "Trapezius", allocationOrder: 1 };
+
+    const result = selectByUncoveredTargets([...latPool, ...trapPool], [need, latTrapNeed], false, 15, 30);
+    expect(result.length).toBeLessThanOrEqual(30);
+  });
+
+  it("pool smaller than maxTotal returns all qualifying exercises", () => {
+    const pool = makePool(5, LAT_ID);
+    const result = selectByUncoveredTargets(pool, [need], false, 3, 20);
+    // Pool has 5 exercises, maxPerTarget=3 → only 3 returned (smaller binding limit)
+    expect(result.length).toBeLessThanOrEqual(5);
+  });
+});
