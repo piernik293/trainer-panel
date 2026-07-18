@@ -65,6 +65,8 @@ export interface DayRecommendationExercise {
   movementPattern?: string | null;
   /** Stage 4: canonical movement category key resolved from movement_pattern + movement_category. */
   movementCategoryKey?: string | null;
+  /** Stage 6: secondary muscle groups for session fatigue tie-breaking. */
+  secondaryMuscleGroups?: string[] | null;
 }
 
 // ─── Phase 4B3: Uncovered-target types ───────────────────────────────────────
@@ -263,6 +265,8 @@ export function selectDayRecommendations(
       movementPattern: ex.movementPattern ?? null,
       // Stage 4: canonical movement category key
       movementCategoryKey: ex.movementCategoryKey ?? null,
+      // Stage 6: secondary muscle groups for session fatigue tie-breaking
+      secondaryMuscleGroups: ex.secondaryMuscleGroups ?? null,
     });
   }
 
@@ -378,6 +382,8 @@ export function selectByUncoveredTargets(
       movementPattern: ex.movementPattern ?? null,
       // Stage 4: canonical movement category key
       movementCategoryKey: ex.movementCategoryKey ?? null,
+      // Stage 6: secondary muscle groups for session fatigue tie-breaking
+      secondaryMuscleGroups: ex.secondaryMuscleGroups ?? null,
     });
   }
 

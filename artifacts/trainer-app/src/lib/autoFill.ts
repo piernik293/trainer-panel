@@ -25,6 +25,7 @@ import { CORE_MUSCLE_GROUP } from "./coreCoverageHelpers";
 import type { ExerciseDraftByDay } from "./exerciseDraftHelpers";
 import { trainerPriorityRank } from "./trainerPriority";
 import { movementPatternPenalty } from "./movementBalance";
+import { computeFatiguePenalty } from "./fatigueManagement";
 
 // ─── Safety limits ─────────────────────────────────────────────────────────────
 
@@ -86,6 +87,8 @@ export interface AutoFillRecExercise {
   movementPattern?: string | null;
   /** Stage 4: canonical movement category key ("push"|"pull"|"squat"|"hinge"|...) resolved by the API. */
   movementCategoryKey?: string | null;
+  /** Stage 6: secondary muscle groups for session fatigue tie-breaking. */
+  secondaryMuscleGroups?: string[] | null;
 }
 
 export interface AutoFillExerciseToAdd {
@@ -105,6 +108,8 @@ export interface AutoFillExerciseToAdd {
   learningDifficulty?: number | null;
   /** Maps to DB `exercise_priority`. Polish priority string or null. */
   exercisePriority?: string | null;
+  /** Stage 6: secondary muscle groups for session fatigue tie-breaking. */
+  secondaryMuscleGroups?: string[] | null;
 }
 
 export interface AutoFillDayResult {
@@ -684,6 +689,8 @@ export function selectExercisesForDay(
       neurologicalFatigue: rec.neurologicalFatigue ?? null,
       learningDifficulty: rec.learningDifficulty ?? null,
       exercisePriority: rec.exercisePriority ?? null,
+      // Stage 6: carry secondary muscles for within-session fatigue tie-breaking
+      secondaryMuscleGroups: rec.secondaryMuscleGroups ?? null,
     });
     addedIds.add(rec.id);
     currentCount++;
@@ -768,6 +775,15 @@ export function selectExercisesForDay(
 
           if (best === null || scoreBetter(score, best.score)) {
             best = { rec, sets, score };
+          } else if (!scoreBetter(best.score, score)) {
+            // Stage 6: perfect ScoreTuple tie — prefer the candidate with lower
+            // session fatigue. scoreBetter(A,B)=false && scoreBetter(B,A)=false
+            // means every element is equal.
+            const fp  = computeFatiguePenalty(rec,      toAdd);
+            const bfp = computeFatiguePenalty(best.rec, toAdd);
+            if (fp < bfp) {
+              best = { rec, sets, score };
+            }
           }
         }
       }
@@ -937,6 +953,13 @@ export function selectExercisesForDay(
 
           if (bestCore === null || scoreBetter(score, bestCore.score)) {
             bestCore = { rec, sets, score };
+          } else if (!scoreBetter(bestCore.score, score)) {
+            // Stage 6: perfect ScoreTuple tie — prefer lower session fatigue
+            const fp  = computeFatiguePenalty(rec,          toAdd);
+            const bfp = computeFatiguePenalty(bestCore.rec, toAdd);
+            if (fp < bfp) {
+              bestCore = { rec, sets, score };
+            }
           }
         }
       }
