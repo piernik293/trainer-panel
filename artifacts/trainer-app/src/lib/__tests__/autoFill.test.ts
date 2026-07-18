@@ -1884,14 +1884,23 @@ describe("Stage 5 — existing safety rules unchanged after Stage 5 integration"
   });
 });
 
-// ─── Stage 6: Fatigue management — integration verification ──────────────────
+// ─── Stage 6: Fatigue management — integration tests ─────────────────────────
+//
+// compareCandidatesWithFatigue() implements a three-phase comparison:
+//   Phase A — ScoreTuple[0–5]  (unresolved targets → weekly vol → daily vol →
+//              sets preference → movement pattern → trainer priority)
+//   Phase B — session fatigue  (between trainerPriority and originalRank)
+//   Phase C — ScoreTuple[6–7]  (original API rank → variety)
 
 describe("Stage 6 — fatigue management integration", () => {
+  // ── Helper targets / coefficients shared by multiple tests ────────────────
+
+  const chestTarget: AutoFillDayTarget = { targetId: 301, targetName: "Chest" };
+  const backTarget:  AutoFillDayTarget = { targetId: 302, targetName: "Back"  };
+
   // ── secondaryMuscleGroups propagation ─────────────────────────────────────
 
   it("secondaryMuscleGroups on a rec are carried into toAdd after commit", () => {
-    // When an exercise is committed, its secondaryMuscleGroups must appear in
-    // toAdd so that subsequent iterations can read them for fatigue tie-breaking.
     const weeklyTargets = new Map([[latTarget.targetId, makeWeekly(latTarget.targetId, 0, 3)]]);
     const coefficients  = new Map([[1, new Map([[latTarget.targetId, 1.0]])]]);
     const rec = makeRec(1, [latTarget], {
@@ -1909,11 +1918,9 @@ describe("Stage 6 — fatigue management integration", () => {
   });
 
   it("secondaryMuscleGroups defaults to null when not provided on a rec", () => {
-    // Existing fixtures omit secondaryMuscleGroups (optional field).
-    // The committed entry must still be created correctly with null / undefined.
     const weeklyTargets = new Map([[latTarget.targetId, makeWeekly(latTarget.targetId, 0, 3)]]);
     const coefficients  = new Map([[1, new Map([[latTarget.targetId, 1.0]])]]);
-    const rec = makeRec(1, [latTarget]); // no secondaryMuscleGroups
+    const rec = makeRec(1, [latTarget]);
 
     const result = selectExercisesForDay(
       0, [latTarget], false, [rec], 0, 0, NO_AVOIDED,
@@ -1921,21 +1928,76 @@ describe("Stage 6 — fatigue management integration", () => {
     );
 
     expect(result.toAdd).toHaveLength(1);
-    // secondaryMuscleGroups is null or undefined — either is acceptable
     expect(result.toAdd[0]?.secondaryMuscleGroups ?? null).toBeNull();
   });
 
-  // ── Stage 6 does NOT override ScoreTuple decisions ────────────────────────
+  // ── POSITIVE: Stage 6 fires and decides correctly ─────────────────────────
 
-  it("Stage 6 does not override target-resolution advantage — volume resolution wins", () => {
-    // rec1 covers latTarget (resolves it), rec2 does not.
-    // rec1 must win at score[0] regardless of fatigue profile.
-    // Both exercises share the same mainMuscleGroup; fatigue would nominally
-    // prefer the one not already loaded — but volume resolution overrules it.
+  it("POSITIVE — lower-fatigue candidate wins over better originalRank when indices 0–5 are equal", () => {
+    // Setup:
+    //   rec1 covers chestTarget (committed first, mainMuscleGroup="chest", NF=5, sets=3)
+    //   rec2 covers backTarget, mainMuscleGroup="chest" → heavy fatigue overlap with rec1
+    //         originalRank = 1 (listed second → BETTER rank)
+    //   rec3 covers backTarget, mainMuscleGroup="back"  → zero fatigue overlap with rec1
+    //         originalRank = 2 (listed third  → WORSE rank)
+    //
+    // After rec1 committed, for backTarget:
+    //   rec2 fatigue: rawLoad = 5×3×1.0 = 15, scaledLoad = 15×(4/3) ≈ 20 → penalty = floor(20/12) = 1
+    //   rec3 fatigue: rawLoad = 0 (no overlap)                             → penalty = 0
+    //
+    //   indices 0–5 are equal between rec2 and rec3 (same coeff, same exerciseType=null,
+    //   same movementCategoryKey=null, same sets → same setsPreference).
+    //
+    // Expected: rec3 wins (penalty 0 < 1) despite worse originalRank (2 > 1).
+    const weeklyTargets = new Map([
+      [chestTarget.targetId, makeWeekly(chestTarget.targetId, 0, 3)],
+      [backTarget.targetId,  makeWeekly(backTarget.targetId,  0, 3)],
+    ]);
+    const coefficients = new Map([
+      [1, new Map([[chestTarget.targetId, 1.0]])],
+      [2, new Map([[backTarget.targetId,  1.0]])],
+      [3, new Map([[backTarget.targetId,  1.0]])],
+    ]);
+
+    const rec1 = makeRec(1, [chestTarget], {
+      mainMuscleGroup: "chest", neurologicalFatigue: 5, secondaryMuscleGroups: [],
+    });
+    // rec2 is listed BEFORE rec3 → originalRank 1 (better than rec3's rank 2)
+    const rec2 = makeRec(2, [backTarget], {
+      mainMuscleGroup: "chest",  // same primary as rec1 → fatigue penalty = 1
+      neurologicalFatigue: 4, exerciseType: null, exercisePriority: null,
+      movementCategoryKey: null, secondaryMuscleGroups: [],
+    });
+    const rec3 = makeRec(3, [backTarget], {
+      mainMuscleGroup: "back",   // different primary → fatigue penalty = 0
+      neurologicalFatigue: 4, exerciseType: null, exercisePriority: null,
+      movementCategoryKey: null, secondaryMuscleGroups: [],
+    });
+
+    const result = selectExercisesForDay(
+      0, [chestTarget, backTarget], false,
+      [rec1, rec2, rec3],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+    );
+
+    const ids = result.toAdd.map((e) => e.exerciseId);
+    expect(ids).toContain(1); // rec1 committed for chestTarget
+    // rec3 wins backTarget via Stage 6 (fatigue 0 < 1) despite worse originalRank
+    expect(ids).toContain(3);
+    expect(ids).not.toContain(2);
+  });
+
+  // ── Phase A: indices 0–5 override Stage 6 ────────────────────────────────
+
+  it("unresolved-target score (index 0) overrides Stage 6 — volume resolution wins over fatigue", () => {
+    // rec1 covers latTarget (coeff=1.0 → resolves it, score[0]=0).
+    // rec2 has no target contribution (score[0]=1 — target remains unresolved).
+    // Both share the same mainMuscleGroup; fatigue cannot rescue rec2.
     const weeklyTargets = new Map([[latTarget.targetId, makeWeekly(latTarget.targetId, 0, 3)]]);
     const coefficients  = new Map([
-      [1, new Map([[latTarget.targetId, 1.0]])],  // covers the target
-      [2, new Map()],                              // no target contribution
+      [1, new Map([[latTarget.targetId, 1.0]])],
+      [2, new Map()],
     ]);
     const rec1 = makeRec(1, [latTarget], { mainMuscleGroup: "Plecy", neurologicalFatigue: 5 });
     const rec2 = makeRec(2, [latTarget], { mainMuscleGroup: "Plecy", neurologicalFatigue: 5 });
@@ -1945,77 +2007,157 @@ describe("Stage 6 — fatigue management integration", () => {
       weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
     );
 
-    // rec1 resolves the target (score[0]=0 vs rec2 score[0]=1) — Stage 6 never fires
-    expect(result.toAdd[0]?.exerciseId).toBe(1);
+    expect(result.toAdd[0]?.exerciseId).toBe(1); // resolves target → wins at index 0
   });
 
-  it("Stage 6 does not override trainer priority — compound beats isolation regardless of fatigue", () => {
-    // isolation (rec1) listed first in pool, compound (rec2) listed second.
-    // Both share the same mainMuscleGroup and target.
-    // trainerPriorityRank (score[5]) ensures compound wins even when listed later.
-    // Stage 6 must not override this.
+  it("movement-pattern penalty (index 4) overrides Stage 6 — fresh movement wins over lower-fatigue repeated pattern", () => {
+    // After rec1 (push, "chest") committed:
+    //   rec2 has movementCategoryKey="push"  → penalty=1 (repeated), mainMuscleGroup="back" (fatigue=0)
+    //   rec3 has movementCategoryKey="pull"  → penalty=0 (fresh),    mainMuscleGroup="chest" (fatigue>0)
+    //
+    // At index 4: rec3 (0) < rec2 (1) → rec3 wins. Stage 6 is never reached.
+    const weeklyTargets = new Map([
+      [chestTarget.targetId, makeWeekly(chestTarget.targetId, 0, 3)],
+      [backTarget.targetId,  makeWeekly(backTarget.targetId,  0, 3)],
+    ]);
+    const coefficients = new Map([
+      [1, new Map([[chestTarget.targetId, 1.0]])],
+      [2, new Map([[backTarget.targetId,  1.0]])],
+      [3, new Map([[backTarget.targetId,  1.0]])],
+    ]);
+
+    const rec1 = makeRec(1, [chestTarget], {
+      mainMuscleGroup: "chest", movementCategoryKey: "push",
+      neurologicalFatigue: 5, secondaryMuscleGroups: [],
+    });
+    const rec2 = makeRec(2, [backTarget], {
+      mainMuscleGroup: "back",  movementCategoryKey: "push", // repeated → penalty=1
+      neurologicalFatigue: 4, secondaryMuscleGroups: [],     // no fatigue overlap
+    });
+    const rec3 = makeRec(3, [backTarget], {
+      mainMuscleGroup: "chest", movementCategoryKey: "pull", // fresh → penalty=0
+      neurologicalFatigue: 4, secondaryMuscleGroups: [],     // fatigue overlap with rec1
+    });
+
+    const result = selectExercisesForDay(
+      0, [chestTarget, backTarget], false,
+      [rec1, rec2, rec3],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+    );
+
+    const ids = result.toAdd.map((e) => e.exerciseId);
+    expect(ids).toContain(3); // pull (fresh pattern) wins at index 4, not Stage 6
+    expect(ids).not.toContain(2);
+  });
+
+  it("trainer priority (index 5) overrides Stage 6 — compound beats isolation regardless of fatigue", () => {
+    // isolation (rec1) listed first → better originalRank, lower NF (lower fatigue if committed).
+    // compound (rec2) listed second → worse originalRank.
+    // trainerPriorityRank (index 5) ensures compound wins before Stage 6 is reached.
     const weeklyTargets = new Map([[latTarget.targetId, makeWeekly(latTarget.targetId, 0, 3)]]);
     const coefficients  = new Map([
       [1, new Map([[latTarget.targetId, 1.0]])],
       [2, new Map([[latTarget.targetId, 1.0]])],
     ]);
     const isolation = makeRec(1, [latTarget], {
-      exerciseType: "Izolowane",
-      neurologicalFatigue: 1,
-      mainMuscleGroup: "Plecy",
+      exerciseType: "Izolowane", neurologicalFatigue: 1, mainMuscleGroup: "Plecy",
     });
     const compound = makeRec(2, [latTarget], {
-      exerciseType: "Złożone",
-      neurologicalFatigue: 5,
-      mainMuscleGroup: "Plecy",
+      exerciseType: "Złożone",  neurologicalFatigue: 5, mainMuscleGroup: "Plecy",
     });
 
     const result = selectExercisesForDay(
       0, [latTarget], false,
-      [isolation, compound], // isolation listed first → lower originalRank
+      [isolation, compound],
       0, 0, NO_AVOIDED,
       weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
     );
 
-    // compound wins at score[5] (trainerPriorityRank); Stage 6 not consulted
-    expect(result.toAdd[0]?.exerciseId).toBe(2);
+    expect(result.toAdd[0]?.exerciseId).toBe(2); // compound wins at index 5
   });
 
-  it("Stage 6 does not override recommendation rank — first-listed exercise still wins equal ScoreTuples", () => {
-    // rec1 and rec2 are identical in every scoring dimension except originalRank.
-    // rec1 has rank 0, rec2 has rank 1 → rec1 wins at score[6].
-    // Stage 6 is consulted only on a COMPLETE tuple tie. Since originalRank
-    // distinguishes them, Stage 6 never fires and rec1 still wins.
-    const weeklyTargets = new Map([[latTarget.targetId, makeWeekly(latTarget.targetId, 0, 3)]]);
-    const coefficients  = new Map([
-      [1, new Map([[latTarget.targetId, 1.0]])],
-      [2, new Map([[latTarget.targetId, 1.0]])],
+  // ── Phase C: indices 6–7 decide after Stage 6 ────────────────────────────
+
+  it("original API rank (index 6) decides when indices 0–5 and fatigue are equal", () => {
+    // After rec1 committed (chest), rec2 and rec3 both cover backTarget with
+    // mainMuscleGroup="back" → zero fatigue overlap for both → fatigue ties at 0.
+    // Equal indices 0–5 (same coeff, same exerciseType=null, same movementCategoryKey=null).
+    // rec2 listed before rec3 → originalRank 1 < 2 → rec2 wins at index 6.
+    const weeklyTargets = new Map([
+      [chestTarget.targetId, makeWeekly(chestTarget.targetId, 0, 3)],
+      [backTarget.targetId,  makeWeekly(backTarget.targetId,  0, 3)],
     ]);
-    const rec1 = makeRec(1, [latTarget], {
-      mainMuscleGroup: "Plecy", neurologicalFatigue: 5,
-      secondaryMuscleGroups: ["biceps", "core"],
+    const coefficients = new Map([
+      [1, new Map([[chestTarget.targetId, 1.0]])],
+      [2, new Map([[backTarget.targetId,  1.0]])],
+      [3, new Map([[backTarget.targetId,  1.0]])],
+    ]);
+
+    const rec1 = makeRec(1, [chestTarget], {
+      mainMuscleGroup: "chest", neurologicalFatigue: 5, secondaryMuscleGroups: [],
     });
-    const rec2 = makeRec(2, [latTarget], {
-      mainMuscleGroup: "Plecy", neurologicalFatigue: 1, // much lower fatigue
-      secondaryMuscleGroups: [],
+    const rec2 = makeRec(2, [backTarget], {
+      mainMuscleGroup: "back", neurologicalFatigue: 4,
+      exerciseType: null, movementCategoryKey: null, secondaryMuscleGroups: [],
+    });
+    const rec3 = makeRec(3, [backTarget], {
+      mainMuscleGroup: "back", neurologicalFatigue: 4,
+      exerciseType: null, movementCategoryKey: null, secondaryMuscleGroups: [],
     });
 
     const result = selectExercisesForDay(
-      0, [latTarget], false,
-      [rec1, rec2], // rec1 at rank 0 → wins at score[6]
+      0, [chestTarget, backTarget], false,
+      [rec1, rec2, rec3],
       0, 0, NO_AVOIDED,
       weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
     );
 
-    // rec2 has lower fatigue profile but higher originalRank → rec1 still wins
-    expect(result.toAdd[0]?.exerciseId).toBe(1);
+    const ids = result.toAdd.map((e) => e.exerciseId);
+    expect(ids).toContain(2); // rec2 wins at index 6 (rank 1 < rank 2)
+    expect(ids).not.toContain(3);
+  });
+
+  it("variety (index 7) is positioned after fatigue and originalRank — used exercise with better rank beats fresh exercise with worse rank", () => {
+    // rec_used:  originalRank=1 (listed second, better rank), used in another day (variety=1)
+    // rec_fresh: originalRank=2 (listed third,  worse  rank), fresh           (variety=0)
+    // Both have mainMuscleGroup="back" → zero fatigue overlap with committed rec1 ("chest").
+    // Equal indices 0–5, equal fatigue.
+    // At index 6: rec_used (1) < rec_fresh (2) → rec_used wins.
+    // Variety (index 7) is never reached — confirming it is subordinate to originalRank.
+    const weeklyTargets = new Map([
+      [chestTarget.targetId, makeWeekly(chestTarget.targetId, 0, 3)],
+      [backTarget.targetId,  makeWeekly(backTarget.targetId,  0, 3)],
+    ]);
+    const coefficients = new Map([
+      [1, new Map([[chestTarget.targetId, 1.0]])],
+      [2, new Map([[backTarget.targetId,  1.0]])],
+      [3, new Map([[backTarget.targetId,  1.0]])],
+    ]);
+
+    const rec1    = makeRec(1, [chestTarget], { mainMuscleGroup: "chest", neurologicalFatigue: 5 });
+    const recUsed = makeRec(2, [backTarget],  { mainMuscleGroup: "back",  neurologicalFatigue: 4, movementCategoryKey: null });
+    const recFresh = makeRec(3, [backTarget], { mainMuscleGroup: "back",  neurologicalFatigue: 4, movementCategoryKey: null });
+
+    // recUsed has id=2 → in exercisesUsedInOtherDays → variety=1
+    const usedInOtherDays = new Set([2]);
+
+    const result = selectExercisesForDay(
+      0, [chestTarget, backTarget], false,
+      [rec1, recUsed, recFresh],
+      0, 0, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, usedInOtherDays, EMPTY_STEP3,
+    );
+
+    const ids = result.toAdd.map((e) => e.exerciseId);
+    // recUsed wins at index 6 (originalRank 1 < 2) despite variety=1
+    expect(ids).toContain(2);
+    expect(ids).not.toContain(3);
   });
 
   // ── Full pipeline stability ───────────────────────────────────────────────
 
-  it("Stage 6 does not change total exercises committed when multiple targets are resolved", () => {
-    // Three exercises, three targets. Stage 6 is present but should not reduce
-    // the number of committed exercises.
+  it("Stage 6 does not reduce total exercises committed when multiple targets are resolved", () => {
     const T1: AutoFillDayTarget = { targetId: 101, targetName: "T1" };
     const T2: AutoFillDayTarget = { targetId: 102, targetName: "T2" };
     const T3: AutoFillDayTarget = { targetId: 103, targetName: "T3" };
@@ -2038,7 +2180,6 @@ describe("Stage 6 — fatigue management integration", () => {
       weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
     );
 
-    // All three targets must be resolved; Stage 6 does not block any of them
     expect(result.resolvedTargets).toHaveLength(3);
     expect(result.toAdd).toHaveLength(3);
   });

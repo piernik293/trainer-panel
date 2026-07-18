@@ -726,6 +726,43 @@ export function selectExercisesForDay(
       });
   }
 
+  /**
+   * Three-phase candidate comparison that inserts Stage 6 fatigue between
+   * trainerPriority (score[5]) and originalRank (score[6]).
+   *
+   * Returns true if `candidate` is strictly better than `current`.
+   *
+   * Phase A — ScoreTuple[0–5]  (unresolved targets → weekly volume →
+   *            daily volume → sets preference → movement pattern → trainer priority)
+   * Phase B — session fatigue  (computeFatiguePenalty against already-committed toAdd)
+   * Phase C — ScoreTuple[6–7]  (original API rank → variety)
+   *
+   * ScoreTuple is not modified. computeFatiguePenalty is only called when all
+   * of indices 0–5 are identical between the two candidates — i.e. every
+   * higher-priority criterion has already been exhausted.
+   */
+  function compareCandidatesWithFatigue(
+    candidate: { rec: AutoFillRecExercise; score: ScoreTuple },
+    current:   { rec: AutoFillRecExercise; score: ScoreTuple },
+  ): boolean {
+    // Phase A: indices 0–5
+    for (let i = 0; i < 6; i++) {
+      if (candidate.score[i]! < current.score[i]!) return true;
+      if (candidate.score[i]! > current.score[i]!) return false;
+    }
+    // Phase B: session fatigue (Stage 6)
+    const fp  = computeFatiguePenalty(candidate.rec, toAdd);
+    const bfp = computeFatiguePenalty(current.rec,   toAdd);
+    if (fp < bfp) return true;
+    if (fp > bfp) return false;
+    // Phase C: indices 6–7
+    for (let i = 6; i < 8; i++) {
+      if (candidate.score[i]! < current.score[i]!) return true;
+      if (candidate.score[i]! > current.score[i]!) return false;
+    }
+    return false;
+  }
+
   // ── Stage 5 closures ──────────────────────────────────────────────────────
 
   /**
@@ -773,17 +810,8 @@ export function selectExercisesForDay(
             varietyPenalty,
           ];
 
-          if (best === null || scoreBetter(score, best.score)) {
+          if (best === null || compareCandidatesWithFatigue({ rec, score }, best)) {
             best = { rec, sets, score };
-          } else if (!scoreBetter(best.score, score)) {
-            // Stage 6: perfect ScoreTuple tie — prefer the candidate with lower
-            // session fatigue. scoreBetter(A,B)=false && scoreBetter(B,A)=false
-            // means every element is equal.
-            const fp  = computeFatiguePenalty(rec,      toAdd);
-            const bfp = computeFatiguePenalty(best.rec, toAdd);
-            if (fp < bfp) {
-              best = { rec, sets, score };
-            }
           }
         }
       }
@@ -951,15 +979,8 @@ export function selectExercisesForDay(
             varietyPenalty,
           ];
 
-          if (bestCore === null || scoreBetter(score, bestCore.score)) {
+          if (bestCore === null || compareCandidatesWithFatigue({ rec, score }, bestCore)) {
             bestCore = { rec, sets, score };
-          } else if (!scoreBetter(bestCore.score, score)) {
-            // Stage 6: perfect ScoreTuple tie — prefer lower session fatigue
-            const fp  = computeFatiguePenalty(rec,          toAdd);
-            const bfp = computeFatiguePenalty(bestCore.rec, toAdd);
-            if (fp < bfp) {
-              bestCore = { rec, sets, score };
-            }
           }
         }
       }
