@@ -1,0 +1,208 @@
+{
+  "duplicateStrategy": "skip",
+  "rows": [
+    {
+      "name": "Wyciskanie sztangą nad głowę",
+      "mainMuscleGroup": "Barki",
+      "secondaryMuscleGroups": ["Triceps"],
+      "equipment": ["Sztanga"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Wyciskanie sztangą nad głowę (OHP / military press) to fundamentalne ćwiczenie na barki budujące siłę i masę przednich i bocznych naramiennych przy jednoczesnym angażowaniu tricepsów i całego core jako stabilizatora.",
+      "executionInstructions": "Stań z nogami na szerokość barków, sztanga na poziomie obojczyków w nachwycie nieco szerzej niż barki. Napnij core i pośladki. Wyciśnij sztangę pionowo w górę, minimalnie cofając głowę, by drążek przeszedł przed twarzą. Na górze wyprostuj ramiona bez blokowania łokci. Powoli opuść do punktu startowego.",
+      "commonMistakes": "Nadmierne odchylanie kręgosłupa lędźwiowego do tyłu — kompensowanie słabych core. Zbyt szeroki chwyt, który ogranicza zakres ruchu. Opuszczanie sztangi za szyję.",
+      "coachingTips": "Wyobraź sobie, że chcesz wycisnąć sztangę lekko do tyłu za głowę na górze — to naturalnie aktywuje górny trapez i poprawia tory ruchu. Core napięty jak przed ciosem.",
+      "breathingTips": "Głęboki wdech przed wyciskaniem, napnij core. Wydech na górze lub po zakończeniu powtórzenia.",
+      "safetyNotes": "Nie wyciskaj ze zbyt wąskim chwytem — przeciąża to nadgarstki. Opanuj technikę z lekkim ciężarem zanim dodasz obciążenie.",
+      "movementPattern": "Pchanie pionowe",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Czołowa",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Siła", "Masa mięśniowa"],
+      "resistanceType": "Sztanga",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Średnie",
+      "learningDifficulty": 4,
+      "neurologicalFatigue": 4,
+      "domsPotential": 3,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień naramienny (głowa boczna)", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień naramienny (głowa przednia)", "isPrimary": false, "coefficient": 0.75 },
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięsień czworoboczny grzbietu", "isPrimary": false, "coefficient": 0.25 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Wyciskanie hantli nad głowę" },
+        { "exerciseName": "Wyciskanie na maszynie nad głowę" }
+      ],
+      "regressions": [
+        { "exerciseName": "Wyciskanie na maszynie nad głowę" }
+      ]
+    },
+    {
+      "name": "Uginanie koncentryczne z hantlem",
+      "mainMuscleGroup": "Biceps",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Hantle"],
+      "trainingLocation": ["Siłownia", "Dom"],
+      "difficultyLevel": "Początkujący",
+      "description": "Uginanie koncentryczne (concentration curl) izoluje głowę długą bicepsa przez opieranie łokcia o udo, eliminując zamach i wymuszając pełen zakres ruchu przy szczytowym skurczu mięśnia.",
+      "executionInstructions": "Usiądź na ławce, rozsuń nogi. Chwyć hantel w jedną rękę i oprzyj łokieć o wewnętrzną stronę uda tej samej nogi. Swobodnie opuść rękę. Ugnij ramię w pełnym zakresie ku barku, supinując nadgarstek na szczycie. Powoli opuść.",
+      "commonMistakes": "Odrywanie łokcia od uda i używanie tułowia jako dźwigni. Zbyt szybkie tempo bez skupienia na skurczu.",
+      "coachingTips": "Na szczycie ruchu maksymalnie supinuj nadgarstek (obróć dłoń tak, by mały palec był wyżej). To aktywuje głowę długą bicepsa do maksimum.",
+      "breathingTips": "Wydech podczas uginania, wdech podczas opuszczania.",
+      "safetyNotes": "Lekkie obciążenie — to ćwiczenie izolowane. Nie używaj dużych ciężarów kosztem techniki.",
+      "movementPattern": "Zgięcie łokcia",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa"],
+      "resistanceType": "Hantle",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień dwugłowy ramienia", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień ramienny", "isPrimary": false, "coefficient": 0.25 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Uginanie ramion na modlitewniku" },
+        { "exerciseName": "Uginanie ramion z hantlami" }
+      ],
+      "regressions": [
+        { "exerciseName": "Uginanie ramion z hantlami" }
+      ]
+    },
+    {
+      "name": "Uginanie Zottmana",
+      "mainMuscleGroup": "Biceps",
+      "secondaryMuscleGroups": ["Przedramiona"],
+      "equipment": ["Hantle"],
+      "trainingLocation": ["Siłownia", "Dom"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Uginanie Zottmana łączy podchwytowy curl w fazie koncentrycznej (biceps) z nachwytem w fazie ekscentrycznej (brachioradialis i prostowniki nadgarstka), trenując kompleksowo mięśnie zginaczy stawu łokciowego.",
+      "executionInstructions": "Stań z hantlami w podchwycie wzdłuż boków. Ugnij ramiona do góry w standardowym curlu (dłonie ku górze). Na szczycie obróć nadgarstki tak, by dłonie były skierowane w dół (nachwytem). Powoli opuszczaj hantle w tym ustawieniu. Obróć nadgarstki z powrotem do podchwytu na dole i powtórz.",
+      "commonMistakes": "Pomijanie rotacji nadgarstka lub wykonywanie jej za wcześnie podczas ruchu. Zbyt szybkie tempo w fazie ekscentrycznej.",
+      "coachingTips": "Rotacja nadgarstka następuje dopiero na szczycie ruchu — nie w trakcie uginania. Faza ekscentryczna powinna być powolna (3 sekundy).",
+      "breathingTips": "Wydech podczas uginania, wdech podczas opuszczania.",
+      "safetyNotes": "Używaj umiarkowanego ciężaru — rotacja nadgarstka przy dużym obciążeniu może obciążyć stawy łokciowe.",
+      "movementPattern": "Zgięcie łokcia",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa"],
+      "resistanceType": "Hantle",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 3,
+      "neurologicalFatigue": 2,
+      "domsPotential": 3,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień ramienny", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień dwugłowy ramienia", "isPrimary": false, "coefficient": 0.75 },
+        { "specificMuscleName": "Prostowniki nadgarstka i palców", "isPrimary": false, "coefficient": 0.5 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Uginanie młotkowe z hantlami" }
+      ],
+      "regressions": [
+        { "exerciseName": "Uginanie ramion z hantlami" }
+      ]
+    },
+    {
+      "name": "Kickback z hantlem na triceps",
+      "mainMuscleGroup": "Triceps",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Hantle"],
+      "trainingLocation": ["Siłownia", "Dom"],
+      "difficultyLevel": "Początkujący",
+      "description": "Kickback z hantlem to izolowane ćwiczenie na tricepsy wykonywane w opadzie tułowia, w którym prostowanie ramienia wzdłuż ciała silnie angażuje głowę boczną i przyśrodkową mięśnia trójgłowego.",
+      "executionInstructions": "Pochyl tułów do poziomu z podparciem jednej ręki na ławce. Unieś łokieć do poziomu pleców, trzymając hantlę. Wyprostuj ramię w tył tak, by tworzył prostą linię z tułowiem. Napnij tricepsy na końcu ruchu. Powoli zegnij łokieć i wróć.",
+      "commonMistakes": "Opadanie łokcia poniżej poziomu pleców — eliminuje zaangażowanie tricepsa. Zamach hantlą zamiast kontrolowanego prostowania.",
+      "coachingTips": "Łokieć musi być wyżej niż tułów — to jest klucz do izolacji tricepsa. Skup się na napięciu mięśnia na szczycie wyprostu.",
+      "breathingTips": "Wydech podczas prostowania ramienia, wdech podczas powrotu.",
+      "safetyNotes": "Lekkie obciążenie. Przy bólu łokcia zredukuj ciężar lub zastąp ćwiczenie pushdownem na wyciągu.",
+      "movementPattern": "Wyprost łokcia",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Izolowane",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa"],
+      "resistanceType": "Hantle",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": true, "coefficient": 1 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Prostowanie ramion z liną na wyciągu" }
+      ],
+      "regressions": [
+        { "exerciseName": "Prostowanie ramion z drążkiem na wyciągu" }
+      ]
+    },
+    {
+      "name": "Prostowanie ramion nad głową z hantlem",
+      "mainMuscleGroup": "Triceps",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Hantle"],
+      "trainingLocation": ["Siłownia", "Dom"],
+      "difficultyLevel": "Początkujący",
+      "description": "Prostowanie ramion nad głową z hantlem trzymanym oburącz rozciąga głowę długą tricepsa w pełnym zakresie — pozycja nad głową aktywuje ją silniej niż jakiekolwiek ćwiczenie tricepsowe przy boku tułowia.",
+      "executionInstructions": "Usiądź lub stań. Trzymaj jeden hantlel oburącz za górną tarczę nad głową, łokcie wąsko przy uszach. Zegnij łokcie, opuszczając hantlę za głowę w pełnym zakresie ruchu. Wyprostuj ramiona w górę bez blokowania łokci i powtórz.",
+      "commonMistakes": "Rozpadanie łokci na boki — eliminuje izolację tricepsów. Zbyt mały zakres ruchu na dole.",
+      "coachingTips": "Łokcie muszą pozostać wąskie — wyobraź sobie, że ściskasz coś łokciami przez cały czas. Im głębiej opuścisz hantlę, tym lepsze rozciągnięcie długiej głowy.",
+      "breathingTips": "Wdech podczas opuszczania hantla za głowę, wydech podczas prostowania.",
+      "safetyNotes": "Osoby z kontuzjami barków powinny zaczynać od małych ciężarów. Nie forsuj zakresu ruchu ponad komfortowy.",
+      "movementPattern": "Wyprost łokcia",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa"],
+      "resistanceType": "Hantle",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 3,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": true, "coefficient": 1 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Prostowanie ramion nad głową z liną" }
+      ],
+      "regressions": [
+        { "exerciseName": "Prostowanie ramion z liną na wyciągu" }
+      ]
+    }
+  ]
+}

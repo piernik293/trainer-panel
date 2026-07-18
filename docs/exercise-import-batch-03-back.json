@@ -1,0 +1,256 @@
+{
+  "duplicateStrategy": "skip",
+  "rows": [
+    {
+      "name": "Wiosłowanie sztangą w opadzie",
+      "mainMuscleGroup": "Plecy",
+      "secondaryMuscleGroups": ["Biceps", "Barki"],
+      "equipment": ["Sztanga"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Wiosłowanie sztangą w opadzie (bent-over barbell row) to jedno z najważniejszych ćwiczeń na masę pleców, angażujące szeroko mięsień najszerszy grzbietu, równoległoboczne i bicepsy w ruchu horyzontalnym.",
+      "executionInstructions": "Stań z nogami na szerokość bioder, chwyć sztangę nachwytem nieco szerzej niż barki. Pochyl tułów do kąta 45–60° przy zachowaniu prostych pleców. Ciągnij sztangę ku dolnej klatce/pępkowi, prowadząc łokcie blisko tułowia wzdłuż boków. Napnij łopatki na górze i powoli opuść.",
+      "commonMistakes": "Zaokrąglanie dolnego odcinka kręgosłupa pod obciążeniem. Używanie zamachu bioder lub tułowia. Ciągnięcie sztangi ku górnej klatce zamiast ku pępkowi.",
+      "coachingTips": "Wyobraź sobie, że ściskasz ołówek między łopatkami na końcu ruchu. Tułów możesz lekko wyprostować przy ciężkich seriach, ale nie więcej niż do 20° zamachu.",
+      "breathingTips": "Wdech przed opuszczeniem sztangi, wydech podczas ciągnienia.",
+      "safetyNotes": "Nigdy nie zaokrąglaj dolnych pleców pod ciężarem. Rozgrzej kręgosłup przed ciężkimi seriami.",
+      "movementPattern": "Przyciąganie poziome",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Siła"],
+      "resistanceType": "Sztanga",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Wysokie",
+      "learningDifficulty": 3,
+      "neurologicalFatigue": 3,
+      "domsPotential": 4,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień najszerszy grzbietu", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięśnie równoległoboczne", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięsień czworoboczny grzbietu", "isPrimary": false, "coefficient": 0.25 },
+        { "specificMuscleName": "Mięsień dwugłowy ramienia", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Prostowniki grzbietu", "isPrimary": false, "coefficient": 0.25 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Wiosłowanie hantlami z podparciem klatki" },
+        { "exerciseName": "Wiosłowanie na maszynie" }
+      ],
+      "regressions": [
+        { "exerciseName": "Wiosłowanie na maszynie" }
+      ]
+    },
+    {
+      "name": "Wiosłowanie podchwytem ze sztangą",
+      "mainMuscleGroup": "Plecy",
+      "secondaryMuscleGroups": ["Biceps"],
+      "equipment": ["Sztanga"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Wiosłowanie podchwytem (supinated-grip row) to wariant wiosłowania w opadzie, w którym odwrócony chwyt silniej angażuje bicepsy i dolną część mięśnia czworobocznego przy jednoczesnej pracy całego grzbietu.",
+      "executionInstructions": "Pochyl tułów do 45°, chwyć sztangę podchwytem (dłonie skierowane ku górze) na szerokość barków. Ciągnij ku dolnej klatce, trzymając łokcie blisko tułowia. Napnij plecy na szczycie i powoli opuść sztangę.",
+      "commonMistakes": "Zbyt pionowa postawa zmienia ćwiczenie w deadlift-shrug. Zamach tułowia przy każdym powtórzeniu.",
+      "coachingTips": "Podchwyt zwiększa zakres ruchu na górze i lepiej angażuje dolny czworoboczny — dobry wybór dla poprawy symetrii pleców.",
+      "breathingTips": "Wdech w dole, wydech podczas ciągnienia.",
+      "safetyNotes": "Przy bólu nadgarstków korzystaj z podchwytu tylko do poziomego ustawienia przedramienia.",
+      "movementPattern": "Przyciąganie poziome",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Siła"],
+      "resistanceType": "Sztanga",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Wysokie",
+      "learningDifficulty": 3,
+      "neurologicalFatigue": 3,
+      "domsPotential": 4,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień najszerszy grzbietu", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięśnie równoległoboczne", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięsień dwugłowy ramienia", "isPrimary": false, "coefficient": 0.75 },
+        { "specificMuscleName": "Mięsień czworoboczny grzbietu", "isPrimary": false, "coefficient": 0.25 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Wiosłowanie sztangą w opadzie" },
+        { "exerciseName": "Ściąganie drążka wyciągu górnego podchwytem" }
+      ],
+      "regressions": [
+        { "exerciseName": "Wiosłowanie siedząc na wyciągu chwytem neutralnym" }
+      ]
+    },
+    {
+      "name": "Martwy ciąg konwencjonalny",
+      "mainMuscleGroup": "Plecy",
+      "secondaryMuscleGroups": ["Pośladki", "Mięśnie dwugłowe uda", "Mięśnie czworogłowe uda"],
+      "equipment": ["Sztanga"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Zaawansowany",
+      "description": "Martwy ciąg konwencjonalny to fundamentalne ćwiczenie wielostawowe angażujące prawie wszystkie mięśnie ciała — prostowniki grzbietu, pośladki, kulszowo-goleniowe i czworogłowe — szczyt budowania siły ogólnej.",
+      "executionInstructions": "Stań z nogami na szerokość bioder, palce stóp lekko na zewnątrz. Sztanga nad środkiem stopy. Złap sztangę nachwytem lub mieszanym chwytem, nieco szerzej niż nogi. Plecy proste, klatka dumna. Wciśnij podłogę od siebie (jak w przysiadzie), prostując jednocześnie kolana i biodra do pionowej pozycji. Opuść sztangę kontrolowanie tą samą ścieżką.",
+      "commonMistakes": "Zaokrąglanie lędźwi na starcie lub podczas ruchu. Odrywanie bioder zbyt wcześnie i zamienianie ruchu w ściąganie pleców. Kolana wpadające do środka.",
+      "coachingTips": "Wyobraź sobie, że odpychasz podłogę od siebie przez pięty — to aktywuje czworogłowe i daje dobry start. Biodra i ramiona rosną jednocześnie w fazie koncentrycznej.",
+      "breathingTips": "Głęboki wdech przed podniesieniem, napnij core jak przy ciosie. Wydech po minięciu kolan lub na górze.",
+      "safetyNotes": "Zaokrąglone lędźwie pod ciężarem to najczęstsza przyczyna urazów kręgosłupa. Opanuj technikę zanim dodasz obciążenie. Użyj pasa przy submaksymalnym ciężarze.",
+      "movementPattern": "Zawias biodrowy",
+      "movementCategory": "Zawiasowe",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Siła", "Masa mięśniowa"],
+      "resistanceType": "Sztanga",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Wysokie",
+      "learningDifficulty": 5,
+      "neurologicalFatigue": 5,
+      "domsPotential": 5,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Prostowniki grzbietu", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień pośladkowy wielki", "isPrimary": false, "coefficient": 0.75 },
+        { "specificMuscleName": "Mięśnie kulszowo-goleniowe", "isPrimary": false, "coefficient": 0.75 },
+        { "specificMuscleName": "Mięsień czworogłowy uda", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięsień czworoboczny grzbietu", "isPrimary": false, "coefficient": 0.25 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Martwy ciąg z trap barem" }
+      ],
+      "regressions": [
+        { "exerciseName": "Martwy ciąg rumuński ze sztangą" }
+      ]
+    },
+    {
+      "name": "Wznosy tułowia",
+      "mainMuscleGroup": "Plecy",
+      "secondaryMuscleGroups": ["Pośladki", "Mięśnie dwugłowe uda"],
+      "equipment": ["Masa własnego ciała"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Początkujący",
+      "description": "Wznosy tułowia (hyperextension / back extension) to izolowane ćwiczenie na ławce rzymskiej lub GHD, trenujące prostowniki grzbietu i stabilizatory lędźwiowe przez pełen zakres ruchu.",
+      "executionInstructions": "Ustaw ławkę tak, by oparcie znajdowało się poniżej bioder. Przekrzyżuj ręce na klatce lub wyciągnij je za głowę. Powoli opuść tułów w dół do kąta 90°, a następnie wznieś go do linii ciała lub nieznacznie wyżej. Na górze napnij pośladki i prostowniki grzbietu.",
+      "commonMistakes": "Nadmierny przeprost na szczycie — kręgosłup powinien tworzyć prostą linię, a nie łuk. Zbyt szybkie tempo bez kontroli.",
+      "coachingTips": "Utrzymuj napięcie w core przez cały ruch. Możesz dodać obciążenie (talerz przy klatce), gdy masa ciała staje się za lekka.",
+      "breathingTips": "Wdech podczas opuszczania, wydech podczas wznoszenia.",
+      "safetyNotes": "Nie przeprostowuj kręgosłupa powyżej neutralnej pozycji. Przy bólu dolnego odcinka pleców skonsultuj się ze specjalistą.",
+      "movementPattern": "Zawias biodrowy",
+      "movementCategory": "Zawiasowe",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Brak aktywności fizycznej", "Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Zdrowie ogólne", "Siła"],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 3,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Prostowniki grzbietu", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień pośladkowy wielki", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięśnie kulszowo-goleniowe", "isPrimary": false, "coefficient": 0.25 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Bird dog" }
+      ],
+      "regressions": [
+        { "exerciseName": "Bird dog" }
+      ],
+      "progressions": [
+        { "exerciseName": "Martwy ciąg konwencjonalny" }
+      ]
+    },
+    {
+      "name": "Szrugowanie ze sztangą",
+      "mainMuscleGroup": "Plecy",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Sztanga"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Początkujący",
+      "description": "Szrugowanie ze sztangą to izolowane ćwiczenie na górną część mięśnia czworobocznego, wykonywane przez unoszenie barków ku uszom przy wyprostowanych łokciach.",
+      "executionInstructions": "Stań wyprostowany, trzymając sztangę nachwytem przed udami. Wzrusz ramionami maksymalnie ku uszom bez zginania łokci. Utrzymaj pozycję przez chwilę, napinając górny trapez, i powoli opuść.",
+      "commonMistakes": "Toczenie barków do przodu lub do tyłu zamiast ruchu czysto pionowego. Zginanie łokci i zamienianie ćwiczenia w curl.",
+      "coachingTips": "Ruch powinien być pionowy — w górę i w dół. Wyobraź sobie, że próbujesz dotknąć barkami uszu.",
+      "breathingTips": "Wdech przed uniesieniem, wydech podczas opuszczania.",
+      "safetyNotes": "Nie toczaj barków — może obciążyć staw barkowo-obojczykowy. Używaj pasków do nadgarstków przy dużych ciężarach.",
+      "movementPattern": "Inne",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Czołowa",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa"],
+      "resistanceType": "Sztanga",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień czworoboczny grzbietu", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień obły większy", "isPrimary": false, "coefficient": 0.25 }
+      ]
+    },
+    {
+      "name": "Wiosłowanie leżąc przodem z hantlami",
+      "mainMuscleGroup": "Plecy",
+      "secondaryMuscleGroups": ["Biceps"],
+      "equipment": ["Hantle", "Ławka"],
+      "trainingLocation": ["Siłownia", "Dom"],
+      "difficultyLevel": "Początkujący",
+      "description": "Wiosłowanie w leżeniu przodem (seal row / prone dumbbell row) eliminuje zamach tułowia dzięki podparciu klatki na ławce, zapewniając pełną izolację mięśni pleców przy poziomym ciąganiu.",
+      "executionInstructions": "Połóż się brzuchem na lekko uniesionym końcu ławki, chwytając hantle oburącz. Ciągnij hantle ku bokach klatki, prowadząc łokcie w górę i cofając łopatki. Napnij plecy na górze i powoli opuść.",
+      "commonMistakes": "Nie korzystanie z pełnego podparcia ławki — tułów musi przez cały czas leżeć na ławce. Szarpanie zamiast kontrolowanego ciągnienia.",
+      "coachingTips": "Ustaw ławkę tak, by ramiona swobodnie zwisały w dole bez dotykania ziemi. Skup się na cofaniu łopatkek przed zginaniem łokci.",
+      "breathingTips": "Wdech w dole, wydech podczas ciągnienia.",
+      "safetyNotes": "Bezpieczne ćwiczenie — brak kompresji kręgosłupa. Idealne dla osób z bólem dolnych pleców.",
+      "movementPattern": "Przyciąganie poziome",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Brak aktywności fizycznej", "Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Zdrowie ogólne"],
+      "resistanceType": "Hantle",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 2,
+      "domsPotential": 3,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień najszerszy grzbietu", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięśnie równoległoboczne", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięsień czworoboczny grzbietu", "isPrimary": false, "coefficient": 0.25 },
+        { "specificMuscleName": "Mięsień dwugłowy ramienia", "isPrimary": false, "coefficient": 0.5 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Wiosłowanie jednorącz hantlem" },
+        { "exerciseName": "Wiosłowanie hantlami z podparciem klatki" }
+      ],
+      "regressions": [
+        { "exerciseName": "Wiosłowanie na maszynie" }
+      ]
+    }
+  ]
+}

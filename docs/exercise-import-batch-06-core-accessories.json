@@ -1,0 +1,322 @@
+{
+  "duplicateStrategy": "skip",
+  "rows": [
+    {
+      "name": "Hollow body hold",
+      "mainMuscleGroup": "Brzuch",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Masa własnego ciała"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Hollow body hold to statyczne ćwiczenie anti-ekstensji z gimnastyki, w którym utrzymanie płaskiego, wydrążonego kształtu ciała intensywnie angażuje cały anterior core — mięsień poprzeczny i prosty brzucha.",
+      "executionInstructions": "Połóż się na plecach, wyciągnij ramiona za głowę. Dociśnij mocno lędźwie do podłogi. Jednocześnie unieś ramiona, głowę, barki i nogi kilkanaście centymetrów nad podłogę — ciało tworzy kształt wydrążonej łódki. Utrzymaj pozycję przez 20–60 sekund bez odrywania lędźwi od podłogi.",
+      "commonMistakes": "Odrywanie lędźwi od podłogi — to podstawowy błąd niszczący cel ćwiczenia. Zbyt wysoko uniesione kończyny — zacznij od wyższego ustawienia jeśli lędźwie nie leżą.",
+      "coachingTips": "Jeśli nie możesz utrzymać lędźwi na podłodze, unieś nogi wyżej lub zegnij kolana. Progresja: wydłużaj czas utrzymania lub opuść nogi bliżej podłogi.",
+      "breathingTips": "Krótkie, kontrolowane oddechy podczas utrzymywania pozycji — nie wstrzymuj oddechu.",
+      "safetyNotes": "Idealne ćwiczenie prewencyjne dla dolnego odcinka pleców. Bezpieczne dla wszystkich grup.",
+      "movementPattern": "Anti-ekstensja",
+      "movementCategory": "Core",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Zdrowie ogólne", "Siła"],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień poprzeczny brzucha", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień prosty brzucha", "isPrimary": false, "coefficient": 0.5 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Dead bug" }
+      ],
+      "regressions": [
+        { "exerciseName": "Dead bug" }
+      ]
+    },
+    {
+      "name": "Rotacje rosyjskie",
+      "mainMuscleGroup": "Brzuch",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Masa własnego ciała"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Początkujący",
+      "description": "Rotacje rosyjskie (Russian twist) to ćwiczenie rotacyjne angażujące mięśnie skośne brzucha i poprzeczny brzucha, wykonywane w siadzie z uniesionym tułowiem i obracaniem ramion na boki.",
+      "executionInstructions": "Usiądź na podłodze z kolanami ugiętymi, pięty uniesione lub oparte. Pochyl tułów pod kątem 45° do tyłu. Złącz ręce przed sobą lub trzymaj ciężar. Obracaj ramiona na przemian w lewo i prawo, skręcając wyraźnie w klatce piersiowej i brzuchu.",
+      "commonMistakes": "Rotacja samymi ramionami bez skrętu tułowia — nie angażuje skośnych. Zbyt szybkie tempo bez kontroli.",
+      "coachingTips": "Skręt musi pochodzić z tułowia — wyobraź sobie, że chwytasz coś daleko za sobą. Możesz dodać hantlę lub talerz dla progresji.",
+      "breathingTips": "Wydech podczas rotacji, wdech podczas powrotu do środka.",
+      "safetyNotes": "Osoby z bólem dolnych pleców powinny unikać tego ćwiczenia lub wykonywać z ograniczonym zakresem rotacji.",
+      "movementPattern": "Rotacja",
+      "movementCategory": "Core",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Zdrowie ogólne"],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięśnie skośne brzucha", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień poprzeczny brzucha", "isPrimary": false, "coefficient": 0.5 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Woodchop na wyciągu" }
+      ],
+      "regressions": [
+        { "exerciseName": "Plank boczny" }
+      ]
+    },
+    {
+      "name": "Woodchop na wyciągu",
+      "mainMuscleGroup": "Brzuch",
+      "secondaryMuscleGroups": ["Barki", "Plecy"],
+      "equipment": ["Wyciąg"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Woodchop na wyciągu (cable woodchop / cable chop) to funkcjonalne ćwiczenie rotacyjne angażujące skośne brzucha w pełnym zakresie ruchu z oporem wyciągu — naśladuje ruch cięcia drewna siekierą.",
+      "executionInstructions": "Ustaw wyciąg wysoko po jednej stronie. Chwyć uchwyt oburącz, stań bokiem do maszyny. Ciągnij uchwyt po przekątnej w dół i przez tułów, skręcając razem z ruchem. Prowadź ręce od pozycji wysoko z boku ku dołowi po przeciwnej stronie bioder. Powoli wróć.",
+      "commonMistakes": "Wykonywanie ruchu ramionami zamiast rotacją tułowia. Zbyt duży ciężar, który uniemożliwia kontrolowany ruch.",
+      "coachingTips": "Rotacja zaczyna się od bioder i miednicy, tułów podąża za nimi — nie odwrotnie. Stopy pozostają w miejscu przez cały ruch.",
+      "breathingTips": "Wydech podczas ciągnięcia i rotacji, wdech podczas powrotu.",
+      "safetyNotes": "Lekki do umiarkowanego opór. Osoby z bólem kręgosłupa powinny skonsultować się ze specjalistą.",
+      "movementPattern": "Rotacja",
+      "movementCategory": "Core",
+      "exerciseType": "Złożone",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Zdrowie ogólne"],
+      "resistanceType": "Wyciąg",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 3,
+      "neurologicalFatigue": 2,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięśnie skośne brzucha", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień poprzeczny brzucha", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięsień naramienny (głowa przednia)", "isPrimary": false, "coefficient": 0.25 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Rotacje rosyjskie" }
+      ],
+      "regressions": [
+        { "exerciseName": "Pallof press" }
+      ]
+    },
+    {
+      "name": "Unoszenie nóg w leżeniu",
+      "mainMuscleGroup": "Brzuch",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Masa własnego ciała"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Początkujący",
+      "description": "Unoszenie nóg w leżeniu to ćwiczenie zgięcia tułowia ze szczególnym naciskiem na dolną część mięśnia prostego brzucha, w którym nogi unoszą się przy nieruchomym tułowiu.",
+      "executionInstructions": "Połóż się na plecach, ręce pod pośladkami lub wzdłuż ciała. Wyprostuj nogi lub lekko zegnij kolana. Unoś nogi do pionu (lub do kąta 90°), docisnąwszy mocno lędźwie do podłogi. Powoli opuść nogi bez dotykania podłogi i powtórz.",
+      "commonMistakes": "Odrywanie lędźwi od podłogi podczas opuszczania nóg — największy błąd. Zamach nogami zamiast kontrolowanego ruchu.",
+      "coachingTips": "Lędźwie muszą być dociśnięte do podłogi przez cały ruch. Jeśli to trudne, zegnij kolana lub skróć zakres. Zatrzymaj nogi tuż nad podłogą na chwilę przed kolejnym powtórzeniem.",
+      "breathingTips": "Wydech podczas unoszenia nóg, wdech podczas opuszczania.",
+      "safetyNotes": "Przy bólu dolnych pleców zmniejsz zakres ruchu lub wykonuj z ugiętymi kolanami.",
+      "movementPattern": "Zgięcie tułowia",
+      "movementCategory": "Core",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Zdrowie ogólne"],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień prosty brzucha", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień poprzeczny brzucha", "isPrimary": false, "coefficient": 0.25 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Odwrotne spięcia brzucha" }
+      ],
+      "regressions": [
+        { "exerciseName": "Odwrotne spięcia brzucha" }
+      ],
+      "progressions": [
+        { "exerciseName": "Unoszenie kolan w zwisie" }
+      ]
+    },
+    {
+      "name": "Superman",
+      "mainMuscleGroup": "Plecy",
+      "secondaryMuscleGroups": ["Pośladki"],
+      "equipment": ["Masa własnego ciała"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Początkujący",
+      "description": "Superman to proste ćwiczenie na prostowniki grzbietu i pośladki wykonywane w leżeniu przodem, w którym jednoczesne unoszenie ramion i nóg aktywuje mięśnie tylnego łańcucha ciała.",
+      "executionInstructions": "Połóż się na brzuchu, ramiona wyciągnięte przed siebie. Jednocześnie unieś ręce, głowę, klatkę i nogi kilkanaście centymetrów nad podłogę. Napnij pośladki i prostowniki. Utrzymaj przez 2–3 sekundy i powoli opuść.",
+      "commonMistakes": "Zbyt gwałtowne unoszenie, generujące zamach. Unoszenie tylko rąk bez nóg lub odwrotnie.",
+      "coachingTips": "Wyobraź sobie, że coś ciągnie cię jednocześnie za ręce i stopy w przeciwnych kierunkach. Ruch powinien być spokojny i kontrolowany.",
+      "breathingTips": "Wdech w pozycji na podłodze, wydech podczas unoszenia.",
+      "safetyNotes": "Bezpieczne ćwiczenie dla większości osób. Osoby ze stenozą kanału kręgowego powinny skonsultować się ze specjalistą.",
+      "movementPattern": "Stabilizacja tułowia",
+      "movementCategory": "Core",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Brak aktywności fizycznej", "Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Zdrowie ogólne"],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 1,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Prostowniki grzbietu", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień pośladkowy wielki", "isPrimary": false, "coefficient": 0.5 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Bird dog" }
+      ],
+      "regressions": [
+        { "exerciseName": "Bird dog" }
+      ]
+    },
+    {
+      "name": "Uginanie nadgarstków ze sztangą",
+      "mainMuscleGroup": "Przedramiona",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Sztanga"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Początkujący",
+      "description": "Uginanie nadgarstków ze sztangą to izolowane ćwiczenie na zginacze nadgarstka i palców, wykonywane w siadzie z przedramionami opartymi na udach — podstawowe ćwiczenie wzmacniające chwyt.",
+      "executionInstructions": "Usiądź, ułóż przedramiona na udach z nadgarstkami zwisającymi za kolan. Chwyć sztangę podchwytem. Ugnij nadgarstki, unosząc sztangę ku górze. Napnij zginacze na szczycie i powoli opuść poniżej neutralnej pozycji.",
+      "commonMistakes": "Unoszenie łokci od ud i angażowanie bicepsów. Zbyt duży ciężar, uniemożliwiający pełen zakres ruchu.",
+      "coachingTips": "Przedramiona muszą leżeć nieruchomo na udach — tylko nadgarstek się porusza. Lekki ciężar z dużą liczbą powtórzeń (15–20) daje najlepsze wyniki.",
+      "breathingTips": "Oddychaj swobodnie — ćwiczenie izolowane, niskie obciążenie.",
+      "safetyNotes": "Stopniowo zwiększaj ciężar — nadgarstki są delikatne. Przerwij przy bólu nadgarstków.",
+      "movementPattern": "Zgięcie łokcia",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa"],
+      "resistanceType": "Sztanga",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Zginacze nadgarstka i palców", "isPrimary": true, "coefficient": 1 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Prostowanie nadgarstków ze sztangą" }
+      ]
+    },
+    {
+      "name": "Prostowanie nadgarstków ze sztangą",
+      "mainMuscleGroup": "Przedramiona",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Sztanga"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Początkujący",
+      "description": "Prostowanie nadgarstków ze sztangą to izolowane ćwiczenie na prostowniki nadgarstka i palców — antagonistów zginaczy, ważne dla równowagi sił przedramion i profilaktyki kontuzji łokcia tenisisty.",
+      "executionInstructions": "Usiądź, ułóż przedramiona na udach z nadgarstkami zwisającymi za kolan. Chwyć sztangę nachwytem (dłonie w dół). Unieś nadgarstki ku górze w pełnym zakresie. Napnij prostowniki na szczycie i powoli opuść.",
+      "commonMistakes": "Używanie zbyt dużego ciężaru — prostowniki są słabsze od zginaczy. Ruch łokciami zamiast tylko nadgarstkami.",
+      "coachingTips": "To ćwiczenie jest trudniejsze niż wygląda — prostowniki nadgarstka są znacznie słabsze od zginaczy. Zacznij od minimalnego obciążenia.",
+      "breathingTips": "Oddychaj swobodnie podczas całego ćwiczenia.",
+      "safetyNotes": "Kluczowe dla równowagi sił przedramienia i zdrowia łokcia. Szczególnie ważne dla osób z tenisowym łokciem.",
+      "movementPattern": "Wyprost łokcia",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Zdrowie ogólne", "Masa mięśniowa"],
+      "resistanceType": "Sztanga",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Prostowniki nadgarstka i palców", "isPrimary": true, "coefficient": 1 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Uginanie nadgarstków ze sztangą" }
+      ]
+    },
+    {
+      "name": "Uginanie ramion ze sztangą podchwytem",
+      "mainMuscleGroup": "Biceps",
+      "secondaryMuscleGroups": ["Przedramiona"],
+      "equipment": ["Sztanga"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Uginanie ze sztangą podchwytem (reverse curl) angażuje brachialis i prostowniki nadgarstka poprzez pronowany chwyt — wzmacnia całą strefę łokciową i skutecznie trenuje mięśnie przedniego przedramienia.",
+      "executionInstructions": "Stań z nogami na szerokość bioder, chwyć sztangę nachwytem (dłonie skierowane w dół) na szerokość barków. Trzymając łokcie przy tułowiu i nadgarstki wyprostowane, ugnij ramiona ku barkom. Napnij mięśnie na szczycie i powoli opuść.",
+      "commonMistakes": "Zginanie nadgarstków — muszą być neutralne lub lekko wyprostowane przez cały czas. Zamach tułowia przy dużych ciężarach.",
+      "coachingTips": "Używaj znacznie mniejszego ciężaru niż przy zwykłym uginaniu. Prostowniki nadgarstka i brachialis są słabsze niż biceps — nie przeciążaj ich.",
+      "breathingTips": "Wydech podczas uginania, wdech podczas opuszczania.",
+      "safetyNotes": "Ćwiczenie może obciążać nadgarstki — wykonuj z lekkim ciężarem i nie forsuj zakresu. Przy bólu łokcia przerwij.",
+      "movementPattern": "Zgięcie łokcia",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa"],
+      "resistanceType": "Sztanga",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień ramienny", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień dwugłowy ramienia", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Prostowniki nadgarstka i palców", "isPrimary": false, "coefficient": 0.5 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Uginanie ramion ze sztangą EZ" }
+      ],
+      "regressions": [
+        { "exerciseName": "Uginanie ramion z hantlami" }
+      ]
+    }
+  ]
+}

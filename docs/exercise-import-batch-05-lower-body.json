@@ -1,0 +1,247 @@
+{
+  "duplicateStrategy": "skip",
+  "rows": [
+    {
+      "name": "Przysiad ze sztangą z przodu",
+      "mainMuscleGroup": "Mięśnie czworogłowe uda",
+      "secondaryMuscleGroups": ["Pośladki", "Plecy"],
+      "equipment": ["Sztanga"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Zaawansowany",
+      "description": "Przysiad ze sztangą z przodu (front squat) to wariant przysiadu ze sztangą ułożoną na przednich mięśniach naramiennych, który jeszcze mocniej angażuje czworogłowe i wymaga większej mobilności stawów skokowych i piersiowego odcinka kręgosłupa.",
+      "executionInstructions": "Ustaw sztangę na przednich naramiennych w pozycji czystej (łokcie wysoko, równoległe do podłogi) lub z rękoma skrzyżowanymi. Stopy na szerokość barków, palce lekko na zewnątrz. Zejdź w przysiad, trzymając tułów pionowo i kolana nad palcami. Wróć przez wypchnięcie podłogi od siebie.",
+      "commonMistakes": "Opadanie łokci i utrata pozycji czystej — sztanga zsunie się do przodu. Zaokrąglanie górnych pleców przy braku mobilności klatki. Kolana wpadające do środka.",
+      "coachingTips": "Łokcie muszą być jak najwyżej przez cały czas — to trzyma tułów pionowo. Przysiad czołowy wymaga większej mobilności niż tylny — rozgrzewaj stawy skokowe i klatkę.",
+      "breathingTips": "Głęboki wdech przed zejściem, napnij core. Wydech podczas wychodzenia z przysiadu.",
+      "safetyNotes": "Trudne technicznie ćwiczenie — opanuj przysiad tylny i mobilność zanim zaczniesz. Stosuj odpowiednio mniejsze ciężary niż przy przysiadzie tylnym.",
+      "movementPattern": "Przysiad",
+      "movementCategory": "Przysiad",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Zaawansowany"],
+      "trainingGoals": ["Siła", "Masa mięśniowa"],
+      "resistanceType": "Sztanga",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Wysokie",
+      "learningDifficulty": 5,
+      "neurologicalFatigue": 5,
+      "domsPotential": 5,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień czworogłowy uda", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień pośladkowy wielki", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Prostowniki grzbietu", "isPrimary": false, "coefficient": 0.25 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Przysiad ze sztangą" },
+        { "exerciseName": "Przysiad na suwnicy Smitha" }
+      ],
+      "regressions": [
+        { "exerciseName": "Przysiad goblet z hantlem" }
+      ]
+    },
+    {
+      "name": "Martwy ciąg sumo",
+      "mainMuscleGroup": "Mięśnie dwugłowe uda",
+      "secondaryMuscleGroups": ["Pośladki", "Plecy", "Przywodziciele"],
+      "equipment": ["Sztanga"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Zaawansowany",
+      "description": "Martwy ciąg sumo to wariant ze szerokim rozstawem nóg i stopami skierowanymi na zewnątrz, który silniej angażuje przywodziciele i pośladki, pozwala zachować bardziej pionowy tułów i bywa łatwiejszy dla osób z długim tułowiem.",
+      "executionInstructions": "Ustaw stopy zdecydowanie szerzej niż barki, palce pod kątem 45°. Chwyć sztangę wąskim nachwytem między nogami. Wyprostuj kręgosłup, unieś klatkę. Wypchnij biodra do przodu i ku górze, prostując jednocześnie kolana. Utrzymaj plecy proste przez cały ruch.",
+      "commonMistakes": "Zaokrąglanie dolnych pleców — identyczne zagrożenie jak w wersji konwencjonalnej. Kolana wpadające do środka podczas wychodzenia z pozycji.",
+      "coachingTips": "Ciągnij kolana na zewnątrz przez cały ruch — to aktywuje przywodziciele i chroni kolana. Biodra startują wyżej niż w konwencjonalnym.",
+      "breathingTips": "Głęboki wdech przed podniesieniem, napnij core. Wydech na górze lub po zakończeniu powtórzenia.",
+      "safetyNotes": "Wymaga dobrej mobilności bioder i przywodzicieli. Nie forsuj rozstawu szerszego niż pozwala mobilność — ryzyko naderwania przywodzicieli.",
+      "movementPattern": "Zawias biodrowy",
+      "movementCategory": "Zawiasowe",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Zaawansowany"],
+      "trainingGoals": ["Siła", "Masa mięśniowa"],
+      "resistanceType": "Sztanga",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Wysokie",
+      "learningDifficulty": 4,
+      "neurologicalFatigue": 5,
+      "domsPotential": 5,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięśnie kulszowo-goleniowe", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień pośladkowy wielki", "isPrimary": false, "coefficient": 0.75 },
+        { "specificMuscleName": "Mięśnie przywodziciele uda", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Prostowniki grzbietu", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięsień czworogłowy uda", "isPrimary": false, "coefficient": 0.25 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Martwy ciąg z trap barem" },
+        { "exerciseName": "Martwy ciąg konwencjonalny" }
+      ],
+      "regressions": [
+        { "exerciseName": "Martwy ciąg rumuński ze sztangą" }
+      ]
+    },
+    {
+      "name": "Uginanie nóg na wyciągu stojąc",
+      "mainMuscleGroup": "Mięśnie dwugłowe uda",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Wyciąg"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Początkujący",
+      "description": "Uginanie nóg na wyciągu w pozycji stojącej to jednostronna izolacja kulszowo-goleniowych z pełnym zakresem ruchu, wykonywana z obciążeniem nakolannikiem przy wyciągu dolnym.",
+      "executionInstructions": "Przymocuj nakolannik do wyciągu dolnego na jedną nogę. Stań przodem do maszyny, trzymaj się uchwytu dla stabilności. Zegnij kolano, ciągnąc stopę ku pośladkowi w pełnym zakresie. Napnij kulszowo-goleniowe na szczycie i powoli wyprostuj.",
+      "commonMistakes": "Ruch biodrem zamiast tylko kolanem. Opuszczanie nogi zbyt szybko bez ekscentrycznej kontroli.",
+      "coachingTips": "Udo musi pozostać nieruchome — tylko podudzie się porusza. Wykonuj ćwiczenie wolno, szczególnie w fazie ekscentrycznej.",
+      "breathingTips": "Wydech podczas uginania, wdech podczas opuszczania.",
+      "safetyNotes": "Bezpieczna wersja jednostronna — dobra dla wyrównywania asymetrii między nogami.",
+      "movementPattern": "Zgięcie kolana",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Zdrowie ogólne"],
+      "resistanceType": "Wyciąg",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 3,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięśnie kulszowo-goleniowe", "isPrimary": true, "coefficient": 1 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Uginanie nóg leżąc na maszynie" }
+      ],
+      "regressions": [
+        { "exerciseName": "Uginanie nóg leżąc na maszynie" }
+      ]
+    },
+    {
+      "name": "Donkey kick na wyciągu",
+      "mainMuscleGroup": "Pośladki",
+      "secondaryMuscleGroups": ["Mięśnie dwugłowe uda"],
+      "equipment": ["Wyciąg"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Początkujący",
+      "description": "Donkey kick na wyciągu (cable hip kickback) to izolowane ćwiczenie na mięsień pośladkowy wielki, w którym opór wyciągu utrzymuje stałe napięcie przez cały zakres ruchu — skuteczniejsze od wersji z masą ciała.",
+      "executionInstructions": "Przymocuj nakolannik do wyciągu dolnego. Stań przodem do maszyny, oprzyj się o ramę, lekko pochyl tułów. Trzymając kolano zgiętym pod kątem 90°, wysuń stopę w tył i ku górze, napinając pośladek na szczycie. Powoli wróć do pozycji startowej.",
+      "commonMistakes": "Rotacja miednicy i kompensowanie ruchem lędźwi zamiast pracy pośladka. Prostowanie kolana i zamienianie ćwiczenia w hip extension.",
+      "coachingTips": "Kolano pozostaje zgięte pod kątem 90° przez cały czas. Na szczycie napnij mocno pośladek i utrzymaj przez chwilę.",
+      "breathingTips": "Wydech podczas wypchnięcia nogi, wdech podczas powrotu.",
+      "safetyNotes": "Reguluj ciężar tak, by zakres ruchu był pełny bez rotowania miednicy.",
+      "movementPattern": "Zawias biodrowy",
+      "movementCategory": "Zawiasowe",
+      "exerciseType": "Izolowane",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Brak aktywności fizycznej", "Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Zdrowie ogólne"],
+      "resistanceType": "Wyciąg",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień pośladkowy wielki", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięśnie kulszowo-goleniowe", "isPrimary": false, "coefficient": 0.25 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Hip thrust" }
+      ],
+      "regressions": [
+        { "exerciseName": "Glute bridge" }
+      ]
+    },
+    {
+      "name": "Wspięcia na palce jednostronne stojąc",
+      "mainMuscleGroup": "Łydki",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Masa własnego ciała"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Początkujący",
+      "description": "Wspięcia na palce jednostronne to najtrudniejsza wersja ćwiczenia na łydki z masą ciała, wymagająca pełnego uniesienia na jednej nodze przez pełen zakres ruchu — skutecznie zastępuje maszynę do wspięć.",
+      "executionInstructions": "Stań na jednej nodze na krawędzi schodka lub podwyższenia, piętą opuszczoną w dół. Trzymaj się czegoś dla równowagi. Wznieś się maksymalnie na palce, napinając łydkę. Powoli opuść piętę poniżej poziomu podwyższenia dla pełnego rozciągnięcia.",
+      "commonMistakes": "Wykonywanie małego zakresu ruchu — piętę trzeba opuścić poniżej poziomu stopy. Zbyt szybkie tempo, eliminujące ekscentryczną pracę mięśnia.",
+      "coachingTips": "Pełen zakres ruchu — od maksymalnego rozciągnięcia do maksymalnego skurczu. Możesz dodać obciążenie, trzymając hantlę w wolnej ręce.",
+      "breathingTips": "Wdech podczas opuszczania, wydech podczas wspięcia.",
+      "safetyNotes": "Trzymaj się uchwytu dla bezpieczeństwa, szczególnie na śliskiej powierzchni.",
+      "movementPattern": "Wyprost kolana",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Izolowane",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Brak aktywności fizycznej", "Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Zdrowie ogólne"],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 3,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień brzuchaty łydki", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień płaszczkowaty", "isPrimary": false, "coefficient": 0.25 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Wspięcia na palce stojąc" }
+      ],
+      "regressions": [
+        { "exerciseName": "Wspięcia na palce stojąc" }
+      ]
+    },
+    {
+      "name": "Odwodzenie biodra na wyciągu",
+      "mainMuscleGroup": "Odwodziciele",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Wyciąg"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Początkujący",
+      "description": "Odwodzenie biodra na wyciągu to izolowane ćwiczenie na mięsień pośladkowy średni i odwodziciele, uzupełniające maszynę abduktorową o stały opór przez pełen zakres ruchu.",
+      "executionInstructions": "Przymocuj nakolannik do wyciągu dolnego na zewnętrzną stronę kostki. Stań bokiem do maszyny, trzymając się uchwytu. Odwiedź nogę w bok na tyle wysoko, na ile pozwala mobilność biodra bez rotowania miednicy. Powoli wróć do pozycji startowej.",
+      "commonMistakes": "Pochylanie tułowia na bok zamiast pracy samym biodrem. Zakres ruchu zbyt mały — unoszenie nogi tylko kilka centymetrów.",
+      "coachingTips": "Miednica i tułów muszą pozostać nieruchome — pracuje tylko noga. Skup się na napięciu pośladka średniego na szczycie ruchu.",
+      "breathingTips": "Wydech podczas odwodzenia, wdech podczas powrotu.",
+      "safetyNotes": "Bezpieczne ćwiczenie dla większości osób — dobre uzupełnienie treningu pośladków i profilaktyki kolan.",
+      "movementPattern": "Odwodzenie",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Czołowa",
+      "suitableExperienceLevels": ["Brak aktywności fizycznej", "Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Zdrowie ogólne"],
+      "resistanceType": "Wyciąg",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięśnie odwodziciele uda", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień pośladkowy średni", "isPrimary": false, "coefficient": 0.75 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Odwodzenie nóg na maszynie" }
+      ]
+    }
+  ]
+}
