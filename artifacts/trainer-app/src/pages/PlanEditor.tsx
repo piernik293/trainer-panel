@@ -63,6 +63,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -699,12 +709,14 @@ function ExerciseRow({
 
   const [editing, setEditing] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const deleteExercise = useDeletePlanExercise(planId);
   const duplicateExercise = useDuplicatePlanExercise(planId);
 
-  const handleDelete = () => {
-    if (!window.confirm(`Usunąć "${ex.exerciseName}" z planu?`)) return;
+  const handleDelete = () => setConfirmDelete(true);
+
+  const handleDeleteConfirmed = () => {
     deleteExercise.mutate(
       { dayId, planExerciseId: ex.id },
       { onError: (err) => toast({ title: err.message, variant: "destructive" }) },
@@ -849,6 +861,26 @@ function ExerciseRow({
         planExerciseId={ex.id}
         planId={planId}
       />
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Usuń ćwiczenie</AlertDialogTitle>
+            <AlertDialogDescription>
+              Czy na pewno chcesz usunąć „{ex.exerciseName}" z planu? Tej operacji nie można cofnąć.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteConfirmed}
+            >
+              Usuń
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
