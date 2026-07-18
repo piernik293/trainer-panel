@@ -1,0 +1,1072 @@
+{
+  "duplicateStrategy": "skip",
+  "skipInvalidRows": false,
+  "_meta": {
+    "batch": "07-mixed",
+    "description": "Multi-group expansion — 24 new exercises across back, biceps, shoulders/prehab, triceps, chest, trapezius, lower body, core and loaded mobility. Evaluated against all 122 existing exercises.",
+    "duplicatesSkipped": [
+      {
+        "requested": "Wiosłowanie jednorącz hantlem w stylu Kroca (Kroc Row)",
+        "matchedId": 131,
+        "matchedName": "Wiosłowanie jednorącz hantlem",
+        "reason": "Biomechanically identical unilateral DB row; Kroc Row style (heavy, controlled body english) is a loading/intensity technique, not a distinct exercise."
+      },
+      {
+        "requested": "Uginanie ramion ze sztangą nachwytem (Reverse Curl)",
+        "matchedId": 204,
+        "matchedName": "Uginanie ramion ze sztangą podchwytem",
+        "reason": "Same exercise. NOTE: id=204 is misnamed — 'podchwytem' means supinated/standard grip; the stored description correctly describes a pronated/reverse curl. Polish name should be 'nachwytem', not 'podchwytem'.",
+        "namingBugInDb": true
+      },
+      {
+        "requested": "Uginanie jednorącz na modlitewniku z hantlem",
+        "matchedId": 152,
+        "matchedName": "Uginanie ramion na modlitewniku",
+        "reason": "Existing record already includes Hantle in equipment array; unilateral variant is covered."
+      },
+      {
+        "requested": "Wyciskanie na maszynie Hammer Strength",
+        "matchedId": 115,
+        "matchedName": "Wyciskanie na maszynie siedząc",
+        "reason": "Hammer Strength is a brand; biomechanically equivalent to plate-loaded machine chest press."
+      }
+    ],
+    "equipmentMappings": [
+      "Kółka gimnastyczne → 'Inny' (not in VALID_EQUIPMENT)",
+      "Uchwyty do pompek → 'Inny' (not in VALID_EQUIPMENT)",
+      "Suwnica Smitha → 'Maszyna' (canonical mapping used throughout existing records)"
+    ],
+    "exerciseTypeNote": "Schema only supports 'Złożone' and 'Izolowane'. Prehab/rotator-cuff exercises and loaded-mobility exercises are stored as 'Izolowane'. High Pull classified as 'Złożone' (compound explosive). Jefferson Curl stored as 'Izolowane' (loaded mobility accessory).",
+    "exercisesReady": 24
+  },
+  "rows": [
+    {
+      "name": "Ściąganie jednorącz wyciągu górnego",
+      "mainMuscleGroup": "Plecy",
+      "secondaryMuscleGroups": ["Biceps", "Barki"],
+      "equipment": ["Wyciąg"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Jednostronne ściąganie drążka wyciągu górnego pozwala na większy zakres ruchu i lepszą izolację mięśnia najszerszego grzbietu po każdej stronie osobno. Idealne do wyrównywania asymetrii siłowej i poprawy połączenia neuromięśniowego z latissimus dorsi.",
+      "executionInstructions": "Usiądź przy wyciągu górnym, chwyć uchwyt jednoręczny dłonią w chwyt neutralny lub podchwyt. Ciągnij łokieć w dół i ku tyłu, prowadząc go blisko ciała. Na dole napnij mocno mięsień najszerszy i łopatkę obniż. Powoli wróć do pełnego rozciągnięcia, kontrolując ciężar.",
+      "commonMistakes": "Odchylanie tułowia za daleko w tył (przenosi obciążenie na prostowniki). Brak pełnego rozciągnięcia na górze. Angażowanie bicepsa jako motoru zamiast pleców.",
+      "coachingTips": "Wyobraź sobie, że łokciem chcesz dosięgnąć kieszeni spodni. Inicjuj ruch depresją łopatki, nie bicepsem. Możesz lekko obrócić tułów dla większego rozciągnięcia.",
+      "breathingTips": "Wdech w górnej pozycji, wydech podczas ściągania.",
+      "safetyNotes": "Kontroluj powrót ciężaru — gwałtowne rozluźnienie może nadwyrężyć bark lub staw łokciowy.",
+      "movementPattern": "Przyciąganie pionowe",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Złożone",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Czołowa",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Siła"],
+      "resistanceType": "Wyciąg",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 2,
+      "domsPotential": 3,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień najszerszy grzbietu", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień dwugłowy ramienia", "isPrimary": false, "coefficient": 0.6 },
+        { "specificMuscleName": "Mięsień obły większy", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięsień czworoboczny grzbietu", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Ściąganie drążka wyciągu górnego chwytem neutralnym" },
+        { "exerciseName": "Ściąganie drążka wyciągu górnego podchwytem" }
+      ],
+      "progressions": [
+        { "exerciseName": "Podciąganie na drążku" }
+      ],
+      "regressions": [
+        { "exerciseName": "Ściąganie drążka wyciągu górnego szerokim nachwytem" }
+      ]
+    },
+
+    {
+      "name": "Uginanie ramion w podporze klatki (Spider Curl)",
+      "mainMuscleGroup": "Biceps",
+      "secondaryMuscleGroups": ["Przedramiona"],
+      "equipment": ["Hantle", "Sztanga", "Ławka"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Spider Curl to uginanie ramion w podporze klatki piersiowej na ławce pochyłej ustawionej pod kątem 45-60°. Dzięki pozycji ramion przed tułowiem długa głowa bicepsa jest w skróceniu przez cały ruch — eliminuje to możliwość pomocniczego zamachu i maksymalizuje izolację.",
+      "executionInstructions": "Połóż się przodem na ławce skośnej dodatniej (kąt 45-60°), klatka na podparciu, ramiona swobodnie zwisają ku dołowi. Chwyć hantle lub sztangę podchwytem. Ugnij ramiona, unosząc ciężar ku barkom bez odrywania ramion od podparcia. Napnij biceps na szczycie i powoli opuść do pełnego wyprostu.",
+      "commonMistakes": "Odrywanie ramion od ławki w górnej fazie ruchu. Zbyt szybkie tempo powrotu. Brak pełnego wyprostu na dole.",
+      "coachingTips": "Długa głowa bicepsa jest skrócona w tej pozycji — używaj mniejszego ciężaru niż przy standardowym uginaniu. Skup się na wolnym, kontrolowanym opuszczaniu.",
+      "breathingTips": "Wdech w dolnej pozycji, wydech podczas uginania.",
+      "safetyNotes": "Nie przeprostowuj gwałtownie stawu łokciowego w dolnej fazie — utrzymuj minimalne napięcie przez cały ruch.",
+      "movementPattern": "Zgięcie łokcia",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa"],
+      "resistanceType": "Hantle",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 3,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień dwugłowy ramienia", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień ramienny", "isPrimary": false, "coefficient": 0.7 },
+        { "specificMuscleName": "Zginacze nadgarstka i palców", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Uginanie ramion na modlitewniku" },
+        { "exerciseName": "Uginanie ramion na wyciągu" }
+      ],
+      "regressions": [
+        { "exerciseName": "Uginanie ramion z hantlami" },
+        { "exerciseName": "Uginanie ramion ze sztangą" }
+      ]
+    },
+
+    {
+      "name": "Uginanie ramienia na wyciągu zza ciała (Bayesian Curl)",
+      "mainMuscleGroup": "Biceps",
+      "secondaryMuscleGroups": ["Przedramiona"],
+      "equipment": ["Wyciąg"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Bayesian Curl to uginanie jednej ręki na wyciągu dolnym z liną przeprowadzoną zza ciała. Ramię jest maksymalnie wyciągnięte za tułów, co rozciąga długą głowę bicepsa w pozycji wyjściowej i poddaje ją napięciu w pełnym zakresie rozciągnięcia — jest to mechanicznie optymalne dla hipertrofii.",
+      "executionInstructions": "Stań przodem od wyciągu dolnego, chwyć uchwyt jednoręczny i cofnij się o krok. Wyprostuj ramię za tułów tak, by biceps był maksymalnie rozciągnięty. Ugnij ramię, prowadząc łokieć do przodu i ku górze. Napnij biceps na szczycie i powoli wróć do pełnego rozciągnięcia za tułowiem.",
+      "commonMistakes": "Zbyt mały cofnięty krok — biceps nie jest w pełni rozciągnięty. Przemieszczanie łokcia do boku zamiast ruchu w płaszczyźnie strzałkowej.",
+      "coachingTips": "Im bardziej cofniesz ramię za tułów, tym większe rozciągnięcie długiej głowy. Możesz lekko przechylić tułów do przodu dla jeszcze większego zakresu. Ćwiczenie jest wyjątkowo skuteczne z powolną fazą ekscentryczną.",
+      "breathingTips": "Wdech na dole (rozciągnięcie), wydech podczas uginania.",
+      "safetyNotes": "Nie stosuj obciążeń powodujących ból w przodzie barku lub bicepsie w pozycji dolnej.",
+      "movementPattern": "Zgięcie łokcia",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa"],
+      "resistanceType": "Wyciąg",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 3,
+      "neurologicalFatigue": 1,
+      "domsPotential": 3,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień dwugłowy ramienia", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień ramienny", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Zginacze nadgarstka i palców", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Uginanie ramion z hantlami na ławce skośnej" },
+        { "exerciseName": "Uginanie ramion na wyciągu" }
+      ],
+      "regressions": [
+        { "exerciseName": "Uginanie ramion z hantlami" }
+      ]
+    },
+
+    {
+      "name": "Jednorącz odwodzenie ramienia w tył na wyciągu",
+      "mainMuscleGroup": "Barki",
+      "secondaryMuscleGroups": ["Plecy"],
+      "equipment": ["Wyciąg"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Początkujący",
+      "description": "Jednostronne odwodzenie ramienia w tył na wyciągu (cable rear delt pull-back) izoluje tylną głowę mięśnia naramiennego. Wyciąg utrzymuje stałe napięcie przez cały zakres ruchu — przewaga nad hantlami, które mają zerowe napięcie w pozycji dolnej.",
+      "executionInstructions": "Stań bokiem do wyciągu, chwyć uchwyt jednoręczny ręką bliższą pulei. Utrzymaj ramię proste lub minimalnie ugięte w łokciu. Wyprowadź ramię w tył i na zewnątrz poziomo, skupiając się na napięciu tylnej delty. Kontroluj powrót — nie pozwól ciężarowi na gwałtowne przeciągnięcie ramienia.",
+      "commonMistakes": "Zginanie łokcia i zamiana ruchu w wiosłowanie. Rotacja tułowia wspomagająca ruch. Zbyt duży ciężar uniemożliwiający izolację.",
+      "coachingTips": "Utrzymuj łokcieć na tej samej wysokości co bark przez cały ruch. Wyobraź sobie, że chcesz dotknąć łokciem ściany za sobą.",
+      "breathingTips": "Wydech podczas odwodzenia, wdech podczas powrotu.",
+      "safetyNotes": "Ćwiczenie bezpieczne — stosuj lekki ciężar i kontrolowany ruch, by nie przeciążać stawu barkowego.",
+      "movementPattern": "Odwodzenie",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Zdrowie ogólne"],
+      "resistanceType": "Wyciąg",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień naramienny (głowa tylna)", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięśnie równoległoboczne", "isPrimary": false, "coefficient": 0.4 },
+        { "specificMuscleName": "Mięsień czworoboczny grzbietu", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Odwrotne rozpiętki na linkach" },
+        { "exerciseName": "Face pull" }
+      ],
+      "regressions": [
+        { "exerciseName": "Odwrotne rozpiętki z hantlami" }
+      ]
+    },
+
+    {
+      "name": "Rozciąganie gumy przed klatką (Band Pull-Apart)",
+      "mainMuscleGroup": "Barki",
+      "secondaryMuscleGroups": ["Plecy"],
+      "equipment": ["Gumy oporowe"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Początkujący",
+      "description": "Band Pull-Apart to ćwiczenie profilaktyczne i wzmacniające tylną deltę, środkowy trapez i równoległoboczne. Rozciągając gumę poziomo przed klatką i rozdzielając ją do boku, angażujemy mięśnie retrakcji łopatki i zewnętrznych rotatorów. Świetne jako rozgrzewka barków i korekcja postawy.",
+      "executionInstructions": "Stań prosto, trzymaj gumę oporową obiema rękami na szerokość barków na wysokości klatki (ramiona wyprostowane). Rozciągaj gumę, rozkładając ręce szeroko na boki, ściskając łopatki razem. Wróć powoli do pozycji wyjściowej. Utrzymuj łokcie lekko ugięte przez cały czas.",
+      "commonMistakes": "Uginanie łokci i zamiana ruchu w wiosłowanie. Unoszenie ramion ku górze zamiast poziomego odwiedzenia. Zbyt szybkie tempo bez kontroli powrotu.",
+      "coachingTips": "Wyobraź sobie, że starasz się dotknąć łopatkami razem za plecami. Tempo 2-0-2 lub wolniejsze jest optymalne. Guma o niskim oporze — to ćwiczenie techniczne, nie siłowe.",
+      "breathingTips": "Wydech podczas rozciągania gumy, wdech podczas powrotu.",
+      "safetyNotes": "Ćwiczenie w pełni bezpieczne. Idealne jako prehab i korekta zaokrąglonych ramion.",
+      "movementPattern": "Odwodzenie",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Zdrowie ogólne"],
+      "resistanceType": "Gumy oporowe",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 1,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień naramienny (głowa tylna)", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięśnie równoległoboczne", "isPrimary": false, "coefficient": 0.6 },
+        { "specificMuscleName": "Mięsień czworoboczny grzbietu", "isPrimary": false, "coefficient": 0.4 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Odwrotne rozpiętki z hantlami" },
+        { "exerciseName": "Face pull" }
+      ],
+      "regressions": [
+        { "exerciseName": "Odwrotne rozpiętki z hantlami" }
+      ]
+    },
+
+    {
+      "name": "Rotacja zewnętrzna barku na wyciągu",
+      "mainMuscleGroup": "Barki",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Wyciąg"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Początkujący",
+      "description": "Izolowane ćwiczenie stożka rotatorów — infraspinatus i teres minor. Rotacja zewnętrzna na wyciągu zapewnia stałe napięcie przez cały zakres ruchu, co jest przewagą nad hantlami. Kluczowe w profilaktyce kontuzji barku, rozgrzewce i rehabilitacji.",
+      "executionInstructions": "Stań bokiem do wyciągu dolnego lub środkowego, chwyć uchwyt jednoręczny ręką dalszą od pulei. Zegnij łokieć do 90° i dociśnij go do boku tułowia (możesz podłożyć zwinięty ręcznik dla stabilizacji). Obracaj przedramię na zewnątrz, utrzymując łokieć przy boku. Powoli wróć do pozycji wyjściowej.",
+      "commonMistakes": "Odrywanie łokcia od tułowia — traci izolację rotatorów. Zamach nadgarstkiem zamiast rotacji w stawie barkowym.",
+      "coachingTips": "Ciężar powinien być bardzo lekki — to ćwiczenie rehabilitacyjne. Skupiaj się na odczuwaniu rotacji w stawie barkowym, nie na pokonaniu ciężaru.",
+      "breathingTips": "Swobodny oddech — ciężar jest zbyt mały, by wymagał kontroli oddechu.",
+      "safetyNotes": "Przy bólu barku podczas rotacji skonsultuj się z fizjoterapeutą. Nie forsuj zakresu ruchu.",
+      "movementPattern": "Rotacja",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Zdrowie ogólne"],
+      "resistanceType": "Wyciąg",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 1,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięśnie stożka rotatorów", "isPrimary": true, "coefficient": 1 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Rotacja zewnętrzna barku z gumą oporową" }
+      ],
+      "regressions": [
+        { "exerciseName": "Rotacja zewnętrzna barku z gumą oporową" }
+      ]
+    },
+
+    {
+      "name": "Rotacja zewnętrzna barku z gumą oporową",
+      "mainMuscleGroup": "Barki",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Gumy oporowe"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Początkujący",
+      "description": "Wersja rotacji zewnętrznej barku z gumą oporową — wszechstronne ćwiczenie prehab/rehab stożka rotatorów wykonywane bez sprzętu siłownianego. Guma z rosnącym oporem uczy kontroli w środkowym zakresie ruchu. Może być stosowane jako rozgrzewka przed treningiem pchania.",
+      "executionInstructions": "Przymocuj gumę do stałego punktu na wysokości łokcia. Stań bokiem, chwyć gumę ręką dalszą. Zegnij łokieć do 90°, dociśnij go do boku. Obracaj przedramię na zewnątrz, utrzymując łokieć przy tułowiu. Powoli wróć. Można też wykonywać oburącz, trzymając gumę przed sobą i rozciągając ją poziomo.",
+      "commonMistakes": "Odrywanie łokcia od ciała. Zbyt mocna guma uniemożliwiająca pełny zakres ruchu.",
+      "coachingTips": "Guma o najlżejszym oporze, jaki masz dostępny. Priorytetem jest czysty zakres ruchu, nie pokonanie oporu.",
+      "breathingTips": "Swobodny oddech.",
+      "safetyNotes": "Bezpieczne ćwiczenie rehabilitacyjne. Stosuj przy pierwszych objawach bólu barku jako prewencja.",
+      "movementPattern": "Rotacja",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Zdrowie ogólne"],
+      "resistanceType": "Gumy oporowe",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 1,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięśnie stożka rotatorów", "isPrimary": true, "coefficient": 1 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Rotacja zewnętrzna barku na wyciągu" }
+      ],
+      "progressions": [
+        { "exerciseName": "Rotacja zewnętrzna barku na wyciągu" }
+      ]
+    },
+
+    {
+      "name": "Jednorącz prostowanie ramienia zza głowy na wyciągu (Katana Extension)",
+      "mainMuscleGroup": "Triceps",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Wyciąg"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Katana Extension to jednostronne prostowanie ramienia zza głowy na wyciągu. Ramię jest w pełni uniesionym, co rozciąga długą głowę tricepsa (jedyna głowa biartykułarna). Stałe napięcie wyciągu przez cały zakres ruchu czyni to ćwiczenie jednym z najbardziej efektywnych dla hipertrofii długiej głowy tricepsa.",
+      "executionInstructions": "Stań tyłem do wyciągu górnego, chwyć uchwyt jednoręczny lub linkę. Unieś łokieć nad głowę, tak by przedramię było za głową. Wyprostuj ramię w łokciu, prowadząc ciężar ku górze. Napnij triceps w górnej pozycji, następnie powoli wróć do pełnego ugięcia — przedramię za głową.",
+      "commonMistakes": "Opuszczanie łokcia — zmniejsza to napięcie długiej głowy. Zamach tułowia przy dużych ciężarach. Brak pełnego rozciągnięcia w dolnej fazie.",
+      "coachingTips": "Utrzymuj łokieć skierowany ku górze przez cały czas. Wyciąg zmienia kierunek siły w porównaniu do hantla — odczujesz napięcie już od samego startu ruchu.",
+      "breathingTips": "Wydech podczas prostowania, wdech podczas powrotu.",
+      "safetyNotes": "Nie stosuj ciężarów powodujących ból w stawie łokciowym lub barkowym. Ćwiczenie wymaga dobrej ruchomości barku.",
+      "movementPattern": "Wyprost łokcia",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Izolowane",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa"],
+      "resistanceType": "Wyciąg",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 3,
+      "neurologicalFatigue": 1,
+      "domsPotential": 3,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": true, "coefficient": 1 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Prostowanie ramion nad głową z liną" },
+        { "exerciseName": "Prostowanie ramion nad głową z hantlem" }
+      ],
+      "regressions": [
+        { "exerciseName": "Prostowanie ramion z liną na wyciągu" }
+      ]
+    },
+
+    {
+      "name": "Wyciskanie JM (JM Press)",
+      "mainMuscleGroup": "Triceps",
+      "secondaryMuscleGroups": ["Klatka piersiowa", "Barki"],
+      "equipment": ["Sztanga", "Ławka"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Zaawansowany",
+      "description": "JM Press (od JM Blakley) to hybrydowe ćwiczenie łączące wyciskanie wąskim chwytem z francuskim prostowaniem — idealne do budowania siły lockoutu w wyciskaniu i masy długiej głowy tricepsa. Popularny w pracy siłaczy i zawodników powerlifterskich.",
+      "executionInstructions": "Połóż się na ławce poziomej, chwyć sztangę wąskim chwytem (szer. barków lub węziej). Opuść sztangę kontrolując łokcie — ugną się lekko na zewnątrz i sztanga zbliży się do twarzy (okolice nosa/czoła). W dolnym punkcie łokcie są nisko, zanikający przedramię leży pod kątem. Wypchnij sztangę z powrotem w górę, prostując łokcie.",
+      "commonMistakes": "Zbyt szeroki chwyt (traci charakter ćwiczenia). Opuszczanie zbyt głęboko bez kontroli. Stosowanie zbyt dużego ciężaru przed opanowaniem techniki.",
+      "coachingTips": "Zacznij od bardzo lekkiego ciężaru i opanuj tor ruchu — to ćwiczenie techniczne. Połącz z wyciskaniem wąskim chwytem jako superset dla maksymalnej stymulacji tricepsa.",
+      "breathingTips": "Wdech podczas opuszczania, wydech podczas wyciskania.",
+      "safetyNotes": "Ćwiczenie zaawansowane — stosuj asekuratora. Błędy techniczne mogą prowadzić do urazu łokcia lub barku.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Zaawansowany"],
+      "trainingGoals": ["Siła", "Masa mięśniowa"],
+      "resistanceType": "Sztanga",
+      "requiresSpotter": true,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Średnie",
+      "learningDifficulty": 4,
+      "neurologicalFatigue": 3,
+      "domsPotential": 3,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień piersiowy większy", "isPrimary": false, "coefficient": 0.4 },
+        { "specificMuscleName": "Mięsień naramienny (głowa przednia)", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Wyciskanie sztangi wąskim chwytem" },
+        { "exerciseName": "Wyciskanie francuskie sztangą EZ" }
+      ],
+      "regressions": [
+        { "exerciseName": "Wyciskanie sztangi wąskim chwytem" }
+      ]
+    },
+
+    {
+      "name": "Francuskie prostowanie ramion gumą oporową zza głowy",
+      "mainMuscleGroup": "Triceps",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Gumy oporowe"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Początkujący",
+      "description": "Overhead triceps extension z gumą oporową — dostępna i skuteczna wersja klasycznego francuskiego prostowania. Guma zapewnia opór w środkowym i końcowym zakresie wyprostu, gdzie mięsień trójgłowy jest najsilniejszy. Idealne jako ćwiczenie domowe lub uzupełniające.",
+      "executionInstructions": "Stań na środku gumy oporowej stopami. Chwyć oba końce gumy, unieś ramiona nad głowę. Zegnij łokcie, opuszczając dłonie za głowę — guma rozciągnięta. Wyprostuj łokcie ku górze, napinając triceps. Utrzymuj łokcie skierowane ku górze przez cały ruch.",
+      "commonMistakes": "Opadanie łokci na zewnątrz. Brak pełnego zakresu ugięcia łokcia (skrócony zakres ruchu). Zbyt mocna guma ograniczająca prawidłowy ruch.",
+      "coachingTips": "Dobierz gumę o oporze umożliwiającym pełne ugięcie łokci za głowę. Możesz wykonywać jednostronnie dla lepszej koncentracji.",
+      "breathingTips": "Wydech podczas prostowania, wdech podczas powrotu.",
+      "safetyNotes": "Bezpieczne ćwiczenie przy użyciu odpowiednio lekkiej gumy. Przy bólu łokcia przejdź na wyciąg lub hantlę.",
+      "movementPattern": "Wyprost łokcia",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Zdrowie ogólne"],
+      "resistanceType": "Gumy oporowe",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": true, "coefficient": 1 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Prostowanie ramion nad głową z hantlem" },
+        { "exerciseName": "Prostowanie ramion nad głową z liną" }
+      ],
+      "regressions": [
+        { "exerciseName": "Prostowanie ramion z liną na wyciągu" }
+      ]
+    },
+
+    {
+      "name": "Wyciskanie jednorącz na wyciągu",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": ["Triceps", "Barki"],
+      "equipment": ["Wyciąg"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Jednostronne wyciskanie na wyciągu — tzw. cable chest press — daje stałe napięcie na mięsień piersiowy w całym zakresie ruchu, włącznie z fazy powrotu (ekscentryczną). Wersja jednostronna umożliwia wyrównanie asymetrii i większą rotację tułowia aktywizującą dodatkowe włókna piersiowego.",
+      "executionInstructions": "Ustaw wyciąg na wysokości klatki lub barku. Chwyć uchwyt jednoręczny, stań w wykroku przodem od maszyny. Wypchnij ramię do przodu i ku środkowi ciała, spinając klatkę. Powoli wróć do pozycji wyjściowej z lekkim rozciągnięciem mięśnia piersiowego.",
+      "commonMistakes": "Za mały wykrok — brak stabilności. Obrót tułowia wspomagający zamiast kontrolowanego. Brak pełnego zakresu ruchu.",
+      "coachingTips": "Możesz lekko skręcić tułów do środka przy pełnym wyprostu — angażuje to bardziej włókna środkowe klatki. Eksperymentuj z kątem ustawienia wyciągu (nisko, środkowo, wysoko).",
+      "breathingTips": "Wdech podczas cofania ramienia, wydech podczas wyciskania.",
+      "safetyNotes": "Stabilna podstawa (szeroki wykrok) jest kluczowa dla bezpiecznego wykonania.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Siła"],
+      "resistanceType": "Wyciąg",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 3,
+      "neurologicalFatigue": 2,
+      "domsPotential": 3,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień piersiowy większy", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięsień naramienny (głowa przednia)", "isPrimary": false, "coefficient": 0.4 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Wyciskanie hantli leżąc" },
+        { "exerciseName": "Rozpiętki na bramie na wysokości klatki" }
+      ],
+      "regressions": [
+        { "exerciseName": "Wyciskanie hantli leżąc" }
+      ]
+    },
+
+    {
+      "name": "Wyciskanie hantli z dociskiem (Squeeze Press)",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": ["Triceps"],
+      "equipment": ["Hantle", "Ławka"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Squeeze Press (wyciskanie z dociskiem) to wyciskanie hantli leżąc z jednoczesnym mocnym dociskiem hantli do siebie przez cały czas trwania serii. Addukacja ramion tworzy ciągłe izometryczne napięcie w mięśniu piersiowym, wzmacniając połączenie neuromięśniowe i aktywację środkowych włókien klatki.",
+      "executionInstructions": "Połóż się na ławce poziomej z hantlami w dłoniach, chwytem neutralnym lub supinowanym. Dociśnij hantle mocno do siebie — utrzymaj ten docisk przez całą serię. Wyciśnij hantle ku górze i lekko ku sobie, nie rozluźniając ucisku. Powoli opuść utrzymując hantle razem.",
+      "commonMistakes": "Zwalnianie docisku na szczycie ruchu lub podczas opuszczania. Zbyt duże hantle uniemożliwiające utrzymanie napięcia.",
+      "coachingTips": "Wyobraź sobie, że zgniatasz gąbkę między hantlami. Im silniejszy docisk, tym większa aktywacja środkowej klatki. Używaj umiarkowanego ciężaru — celem jest napięcie, nie masa obciążenia.",
+      "breathingTips": "Wdech podczas opuszczania, wydech podczas wyciskania.",
+      "safetyNotes": "Ćwiczenie bezpieczne — docisk hantli eliminuje ryzyko ich rozjechania się.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa"],
+      "resistanceType": "Hantle",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 2,
+      "domsPotential": 3,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień piersiowy większy", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": false, "coefficient": 0.4 },
+        { "specificMuscleName": "Mięsień piersiowy mniejszy", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Wyciskanie hantli leżąc" }
+      ],
+      "regressions": [
+        { "exerciseName": "Wyciskanie hantli leżąc" }
+      ]
+    },
+
+    {
+      "name": "Wyciskanie na maszynie zbieżnej",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": ["Triceps", "Barki"],
+      "equipment": ["Maszyna"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Początkujący",
+      "description": "Wyciskanie na maszynie zbieżnej (converging/plate-loaded machine press) naśladuje naturalny łuk ruchu mięśnia piersiowego — ramiona zbiegają się ku środkowi ciała na szczycie ruchu. Zapewnia bezpieczne, kontrolowane obciążenie z pełnym zakresem ruchu klatki bez ryzyka nierównowagi.",
+      "executionInstructions": "Ustaw siedzisko tak, by uchwyty były na wysokości dolnej części klatki piersiowej. Chwyć uchwyty, stopy płasko na podłodze. Wypchnij ramiona do przodu i ku środkowi, napinając klatkę. Powoli wróć do pełnego rozciągnięcia — łopatki cofnięte.",
+      "commonMistakes": "Zbyt wysokie ustawienie siedziska przenosące pracę na barki. Odbijanie od stopu maszyny zamiast kontrolowanego opuszczania.",
+      "coachingTips": "Maszyny zbieżne różnią się profilem oporu — znajdź punkt, w którym czujesz maksymalne napięcie klatki. Doskonałe do pompowania krwi na końcu sesji piersiowej.",
+      "breathingTips": "Wdech podczas cofania ramion, wydech podczas wyciskania.",
+      "safetyNotes": "Ćwiczenie w pełni bezpieczne. Brak ryzyka upadku sztangi lub hantli.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Siła"],
+      "resistanceType": "Maszyna",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 2,
+      "domsPotential": 3,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień piersiowy większy", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": false, "coefficient": 0.4 },
+        { "specificMuscleName": "Mięsień naramienny (głowa przednia)", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Wyciskanie na maszynie siedząc" },
+        { "exerciseName": "Wyciskanie hantli leżąc" }
+      ],
+      "regressions": [
+        { "exerciseName": "Wyciskanie na maszynie siedząc" }
+      ]
+    },
+
+    {
+      "name": "Pompki z gumą oporową",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": ["Triceps", "Barki"],
+      "equipment": ["Gumy oporowe", "Masa własnego ciała"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Pompki z gumą oporową przeprowadzoną za plecami to progresja pompek klasycznych — guma dodaje opór w górnej fazie ruchu, gdzie mięsień piersiowy jest w skróceniu. Idealne do przebicia plateau w pompkach i zwiększenia siły lockoutu.",
+      "executionInstructions": "Połóż gumę oporową za plecami na wysokości łopatek i chwyć jej końce dłońmi przy podłodze. Przyjmij pozycję pompki. Wykonaj pełne pompki — guma stawia coraz większy opór podczas wyprostu. Powoli opuść ciało kontrolując gumę.",
+      "commonMistakes": "Zbyt mocna guma uniemożliwiająca pełny zakres ruchu. Opadanie bioder lub garbienie pleców.",
+      "coachingTips": "Zaczynaj od lekkiej gumy i stopniowo zwiększaj opór. Możesz używać dwóch gum dla większego oporu. Połącz z pompkami klasycznymi w drop-secie.",
+      "breathingTips": "Wdech podczas opuszczania, wydech podczas wyciskania.",
+      "safetyNotes": "Upewnij się, że guma jest stabilnie ułożona i nie ześlizgnie się podczas ćwiczenia.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Siła", "Masa mięśniowa"],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 2,
+      "domsPotential": 3,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień piersiowy większy", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": false, "coefficient": 0.6 },
+        { "specificMuscleName": "Mięsień naramienny (głowa przednia)", "isPrimary": false, "coefficient": 0.4 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Pompki klasyczne" },
+        { "exerciseName": "Pompki z obciążeniem" }
+      ],
+      "regressions": [
+        { "exerciseName": "Pompki klasyczne" }
+      ]
+    },
+
+    {
+      "name": "Pompki na uchwytach",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": ["Triceps", "Barki"],
+      "equipment": ["Masa własnego ciała", "Inny"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Pompki na uchwytach (push-up handles) zwiększają zakres ruchu w fazie opuszczania w porównaniu do pompek klasycznych — klatka schodzi niżej, co intensywniej rozciąga mięsień piersiowy. Ponadto neutralny chwyt redukuje stres na nadgarstkach, co czyni je bezpieczniejszą alternatywą dla osób z dyskomfortem nadgarstków.",
+      "executionInstructions": "Ustaw uchwyty na szerokość barków lub nieco szerzej. Przyjmij pozycję pompki z dłońmi na uchwytach. Opuść klatkę poniżej poziomu uchwytów, utrzymując łokcie pod kątem ok. 60-75° do tułowia. Wypchnij się do góry do pełnego wyprostu ramion.",
+      "commonMistakes": "Opadanie bioder lub wystawianie pośladków ku górze. Brak pełnego zakresu ruchu w dół.",
+      "coachingTips": "Im szerzej ustawisz uchwyty, tym bardziej angażujesz klatkę. Im wężej — tym więcej tricepsa. Skorzystaj z większego zakresu ruchu — to główna zaleta uchwytów.",
+      "breathingTips": "Wdech podczas opuszczania, wydech podczas wyciskania.",
+      "safetyNotes": "Upewnij się, że uchwyty są stabilne i nie będą się przesuwać na wybranej nawierzchni.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Zdrowie ogólne"],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 2,
+      "domsPotential": 3,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień piersiowy większy", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięsień naramienny (głowa przednia)", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Pompki klasyczne" }
+      ],
+      "progressions": [
+        { "exerciseName": "Pompki na kółkach gimnastycznych" }
+      ],
+      "regressions": [
+        { "exerciseName": "Pompki klasyczne" }
+      ]
+    },
+
+    {
+      "name": "Pompki na kółkach gimnastycznych",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": ["Triceps", "Barki", "Brzuch"],
+      "equipment": ["Masa własnego ciała", "Inny"],
+      "trainingLocation": ["Siłownia", "Plener"],
+      "difficultyLevel": "Zaawansowany",
+      "description": "Pompki na kółkach gimnastycznych (ring push-ups) wymagają stałej stabilizacji niestabilnego podłoża. Pierścienie umożliwiają swobodny obrót chwytów, co redukuje stres na nadgarstkach i naturalny ruch ramion, a niestabilność angażuje dodatkowe mięśnie stabilizujące bark i tułów w stopniu znacznie wyższym niż pompki klasyczne.",
+      "executionInstructions": "Ustaw kółka gimnastyczne na niskiej wysokości (15-30 cm od podłogi) lub chwyć je ze stojaka. Przyjmij pozycję pompki z rękoma na kółkach. Utrzymując stabilizację tułowia i bioder, opuść klatkę ku podłodze. Wypchnij się do góry, obracając kółka naturalnymi ruchem dłoni.",
+      "commonMistakes": "Brak stabilizacji tułowia — kółka zaczynają się wahać niekontrolowanie. Zbyt wysoko zawieszone kółka zmieniające ćwiczenie w wyciskanie na pierścieniach.",
+      "coachingTips": "Zacznij od kółek ustawionych na podwyższeniu (piersi na poziomie kółek) — łatwiejsza wersja. Progresja: obniżaj kółka stopniowo. Skup na zwieraniu kółek do siebie w górnej fazie.",
+      "breathingTips": "Wdech podczas opuszczania, wydech podczas wyciskania.",
+      "safetyNotes": "Ćwiczenie zaawansowane — opanuj najpierw pompki na uchwytach. Upewnij się, że mocowanie kółek jest pewne i wytrzyma Twój ciężar ciała.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Zaawansowany"],
+      "trainingGoals": ["Siła", "Masa mięśniowa"],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 4,
+      "neurologicalFatigue": 2,
+      "domsPotential": 3,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień piersiowy większy", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięsień naramienny (głowa przednia)", "isPrimary": false, "coefficient": 0.3 },
+        { "specificMuscleName": "Mięsień poprzeczny brzucha", "isPrimary": false, "coefficient": 0.4 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Pompki na uchwytach" },
+        { "exerciseName": "Pompki klasyczne" }
+      ],
+      "regressions": [
+        { "exerciseName": "Pompki na uchwytach" }
+      ]
+    },
+
+    {
+      "name": "Pompki z nogami na podwyższeniu",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": ["Triceps", "Barki"],
+      "equipment": ["Masa własnego ciała", "Ławka"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Pompki ze stopami na podwyższeniu (decline push-ups) kierują wektor siły ku dołowi klatki piersiowej i przednim deltom — odwrotnie niż pompki na podwyższeniu rękoma. Kąt pochylenia zwiększa udział górnej klatki i przednich deltoidów oraz podnosi ogólną trudność ćwiczenia.",
+      "executionInstructions": "Ustaw stopy na ławce, krześle lub pudełku plyometrycznym. Dłonie na podłodze nieco szerzej niż barki. Opuść klatkę ku podłodze, utrzymując ciało w linii od głowy przez biodra do nóg. Wypchnij się do góry do pełnego wyprostu.",
+      "commonMistakes": "Opadanie bioder — brak napięcia tułowia. Zbyt wysokie podwyższenie utrudniające kontrolę.",
+      "coachingTips": "Im wyżej stopy, tym większy udział górnej klatki i deltoidów przednich, tym też trudniejsze ćwiczenie. Możesz dodać pauzę w dolnej pozycji.",
+      "breathingTips": "Wdech podczas opuszczania, wydech podczas wyciskania.",
+      "safetyNotes": "Upewnij się, że podwyższenie jest stabilne i nie ześlizgnie się podczas ćwiczenia.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Siła", "Masa mięśniowa"],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 2,
+      "domsPotential": 3,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień piersiowy większy", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięsień naramienny (głowa przednia)", "isPrimary": false, "coefficient": 0.5 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Pompki klasyczne" },
+        { "exerciseName": "Wyciskanie sztangi na ławce skośnej dodatniej" }
+      ],
+      "regressions": [
+        { "exerciseName": "Pompki klasyczne" }
+      ]
+    },
+
+    {
+      "name": "Szrugsy z hantlami",
+      "mainMuscleGroup": "Plecy",
+      "secondaryMuscleGroups": ["Przedramiona"],
+      "equipment": ["Hantle"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Początkujący",
+      "description": "Szrugsy z hantlami to izolowane ćwiczenie mięśnia czworobocznego grzbietu (zwłaszcza górnej i środkowej części). Hantle pozwalają na naturalną pozycję ramion po bokach ciała z lekką rotacją zewnętrzną, co jest wygodniejsze dla wielu ćwiczących niż wersja ze sztangą.",
+      "executionInstructions": "Stań prosto z hantlami w opuszczonych rękach po bokach ciała, dłonie zwrócone ku sobie. Wzrusz ramionami ku górze maksymalnie wysoko — próbując dotknąć barkami uszu. Napnij czworoboczny na szczycie, utrzymaj 1-2 sekundy i powoli opuść ramiona.",
+      "commonMistakes": "Rolowanie barkami do przodu lub do tyłu zamiast czystego unoszenia. Używanie pędu zamiast siły mięśniowej. Zbyt szybkie tempo bez zatrzymania na szczycie.",
+      "coachingTips": "Ruch powinien być czysto pionowy — żadnych kółek. Izometryczne zatrzymanie na górze mocno zwiększa aktywację czworobocznego. Używaj pasków jeśli grip jest ograniczeniem.",
+      "breathingTips": "Wydech podczas unoszenia ramion, wdech podczas opuszczania.",
+      "safetyNotes": "Nie rotuj ramionami w zakresie ruchu — to niepotrzebnie obciąża staw barkowy. Kontroluj powrót.",
+      "movementPattern": "Inne",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Czołowa",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Siła"],
+      "resistanceType": "Hantle",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień czworoboczny grzbietu", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Zginacze nadgarstka i palców", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Szrugowanie ze sztangą" },
+        { "exerciseName": "Szrugsy na suwnicy Smitha" }
+      ],
+      "regressions": [
+        { "exerciseName": "Szrugowanie ze sztangą" }
+      ]
+    },
+
+    {
+      "name": "Szrugsy na suwnicy Smitha",
+      "mainMuscleGroup": "Plecy",
+      "secondaryMuscleGroups": ["Przedramiona"],
+      "equipment": ["Maszyna"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Początkujący",
+      "description": "Szrugsy na suwnicy Smitha (Smith machine shrugs) ograniczają stopień swobody do czysto pionowego ruchu. To eliminuje konieczność stabilizacji sztangi i pozwala skupić się wyłącznie na maksymalnej aktywacji mięśnia czworobocznego. Idealne do treningu z dużymi ciężarami lub w fazie zmęczeniowej serii.",
+      "executionInstructions": "Ustaw sztangę na suwnicy Smitha na poziomie bioder. Stań pod sztangą, chwyć ją nachwytem na szerokość barków, odblokuj. Stań prosto. Wzrusz ramionami pionowo ku górze i napnij czworoboczny na szczycie. Kontroluj powrót do pozycji wyjściowej.",
+      "commonMistakes": "Uginanie łokci i próba przenoszenia ciężaru ramionami. Brak pełnego zakresu ruchu na dole.",
+      "coachingTips": "Suwnica Smitha pozwala na stosowanie cięższych ciężarów bezpiecznie. Możesz ustawić sztangę nieco za sobą, by ramiona były lekko odciągnięte do tyłu — lepsze rozciągnięcie czworobocznego na dole.",
+      "breathingTips": "Wydech podczas unoszenia, wdech podczas opuszczania.",
+      "safetyNotes": "Ćwiczenie bezpieczne dzięki prowadnicy suwnicy. Zablokuj sztangę po każdej serii.",
+      "movementPattern": "Inne",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Czołowa",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Siła"],
+      "resistanceType": "Maszyna",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień czworoboczny grzbietu", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Zginacze nadgarstka i palców", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Szrugowanie ze sztangą" },
+        { "exerciseName": "Szrugsy z hantlami" }
+      ],
+      "regressions": [
+        { "exerciseName": "Szrugowanie ze sztangą" }
+      ]
+    },
+
+    {
+      "name": "High Pull",
+      "mainMuscleGroup": "Plecy",
+      "secondaryMuscleGroups": ["Barki", "Całe ciało"],
+      "equipment": ["Sztanga", "Hantle", "Kettlebell"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Zaawansowany",
+      "description": "High Pull to eksplozywne ćwiczenie złożone wywodzące się z olimpijskiego podnoszenia ciężarów. Łączy dynamiczny zawias biodrowy z eksplozywnym ciągnięciem sztangi powyżej wysokości bioder ku barkom. Angażuje w kolejności: kulszowo-goleniowe, pośladki, prostowniki grzbietu (faza wyprostu bioder), następnie barki i trapez (pull). Klasyfikowane jako ruch mocy.",
+      "executionInstructions": "Ustaw sztangę na podłodze lub na wysokości kolan. Chwyć ją nachwytem na szerokość barków lub nieco szerzej. Przyjmij pozycję zawiasu biodrowego. Eksploduj biodrami do przodu, prostując jednocześnie kolana i stając na palcach. Momentum przenosi się przez tułów — unieś łokcie wysoko, ciągnąc sztangę do wysokości barków lub powyżej. Kontrolowany powrót do pozycji wyjściowej.",
+      "commonMistakes": "Używanie ramion zamiast bioder jako motoru ruchu — to ćwiczenie mocy, nie wiosłowanie pionowe. Zbyt powolne tempo pozbawia ćwiczenie charakteru eksplozywnego. Brak pełnego wyprostu bioder.",
+      "coachingTips": "Biodra, a nie barki, generują moc. Ramiona są tylko dźwignią przenoszącą siłę. Tempo: eksplozywny ruch w górę, kontrolowany w dół. Ćwiczenie najlepiej wykonywać jako pierwsze w sesji, gdy układ nerwowy jest wypoczęty.",
+      "breathingTips": "Wdech przed ruchem, wydech gwałtowny podczas eksplozji bioder.",
+      "safetyNotes": "Ćwiczenie zaawansowane — opanuj najpierw martwy ciąg i wznosy obciążone. Błędy techniczne mogą prowadzić do urazu dolnych pleców lub barków. Nie stosuj do upadku mięśniowego.",
+      "movementPattern": "Przyciąganie pionowe",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Czołowa",
+      "suitableExperienceLevels": ["Zaawansowany"],
+      "trainingGoals": ["Siła", "Zdrowie ogólne"],
+      "resistanceType": "Sztanga",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Nie",
+      "jointStress": "Średnie",
+      "learningDifficulty": 4,
+      "neurologicalFatigue": 4,
+      "domsPotential": 3,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień czworoboczny grzbietu", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień naramienny (głowa boczna)", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięśnie kulszowo-goleniowe", "isPrimary": false, "coefficient": 0.6 },
+        { "specificMuscleName": "Mięsień pośladkowy wielki", "isPrimary": false, "coefficient": 0.6 },
+        { "specificMuscleName": "Prostowniki grzbietu", "isPrimary": false, "coefficient": 0.4 },
+        { "specificMuscleName": "Mięśnie stożka rotatorów", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Martwy ciąg konwencjonalny" }
+      ],
+      "regressions": [
+        { "exerciseName": "Szrugowanie ze sztangą" }
+      ]
+    },
+
+    {
+      "name": "Przysiad na jednej nodze (Pistol Squat)",
+      "mainMuscleGroup": "Mięśnie czworogłowe uda",
+      "secondaryMuscleGroups": ["Pośladki", "Mięśnie dwugłowe uda", "Brzuch"],
+      "equipment": ["Masa własnego ciała"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Zaawansowany",
+      "description": "Pistol Squat to jednostronne przysiady na jednej nodze do pełnego głębokiego przysiadu, z drugą nogą wyciągniętą poziomo przed siebie. Wymaga wyjątkowej siły, ruchomości kostki i stawu biodrowego oraz propriocepcji. Jest testem symetrii siłowej i mobilności dolnych partii.",
+      "executionInstructions": "Stań na jednej nodze. Wyciągnij drugą nogę poziomo przed siebie. Powoli opuść się do głębokiego przysiadu na jednej nodze, trzymając wyciągniętą nogę prosto. Kolano nogi podporowej podąża za palcami stopy. Wstań ze szczytu dolnego do pełnego wyprostu. Trzymaj ręce przed sobą dla balansu.",
+      "commonMistakes": "Kolano zapada się do wewnątrz (valgus). Brak ruchomości kostki ograniczający głębokość. Pochylanie tułowia za daleko do przodu.",
+      "coachingTips": "Progresja: zacznij od Pistol Squat z asekuracją (trzymaj się drążka), potem box pistol (do skrzyni), potem pełny. Ruchomość kostki jest kluczem — rozciągaj ją regularnie.",
+      "breathingTips": "Wdech podczas schodzenia, wydech podczas wstawania.",
+      "safetyNotes": "Ćwiczenie zaawansowane — nie wykonuj z bólem kolana lub kostki. Opanuj pełny obustronny przysiad zanim przejdziesz do Pistol Squat.",
+      "movementPattern": "Przysiad",
+      "movementCategory": "Przysiad",
+      "exerciseType": "Złożone",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Zaawansowany"],
+      "trainingGoals": ["Siła", "Zdrowie ogólne"],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Wysokie",
+      "learningDifficulty": 5,
+      "neurologicalFatigue": 3,
+      "domsPotential": 4,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień czworogłowy uda", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień pośladkowy wielki", "isPrimary": false, "coefficient": 0.6 },
+        { "specificMuscleName": "Mięśnie kulszowo-goleniowe", "isPrimary": false, "coefficient": 0.4 },
+        { "specificMuscleName": "Mięśnie odwodziciele uda", "isPrimary": false, "coefficient": 0.3 },
+        { "specificMuscleName": "Mięsień poprzeczny brzucha", "isPrimary": false, "coefficient": 0.4 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Wykrok w tył" },
+        { "exerciseName": "Wykroki chodzone" }
+      ],
+      "regressions": [
+        { "exerciseName": "Wykrok w tył" },
+        { "exerciseName": "Przysiad ze sztangą z przodu" }
+      ]
+    },
+
+    {
+      "name": "Przysiad Zerchera (Zercher Squat)",
+      "mainMuscleGroup": "Mięśnie czworogłowe uda",
+      "secondaryMuscleGroups": ["Pośladki", "Przywodziciele", "Plecy", "Brzuch"],
+      "equipment": ["Sztanga", "Ławka"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Zaawansowany",
+      "description": "Zercher Squat to głęboki przysiad ze sztangą trzymaną w zgięciu łokci przed klatką. Pozycja obciążenia wymusza pionowy tułów i głęboki przysiad, intensywnie angażując czworogłowe, pośladki i przywodziciele. Znaczne wymagania stabilizerów tułowia i siły chwytu/łokci.",
+      "executionInstructions": "Podnieś sztangę z ławki lub z kucki do zgięcia łokci — sztanga leży w zagłębieniu łokciowym, ramiona splecione lub dłonie złączone. Stój z nogami na szerokość bioder lub szerzej, palce nieco na zewnątrz. Schodź do pełnego głębokiego przysiadu, utrzymując tułów pionowo. Wstań, napinając całe ciało.",
+      "commonMistakes": "Pochylanie tułowia do przodu (obniża cel ćwiczenia). Za wąski rozstaw nóg ograniczający głębokość. Zbyt ciężka sztanga powodująca ból łokci.",
+      "coachingTips": "Otulaj sztangę rękawem lub używaj maty barbell sleeve dla komfortu łokci. Zercher wymaga dobrej ruchomości bioder i kostki. Zacznij od lekkiego ciężaru. Trzymaj łokcie wysokim — to utrzymuje tułów w pionie.",
+      "breathingTips": "Wdech i napięcie tłoczni brzusznej przed zejściem, wydech na górze.",
+      "safetyNotes": "Może powodować ból łokci przy dużych ciężarach — stosuj ochronę. Ćwiczenie zaawansowane — opanuj front squat jako wstęp.",
+      "movementPattern": "Przysiad",
+      "movementCategory": "Przysiad",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Zaawansowany"],
+      "trainingGoals": ["Siła", "Masa mięśniowa"],
+      "resistanceType": "Sztanga",
+      "requiresSpotter": true,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Wysokie",
+      "learningDifficulty": 4,
+      "neurologicalFatigue": 4,
+      "domsPotential": 4,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień czworogłowy uda", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień pośladkowy wielki", "isPrimary": false, "coefficient": 0.6 },
+        { "specificMuscleName": "Mięśnie przywodziciele uda", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Prostowniki grzbietu", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięsień poprzeczny brzucha", "isPrimary": false, "coefficient": 0.4 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Przysiad ze sztangą z przodu" }
+      ],
+      "regressions": [
+        { "exerciseName": "Przysiad ze sztangą z przodu" },
+        { "exerciseName": "Hack squat na maszynie" }
+      ]
+    },
+
+    {
+      "name": "Skłony boczne z hantlem",
+      "mainMuscleGroup": "Brzuch",
+      "secondaryMuscleGroups": [],
+      "equipment": ["Hantle"],
+      "trainingLocation": ["Siłownia", "Dom"],
+      "difficultyLevel": "Początkujący",
+      "description": "Skłony boczne z hantlem izolują mięśnie skośne brzucha i kwadratowy lędźwi poprzez boczne zgięcie tułowia. Prosta mechanika, szeroka dostępność i przydatność w profilaktyce bólu dolnych pleców.",
+      "executionInstructions": "Stań prosto z hantlem w jednej ręce. Powoli pochyl tułów w bok, opuszczając hantlę wzdłuż uda. Zakres ruchu: do końca komfortowego zasięgu. Wróć do pozycji pionowej siłą mięśni bocznych tułowia. Wykonaj wszystkie powtórzenia na jedną stronę, następnie zmień ręce.",
+      "commonMistakes": "Pochylanie do przodu lub rotacja tułowia zamiast czystego ruchu bocznego. Zbyt duży ciężar skracający zakres ruchu.",
+      "coachingTips": "Ruch powinien być czysto boczny w płaszczyźnie czołowej — wyobraź sobie stanie plecami do ściany. Możesz wykonywać jednostronnie (obciążona ręka po boku) lub z obciążeniem po obu stronach naprzemiennie.",
+      "breathingTips": "Wydech podczas bocznego zgięcia, wdech podczas powrotu.",
+      "safetyNotes": "Osoby z bólem dolnych pleców powinny skonsultować to ćwiczenie z fizjoterapeutą.",
+      "movementPattern": "Inne",
+      "movementCategory": "Core",
+      "exerciseType": "Izolowane",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Czołowa",
+      "suitableExperienceLevels": ["Początkujący", "Średniozaawansowany", "Zaawansowany"],
+      "trainingGoals": ["Masa mięśniowa", "Zdrowie ogólne"],
+      "resistanceType": "Hantle",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Tak",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięśnie skośne brzucha", "isPrimary": true, "coefficient": 1 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Woodchop na wyciągu" }
+      ],
+      "regressions": [
+        { "exerciseName": "Rotacje rosyjskie" }
+      ]
+    },
+
+    {
+      "name": "Jefferson Curl",
+      "mainMuscleGroup": "Plecy",
+      "secondaryMuscleGroups": ["Mięśnie dwugłowe uda"],
+      "equipment": ["Sztanga", "Hantle", "Kettlebell"],
+      "trainingLocation": ["Siłownia"],
+      "difficultyLevel": "Zaawansowany",
+      "description": "Jefferson Curl to ćwiczenie loaded mobility — stopniowe, kontrolowane zwijanie kręgosłupa pod obciążeniem, stojąc na podwyższeniu. Celowo angażuje kręgosłup w zgięcie (flex) z obciążeniem, by wzmocnić więzadła, dyski i mięśnie przykręgosłupowe w pełnym zakresie. Stosowane jako ćwiczenie prewencyjne i mobilizacyjne przez trenerów sportowych i gimnastyków. Nie jest ćwiczeniem hipertroficznym — celem jest mobilność i elastyczność tkanek łącznych.",
+      "executionInstructions": "Stań na podwyższeniu (skrzynce lub stopniu) stopami razem. Trzymaj lekkie obciążenie w opuszczonych rękach. Zacznij od pochylenia głowy ku przodowi, następnie zaokrąglaj kręgosłup segment po segmencie — szyjny, piersiowy, lędźwiowy — aż ciężar zwisa możliwie nisko. Utrzymaj 2-3 sekundy. Wróć odwijając kręgosłup w odwrotnej kolejności — od dołu ku górze.",
+      "commonMistakes": "Stosowanie zbyt dużego ciężaru (to ćwiczenie mobilnościowe). Pośpiech — każdy segment kręgosłupa musi być świadomie zwijany. Brak podwyższenia ograniczającego zakres ruchu.",
+      "coachingTips": "Zacznij od minimalnego ciężaru (2-5 kg) i przez wiele tygodni stopniowo go zwiększaj. Podwyższenie musi być stabilne. Miej poczucie, że 'wydłużasz' kręgosłup przez grawitację. Jefferson Curl nie jest dla osób z aktywnym bólem pleców lub hernią dysku.",
+      "breathingTips": "Długi, spokojny wydech podczas zwijania, wdech podczas powrotu.",
+      "safetyNotes": "ZAAWANSOWANE — tylko dla osób z dobrą techniką martwego ciągu i bez istniejących problemów kręgosłupa. Zawsze zaczynaj od bardzo lekkiego ciężaru. Przy bólu lub dyskomforcie przerwij natychmiast.",
+      "movementPattern": "Zgięcie tułowia",
+      "movementCategory": "Inne",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Zaawansowany"],
+      "trainingGoals": ["Zdrowie ogólne"],
+      "resistanceType": "Hantle",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Nie",
+      "jointStress": "Wysokie",
+      "learningDifficulty": 5,
+      "neurologicalFatigue": 2,
+      "domsPotential": 2,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Prostowniki grzbietu", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięśnie kulszowo-goleniowe", "isPrimary": false, "coefficient": 0.6 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Wznosy tułowia" }
+      ],
+      "regressions": [
+        { "exerciseName": "Martwy ciąg konwencjonalny" }
+      ]
+    }
+  ]
+}
