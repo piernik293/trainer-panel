@@ -2188,12 +2188,17 @@ describe("Stage 6 — fatigue management integration", () => {
 // ─── Stage 7A: Per-level session constraints ──────────────────────────────────
 //
 // All four sub-features: poolSize, maxDayExercises, allowedSetCounts, maxSessionMinutes.
-// Duration formula (DURATION_ESTIMATE_ASSUMPTIONS):
-//   estimatedSeconds = 300 + totalSets×120 + max(0,totalExercises−1)×60
-// Spot-check (used in several tests below):
-//   1 exercise × 2 sets = 300 + 240 +   0 = 540s = 9.0 min
-//   1 exercise × 3 sets = 300 + 360 +   0 = 660s = 11.0 min
-//   2 exercises × {2+2} = 300 + 480 +  60 = 840s = 14.0 min
+//
+// Duration formula (Stage 7A clarification, SESSION_DURATION_SPEC):
+//   estimatedSeconds
+//     = warmUpSeconds (300 s fallback)
+//     + totalSets × 60                          (execution)
+//     + (totalSets − N) × 90                    (rest, no rest after final set; rest=90 s fallback)
+//     + (N − 1) × 60                            (transitions)
+// Spot-check (N = totalExercises):
+//   1 exercise × 2 sets = 300 + 120 +  90 +  0 = 510s =  8.5 min
+//   1 exercise × 3 sets = 300 + 180 + 180 +  0 = 660s = 11.0 min
+//   2 exercises × {2+2} = 300 + 240 + 180 + 60 = 780s = 13.0 min
 
 function makeT(id: number): AutoFillDayTarget { return { targetId: id, targetName: `T${id}` }; }
 
@@ -2417,8 +2422,8 @@ describe("Stage 7A-3 — allowedSetCounts=[2,3] restricts set assignments", () =
 
 describe("Stage 7A-4 — maxSessionMinutes duration cap", () => {
   it("stops at 1 exercise when adding a 2nd would exceed maxSessionMinutes=9", () => {
-    // 1 ex × 2 sets → 540s = 9.0 min (allowed, = cap not > cap)
-    // 2 ex × 4 sets → 840s = 14 min (rejected, > 9)
+    // 1 ex × 2 sets → 510s = 8.5 min (allowed, < 9-min cap)
+    // 2 ex × 4 sets → 780s = 13.0 min (rejected, > 9)
     const T1 = makeT(1);
     const T2 = makeT(2);
     const weeklyTargets = new Map([
@@ -2441,13 +2446,13 @@ describe("Stage 7A-4 — maxSessionMinutes duration cap", () => {
       undefined, [2, 3], 9, // maxSessionMinutes=9
     );
 
-    // canAddMore() for 2nd exercise: 2 ex × (2+2) sets = 840s = 14 min > 9 → false
+    // canAddMore() for 2nd exercise: 2 ex × (2+2) sets = 780s = 13 min > 9 → false
     expect(result.toAdd).toHaveLength(1);
   });
 
   it("prevents adding any exercise when existing exercises already fill the session cap", () => {
-    // existing: 1 exercise, 2 sets → 540s = 9.0 min
-    // cap=10: canAddMore (2 ex, 4 sets) → 840s = 14 min > 10 → false
+    // existing: 1 exercise, 2 sets → 510s = 8.5 min
+    // cap=10: canAddMore (2 ex, 4 sets) → 780s = 13 min > 10 → false
     const target = makeT(1);
     const weeklyTargets = new Map([[target.targetId, makeWeekly(target.targetId, 0, 6)]]);
     const coefficients = new Map<number, ReadonlyMap<number, number>>([
@@ -2465,14 +2470,14 @@ describe("Stage 7A-4 — maxSessionMinutes duration cap", () => {
       undefined, undefined, 10, // maxSessionMinutes=10
     );
 
-    // canAddMore: 2 ex × 4 sets = 840s = 14 min > 10 → false immediately
+    // canAddMore: 2 ex × 4 sets = 780s = 13 min > 10 → false immediately
     expect(result.toAdd).toHaveLength(0);
   });
 
   it("3-set expansion is rejected by duration cap when it would push session over limit", () => {
     // With maxSessionMinutes=9 and allowedSetCounts=[2,3]:
-    //   sets=2 → 540s = 9 min (exactly at cap → not > cap → allowed)
-    //   sets=3 → 660s = 11 min > 9 → rejected
+    //   sets=2 → 510s = 8.5 min (< 9-min cap → allowed)
+    //   sets=3 → 660s = 11.0 min > 9 → rejected
     // So the exercise is committed at 2 sets, not 3.
     const target = makeT(1);
     const weeklyTargets = new Map([[target.targetId, makeWeekly(target.targetId, 0, 12)]]);

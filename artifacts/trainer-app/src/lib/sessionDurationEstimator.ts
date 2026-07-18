@@ -1,133 +1,119 @@
 /**
- * Session Duration Estimator — Stage 7A
+ * Pure, independently tested session-duration estimator for the auto-fill generator.
  *
- * Provides a deterministic estimate of session duration used as a safety gate
- * in the auto-fill generator.
+ * Formula (Stage 7A clarification):
  *
- * Formula (all quantities per working set or per exercise):
+ *   sessionDuration
+ *     = warmUpSeconds
+ *     + Σᵢ [ Sᵢ × SECS_PER_SET_EXECUTION + (Sᵢ − 1) × restSecondsᵢ ]
+ *     + max(0, N − 1) × TRANSITION_SECONDS
  *
- *   estimatedSeconds =
- *       SESSION_WARMUP_SECONDS
- *     + totalSets × (SECS_PER_REP × REPS_PER_SET + REST_SECONDS_PER_SET)
- *     + max(0, totalExercises − 1) × TRANSITION_SECONDS_BETWEEN_EXERCISES
+ * where N = total exercise count, Sᵢ = working sets for exercise i.
  *
- * ─── Sources ─────────────────────────────────────────────────────────────────
- * Two constants are sourced from existing system defaults:
+ * When all exercises share the same rest duration R (the common case — all
+ * auto-filled exercises receive DRAFT_EXERCISE_DEFAULTS.restSeconds = 90 s,
+ * and existing exercises without per-exercise data use the same documented
+ * fallback), the per-exercise sum telescopes to:
  *
- *   REST_SECONDS_PER_SET (90)
- *     Source: DRAFT_EXERCISE_DEFAULTS.restSeconds in exerciseDraftHelpers.ts.
- *     Every exercise added by auto-fill uses this value as its rest prescription
- *     unless the trainer manually overrides it. Not an assumption.
+ *   Σᵢ [ Sᵢ × 60 + (Sᵢ − 1) × R ]
+ *   = totalSets × 60 + (totalSets − N) × R
  *
- *   REPS_PER_SET (10)
- *     Source: midpoint of DRAFT_EXERCISE_DEFAULTS (repsMin=8, repsMax=12).
- *     Auto-fill exercises are committed with these rep defaults.
- *     Not an assumption — derived from the actual committed defaults.
+ * "No rest after the final set of an exercise" is built into (Sᵢ − 1) × R.
  *
- * ─── Estimation assumptions (no data source in current model) ────────────────
- * Three constants cannot be derived from data in the current data model. They are
- * named here so they are visible, discoverable, and easily replaced:
- *
- *   SECS_PER_REP (3)
- *     Assumption: 3 seconds per repetition (≈2 s eccentric + 1 s concentric).
- *     The exercises table has a `tempo` column but it is NOT surfaced in
- *     AutoFillRecExercise. When per-exercise tempo data is added to the
- *     recommendation API response, this constant should be retired.
- *
- *   SESSION_WARMUP_SECONDS (300)
- *     Assumption: 5-minute general warm-up at session start.
- *     No warm-up time field exists in the current data model.
- *
- *   TRANSITION_SECONDS_BETWEEN_EXERCISES (60)
- *     Assumption: 60-second average transition between exercises
- *     (equipment adjustment, brief mobilisation, movement setup).
- *     No transition-time field exists in the current data model.
+ * All constants are named and sourced below; nothing is silently assumed.
  */
-
-// ─── Constants ────────────────────────────────────────────────────────────────
 
 /**
- * All duration-estimation constants in one place.
- *
- * Fields marked "From defaults" are sourced from DRAFT_EXERCISE_DEFAULTS.
- * Fields marked "Assumption" have no data-model source — they are documented
- * estimates that should be replaced once the data model supports them.
+ * Session-duration constants — every value is either specified by the Stage 7A
+ * clarification or derived from an existing documented system default.
  */
-export const DURATION_ESTIMATE_ASSUMPTIONS = {
-  // ─── From DRAFT_EXERCISE_DEFAULTS ─────────────────────────────────────────
+export const SESSION_DURATION_SPEC = {
+  /**
+   * Execution time per working set in seconds.
+   * Source: Stage 7A clarification — "number of working sets × 60 seconds of exercise execution".
+   */
+  SECS_PER_SET_EXECUTION: 60,
 
   /**
-   * Rest between working sets, in seconds.
-   * From: DRAFT_EXERCISE_DEFAULTS.restSeconds (exerciseDraftHelpers.ts).
+   * Setup/transition time between consecutive exercises in seconds.
+   * Source: Stage 7A clarification — "add 60 seconds of transition/setup time between exercises".
    */
-  REST_SECONDS_PER_SET: 90,
+  TRANSITION_SECONDS: 60,
 
   /**
-   * Repetitions per working set for active-time estimation.
-   * From: midpoint of DRAFT_EXERCISE_DEFAULTS.repsMin=8 and repsMax=12.
+   * Session warm-up duration fallback in seconds.
+   * Used when no explicit warm-up is recorded for the current plan day.
+   * Source: Stage 7A clarification — "5 minutes" fallback.
    */
-  REPS_PER_SET: 10,
-
-  // ─── Estimation assumptions ───────────────────────────────────────────────
-
-  /**
-   * Seconds per repetition.
-   * Assumption: 3 s (≈2 s eccentric + 1 s concentric) for simple compound
-   * exercises typical of a "Brak aktywności fizycznej" programme.
-   * Data required to remove: `tempo` field in AutoFillRecExercise.
-   */
-  SECS_PER_REP: 3,
+  WARMUP_FALLBACK_SECONDS: 300,
 
   /**
-   * Seconds added once at session start for a general warm-up.
-   * Assumption: 5 minutes (300 s).
-   * Data required to remove: a per-session warm-up time field in the data model.
+   * Rest duration per inter-set interval fallback in seconds.
+   * Source: DRAFT_EXERCISE_DEFAULTS.restSeconds (exerciseDraftHelpers.ts line 80).
+   * This is the actual rest time applied to every exercise created by the auto-fill
+   * generator, so it is not an approximation for auto-filled exercises.
+   * Also used as a fallback for existing exercises whose individual rest times are
+   * not available at the selectExercisesForDay call site (only aggregate set counts
+   * are passed in — existingExerciseCount / existingSetCount).
    */
-  SESSION_WARMUP_SECONDS: 300,
+  REST_SECONDS_FALLBACK: 90,
 
   /**
-   * Seconds between consecutive exercises (setup, brief mobilisation).
-   * Assumption: 60 s.
-   * Data required to remove: a per-exercise transition-time field.
+   * Hard session-duration cap in seconds.
+   * Exactly MAX_SESSION_SECONDS is ACCEPTED (strict greater-than comparison).
+   * Any value strictly above is REJECTED.
+   * Source: Stage 7A clarification — "exactly 45 minutes is allowed;
+   * any projected duration above 2700 seconds must be rejected".
    */
-  TRANSITION_SECONDS_BETWEEN_EXERCISES: 60,
+  MAX_SESSION_SECONDS: 2700,
 } as const;
 
-// ─── Estimators ───────────────────────────────────────────────────────────────
-
 /**
- * Returns the estimated session duration in seconds.
+ * Returns the estimated total session duration in seconds.
  *
- * Uses DURATION_ESTIMATE_ASSUMPTIONS for all constants.
- *
- * @param totalExercises  Total committed exercises (existing + auto-filled).
- * @param totalSets       Total committed working sets (existing + auto-filled).
+ * @param totalExercises  Total exercise count (existing + auto-filled).
+ * @param totalSets       Total working-set count (existing + auto-filled).
+ * @param restSeconds     Rest duration per inter-set interval.
+ *                        Defaults to SESSION_DURATION_SPEC.REST_SECONDS_FALLBACK (90 s).
+ * @param warmUpSeconds   Warm-up duration. Pass the plan day's actual warm-up when
+ *                        available; otherwise the documented fallback of 300 s is used.
+ *                        Defaults to SESSION_DURATION_SPEC.WARMUP_FALLBACK_SECONDS (300 s).
  */
 export function estimateSessionDurationSeconds(
   totalExercises: number,
   totalSets: number,
+  restSeconds: number = SESSION_DURATION_SPEC.REST_SECONDS_FALLBACK,
+  warmUpSeconds: number = SESSION_DURATION_SPEC.WARMUP_FALLBACK_SECONDS,
 ): number {
-  const {
-    REST_SECONDS_PER_SET,
-    REPS_PER_SET,
-    SECS_PER_REP,
-    SESSION_WARMUP_SECONDS,
-    TRANSITION_SECONDS_BETWEEN_EXERCISES,
-  } = DURATION_ESTIMATE_ASSUMPTIONS;
+  if (totalExercises <= 0 || totalSets <= 0) return warmUpSeconds;
 
-  const activeSeconds  = totalSets * REPS_PER_SET * SECS_PER_REP;
-  const restSeconds    = totalSets * REST_SECONDS_PER_SET;
-  const transitionSecs = Math.max(0, totalExercises - 1) * TRANSITION_SECONDS_BETWEEN_EXERCISES;
+  const { SECS_PER_SET_EXECUTION, TRANSITION_SECONDS } = SESSION_DURATION_SPEC;
 
-  return SESSION_WARMUP_SECONDS + activeSeconds + restSeconds + transitionSecs;
+  // Execution: every set costs SECS_PER_SET_EXECUTION (60 s)
+  const executionTime = totalSets * SECS_PER_SET_EXECUTION;
+  // Rest: (S − 1) intervals per exercise, no rest after the final set.
+  // With uniform rest: Σ(Sᵢ − 1) × R = (totalSets − N) × R
+  const restTime = (totalSets - totalExercises) * restSeconds;
+  // Transition: one gap between each pair of consecutive exercises
+  const transitionTime = Math.max(0, totalExercises - 1) * TRANSITION_SECONDS;
+
+  return warmUpSeconds + executionTime + restTime + transitionTime;
 }
 
 /**
- * Returns the estimated session duration in minutes (decimal).
+ * Returns true when the projected session duration strictly exceeds the hard
+ * 2700-second cap (45 minutes).  Exactly 2700 s returns false (accepted).
+ *
+ * Parameters match estimateSessionDurationSeconds.
  */
-export function estimateSessionDurationMinutes(
+export function exceedsSessionCap(
   totalExercises: number,
   totalSets: number,
-): number {
-  return estimateSessionDurationSeconds(totalExercises, totalSets) / 60;
+  restSeconds?: number,
+  warmUpSeconds?: number,
+): boolean {
+  return (
+    estimateSessionDurationSeconds(totalExercises, totalSets, restSeconds, warmUpSeconds) >
+    SESSION_DURATION_SPEC.MAX_SESSION_SECONDS
+  );
 }

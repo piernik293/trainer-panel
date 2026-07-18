@@ -718,7 +718,8 @@ export function selectExercisesForDay(
    */
   function wouldExceedDuration(projectedExercises: number, projectedSets: number): boolean {
     if (effectiveMaxSessionMinutes === Infinity) return false;
-    return estimateSessionDurationSeconds(projectedExercises, projectedSets) / 60 > effectiveMaxSessionMinutes;
+    // Compare in seconds to avoid floating-point division; exactly at the cap is accepted (strict >).
+    return estimateSessionDurationSeconds(projectedExercises, projectedSets) > effectiveMaxSessionMinutes * 60;
   }
 
   const canAddMore = (): boolean => {
