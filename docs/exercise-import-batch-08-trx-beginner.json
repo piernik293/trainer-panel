@@ -1,0 +1,340 @@
+{
+  "duplicateStrategy": "skip",
+  "skipInvalidRows": false,
+  "_meta": {
+    "batch": "08-trx-beginner",
+    "description": "TRX beginner series — 7 exercises designed for users with no previous physical activity. All marked Początkujący, canBePerformedToFailure: Nie, suitableExperienceLevels: [Początkujący]. TRX allows angle-based load scaling: standing more upright reduces intensity, making every exercise self-adjustable without equipment changes.",
+    "duplicatesSkipped": [
+      {
+        "requested": "Wiosłowanie na TRX",
+        "matchedId": 133,
+        "matchedName": "Wiosłowanie na TRX",
+        "reason": "Exact match — already in library."
+      }
+    ],
+    "designPrinciple": "TRX exercises are ordered from most-supported (Przysiad, Wykrok — user holds straps for balance) to least-supported (Plank — feet suspended, hands on floor). Coaching tips emphasise movement quality and angle management over load or rep count.",
+    "exercisesReady": 7
+  },
+  "rows": [
+    {
+      "name": "Pompki na TRX",
+      "mainMuscleGroup": "Klatka piersiowa",
+      "secondaryMuscleGroups": ["Triceps", "Barki", "Brzuch"],
+      "equipment": ["TRX"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Początkujący",
+      "description": "Pompki na TRX to wersja pompek z uchwytami zawieszonymi na taśmach. Niestabilność taśm angażuje dodatkowe mięśnie stabilizujące bark i tułów. Kluczową zaletą dla początkujących jest regulacja trudności kątem ustawienia — im bardziej pionowa pozycja ciała, tym mniejsze obciążenie. Idealne jako pierwszy krok dla osób, które nie są w stanie wykonać klasycznych pompek.",
+      "executionInstructions": "Chwyć uchwyty TRX i odsuń się od punktu zawieszenia, pochylając ciało do przodu. Zacznij od małego kąta (ciało prawie pionowe). Ugnij łokcie, opuszczając klatkę ku uchwytom, utrzymując łokcie pod kątem ok. 60° do tułowia. Wypchnij się do pełnego wyprostu. Ciało tworzy jedną prostą linię od głowy do pięt przez cały ruch.",
+      "commonMistakes": "Opadanie bioder lub garbienie się w biodrach — utrzymuj napięcie całego tułowia. Zbyt szeroko ustawione łokcie obciążają bark. Brak kontroli w fazie opuszczania.",
+      "coachingTips": "Zacznij od pozycji prawie pionowej i stopniowo zwiększaj kąt pochylenia w kolejnych tygodniach. Skupiaj się na utrzymaniu sztywnej linii ciała — to ważniejsze niż liczba powtórzeń. Gdy pozycja jest stabilna i czysta przez 10-12 powtórzeń, zejdź o krok dalej od punktu zawieszenia.",
+      "breathingTips": "Wdech podczas opuszczania do uchwytów, wydech podczas odpychania.",
+      "safetyNotes": "Nie wykonuj do upadku mięśniowego w fazie adaptacji — zakończ serię, gdy technika zaczyna się psuć. Przy bólu nadgarstków lub barków zmniejsz kąt pochylenia lub przerwij.",
+      "movementPattern": "Pchanie poziome",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Poprzeczna",
+      "suitableExperienceLevels": ["Początkujący"],
+      "trainingGoals": ["Zdrowie ogólne", "Siła"],
+      "resistanceType": "TRX",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Nie",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień piersiowy większy", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięsień naramienny (głowa przednia)", "isPrimary": false, "coefficient": 0.3 },
+        { "specificMuscleName": "Mięsień poprzeczny brzucha", "isPrimary": false, "coefficient": 0.4 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Pompki na kolanach" },
+        { "exerciseName": "Pompki klasyczne" }
+      ],
+      "progressions": [
+        { "exerciseName": "Pompki klasyczne" }
+      ],
+      "regressions": [
+        { "exerciseName": "Pompki na kolanach" }
+      ]
+    },
+
+    {
+      "name": "Przysiad na TRX",
+      "mainMuscleGroup": "Mięśnie czworogłowe uda",
+      "secondaryMuscleGroups": ["Pośladki", "Mięśnie dwugłowe uda"],
+      "equipment": ["TRX"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Początkujący",
+      "description": "Przysiad na TRX wykorzystuje taśmy jako support dla równowagi i odciążenia — ćwiczący trzyma uchwyty oburącz i może lekko się nimi wspierać, co pozwala na głębszy przysiad z utrzymaniem pionowego tułowia. Idealne wprowadzenie do mechaniki przysiadu dla osób z ograniczoną mobilnością kostki lub bioder, a także dla tych, którzy nie są pewni techniki przysiadu bez asekuracji.",
+      "executionInstructions": "Stań twarzą do punktu zawieszenia TRX, chwyć uchwyty na wysokości bioder lub klatki. Rozstaw stopy na szerokość bioder, palce lekko na zewnątrz. Odsuwaj biodra w tył i ku dołowi, lekko trzymając się taśm dla balansu. Schódź do kąta 90° w kolanach lub głębiej, utrzymując klatkę uniesioną. Wstań, odpychając piętami od podłogi.",
+      "commonMistakes": "Ciągnięcie się za taśmy zamiast używania ich tylko do balansu. Kolana wpadające do wewnątrz (valgus). Odrywanie pięt od podłogi.",
+      "coachingTips": "TRX daje Ci pewność — nie bój się schodzić głęboko. Używaj taśm tylko tyle, ile potrzeba do utrzymania równowagi, nie do dźwigania się w górę. Z tygodnia na tydzień zmniejszaj siłę chwytu na taśmach, dążąc do pełnego przysiadu bez asekuracji. Patrz przed siebie, nie w dół.",
+      "breathingTips": "Wdech podczas schodzenia, wydech podczas wstawania.",
+      "safetyNotes": "Nie wykonuj do upadku mięśniowego — przy pierwszych oznakach drżenia lub utraty kontroli zakończ serię. Przy bólu kolan lub kręgosłupa skonsultuj się ze specjalistą.",
+      "movementPattern": "Przysiad",
+      "movementCategory": "Przysiad",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Początkujący"],
+      "trainingGoals": ["Zdrowie ogólne", "Siła"],
+      "resistanceType": "TRX",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Nie",
+      "jointStress": "Niskie",
+      "learningDifficulty": 1,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień czworogłowy uda", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień pośladkowy wielki", "isPrimary": false, "coefficient": 0.6 },
+        { "specificMuscleName": "Mięśnie kulszowo-goleniowe", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Wiosłowanie na TRX" }
+      ],
+      "progressions": [
+        { "exerciseName": "Hack squat na maszynie" },
+        { "exerciseName": "Wykrok z TRX" }
+      ],
+      "regressions": [
+        { "exerciseName": "Wiosłowanie na TRX" }
+      ]
+    },
+
+    {
+      "name": "Wykrok z TRX",
+      "mainMuscleGroup": "Mięśnie czworogłowe uda",
+      "secondaryMuscleGroups": ["Pośladki", "Mięśnie dwugłowe uda"],
+      "equipment": ["TRX"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Początkujący",
+      "description": "Wykrok z TRX to jednostronna wersja wykroku z asekuracją taśm zapewniającą balans. Trzymając uchwyty TRX oburącz, ćwiczący może skupić się na technice opuszczania kolana, nie bojąc się utraty równowagi. Doskonałe narzędzie do nauki mechaniki wykroku i budowania siły nóg asymetrycznej, przy jednoczesnym bezpiecznym wejściu w ruch jednostronny.",
+      "executionInstructions": "Stań twarzą do punktu zawieszenia, chwyć uchwyty TRX. Zrób krok do przodu jedną nogą. Opuść tylne kolano ku podłodze, utrzymując przednie kolano nad środkiem stopy. Przedni tułów pozostaje pionowy. Wróć do pozycji wyjściowej, odpychając przednią piętą. Wykonaj wszystkie powtórzenia na jedną stronę, następnie zmień.",
+      "commonMistakes": "Przednie kolano wysuwające się za palce stopy. Pochylanie tułowia do przodu zamiast prostego zejścia w dół. Ciągnięcie się mocno za taśmy zamiast lekkiego trzymania.",
+      "coachingTips": "Myśl o ruchu 'w dół', nie 'do przodu' — tylne kolano opada pionowo ku podłodze. Używaj TRX tylko dla pewności, nie jako dźwigni. Z upływem tygodni zmniejszaj nacisk na taśmy. Zaczynaj od krótkiego kroku, by kontrolować zakres ruchu.",
+      "breathingTips": "Wdech podczas opuszczania, wydech podczas powrotu do pozycji stojącej.",
+      "safetyNotes": "Nie wykonuj do upadku mięśniowego. Przy bólu kolana lub biodra przerwij i wróć do przysiadu na TRX.",
+      "movementPattern": "Wykrok",
+      "movementCategory": "Wykrok",
+      "exerciseType": "Złożone",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Początkujący"],
+      "trainingGoals": ["Zdrowie ogólne", "Siła"],
+      "resistanceType": "TRX",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Nie",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień czworogłowy uda", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień pośladkowy wielki", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięśnie kulszowo-goleniowe", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Przysiad na TRX" },
+        { "exerciseName": "Wykrok w tył" }
+      ],
+      "progressions": [
+        { "exerciseName": "Wykrok w tył" },
+        { "exerciseName": "Wykroki chodzone" }
+      ],
+      "regressions": [
+        { "exerciseName": "Przysiad na TRX" }
+      ]
+    },
+
+    {
+      "name": "Y Raise na TRX",
+      "mainMuscleGroup": "Barki",
+      "secondaryMuscleGroups": ["Plecy"],
+      "equipment": ["TRX"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Początkujący",
+      "description": "Y Raise na TRX to ćwiczenie angażujące tylną deltę, środkowy trapez i równoległoboczne poprzez unoszenie ramion w górę i na boki w kształt litery Y, przy ciele odchylonym od pionu. Kluczowe dla budowania zdrowej postawy i stabilności łopatki u osób z siedzącym trybem życia. Niska trudność i brak osiowego obciążenia kręgosłupa czynią je idealnym dla kompletnych początkujących.",
+      "executionInstructions": "Chwyć uchwyty TRX i odchyl się do tyłu (ciało pod kątem 30-45° do podłogi). Ramiona wyciągnięte przed siebie, dłonie skierowane ku sobie. Unieś ramiona nad głowę i na boki, tworząc literę Y — łopatki ściągaj ku sobie i ku dołowi. Powoli wróć do pozycji wyjściowej. Im większy kąt odchylenia, tym trudniejsze ćwiczenie.",
+      "commonMistakes": "Unoszenie ramion do przodu zamiast po łuku w górę i na boki — nie tworzy kształtu Y. Wzruszanie barkami ku uszom zamiast depresji łopatek. Brak kontroli w powrocie.",
+      "coachingTips": "Wyobraź sobie, że chcesz pokazać komuś pachy — ramiona idą w górę i szeroko na boki. Łopatki aktywnie schodź w dół przez cały ruch. Zacznij od małego kąta odchylenia (ciało prawie pionowe) i z tygodnia na tydzień zwiększaj pochylenie. To ćwiczenie poprawy postawy — skup się na jakości, nie na liczbie powtórzeń.",
+      "breathingTips": "Wydech podczas unoszenia ramion, wdech podczas powrotu.",
+      "safetyNotes": "Nie wykonuj do upadku. Przy bólu barku podczas unoszenia ramion zmniejsz kąt odchylenia lub przerwij.",
+      "movementPattern": "Odwodzenie",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Czołowa",
+      "suitableExperienceLevels": ["Początkujący"],
+      "trainingGoals": ["Zdrowie ogólne"],
+      "resistanceType": "TRX",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Nie",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 1,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień naramienny (głowa tylna)", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięśnie równoległoboczne", "isPrimary": false, "coefficient": 0.6 },
+        { "specificMuscleName": "Mięsień czworoboczny grzbietu", "isPrimary": false, "coefficient": 0.5 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Rozciąganie gumy przed klatką (Band Pull-Apart)" },
+        { "exerciseName": "Odwrotne rozpiętki z hantlami" }
+      ],
+      "progressions": [
+        { "exerciseName": "Wiosłowanie na TRX" }
+      ],
+      "regressions": [
+        { "exerciseName": "Rozciąganie gumy przed klatką (Band Pull-Apart)" }
+      ]
+    },
+
+    {
+      "name": "Uginanie ramion na TRX",
+      "mainMuscleGroup": "Biceps",
+      "secondaryMuscleGroups": ["Przedramiona"],
+      "equipment": ["TRX"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Początkujący",
+      "description": "Uginanie ramion na TRX angażuje biceps i brachialis przy ciele zawieszonym na taśmach. Ćwiczący odchyla się do tyłu i ugina łokcie, podciągając ciało ku uchwytom. Trudność reguluje się kątem ustawienia — im bardziej poziome ciało, tym większe obciążenie. Brak obciążenia zewnętrznego i możliwość natychmiastowej korekty kąta czynią je bezpiecznym startem dla kompletnych początkujących.",
+      "executionInstructions": "Stań twarzą do punktu zawieszenia, chwyć uchwyty podchwytem (dłonie ku górze). Odchyl się do tyłu, ciało wyprostowane w linii. Zacznij od małego kąta (ciało prawie pionowe). Ugnij łokcie, prowadząc dłonie ku skroniom — ciało unosi się ku uchwytom. Łokcie pozostają nieruchome. Powoli wróć, kontrolując ruch.",
+      "commonMistakes": "Odrywanie łokci do przodu lub na boki zamiast ich stabilizacji. Zginanie bioder — ciało musi pozostać w jednej linii. Zbyt szybki powrót bez kontroli ekscentrycznej.",
+      "coachingTips": "Wyobraź sobie, że łokcie są przybite do ściany za Tobą — mogą się zginać, ale nie mogą się poruszać. Utrzymuj napięcie pośladków i brzucha przez cały ruch. Powolna faza opuszczania (ekscentryczna) buduje siłę szybciej niż szybkie powtórzenia.",
+      "breathingTips": "Wdech w pozycji wyjściowej, wydech podczas uginania.",
+      "safetyNotes": "Nie wykonuj do upadku mięśniowego w fazie adaptacji. Przy bólu łokci zmniejsz kąt odchylenia.",
+      "movementPattern": "Zgięcie łokcia",
+      "movementCategory": "Ciągnięcie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Początkujący"],
+      "trainingGoals": ["Zdrowie ogólne", "Siła"],
+      "resistanceType": "TRX",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Nie",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień dwugłowy ramienia", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień ramienny", "isPrimary": false, "coefficient": 0.6 },
+        { "specificMuscleName": "Zginacze nadgarstka i palców", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Uginanie ramion z hantlami" }
+      ],
+      "progressions": [
+        { "exerciseName": "Uginanie ramion ze sztangą" }
+      ],
+      "regressions": [
+        { "exerciseName": "Uginanie ramion z hantlami" }
+      ]
+    },
+
+    {
+      "name": "Prostowanie ramion na TRX",
+      "mainMuscleGroup": "Triceps",
+      "secondaryMuscleGroups": [],
+      "equipment": ["TRX"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Początkujący",
+      "description": "Prostowanie ramion na TRX (TRX tricep extension) to stojąca wersja francuskiego prostowania — ćwiczący trzyma uchwyty i ugina łokcie, opuszczając czoło ku uchwytom, a następnie prostuje ramiona. Kąt pochylenia ciała reguluje obciążenie, co czyni je dostępnym dla każdego na początku treningu. Angażuje przede wszystkim długą głowę mięśnia trójgłowego.",
+      "executionInstructions": "Chwyć uchwyty TRX i odsuń się od punktu zawieszenia, pochylając ciało do przodu (zacznij od małego kąta — ciało prawie pionowe). Ręce wyciągnięte nad głową ku punktowi zawieszenia. Utrzymując łokcie nieruchomo, ugnij je, opuszczając czoło ku uchwytom. Wypchnij z powrotem do pełnego wyprostu, napinając triceps.",
+      "commonMistakes": "Opadanie łokci na boki zamiast ich stabilizacji przed sobą. Garbienie się w biodrach — ciało pozostaje w linii prostej. Zbyt duży kąt pochylenia dla kompletnego początkującego.",
+      "coachingTips": "Łokcie wskazują kierunek punktu zawieszenia przez cały czas — to ключ do izolacji tricepsa. Zacznij od prawie pionowej pozycji ciała i zwiększaj kąt powoli. Napięcie mięśnia trójgłowego czujesz w fazie prostowania — jeśli go nie czujesz, zmniejsz prędkość ruchu.",
+      "breathingTips": "Wdech podczas uginania łokci, wydech podczas prostowania.",
+      "safetyNotes": "Nie wykonuj do upadku mięśniowego. Przy bólu łokci lub barków zmniejsz kąt pochylenia lub przerwij.",
+      "movementPattern": "Wyprost łokcia",
+      "movementCategory": "Pchanie",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Początkujący"],
+      "trainingGoals": ["Zdrowie ogólne", "Siła"],
+      "resistanceType": "TRX",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Nie",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 2,
+      "exercisePriority": "Niski",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień trójgłowy ramienia", "isPrimary": true, "coefficient": 1 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Pompki na kolanach" }
+      ],
+      "progressions": [
+        { "exerciseName": "Prostowanie ramion z drążkiem na wyciągu" }
+      ],
+      "regressions": [
+        { "exerciseName": "Pompki na kolanach" }
+      ]
+    },
+
+    {
+      "name": "Plank na TRX",
+      "mainMuscleGroup": "Brzuch",
+      "secondaryMuscleGroups": ["Plecy", "Barki"],
+      "equipment": ["TRX"],
+      "trainingLocation": ["Siłownia", "Dom", "Plener"],
+      "difficultyLevel": "Początkujący",
+      "description": "Plank na TRX to statyczne ćwiczenie stabilizacji tułowia ze stopami w pętlach TRX i dłońmi na podłodze. Niestabilność taśm wymaga ciągłej aktywnej pracy mięśni tułowia, co intensywniej angażuje mięsień poprzeczny brzucha niż klasyczny plank. Wersja dla kompletnych początkujących: kolana na podłodze zamiast stóp w pętlach — stopniowe przejście do pełnej wersji.",
+      "executionInstructions": "Połóż się na macie, włóż stopy (lub kolana) w pętle TRX. Oprzyj się na dłoniach lub przedramionach. Unieś ciało w pozycję planku — ciało tworzy linię prostą od głów do pięt (lub kolan). Utrzymaj przez zadany czas (zacznij od 10-20 sekund), aktywnie napinając brzuch i pośladki. Oddychaj spokojnie przez cały czas utrzymywania pozycji.",
+      "commonMistakes": "Opadanie bioder ku podłodze. Unoszenie bioder zbyt wysoko (pozycja A-frame). Wstrzymywanie oddechu, które powoduje nagły wzrost ciśnienia.",
+      "coachingTips": "Zacznij od wersji z kolanami w pętlach — dłuższy dźwig ciała redukuje trudność. Gdy utrzymujesz 30 sekund z kolanami bez drżenia, przejdź do wersji ze stopami. Wyobraź sobie, że ktoś chce przeciągnąć Cię po podłodze — napnij wszystko, by mu nie dać. Krótszy czas z pełnym napięciem jest lepszy niż długi czas z opuszczonymi biodrami.",
+      "breathingTips": "Spokojny, kontrolowany oddech — wdech przez nos, wydech przez usta. Nie wstrzymuj oddechu.",
+      "safetyNotes": "Nie wykonuj do całkowitego wyczerpania — zakończ, gdy biodra zaczną opadać. Przy bólu dolnych pleców przejdź na wersję z kolanami lub na klasyczny plank.",
+      "movementPattern": "Stabilizacja tułowia",
+      "movementCategory": "Core",
+      "exerciseType": "Izolowane",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": ["Początkujący"],
+      "trainingGoals": ["Zdrowie ogólne"],
+      "resistanceType": "TRX",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Nie",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 1,
+      "domsPotential": 1,
+      "exercisePriority": "Średni",
+      "isActive": true,
+      "muscleAssignments": [
+        { "specificMuscleName": "Mięsień poprzeczny brzucha", "isPrimary": true, "coefficient": 1 },
+        { "specificMuscleName": "Mięsień prosty brzucha", "isPrimary": false, "coefficient": 0.5 },
+        { "specificMuscleName": "Mięśnie skośne brzucha", "isPrimary": false, "coefficient": 0.4 },
+        { "specificMuscleName": "Prostowniki grzbietu", "isPrimary": false, "coefficient": 0.3 }
+      ],
+      "substitutions": [
+        { "exerciseName": "Plank" }
+      ],
+      "progressions": [
+        { "exerciseName": "Ab wheel rollout" }
+      ],
+      "regressions": [
+        { "exerciseName": "Plank" },
+        { "exerciseName": "Dead bug" }
+      ]
+    }
+  ]
+}
