@@ -9,14 +9,13 @@
         "requested": "Wiosłowanie jednorącz hantlem w stylu Kroca (Kroc Row)",
         "matchedId": 131,
         "matchedName": "Wiosłowanie jednorącz hantlem",
-        "reason": "Biomechanically identical unilateral DB row; Kroc Row style (heavy, controlled body english) is a loading/intensity technique, not a distinct exercise."
+        "reason": "Skipped to avoid library fragmentation. Kroc Row is a specialized loading and execution variant of the one-arm dumbbell row (heavier loads, deliberate body English, controlled torso rotation) — not a biomechanically distinct exercise. The underlying movement pattern is identical to id=131."
       },
       {
         "requested": "Uginanie ramion ze sztangą nachwytem (Reverse Curl)",
         "matchedId": 204,
-        "matchedName": "Uginanie ramion ze sztangą podchwytem",
-        "reason": "Same exercise. NOTE: id=204 is misnamed — 'podchwytem' means supinated/standard grip; the stored description correctly describes a pronated/reverse curl. Polish name should be 'nachwytem', not 'podchwytem'.",
-        "namingBugInDb": true
+        "matchedName": "Uginanie ramion ze sztangą nachwytem",
+        "reason": "Duplicate — id=204 IS this exercise. The record was previously misnamed 'podchwytem' (supinated) but has been corrected in the DB to 'nachwytem' (pronated). Standard supinated barbell curl exists separately as id=147 'Uginanie ramion ze sztangą'."
       },
       {
         "requested": "Uginanie jednorącz na modlitewniku z hantlem",
@@ -26,9 +25,9 @@
       },
       {
         "requested": "Wyciskanie na maszynie Hammer Strength",
-        "matchedId": 115,
-        "matchedName": "Wyciskanie na maszynie siedząc",
-        "reason": "Hammer Strength is a brand; biomechanically equivalent to plate-loaded machine chest press."
+        "matchedId": null,
+        "matchedName": null,
+        "reason": "Skipped — represented in this batch by the brand-neutral 'Wyciskanie na maszynie zbieżnej'. The schema has no alias field, so 'Hammer Strength' cannot be stored as a search alias; it is noted here in the meta only."
       }
     ],
     "equipmentMappings": [
@@ -36,7 +35,7 @@
       "Uchwyty do pompek → 'Inny' (not in VALID_EQUIPMENT)",
       "Suwnica Smitha → 'Maszyna' (canonical mapping used throughout existing records)"
     ],
-    "exerciseTypeNote": "Schema only supports 'Złożone' and 'Izolowane'. Prehab/rotator-cuff exercises and loaded-mobility exercises are stored as 'Izolowane'. High Pull classified as 'Złożone' (compound explosive). Jefferson Curl stored as 'Izolowane' (loaded mobility accessory).",
+    "exerciseTypeNote": "Schema only supports 'Złożone' and 'Izolowane'. Prehab/rotator-cuff exercises stored as 'Izolowane'. High Pull as 'Złożone' (explosive compound). Jefferson Curl changed to 'Złożone' — it is a multi-joint, full-spine loaded mobility movement, not a single-joint isolation exercise.",
     "exercisesReady": 24
   },
   "rows": [
@@ -267,12 +266,12 @@
       "equipment": ["Wyciąg"],
       "trainingLocation": ["Siłownia"],
       "difficultyLevel": "Początkujący",
-      "description": "Izolowane ćwiczenie stożka rotatorów — infraspinatus i teres minor. Rotacja zewnętrzna na wyciągu zapewnia stałe napięcie przez cały zakres ruchu, co jest przewagą nad hantlami. Kluczowe w profilaktyce kontuzji barku, rozgrzewce i rehabilitacji.",
+      "description": "Ćwiczenie prehab/akcesorialne stożka rotatorów — infraspinatus i teres minor. Rotacja zewnętrzna na wyciągu zapewnia stałe napięcie przez cały zakres ruchu. Stosowane jako prewencja kontuzji barku, element rozgrzewki przed treningiem pchania i ćwiczenie rehabilitacyjne. Nie jest ćwiczeniem hipertroficznym — celem jest zdrowie i stabilność stawu barkowego.",
       "executionInstructions": "Stań bokiem do wyciągu dolnego lub środkowego, chwyć uchwyt jednoręczny ręką dalszą od pulei. Zegnij łokieć do 90° i dociśnij go do boku tułowia (możesz podłożyć zwinięty ręcznik dla stabilizacji). Obracaj przedramię na zewnątrz, utrzymując łokieć przy boku. Powoli wróć do pozycji wyjściowej.",
       "commonMistakes": "Odrywanie łokcia od tułowia — traci izolację rotatorów. Zamach nadgarstkiem zamiast rotacji w stawie barkowym.",
-      "coachingTips": "Ciężar powinien być bardzo lekki — to ćwiczenie rehabilitacyjne. Skupiaj się na odczuwaniu rotacji w stawie barkowym, nie na pokonaniu ciężaru.",
+      "coachingTips": "Ciężar powinien być bardzo lekki — to ćwiczenie rehabilitacyjne i prewencyjne. Skupiaj się na odczuwaniu rotacji w stawie barkowym, nie na pokonaniu ciężaru. Wykonuj jako rozgrzewkę lub akcesorialne zakończenie sesji.",
       "breathingTips": "Swobodny oddech — ciężar jest zbyt mały, by wymagał kontroli oddechu.",
-      "safetyNotes": "Przy bólu barku podczas rotacji skonsultuj się z fizjoterapeutą. Nie forsuj zakresu ruchu.",
+      "safetyNotes": "Przy bólu barku podczas rotacji skonsultuj się z fizjoterapeutą. Nie forsuj zakresu ruchu. Nie wykonuj do upadku — to ćwiczenie stabilizacyjne.",
       "movementPattern": "Rotacja",
       "movementCategory": "Ciągnięcie",
       "exerciseType": "Izolowane",
@@ -282,7 +281,7 @@
       "trainingGoals": ["Zdrowie ogólne"],
       "resistanceType": "Wyciąg",
       "requiresSpotter": false,
-      "canBePerformedToFailure": "Z ostrożnością",
+      "canBePerformedToFailure": "Nie",
       "jointStress": "Niskie",
       "learningDifficulty": 2,
       "neurologicalFatigue": 1,
@@ -307,12 +306,12 @@
       "equipment": ["Gumy oporowe"],
       "trainingLocation": ["Siłownia", "Dom", "Plener"],
       "difficultyLevel": "Początkujący",
-      "description": "Wersja rotacji zewnętrznej barku z gumą oporową — wszechstronne ćwiczenie prehab/rehab stożka rotatorów wykonywane bez sprzętu siłownianego. Guma z rosnącym oporem uczy kontroli w środkowym zakresie ruchu. Może być stosowane jako rozgrzewka przed treningiem pchania.",
+      "description": "Ćwiczenie prehab/akcesorialne stożka rotatorów z gumą oporową — wszechstronne i dostępne bez siłownianego sprzętu. Guma uczy kontroli w zakresie rotacji zewnętrznej. Stosowane jako prewencja kontuzji barku, rozgrzewka przed treningiem pchania i ćwiczenie rehabilitacyjne. Nie jest ćwiczeniem hipertroficznym — celem jest zdrowie i stabilność stawu barkowego.",
       "executionInstructions": "Przymocuj gumę do stałego punktu na wysokości łokcia. Stań bokiem, chwyć gumę ręką dalszą. Zegnij łokieć do 90°, dociśnij go do boku. Obracaj przedramię na zewnątrz, utrzymując łokieć przy tułowiu. Powoli wróć. Można też wykonywać oburącz, trzymając gumę przed sobą i rozciągając ją poziomo.",
       "commonMistakes": "Odrywanie łokcia od ciała. Zbyt mocna guma uniemożliwiająca pełny zakres ruchu.",
-      "coachingTips": "Guma o najlżejszym oporze, jaki masz dostępny. Priorytetem jest czysty zakres ruchu, nie pokonanie oporu.",
+      "coachingTips": "Guma o najlżejszym oporze, jaki masz dostępny. Priorytetem jest czysty zakres ruchu, nie pokonanie oporu. Wykonuj jako rozgrzewkę lub akcesorialne zakończenie sesji — nie jako główne ćwiczenie treningowe.",
       "breathingTips": "Swobodny oddech.",
-      "safetyNotes": "Bezpieczne ćwiczenie rehabilitacyjne. Stosuj przy pierwszych objawach bólu barku jako prewencja.",
+      "safetyNotes": "Bezpieczne ćwiczenie rehabilitacyjne. Stosuj przy pierwszych objawach bólu barku jako prewencja. Nie wykonuj do upadku — to ćwiczenie stabilizacyjne.",
       "movementPattern": "Rotacja",
       "movementCategory": "Ciągnięcie",
       "exerciseType": "Izolowane",
@@ -322,7 +321,7 @@
       "trainingGoals": ["Zdrowie ogólne"],
       "resistanceType": "Gumy oporowe",
       "requiresSpotter": false,
-      "canBePerformedToFailure": "Z ostrożnością",
+      "canBePerformedToFailure": "Nie",
       "jointStress": "Niskie",
       "learningDifficulty": 1,
       "neurologicalFatigue": 1,
@@ -1035,15 +1034,15 @@
       "equipment": ["Sztanga", "Hantle", "Kettlebell"],
       "trainingLocation": ["Siłownia"],
       "difficultyLevel": "Zaawansowany",
-      "description": "Jefferson Curl to ćwiczenie loaded mobility — stopniowe, kontrolowane zwijanie kręgosłupa pod obciążeniem, stojąc na podwyższeniu. Celowo angażuje kręgosłup w zgięcie (flex) z obciążeniem, by wzmocnić więzadła, dyski i mięśnie przykręgosłupowe w pełnym zakresie. Stosowane jako ćwiczenie prewencyjne i mobilizacyjne przez trenerów sportowych i gimnastyków. Nie jest ćwiczeniem hipertroficznym — celem jest mobilność i elastyczność tkanek łącznych.",
+      "description": "Jefferson Curl to ćwiczenie loaded mobility — wielostawowe, kontrolowane zwijanie całego kręgosłupa pod obciążeniem, stojąc na podwyższeniu. Angażuje jednocześnie mięśnie przykręgosłupowe, kulszowo-goleniowe i pośladki, co czyni je ruchem złożonym. Nie jest ćwiczeniem siłowym ani hipertroficznym i nie powinno być dobierane jako główny ruch wielostawowy — celem jest mobilność i elastyczność tkanek łącznych pod kontrolowanym obciążeniem. Przeznaczone wyłącznie dla zaawansowanych ćwiczących bez problemów kręgosłupa.",
       "executionInstructions": "Stań na podwyższeniu (skrzynce lub stopniu) stopami razem. Trzymaj lekkie obciążenie w opuszczonych rękach. Zacznij od pochylenia głowy ku przodowi, następnie zaokrąglaj kręgosłup segment po segmencie — szyjny, piersiowy, lędźwiowy — aż ciężar zwisa możliwie nisko. Utrzymaj 2-3 sekundy. Wróć odwijając kręgosłup w odwrotnej kolejności — od dołu ku górze.",
-      "commonMistakes": "Stosowanie zbyt dużego ciężaru (to ćwiczenie mobilnościowe). Pośpiech — każdy segment kręgosłupa musi być świadomie zwijany. Brak podwyższenia ograniczającego zakres ruchu.",
-      "coachingTips": "Zacznij od minimalnego ciężaru (2-5 kg) i przez wiele tygodni stopniowo go zwiększaj. Podwyższenie musi być stabilne. Miej poczucie, że 'wydłużasz' kręgosłup przez grawitację. Jefferson Curl nie jest dla osób z aktywnym bólem pleców lub hernią dysku.",
+      "commonMistakes": "Stosowanie zbyt dużego ciężaru (to ćwiczenie mobilnościowe, nie siłowe). Pośpiech — każdy segment kręgosłupa musi być świadomie zwijany. Brak podwyższenia ograniczającego zakres ruchu.",
+      "coachingTips": "Zacznij od minimalnego ciężaru (2-5 kg) i przez wiele tygodni stopniowo go zwiększaj. Podwyższenie musi być stabilne. Miej poczucie, że 'wydłużasz' kręgosłup przez grawitację. Jefferson Curl nie jest dla osób z aktywnym bólem pleców lub hernią dysku. Nie stosuj jako główne ćwiczenie złożone sesji — zawsze jako akcesorialne lub zamykające.",
       "breathingTips": "Długi, spokojny wydech podczas zwijania, wdech podczas powrotu.",
-      "safetyNotes": "ZAAWANSOWANE — tylko dla osób z dobrą techniką martwego ciągu i bez istniejących problemów kręgosłupa. Zawsze zaczynaj od bardzo lekkiego ciężaru. Przy bólu lub dyskomforcie przerwij natychmiast.",
+      "safetyNotes": "TYLKO DLA ZAAWANSOWANYCH — wyłącznie dla osób z dobrą techniką martwego ciągu i bez istniejących problemów kręgosłupa. Zawsze zaczynaj od bardzo lekkiego ciężaru. Przy bólu lub dyskomforcie przerwij natychmiast. Nie dobieraj dla początkujących ani jako główny ruch wielostawowy.",
       "movementPattern": "Zgięcie tułowia",
       "movementCategory": "Inne",
-      "exerciseType": "Izolowane",
+      "exerciseType": "Złożone",
       "execution": "Obustronne",
       "planeOfMotion": "Strzałkowa",
       "suitableExperienceLevels": ["Zaawansowany"],
