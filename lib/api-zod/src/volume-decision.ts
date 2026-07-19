@@ -204,13 +204,27 @@ export const EXPERIENCE_LEVEL_RANGE_POSITIONS: Record<string, number> = {
   "Zaawansowany": 0.50,
 };
 
+// ─── Priority-eligibility gate ────────────────────────────────────────────────
+
+/**
+ * Experience levels that enable true priority-muscle planning (Tier A / B / C).
+ *
+ * For levels NOT in this set ("Brak aktywności fizycznej", "Początkujący"),
+ * survey priority-muscle data is stored but does NOT drive weekly volume
+ * allocation — all targets receive balanced general-development volume instead.
+ */
+export const PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS = new Set([
+  "Średniozaawansowany",
+  "Zaawansowany",
+]);
+
 // ─── Priority adjustment percentages ─────────────────────────────────────────
 
 /** Fraction of the preferred-range width added per priority order. */
 export const PRIORITY_ADJUSTMENTS: Record<1 | 2 | 3, number> = {
-  1: 0.20,  // first priority: +20% of preferredWidth
-  2: 0.10,  // second priority: +10%
-  3: 0.05,  // third priority: +5%
+  1: 0.20,  // Tier A (first priority):  +20% of preferredWidth
+  2: 0.10,  // Tier B (second priority): +10%
+  3: 0.05,  // Tier B (third priority):   +5%
 };
 
 // ─── Recovery adjustment magnitude ───────────────────────────────────────────

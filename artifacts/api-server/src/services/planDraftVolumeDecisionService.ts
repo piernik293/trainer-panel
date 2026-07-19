@@ -44,6 +44,7 @@ import {
 } from "@workspace/db";
 import {
   EXPERIENCE_LEVEL_RANGE_POSITIONS,
+  PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS,
   PRIORITY_ADJUSTMENTS,
   REDUCED_RECOVERY_ADJUSTMENT,
   SHORT_AVAILABILITY_ADJUSTMENT,
@@ -356,16 +357,34 @@ export function computeTargetDecision(
   }
 
   // ── 3. Priority adjustment ────────────────────────────────────────────────
+  // Experience-aware gate: only intermediate / advanced trainees receive true
+  // priority-muscle volume bias (Tier A / B / C allocation).
+  // For "Brak aktywności fizycznej" and "Początkujący" the survey priority fields
+  // are stored but SOFTENED to zero — all targets are treated as Tier C and
+  // receive balanced general-development volume.
+  const isPriorityEligible =
+    inp.experienceLevel !== null &&
+    inp.experienceLevel !== undefined &&
+    PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS.has(inp.experienceLevel);
+
   let priorityAdjustment = 0;
-  if (inp.priorityOrder !== null && !inp.isExcluded) {
+  if (isPriorityEligible && inp.priorityOrder !== null && !inp.isExcluded) {
     const pct = PRIORITY_ADJUSTMENTS[inp.priorityOrder];
     // When a broad category (e.g. "Plecy") maps to N internal targets, divide the
     // bonus evenly so the total priority uplift per category equals one full bonus,
     // not N independent bonuses.
     const groupSize = Math.max(1, inp.priorityGroupSize ?? 1);
     priorityAdjustment = (preferredWidth * pct) / groupSize;
+    // Assign Tier label: priority 1 → Tier A, priority 2–3 → Tier B
+    const tierLabel = inp.priorityOrder === 1 ? "A" : "B";
+    const priorityOrdinal =
+      inp.priorityOrder === 1 ? "pierwszy" : inp.priorityOrder === 2 ? "drugi" : "trzeci";
+    reasons.push(`Tier ${tierLabel}: ${priorityOrdinal} priorytet klienta`);
+  } else if (!isPriorityEligible && inp.priorityOrder !== null && !inp.isExcluded) {
+    // Priority preference stored but not applied — beginner / no-activity rule.
+    // The muscle is treated as Tier C (balanced general development).
     reasons.push(
-      `${inp.priorityOrder === 1 ? "pierwszy" : inp.priorityOrder === 2 ? "drugi" : "trzeci"} priorytet klienta`,
+      `preferencja mięśniowa zapisana, lecz niezastosowana — poziom "${inp.experienceLevel ?? "brak"}" → ogólny rozwój (Tier C)`,
     );
   }
 
