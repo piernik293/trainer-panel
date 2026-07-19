@@ -14,6 +14,7 @@ import {
   normalizeEquipmentList,
   defaultEquipmentForLocation,
 } from "./equipmentNormalizer";
+import { recommendSplit } from "./splitRecommendationService";
 import {
   VALID_EXPERIENCE_LEVELS,
   SPLIT_TYPES,
@@ -25,6 +26,7 @@ import {
   type PlanDraftInputWarningType,
   type SplitType,
   type GetClientPlanDraftInputResponseType,
+  type SplitRecommendationType,
 } from "@workspace/api-zod";
 
 // ─── Experience level validation ──────────────────────────────────────────────
@@ -111,6 +113,7 @@ export interface PlanDraftInputResult {
   defaultPreferences: PlanDraftGenerationPreferencesType;
   allowedSplitTypes: SplitType[];
   blockDurationRange: { min: number; max: number; default: number };
+  splitRecommendation: SplitRecommendationType | null;
 }
 
 export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInputResult | null> {
@@ -317,7 +320,21 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
 
   // ── Default preferences ──────────────────────────────────────────────────────
   const trainingDays = availableDays ?? 3;
-  const splitType = defaultSplitForDays(trainingDays);
+
+  // Build the rich split recommendation first so defaultPreferences uses it.
+  const splitRecommendation: SplitRecommendationType | null = experienceLevel
+    ? recommendSplit({
+        trainingDays,
+        experienceLevel,
+        recoveryQuality,
+        trainingGoal,
+        priorityMuscleGroups,
+      })
+    : null;
+
+  // Use the recommendation's split as the default; fall back to the simple rule
+  // when recommendation is unavailable (e.g. missing experience level).
+  const splitType = splitRecommendation?.recommended ?? defaultSplitForDays(trainingDays);
 
   const defaultPreferences: PlanDraftGenerationPreferencesType = {
     trainingDays,
@@ -347,5 +364,6 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     defaultPreferences,
     allowedSplitTypes,
     blockDurationRange: { min: 4, max: 12, default: 6 },
+    splitRecommendation,
   };
 }

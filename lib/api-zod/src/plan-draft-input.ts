@@ -176,6 +176,18 @@ export function getCompatibleSplits(days: number | null): SplitType[] {
   return ["push_pull_legs", "specialization", "custom"];
 }
 
+// ─── Split recommendation ─────────────────────────────────────────────────────
+
+export const SplitRecommendation = z.object({
+  recommended: SplitTypeSchema,
+  explanation: z.string(),
+  alternatives: z.array(SplitTypeSchema),
+  /** True when a poor-recovery fallback was applied. */
+  fallbackApplied: z.boolean(),
+});
+
+export type SplitRecommendationType = z.infer<typeof SplitRecommendation>;
+
 // ─── API response ─────────────────────────────────────────────────────────────
 
 export const GetClientPlanDraftInputParams = z.object({
@@ -201,6 +213,7 @@ export const GetClientPlanDraftInputResponse = z.object({
     max: z.number(),
     default: z.number(),
   }),
+  splitRecommendation: SplitRecommendation.nullable(),
 });
 
 export type GetClientPlanDraftInputResponseType = z.infer<typeof GetClientPlanDraftInputResponse>;

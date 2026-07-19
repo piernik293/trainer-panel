@@ -29,6 +29,7 @@ import {
   type WeeklyVolumeTargetDecisionType,
   type WeeklyVolumeDecisionResponseType,
   type WeeklyVolumeDistributionResponseType,
+  type SplitRecommendationType,
 } from "@workspace/api-zod";
 import {
   buildDistributionRequest,
@@ -416,10 +417,15 @@ function Step2Preferences({
     [prefs.trainingDays],
   );
 
+  // Derive the live recommendation from the API data.
+  // The recommendation reflects the survey data (days × level × recovery × goal).
+  const rec = (data as unknown as { splitRecommendation?: SplitRecommendationType | null }).splitRecommendation ?? null;
+
   const splitOptions = SPLIT_TYPES.map((s) => ({
     value: s,
     label: SPLIT_TYPE_LABELS[s],
     compatible: compatibleSplits.includes(s),
+    recommended: rec?.recommended === s,
   }));
 
   function set<K extends keyof PlanDraftGenerationPreferencesType>(
@@ -515,8 +521,22 @@ function Step2Preferences({
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 py-4 space-y-3">
+          {/* Recommendation explanation banner */}
+          {rec && (
+            <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 flex items-start gap-2">
+              <Sparkles size={13} className="text-primary mt-0.5 shrink-0" />
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                {rec.explanation}
+                {rec.fallbackApplied && (
+                  <span className="ml-1 font-medium text-amber-700">
+                    (obniżone ze względu na regenerację)
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-2">
-            {splitOptions.map(({ value, label, compatible }) => (
+            {splitOptions.map(({ value, label, compatible, recommended }) => (
               <button
                 key={value}
                 type="button"
@@ -530,19 +550,34 @@ function Step2Preferences({
                   }`}
               >
                 <span>{label}</span>
-                {!compatible && value !== "custom" && (
-                  <span className="text-[10px] text-muted-foreground ml-2 border rounded px-1">
-                    {prefs.trainingDays} dni
-                  </span>
-                )}
-                {prefs.splitType === value && <CheckCircle2 size={14} className="shrink-0 ml-2" />}
+                <span className="flex items-center gap-1.5 shrink-0 ml-2">
+                  {recommended && prefs.splitType !== value && (
+                    <span className="text-[10px] font-medium text-primary border border-primary/40 bg-primary/10 rounded px-1.5 py-0.5">
+                      Rekomendowane
+                    </span>
+                  )}
+                  {!compatible && value !== "custom" && (
+                    <span className="text-[10px] text-muted-foreground border rounded px-1">
+                      {prefs.trainingDays} dni
+                    </span>
+                  )}
+                  {prefs.splitType === value && <CheckCircle2 size={14} className="text-primary" />}
+                </span>
               </button>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground pt-1">
-            Podziały rekomendowane dla {prefs.trainingDays} dni treningowych są wyróżnione.
-            Możesz wybrać dowolny, w tym niestandarowe konfiguracje.
-          </p>
+          {rec?.alternatives && rec.alternatives.length > 0 && (
+            <p className="text-xs text-muted-foreground pt-0.5">
+              Alternatywny podział:{" "}
+              {rec.alternatives.map((a) => SPLIT_TYPE_LABELS[a]).join(", ")}.
+              Możesz wybrać dowolny podział poniżej.
+            </p>
+          )}
+          {!rec && (
+            <p className="text-xs text-muted-foreground pt-1">
+              Uzupełnij wywiad klienta, aby uzyskać rekomendację podziału.
+            </p>
+          )}
         </CardContent>
       </Card>
 
