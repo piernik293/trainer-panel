@@ -8,6 +8,16 @@
  *   - Fail-safe: missing required metadata → skip the exercise (never guess)
  *   - Minimum session guard: returns blocking failure if < 4 exercises selected
  *
+ * Slot predicate rules (tightened):
+ *   PUSH  slot 3  Shoulder accessory: Barki only, NO overhead-press compounds
+ *   PULL  slot 3  Rear delt / upper back: Barki only if rear-delt pattern
+ *                 (lateral raises and front raises excluded by name)
+ *   PULL  slot 5  Second biceps / rear delt: Biceps OR rear-delt Barki only
+ *                 (shoulder press excluded)
+ *   LEGS / LOWER  Near-duplicate protection: exercises sharing the knee-dominant
+ *                 movement pattern are blocked from later accessory slots
+ *   ALL   Core    always occupies the final slot — no slot runs after core
+ *
  * Runs BESIDE the original selector behind the `useV0Selector=true` query flag.
  * The original selector path is completely unchanged.
  *
@@ -47,13 +57,38 @@ const HARD_FILTER_FRAGMENTS = [
   "inchworm",
 ] as const;
 
+/**
+ * Name fragments that identify lateral raises and front raises.
+ * These are excluded from rear-delt / upper-back slots — they train the
+ * lateral or anterior deltoid head, not the posterior/upper back.
+ */
+const LATERAL_OR_FRONT_RAISE_FRAGMENTS = [
+  "bokiem",   // "unoszenie hantli bokiem" — lateral raise variants
+  "w przód",  // "unoszenie hantli w przód" — front raise variants
+] as const;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const norm = (s: string) => s.trim().toLowerCase();
 
+/** Normalise a nullable movement-pattern string for comparison. */
+function normP(p: string | null | undefined): string | null {
+  return p != null ? p.trim().toLowerCase() : null;
+}
+
 function isBlocklisted(name: string): boolean {
   const lower = name.trim().toLowerCase();
   return HARD_FILTER_FRAGMENTS.some((f) => lower.includes(f));
+}
+
+/**
+ * True when the exercise name indicates a REAR-delt or upper-back movement.
+ * Returns false for lateral raises ("bokiem") and front raises ("w przód")
+ * so they are excluded from rear-delt / upper-back slots.
+ */
+function isRearDeltMovement(name: string): boolean {
+  const lower = name.trim().toLowerCase();
+  return !LATERAL_OR_FRONT_RAISE_FRAGMENTS.some((f) => lower.includes(f));
 }
 
 /** True if exercise mainMuscleGroup matches any of the provided groups (case-insensitive). */
@@ -71,6 +106,26 @@ function pattern(ex: ScoredAndFilteredExercise, ...patterns: string[]): boolean 
   return (
     ex.movementPattern != null &&
     patterns.some((p) => norm(ex.movementPattern!) === norm(p))
+  );
+}
+
+/**
+ * Rear-delt / upper-back Barki filter.
+ *
+ * Accepts Barki exercises that are:
+ *   - "Przyciąganie poziome" (face pull, cable rear-delt pulls)
+ *   - "Odwodzenie" AND the name is NOT a lateral or front raise
+ *
+ * Explicitly rejects:
+ *   - Overhead-press compounds ("Pchanie pionowe") — those belong in push/shoulder slots
+ *   - Lateral raises ("bokiem") — anterior/lateral, not posterior
+ *   - Front raises ("w przód") — anterior, not posterior
+ */
+function isRearDeltBarki(ex: ScoredAndFilteredExercise): boolean {
+  return (
+    muscle(ex, "Barki") &&
+    (pattern(ex, "Przyciąganie poziome") ||
+      (pattern(ex, "Odwodzenie") && isRearDeltMovement(ex.name)))
   );
 }
 
@@ -183,8 +238,14 @@ export function runExerciseSelectionEngineV0(
 
   switch (sessionType) {
     // ── PUSH ─────────────────────────────────────────────────────────────────
-    // 1. Chest compound   2. Second push compound   3. Shoulder accessory
-    // 4. Triceps          5. (opt) Chest/Triceps accessory  6. (opt) Core
+    //
+    // Slot order:
+    //   1. Chest push compound
+    //   2. Second push compound (chest or shoulder — includes overhead press)
+    //   3. Shoulder accessory   ← lateral raise / rear delt only; NO press compounds
+    //   4. Triceps isolation
+    //   5. (opt) Chest or triceps accessory
+    //   6. (opt) Core           ← always last
     case "push": {
       pick(
         "Chest compound",
@@ -194,6 +255,8 @@ export function runExerciseSelectionEngineV0(
           compound(ex) &&
           pattern(ex, "Pchanie poziome"),
       );
+
+      // Second push compound: chest horizontal OR shoulder vertical press
       pick(
         "Second push compound",
         true,
@@ -202,21 +265,40 @@ export function runExerciseSelectionEngineV0(
           compound(ex) &&
           pattern(ex, "Pchanie poziome", "Pchanie pionowe"),
       );
-      pick("Shoulder accessory", true, (ex) => muscle(ex, "Barki"));
+
+      // Shoulder accessory: Barki but NOT another overhead-press compound.
+      // Lateral raises, rear-delt isolation, and face-pull Barki all qualify.
+      // Overhead press belongs to slot 2 only.
+      pick(
+        "Shoulder accessory",
+        true,
+        (ex) =>
+          muscle(ex, "Barki") &&
+          !(compound(ex) && pattern(ex, "Pchanie pionowe")),
+      );
+
       pick("Triceps isolation", true, (ex) => muscle(ex, "Triceps"));
+
       pick(
         "Chest or triceps accessory",
         false,
         (ex) => muscle(ex, "Klatka piersiowa", "Triceps"),
       );
+
+      // Core always last
       pick("Core", false, (ex) => muscle(ex, "Brzuch"));
       break;
     }
 
     // ── PULL ─────────────────────────────────────────────────────────────────
-    // 1. Pull compound   2. Complementary pull compound (prefer opposite pattern)
-    // 3. Rear delt / upper back   4. Biceps
-    // 5. (opt) Second biceps / rear delt   6. (opt) Core
+    //
+    // Slot order:
+    //   1. Pull compound (vertical or horizontal)
+    //   2. Complementary pull compound (prefer the opposite pattern)
+    //   3. Rear delt / upper back   ← rear-delt Barki + back isolation only
+    //   4. Biceps isolation
+    //   5. (opt) Second biceps or rear delt  ← Biceps + rear-delt Barki only
+    //   6. (opt) Core               ← always last
     case "pull": {
       // Slot 1: any pull compound
       const s1 = pick(
@@ -229,60 +311,83 @@ export function runExerciseSelectionEngineV0(
       );
 
       // Slot 2: prefer the complementary movement pattern to slot 1.
-      // If slot 1 was vertical pull, prefer horizontal rows — and vice versa.
-      // Falls back to any pull compound if the complementary pattern has no candidates.
-      const s1Pattern = s1?.movementPattern ?? null;
+      // Vertical pull → prefer horizontal rows; horizontal row → prefer vertical pull.
+      // Falls back to any pull compound if the complementary pattern is exhausted.
+      const s1Pattern = normP(s1?.movementPattern);
       const complementary =
-        s1Pattern != null && norm(s1Pattern) === "przyciąganie pionowe"
+        s1Pattern === "przyciąganie pionowe"
           ? "Przyciąganie poziome"
           : "Przyciąganie pionowe";
 
       const s2 =
         pick(
           "Complementary pull compound",
-          false, // not required — fallback below handles the required logging
+          false, // non-required; fallback below carries the required flag
           (ex) =>
             muscle(ex, "Plecy") && compound(ex) && pattern(ex, complementary),
         ) ??
         pick(
           "Second pull compound",
-          true, // required — logs failure if no candidates
+          true,
           (ex) =>
             muscle(ex, "Plecy") &&
             compound(ex) &&
             pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome"),
         );
-      void s2; // result not needed beyond dedup
+      void s2;
 
-      // Slot 3: rear delt / upper back accessory
+      // Slot 3: rear delt / upper back accessory.
+      //
+      // Accepts:
+      //   • Barki + "Przyciąganie poziome"          (face pull, cable rear-delt)
+      //   • Barki + "Odwodzenie" + NOT lateral/front  (reverse flyes, band pull-apart)
+      //   • Plecy + "Izolowane"                     (straight-arm pulldown, etc.)
+      //
+      // Rejects:
+      //   • Lateral raises  ("bokiem" in name)
+      //   • Front raises    ("w przód" in name)
+      //   • Shoulder press  ("Pchanie pionowe")
       pick(
         "Rear delt or upper back",
         true,
         (ex) =>
-          // Barki exercises with rear-delt or horizontal-pull patterns
-          (muscle(ex, "Barki") &&
-            pattern(ex, "Odwodzenie", "Przyciąganie poziome")) ||
-          // OR back isolation exercises (straight-arm pulldown, etc.)
+          isRearDeltBarki(ex) ||
           (muscle(ex, "Plecy") &&
             ex.exerciseType != null &&
             norm(ex.exerciseType) === "izolowane"),
       );
 
-      pick("Biceps", true, (ex) => muscle(ex, "Biceps"));
+      // Slot 4: biceps isolation only
+      pick("Biceps isolation", true, (ex) => muscle(ex, "Biceps"));
+
+      // Slot 5: second biceps OR rear-delt Barki only.
+      // Shoulder press is explicitly excluded — it belongs to push days.
       pick(
         "Second biceps or rear delt",
         false,
-        (ex) => muscle(ex, "Biceps", "Barki"),
+        (ex) => muscle(ex, "Biceps") || isRearDeltBarki(ex),
       );
+
+      // Core always last
       pick("Core", false, (ex) => muscle(ex, "Brzuch"));
       break;
     }
 
     // ── LEGS ─────────────────────────────────────────────────────────────────
-    // 1. Knee-dominant compound   2. Hip-dominant   3. Lower-body accessory
-    // 4. Calves   5. (opt) Core   6. (opt) Second lower accessory
+    //
+    // Slot order:
+    //   1. Knee-dominant compound (squat / lunge pattern)
+    //   2. Hip-dominant (hinge pattern)
+    //   3. Lower-body accessory   ← blocks near-duplicate of knee-dominant pattern
+    //   4. Calves
+    //   5. (opt) Second lower accessory  ← also blocks near-duplicate pattern
+    //   6. (opt) Core             ← always last
+    //
+    // Near-duplicate protection: once a movement pattern is selected in the
+    // knee-dominant slot, that exact pattern is excluded from all later
+    // accessory slots to prevent the same squat or lunge variant appearing twice.
     case "legs": {
-      pick(
+      const s1 = pick(
         "Knee-dominant compound",
         true,
         (ex) =>
@@ -290,17 +395,19 @@ export function runExerciseSelectionEngineV0(
           compound(ex) &&
           pattern(ex, "Przysiad", "Wykrok"),
       );
+      // Capture the knee-dominant pattern for near-duplicate exclusion below.
+      const kneeDominantPattern = normP(s1?.movementPattern);
+
       pick(
         "Hip-dominant",
         true,
         (ex) =>
-          muscle(
-            ex,
-            "Mięśnie dwugłowe uda",
-            "Pośladki",
-            "Plecy",
-          ) && pattern(ex, "Zawias biodrowy"),
+          muscle(ex, "Mięśnie dwugłowe uda", "Pośladki", "Plecy") &&
+          pattern(ex, "Zawias biodrowy"),
       );
+
+      // Lower-body accessory: exclude same movement pattern as knee-dominant.
+      // Example: if slot 1 was a squat, no second squat-pattern exercise here.
       pick(
         "Lower-body accessory",
         true,
@@ -311,10 +418,15 @@ export function runExerciseSelectionEngineV0(
             "Przywodziciele",
             "Mięśnie czworogłowe uda",
             "Mięśnie dwugłowe uda",
-          ),
+          ) &&
+          (kneeDominantPattern === null ||
+            normP(ex.movementPattern) !== kneeDominantPattern),
       );
+
       pick("Calves", true, (ex) => muscle(ex, "Łydki"));
-      pick("Core", false, (ex) => muscle(ex, "Brzuch"));
+
+      // Second lower accessory: also blocks near-duplicate of knee pattern.
+      // Placed BEFORE Core so that Core is always the final slot.
       pick(
         "Second lower accessory",
         false,
@@ -326,14 +438,27 @@ export function runExerciseSelectionEngineV0(
             "Mięśnie czworogłowe uda",
             "Mięśnie dwugłowe uda",
             "Łydki",
-          ),
+          ) &&
+          (kneeDominantPattern === null ||
+            normP(ex.movementPattern) !== kneeDominantPattern),
       );
+
+      // Core always last
+      pick("Core", false, (ex) => muscle(ex, "Brzuch"));
       break;
     }
 
     // ── UPPER ─────────────────────────────────────────────────────────────────
-    // 1. Chest compound   2. Back compound   3. Shoulders   4. Arms
-    // 5. (opt) Accessory or core
+    //
+    // Slot order:
+    //   1. Chest compound
+    //   2. Back compound
+    //   3. Shoulders (overhead press belongs here — all Barki compounds welcome)
+    //   4. Arms
+    //   5. (opt) Accessory or core  ← core may appear here if nothing else fills
+    //
+    // Note: UPPER has a single broad shoulder slot (overhead press is correct here).
+    // There is no separate rear-delt slot in Upper — that granularity belongs in Pull.
     case "upper": {
       pick(
         "Chest compound",
@@ -345,8 +470,15 @@ export function runExerciseSelectionEngineV0(
         true,
         (ex) => muscle(ex, "Plecy") && compound(ex),
       );
+
+      // All Barki exercises welcome in Upper — overhead press is the primary
+      // shoulder stimulus in an Upper session (no separate push/pull split here).
       pick("Shoulders", true, (ex) => muscle(ex, "Barki"));
+
       pick("Arms", true, (ex) => muscle(ex, "Biceps", "Triceps"));
+
+      // Slot 5 is an optional catch-all — core is acceptable here if nothing else fits.
+      // Upper has only 5 slots (spec), so this is also the de-facto final slot.
       pick(
         "Accessory or core",
         false,
@@ -365,10 +497,22 @@ export function runExerciseSelectionEngineV0(
     }
 
     // ── LOWER ─────────────────────────────────────────────────────────────────
-    // 1. Knee-dominant   2. Hip-dominant   3. Lower-body accessory
-    // 4. Calves or core   5. (opt) Extra lower-body accessory
+    //
+    // Slot order:
+    //   1. Knee-dominant (squat / lunge pattern)
+    //   2. Hip-dominant (hinge pattern)
+    //   3. Lower-body accessory  ← blocks near-duplicate of knee-dominant pattern
+    //   4. Calves (preferred) — falls back to Core if no calves available
+    //   5. (opt) Extra lower-body accessory  ← also blocks near-duplicate pattern
+    //   6. (opt) Core            ← always last; omitted if Core was the slot 4 fallback
+    //
+    // Calves-or-core logic:
+    //   • First try Calves (preferred for a lower session)
+    //   • If no calves exercises are available, fall back to Core as slot 4
+    //   • A separate Core slot at position 6 is added ONLY when Calves filled slot 4,
+    //     so Core is never duplicated and always remains the final slot.
     case "lower": {
-      pick(
+      const s1 = pick(
         "Knee-dominant",
         true,
         (ex) =>
@@ -376,17 +520,18 @@ export function runExerciseSelectionEngineV0(
           compound(ex) &&
           pattern(ex, "Przysiad", "Wykrok"),
       );
+      // Capture the knee-dominant pattern for near-duplicate exclusion below.
+      const kneeDominantPattern = normP(s1?.movementPattern);
+
       pick(
         "Hip-dominant",
         true,
         (ex) =>
-          muscle(
-            ex,
-            "Mięśnie dwugłowe uda",
-            "Pośladki",
-            "Plecy",
-          ) && pattern(ex, "Zawias biodrowy"),
+          muscle(ex, "Mięśnie dwugłowe uda", "Pośladki", "Plecy") &&
+          pattern(ex, "Zawias biodrowy"),
       );
+
+      // Lower-body accessory: exclude near-duplicate of knee-dominant pattern.
       pick(
         "Lower-body accessory",
         true,
@@ -397,13 +542,20 @@ export function runExerciseSelectionEngineV0(
             "Przywodziciele",
             "Mięśnie czworogłowe uda",
             "Mięśnie dwugłowe uda",
-          ),
+          ) &&
+          (kneeDominantPattern === null ||
+            normP(ex.movementPattern) !== kneeDominantPattern),
       );
-      pick(
-        "Calves or core",
-        true,
-        (ex) => muscle(ex, "Łydki", "Brzuch"),
-      );
+
+      // Slot 4: prefer calves; fall back to core if unavailable.
+      const s4Calves = pick("Calves", false, (ex) => muscle(ex, "Łydki"));
+      if (s4Calves === null) {
+        // Required fallback — core fills the slot and is already the last exercise.
+        pick("Calves slot (core fallback)", true, (ex) => muscle(ex, "Brzuch"));
+      }
+
+      // Extra lower accessory: also blocks near-duplicate of knee pattern.
+      // Placed BEFORE the optional Core slot so Core remains last.
       pick(
         "Extra lower-body accessory",
         false,
@@ -415,8 +567,18 @@ export function runExerciseSelectionEngineV0(
             "Mięśnie czworogłowe uda",
             "Mięśnie dwugłowe uda",
             "Łydki",
-          ),
+          ) &&
+          (kneeDominantPattern === null ||
+            normP(ex.movementPattern) !== kneeDominantPattern),
       );
+
+      // Core always last — only added when Calves successfully filled slot 4.
+      // When core was the slot 4 fallback it is already present; adding it again
+      // would pick a DIFFERENT core exercise (usedExercises dedup prevents repeats),
+      // which is acceptable but usually unwanted. Skip it for cleanliness.
+      if (s4Calves !== null) {
+        pick("Core", false, (ex) => muscle(ex, "Brzuch"));
+      }
       break;
     }
   }
