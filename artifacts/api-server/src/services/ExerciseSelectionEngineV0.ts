@@ -113,6 +113,50 @@ function isRearDeltMovement(name: string): boolean {
   return !LATERAL_OR_FRONT_RAISE_FRAGMENTS.some((f) => lower.includes(f));
 }
 
+/**
+ * True when the exercise uses free-weight equipment (barbell or dumbbells).
+ *
+ * Used to prefer barbell / dumbbell presses over machine presses in
+ * chest-priority slot 1 — machines are accepted as a fallback only.
+ */
+function hasFreeWeight(ex: ScoredAndFilteredExercise): boolean {
+  return ex.equipment.some((e) => {
+    const n = norm(e);
+    return n === "sztanga" || n === "hantle";
+  });
+}
+
+/**
+ * True when the exercise is a shrug variant (trap isolation).
+ *
+ * Covers all Polish shrug names: "Szrugowanie …" and "Szrugsy …".
+ * Shrugs are excluded from back-priority contested slots unless the
+ * client explicitly prioritises upper traps.
+ */
+function isShrug(ex: ScoredAndFilteredExercise): boolean {
+  return ex.name.toLowerCase().includes("szrug");
+}
+
+/**
+ * True when the exercise is a back-extension / hyperextension variant.
+ *
+ * Identified by: mainMuscleGroup = Plecy AND movementPattern = Zawias biodrowy
+ * AND exerciseType = Izolowane.
+ *
+ * This excludes Wznosy tułowia from back-priority support slots where pull-
+ * family exercises (rows, pulldowns) are better choices.
+ * Note: compound hip-hinge exercises like Martwy ciąg are NOT excluded here
+ * (they are Złożone, not Izolowane).
+ */
+function isBackExtension(ex: ScoredAndFilteredExercise): boolean {
+  return (
+    muscle(ex, "Plecy") &&
+    pattern(ex, "Zawias biodrowy") &&
+    ex.exerciseType != null &&
+    norm(ex.exerciseType) === "izolowane"
+  );
+}
+
 /** True if exercise mainMuscleGroup matches any of the provided groups (case-insensitive). */
 function muscle(ex: ScoredAndFilteredExercise, ...groups: string[]): boolean {
   return groups.some((g) => norm(ex.mainMuscleGroup) === norm(g));
@@ -642,11 +686,23 @@ export function runExerciseSelectionEngineV0(
 
       if (chestUpperPriority) {
         // ── UPPER — CHEST PRIORITY ─────────────────────────────────────────────
+        //
+        // Slot 1 family preference:
+        //   1st try: barbell or dumbbell compound (hasFreeWeight) — sortWithPriority
+        //            picks the highest-priority free-weight press (e.g. dumbbell incline
+        //            or barbell flat bench) over an easier machine alternative.
+        //   Fallback: any chest compound (machine included) when no free-weight
+        //             exercise passes the equipment filter for this client.
         pick(
           "Chest main lift",
-          true,
-          (ex) => muscle(ex, "Klatka piersiowa") && compound(ex),
-        );
+          false,
+          (ex) => muscle(ex, "Klatka piersiowa") && compound(ex) && hasFreeWeight(ex),
+        ) ??
+          pick(
+            "Chest main lift",
+            true,
+            (ex) => muscle(ex, "Klatka piersiowa") && compound(ex),
+          );
 
         // Second chest lift: any chest exercise — compound preferred by sortWithPriority
         // (exercisePriority rank), isolation accepted as fallback.
@@ -730,8 +786,18 @@ export function runExerciseSelectionEngineV0(
         );
 
         // Rear delt / biceps / back isolation — supports back development.
-        // When back is Tier A, sortWithPriority surfaces back isolation (Plecy + Izolowane)
-        // above rear-delt Barki and above plain Biceps.
+        //
+        // Accepted families:
+        //   • isRearDeltBarki       — rear-delt fly, face pull (Barki + pull/abduction)
+        //   • Biceps                — biceps isolation (arm synergist for pulling)
+        //   • Plecy + Izolowane + pull pattern only
+        //                           — straight-arm pulldown (Przyciąganie pionowe)
+        //                             and similar pull-family back isolation
+        //
+        // Rejected by the Plecy + Izolowane clause:
+        //   • isBackExtension       — Wznosy tułowia (Zawias biodrowy + Izolowane)
+        //   • isShrug               — Szrugowanie / Szrugsy (pattern "Inne")
+        //   These are filtered by requiring pattern ∈ {Przyciąganie pionowe, poziome}.
         pick(
           "Rear delt or biceps",
           true,
@@ -740,9 +806,16 @@ export function runExerciseSelectionEngineV0(
             muscle(ex, "Biceps") ||
             (muscle(ex, "Plecy") &&
               ex.exerciseType != null &&
-              norm(ex.exerciseType) === "izolowane"),
+              norm(ex.exerciseType) === "izolowane" &&
+              pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome")),
         );
 
+        // Slot 5: broad catch-all, but shrugs and back extensions excluded.
+        //
+        // Shrugs (isShrug) win by "Inne" pattern freshness after horizontal + vertical
+        // pulls are used — they are not valuable back-development exercises.
+        // Back extensions (isBackExtension) are lower-body / erector work; they should
+        // not occupy an upper-session accessory slot ahead of real pulling alternatives.
         pick(
           "Accessory or core",
           false,
@@ -755,7 +828,9 @@ export function runExerciseSelectionEngineV0(
               "Biceps",
               "Triceps",
               "Brzuch",
-            ),
+            ) &&
+            !isShrug(ex) &&
+            !isBackExtension(ex),
         );
       } else {
         // ── UPPER — DEFAULT ────────────────────────────────────────────────────
