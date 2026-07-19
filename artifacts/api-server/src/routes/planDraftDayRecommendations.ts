@@ -48,10 +48,13 @@ import {
   selectExercise,
   selectDayRecommendations,
   selectByUncoveredTargets,
+  zeroSubTargetCoverage,
+  accumulateSubTargetCoverage,
   type DayType,
   type ScoredAndFilteredExercise,
   type ExerciseWithCoveredTargets,
   type UncoveredTargetNeed,
+  type SubTargetBiases,
 } from "../services/planDraftDayRecommendationsService";
 import { normalizeMovementCategory } from "../services/planAnalyzer";
 
@@ -204,6 +207,8 @@ router.get(
           ex.movementPattern ?? null,
           ex.movementCategory ?? null,
         ),
+        // Sub-target bias weights — passed through from DB; null when not assigned.
+        subTargetBiases: (ex.subTargetBiases as SubTargetBiases | null) ?? null,
       });
     }
 
@@ -229,12 +234,29 @@ router.get(
       Array.from(alreadyAddedIds).map(String),
     );
 
+    // ── Sub-target coverage from already-added exercises ───────────────────────
+    // Compute coverage so the bias re-sort in selectExercise has context.
+    // Already-added exercises are excluded from the pool but their bias data is
+    // available from the full exercises fetch. We assume ~3 working sets per
+    // exercise as a directional approximation (exact sets are not sent in this
+    // stateless request).
+    const subTargetCoverage = zeroSubTargetCoverage();
+    for (const ex of exercises) {
+      if (!alreadyAddedIds.has(ex.id)) continue;
+      accumulateSubTargetCoverage(
+        subTargetCoverage,
+        (ex.subTargetBiases as SubTargetBiases | null) ?? null,
+        3, // approximation: ~3 working sets per committed exercise
+      );
+    }
+
     const filteredPool = selectExercise({
       exercises: pool,
       dayType,
       usedExercises,
       clientEquipment: survey.equipment,
       keepCoreGroup: includeCoreFlag,
+      subTargetCoverage,
     });
 
     console.log("USED_EXERCISES:", [...usedExercises]);

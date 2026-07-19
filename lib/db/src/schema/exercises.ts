@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, boolean, uniqueIndex, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, boolean, uniqueIndex, integer, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -51,6 +51,15 @@ export const exercisesTable = pgTable("exercises", {
   suitableForNoActivity: boolean("suitable_for_no_activity"),
   /** "Prosta" | "Umiarkowana" | "Złożona" — derived from learningDifficulty, overridden for suitableForNoActivity */
   movementComplexity: text("movement_complexity"),
+
+  /**
+   * Sub-target bias weights for exercise selection quality (Phase 1: Chest / Back / Shoulders).
+   * Shape: { upper_chest?, mid_chest?, lower_chest?, lats?, upper_back?,
+   *           front_delt?, lateral_delt?, rear_delt? }
+   * Values are relative coaching-bias proportions (should sum to ~1.0 per exercise).
+   * null = no data; selection engine falls back to base-score ordering.
+   */
+  subTargetBiases: jsonb("sub_target_biases"),
 
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),

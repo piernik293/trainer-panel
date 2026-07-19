@@ -37,6 +37,12 @@ export interface ScoredAndFilteredExercise {
   movementPattern?: string | null;
   /** Stage 4: canonical movement category key resolved from movement_pattern + movement_category. */
   movementCategoryKey?: string | null;
+  /**
+   * Sub-target bias weights (Phase 1: Chest / Back / Shoulders).
+   * Used by selectExercise to prefer exercises that improve under-covered sub-targets.
+   * null = no bias data; exercise competes on base score only (safe fallback).
+   */
+  subTargetBiases?: SubTargetBiases | null;
 }
 
 export interface DayRecommendationExercise {
@@ -67,6 +73,95 @@ export interface DayRecommendationExercise {
   movementCategoryKey?: string | null;
   /** Stage 6: secondary muscle groups for session fatigue tie-breaking. */
   secondaryMuscleGroups?: string[] | null;
+}
+
+// ─── Sub-target bias system (Phase 1: Chest / Back / Shoulders) ──────────────
+//
+// Weekly targets stay at the main muscle-group level (Klatka / Plecy / Barki).
+// Sub-targets are a QUALITY layer for exercise selection only — not a new volume system.
+//
+// Usage:
+//   1. Create coverage with zeroSubTargetCoverage().
+//   2. Call accumulateSubTargetCoverage() after each committed exercise.
+//   3. Pass coverage to selectExercise() so the pool is re-sorted to prefer
+//      exercises that improve under-covered sub-targets.
+//
+// Fallback: exercises with no subTargetBiases get biasBonus = 0 and compete
+// on base score alone — identical to the pre-bias behaviour.
+
+export type SubTargetKey =
+  | "upper_chest" | "mid_chest" | "lower_chest"
+  | "lats" | "upper_back"
+  | "front_delt" | "lateral_delt" | "rear_delt";
+
+export type SubTargetBiases = Partial<Record<SubTargetKey, number>>;
+export type SubTargetCoverage = Record<SubTargetKey, number>;
+
+/** Create a fresh zeroed coverage accumulator. */
+export function zeroSubTargetCoverage(): SubTargetCoverage {
+  return {
+    upper_chest: 0, mid_chest: 0, lower_chest: 0,
+    lats: 0, upper_back: 0,
+    front_delt: 0, lateral_delt: 0, rear_delt: 0,
+  };
+}
+
+/**
+ * Update the running sub-target coverage after an exercise is committed.
+ * Mutates `coverage` in place.
+ *
+ * @param coverage - Accumulated coverage state for the current session.
+ * @param biases   - The committed exercise's bias weights (may be null).
+ * @param sets     - Number of working sets assigned to the exercise.
+ */
+export function accumulateSubTargetCoverage(
+  coverage: SubTargetCoverage,
+  biases: SubTargetBiases | null | undefined,
+  sets: number,
+): void {
+  if (!biases) return;
+  for (const rawKey of Object.keys(biases)) {
+    const key = rawKey as SubTargetKey;
+    const weight = biases[key];
+    if (weight != null && weight > 0) {
+      coverage[key] = (coverage[key] ?? 0) + sets * weight;
+    }
+  }
+}
+
+/**
+ * Compute a bias bonus (0–10 range) for a candidate exercise.
+ *
+ * Higher bonus = more of the exercise's bias weight lands on the most
+ * under-covered sub-targets relative to the current session coverage.
+ *
+ * Returns 0 when `biases` is absent — exercise competes on base score only
+ * (safe fallback, identical to pre-bias behaviour).
+ *
+ * Formula:
+ *   For each sub-target key k with bias[k] > 0:
+ *     deficit = 1 − (coverage[k] / maxCoverage)   ∈ [0, 1]
+ *     bonus  += bias[k] × deficit
+ *   Scale to 0–10 (bias weights sum to ~1, deficit ≤ 1 → raw ≤ 1 → ×10).
+ */
+export function computeBiasBonus(
+  biases: SubTargetBiases | null | undefined,
+  coverage: SubTargetCoverage,
+): number {
+  if (!biases) return 0;
+  const keys = (Object.keys(biases) as SubTargetKey[]).filter((k) => (biases[k] ?? 0) > 0);
+  if (keys.length === 0) return 0;
+
+  const allValues = Object.values(coverage) as number[];
+  const maxCoverage = Math.max(...allValues, 1); // floor at 1 to avoid division by zero
+
+  let bonus = 0;
+  for (const key of keys) {
+    const weight = biases[key] ?? 0;
+    const deficit = 1 - coverage[key] / maxCoverage; // 0 = saturated → 1 = untouched
+    bonus += weight * deficit;
+  }
+  return bonus * 10; // scale: max ~10 pts on a 0–100 base score
 }
 
 // ─── Phase 4B3: Uncovered-target types ───────────────────────────────────────
@@ -180,6 +275,13 @@ export interface SelectExerciseParams {
    * Default: false.
    */
   keepCoreGroup?: boolean;
+  /**
+   * Running sub-target coverage state for the current session.
+   * When provided, the returned pool is re-sorted using biasBonus as a secondary
+   * criterion (after base score). Exercises without subTargetBiases are unaffected.
+   * When absent, falls back to pure base-score ordering (pre-bias behaviour).
+   */
+  subTargetCoverage?: SubTargetCoverage;
 }
 
 /**
@@ -215,6 +317,7 @@ export function selectExercise({
   usedExercises,
   clientEquipment,
   keepCoreGroup = false,
+  subTargetCoverage,
 }: SelectExerciseParams): ScoredAndFilteredExercise[] {
   const norm = (s: string) => s.trim().toLowerCase();
 
@@ -224,7 +327,7 @@ export function selectExercise({
       ? new Set(DAY_TYPE_MUSCLE_GROUPS[dayType].map(norm))
       : null;
 
-  return exercises.filter((ex) => {
+  const filtered = exercises.filter((ex) => {
     // 1. Deduplication — reject exercises already committed this session
     if (usedExercises.has(String(ex.id))) return false;
 
@@ -244,6 +347,22 @@ export function selectExercise({
 
     return true;
   });
+
+  // 5. Sub-target bias re-sort — secondary scoring layer.
+  //    When coverage state is provided, promote exercises that improve the most
+  //    under-covered sub-targets for the current session.
+  //    Exercises with no subTargetBiases receive biasBonus = 0 and keep their
+  //    relative order from the base-score sort (safe fallback).
+  if (subTargetCoverage) {
+    filtered.sort((a, b) => {
+      const aTotal = a.score + computeBiasBonus(a.subTargetBiases, subTargetCoverage);
+      const bTotal = b.score + computeBiasBonus(b.subTargetBiases, subTargetCoverage);
+      if (Math.abs(bTotal - aTotal) > 0.001) return bTotal - aTotal;
+      return a.name.localeCompare(b.name, "pl");
+    });
+  }
+
+  return filtered;
 }
 
 // ─── Compatibility helpers ────────────────────────────────────────────────────

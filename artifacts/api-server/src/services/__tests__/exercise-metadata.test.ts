@@ -104,6 +104,7 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     exercisePriority: "Wysoki",
     suitableForNoActivity: null,
     movementComplexity: null,
+    subTargetBiases: null,
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),

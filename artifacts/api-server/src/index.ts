@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { maybeRunSeed } from "./seeds/volumeGuidelines";
 import { normalizeExerciseLocations } from "./seeds/normalizeLocations";
 import { seedExerciseAdaptationFields } from "./seeds/exerciseAdaptation";
+import { seedSubTargetBiases } from "./seeds/subTargetBiasSeed";
 
 const rawPort = process.env["PORT"];
 
@@ -36,6 +37,12 @@ async function startServer() {
     await seedExerciseAdaptationFields();
   } catch (err) {
     logger.warn({ err }, "Exercise adaptation seed failed (non-fatal)");
+  }
+
+  try {
+    await seedSubTargetBiases();
+  } catch (err) {
+    logger.warn({ err }, "Sub-target bias seed failed (non-fatal)");
   }
 
   app.listen(port, (err) => {
