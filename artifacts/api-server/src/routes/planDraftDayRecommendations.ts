@@ -57,6 +57,10 @@ import {
   type SubTargetBiases,
 } from "../services/planDraftDayRecommendationsService";
 import { normalizeMovementCategory } from "../services/planAnalyzer";
+import {
+  runExerciseSelectionEngineV0,
+  type V0SessionType,
+} from "../services/ExerciseSelectionEngineV0";
 
 const router: IRouter = Router();
 
@@ -87,6 +91,18 @@ const QuerySchema = z.object({
    * When absent the day-type filter is skipped (backward-compatible).
    */
   dayType: z.enum(["upper", "lower"]).optional(),
+  /**
+   * V0 selector flag — enables ExerciseSelectionEngineV0.
+   * When "true", the new deterministic slot-based engine runs instead of
+   * the original scoring-based selector. The original path is unchanged.
+   * Requires v0SessionType to be provided.
+   */
+  useV0Selector: z.enum(["true", "false"]).optional(),
+  /**
+   * V0 session type — required when useV0Selector=true.
+   * "push" | "pull" | "legs" | "upper" | "lower"
+   */
+  v0SessionType: z.enum(["push", "pull", "legs", "upper", "lower"]).optional(),
 });
 
 router.get(
@@ -233,6 +249,35 @@ router.get(
     const usedExercises = new Set<string>(
       Array.from(alreadyAddedIds).map(String),
     );
+
+    // ── V0 selector gate ───────────────────────────────────────────────────────
+    // When useV0Selector=true, the deterministic slot-based engine runs and the
+    // entire old selector path (selectExercise / filteredPool / Phase 4B3) is
+    // bypassed. The original path below is completely unchanged.
+    if (query.data.useV0Selector === "true") {
+      const v0SessionType = query.data.v0SessionType as V0SessionType | undefined;
+      if (!v0SessionType) {
+        res.status(400).json({
+          error: "v0SessionType is required when useV0Selector=true (push|pull|legs|upper|lower)",
+        });
+        return;
+      }
+
+      const v0Result = runExerciseSelectionEngineV0(pool, v0SessionType, usedExercises);
+
+      if (!v0Result.valid) {
+        res.status(422).json({
+          error: v0Result.error,
+          hasProfile: true,
+          hasLocationData,
+          exercises: [],
+        });
+        return;
+      }
+
+      res.json({ hasProfile: true, hasLocationData, exercises: v0Result.exercises });
+      return;
+    }
 
     // ── Sub-target coverage from already-added exercises ───────────────────────
     // Compute coverage so the bias re-sort in selectExercise has context.
