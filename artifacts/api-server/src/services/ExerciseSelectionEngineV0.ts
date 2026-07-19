@@ -157,6 +157,36 @@ function isBackExtension(ex: ScoredAndFilteredExercise): boolean {
   );
 }
 
+/**
+ * True when the exercise is lower-body dominant or a heavy systemic compound
+ * that does not belong in an Upper session accessory slot.
+ *
+ * Two families are rejected:
+ *
+ * 1. Lower-body primary movers — any exercise whose mainMuscleGroup is
+ *    Nogi, Pośladki, Uda, or Łydki (squats, lunges, leg press, hip thrust,
+ *    calf raises, etc.).
+ *
+ * 2. Hip-hinge compounds catalogued under Plecy — conventional / Romanian /
+ *    sumo deadlift and trap-bar deadlift.  These are Złożone + Zawias biodrowy;
+ *    isBackExtension (Izolowane + Zawias biodrowy) is already handled
+ *    separately and is NOT caught here.
+ *
+ * Safe upper-body exercises that are NOT rejected:
+ *   - Pull-pattern back compounds (rows, pulldowns)      — Przyciąganie …
+ *   - Plecy isolation in pull patterns (straight-arm)   — Przyciąganie pionowe
+ *   - Core / Brzuch                                      — any pattern
+ *   - Arms, shoulders, chest                             — any pattern
+ */
+function isLowerBodyDominant(ex: ScoredAndFilteredExercise): boolean {
+  // Family 1: lower-body primary muscle group
+  if (muscle(ex, "Nogi", "Pośladki", "Uda", "Łydki")) return true;
+  // Family 2: compound hip-hinge (deadlift family) — includes Martwy ciąg
+  // konwencjonalny / rumuński / sumo even though they list Plecy as primary.
+  if (compound(ex) && pattern(ex, "Zawias biodrowy")) return true;
+  return false;
+}
+
 /** True if exercise mainMuscleGroup matches any of the provided groups (case-insensitive). */
 function muscle(ex: ScoredAndFilteredExercise, ...groups: string[]): boolean {
   return groups.some((g) => norm(ex.mainMuscleGroup) === norm(g));
@@ -742,7 +772,7 @@ export function runExerciseSelectionEngineV0(
               "Biceps",
               "Triceps",
               "Brzuch",
-            ),
+            ) && !isLowerBodyDominant(ex),
         );
       } else if (backUpperPriority) {
         // ── UPPER — BACK PRIORITY ──────────────────────────────────────────────
@@ -810,12 +840,14 @@ export function runExerciseSelectionEngineV0(
               pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome")),
         );
 
-        // Slot 5: broad catch-all, but shrugs and back extensions excluded.
+        // Slot 5: broad catch-all — shrugs, back extensions, and lower-body
+        // dominant / heavy hip-hinge compounds are all excluded.
         //
-        // Shrugs (isShrug) win by "Inne" pattern freshness after horizontal + vertical
-        // pulls are used — they are not valuable back-development exercises.
-        // Back extensions (isBackExtension) are lower-body / erector work; they should
-        // not occupy an upper-session accessory slot ahead of real pulling alternatives.
+        // isShrug        — trap isolation wins by "Inne" pattern freshness; excluded.
+        // isBackExtension — erector isolation; excluded (lower-body / spinal erector).
+        // isLowerBodyDominant — deadlift family (Martwy ciąg …) and any exercise
+        //   whose primary mover is Nogi / Pośladki / Uda / Łydki; excluded because
+        //   an Upper accessory slot must not become a deadlift substitute slot.
         pick(
           "Accessory or core",
           false,
@@ -830,7 +862,8 @@ export function runExerciseSelectionEngineV0(
               "Brzuch",
             ) &&
             !isShrug(ex) &&
-            !isBackExtension(ex),
+            !isBackExtension(ex) &&
+            !isLowerBodyDominant(ex),
         );
       } else {
         // ── UPPER — DEFAULT ────────────────────────────────────────────────────
@@ -851,6 +884,8 @@ export function runExerciseSelectionEngineV0(
         pick("Arms", true, (ex) => muscle(ex, "Biceps", "Triceps"));
 
         // Slot 5 is an optional catch-all — core is acceptable here if nothing else fits.
+        // isLowerBodyDominant guards against deadlift-family compounds and lower-body
+        // primary movers winning this slot via pattern-freshness tie-breaking.
         pick(
           "Accessory or core",
           false,
@@ -863,7 +898,7 @@ export function runExerciseSelectionEngineV0(
               "Biceps",
               "Triceps",
               "Brzuch",
-            ),
+            ) && !isLowerBodyDominant(ex),
         );
       }
       break;
