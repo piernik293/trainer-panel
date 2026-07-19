@@ -33,7 +33,6 @@ import {
 import {
   buildDistributionRequest,
   checkDistributionConsistency,
-  filterNonZeroAllocations,
 } from "@/lib/distributionHelpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -770,64 +769,20 @@ function DistributionSection({
 
               {/* Day cards */}
               <div className="space-y-2">
-                {result.days.map((day) => {
-                  const nonZero = filterNonZeroAllocations(day.targetAllocations);
-                  const coreAlloc = result.auxiliaryCoreBlock.dayAllocations.find(
-                    (a) => a.dayIndex === day.dayIndex,
-                  );
-                  const hasCoreAlloc = coreAlloc && coreAlloc.sets > 0;
-                  return (
-                    <Card key={day.dayIndex} className="border-border/50 shadow-sm">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium text-sm">
-                              Dzień {day.dayIndex + 1}: {day.dayName}
-                            </span>
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                              {day.dayType}
-                            </Badge>
-                          </div>
-                          <div className="shrink-0 text-right">
-                            <span className="text-sm font-semibold">
-                              Łączna objętość efektywna targetów: {day.totalEffectiveTargetVolume}
-                            </span>
-                            <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[220px]">
-                              To wartość analityczna uwzględniająca pracę kilku mięśni. Nie jest to liczba serii roboczych do wykonania.
-                            </p>
-                          </div>
-                        </div>
-                        {(nonZero.length > 0 || hasCoreAlloc) && (
-                          <div className="space-y-1 pt-2 border-t border-border/30">
-                            {nonZero.map((alloc) => (
-                              <div
-                                key={alloc.targetId}
-                                className="flex items-center justify-between text-xs"
-                              >
-                                <span className="text-muted-foreground">{alloc.targetName}</span>
-                                <span className="font-medium">{alloc.allocatedVolume} pkt. obj. efektywnej</span>
-                              </div>
-                            ))}
-                            {hasCoreAlloc && (
-                              <div className="flex items-center justify-between text-xs pt-1 mt-0.5 border-t border-amber-100">
-                                <span className="text-amber-700 font-medium">Core / brzuch</span>
-                                <span className="font-medium text-amber-700">
-                                  {coreAlloc.sets} {pluralizeSets(coreAlloc.sets)}
-                                </span>
-                              </div>
-                            )}
-                            <p className="text-[10px] text-muted-foreground pt-1 italic">
-                              Serie robocze do wykonania: dostępne po doborze ćwiczeń
-                            </p>
-                            <p className="text-[10px] text-muted-foreground italic">
-                              Podział na objętość bezpośrednią i pośrednią będzie dostępny po doborze ćwiczeń.
-                            </p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                {result.days.map((day) => (
+                  <Card key={day.dayIndex} className="border-border/50 shadow-sm">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm">
+                          Dzień {day.dayIndex + 1}: {day.dayName}
+                        </span>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          {day.dayType}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </>
           )}

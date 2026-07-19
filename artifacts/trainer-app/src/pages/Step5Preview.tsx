@@ -25,14 +25,9 @@ import {
 } from "@workspace/api-zod";
 import type { ExerciseDraftByDay, DraftExercise } from "@/lib/exerciseDraftHelpers";
 import { validatePrescription } from "@/lib/exerciseDraftHelpers";
-import { filterNonZeroAllocations } from "@/lib/distributionHelpers";
 import type { DraftVolumePreviewResult } from "@/hooks/useVolumeCoverage";
-import { WeeklyVolumeCoverage, DayVolumeCoverage } from "@/components/VolumeCoverageSection";
-import {
-  countCoreActualSetsForDay,
-  getCorePlanForDay,
-  pluralizeSets,
-} from "@/lib/coreCoverageHelpers";
+import { WeeklyVolumeCoverage } from "@/components/VolumeCoverageSection";
+import { pluralizeSets } from "@/lib/coreCoverageHelpers";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -355,9 +350,6 @@ function ExercisePreviewItem({
 interface DayPreviewCardProps {
   day: WeeklyVolumeDistributionResponseType["days"][number];
   exerciseDraft: ExerciseDraftByDay;
-  distributionResult: WeeklyVolumeDistributionResponseType;
-  previewResult: DraftVolumePreviewResult | null;
-  coverageLoading: boolean;
   exerciseContribMap: Map<number, ExerciseContrib[]>;
   avoidedExerciseIds: Set<number>;
   previewWarningsByEntryId: Map<string, string>;
@@ -366,17 +358,11 @@ interface DayPreviewCardProps {
 function DayPreviewCard({
   day,
   exerciseDraft,
-  distributionResult,
-  previewResult,
-  coverageLoading,
   exerciseContribMap,
   avoidedExerciseIds,
   previewWarningsByEntryId,
 }: DayPreviewCardProps) {
   const dayExercises = exerciseDraft[day.dayIndex] ?? [];
-  const nonZeroTargets = filterNonZeroAllocations(day.targetAllocations);
-  const corePlanned = getCorePlanForDay(distributionResult.auxiliaryCoreBlock, day.dayIndex);
-  const coreActual = countCoreActualSetsForDay(dayExercises);
   const totalSets = dayExercises.reduce((s, ex) => s + ex.sets, 0);
 
   return (
@@ -394,49 +380,12 @@ function DayPreviewCard({
           </div>
           <div className="text-right shrink-0 text-xs text-muted-foreground">
             <p>
-              Zaplanowana obj. efektywna:{" "}
-              <span className="font-medium text-foreground">
-                {day.totalEffectiveTargetVolume} pkt.
-              </span>
-            </p>
-            <p>
               {pluralizeExercises(dayExercises.length)}
               {" · "}
               {totalSets} {pluralizeSets(totalSets).replace(/^\d+ /, "")} łącznie
             </p>
           </div>
         </div>
-
-        {/* Planned targets quick view */}
-        {nonZeroTargets.length > 0 && (
-          <div className="text-[10px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5 border-t border-border/20 pt-2">
-            {nonZeroTargets.map((a) => (
-              <span key={a.targetId}>
-                {a.targetName}: <b className="text-foreground">{a.allocatedVolume} pkt.</b>
-              </span>
-            ))}
-            {corePlanned > 0 && (
-              <span>
-                Core: <b className="text-foreground">{pluralizeSets(corePlanned)}</b>
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Volume coverage for this day (reused component) */}
-        <DayVolumeCoverage
-          day={day}
-          exerciseDraft={exerciseDraft}
-          previewResult={previewResult}
-          isLoading={coverageLoading}
-          auxiliaryCoreBlock={distributionResult.auxiliaryCoreBlock}
-        />
-
-        {/* Helper text */}
-        <p className="text-[10px] text-muted-foreground italic">
-          Serie robocze są sumą serii przypisanych do ćwiczeń. Objętość efektywna uwzględnia
-          współczynniki pracy mięśni.
-        </p>
 
         {/* Read-only exercise list */}
         {dayExercises.length === 0 ? (
@@ -858,9 +807,6 @@ export default function Step5Preview({
               key={day.dayIndex}
               day={day}
               exerciseDraft={exerciseDraft}
-              distributionResult={distributionResult}
-              previewResult={previewResult}
-              coverageLoading={coverageLoading}
               exerciseContribMap={exerciseContribMap}
               avoidedExerciseIds={avoidedExerciseIds}
               previewWarningsByEntryId={previewWarningsByEntryId}

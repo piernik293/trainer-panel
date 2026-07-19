@@ -82,12 +82,11 @@ import {
   Plus,
   Trash2,
   Loader2,
-  Info,
 } from "lucide-react";
 import DayRecommendations, { type AddFromRecommendationPayload } from "@/components/DayRecommendations";
-import { WeeklyVolumeCoverage, DayVolumeCoverage } from "@/components/VolumeCoverageSection";
+import { WeeklyVolumeCoverage } from "@/components/VolumeCoverageSection";
 import type { DraftVolumePreviewResult } from "@/hooks/useVolumeCoverage";
-import { pluralizeSets, computeEligibleTargetNeeds } from "@/lib/coreCoverageHelpers";
+import { computeEligibleTargetNeeds } from "@/lib/coreCoverageHelpers";
 import { orderExercisesForSession } from "@/lib/exerciseOrdering";
 import {
   runAutoFill,
@@ -401,14 +400,6 @@ export default function Step4Exercises({
 
   return (
     <div className="space-y-4">
-      {/* Helper note */}
-      <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
-        <Info size={13} className="shrink-0 mt-0.5" />
-        <span>
-          To wartość analityczna. Rzeczywiste serie robocze wynikają z dobranych ćwiczeń.
-        </span>
-      </div>
-
       {/* Auto-fill button */}
       <div className="flex items-center gap-2">
         <Button
@@ -510,9 +501,6 @@ export default function Step4Exercises({
       {distributionResult.days.map((day) => {
         const dayExercises = exerciseDraft[day.dayIndex] ?? [];
         const nonZeroTargets = filterNonZeroAllocations(day.targetAllocations);
-        const coreAlloc = distributionResult.auxiliaryCoreBlock.dayAllocations.find(
-          (a) => a.dayIndex === day.dayIndex,
-        );
 
         // Broad categories for this day — maps targetId → broadCategory via targetDecisions
         const broadCategories = nonZeroTargets
@@ -546,41 +534,7 @@ export default function Step4Exercises({
                     {day.dayType}
                   </Badge>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="text-xs text-muted-foreground">
-                    Objętość efektywna targetów:{" "}
-                    <span className="font-medium text-foreground">
-                      {day.totalEffectiveTargetVolume} pkt.
-                    </span>
-                  </p>
-                </div>
               </div>
-
-              {/* Target allocations */}
-              {nonZeroTargets.length > 0 && (
-                <div className="space-y-0.5 border-t border-border/30 pt-2">
-                  {nonZeroTargets.map((alloc) => (
-                    <div key={alloc.targetId} className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">{alloc.targetName}</span>
-                      <span className="text-muted-foreground">{alloc.allocatedVolume} pkt. obj. efektywnej</span>
-                    </div>
-                  ))}
-                  {coreAlloc && coreAlloc.sets > 0 && (
-                    <div className="text-xs text-muted-foreground italic">
-                      Core / brzuch{" "}—{" "}<span className="not-italic">{pluralizeSets(coreAlloc.sets)}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Per-day volume coverage (planned vs actual) */}
-              <DayVolumeCoverage
-                day={day}
-                exerciseDraft={exerciseDraft}
-                previewResult={previewResult}
-                isLoading={coverageLoading}
-                auxiliaryCoreBlock={distributionResult.auxiliaryCoreBlock}
-              />
 
               {/* Exercise list */}
               <DayExerciseList
