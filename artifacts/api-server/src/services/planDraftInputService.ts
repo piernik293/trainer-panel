@@ -356,8 +356,24 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     trainerRestrictions: null,
   };
 
-  // allowedSplitTypes follows the effective (capped) day count, not the raw declared value.
-  const allowedSplitTypes = getCompatibleSplits(effectiveTrainingDays);
+  // allowedSplitTypes: day-count compatible splits, further restricted by experience level.
+  //
+  // Beginner / no-activity users must only see split families that are
+  // appropriate for their level regardless of how many days they declared.
+  // Upper/Lower, PPL and specialisation structures are not beginner-safe and
+  // must not appear in the allowed list even when the day count would otherwise
+  // permit them (e.g. a beginner who declared 3 days would get push_pull_legs
+  // from getCompatibleSplits(3) — that is wrong for a beginner).
+  const BEGINNER_EXPERIENCE_LEVELS = new Set([
+    "Brak aktywności fizycznej",
+    "Początkujący",
+  ]);
+  const isBeginnerLevel =
+    experienceLevel != null && BEGINNER_EXPERIENCE_LEVELS.has(experienceLevel);
+
+  const allowedSplitTypes: SplitType[] = isBeginnerLevel
+    ? ["full_body", "custom"]
+    : getCompatibleSplits(effectiveTrainingDays);
 
   return {
     client: {
