@@ -46,7 +46,9 @@ import { normalizeMovementCategory } from "../services/planAnalyzer";
 import {
   runExerciseSelectionEngineV0,
   type V0SessionType,
+  type V0PriorityContext,
 } from "../services/ExerciseSelectionEngineV0";
+import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -167,6 +169,24 @@ router.post(
     // Sort by score desc, then name asc (deterministic, same as recommendations route).
     pool.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, "pl"));
 
+    // ── Priority context — experience-aware muscle tier assignment ─────────────
+    //
+    // Builds the V0PriorityContext from survey fields.  Only intermediate and
+    // advanced clients get true priority-muscle slot influence (Tier A / B / C).
+    // Beginners and inactive clients fall back to balanced general-development
+    // sorting (isPriorityEligible = false → sortDeterministic inside V0).
+    const isPriorityEligible =
+      !!survey.experienceLevel &&
+      PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS.has(survey.experienceLevel);
+
+    const priorityContext: V0PriorityContext = {
+      isPriorityEligible,
+      tierA: survey.priorityMuscle1 ? [survey.priorityMuscle1] : [],
+      tierB: [survey.priorityMuscle2, survey.priorityMuscle3].filter(
+        (v): v is string => v !== null && v !== undefined && v.trim() !== "",
+      ),
+    };
+
     // ── TRUE EMPTY-SESSION START ───────────────────────────────────────────────
     //
     // usedExerciseIds begins completely empty — no pre-seeded exercises,
@@ -183,6 +203,7 @@ router.post(
       pool,
       v0SessionType as V0SessionType,
       usedExerciseIds,
+      priorityContext,
     );
 
     if (!v0Result.valid) {

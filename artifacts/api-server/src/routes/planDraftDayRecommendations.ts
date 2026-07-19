@@ -59,8 +59,10 @@ import {
 import { normalizeMovementCategory } from "../services/planAnalyzer";
 import {
   runExerciseSelectionEngineV0,
+  type V0PriorityContext,
   type V0SessionType,
 } from "../services/ExerciseSelectionEngineV0";
+import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -263,7 +265,21 @@ router.get(
         return;
       }
 
-      const v0Result = runExerciseSelectionEngineV0(pool, v0SessionType, usedExercises);
+      // Priority context — mirrors the same logic in planDraftGenerateDay.ts.
+      // Only intermediate / advanced clients get tier-aware slot sorting.
+      const isPriorityEligible =
+        !!survey.experienceLevel &&
+        PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS.has(survey.experienceLevel);
+
+      const v0PriorityContext: V0PriorityContext = {
+        isPriorityEligible,
+        tierA: survey.priorityMuscle1 ? [survey.priorityMuscle1] : [],
+        tierB: [survey.priorityMuscle2, survey.priorityMuscle3].filter(
+          (v): v is string => v !== null && v !== undefined && v.trim() !== "",
+        ),
+      };
+
+      const v0Result = runExerciseSelectionEngineV0(pool, v0SessionType, usedExercises, v0PriorityContext);
 
       if (!v0Result.valid) {
         res.status(422).json({

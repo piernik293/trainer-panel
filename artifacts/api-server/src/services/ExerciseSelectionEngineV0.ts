@@ -42,6 +42,28 @@ export interface V0Result {
   error?: string;
 }
 
+/**
+ * Priority context derived from the client's survey and experience level.
+ *
+ * Controls tier-aware candidate sorting and movement-pattern variety tracking
+ * inside the engine.  Always pass this from the route — set isPriorityEligible
+ * to false for beginners / inactive clients so all logic collapses to the
+ * original deterministic order with no priority influence.
+ *
+ * Tier model (intermediate / advanced only):
+ *   Tier A — main priority muscle (survey priorityMuscle1)
+ *   Tier B — supporting muscles  (survey priorityMuscle2, priorityMuscle3)
+ *   Tier C — everything else (no preference — balanced general development)
+ */
+export interface V0PriorityContext {
+  /** True only for "Średniozaawansowany" / "Zaawansowany". */
+  isPriorityEligible: boolean;
+  /** Tier A: the client's first-priority muscle group. */
+  tierA: string[];
+  /** Tier B: second and third priority muscle groups. */
+  tierB: string[];
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 /** Session types with a minimum of 4 exercises required for a valid session. */
@@ -164,6 +186,80 @@ function sortDeterministic(
   });
 }
 
+// ─── Priority-aware candidate ordering ───────────────────────────────────────
+
+/**
+ * Map an exercise to its client priority tier (0 = Tier A, 1 = Tier B, 2 = Tier C).
+ */
+function clientTierRank(
+  ex: ScoredAndFilteredExercise,
+  ctx: V0PriorityContext,
+): number {
+  const m = norm(ex.mainMuscleGroup);
+  if (ctx.tierA.some((t) => norm(t) === m)) return 0;
+  if (ctx.tierB.some((t) => norm(t) === m)) return 1;
+  return 2;
+}
+
+/**
+ * Priority-aware candidate sort for intermediate / advanced clients.
+ *
+ * Sort key:
+ *   1. Client muscle tier  (Tier A → Tier B → Tier C)
+ *      • Tier A wins multi-muscle optional slots (e.g. "Chest or triceps accessory"
+ *        goes to chest when chest is the priority muscle).
+ *      • Tier C is the last to win any contested slot — protection from cuts.
+ *   2. Movement-pattern freshness for Tier A muscles
+ *      • Prefers an exercise with a pattern not yet used by the same muscle group
+ *        in this session, enforcing flat+incline / vertical+horizontal variety.
+ *      • Only applied between two Tier A candidates for the same muscle.
+ *   3. Exercise library priority  (Bardzo wysoki → Niski)
+ *   4. Learning difficulty ascending  (simpler first)
+ *   5. ID ascending  (stable numeric tie-breaker)
+ *
+ * Falls back to sortDeterministic when isPriorityEligible = false or no tiers set.
+ */
+function sortWithPriority(
+  candidates: ScoredAndFilteredExercise[],
+  ctx: V0PriorityContext,
+  usedPatternsByMuscle: Map<string, Set<string>>,
+): ScoredAndFilteredExercise[] {
+  if (!ctx.isPriorityEligible || (ctx.tierA.length === 0 && ctx.tierB.length === 0)) {
+    return sortDeterministic(candidates);
+  }
+  return [...candidates].sort((a, b) => {
+    // 1. Client muscle tier
+    const ta = clientTierRank(a, ctx),
+      tb = clientTierRank(b, ctx);
+    if (ta !== tb) return ta - tb;
+
+    // 2. Movement-pattern freshness — only between two Tier A candidates
+    if (ta === 0 && tb === 0) {
+      const muscleA = norm(a.mainMuscleGroup);
+      const usedPats = usedPatternsByMuscle.get(muscleA) ?? new Set<string>();
+      const patA = normP(a.movementPattern) ?? "";
+      const patB = normP(b.movementPattern) ?? "";
+      // 0 = fresh (preferred), 1 = already used
+      const freshA = usedPats.has(patA) ? 1 : 0;
+      const freshB = usedPats.has(patB) ? 1 : 0;
+      if (freshA !== freshB) return freshA - freshB;
+    }
+
+    // 3. Exercise library priority
+    const pa = priorityRank(a),
+      pb = priorityRank(b);
+    if (pa !== pb) return pa - pb;
+
+    // 4. Learning difficulty
+    const la = a.learningDifficulty ?? 99,
+      lb = b.learningDifficulty ?? 99;
+    if (la !== lb) return la - lb;
+
+    // 5. ID
+    return a.id - b.id;
+  });
+}
+
 // ─── Core engine ──────────────────────────────────────────────────────────────
 
 /**
@@ -174,11 +270,17 @@ function sortDeterministic(
  * @param sessionType     "push" | "pull" | "legs" | "upper" | "lower"
  * @param usedExerciseIds Per-session deduplication state. Mutated in place.
  *                        Pre-populate with alreadyAdded exercise IDs before calling.
+ * @param ctx             Optional priority context from the client's survey.
+ *                        When present and isPriorityEligible = true, candidates are
+ *                        sorted Tier A → Tier B → Tier C before the deterministic
+ *                        tie-breaker, and Tier A variety tracking is active.
+ *                        Omit or pass undefined to keep the original behaviour.
  */
 export function runExerciseSelectionEngineV0(
   pool: ScoredAndFilteredExercise[],
   sessionType: V0SessionType,
   usedExerciseIds: Set<string>,
+  ctx?: V0PriorityContext,
 ): V0Result {
   // ── Step 1: Global hard filter ────────────────────────────────────────────
   // Exclude avoided exercises and blocklisted names from the entire session.
@@ -190,6 +292,18 @@ export function runExerciseSelectionEngineV0(
   const results: Array<{ ex: ScoredAndFilteredExercise; slotName: string }> =
     [];
 
+  // Movement-pattern variety tracker for Tier A muscles.
+  // After each Tier A exercise is chosen, its movement pattern is recorded here.
+  // Future picks within the same muscle group deprioritise already-used patterns,
+  // enforcing flat+incline / vertical+horizontal variety automatically.
+  const usedPatternsByMuscle = new Map<string, Set<string>>();
+
+  if (ctx?.isPriorityEligible && (ctx.tierA.length > 0 || ctx.tierB.length > 0)) {
+    console.log(
+      `PRIORITY_CONTEXT: Tier A=[${ctx.tierA.join(", ")}] Tier B=[${ctx.tierB.join(", ")}]`,
+    );
+  }
+
   /**
    * Attempt to pick one exercise for a named slot.
    *
@@ -197,8 +311,13 @@ export function runExerciseSelectionEngineV0(
    *   1. Deduplication (usedExerciseIds)
    *   2. Global eligibility (already applied to `eligible`)
    *   3. Slot-specific filter predicate
-   *   4. Deterministic sort (priority → difficulty → id)
+   *   4. Priority-aware sort when ctx.isPriorityEligible = true:
+   *        Tier A → Tier B → Tier C → deterministic tie-breaker
+   *      Falls back to plain deterministic sort for beginners / no ctx.
    *   5. Select candidates[0]
+   *
+   * After selection, records the movement pattern of Tier A exercises so
+   * subsequent picks for the same muscle prefer a different pattern.
    *
    * Mutates usedExerciseIds on success.
    * Emits structured debug logs per spec.
@@ -208,9 +327,13 @@ export function runExerciseSelectionEngineV0(
     required: boolean,
     filter: (ex: ScoredAndFilteredExercise) => boolean,
   ): ScoredAndFilteredExercise | null {
-    const candidates = sortDeterministic(
-      eligible.filter((ex) => !usedExerciseIds.has(String(ex.id)) && filter(ex)),
+    const filtered = eligible.filter(
+      (ex) => !usedExerciseIds.has(String(ex.id)) && filter(ex),
     );
+    const candidates =
+      ctx?.isPriorityEligible
+        ? sortWithPriority(filtered, ctx, usedPatternsByMuscle)
+        : sortDeterministic(filtered);
 
     console.log(
       `SESSION_TYPE: ${sessionType} | SLOT: ${slotName} | CANDIDATE_COUNT: ${candidates.length}`,
@@ -230,6 +353,17 @@ export function runExerciseSelectionEngineV0(
 
     console.log(`SELECTED_EXERCISE: ${selected.id} ${selected.name}`);
     console.log(`USED_EXERCISE_IDS: [${[...usedExerciseIds].join(", ")}]`);
+
+    // Record movement pattern for Tier A variety tracking.
+    // Only applies when the selected exercise belongs to a Tier A muscle group.
+    if (ctx?.isPriorityEligible && selected.movementPattern) {
+      const m = norm(selected.mainMuscleGroup);
+      if (ctx.tierA.some((t) => norm(t) === m)) {
+        const existing = usedPatternsByMuscle.get(m) ?? new Set<string>();
+        existing.add(normP(selected.movementPattern) ?? "");
+        usedPatternsByMuscle.set(m, existing);
+      }
+    }
 
     return selected;
   }
