@@ -408,6 +408,18 @@ export function useDeletePlanExercise(planId: number) {
   });
 }
 
+export function useClearPlanDay(planId: number) {
+  const invalidate = usePlanInvalidator(planId);
+  return useMutation<WorkoutPlan, Error, { dayId: number }>({
+    mutationFn: ({ dayId }) =>
+      apiFetch<WorkoutPlan>(
+        `/plans/${planId}/days/${dayId}/exercises`,
+        { method: "DELETE" },
+      ),
+    onSuccess: invalidate,
+  });
+}
+
 export function useActivatePlan(planId: number, clientId?: number) {
   const invalidate = usePlanInvalidator(planId, clientId);
   return useMutation<WorkoutPlan, Error, void>({

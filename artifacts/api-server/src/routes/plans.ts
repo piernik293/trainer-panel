@@ -1264,6 +1264,39 @@ router.post(
   },
 );
 
+// ─── DELETE /plans/:id/days/:dayId/exercises (clear all) ─────────────────────
+
+router.delete("/plans/:id/days/:dayId/exercises", async (req, res): Promise<void> => {
+  const planId = Number(req.params.id);
+  const dayId = Number(req.params.dayId);
+  if (!Number.isFinite(planId) || !Number.isFinite(dayId)) {
+    res.status(400).json({ error: "Nieprawidłowe ID" });
+    return;
+  }
+
+  const [day] = await db
+    .select()
+    .from(workoutPlanDaysTable)
+    .where(and(eq(workoutPlanDaysTable.id, dayId), eq(workoutPlanDaysTable.planId, planId)));
+
+  if (!day) {
+    res.status(404).json({ error: "Dzień nie znaleziony" });
+    return;
+  }
+
+  await db
+    .delete(workoutPlanExercisesTable)
+    .where(eq(workoutPlanExercisesTable.dayId, dayId));
+
+  await db
+    .update(workoutPlansTable)
+    .set({ updatedAt: new Date() })
+    .where(eq(workoutPlansTable.id, planId));
+
+  const full = await getPlanFull(planId);
+  res.json(full);
+});
+
 // ─── DELETE /plans/:id/days/:dayId/exercises/:exerciseId ─────────────────────
 
 router.delete(

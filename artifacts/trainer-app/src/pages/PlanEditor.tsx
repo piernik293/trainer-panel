@@ -31,6 +31,7 @@ import {
   useUpdatePlanDay,
   useDeletePlanDay,
   useDuplicatePlanDay,
+  useClearPlanDay,
   useReorderPlanDays,
   useAddPlanExercise,
   useUpdatePlanExercise,
@@ -102,6 +103,7 @@ import {
   Save,
   Archive,
   LayoutList,
+  ListX,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -951,9 +953,12 @@ function DaySection({
     trainerNotes: day.trainerNotes ?? "",
   });
 
+  const [confirmClearDay, setConfirmClearDay] = useState(false);
+
   const updateDay = useUpdatePlanDay(planId);
   const deleteDay = useDeletePlanDay(planId);
   const duplicateDay = useDuplicatePlanDay(planId);
+  const clearDay = useClearPlanDay(planId);
   const reorderExercises = useReorderPlanExercises(planId);
 
   const sensors = useSensors(
@@ -1000,6 +1005,13 @@ function DaySection({
     duplicateDay.mutate(day.id, {
       onError: (err) => toast({ title: err.message, variant: "destructive" }),
     });
+  };
+
+  const handleClearDayConfirmed = () => {
+    clearDay.mutate(
+      { dayId: day.id },
+      { onError: (err) => toast({ title: err.message, variant: "destructive" }) },
+    );
   };
 
   const handleExerciseDragEnd = (event: DragEndEvent) => {
@@ -1108,6 +1120,18 @@ function DaySection({
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleDuplicateDay} disabled={duplicateDay.isPending} title="Duplikuj dzień">
               <Copy size={13} />
             </Button>
+            {day.exercises.length > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                onClick={() => setConfirmClearDay(true)}
+                disabled={clearDay.isPending}
+                title="Wyczyść dzień"
+              >
+                <ListX size={13} />
+              </Button>
+            )}
             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={handleDeleteDay} title="Usuń dzień">
               <Trash2 size={13} />
             </Button>
@@ -1202,6 +1226,26 @@ function DaySection({
           </Button>
         </div>
       </CardContent>
+
+      <AlertDialog open={confirmClearDay} onOpenChange={setConfirmClearDay}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Wyczyść dzień</AlertDialogTitle>
+            <AlertDialogDescription>
+              Usunąć wszystkie ćwiczenia z dnia „{day.dayName ?? `Dzień ${day.dayOrder}`}"? Tej operacji nie można cofnąć.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleClearDayConfirmed}
+            >
+              Usuń wszystko
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
