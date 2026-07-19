@@ -525,14 +525,21 @@ function Step2Preferences({
           {rec && (
             <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 flex items-start gap-2">
               <Sparkles size={13} className="text-primary mt-0.5 shrink-0" />
-              <p className="text-[11px] text-muted-foreground leading-snug">
-                {rec.explanation}
-                {rec.fallbackApplied && (
-                  <span className="ml-1 font-medium text-amber-700">
-                    (obniżone ze względu na regenerację)
-                  </span>
+              <div className="text-[11px] text-muted-foreground leading-snug space-y-1">
+                <p>{rec.explanation}</p>
+                {rec.cappedTrainingDays != null && (
+                  <p className="font-medium text-amber-700">
+                    Wywiad wskazuje {prefs.trainingDays} dni —
+                    rekomendowana częstotliwość to maksymalnie {rec.cappedTrainingDays} dni/tydz.
+                    na tym poziomie.
+                  </p>
                 )}
-              </p>
+                {rec.fallbackApplied && !rec.cappedTrainingDays && (
+                  <p className="font-medium text-amber-700">
+                    Podział obniżony ze względu na słabszą regenerację.
+                  </p>
+                )}
+              </div>
             </div>
           )}
           <div className="grid grid-cols-1 gap-2">

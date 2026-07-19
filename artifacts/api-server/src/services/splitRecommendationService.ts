@@ -3,22 +3,28 @@
  *
  * Pure, side-effect-free function that maps:
  *   (trainingDays, experienceLevel, recoveryQuality, trainingGoal)
- *   → { recommended, explanation, alternatives, fallbackApplied }
+ *   → { recommended, explanation, alternatives, fallbackApplied, cappedTrainingDays }
  *
- * Decision table mirrors the spec matrix exactly.
- * Goal is treated as a secondary modifier after the primary days × level matrix.
- * Recovery is applied last — poor recovery always pulls toward a simpler split.
+ * ── Product-level split families ────────────────────────────────────────────
+ *   full_body · upper_lower · upper_lower_full_body · push_pull_legs
  *
- * EXPERIENCE GATING
- *   Lower levels (Brak aktywności, Początkujący):
- *     - never receive specialized splits by default
- *     - priority muscles do NOT influence the recommendation
- *   Higher levels (Średniozaawansowany, Zaawansowany):
- *     - may receive more complex splits
- *     - future: priority-aware modifications can be added here
+ *   `full_body_ab` is an internal template variant (two non-identical A/B days
+ *   within the Full Body family). It must NOT appear in recommendation output.
+ *   All public recommendations use `full_body` for the Full Body family.
  *
- * SPLIT HIERARCHY (simplest → most complex)
- *   full_body → full_body_ab → upper_lower → upper_lower_full_body → push_pull_legs
+ * ── Beginner / Brak aktywności hard cap ─────────────────────────────────────
+ *   Maximum recommended training frequency for these levels is 3 days/week.
+ *   If the survey declares more than 3 days, the recommendation still returns
+ *   `full_body` + `cappedTrainingDays: 3`. The declared value is preserved in
+ *   the input object; only the recommendation is capped.
+ *
+ * ── Split hierarchy (simplest → most complex) ───────────────────────────────
+ *   full_body → upper_lower → upper_lower_full_body → push_pull_legs
+ *
+ * ── Recovery modifier ───────────────────────────────────────────────────────
+ *   Applied last. `poor` pulls toward a simpler split for intermediate/advanced.
+ *   Beginner/no-activity are already at the simplest split, so no further
+ *   downgrade is possible.
  */
 
 import type { SplitType } from "@workspace/api-zod";
@@ -37,16 +43,26 @@ export interface SplitRecommendationResult {
   recommended: SplitType;
   explanation: string;
   alternatives: SplitType[];
-  /** True when recovery downgraded the initial recommendation. */
+  /** True when recovery downgraded the initial intermediate/advanced recommendation. */
   fallbackApplied: boolean;
+  /**
+   * Set when the recommendation caps the training frequency below what the
+   * user declared in their survey. E.g. survey says 5 days but level is
+   * Początkujący → cappedTrainingDays = 3.
+   * Null when no cap was applied.
+   */
+  cappedTrainingDays: number | null;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const NO_ACTIVITY = "Brak aktywności fizycznej";
-const BEGINNER    = "Początkujący";
+const NO_ACTIVITY  = "Brak aktywności fizycznej";
+const BEGINNER     = "Początkujący";
 const INTERMEDIATE = "Średniozaawansowany";
-const ADVANCED    = "Zaawansowany";
+const ADVANCED     = "Zaawansowany";
+
+/** Maximum recommended training days per week for beginner / no-activity levels. */
+const LOWER_LEVEL_MAX_DAYS = 3;
 
 // ─── Goal classifier ──────────────────────────────────────────────────────────
 
@@ -56,7 +72,7 @@ function classifyGoal(goal: string | null): GoalCategory {
   if (!goal) return "unknown";
   const g = goal.toLowerCase();
   if (/redukc|odchudz|fat.?loss|spalani|chudni|deficyt/.test(g)) return "fat_loss";
-  if (/siła|strength|wyciskan|bench|powerlifting|pl|1rm/.test(g)) return "strength";
+  if (/siła|strength|wyciskan|bench|powerlifting|pl|1rm/.test(g))  return "strength";
   if (/mas[ay]|hipertrofi|hypertrophy|muskulat|objętoś|mięśni/.test(g)) return "hypertrophy";
   if (/ogólnorozwoj|zdrowi|kondycj|aktywno|sprawno|ruch|forma|wellbeing/.test(g)) return "general";
   return "unknown";
@@ -72,7 +88,7 @@ function isPoorRecovery(r: "excellent" | "good" | "standard" | "poor" | null): b
   return r === "poor";
 }
 
-function levelLabel(level: string | null): string {
+function lvl(level: string | null): string {
   return level ?? "nieznany poziom";
 }
 
@@ -83,7 +99,49 @@ export function recommendSplit(input: SplitRecommendationInput): SplitRecommenda
 
   const goal        = classifyGoal(trainingGoal);
   const poorRecovery = isPoorRecovery(recoveryQuality);
-  const lvl         = levelLabel(experienceLevel);
+
+  // ── Beginner / no-activity: hard 3-day cap ───────────────────────────────
+  //
+  // No matter how many days the survey declares, these levels should not
+  // receive a recommendation above 3 days or a split above Full Body.
+  // Return immediately with cappedTrainingDays set.
+  //
+  if (isLowerLevel(experienceLevel)) {
+    const declared = trainingDays;
+    const capped   = declared > LOWER_LEVEL_MAX_DAYS;
+
+    if (capped) {
+      return {
+        recommended: "full_body",
+        explanation:
+          `Wywiad wskazuje ${declared} dni, ale na poziomie ${lvl(experienceLevel)} ` +
+          `rekomendujemy maksymalnie ${LOWER_LEVEL_MAX_DAYS} dni treningowe tygodniowo ` +
+          "i plan ogólnorozwojowy Full Body. " +
+          "Wyższa częstotliwość zostanie uwzględniona gdy poziom zaawansowania wzrośnie.",
+        alternatives: [],
+        fallbackApplied: false,
+        cappedTrainingDays: LOWER_LEVEL_MAX_DAYS,
+      };
+    }
+
+    // ≤ 3 days, lower level — always Full Body, no alternatives needed
+    const dayNote = declared <= 1
+      ? "1 dzień treningowy"
+      : `${declared} ${declared === 2 ? "dni treningowe" : "dni treningowe"}`;
+
+    return {
+      recommended: "full_body",
+      explanation:
+        `${dayNote} + poziom ${lvl(experienceLevel)} → rekomendowany Full Body. ` +
+        "Plan powinien mieć charakter ogólnorozwojowy. " +
+        "Wysoka częstotliwość treningu każdej partii sprzyja nauce wzorców ruchowych.",
+      alternatives: [],
+      fallbackApplied: false,
+      cappedTrainingDays: null,
+    };
+  }
+
+  // ── Intermediate / advanced below ────────────────────────────────────────
 
   // ─── 1 day ──────────────────────────────────────────────────────────────────
   if (trainingDays <= 1) {
@@ -92,100 +150,85 @@ export function recommendSplit(input: SplitRecommendationInput): SplitRecommenda
       explanation: "1 dzień treningowy — jedyna sensowna opcja to trening Full Body angażujący całe ciało.",
       alternatives: [],
       fallbackApplied: false,
+      cappedTrainingDays: null,
     };
   }
 
   // ─── 2 days ─────────────────────────────────────────────────────────────────
   if (trainingDays === 2) {
     return {
-      recommended: "full_body_ab",
+      recommended: "full_body",
       explanation:
-        "2 dni treningowe — rekomendowany Full Body A/B dla wszystkich poziomów. " +
-        "Rotacja sesji A i B zapewnia pełne pokrycie ciała przy optymalnej regeneracji.",
-      alternatives: ["full_body"],
+        `2 dni treningowe + poziom ${lvl(experienceLevel)} → rekomendowany Full Body. ` +
+        "Dwie sesje tygodniowo angażujące całe ciało z wariantami A i B.",
+      alternatives: [],
       fallbackApplied: false,
+      cappedTrainingDays: null,
     };
   }
 
   // ─── 3 days ─────────────────────────────────────────────────────────────────
   if (trainingDays === 3) {
-    if (isLowerLevel(experienceLevel)) {
-      return {
-        recommended: "full_body",
-        explanation:
-          `3 dni treningowe + poziom ${lvl} → rekomendowany Full Body. ` +
-          "Na tym poziomie plan powinien mieć charakter ogólnorozwojowy. " +
-          "Wysoka częstotliwość treningu każdej partii sprzyja nauce wzorców ruchowych.",
-        alternatives: ["upper_lower_full_body"],
-        fallbackApplied: false,
-      };
-    }
-
-    // Intermediate / advanced
     if (goal === "general") {
       return {
         recommended: "full_body",
         explanation:
-          `3 dni treningowe + poziom ${lvl} + cel ogólnorozwojowy → rekomendowany Full Body. ` +
+          `3 dni treningowe + poziom ${lvl(experienceLevel)} + cel ogólnorozwojowy → rekomendowany Full Body. ` +
           "Cel ogólnorozwojowy / zdrowotny preferuje prostsze, wszechstronne podziały.",
         alternatives: ["upper_lower_full_body"],
         fallbackApplied: false,
+        cappedTrainingDays: null,
+      };
+    }
+
+    // Poor recovery → downgrade to full_body
+    if (poorRecovery) {
+      return {
+        recommended: "full_body",
+        explanation:
+          `3 dni treningowe + poziom ${lvl(experienceLevel)} — słabsza regeneracja obniża rekomendację do Full Body. ` +
+          "Przywróć Góra / Dół / Full Body gdy regeneracja się poprawi.",
+        alternatives: ["upper_lower_full_body"],
+        fallbackApplied: true,
+        cappedTrainingDays: null,
       };
     }
 
     // strength / hypertrophy / unknown → Góra/Dół/Full Body
-    const base: SplitType = "upper_lower_full_body";
     let explanation =
-      `3 dni treningowe + poziom ${lvl} → rekomendowany Góra / Dół / Full Body. ` +
-      "Optymalny podział dla 3 sesji tygodniowo przy wyższym poziomie zaawansowania: " +
-      "górna (A), górna (B), pełne ciało.";
+      `3 dni treningowe + poziom ${lvl(experienceLevel)} → rekomendowany Góra / Dół / Full Body. ` +
+      "Optymalny podział dla 3 sesji tygodniowo: górna (A), górna (B), pełne ciało.";
 
     if (goal === "strength" || goal === "hypertrophy") {
       explanation += ` Cel ${goal === "strength" ? "siłowy" : "hipertroficzny"} wspiera wybór tego układu.`;
     }
 
-    if (poorRecovery) {
-      return {
-        recommended: "full_body",
-        explanation:
-          `3 dni treningowe + poziom ${lvl} — słabsza regeneracja obniża rekomendację do Full Body. ` +
-          "Przywróć Góra / Dół / Full Body gdy regeneracja się poprawi.",
-        alternatives: ["upper_lower_full_body"],
-        fallbackApplied: true,
-      };
-    }
-
-    return { recommended: base, explanation, alternatives: ["full_body"], fallbackApplied: false };
+    return {
+      recommended: "upper_lower_full_body",
+      explanation,
+      alternatives: ["full_body"],
+      fallbackApplied: false,
+      cappedTrainingDays: null,
+    };
   }
 
   // ─── 4 days ─────────────────────────────────────────────────────────────────
   if (trainingDays === 4) {
-    if (experienceLevel === NO_ACTIVITY) {
-      return {
-        recommended: "upper_lower",
-        explanation:
-          "4 dni treningowe + brak aktywności fizycznej → Góra / Dół (stosuj ostrożnie). " +
-          "4 dni to wymagający harmonogram dla osoby bez aktywności. " +
-          "Góra / Dół zapewnia wystarczającą częstotliwość bez nadmiernej specjalizacji.",
-        alternatives: ["full_body_ab"],
-        fallbackApplied: false,
-      };
-    }
-
-    // fat loss + poor recovery → drop to full_body_ab
+    // Fat loss + poor recovery → simplify
     if (goal === "fat_loss" && poorRecovery) {
       return {
-        recommended: "full_body_ab",
+        recommended: "full_body",
         explanation:
-          `4 dni treningowe + poziom ${lvl} + redukcja + słaba regeneracja → Full Body A/B. ` +
+          `4 dni treningowe + poziom ${lvl(experienceLevel)} + redukcja + słaba regeneracja → Full Body. ` +
           "Redukcja z ograniczoną regeneracją wymaga prostszego podziału chroniącego przed przetrenowaniem.",
         alternatives: ["upper_lower"],
         fallbackApplied: true,
+        cappedTrainingDays: null,
       };
     }
 
     let explanation =
-      `4 dni treningowe + poziom ${lvl} → rekomendowany Góra / Dół. ` +
+      `4 dni treningowe + poziom ${lvl(experienceLevel)} → rekomendowany Góra / Dół. ` +
       "Każda partia trenowana 2× w tygodniu — optymalna częstotliwość i prosty rozkład objętości.";
 
     if (poorRecovery) {
@@ -197,39 +240,28 @@ export function recommendSplit(input: SplitRecommendationInput): SplitRecommenda
     return {
       recommended: "upper_lower",
       explanation,
-      alternatives: ["push_pull_lower_full_body"],
+      alternatives: ["upper_lower_full_body"],
       fallbackApplied: false,
+      cappedTrainingDays: null,
     };
   }
 
   // ─── 5 days ─────────────────────────────────────────────────────────────────
   if (trainingDays === 5) {
-    if (isLowerLevel(experienceLevel)) {
-      return {
-        recommended: "upper_lower_full_body",
-        explanation:
-          `5 dni treningowe + poziom ${lvl} → rekomendowany Góra / Dół / Full Body. ` +
-          "Na tym poziomie nie rekomenduje się wyspecjalizowanych podziałów przy 5 dniach. " +
-          "Plan powinien mieć charakter ogólnorozwojowy.",
-        alternatives: ["upper_lower"],
-        fallbackApplied: false,
-      };
-    }
-
-    // Intermediate / advanced
     if (poorRecovery) {
       return {
         recommended: "upper_lower_full_body",
         explanation:
-          `5 dni treningowe + poziom ${lvl} — słabsza regeneracja obniża rekomendację do Góra / Dół / Full Body. ` +
-          "Push / Pull / Legs zostanie rekomendowany gdy regeneracja się poprawi.",
+          `5 dni treningowe + poziom ${lvl(experienceLevel)} — słabsza regeneracja obniża rekomendację ` +
+          "do Góra / Dół / Full Body. Push / Pull / Legs zostanie rekomendowany gdy regeneracja się poprawi.",
         alternatives: ["push_pull_legs", "upper_lower"],
         fallbackApplied: true,
+        cappedTrainingDays: null,
       };
     }
 
     let explanation =
-      `5 dni treningowe + poziom ${lvl} → rekomendowany Push / Pull / Legs. ` +
+      `5 dni treningowe + poziom ${lvl(experienceLevel)} → rekomendowany Push / Pull / Legs. ` +
       "Efektywna specjalizacja przy 5 sesjach tygodniowo.";
 
     if (goal === "strength" || goal === "hypertrophy") {
@@ -241,6 +273,7 @@ export function recommendSplit(input: SplitRecommendationInput): SplitRecommenda
       explanation,
       alternatives: ["upper_lower_full_body"],
       fallbackApplied: false,
+      cappedTrainingDays: null,
     };
   }
 
@@ -250,30 +283,33 @@ export function recommendSplit(input: SplitRecommendationInput): SplitRecommenda
       return {
         recommended: "upper_lower",
         explanation:
-          `${trainingDays} dni treningowe + poziom ${lvl} — słabsza regeneracja → Góra / Dół. ` +
+          `${trainingDays} dni treningowe + poziom ${lvl(experienceLevel)} — słabsza regeneracja → Góra / Dół. ` +
           "Push / Pull / Legs jest dostępny gdy regeneracja pozwala na pełny harmonogram.",
         alternatives: ["push_pull_legs"],
         fallbackApplied: true,
+        cappedTrainingDays: null,
       };
     }
     return {
       recommended: "push_pull_legs",
       explanation:
-        `${trainingDays} dni treningowe + poziom ${lvl} → Push / Pull / Legs (rotacja 2×). ` +
+        `${trainingDays} dni treningowe + poziom ${lvl(experienceLevel)} → Push / Pull / Legs (rotacja 2×). ` +
         "Efektywny podział dla zaawansowanych przy wysokiej częstotliwości.",
       alternatives: ["upper_lower_full_body", "specialization"],
       fallbackApplied: false,
+      cappedTrainingDays: null,
     };
   }
 
-  // Not advanced, 6-7 days → simpler
+  // Intermediate, 6-7 days → simpler
   return {
     recommended: "upper_lower",
     explanation:
-      `${trainingDays} dni treningowe + poziom ${lvl} → Góra / Dół. ` +
+      `${trainingDays} dni treningowe + poziom ${lvl(experienceLevel)} → Góra / Dół. ` +
       "Push / Pull / Legs przy tej częstotliwości jest zarezerwowany dla zaawansowanych. " +
       "Prostszy podział jest tu bardziej efektywny.",
     alternatives: ["upper_lower_full_body"],
     fallbackApplied: false,
+    cappedTrainingDays: null,
   };
 }

@@ -182,8 +182,14 @@ export const SplitRecommendation = z.object({
   recommended: SplitTypeSchema,
   explanation: z.string(),
   alternatives: z.array(SplitTypeSchema),
-  /** True when a poor-recovery fallback was applied. */
+  /** True when recovery downgraded the initial intermediate/advanced recommendation. */
   fallbackApplied: z.boolean(),
+  /**
+   * Set when the recommendation caps the frequency below what the user declared.
+   * E.g. survey says 5 days but level is Początkujący → cappedTrainingDays = 3.
+   * Null when no frequency cap was applied.
+   */
+  cappedTrainingDays: z.number().nullable(),
 });
 
 export type SplitRecommendationType = z.infer<typeof SplitRecommendation>;
