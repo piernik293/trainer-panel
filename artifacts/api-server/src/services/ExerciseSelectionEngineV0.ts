@@ -187,6 +187,36 @@ function isLowerBodyDominant(ex: ScoredAndFilteredExercise): boolean {
   return false;
 }
 
+/**
+ * Positive whitelist for Upper session "Accessory or core" slots.
+ *
+ * An exercise must belong to one of these families to be admitted:
+ *
+ *   • Klatka piersiowa  — any type (isolation, compound accessory)
+ *   • Barki             — any type (lateral raise, rear-delt fly, press accessory)
+ *   • Biceps            — any type
+ *   • Triceps           — any type
+ *   • Brzuch            — any type (plank, crunch, cable crunch, etc.)
+ *   • Plecy             — pull-pattern ONLY (Przyciąganie pionowe / poziome)
+ *                         Rejects: Zawias biodrowy (deadlifts, back extensions),
+ *                                  Zgięcie tułowia (Jefferson Curl, good-morning),
+ *                                  Inne (shrugs), and any other non-pull pattern.
+ *
+ * This is the primary gate. isLowerBodyDominant is kept alongside it as a
+ * belt-and-suspenders guard for any lower-body exercise that might otherwise
+ * slip through (e.g. Nogi / Pośladki primary mover not yet in the DB).
+ */
+function isUpperAccessorySafe(ex: ScoredAndFilteredExercise): boolean {
+  if (muscle(ex, "Biceps", "Triceps", "Brzuch")) return true;
+  if (muscle(ex, "Klatka piersiowa", "Barki")) return true;
+  if (
+    muscle(ex, "Plecy") &&
+    pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome")
+  )
+    return true;
+  return false;
+}
+
 /** True if exercise mainMuscleGroup matches any of the provided groups (case-insensitive). */
 function muscle(ex: ScoredAndFilteredExercise, ...groups: string[]): boolean {
   return groups.some((g) => norm(ex.mainMuscleGroup) === norm(g));
@@ -760,19 +790,12 @@ export function runExerciseSelectionEngineV0(
           (ex) => muscle(ex, "Triceps", "Barki"),
         );
 
+        // Slot 5: whitelist-gated — only sensible upper-body accessory / isolation / core.
+        // isUpperAccessorySafe is the primary gate; isLowerBodyDominant is an extra guard.
         pick(
           "Accessory or core",
           false,
-          (ex) =>
-            muscle(
-              ex,
-              "Klatka piersiowa",
-              "Plecy",
-              "Barki",
-              "Biceps",
-              "Triceps",
-              "Brzuch",
-            ) && !isLowerBodyDominant(ex),
+          (ex) => isUpperAccessorySafe(ex) && !isLowerBodyDominant(ex),
         );
       } else if (backUpperPriority) {
         // ── UPPER — BACK PRIORITY ──────────────────────────────────────────────
@@ -840,30 +863,14 @@ export function runExerciseSelectionEngineV0(
               pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome")),
         );
 
-        // Slot 5: broad catch-all — shrugs, back extensions, and lower-body
-        // dominant / heavy hip-hinge compounds are all excluded.
-        //
-        // isShrug        — trap isolation wins by "Inne" pattern freshness; excluded.
-        // isBackExtension — erector isolation; excluded (lower-body / spinal erector).
-        // isLowerBodyDominant — deadlift family (Martwy ciąg …) and any exercise
-        //   whose primary mover is Nogi / Pośladki / Uda / Łydki; excluded because
-        //   an Upper accessory slot must not become a deadlift substitute slot.
+        // Slot 5: whitelist-gated — only sensible upper-body accessory / isolation / core.
+        // isUpperAccessorySafe is the primary gate (rejects shrugs, back extensions,
+        // deadlifts, Jefferson Curl, and all lower-body primary movers by admission
+        // logic rather than by exclusion).  isLowerBodyDominant is kept as an extra guard.
         pick(
           "Accessory or core",
           false,
-          (ex) =>
-            muscle(
-              ex,
-              "Klatka piersiowa",
-              "Plecy",
-              "Barki",
-              "Biceps",
-              "Triceps",
-              "Brzuch",
-            ) &&
-            !isShrug(ex) &&
-            !isBackExtension(ex) &&
-            !isLowerBodyDominant(ex),
+          (ex) => isUpperAccessorySafe(ex) && !isLowerBodyDominant(ex),
         );
       } else {
         // ── UPPER — DEFAULT ────────────────────────────────────────────────────
@@ -883,22 +890,12 @@ export function runExerciseSelectionEngineV0(
         pick("Shoulders", true, (ex) => muscle(ex, "Barki"));
         pick("Arms", true, (ex) => muscle(ex, "Biceps", "Triceps"));
 
-        // Slot 5 is an optional catch-all — core is acceptable here if nothing else fits.
-        // isLowerBodyDominant guards against deadlift-family compounds and lower-body
-        // primary movers winning this slot via pattern-freshness tie-breaking.
+        // Slot 5: whitelist-gated — only sensible upper-body accessory / isolation / core.
+        // isUpperAccessorySafe is the primary gate; isLowerBodyDominant is an extra guard.
         pick(
           "Accessory or core",
           false,
-          (ex) =>
-            muscle(
-              ex,
-              "Klatka piersiowa",
-              "Plecy",
-              "Barki",
-              "Biceps",
-              "Triceps",
-              "Brzuch",
-            ) && !isLowerBodyDominant(ex),
+          (ex) => isUpperAccessorySafe(ex) && !isLowerBodyDominant(ex),
         );
       }
       break;
