@@ -201,7 +201,125 @@ export default function Step4Exercises({
     onDraftChange(reorderExercisesInDay(exerciseDraft, dayIndex, oldIndex, newIndex));
   }
 
+  // Hoisted above both callbacks so both handleGenerateFromEmpty and
+  // handleAutoFill can reference it without capturing stale closures.
+  const hasAnyExercise = Object.values(exerciseDraft).some((day) => day.length > 0);
+
+  /** V0 session types accepted by POST .../generate-day */
+  const V0_SESSION_TYPES = new Set(["push", "pull", "legs", "upper", "lower"]);
+
+  /**
+   * handleGenerateFromEmpty — true empty-session generator.
+   *
+   * Calls POST /api/clients/:id/plan-draft/generate-day for each day whose
+   * dayType maps to a V0 session type.  Does NOT require previewResult,
+   * alreadyAdded, or any pre-seeded draft state.
+   */
+  const handleGenerateFromEmpty = useCallback(async () => {
+    setAutoFillState("loading");
+    setAutoFillSummary(null);
+    setAutoFillError(null);
+
+    const dayResults: Array<{
+      dayIndex: number;
+      exercises: Array<{ id: number; name: string; mainMuscleGroup: string; equipment: string[] }>;
+    }> = [];
+    const errors: string[] = [];
+
+    for (const day of distributionResult.days) {
+      const sessionType = day.dayType?.toLowerCase() ?? "";
+      if (!V0_SESSION_TYPES.has(sessionType)) {
+        console.log(`[GenerateDay] Skipping day ${day.dayIndex} — unsupported dayType: "${day.dayType}"`);
+        continue;
+      }
+
+      console.log(`[GenerateDay] Calling empty-session route — day ${day.dayIndex} (${sessionType})`);
+
+      try {
+        const resp = await fetch(`/api/clients/${clientId}/plan-draft/generate-day`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ v0SessionType: sessionType }),
+        });
+
+        console.log(`[GenerateDay] Day ${day.dayIndex} (${sessionType}): HTTP ${resp.status}`);
+
+        if (!resp.ok) {
+          const errData = await resp.json().catch(() => ({})) as { error?: string };
+          const msg = `Dzień ${day.dayIndex + 1} (${sessionType}): ${errData.error ?? `HTTP ${resp.status}`}`;
+          console.warn(`[GenerateDay] Failed — ${msg}`);
+          errors.push(msg);
+          continue;
+        }
+
+        const data = await resp.json() as {
+          exercises: Array<{ id: number; name: string; mainMuscleGroup: string; equipment: string[] }>;
+        };
+        console.log(`[GenerateDay] Day ${day.dayIndex}: ${data.exercises.length} exercises received`);
+        dayResults.push({ dayIndex: day.dayIndex, exercises: data.exercises });
+      } catch (err) {
+        const msg = `Dzień ${day.dayIndex + 1} (${sessionType}): ${err instanceof Error ? err.message : "Nieznany błąd"}`;
+        console.error(`[GenerateDay] Error:`, msg);
+        errors.push(msg);
+      }
+    }
+
+    if (dayResults.length === 0) {
+      setAutoFillState("error");
+      setAutoFillError(
+        errors.length > 0
+          ? errors.join("; ")
+          : "Brak dni z obsługiwanym typem sesji (push / pull / legs / upper / lower).",
+      );
+      return;
+    }
+
+    // Apply all generated exercises atomically
+    let newDraft = { ...exerciseDraft };
+    for (const { dayIndex, exercises } of dayResults) {
+      for (const ex of exercises) {
+        newDraft = addExerciseToDay(newDraft, dayIndex, {
+          exerciseId: ex.id,
+          exerciseName: ex.name,
+          mainMuscleGroup: ex.mainMuscleGroup,
+          equipment: ex.equipment,
+          isCore: ex.mainMuscleGroup === "Brzuch",
+          sets: DRAFT_EXERCISE_DEFAULTS.sets,
+          repsMin: DRAFT_EXERCISE_DEFAULTS.repsMin,
+          repsMax: DRAFT_EXERCISE_DEFAULTS.repsMax,
+          rir: DRAFT_EXERCISE_DEFAULTS.rir,
+          restSeconds: DRAFT_EXERCISE_DEFAULTS.restSeconds,
+        });
+      }
+    }
+
+    onDraftChange(newDraft);
+    setAutoFillState("success");
+    setAutoFillSummary({
+      totalAdded: dayResults.reduce((sum, r) => sum + r.exercises.length, 0),
+      daysUpdated: dayResults.length,
+      daysCovered: 0,
+      resolvedTargets: [],
+      unresolvedTargets: [],
+      coreAddedCount: dayResults.reduce(
+        (sum, r) => sum + r.exercises.filter((e) => e.mainMuscleGroup === "Brzuch").length,
+        0,
+      ),
+      limitWarnings: errors.length > 0 ? errors : [],
+    });
+  }, [distributionResult, exerciseDraft, clientId, onDraftChange]);
+
   const handleAutoFill = useCallback(async () => {
+    // ── Empty-session branch: use the new true generator ─────────────────────
+    // When no exercises have been selected yet, delegate entirely to the
+    // empty-session generator.  This path does NOT need previewResult.
+    if (!hasAnyExercise) {
+      await handleGenerateFromEmpty();
+      return;
+    }
+
+    // ── Continuation branch: old autofill path (unchanged) ───────────────────
+    // Only reached when at least one exercise already exists in the draft.
     if (!previewResult || coverageLoading) return;
     setAutoFillState("loading");
     setAutoFillSummary(null);
@@ -394,9 +512,7 @@ export default function Step4Exercises({
     onDraftChange(newDraft);
     setAutoFillState("success");
     setAutoFillSummary(result.summary);
-  }, [distributionResult, exerciseDraft, previewResult, coverageLoading, clientId, avoidedExercises, onDraftChange]);
-
-  const hasAnyExercise = Object.values(exerciseDraft).some((day) => day.length > 0);
+  }, [distributionResult, exerciseDraft, previewResult, coverageLoading, clientId, avoidedExercises, onDraftChange, hasAnyExercise, handleGenerateFromEmpty]);
 
   return (
     <div className="space-y-4">
@@ -407,7 +523,12 @@ export default function Step4Exercises({
           size="sm"
           className="gap-2"
           onClick={handleAutoFill}
-          disabled={autoFillState === "loading" || !previewResult || coverageLoading}
+          disabled={
+            autoFillState === "loading" ||
+            // Old autofill continuation path needs volume preview data.
+            // The empty-session generator does NOT — never block on empty days.
+            (hasAnyExercise && (!previewResult || coverageLoading))
+          }
         >
           {autoFillState === "loading" ? (
             <Loader2 size={14} className="animate-spin" />
