@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { maybeRunSeed } from "./seeds/volumeGuidelines";
+import { applyVolumeTargetPatch } from "./seeds/volumeTargetPatch";
 import { normalizeExerciseLocations } from "./seeds/normalizeLocations";
 import { seedExerciseAdaptationFields } from "./seeds/exerciseAdaptation";
 import { seedSubTargetBiases } from "./seeds/subTargetBiasSeed";
@@ -25,6 +26,13 @@ async function startServer() {
     logger.info("Volume guidelines seed check complete");
   } catch (err) {
     logger.warn({ err }, "Seed check failed (non-fatal, will retry next restart)");
+  }
+
+  try {
+    await applyVolumeTargetPatch();
+    logger.info("Volume target patch applied");
+  } catch (err) {
+    logger.warn({ err }, "Volume target patch failed (non-fatal, will retry next restart)");
   }
 
   try {
