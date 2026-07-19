@@ -62,6 +62,18 @@ export interface V0PriorityContext {
   tierA: string[];
   /** Tier B: second and third priority muscle groups. */
   tierB: string[];
+  /**
+   * When true, barbell chest exercises are preferred over dumbbell / bodyweight
+   * alternatives within the same Tier A sort band.
+   *
+   * Activated only when ALL of:
+   *   1. The client's trainingGoal explicitly names barbell bench (e.g. "100 kg na klatę")
+   *   2. The client has barbell equipment available (survey.equipment includes "Sztanga")
+   *   3. isPriorityEligible is true (intermediate / advanced)
+   *
+   * Has no effect outside Klatka piersiowa (chest) Tier A candidates.
+   */
+  benchGoalActive?: boolean;
 }
 
 /**
@@ -407,6 +419,33 @@ function sortWithPriority(
       const freshA = usedPats.has(patA) ? 1 : 0;
       const freshB = usedPats.has(patB) ? 1 : 0;
       if (freshA !== freshB) return freshA - freshB;
+    }
+
+    // 2.5. Bench-goal barbell preference (bench-goal clients only).
+    //
+    // When benchGoalActive is set, prefer barbell chest exercises over
+    // dumbbell / bodyweight ones within the same Tier A chest candidate band.
+    // Only applies between two Tier A Klatka piersiowa candidates so it has
+    // no effect on shoulder, triceps or any other slot.
+    //
+    // Barbell detection: exercise.equipment includes "Sztanga" (case-insensitive).
+    // A barbell exercise gets rank 0; everything else gets rank 1.
+    if (ctx.benchGoalActive && ta === 0 && tb === 0) {
+      const isChestA = norm(a.mainMuscleGroup) === norm("Klatka piersiowa");
+      const isChestB = norm(b.mainMuscleGroup) === norm("Klatka piersiowa");
+      if (isChestA && isChestB) {
+        const barbellA = a.equipment.some(
+          (e) => e.trim().toLowerCase() === "sztanga",
+        )
+          ? 0
+          : 1;
+        const barbellB = b.equipment.some(
+          (e) => e.trim().toLowerCase() === "sztanga",
+        )
+          ? 0
+          : 1;
+        if (barbellA !== barbellB) return barbellA - barbellB;
+      }
     }
 
     // 3. Exercise library priority

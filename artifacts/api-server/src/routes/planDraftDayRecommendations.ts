@@ -271,12 +271,27 @@ router.get(
         !!survey.experienceLevel &&
         PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS.has(survey.experienceLevel);
 
+      // Bench-goal detection — same keywords and conditions as generate-day route.
+      const BENCH_GOAL_KEYWORDS = [
+        "klatę", "klatą", "bench", "wyciskanie", "wycisk", "ławka",
+      ];
+      const isBenchGoal =
+        survey.trainingGoal
+          ? BENCH_GOAL_KEYWORDS.some((kw) =>
+              survey.trainingGoal!.toLowerCase().includes(kw),
+            )
+          : false;
+      const hasBarbell = survey.equipment
+        ? survey.equipment.toLowerCase().includes("sztanga")
+        : false;
+
       const v0PriorityContext: V0PriorityContext = {
         isPriorityEligible,
         tierA: survey.priorityMuscle1 ? [survey.priorityMuscle1] : [],
         tierB: [survey.priorityMuscle2, survey.priorityMuscle3].filter(
           (v): v is string => v !== null && v !== undefined && v.trim() !== "",
         ),
+        benchGoalActive: isPriorityEligible && isBenchGoal && hasBarbell,
       };
 
       const v0Result = runExerciseSelectionEngineV0(pool, v0SessionType, usedExercises, v0PriorityContext);

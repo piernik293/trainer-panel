@@ -213,12 +213,33 @@ router.post(
       !!survey.experienceLevel &&
       PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS.has(survey.experienceLevel);
 
+    // ── Bench-goal detection ───────────────────────────────────────────────────
+    //
+    // Activates barbell-preference sort (step 2.5 in sortWithPriority) when the
+    // client's goal is explicitly bench-oriented AND barbell equipment is available.
+    // Keywords cover common Polish phrasings ("100 kg na klatę", "ławka", etc.)
+    // plus the English "bench".  Only enabled for priority-eligible experience
+    // levels — beginners use sortDeterministic (simpler-first) regardless.
+    const BENCH_GOAL_KEYWORDS = [
+      "klatę", "klatą", "bench", "wyciskanie", "wycisk", "ławka",
+    ];
+    const isBenchGoal =
+      survey.trainingGoal
+        ? BENCH_GOAL_KEYWORDS.some((kw) =>
+            survey.trainingGoal!.toLowerCase().includes(kw),
+          )
+        : false;
+    const hasBarbell = survey.equipment
+      ? survey.equipment.toLowerCase().includes("sztanga")
+      : false;
+
     const priorityContext: V0PriorityContext = {
       isPriorityEligible,
       tierA: survey.priorityMuscle1 ? [survey.priorityMuscle1] : [],
       tierB: [survey.priorityMuscle2, survey.priorityMuscle3].filter(
         (v): v is string => v !== null && v !== undefined && v.trim() !== "",
       ),
+      benchGoalActive: isPriorityEligible && isBenchGoal && hasBarbell,
     };
 
     // ── Session start — seed cross-session memory if provided ─────────────────
