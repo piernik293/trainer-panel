@@ -64,10 +64,33 @@ export interface V0PriorityContext {
   tierB: string[];
 }
 
+/**
+ * Engine-level call options.
+ *
+ * alternativeIndex controls which candidate from the ranked band wins each slot:
+ *   0 (default) — rank-1 always wins; fully deterministic / stable
+ *   1           — first pattern-diverse candidate in the band wins
+ *   2           — second pattern-diverse candidate in the band wins
+ *   …
+ *
+ * Protected main-lift slots draw from a band of BAND_MAIN (3) candidates.
+ * Accessory and isolation slots draw from a band of BAND_ACCESSORY (5).
+ * When the band is smaller than requested the last available candidate is used.
+ */
+export interface V0EngineOptions {
+  alternativeIndex?: number;
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 /** Session types with a minimum of 4 exercises required for a valid session. */
 const MIN_EXERCISES = 4;
+
+/** Band size for protected main-lift slots — variety stays within the same stimulus family. */
+const BAND_MAIN = 3;
+
+/** Band size for accessory / isolation / optional slots — more variety permitted. */
+const BAND_ACCESSORY = 5;
 
 /** Name fragments that disqualify an exercise from any structural slot. */
 const HARD_FILTER_FRAGMENTS = [
@@ -385,6 +408,7 @@ export function runExerciseSelectionEngineV0(
   sessionType: V0SessionType,
   usedExerciseIds: Set<string>,
   ctx?: V0PriorityContext,
+  options?: V0EngineOptions,
 ): V0Result {
   // ── Step 1: Global hard filter ────────────────────────────────────────────
   // Exclude avoided exercises and blocklisted names from the entire session.
@@ -430,6 +454,7 @@ export function runExerciseSelectionEngineV0(
     slotName: string,
     required: boolean,
     filter: (ex: ScoredAndFilteredExercise) => boolean,
+    pickOpts?: { protected?: boolean },
   ): ScoredAndFilteredExercise | null {
     const filtered = eligible.filter(
       (ex) => !usedExerciseIds.has(String(ex.id)) && filter(ex),
@@ -451,7 +476,40 @@ export function runExerciseSelectionEngineV0(
       return null;
     }
 
-    const selected = candidates[0];
+    // ── Band selection ────────────────────────────────────────────────────────
+    //
+    // altIdx=0 (default): rank-1 always wins — behaviour is identical to before.
+    // altIdx>0 (alternative): prefer a candidate whose movementPattern differs
+    //   from the default pick (band[0]).  This drives family-level variety
+    //   (e.g. flat press → incline press → fly) rather than same-pattern variants
+    //   (e.g. flat barbell → flat smith → flat machine).
+    //
+    // Band sizes:
+    //   BAND_MAIN      (3) for protected main-lift slots — stays within stimulus family
+    //   BAND_ACCESSORY (5) for accessory / isolation / optional slots
+    //
+    // Diversity fallback: if the band does not contain enough pattern-diverse
+    // candidates, falls back to band[min(altIdx, band.length-1)].
+    const altIdx = options?.alternativeIndex ?? 0;
+    const bandSize = pickOpts?.protected ? BAND_MAIN : BAND_ACCESSORY;
+    const band = candidates.slice(0, bandSize);
+
+    let selected: ScoredAndFilteredExercise;
+    if (altIdx === 0 || band.length <= 1) {
+      // Stable default path — unchanged from original behaviour.
+      selected = band[0];
+    } else {
+      const defaultPattern = normP(band[0].movementPattern);
+      // Collect candidates whose pattern differs from the default winner.
+      const diverse = band
+        .slice(1)
+        .filter((ex) => normP(ex.movementPattern) !== defaultPattern);
+      // diverse[altIdx-1]: first diverse pick for alt=1, second for alt=2, etc.
+      // Falls back to the raw band index when diversity is exhausted.
+      selected =
+        diverse[altIdx - 1] ?? band[Math.min(altIdx, band.length - 1)];
+    }
+
     usedExerciseIds.add(String(selected.id));
     results.push({ ex: selected, slotName });
 
@@ -502,6 +560,7 @@ export function runExerciseSelectionEngineV0(
           muscle(ex, "Klatka piersiowa") &&
           compound(ex) &&
           pattern(ex, "Pchanie poziome"),
+        { protected: true },
       );
 
       if (chestPushPriority) {
@@ -512,6 +571,7 @@ export function runExerciseSelectionEngineV0(
           "Second chest compound",
           true,
           (ex) => muscle(ex, "Klatka piersiowa") && compound(ex),
+          { protected: true },
         );
       } else {
         // Default: chest OR shoulder vertical press
@@ -522,6 +582,7 @@ export function runExerciseSelectionEngineV0(
             muscle(ex, "Klatka piersiowa", "Barki") &&
             compound(ex) &&
             pattern(ex, "Pchanie poziome", "Pchanie pionowe"),
+          { protected: true },
         );
       }
 
@@ -567,6 +628,7 @@ export function runExerciseSelectionEngineV0(
           muscle(ex, "Plecy") &&
           compound(ex) &&
           pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome"),
+        { protected: true },
       );
 
       // Slot 2: prefer the complementary movement pattern to slot 1.
@@ -584,6 +646,7 @@ export function runExerciseSelectionEngineV0(
           false, // non-required; fallback below carries the required flag
           (ex) =>
             muscle(ex, "Plecy") && compound(ex) && pattern(ex, complementary),
+          { protected: true },
         ) ??
         pick(
           "Second pull compound",
@@ -592,6 +655,7 @@ export function runExerciseSelectionEngineV0(
             muscle(ex, "Plecy") &&
             compound(ex) &&
             pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome"),
+          { protected: true },
         );
       void s2;
 
@@ -653,6 +717,7 @@ export function runExerciseSelectionEngineV0(
           muscle(ex, "Mięśnie czworogłowe uda", "Pośladki") &&
           compound(ex) &&
           pattern(ex, "Przysiad", "Wykrok"),
+        { protected: true },
       );
       // Capture the knee-dominant pattern for near-duplicate exclusion below.
       const kneeDominantPattern = normP(s1?.movementPattern);
@@ -757,11 +822,13 @@ export function runExerciseSelectionEngineV0(
           "Chest main lift",
           false,
           (ex) => muscle(ex, "Klatka piersiowa") && compound(ex) && hasFreeWeight(ex),
+          { protected: true },
         ) ??
           pick(
             "Chest main lift",
             true,
             (ex) => muscle(ex, "Klatka piersiowa") && compound(ex),
+            { protected: true },
           );
 
         // Second chest lift: any chest exercise — compound preferred by sortWithPriority
@@ -806,6 +873,7 @@ export function runExerciseSelectionEngineV0(
             muscle(ex, "Plecy") &&
             compound(ex) &&
             pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome"),
+          { protected: true },
         );
 
         // Prefer the complementary pull pattern for slot 2 — ensures vertical+horizontal
@@ -821,6 +889,7 @@ export function runExerciseSelectionEngineV0(
           false, // non-required; fallback below carries the required flag
           (ex) =>
             muscle(ex, "Plecy") && compound(ex) && pattern(ex, complementaryPull),
+          { protected: true },
         ) ??
           pick(
             "Second back compound",
@@ -829,6 +898,7 @@ export function runExerciseSelectionEngineV0(
               muscle(ex, "Plecy") &&
               compound(ex) &&
               pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome"),
+            { protected: true },
           );
 
         // Chest compound — always present for structural balance.
@@ -836,6 +906,7 @@ export function runExerciseSelectionEngineV0(
           "Chest compound",
           true,
           (ex) => muscle(ex, "Klatka piersiowa") && compound(ex),
+          { protected: true },
         );
 
         // Rear delt / biceps / back isolation — supports back development.
@@ -881,11 +952,13 @@ export function runExerciseSelectionEngineV0(
           "Chest compound",
           true,
           (ex) => muscle(ex, "Klatka piersiowa") && compound(ex),
+          { protected: true },
         );
         pick(
           "Back compound",
           true,
           (ex) => muscle(ex, "Plecy") && compound(ex),
+          { protected: true },
         );
         pick("Shoulders", true, (ex) => muscle(ex, "Barki"));
         pick("Arms", true, (ex) => muscle(ex, "Biceps", "Triceps"));
@@ -924,6 +997,7 @@ export function runExerciseSelectionEngineV0(
           muscle(ex, "Mięśnie czworogłowe uda", "Pośladki") &&
           compound(ex) &&
           pattern(ex, "Przysiad", "Wykrok"),
+        { protected: true },
       );
       // Capture the knee-dominant pattern for near-duplicate exclusion below.
       const kneeDominantPattern = normP(s1?.movementPattern);

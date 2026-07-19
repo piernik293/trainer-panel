@@ -62,6 +62,17 @@ const BodySchema = z.object({
    * "push" | "pull" | "legs" | "upper" | "lower"
    */
   v0SessionType: z.enum(["push", "pull", "legs", "upper", "lower"]),
+  /**
+   * Controlled variety index (optional, default 0).
+   *
+   * 0 = stable default — rank-1 candidate always wins each slot (deterministic).
+   * 1 = first alternative — prefer the first pattern-diverse candidate in each slot's band.
+   * 2 = second alternative — prefer the second pattern-diverse candidate, etc.
+   *
+   * Protected main-lift slots draw from a band of 3; accessory slots from a band of 5.
+   * Passing any value > 0 produces a structurally identical but exercise-diverse session.
+   */
+  alternativeIndex: z.number().int().min(0).optional(),
 });
 
 router.post(
@@ -199,11 +210,13 @@ router.post(
     console.log(`USED_EXERCISE_IDS: []`);
 
     // ── Run V0 slot-based generator ────────────────────────────────────────────
+    const alternativeIndex = body.data.alternativeIndex ?? 0;
     const v0Result = runExerciseSelectionEngineV0(
       pool,
       v0SessionType as V0SessionType,
       usedExerciseIds,
       priorityContext,
+      { alternativeIndex },
     );
 
     if (!v0Result.valid) {
