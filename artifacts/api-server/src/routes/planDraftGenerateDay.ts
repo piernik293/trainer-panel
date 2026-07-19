@@ -73,6 +73,29 @@ const BodySchema = z.object({
    * Passing any value > 0 produces a structurally identical but exercise-diverse session.
    */
   alternativeIndex: z.number().int().min(0).optional(),
+  /**
+   * BLOCKER 3 FIX — Cross-session memory for multi-day week generation.
+   *
+   * Optional list of exercise IDs already used in earlier sessions of the
+   * same generated week.  When provided, V0 excludes these exercises from
+   * all slots before running the slot-fill algorithm — the same deduplication
+   * mechanism that already prevents repeats within a single session.
+   *
+   * Behaviour:
+   *   - omitted / empty → single isolated session, unchanged behaviour
+   *   - non-empty       → V0 starts with these IDs pre-marked as used,
+   *                       producing a day that shares no exercises with
+   *                       the earlier sessions unless the pool is exhausted
+   *
+   * Design constraints:
+   *   - deterministic: no randomness added; the same week context always
+   *     produces the same session given the same alt index
+   *   - does not affect equipment/location/safety filtering
+   *   - does not alter session structure (slot order, core-last rule, etc.)
+   *   - the caller accumulates IDs from each generated day and passes them
+   *     to subsequent calls; the server holds no inter-request state
+   */
+  weekUsedExerciseIds: z.array(z.coerce.number().int().positive()).optional(),
 });
 
 router.post(
@@ -198,16 +221,25 @@ router.post(
       ),
     };
 
-    // ── TRUE EMPTY-SESSION START ───────────────────────────────────────────────
+    // ── Session start — seed cross-session memory if provided ─────────────────
     //
-    // usedExerciseIds begins completely empty — no pre-seeded exercises,
-    // no alreadyAdded, no continuation of a prior session.
-    // V0 fills every slot from scratch.
-    const usedExerciseIds = new Set<string>();
+    // When weekUsedExerciseIds is supplied, pre-mark those exercise IDs as
+    // already used so V0 excludes them from all slots.  This prevents the same
+    // exercises appearing in multiple sessions of a generated week.
+    //
+    // When omitted (single-session call), behaviour is identical to before:
+    // the set starts empty and V0 fills every slot from scratch.
+    const weekIds = body.data.weekUsedExerciseIds ?? [];
+    const usedExerciseIds = new Set<string>(weekIds.map(String));
 
-    console.log("SESSION_START: empty");
+    const sessionMode = weekIds.length > 0
+      ? `week-aware (${weekIds.length} pre-excluded)`
+      : "empty";
+    console.log(`SESSION_START: ${sessionMode}`);
     console.log(`DAY_TYPE: ${v0SessionType}`);
-    console.log(`USED_EXERCISE_IDS: []`);
+    console.log(
+      `USED_EXERCISE_IDS: [${weekIds.length > 0 ? weekIds.join(", ") : ""}]`,
+    );
 
     // ── Run V0 slot-based generator ────────────────────────────────────────────
     const alternativeIndex = body.data.alternativeIndex ?? 0;

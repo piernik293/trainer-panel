@@ -336,8 +336,17 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
   // when recommendation is unavailable (e.g. missing experience level).
   const splitType = splitRecommendation?.recommended ?? defaultSplitForDays(trainingDays);
 
+  // BLOCKER 1 FIX — Cap propagation.
+  //
+  // When the recommendation caps the frequency (e.g. beginner declares 5 days
+  // but recommendation says max 3), the wizard defaults must follow the cap.
+  //
+  // `trainingDays`         — raw declared value; kept in `input.availableDays`
+  // `effectiveTrainingDays` — the value all planning defaults must use
+  const effectiveTrainingDays = splitRecommendation?.cappedTrainingDays ?? trainingDays;
+
   const defaultPreferences: PlanDraftGenerationPreferencesType = {
-    trainingDays,
+    trainingDays: effectiveTrainingDays,
     sessionDurationMinutes: sessionDurationMinutes ?? 60,
     splitType,
     blockDurationWeeks: 6,
@@ -347,7 +356,8 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     trainerRestrictions: null,
   };
 
-  const allowedSplitTypes = getCompatibleSplits(trainingDays);
+  // allowedSplitTypes follows the effective (capped) day count, not the raw declared value.
+  const allowedSplitTypes = getCompatibleSplits(effectiveTrainingDays);
 
   return {
     client: {

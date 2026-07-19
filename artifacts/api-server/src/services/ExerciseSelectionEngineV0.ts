@@ -278,6 +278,43 @@ function isRearDeltBarki(ex: ScoredAndFilteredExercise): boolean {
   );
 }
 
+/**
+ * BLOCKER 2 FIX — Pull slot 3 semantic guard.
+ *
+ * True when an exercise is appropriate for the "Rear delt / upper back" slot
+ * in a PULL session.
+ *
+ * Accepts:
+ *   • isRearDeltBarki — face pull, cable rear-delt, reverse fly
+ *   • Plecy + Izolowane + Przyciąganie pionowe  — straight-arm pulldown, etc.
+ *   • Plecy + Izolowane + Przyciąganie poziome  — horizontal pull isolations
+ *
+ * Explicitly rejects (even though they satisfy muscle(ex, "Plecy") + Izolowane):
+ *   • Zawias biodrowy pattern — back extensions, hyperextensions (Wznosy tułowia)
+ *   • "Inne" pattern          — shrugs (Szrugowanie, Szrugsy) and similar trap fillers
+ *     that do not involve meaningful shoulder-joint pulling
+ *
+ * Design: whitelist correct movement families rather than rely solely on
+ * blacklist exclusions, so future exercises are accepted or rejected correctly.
+ */
+function isPullRearDeltUpperBackSafe(ex: ScoredAndFilteredExercise): boolean {
+  // Shoulder-side path: face pull, reverse fly, cable rear-delt rows
+  if (isRearDeltBarki(ex)) return true;
+
+  // Back-isolation path: only pulling patterns qualify.
+  // Zawias biodrowy (back extension) and Inne (shrugs) are explicitly excluded.
+  if (
+    muscle(ex, "Plecy") &&
+    ex.exerciseType != null &&
+    norm(ex.exerciseType) === "izolowane" &&
+    (pattern(ex, "Przyciąganie pionowe") || pattern(ex, "Przyciąganie poziome"))
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 // ─── Deterministic candidate ordering ────────────────────────────────────────
 
 const PRIORITY_RANK: Record<string, number> = {
@@ -661,23 +698,15 @@ export function runExerciseSelectionEngineV0(
 
       // Slot 3: rear delt / upper back accessory.
       //
-      // Accepts:
-      //   • Barki + "Przyciąganie poziome"          (face pull, cable rear-delt)
-      //   • Barki + "Odwodzenie" + NOT lateral/front  (reverse flyes, band pull-apart)
-      //   • Plecy + "Izolowane"                     (straight-arm pulldown, etc.)
-      //
-      // Rejects:
-      //   • Lateral raises  ("bokiem" in name)
-      //   • Front raises    ("w przód" in name)
-      //   • Shoulder press  ("Pchanie pionowe")
+      // Uses isPullRearDeltUpperBackSafe — see its JSDoc for the exact
+      // accept / reject rules.  Key improvement over the old filter:
+      //   OLD: Plecy + Izolowane (any pattern)
+      //   NEW: Plecy + Izolowane + pulling pattern only
+      //        → excludes hyperextensions (Zawias biodrowy) and shrugs (Inne)
       pick(
         "Rear delt or upper back",
         true,
-        (ex) =>
-          isRearDeltBarki(ex) ||
-          (muscle(ex, "Plecy") &&
-            ex.exerciseType != null &&
-            norm(ex.exerciseType) === "izolowane"),
+        (ex) => isPullRearDeltUpperBackSafe(ex),
       );
 
       // Slot 4: biceps isolation only
