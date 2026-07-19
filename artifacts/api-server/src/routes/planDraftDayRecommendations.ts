@@ -45,8 +45,10 @@ import { computeCompleteness, fetchMuscleStats } from "../lib/exercise-completen
 import {
   isLocationCompatible,
   isEquipmentCompatible,
+  selectExercise,
   selectDayRecommendations,
   selectByUncoveredTargets,
+  type DayType,
   type ScoredAndFilteredExercise,
   type ExerciseWithCoveredTargets,
   type UncoveredTargetNeed,
@@ -75,6 +77,13 @@ const QuerySchema = z.object({
    * Server-side maximum: 30. Values above 30 are clamped.
    */
   poolSize: z.coerce.number().int().min(1).max(30).optional(),
+  /**
+   * Day-type hard filter applied by selectExercise before selection.
+   * "upper" → chest / back / shoulders / arms only.
+   * "lower" → legs / glutes / hamstrings / calves only.
+   * When absent the day-type filter is skipped (backward-compatible).
+   */
+  dayType: z.enum(["upper", "lower"]).optional(),
 });
 
 router.get(
@@ -201,6 +210,35 @@ router.get(
     // Sort pool by score descending, then name ascending (deterministic).
     pool.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, "pl"));
 
+    // ── selectExercise gate: day-type boundary + hard filter ───────────────────
+    //
+    // usedExercises is the per-session deduplication state.  It is initialised
+    // from alreadyAddedIds (exercises already present in the day before this
+    // request) so that selectExercise sees the full exclusion history.
+    // After the route returns, the CALLER is responsible for adding the chosen
+    // exercise ID back into the set it maintains between sequential slot calls.
+    //
+    // The same usedExercises instance is passed to selectExercise once here to
+    // produce the filteredPool that both selection paths consume.  When the
+    // client calls this endpoint multiple times to fill successive session slots,
+    // it must pass the accumulated alreadyAdded IDs on each subsequent request.
+
+    const dayType: DayType | null = (query.data.dayType as DayType) ?? null;
+
+    const usedExercises = new Set<string>(
+      Array.from(alreadyAddedIds).map(String),
+    );
+
+    const filteredPool = selectExercise({
+      exercises: pool,
+      dayType,
+      usedExercises,
+      clientEquipment: survey.equipment,
+      keepCoreGroup: includeCoreFlag,
+    });
+
+    console.log("USED_EXERCISES:", [...usedExercises]);
+
     // ── Phase 4B3: Uncovered-target path ───────────────────────────────────────
     // Activate when either specific targets are uncovered OR Core still needs sets.
     // Both conditions can be true simultaneously; either alone is sufficient.
@@ -227,8 +265,8 @@ router.get(
         muscleToTargets.get(row.specificMuscleId)!.add(row.volumeTargetId);
       }
 
-      // 2. Fetch muscle assignments for pool exercises.
-      const poolExerciseIds = pool.map((ex) => ex.id);
+      // 2. Fetch muscle assignments for filtered-pool exercises.
+      const poolExerciseIds = filteredPool.map((ex) => ex.id);
       const assignmentRows =
         poolExerciseIds.length > 0
           ? await db
@@ -273,8 +311,8 @@ router.get(
         allocationOrder: idx,
       }));
 
-      // 6. Enrich pool and filter to exercises with at least one match.
-      const enrichedPool: ExerciseWithCoveredTargets[] = pool
+      // 6. Enrich filteredPool and further restrict to exercises with at least one match.
+      const enrichedPool: ExerciseWithCoveredTargets[] = filteredPool
         .filter((ex) => {
           const covered = exerciseCoveredTargets.get(ex.id) ?? new Set<number>();
           const matchesTarget = covered.size > 0;
@@ -301,7 +339,7 @@ router.get(
 
     // ── Original path: broad-category matching ─────────────────────────────────
     const selected = selectDayRecommendations(
-      pool,
+      filteredPool,
       broadCategories,
       MAX_PER_TARGET,
       resolvedPoolSize,

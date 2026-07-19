@@ -92,6 +92,160 @@ export interface ExerciseWithCoveredTargets extends ScoredAndFilteredExercise {
   coveredTargetIds: ReadonlySet<number>;
 }
 
+// ─── Session deduplication state ─────────────────────────────────────────────
+//
+// Usage pattern — create ONCE per session before calling selectExercise:
+//
+//   const usedExercises = new Set<string>();
+//
+// After each exercise is committed to the session:
+//
+//   usedExercises.add(String(chosen.id));
+//   console.log("USED_EXERCISES:", [...usedExercises]);
+//
+// Never recreate this set inside a loop.  It must persist across all slot
+// selections so that every slot sees the full history of committed exercises.
+
+// ─── Day-type muscle group mapping ───────────────────────────────────────────
+
+export type DayType = "upper" | "lower";
+
+/**
+ * Canonical (lower-case) Polish mainMuscleGroup values allowed per day type.
+ * Used by selectExercise to enforce day-type hard boundaries server-side.
+ *
+ * Selection flow:
+ *   UPPER DAY:  1. chest  2. back  3. shoulders  4. arms
+ *   LOWER DAY:  1. squat pattern  2. hinge pattern  3. accessory legs  4. calves/core
+ */
+export const DAY_TYPE_MUSCLE_GROUPS: Record<DayType, readonly string[]> = {
+  upper: [
+    "klatka piersiowa",
+    "plecy",
+    "barki",
+    "biceps",
+    "triceps",
+    "przedramiona",
+  ],
+  lower: [
+    "mięśnie czworogłowe uda",
+    "mięśnie dwugłowe uda",
+    "pośladki",
+    "łydki",
+    "przywodziciele",
+    "mięśnie prostowniki grzbietu",
+  ],
+};
+
+// ─── Hard filter: exercises ineligible as main-slot selections ────────────────
+
+/**
+ * Partial lower-case name fragments that are never permitted as main selections.
+ * Catches movement-skills and rehabilitation exercises that score well on other
+ * dimensions but are inappropriate as primary training stimuli.
+ */
+const HARD_FILTER_NAME_FRAGMENTS = [
+  "bear crawl",
+  "człapak",   // Polish: bear crawl variant
+  "superman",
+  "żabka",     // frog jump / bodyweight drill
+  "pająk",     // spider crawl
+  "inchworm",
+] as const;
+
+function isHardFiltered(exerciseName: string): boolean {
+  const lower = exerciseName.trim().toLowerCase();
+  return HARD_FILTER_NAME_FRAGMENTS.some((fragment) => lower.includes(fragment));
+}
+
+// ─── selectExercise ───────────────────────────────────────────────────────────
+
+export interface SelectExerciseParams {
+  /** Pre-scored exercise pool (already equipment- and location-filtered by route). */
+  exercises: ScoredAndFilteredExercise[];
+  /** "upper" | "lower" | null.  When null the day-type filter is skipped. */
+  dayType: DayType | null;
+  /**
+   * Shared per-session deduplication state.  Create once before the first slot
+   * selection and pass the same instance to every subsequent call.
+   * The caller is responsible for adding committed IDs after selection.
+   */
+  usedExercises: Set<string>;
+  /** Raw survey equipment string (comma-separated).  Re-applied as a safety net. */
+  clientEquipment: string | null | undefined;
+  /**
+   * When true, exercises whose mainMuscleGroup is "Brzuch" (Core) are kept even
+   * if they do not match the dayType allowlist.  Set to true when the caller
+   * activated the includeCore / coreEligible flag for this session slot.
+   * Default: false.
+   */
+  keepCoreGroup?: boolean;
+}
+
+/**
+ * Hard-filter the exercise pool for a single session slot selection.
+ *
+ * Removes:
+ *   1. Exercises already used this session (usedExercises set — deduplication).
+ *   2. Exercises whose mainMuscleGroup does not match the day type.
+ *   3. Equipment-incompatible exercises (safety-net re-check).
+ *   4. Blocklisted exercise names (bear crawl, superman, etc.).
+ *
+ * After the caller selects from the returned pool it MUST:
+ *   usedExercises.add(String(chosen.id));
+ *   console.log("USED_EXERCISES:", [...usedExercises]);
+ *
+ * Call multiple times — once per session slot — passing the same usedExercises
+ * instance so deduplication accumulates across the whole session:
+ *
+ *   // Build an Upper session
+ *   const usedExercises = new Set<string>();
+ *   const chestPool     = selectExercise({ exercises: pool, dayType: "upper", usedExercises, clientEquipment });
+ *   const chestPick     = chestPool.find(ex => ex.mainMuscleGroup === "Klatka piersiowa");
+ *   if (chestPick) { usedExercises.add(String(chestPick.id)); console.log("USED_EXERCISES:", [...usedExercises]); }
+ *
+ *   const backPool      = selectExercise({ exercises: pool, dayType: "upper", usedExercises, clientEquipment });
+ *   const backPick      = backPool.find(ex => ex.mainMuscleGroup === "Plecy");
+ *   if (backPick)  { usedExercises.add(String(backPick.id));  console.log("USED_EXERCISES:", [...usedExercises]); }
+ *   // ...shoulders, arms slots follow the same pattern
+ */
+export function selectExercise({
+  exercises,
+  dayType,
+  usedExercises,
+  clientEquipment,
+  keepCoreGroup = false,
+}: SelectExerciseParams): ScoredAndFilteredExercise[] {
+  const norm = (s: string) => s.trim().toLowerCase();
+
+  // Build canonical allowlist once per call
+  const allowed: Set<string> | null =
+    dayType !== null
+      ? new Set(DAY_TYPE_MUSCLE_GROUPS[dayType].map(norm))
+      : null;
+
+  return exercises.filter((ex) => {
+    // 1. Deduplication — reject exercises already committed this session
+    if (usedExercises.has(String(ex.id))) return false;
+
+    // 2. Day-type muscle group boundary
+    if (allowed !== null) {
+      const muscleGroup = norm(ex.mainMuscleGroup);
+      const isCoreKept  = keepCoreGroup && muscleGroup === "brzuch";
+      if (!allowed.has(muscleGroup) && !isCoreKept) return false;
+    }
+
+    // 3. Equipment safety-net (route already filters, but selectExercise is also
+    //    called standalone so the check must be self-contained)
+    if (!isEquipmentCompatible(ex.equipment, clientEquipment)) return false;
+
+    // 4. Hard name blocklist — never select these as main-slot exercises
+    if (isHardFiltered(ex.name)) return false;
+
+    return true;
+  });
+}
+
 // ─── Compatibility helpers ────────────────────────────────────────────────────
 
 const LOCATION_CANONICAL_MAP: Record<string, string> = {
