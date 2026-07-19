@@ -373,14 +373,24 @@ export function runExerciseSelectionEngineV0(
   switch (sessionType) {
     // ── PUSH ─────────────────────────────────────────────────────────────────
     //
-    // Slot order:
+    // DEFAULT slot order:
     //   1. Chest push compound
     //   2. Second push compound (chest or shoulder — includes overhead press)
     //   3. Shoulder accessory   ← lateral raise / rear delt only; NO press compounds
     //   4. Triceps isolation
     //   5. (opt) Chest or triceps accessory
     //   6. (opt) Core           ← always last
+    //
+    // CHEST-PRIORITY variant (Tier A = Klatka piersiowa, eligible experience level):
+    //   Slot 2 is restricted to chest only — guarantees a second chest compound
+    //   (e.g. incline press or DB press) instead of allowing OHP to take the slot.
+    //   sortWithPriority + usedPatternsByMuscle then tries to vary the stimulus angle.
+    //   Slots 3–6 are unchanged; triceps remains in slot 4 (bench-press synergist).
     case "push": {
+      const chestPushPriority =
+        ctx?.isPriorityEligible &&
+        ctx.tierA.some((t) => norm(t) === norm("Klatka piersiowa"));
+
       pick(
         "Chest compound",
         true,
@@ -390,15 +400,26 @@ export function runExerciseSelectionEngineV0(
           pattern(ex, "Pchanie poziome"),
       );
 
-      // Second push compound: chest horizontal OR shoulder vertical press
-      pick(
-        "Second push compound",
-        true,
-        (ex) =>
-          muscle(ex, "Klatka piersiowa", "Barki") &&
-          compound(ex) &&
-          pattern(ex, "Pchanie poziome", "Pchanie pionowe"),
-      );
+      if (chestPushPriority) {
+        // Chest-priority: slot 2 locked to chest — no OHP alternative.
+        // Any chest compound qualifies (all patterns accepted) so variety tracking
+        // in sortWithPriority can surface incline / decline / machine variants.
+        pick(
+          "Second chest compound",
+          true,
+          (ex) => muscle(ex, "Klatka piersiowa") && compound(ex),
+        );
+      } else {
+        // Default: chest OR shoulder vertical press
+        pick(
+          "Second push compound",
+          true,
+          (ex) =>
+            muscle(ex, "Klatka piersiowa", "Barki") &&
+            compound(ex) &&
+            pattern(ex, "Pchanie poziome", "Pchanie pionowe"),
+        );
+      }
 
       // Shoulder accessory: Barki but NOT another overhead-press compound.
       // Lateral raises, rear-delt isolation, and face-pull Barki all qualify.
@@ -584,49 +605,192 @@ export function runExerciseSelectionEngineV0(
 
     // ── UPPER ─────────────────────────────────────────────────────────────────
     //
-    // Slot order:
+    // Three template variants, selected at runtime:
+    //
+    // DEFAULT (non-eligible or no matching Tier A muscle):
     //   1. Chest compound
     //   2. Back compound
-    //   3. Shoulders (overhead press belongs here — all Barki compounds welcome)
+    //   3. Shoulders
     //   4. Arms
-    //   5. (opt) Accessory or core  ← core may appear here if nothing else fills
+    //   5. (opt) Accessory or core
     //
-    // Note: UPPER has a single broad shoulder slot (overhead press is correct here).
-    // There is no separate rear-delt slot in Upper — that granularity belongs in Pull.
+    // CHEST-PRIORITY (Tier A = Klatka piersiowa, eligible experience level):
+    //   1. Chest main lift      — compound, leading slot
+    //   2. Second chest lift    — compound preferred; isolation fallback
+    //                            sortWithPriority + usedPatternsByMuscle vary the angle
+    //   3. Back compound        — balance; always present
+    //   4. Shoulders or triceps — triceps supports pressing; Barki broadens shoulder work
+    //   5. (opt) Accessory or core
+    //
+    // BACK-PRIORITY (Tier A = Plecy, eligible experience level):
+    //   1. Back main lift       — compound, vertical or horizontal pull
+    //   2. Complementary pull   — prefer the opposite pattern (vertical↔horizontal)
+    //                            fallback: any back compound
+    //   3. Chest compound       — balance; always present
+    //   4. Rear delt / biceps / back isolation — supports back development
+    //   5. (opt) Accessory or core
+    //
+    // Priority eligibility is guarded by PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS in the route.
+    // Beginners and inactive clients always receive the DEFAULT template.
     case "upper": {
-      pick(
-        "Chest compound",
-        true,
-        (ex) => muscle(ex, "Klatka piersiowa") && compound(ex),
-      );
-      pick(
-        "Back compound",
-        true,
-        (ex) => muscle(ex, "Plecy") && compound(ex),
-      );
+      const chestUpperPriority =
+        ctx?.isPriorityEligible &&
+        ctx.tierA.some((t) => norm(t) === norm("Klatka piersiowa"));
+      const backUpperPriority =
+        ctx?.isPriorityEligible &&
+        ctx.tierA.some((t) => norm(t) === norm("Plecy"));
 
-      // All Barki exercises welcome in Upper — overhead press is the primary
-      // shoulder stimulus in an Upper session (no separate push/pull split here).
-      pick("Shoulders", true, (ex) => muscle(ex, "Barki"));
+      if (chestUpperPriority) {
+        // ── UPPER — CHEST PRIORITY ─────────────────────────────────────────────
+        pick(
+          "Chest main lift",
+          true,
+          (ex) => muscle(ex, "Klatka piersiowa") && compound(ex),
+        );
 
-      pick("Arms", true, (ex) => muscle(ex, "Biceps", "Triceps"));
+        // Second chest lift: any chest exercise — compound preferred by sortWithPriority
+        // (exercisePriority rank), isolation accepted as fallback.
+        // usedPatternsByMuscle fires here: if slot 1 used "Pchanie poziome",
+        // the sort promotes a fresh-pattern candidate (fly / Przywodzenie) first.
+        pick(
+          "Second chest lift",
+          true,
+          (ex) => muscle(ex, "Klatka piersiowa"),
+        );
 
-      // Slot 5 is an optional catch-all — core is acceptable here if nothing else fits.
-      // Upper has only 5 slots (spec), so this is also the de-facto final slot.
-      pick(
-        "Accessory or core",
-        false,
-        (ex) =>
-          muscle(
-            ex,
-            "Klatka piersiowa",
-            "Plecy",
-            "Barki",
-            "Biceps",
-            "Triceps",
-            "Brzuch",
-          ),
-      );
+        // Back compound — always present for structural balance.
+        pick(
+          "Back compound",
+          true,
+          (ex) => muscle(ex, "Plecy") && compound(ex),
+        );
+
+        // Triceps listed alongside Barki — triceps is the primary bench-press synergist
+        // and benefits most from appearing on a chest-heavy day.
+        // sortWithPriority (both Tier C) falls through to exercisePriority → difficulty → id.
+        pick(
+          "Shoulders or triceps",
+          true,
+          (ex) => muscle(ex, "Triceps", "Barki"),
+        );
+
+        pick(
+          "Accessory or core",
+          false,
+          (ex) =>
+            muscle(
+              ex,
+              "Klatka piersiowa",
+              "Plecy",
+              "Barki",
+              "Biceps",
+              "Triceps",
+              "Brzuch",
+            ),
+        );
+      } else if (backUpperPriority) {
+        // ── UPPER — BACK PRIORITY ──────────────────────────────────────────────
+        const backS1 = pick(
+          "Back main lift",
+          true,
+          (ex) =>
+            muscle(ex, "Plecy") &&
+            compound(ex) &&
+            pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome"),
+        );
+
+        // Prefer the complementary pull pattern for slot 2 — ensures vertical+horizontal
+        // coverage within a single Upper session (mirrors Pull session logic).
+        const backS1Pattern = normP(backS1?.movementPattern);
+        const complementaryPull =
+          backS1Pattern === "przyciąganie pionowe"
+            ? "Przyciąganie poziome"
+            : "Przyciąganie pionowe";
+
+        pick(
+          "Complementary back lift",
+          false, // non-required; fallback below carries the required flag
+          (ex) =>
+            muscle(ex, "Plecy") && compound(ex) && pattern(ex, complementaryPull),
+        ) ??
+          pick(
+            "Second back compound",
+            true,
+            (ex) =>
+              muscle(ex, "Plecy") &&
+              compound(ex) &&
+              pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome"),
+          );
+
+        // Chest compound — always present for structural balance.
+        pick(
+          "Chest compound",
+          true,
+          (ex) => muscle(ex, "Klatka piersiowa") && compound(ex),
+        );
+
+        // Rear delt / biceps / back isolation — supports back development.
+        // When back is Tier A, sortWithPriority surfaces back isolation (Plecy + Izolowane)
+        // above rear-delt Barki and above plain Biceps.
+        pick(
+          "Rear delt or biceps",
+          true,
+          (ex) =>
+            isRearDeltBarki(ex) ||
+            muscle(ex, "Biceps") ||
+            (muscle(ex, "Plecy") &&
+              ex.exerciseType != null &&
+              norm(ex.exerciseType) === "izolowane"),
+        );
+
+        pick(
+          "Accessory or core",
+          false,
+          (ex) =>
+            muscle(
+              ex,
+              "Klatka piersiowa",
+              "Plecy",
+              "Barki",
+              "Biceps",
+              "Triceps",
+              "Brzuch",
+            ),
+        );
+      } else {
+        // ── UPPER — DEFAULT ────────────────────────────────────────────────────
+        // All Barki exercises welcome in Upper — overhead press is the primary
+        // shoulder stimulus in an Upper session (no separate push/pull split here).
+        // There is no separate rear-delt slot in Upper — that granularity belongs in Pull.
+        pick(
+          "Chest compound",
+          true,
+          (ex) => muscle(ex, "Klatka piersiowa") && compound(ex),
+        );
+        pick(
+          "Back compound",
+          true,
+          (ex) => muscle(ex, "Plecy") && compound(ex),
+        );
+        pick("Shoulders", true, (ex) => muscle(ex, "Barki"));
+        pick("Arms", true, (ex) => muscle(ex, "Biceps", "Triceps"));
+
+        // Slot 5 is an optional catch-all — core is acceptable here if nothing else fits.
+        pick(
+          "Accessory or core",
+          false,
+          (ex) =>
+            muscle(
+              ex,
+              "Klatka piersiowa",
+              "Plecy",
+              "Barki",
+              "Biceps",
+              "Triceps",
+              "Brzuch",
+            ),
+        );
+      }
       break;
     }
 
