@@ -278,14 +278,19 @@ export function recommendSplit(input: SplitRecommendationInput): SplitRecommenda
   }
 
   // ─── 6–7 days ───────────────────────────────────────────────────────────────
+  //
+  // NOTE: getCompatibleSplits(≥6) = ["push_pull_legs", "push_pull_lower_full_body",
+  //       "specialization", "custom"].  "upper_lower" is NOT in that list, so every
+  //       branch here must recommend a split from the compatible set only.
   if (experienceLevel === ADVANCED) {
     if (poorRecovery) {
       return {
-        recommended: "upper_lower",
+        recommended: "push_pull_legs",
         explanation:
-          `${trainingDays} dni treningowe + poziom ${lvl(experienceLevel)} — słabsza regeneracja → Góra / Dół. ` +
-          "Push / Pull / Legs jest dostępny gdy regeneracja pozwala na pełny harmonogram.",
-        alternatives: ["push_pull_legs"],
+          `${trainingDays} dni treningowe + poziom ${lvl(experienceLevel)} — słabsza regeneracja. ` +
+          "Push / Pull / Legs pozostaje optymalnym wyborem przy tej częstotliwości; " +
+          "monitoruj obciążenie i rozważ niższe intensywności na słabszych sesjach.",
+        alternatives: ["push_pull_lower_full_body"],
         fallbackApplied: true,
         cappedTrainingDays: null,
       };
@@ -295,20 +300,22 @@ export function recommendSplit(input: SplitRecommendationInput): SplitRecommenda
       explanation:
         `${trainingDays} dni treningowe + poziom ${lvl(experienceLevel)} → Push / Pull / Legs (rotacja 2×). ` +
         "Efektywny podział dla zaawansowanych przy wysokiej częstotliwości.",
-      alternatives: ["upper_lower_full_body", "specialization"],
+      alternatives: ["push_pull_lower_full_body", "specialization"],
       fallbackApplied: false,
       cappedTrainingDays: null,
     };
   }
 
-  // Intermediate, 6-7 days → simpler
+  // Intermediate, 6-7 days → Push / Pull / Legs
+  // upper_lower is not in getCompatibleSplits(≥6); PPL is the lowest-complexity
+  // allowed option and appropriate for an intermediate at this frequency.
   return {
-    recommended: "upper_lower",
+    recommended: "push_pull_legs",
     explanation:
-      `${trainingDays} dni treningowe + poziom ${lvl(experienceLevel)} → Góra / Dół. ` +
-      "Push / Pull / Legs przy tej częstotliwości jest zarezerwowany dla zaawansowanych. " +
-      "Prostszy podział jest tu bardziej efektywny.",
-    alternatives: ["upper_lower_full_body"],
+      `${trainingDays} dni treningowe + poziom ${lvl(experienceLevel)} → Push / Pull / Legs. ` +
+      "Przy tej częstotliwości PPL jest optymalnym wyborem — każda partia trenowana 2× w tygodniu " +
+      "przy dobrym rozłożeniu objętości na 6–7 sesji.",
+    alternatives: ["push_pull_lower_full_body"],
     fallbackApplied: false,
     cappedTrainingDays: null,
   };

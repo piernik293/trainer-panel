@@ -99,7 +99,6 @@ const surveySchema = z.object({
   avoidedExercises: z.string().optional(),
   favoriteExercises: z.string().optional(),
   // Trainer-only: muscle groups to avoid entirely (not on client survey)
-  avoidedMuscles: z.string().optional(),
   age: z.coerce
     .number()
     .min(1)
@@ -238,7 +237,6 @@ function SurveyFormBody({
       sessionDuration: (survey?.sessionDuration as string) ?? "",
       avoidedExercises: (survey?.avoidedExercises as string) ?? "",
       favoriteExercises: (survey?.favoriteExercises as string) ?? "",
-      avoidedMuscles: (survey?.avoidedMuscles as string) ?? "",
       age: (survey?.age as number) ?? undefined,
       dateOfBirth: (survey?.dateOfBirth as string) ?? "",
       gender:
@@ -1148,35 +1146,6 @@ function SurveyFormBody({
                 </p>
               )}
 
-              {/* Trainer-only: avoided muscle groups (not on client survey) */}
-              <div className="pt-4 border-t border-border/50">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-3">
-                  Tylko dla trenera
-                </p>
-                <FormField
-                  control={form.control}
-                  name="avoidedMuscles"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Partie do pominięcia (jeżeli tak — opisz dlaczego)
-                      </FormLabel>
-                      <FormDescription className="text-xs">
-                        Partie, których klient nie chce trenować lub które należy
-                        pominąć ze względów zdrowotnych. Pole widoczne wyłącznie
-                        dla trenera.
-                      </FormDescription>
-                      <FormControl>
-                        <Input
-                          placeholder="np. Łydki (są już wystarczające)"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
             </CardContent>
           </Card>
 
