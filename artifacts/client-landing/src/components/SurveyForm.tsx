@@ -897,7 +897,7 @@ export default function SurveyForm() {
               {CARDIO_RECOMMENDATION_TEXT}
             </p>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <FormField control={form.control} name="cardioPreference" render={({field}) => (
               <FormItem className="space-y-4">
                 <FormLabel className="text-muted-foreground">Jak chcesz, aby w planie uwzględnić trening cardio?</FormLabel>
@@ -950,11 +950,13 @@ export default function SurveyForm() {
                 </FormControl>
               </FormItem>
             )} />
+          </div>
+          <div className="mt-8">
             <FormField control={form.control} name="preferredCardioType" render={({field}) => (
               <FormItem className="space-y-4">
                 <FormLabel className="text-muted-foreground">Jaka forma aktywności tlenowej najbardziej Ci odpowiada?</FormLabel>
                 <FormControl>
-                  <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     {[
                       "Marsz",
                       "Szybki marsz",
