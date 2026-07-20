@@ -83,7 +83,19 @@ export function getHealthAlertState(
 // ─── Feature 3 — Cardio / steps recommendation ───────────────────────────────
 
 export type CardioRecommendationType = "cardio_day" | "steps";
-export type CardioReasonType = "sedentary" | "fat_loss" | "sedentary_and_fat_loss";
+
+/**
+ * Why the cardio / activity recommendation was triggered:
+ *   experience_cap          – surplus days above the level-based strength cap (any goal)
+ *   sedentary               – sedentary lifestyle, no fat-loss goal
+ *   fat_loss                – fat-loss goal, non-sedentary
+ *   sedentary_and_fat_loss  – both sedentary + fat-loss
+ */
+export type CardioReasonType =
+  | "experience_cap"
+  | "sedentary"
+  | "fat_loss"
+  | "sedentary_and_fat_loss";
 
 export interface CardioRecommendation {
   type: CardioRecommendationType;
@@ -91,8 +103,21 @@ export interface CardioRecommendation {
   reason: CardioReasonType;
 }
 
+/**
+ * Maximum allowed strength-training days by experience level.
+ * Surplus days above this cap MUST be redirected to cardio / general activity.
+ *
+ *   "Brak aktywności fizycznej" → 2 strength days max
+ *   "Początkujący"              → 3 strength days max
+ *   all other levels            → no cap enforced here
+ */
+const STRENGTH_DAY_CAP: Record<string, number> = {
+  "Brak aktywności fizycznej": 2,
+  "Początkujący": 3,
+};
+
 const FAT_LOSS_GOAL_VALUES = ["Redukcja tkanki tłuszczowej"];
-const FAT_LOSS_KEYWORDS_NORM = ["redukcja", "odchudzanie", "tluszcz", "fat loss", "schudnac", "schudnąć"];
+const FAT_LOSS_KEYWORDS_NORM = ["redukcja", "odchudzanie", "tluszcz", "fat loss", "schudnac", "schudnac"];
 
 export function isFatLossGoal(trainingGoal: string | null | undefined): boolean {
   if (!trainingGoal) return false;
@@ -105,17 +130,18 @@ export function isSedentaryLifestyle(activityLevel: string | null | undefined): 
   return activityLevel === "Siedzący";
 }
 
-const BEGINNER_LEVELS = new Set(["Brak aktywności fizycznej", "Początkujący"]);
-
 /**
- * Returns a mandatory cardio / steps recommendation when the client has a
- * sedentary lifestyle or a fat-loss goal.
+ * Returns a mandatory cardio / activity recommendation when ANY of the following apply:
  *
- * Returns null when neither condition is met.
+ *   1. Experience cap (highest priority):
+ *      - "Brak aktywności fizycznej": max 2 strength days; surplus → cardio/activity days
+ *      - "Początkujący":              max 3 strength days; surplus → cardio/activity days
+ *      Fires for any goal and any activity level.
  *
- * Planning logic (Feature 3):
- *   - beginner/inactive + extra days above 3 strength cap → cardio day(s)
- *   - otherwise (no extra days available) → daily step target
+ *   2. Sedentary lifestyle and/or fat-loss goal (when no surplus days above cap):
+ *      - No extra days available → daily step target (8000–10000 steps)
+ *
+ * Returns null when none of the above conditions are met.
  */
 export function getCardioRecommendation(
   trainingGoal: string | null | undefined,
@@ -123,6 +149,42 @@ export function getCardioRecommendation(
   availableDays: number | null | undefined,
   experienceLevel: string | null | undefined,
 ): CardioRecommendation | null {
+  const days = availableDays ?? 3;
+  const cap = experienceLevel != null ? (STRENGTH_DAY_CAP[experienceLevel] ?? Infinity) : Infinity;
+  const surplusDays = cap < Infinity ? Math.max(0, days - cap) : 0;
+
+  // ── Priority 1: experience-level cap ────────────────────────────────────────
+  if (surplusDays > 0) {
+    const fatLoss = isFatLossGoal(trainingGoal);
+    const sedentary = isSedentaryLifestyle(activityLevel);
+    const capLabel = cap === 2 ? "2 treningi siłowe" : "3 treningi siłowe";
+    const dayWord = surplusDays === 1 ? "dzień" : "dni";
+
+    // Build contextual reason — cap always dominates, but we can layer the other reasons into text
+    const reason: CardioReasonType =
+      fatLoss && sedentary ? "sedentary_and_fat_loss"
+      : sedentary ? "sedentary"
+      : fatLoss ? "fat_loss"
+      : "experience_cap";
+
+    const capNote = `Poziom zaawansowania "${experienceLevel}" dopuszcza maksymalnie ${capLabel} tygodniowo.`;
+    const extraNote =
+      reason === "sedentary_and_fat_loss"
+        ? " Siedzący tryb życia i cel redukcyjny dodatkowo uzasadniają aktywność tlenową."
+        : reason === "sedentary"
+        ? " Siedzący tryb życia dodatkowo uzasadnia aktywność tlenową."
+        : reason === "fat_loss"
+        ? " Cel redukcyjny dodatkowo uzasadnia aktywność tlenową."
+        : "";
+
+    return {
+      type: "cardio_day",
+      text: `${capNote} Nadprogramowe ${surplusDays} ${dayWord}: cardio / aktywność ogólnorozwojowa (nie siłownia).${extraNote}`,
+      reason,
+    };
+  }
+
+  // ── Priority 2: sedentary / fat-loss (no surplus days available) ─────────────
   const fatLoss = isFatLossGoal(trainingGoal);
   const sedentary = isSedentaryLifestyle(activityLevel);
 
@@ -131,27 +193,6 @@ export function getCardioRecommendation(
   const reason: CardioReasonType =
     fatLoss && sedentary ? "sedentary_and_fat_loss" : sedentary ? "sedentary" : "fat_loss";
 
-  const isBeginner = experienceLevel != null && BEGINNER_LEVELS.has(experienceLevel);
-  const days = availableDays ?? 3;
-  // Beginners are capped at 3 strength days; extra days above that become cardio
-  const extraDays = isBeginner ? Math.max(0, days - 3) : 0;
-
-  if (extraDays > 0) {
-    const dayWord = extraDays === 1 ? "dzień" : "dni";
-    const reasonText =
-      reason === "sedentary_and_fat_loss"
-        ? "Ze względu na siedzący tryb życia i cel redukcyjny"
-        : reason === "sedentary"
-        ? "Ze względu na siedzący tryb życia"
-        : "Cel redukcyjny wymaga dodatkowej aktywności tlenowej.";
-    return {
-      type: "cardio_day",
-      text: `${reasonText} dodano obowiązkową aktywność tlenową. Dodatkowa aktywność: ${extraDays} ${dayWord} cardio tygodniowo.`,
-      reason,
-    };
-  }
-
-  // No extra days available — prescribe a daily step target instead
   const baseText =
     reason === "sedentary_and_fat_loss"
       ? "Ze względu na siedzący tryb życia i cel redukcyjny"

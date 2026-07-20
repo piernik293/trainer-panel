@@ -101,7 +101,13 @@ export const CardioRecommendation = z.object({
   type: z.enum(["cardio_day", "steps"]),
   /** Human-readable recommendation text for the trainer */
   text: z.string(),
-  reason: z.enum(["sedentary", "fat_loss", "sedentary_and_fat_loss"]),
+  /**
+   * experience_cap          – surplus days above the level-based strength cap (always fires first)
+   * sedentary               – sedentary lifestyle, no fat-loss goal, no surplus days
+   * fat_loss                – fat-loss goal, non-sedentary, no surplus days
+   * sedentary_and_fat_loss  – both sedentary + fat-loss, no surplus days
+   */
+  reason: z.enum(["experience_cap", "sedentary", "fat_loss", "sedentary_and_fat_loss"]),
 });
 export type CardioRecommendationType = z.infer<typeof CardioRecommendation>;
 
