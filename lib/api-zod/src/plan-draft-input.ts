@@ -18,10 +18,10 @@ export type SplitType = typeof SPLIT_TYPES[number];
 export const SPLIT_TYPE_LABELS: Record<SplitType, string> = {
   full_body: "Full Body",
   full_body_ab: "Full Body A/B",
-  upper_lower: "Góra / Dół",
-  upper_lower_full_body: "Góra / Dół / Full Body",
+  upper_lower: "Upper / Lower",
+  upper_lower_full_body: "Upper / Lower / Full Body",
   push_pull_legs: "Push / Pull / Legs",
-  push_pull_lower_full_body: "Push / Pull / Dół / Full Body",
+  push_pull_lower_full_body: "Push / Pull / Lower / Full Body",
   specialization: "Plan specjalizacyjny",
   custom: "Własny podział",
 };
@@ -243,16 +243,33 @@ export type PlanDraftInputSourceMapType = z.infer<typeof PlanDraftInputSourceMap
 
 // ─── Compatible splits by day count ──────────────────────────────────────────
 
+/**
+ * Returns the split options shown in the planner UI for a given number of
+ * training days. The list is primarily day-driven; experience level and
+ * recovery influence recommendation text and banners only — not the visible
+ * option set. "Własny podział" always appears last as an escape hatch.
+ *
+ * 1–2 days : Full Body variants
+ * 3 days   : Full Body, Upper / Lower / Full Body, Push / Pull / Legs
+ * 4 days   : Upper / Lower, Upper / Lower / Full Body, Push / Pull / Lower / Full Body
+ * 5 days   : Upper / Lower / Full Body, Push / Pull / Legs,
+ *             Push / Pull / Lower / Full Body, Plan specjalizacyjny
+ * 6–7 days : Push / Pull / Legs, Push / Pull / Lower / Full Body, Plan specjalizacyjny
+ */
 export function getCompatibleSplits(days: number | null): SplitType[] {
-  if (!days || days < 1) return ["custom"];
-  if (days <= 2) return ["full_body_ab", "custom"];
-  // 3 days: classic Push / Pull / Legs is a natural fit alongside full-body variants
+  if (!days || days < 1) return ["full_body", "custom"];
+  if (days <= 2) return ["full_body", "full_body_ab", "custom"];
   if (days === 3) return ["full_body", "upper_lower_full_body", "push_pull_legs", "custom"];
-  if (days === 4) return ["upper_lower", "push_pull_lower_full_body", "custom"];
-  // 5 days: PPL repeats the first day → unbalanced; use upper/lower variants instead
-  if (days === 5) return ["upper_lower_full_body", "specialization", "custom"];
-  // 6-7 days: PPL divides evenly (Push/Pull/Legs × 2)
-  return ["push_pull_legs", "specialization", "custom"];
+  if (days === 4) return ["upper_lower", "upper_lower_full_body", "push_pull_lower_full_body", "custom"];
+  if (days === 5) return [
+    "upper_lower_full_body",
+    "push_pull_legs",
+    "push_pull_lower_full_body",
+    "specialization",
+    "custom",
+  ];
+  // 6–7 days: PPL divides evenly; full-body variants are secondary options
+  return ["push_pull_legs", "push_pull_lower_full_body", "specialization", "custom"];
 }
 
 // ─── Split recommendation ─────────────────────────────────────────────────────

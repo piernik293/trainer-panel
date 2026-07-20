@@ -11,7 +11,7 @@
  * Step 5 — Podgląd szkicu         : (Phase 4C — read-only preview, frontend-only)
  */
 
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import {
   useGetClientPlanDraftInput,
@@ -169,7 +169,6 @@ function InfoRow({
 const STEPS = [
   { label: "Profil klienta", icon: User },
   { label: "Założenia planu", icon: ClipboardList },
-  { label: "Objętość", icon: Gauge },
   { label: "Ćwiczenia", icon: Dumbbell, locked: true },
   { label: "Podgląd", icon: Sparkles, locked: true },
 ];
@@ -190,8 +189,8 @@ function Stepper({
         const isDone = i < current;
         const effectiveLocked =
           step.locked &&
-          !(i === 3 && exerciseStepUnlocked) &&
-          !(i === 4 && previewStepUnlocked);
+          !(i === 2 && exerciseStepUnlocked) &&
+          !(i === 3 && previewStepUnlocked);
         const isLocked = effectiveLocked && !isDone;
         const Icon = step.icon;
 
@@ -576,10 +575,14 @@ function Step2Preferences({
   data,
   prefs,
   onPrefsChange,
+  cardioRecommendation,
+  conditioningRecommendation,
 }: {
   data: GetClientPlanDraftInputResponseType;
   prefs: PlanDraftGenerationPreferencesType;
   onPrefsChange: (p: PlanDraftGenerationPreferencesType) => void;
+  cardioRecommendation: { type: string; text: string; reason: string } | null;
+  conditioningRecommendation: { text: string } | null;
 }) {
   const compatibleSplits = useMemo(
     () => getCompatibleSplits(prefs.trainingDays),
@@ -613,6 +616,8 @@ function Step2Preferences({
 
   const hasSurveyLevel = !!data.input.experienceLevel;
 
+  const hasCardioNote = !!(cardioRecommendation?.text || conditioningRecommendation?.text);
+
   return (
     <div className="space-y-4">
       {!hasSurveyLevel && (
@@ -623,6 +628,14 @@ function Step2Preferences({
             Dane poniżej zostaną zapisane, ale generator będzie zablokowany.
           </p>
         </div>
+      )}
+
+      {/* Cardio / conditioning guidance pulled directly from survey logic */}
+      {hasCardioNote && (
+        <CardioConditioningBanner
+          cardioText={cardioRecommendation?.text ?? null}
+          conditioningText={conditioningRecommendation?.text ?? null}
+        />
       )}
 
       <Card className="border-border/50 shadow-sm">
@@ -866,38 +879,34 @@ function DistributionSection({
   isLoading,
   error,
   trainingDays,
-  onRecalculate,
 }: {
   result: WeeklyVolumeDistributionResponseType | null;
   isLoading: boolean;
   error: string | null;
   trainingDays: number;
-  onRecalculate: () => void;
 }) {
   const consistencyCheck = result ? checkDistributionConsistency(result, trainingDays) : null;
 
   return (
     <div className="space-y-3 pt-4">
-      {/* Header + button */}
+      {/* Header + auto-status indicator */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <CalendarDays size={14} />
           Rozkład objętości na dni
         </h3>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onRecalculate}
-          disabled={isLoading}
-          className="gap-1.5 text-xs h-7"
-        >
-          {isLoading ? (
-            <Loader2 size={12} className="animate-spin" />
-          ) : (
-            <RotateCcw size={12} />
-          )}
-          Przelicz rozkład
-        </Button>
+        {isLoading && (
+          <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Loader2 size={11} className="animate-spin" />
+            Przeliczam…
+          </span>
+        )}
+        {!isLoading && result && (
+          <span className="text-xs text-emerald-600 flex items-center gap-1.5">
+            <CheckCircle2 size={11} />
+            Rozkład zaktualizowany
+          </span>
+        )}
       </div>
 
       {/* API error */}
@@ -1252,7 +1261,6 @@ function Step3Volume({
   distributionResult,
   distributionLoading,
   distributionError,
-  onRecalculate,
   trainingDays,
 }: {
   decisions: WeeklyVolumeDecisionResponseType;
@@ -1262,7 +1270,6 @@ function Step3Volume({
   distributionResult: WeeklyVolumeDistributionResponseType | null;
   distributionLoading: boolean;
   distributionError: string | null;
-  onRecalculate: () => void;
   trainingDays: number;
 }) {
   const overrideCount = Object.keys(overrides).length;
@@ -1370,13 +1377,12 @@ function Step3Volume({
         </Card>
       )}
 
-      {/* Phase 3B — Daily volume distribution */}
+      {/* Phase 3B — Daily volume distribution (auto-recalculates) */}
       <DistributionSection
         result={distributionResult}
         isLoading={distributionLoading}
         error={distributionError}
         trainingDays={trainingDays}
-        onRecalculate={onRecalculate}
       />
     </div>
   );
@@ -1419,39 +1425,28 @@ export default function PlanDraftWizard() {
   const typedData = data as unknown as GetClientPlanDraftInputResponseType | undefined;
   const hasBlockingWarnings = typedData?.warnings.some((w: PlanDraftInputWarningType) => w.blocking) ?? false;
 
+  // Volume auto-trigger refs
+  const volumeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastVolumePrefsRef = useRef<string | null>(null);
+
   function handlePrefsChange(p: PlanDraftGenerationPreferencesType) {
+    // Clear stale volume + distribution when structural inputs change
+    if (
+      effectivePrefs &&
+      (p.trainingDays !== effectivePrefs.trainingDays ||
+        p.splitType !== effectivePrefs.splitType ||
+        p.sessionDurationMinutes !== effectivePrefs.sessionDurationMinutes)
+    ) {
+      setVolumeDecisions(null);
+      setDistributionResult(null);
+      setVolumeOverrides({});
+      lastVolumePrefsRef.current = null;
+    }
     setPrefs(p);
   }
 
   function handleBack() {
     if (step > 0) setStep((s) => s - 1);
-  }
-
-  // Advance from Step 2 → Step 3: call volume preview API
-  async function handleAdvanceToVolume() {
-    if (!effectivePrefs || !typedData) return;
-    try {
-      const result = await volumeMutation.mutateAsync({
-        clientId,
-        preferences: {
-          trainingDays: effectivePrefs.trainingDays,
-          sessionDurationMinutes: effectivePrefs.sessionDurationMinutes,
-          splitType: effectivePrefs.splitType,
-          blockDurationWeeks: effectivePrefs.blockDurationWeeks,
-          trainingGoal: effectivePrefs.trainingGoal,
-          priorityMuscleGroups: effectivePrefs.priorityMuscleGroups,
-          preferredTrainingStyle: effectivePrefs.preferredTrainingStyle,
-          trainerRestrictions: effectivePrefs.trainerRestrictions,
-        },
-        trainerVolumeOverrides: Object.fromEntries(
-          Object.entries(volumeOverrides).map(([k, v]) => [k, v]),
-        ),
-      });
-      setVolumeDecisions(result);
-      setStep(2);
-    } catch (e) {
-      // volumeMutation.error will display the error
-    }
   }
 
   function handleVolumeOverride(targetId: number, value: number) {
@@ -1482,14 +1477,65 @@ export default function PlanDraftWizard() {
   }, [clientId, typedData, effectivePrefs, volumeDecisions, volumeOverrides]);
 
   /**
-   * Auto-recalculate distribution when any trigger input changes while on
-   * the Objętość step. Duplicate-identical requests are suppressed via a ref.
-   *
-   * Triggers: trainingDays, splitType, priorities, any override change or reset
-   * (all of these change distributionRequest, which drives the effect).
+   * Auto-calculate volume whenever the trainer is on step 1 and prefs change.
+   * Debounced 800 ms so rapid field changes (e.g. typing in the goal input)
+   * don't fire the expensive API call on every keystroke.
    */
   useEffect(() => {
-    if (step !== 2 || !distributionRequest) return;
+    if (step !== 1 || !effectivePrefs || !typedData) return;
+
+    const key = JSON.stringify({
+      trainingDays: effectivePrefs.trainingDays,
+      sessionDurationMinutes: effectivePrefs.sessionDurationMinutes,
+      splitType: effectivePrefs.splitType,
+      blockDurationWeeks: effectivePrefs.blockDurationWeeks,
+      trainingGoal: effectivePrefs.trainingGoal,
+      priorityMuscleGroups: effectivePrefs.priorityMuscleGroups,
+      preferredTrainingStyle: effectivePrefs.preferredTrainingStyle,
+      trainerRestrictions: effectivePrefs.trainerRestrictions,
+    });
+
+    if (key === lastVolumePrefsRef.current) return;
+
+    if (volumeDebounceRef.current) clearTimeout(volumeDebounceRef.current);
+    volumeDebounceRef.current = setTimeout(() => {
+      lastVolumePrefsRef.current = key;
+      volumeMutation.mutate(
+        {
+          clientId,
+          preferences: {
+            trainingDays: effectivePrefs.trainingDays,
+            sessionDurationMinutes: effectivePrefs.sessionDurationMinutes,
+            splitType: effectivePrefs.splitType,
+            blockDurationWeeks: effectivePrefs.blockDurationWeeks,
+            trainingGoal: effectivePrefs.trainingGoal,
+            priorityMuscleGroups: effectivePrefs.priorityMuscleGroups,
+            preferredTrainingStyle: effectivePrefs.preferredTrainingStyle,
+            trainerRestrictions: effectivePrefs.trainerRestrictions,
+          },
+          trainerVolumeOverrides: Object.fromEntries(
+            Object.entries(volumeOverrides).map(([k, v]) => [k, v]),
+          ),
+        },
+        {
+          onSuccess: (result: WeeklyVolumeDecisionResponseType) => setVolumeDecisions(result),
+          onError: () => setVolumeDecisions(null),
+        },
+      );
+    }, 800);
+
+    return () => {
+      if (volumeDebounceRef.current) clearTimeout(volumeDebounceRef.current);
+    };
+  }, [step, effectivePrefs]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * Auto-recalculate distribution whenever volume decisions or overrides
+   * change while on the merged step 1 (Założenia planu).
+   * Duplicate-identical requests are suppressed via a ref.
+   */
+  useEffect(() => {
+    if (step !== 1 || !distributionRequest) return;
     const key = JSON.stringify(distributionRequest);
     if (key === lastDistributionKeyRef.current) return;
     lastDistributionKeyRef.current = key;
@@ -1498,17 +1544,6 @@ export default function PlanDraftWizard() {
       onError: () => setDistributionResult(null),
     });
   }, [step, distributionRequest]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /** Manual "Przelicz rozkład" button handler — forces a re-fire. */
-  const handleRecalculate = useCallback(() => {
-    if (!distributionRequest) return;
-    const key = JSON.stringify(distributionRequest);
-    lastDistributionKeyRef.current = key;
-    distributionMutation.mutate(distributionRequest, {
-      onSuccess: (result: WeeklyVolumeDistributionResponseType) => setDistributionResult(result),
-      onError: () => setDistributionResult(null),
-    });
-  }, [distributionRequest, distributionMutation]);
 
   // ── Exercise step unlock ───────────────────────────────────────────────────
 
@@ -1619,31 +1654,62 @@ export default function PlanDraftWizard() {
 
       {/* Step content */}
       {step === 0 && <Step1Summary data={typedData} />}
+
+      {/* Step 1 — Założenia planu: preferences + volume + distribution (merged) */}
       {step === 1 && effectivePrefs && (
-        <Step2Preferences
-          data={typedData}
-          prefs={effectivePrefs}
-          onPrefsChange={handlePrefsChange}
-        />
+        <>
+          <Step2Preferences
+            data={typedData}
+            prefs={effectivePrefs}
+            onPrefsChange={handlePrefsChange}
+            cardioRecommendation={
+              (typedData as unknown as { cardioRecommendation?: { type: string; text: string; reason: string } | null })
+                .cardioRecommendation ?? null
+            }
+            conditioningRecommendation={
+              (typedData as unknown as { conditioningRecommendation?: { text: string } | null })
+                .conditioningRecommendation ?? null
+            }
+          />
+
+          {/* Volume section — auto-computed inline */}
+          {volumeMutation.isPending && !volumeDecisions && (
+            <div className="rounded-lg border border-border/50 bg-muted/20 px-4 py-6 flex items-center justify-center gap-3">
+              <Loader2 size={16} className="animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Obliczam objętość treningową…</span>
+            </div>
+          )}
+
+          {volumeMutation.isError && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 flex items-start gap-2">
+              <AlertCircle size={14} className="text-destructive mt-0.5 shrink-0" />
+              <p className="text-sm text-destructive">
+                Nie udało się obliczyć objętości. Sprawdź dane klienta i spróbuj ponownie.
+              </p>
+            </div>
+          )}
+
+          {volumeDecisions && (
+            <Step3Volume
+              decisions={volumeDecisions}
+              overrides={volumeOverrides}
+              onOverride={handleVolumeOverride}
+              onReset={handleVolumeReset}
+              distributionResult={distributionResult}
+              distributionLoading={distributionMutation.isPending}
+              distributionError={
+                distributionMutation.isError
+                  ? "Nie udało się obliczyć rozkładu. Sprawdź dane i spróbuj ponownie."
+                  : null
+              }
+              trainingDays={effectivePrefs.trainingDays}
+            />
+          )}
+        </>
       )}
-      {step === 2 && volumeDecisions && effectivePrefs && (
-        <Step3Volume
-          decisions={volumeDecisions}
-          overrides={volumeOverrides}
-          onOverride={handleVolumeOverride}
-          onReset={handleVolumeReset}
-          distributionResult={distributionResult}
-          distributionLoading={distributionMutation.isPending}
-          distributionError={
-            distributionMutation.isError
-              ? "Nie udało się obliczyć rozkładu. Sprawdź dane i spróbuj ponownie."
-              : null
-          }
-          onRecalculate={handleRecalculate}
-          trainingDays={effectivePrefs.trainingDays}
-        />
-      )}
-      {step === 3 && isExerciseStepUnlocked && distributionResult && (
+
+      {/* Step 2 — Ćwiczenia (was step 3) */}
+      {step === 2 && isExerciseStepUnlocked && distributionResult && (
         <Step4Exercises
           distributionResult={distributionResult}
           exerciseDraft={exerciseDraft}
@@ -1654,7 +1720,7 @@ export default function PlanDraftWizard() {
           experienceLevel={typedData?.input.experienceLevel ?? null}
         />
       )}
-      {step === 3 && !isExerciseStepUnlocked && (
+      {step === 2 && !isExerciseStepUnlocked && (
         <Card className="border-dashed border-border/60 shadow-sm">
           <CardContent className="py-10 text-center">
             <AlertCircle className="w-8 h-8 mx-auto mb-3 text-muted-foreground/40" />
@@ -1664,7 +1730,9 @@ export default function PlanDraftWizard() {
           </CardContent>
         </Card>
       )}
-      {step === 4 && distributionResult && effectivePrefs && (
+
+      {/* Step 3 — Podgląd (was step 4) */}
+      {step === 3 && distributionResult && effectivePrefs && (
         <Step5Preview
           typedData={typedData}
           effectivePrefs={effectivePrefs}
@@ -1673,20 +1741,10 @@ export default function PlanDraftWizard() {
           previewResult={previewResult}
           coverageLoading={coverageLoading}
           clientId={clientId}
-          onBack={() => setStep(3)}
+          onBack={() => setStep(2)}
         />
       )}
-      {step > 4 && <LockedStepPlaceholder step={step} />}
-
-      {/* Mutation error for volume fetch */}
-      {volumeMutation.isError && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 flex items-start gap-2">
-          <AlertCircle size={14} className="text-destructive mt-0.5 shrink-0" />
-          <p className="text-sm text-destructive">
-            Nie udało się obliczyć objętości. Sprawdź dane klienta i spróbuj ponownie.
-          </p>
-        </div>
-      )}
+      {step > 3 && <LockedStepPlaceholder step={step} />}
 
       {/* Navigation */}
       <div className="flex items-center justify-between pt-2">
@@ -1694,7 +1752,7 @@ export default function PlanDraftWizard() {
           variant="outline"
           onClick={step === 0 ? () => navigate(`/clients/${clientId}`) : handleBack}
           className="gap-2"
-          disabled={volumeMutation.isPending}
+          disabled={volumeMutation.isPending && step === 0}
         >
           <ArrowLeft size={14} />
           {step === 0 ? "Anuluj" : "Wstecz"}
@@ -1708,47 +1766,40 @@ export default function PlanDraftWizard() {
             </Button>
           )}
           {step === 1 && (
-            <Button
-              onClick={handleAdvanceToVolume}
-              disabled={hasBlockingWarnings || volumeMutation.isPending}
-              className="gap-2"
-            >
-              {volumeMutation.isPending ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  Obliczanie…
-                </>
-              ) : (
-                <>
-                  Oblicz objętość
-                  <ArrowRight size={14} />
-                </>
+            <>
+              {volumeMutation.isPending && (
+                <span className="flex items-center gap-2 text-sm text-muted-foreground self-center">
+                  <Loader2 size={13} className="animate-spin" />
+                  Przeliczam…
+                </span>
               )}
-            </Button>
+              <Button
+                onClick={() => { if (isExerciseStepUnlocked) setStep(2); }}
+                disabled={hasBlockingWarnings || !isExerciseStepUnlocked}
+                className="gap-2"
+                title={
+                  !isExerciseStepUnlocked
+                    ? "Poczekaj na obliczenie objętości i rozkładu, aby kontynuować"
+                    : undefined
+                }
+              >
+                {isExerciseStepUnlocked ? (
+                  <>
+                    Dobierz ćwiczenia
+                    <ArrowRight size={14} />
+                  </>
+                ) : (
+                  <>
+                    <Lock size={14} />
+                    Oczekiwanie na objętość…
+                  </>
+                )}
+              </Button>
+            </>
           )}
           {step === 2 && (
             <Button
-              onClick={() => { if (isExerciseStepUnlocked) setStep(3); }}
-              disabled={!isExerciseStepUnlocked}
-              className="gap-2"
-              title={!isExerciseStepUnlocked ? "Przelicz rozkład, aby przejść do doboru ćwiczeń" : ""}
-            >
-              {isExerciseStepUnlocked ? (
-                <>
-                  Dobierz ćwiczenia
-                  <ArrowRight size={14} />
-                </>
-              ) : (
-                <>
-                  <Lock size={14} />
-                  Przelicz rozkład, aby kontynuować
-                </>
-              )}
-            </Button>
-          )}
-          {step === 3 && (
-            <Button
-              onClick={() => { if (isPreviewStepUnlocked) setStep(4); }}
+              onClick={() => { if (isPreviewStepUnlocked) setStep(3); }}
               disabled={!isPreviewStepUnlocked}
               className="gap-2"
               title={
@@ -1770,7 +1821,7 @@ export default function PlanDraftWizard() {
               )}
             </Button>
           )}
-          {step >= 4 && (
+          {step >= 3 && (
             <Button disabled className="gap-2 opacity-50 cursor-not-allowed">
               <Lock size={14} />
               Zapis planu — kolejny etap
