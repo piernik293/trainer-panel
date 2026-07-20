@@ -166,12 +166,9 @@ function EmailGate({ onSuccess }: { onSuccess: (client: ClientInfo, plan: Plan, 
     }
   };
 
-  // Auto-submit when email is pre-filled via query param
-  useEffect(() => {
-    if (queryEmail) {
-      submit(queryEmail);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Note: auto-submit from query email is handled exclusively in PlanPortal
+  // (single fetch path). EmailGate only pre-fills the input so the user can
+  // resubmit manually if the initial attempt failed.
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -727,14 +724,26 @@ export default function PlanPortal() {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [selectedDay, setSelectedDay] = useState<PlanDay | null>(null);
 
-  // Auto-try with stored email on mount.
+  // Single deterministic identity resolution on mount.
+  // Priority: ?email= query param (shared link) > sessionStorage (returning user).
+  // Having one fetch path here prevents a race where both sources fire concurrently
+  // and the slower response overwrites the faster one with a different client's data.
   useEffect(() => {
-    const storedEmail = sessionStorage.getItem("portal_email");
-    if (!storedEmail) return;
-    apiFetch<{ client: ClientInfo; plan: Plan }>(`/client-portal/plan?email=${encodeURIComponent(storedEmail)}`)
-      .then(({ client: c, plan: p }) => { setClient(c); setPlan(p); })
-      .catch(() => sessionStorage.removeItem("portal_email"));
-  }, []);
+    const queryEmail = new URLSearchParams(window.location.search).get("email")?.trim().toLowerCase() ?? "";
+    const emailToTry = queryEmail || sessionStorage.getItem("portal_email") || "";
+    if (!emailToTry) return;
+    apiFetch<{ client: ClientInfo; plan: Plan }>(`/client-portal/plan?email=${encodeURIComponent(emailToTry)}`)
+      .then(({ client: c, plan: p }) => {
+        sessionStorage.setItem("portal_email", emailToTry);
+        setClient(c);
+        setPlan(p);
+      })
+      .catch(() => {
+        // If the pre-fill fails (expired link, deleted account), clear storage
+        // so the user sees the email form with the address pre-filled for retry.
+        if (!queryEmail) sessionStorage.removeItem("portal_email");
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!client || !plan) {
     return (
