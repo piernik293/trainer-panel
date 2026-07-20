@@ -5488,6 +5488,674 @@
           "coefficient": 0.25
         }
       ]
+    },
+    {
+      "name": "Skoki pogo",
+      "mainMuscleGroup": "Łydki",
+      "secondaryMuscleGroups": [
+        "Mięśnie czworogłowe uda",
+        "Pośladki"
+      ],
+      "equipment": [
+        "Masa własnego ciała"
+      ],
+      "trainingLocation": [
+        "Siłownia",
+        "Dom",
+        "Plener"
+      ],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Skoki pogo to reaktywne skoki o małej amplitudzie, w których energia sprężysta gromadzona jest w ścięgnie Achillesa i mięśniach łydki. Stopa kontaktuje się z podłożem na ułamek sekundy, a napęd pochodzi niemal wyłącznie z kostki — kolano pozostaje prawie nieruchome.",
+      "executionInstructions": "Stań wyprostowany, stopy na szerokość bioder. Wykonaj szybkie, rytmiczne skoki z minimalnymi ugięciami kolana — napęd pochodzi ze ścięgien Achillesa i mięśni łydki. Utrzymuj sztywny tułów i ręce lekko przed ciałem dla równowagi. Cel: jak najkrótszy kontakt z podłożem przy zachowaniu rytmu.",
+      "commonMistakes": "Zbyt duże ugięcie kolan — zamienia ćwiczenie w zwykłe podskoki. Lądowanie na piętach wydłuża czas kontaktu i traci reaktywność. Zbyt wolny rytm — traci się efekt sprężynowania.",
+      "coachingTips": "Myśl o ziemi jak o gorącej blasze — odbij się jak najszybciej. Pracuj wyłącznie kostką; kolano pozostaje prawie nieruchome. Zacznij od 3 serii 10 s, stopniowo zwiększaj do 20–30 s.",
+      "breathingTips": "Oddech swobodny przez cały czas; nie wstrzymuj oddechu. Rytm oddechu dostosuj do rytmu skoków.",
+      "safetyNotes": "Nie wykonuj na twardym betonie bez amortyzacji. Stopniuj objętość — przeciążenie ścięgna Achillesa grozi tendinopatią. Odłóż ćwiczenie w przypadku bólu piętowego lub łydkowego.",
+      "movementPattern": "Inne",
+      "movementCategory": "Przysiad",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": [
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Siła",
+        "Poprawa kondycji"
+      ],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 3,
+      "neurologicalFatigue": 3,
+      "domsPotential": 2,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień brzuchaty łydki",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień czworogłowy uda",
+          "isPrimary": false,
+          "coefficient": 0.25
+        },
+        {
+          "specificMuscleName": "Mięsień poprzeczny brzucha",
+          "isPrimary": false,
+          "coefficient": 0.1
+        }
+      ]
+    },
+    {
+      "name": "Skok z zamachem",
+      "mainMuscleGroup": "Mięśnie czworogłowe uda",
+      "secondaryMuscleGroups": [
+        "Pośladki",
+        "Łydki"
+      ],
+      "equipment": [
+        "Masa własnego ciała"
+      ],
+      "trainingLocation": [
+        "Siłownia",
+        "Dom",
+        "Plener"
+      ],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Skok z zamachem (countermovement jump) to eksplozywny wyskok pionowy, w którym wstępne ugięcie kolan i bioder magazynuje energię sprężystą, a gwałtowne wyprostowanie i zamach ramion maksymalizują wysokość wybicia. Jest to podstawowy test mocy kończyn dolnych.",
+      "executionInstructions": "Stań w rozkroku na szerokość barków. Szybko obniż biodra i zamachaj ramionami w dół, następnie natychmiast wypchnij się ku górze, prostując biodra, kolana i kostki jednocześnie. W szczycie lotu ciało jest w pełni wyprostowane. Ląduj miękko na półpalcach, amortyzując ugięciem kolan.",
+      "commonMistakes": "Zbyt powolne przejście z fazy opuszczania do wybicia — traci się efekt odbicia. Niepełne wyprostowanie w wyskoku. Twarde lądowanie na piętach bez amortyzacji.",
+      "coachingTips": "Kluczowy jest szybki, gwałtowny przeskok z fazy ekscentrycznej do koncentrycznej — im krótszy czas zatrzymania, tym wyższy wyskok. Zamach ramionami dodaje 5–10% wysokości.",
+      "breathingTips": "Wdech w fazie opuszczania, wydech i napięcie core podczas wybicia. Nie wstrzymuj oddechu przez wiele powtórzeń.",
+      "safetyNotes": "Ćwicz na niełuskiej powierzchni z dobrą amortyzacją. Nie wykonuj przy bólu kolan lub bioder. Upewnij się, że wokół jest wystarczająco dużo miejsca.",
+      "movementPattern": "Przysiad",
+      "movementCategory": "Przysiad",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": [
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Siła",
+        "Poprawa kondycji"
+      ],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Średnie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 3,
+      "domsPotential": 2,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień czworogłowy uda",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień pośladkowy wielki",
+          "isPrimary": false,
+          "coefficient": 0.75
+        },
+        {
+          "specificMuscleName": "Mięsień brzuchaty łydki",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięśnie kulszowo-goleniowe",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ]
+    },
+    {
+      "name": "Skok w dal z miejsca",
+      "mainMuscleGroup": "Mięśnie czworogłowe uda",
+      "secondaryMuscleGroups": [
+        "Pośladki",
+        "Mięśnie dwugłowe uda",
+        "Łydki"
+      ],
+      "equipment": [
+        "Masa własnego ciała"
+      ],
+      "trainingLocation": [
+        "Siłownia",
+        "Dom",
+        "Plener"
+      ],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Skok w dal z miejsca to maksymalny wyskok horyzontalny z dwóch nóg. Angażuje całe ciało w kierunku poziomym i jest klasycznym testem mocy eksplozywnej dolnej partii ciała. Wymaga koordynacji pracy bioder, kolan, kostek i ramion.",
+      "executionInstructions": "Stań za linią w rozkroku na szerokość bioder. Ugnij kolana, pochyl tułów lekko do przodu i zamachaj ramionami do tyłu. Gwałtownie wypchnij się do przodu i ku górze, prostując biodra i kolana. Ląduj na obu stopach jednocześnie, amortyzując ugięciem kolan i opadając do przysiadu.",
+      "commonMistakes": "Zbyt pionowe wybicie — traci się dystans. Lądowanie z wyprostowanymi kolanami — przeciążenie stawów. Brak zamachu ramionami — ogranicza dystans o 10–15%.",
+      "coachingTips": "Optymalny kąt wybicia to około 45°. Użyj energii zamachu ramionami jako katapulty. Mierz dystans od linii do pięt przy lądowaniu.",
+      "breathingTips": "Głęboki wdech przed wybiciem, wydech przy lądowaniu. Nie wstrzymuj oddechu dłużej niż jedno powtórzenie.",
+      "safetyNotes": "Ląduj na miękkiej nawierzchni lub macie. Nie wykonuj przy bólu kolan, bioder lub kostek. Rozgrzej stawy kończyn dolnych przed seriami maksymalnymi.",
+      "movementPattern": "Przysiad",
+      "movementCategory": "Przysiad",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": [
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Siła",
+        "Poprawa kondycji"
+      ],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Średnie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 3,
+      "domsPotential": 2,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień czworogłowy uda",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień pośladkowy wielki",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięśnie kulszowo-goleniowe",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięsień brzuchaty łydki",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ]
+    },
+    {
+      "name": "Zeskok z natychmiastowym wybiciem",
+      "mainMuscleGroup": "Mięśnie czworogłowe uda",
+      "secondaryMuscleGroups": [
+        "Pośladki",
+        "Łydki"
+      ],
+      "equipment": [
+        "Masa własnego ciała"
+      ],
+      "trainingLocation": [
+        "Siłownia",
+        "Plener"
+      ],
+      "difficultyLevel": "Zaawansowany",
+      "description": "Zeskok z natychmiastowym wybiciem (drop jump / depth jump) to ćwiczenie reaktywne, w którym sportowiec zeskakuje z podwyższenia, natychmiast po kontakcie z podłożem minimalizuje czas lądowania i wyskakuje jak najwyżej. Intensywnie trenuje cykl rozciągnięcia-skurczu mięśni i ścięgien.",
+      "executionInstructions": "Stań na podwyższeniu 20–40 cm. Zeskocz swobodnie, lądując na śródstopiu obu nóg jednocześnie. Natychmiast, bez pauzy, wypchnij się maksymalnie ku górze. Czas kontaktu z podłożem powinien być jak najkrótszy — cel poniżej 200 ms. Ląduj miękko po wyskoku.",
+      "commonMistakes": "Za wysokie podwyższenie — zwiększa ryzyko bez proporcjonalnego efektu. Pauza między lądowaniem a wybiciem — traci się reaktywność. Zginanie kolan głębiej niż 90° przy lądowaniu.",
+      "coachingTips": "Zacznij od niższego podwyższenia (20 cm) i stopniowo zwiększaj. Mierz czas kontaktu — to klucz do jakości ćwiczenia. Wykonuj wyłącznie wypoczęty, nie na koniec treningu.",
+      "breathingTips": "Wdech przed zeskokiem, wydech i napięcie brzucha podczas wybicia. Zresetuj oddech między powtórzeniami.",
+      "safetyNotes": "Wyłącznie dla sportowców z solidną bazą siłową i techniczną. Nie wykonuj przy bólu kolan, kostek lub bioder. Ogranicz objętość — maksymalnie 40 kontaktów na sesję.",
+      "movementPattern": "Przysiad",
+      "movementCategory": "Przysiad",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": [
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Siła",
+        "Poprawa kondycji"
+      ],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Wysokie",
+      "learningDifficulty": 4,
+      "neurologicalFatigue": 4,
+      "domsPotential": 3,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień czworogłowy uda",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień pośladkowy wielki",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięsień brzuchaty łydki",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięśnie kulszowo-goleniowe",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ]
+    },
+    {
+      "name": "Wskok na podwyższenie",
+      "mainMuscleGroup": "Pośladki",
+      "secondaryMuscleGroups": [
+        "Mięśnie czworogłowe uda",
+        "Mięśnie dwugłowe uda",
+        "Łydki"
+      ],
+      "equipment": [
+        "Masa własnego ciała"
+      ],
+      "trainingLocation": [
+        "Siłownia",
+        "Plener"
+      ],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Wskok na podwyższenie (box jump) to eksplozywny skok obunóż na skrzynię lub podwyższenie. Łączy generowanie mocy w wyskoku z kontrolowanym lądowaniem na wyższym poziomie. Angażuje pośladki, czworogłowe i łydki; wymaga koordynacji i odwagi w fazie lotu.",
+      "executionInstructions": "Stań 30–50 cm od skrzyni/podwyższenia w rozkroku na szerokość bioder. Wykonaj szybki przysiad z zamachem ramion, a następnie wypchnij się ku górze i do przodu. Ląduj na obu stopach jednocześnie na środku podwyższenia, miękko amortyzując ugięciem kolan. Zejdź tyłem lub krokowo — nie skacz z powrotem.",
+      "commonMistakes": "Zbyt wysokie podwyższenie — ryzyko urazu przy nieudanym skoku. Lądowanie tylko na palcach bez amortyzacji. Odbijanie się bezpośrednio z powrotem bez pauzy.",
+      "coachingTips": "Wybierz wysokość, którą możesz pokonać ze swobodą i pewną techniką. Skup się na lądowaniu — powinno być ciche. Progresja: najpierw opanuj technikę lądowania, potem zwiększaj wysokość.",
+      "breathingTips": "Wdech przed wybiciem, wydech podczas lądowania i stabilizacji. Nie wstrzymuj oddechu przy seriach.",
+      "safetyNotes": "Upewnij się, że podwyższenie jest stabilne i nie przesuwa się. Nie skacz na podłoże w złym stanie lub mokre. Przy nieudanym wyskoku chwyć krawędź lub zejdź z boku.",
+      "movementPattern": "Przysiad",
+      "movementCategory": "Przysiad",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": [
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Siła",
+        "Poprawa kondycji"
+      ],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Średnie",
+      "learningDifficulty": 3,
+      "neurologicalFatigue": 3,
+      "domsPotential": 2,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień pośladkowy wielki",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień czworogłowy uda",
+          "isPrimary": false,
+          "coefficient": 0.75
+        },
+        {
+          "specificMuscleName": "Mięśnie kulszowo-goleniowe",
+          "isPrimary": false,
+          "coefficient": 0.25
+        },
+        {
+          "specificMuscleName": "Mięsień brzuchaty łydki",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ]
+    },
+    {
+      "name": "Skoki boczne jednonóż",
+      "mainMuscleGroup": "Mięśnie czworogłowe uda",
+      "secondaryMuscleGroups": [
+        "Pośladki",
+        "Łydki"
+      ],
+      "equipment": [
+        "Masa własnego ciała"
+      ],
+      "trainingLocation": [
+        "Siłownia",
+        "Dom",
+        "Plener"
+      ],
+      "difficultyLevel": "Zaawansowany",
+      "description": "Skoki boczne jednonóż to seria eksplozywnych skoków w bok wykonywanych na jednej nodze. Ćwiczenie trenuje boczną moc wybicia, kontrolę lądowania jednonóż i stabilność stawu kolanowego, kluczowe dla sportów wymagających zmiany kierunku.",
+      "executionInstructions": "Stań na jednej nodze, lekko uginając kolano. Wypchnij się dynamicznie w bok, lądując na tej samej nodze z miękkim amortyzowaniem. Utrzymaj równowagę przez 1 s, a następnie odbij się z powrotem. Powtarzaj rytmicznie. Aktywny biodro i tułów zapewniają stabilizację przy lądowaniu.",
+      "commonMistakes": "Zbyt duży zakres — traci się kontrolę lądowania. Kolano zapada się do środka przy lądowaniu. Brak pauzy stabilizacyjnej — ćwiczenie staje się bieganiem, nie skokami.",
+      "coachingTips": "Zacznij od mniejszego dystansu bocznego i rozszerzaj stopniowo. Dbaj o to, aby kolano było nad palcami stóp w chwili lądowania. Wzmocnij pośladek średni zanim przejdziesz do tej progresji.",
+      "breathingTips": "Równomierne oddychanie między skokami. Napnij core podczas fazy lotu dla stabilizacji.",
+      "safetyNotes": "Wymagana solidna baza jednostronnej stabilności kolana. Nie wykonuj przy bólu stawu kolanowego lub kostki. Ćwicz boso lub w butach z dobrą stabilizacją boczną.",
+      "movementPattern": "Odwodzenie",
+      "movementCategory": "Wykrok",
+      "exerciseType": "Złożone",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Czołowa",
+      "suitableExperienceLevels": [
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Siła",
+        "Poprawa kondycji"
+      ],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Średnie",
+      "learningDifficulty": 4,
+      "neurologicalFatigue": 4,
+      "domsPotential": 3,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień czworogłowy uda",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień pośladkowy średni",
+          "isPrimary": false,
+          "coefficient": 0.75
+        },
+        {
+          "specificMuscleName": "Mięsień pośladkowy wielki",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięsień brzuchaty łydki",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ]
+    },
+    {
+      "name": "Skok jednonóż",
+      "mainMuscleGroup": "Mięśnie czworogłowe uda",
+      "secondaryMuscleGroups": [
+        "Pośladki",
+        "Łydki"
+      ],
+      "equipment": [
+        "Masa własnego ciała"
+      ],
+      "trainingLocation": [
+        "Siłownia",
+        "Dom",
+        "Plener"
+      ],
+      "difficultyLevel": "Zaawansowany",
+      "description": "Skok jednonóż to eksplozywny wyskok w przód lub w górę z jednej nogi, z lądowaniem na tej samej lub drugiej nodze. Ćwiczenie ujawnia asymetrie siłowe między kończynami i jest kluczowym elementem rehabilitacji oraz treningu sportowego.",
+      "executionInstructions": "Stań na jednej nodze, lekko uginając kolano. Zamachaj ramionami i wypchnij się dynamicznie do przodu lub ku górze. Ląduj miękko na stopie tej samej lub przeciwnej nogi, amortyzując ruch ugięciem kolana i biodra. Utrzymaj równowagę przez 2–3 s przed kolejnym powtórzeniem.",
+      "commonMistakes": "Twarde lądowanie z wyprostowanym kolanem. Kolano zapada się do środka (koślawość dynamiczna). Zbyt mały wychwyt tułowia — nieplanowane cofnięcie środka ciężkości.",
+      "coachingTips": "Porównuj odległości między nogami — asymetria > 10% może wskazywać na ryzyko urazu. Progresja: najpierw opanuj lądowanie jednonóż, potem dodaj fazę odbicia. Użyj taśmy na podłodze jako celu odległości.",
+      "breathingTips": "Wdech przed wybiciem, wydech i napięcie core podczas lotu i lądowania.",
+      "safetyNotes": "Wymagana dobra siła stabilizatorów kolana i kostki. Praca jednostronna mocno obciąża staw kolanowy — nie wykonuj przy istniejącej niestabilności więzadłowej.",
+      "movementPattern": "Wykrok",
+      "movementCategory": "Wykrok",
+      "exerciseType": "Złożone",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": [
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Siła",
+        "Poprawa kondycji"
+      ],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Wysokie",
+      "learningDifficulty": 4,
+      "neurologicalFatigue": 4,
+      "domsPotential": 3,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień czworogłowy uda",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień pośladkowy wielki",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięsień brzuchaty łydki",
+          "isPrimary": false,
+          "coefficient": 0.25
+        },
+        {
+          "specificMuscleName": "Mięśnie kulszowo-goleniowe",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ]
+    },
+    {
+      "name": "Nauka lądowania",
+      "mainMuscleGroup": "Mięśnie czworogłowe uda",
+      "secondaryMuscleGroups": [
+        "Pośladki",
+        "Mięśnie dwugłowe uda",
+        "Brzuch"
+      ],
+      "equipment": [
+        "Masa własnego ciała"
+      ],
+      "trainingLocation": [
+        "Siłownia",
+        "Dom",
+        "Plener"
+      ],
+      "difficultyLevel": "Początkujący",
+      "description": "Nauka lądowania to fundamentalne ćwiczenie kontroli dezaktywacji i mechaniki stawów przy przyjmowaniu obciążenia. Uczy prawidłowej sekwencji amortyzacji (kostka → kolano → biodro), niezbędnej przed przejściem do ćwiczeń plyometrycznych. Kluczowe dla prewencji urazów.",
+      "executionInstructions": "Stań na lekkim podwyższeniu lub po prostu stań wyprostowany. Wykonaj małe odbicie i ląduj na obu stopach jednocześnie, miękko amortyzując przez ugięcie kostek, kolan i bioder w tej kolejności. Kolana podążają za palcami stóp, tułów lekko pochylony do przodu. Zatrzymaj ruch kontrolowanie, utrzymując pozycję przez 3 s.",
+      "commonMistakes": "Lądowanie na piętach z wyprostowanymi kolanami. Koślawość kolan przy lądowaniu (wpadanie do środka). Brak kontroli po lądowaniu — ruch jest jednorazowy, a nie stabilizowany.",
+      "coachingTips": "Ciche lądowanie = dobre lądowanie. Naucz klientów słuchać dźwięku lądowania jako wskaźnika jakości. Progresja: obunóż → jednostronne → z większej wysokości.",
+      "breathingTips": "Wdech przed lądowaniem, wydech i napięcie core w momencie kontaktu. Utrzymuj napięcie brzucha przez całą fazę stabilizacji.",
+      "safetyNotes": "To ćwiczenie bazowe — nie pomijaj go przed przejściem do skoków o dużej intensywności. Jest odpowiednie dla każdego poziomu jako wprowadzenie do treningu plyometrycznego.",
+      "movementPattern": "Przysiad",
+      "movementCategory": "Przysiad",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Strzałkowa",
+      "suitableExperienceLevels": [
+        "Początkujący",
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Zdrowie ogólne",
+        "Siła"
+      ],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Niskie",
+      "learningDifficulty": 2,
+      "neurologicalFatigue": 2,
+      "domsPotential": 2,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień czworogłowy uda",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień pośladkowy wielki",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięśnie kulszowo-goleniowe",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięśnie skośne brzucha",
+          "isPrimary": false,
+          "coefficient": 0.25
+        },
+        {
+          "specificMuscleName": "Mięsień poprzeczny brzucha",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ]
+    },
+    {
+      "name": "Skok boczny z zatrzymaniem",
+      "mainMuscleGroup": "Pośladki",
+      "secondaryMuscleGroups": [
+        "Mięśnie czworogłowe uda",
+        "Łydki"
+      ],
+      "equipment": [
+        "Masa własnego ciała"
+      ],
+      "trainingLocation": [
+        "Siłownia",
+        "Dom",
+        "Plener"
+      ],
+      "difficultyLevel": "Zaawansowany",
+      "description": "Skok boczny z zatrzymaniem (lateral jump & stick) to ćwiczenie bocznej mocy wybicia z akcentem na kontrolowane, stabilne lądowanie jednonóż. Po wyskoku bocznym sportowiec 'przykleja' się do podłogi na lądującej nodze i utrzymuje równowagę przez 2–3 s. Trenuje zmianę kierunku i kontrolę dezaktywacji.",
+      "executionInstructions": "Stań na jednej nodze. Wypchnij się dynamicznie w bok, lądując na przeciwnej nodze z ugiętym kolanem i biodrem. Natychmiast stabilizuj pozycję — kolano nad palcami, tułów w równowadze. Utrzymaj 'stick' przez 2–3 s, a następnie zmień kierunek. Wymagana pełna kontrola przed kolejnym skokiem.",
+      "commonMistakes": "Pośpiech przy lądowaniu — brak pauzy stabilizacyjnej. Koślawość kolana w chwili kontaktu. Zbyt szeroki krok boczny przekraczający możliwości stabilizacji.",
+      "coachingTips": "Metafora: wyobraź sobie lądowanie na jednej nodze w błocie — masz zostać tam i nie 'wyjść ze śladu'. Progresja: najpierw małe skoki, stopniowo zwiększaj dystans. Wzmocnij pośladek średni przed tą progresją.",
+      "breathingTips": "Wdech przed skokiem, wydech i napięcie core przy lądowaniu. Utrzymaj napięcie przez fazę stabilizacji.",
+      "safetyNotes": "Wymaga dobrej jednostronnej kontroli kolana. Przy pierwszych próbach asekuruj klienta werbalnie. Nie wykonuj na śliskiej nawierzchni.",
+      "movementPattern": "Odwodzenie",
+      "movementCategory": "Wykrok",
+      "exerciseType": "Złożone",
+      "execution": "Jednostronne",
+      "planeOfMotion": "Czołowa",
+      "suitableExperienceLevels": [
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Siła",
+        "Poprawa kondycji"
+      ],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Średnie",
+      "learningDifficulty": 4,
+      "neurologicalFatigue": 4,
+      "domsPotential": 2,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień pośladkowy wielki",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień czworogłowy uda",
+          "isPrimary": false,
+          "coefficient": 0.75
+        },
+        {
+          "specificMuscleName": "Mięsień pośladkowy średni",
+          "isPrimary": false,
+          "coefficient": 0.75
+        },
+        {
+          "specificMuscleName": "Mięsień brzuchaty łydki",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ]
+    },
+    {
+      "name": "Przeskoki boczne z nogi na nogę",
+      "mainMuscleGroup": "Mięśnie czworogłowe uda",
+      "secondaryMuscleGroups": [
+        "Pośladki",
+        "Łydki"
+      ],
+      "equipment": [
+        "Masa własnego ciała"
+      ],
+      "trainingLocation": [
+        "Siłownia",
+        "Dom",
+        "Plener"
+      ],
+      "difficultyLevel": "Średniozaawansowany",
+      "description": "Przeskoki boczne z nogi na nogę (lateral bounds) to rytmiczne skoki boczne, w których sportowiec przemieszcza się naprzemiennie między lewą a prawą nogą. Ćwiczenie trenuje boczną reaktywność, koordynację, rytm ruchowy i symetrię siłową kończyn dolnych.",
+      "executionInstructions": "Stań na jednej nodze, lekko uginając kolano. Wypchnij się dynamicznie w bok, lądując na przeciwnej nodze z krótkim amortyzowaniem. Natychmiast odbij się z powrotem w przeciwnym kierunku. Utrzymuj rytmiczne przeskoki przez wyznaczony czas lub liczbę powtórzeń. Ramiona pracują naprzemiennie jak u sprinterów.",
+      "commonMistakes": "Zatrzymywanie się przed każdym odbiciem — traci się rytm i reaktywność. Zbyt szeroki krok — wychodzi się poza kontrolę stabilizacji. Asymetryczny rytm wskazujący na słabszą stronę.",
+      "coachingTips": "Ustaw dwie taśmy lub stożki jako cele lądowania. Mierz rytm metronomem lub muzyką — regularność jest kluczem. Porównuj szerokość skoku lewej i prawej nogi, żeby wykryć asymetrię.",
+      "breathingTips": "Równomierne oddychanie w rytm skoków. Nie wstrzymuj oddechu — to ćwiczenie kondycyjne o dużym zapotrzebowaniu tlenowym.",
+      "safetyNotes": "Zacznij od mniejszego dystansu bocznego i stopniowo zwiększaj. Unikaj wykonywania w zmęczeniu, gdy technika lądowania się pogarsza. Ćwicz na nawierzchni z dobrą przyczepnością.",
+      "movementPattern": "Lokomocja",
+      "movementCategory": "Wykrok",
+      "exerciseType": "Złożone",
+      "execution": "Obustronne",
+      "planeOfMotion": "Czołowa",
+      "suitableExperienceLevels": [
+        "Średniozaawansowany",
+        "Zaawansowany"
+      ],
+      "trainingGoals": [
+        "Siła",
+        "Poprawa kondycji"
+      ],
+      "resistanceType": "Masa własnego ciała",
+      "requiresSpotter": false,
+      "canBePerformedToFailure": "Z ostrożnością",
+      "jointStress": "Średnie",
+      "learningDifficulty": 3,
+      "neurologicalFatigue": 3,
+      "domsPotential": 2,
+      "exercisePriority": "Wysoki",
+      "isActive": true,
+      "muscleAssignments": [
+        {
+          "specificMuscleName": "Mięsień czworogłowy uda",
+          "isPrimary": true,
+          "coefficient": 1
+        },
+        {
+          "specificMuscleName": "Mięsień pośladkowy wielki",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięsień pośladkowy średni",
+          "isPrimary": false,
+          "coefficient": 0.5
+        },
+        {
+          "specificMuscleName": "Mięsień brzuchaty łydki",
+          "isPrimary": false,
+          "coefficient": 0.25
+        }
+      ]
     }
   ]
 }

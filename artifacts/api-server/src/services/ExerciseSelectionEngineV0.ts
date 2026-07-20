@@ -1149,35 +1149,33 @@ export function runExerciseSelectionEngineV0(
     // Exercises tagged with higher exercisePriority / lower learningDifficulty
     // naturally rank ahead via the existing sort — no special scoring is needed.
     case "plyo": {
-      // Slot 1: Explosive knee-dominant compound (squat / lunge family).
-      // Provides the primary reactive / jumping stimulus.
+      // Slot 1: Explosive knee-dominant compound (squat / lunge / jump pattern).
+      // Uses the canonical mainMuscleGroup values that exist in the DB.
+      // Accepts "Inne" movement pattern so purpose-built plyometric exercises
+      // (e.g. Skoki pogo) can fill this slot when the pool contains them.
       pick(
         "Explosive lower compound",
         true,
         (ex) =>
-          muscle(ex, "Uda", "Pośladki") &&
+          muscle(ex, "Mięśnie czworogłowe uda", "Pośladki") &&
           compound(ex) &&
-          pattern(ex, "Dominacja kolana"),
+          pattern(ex, "Przysiad", "Wykrok", "Inne"),
         { protected: true },
       );
 
       // Slot 2: Hip-hinge compound — deceleration, landing mechanics, posterior chain.
-      // RDL / hinge patterns load the posterior chain eccentrically, which is
-      // central to landing quality and injury-prevention in reactive sports.
       pick(
         "Hip-hinge deceleration compound",
         true,
         (ex) =>
-          muscle(ex, "Uda", "Pośladki", "Plecy") &&
+          muscle(ex, "Mięśnie czworogłowe uda", "Mięśnie dwugłowe uda", "Pośladki", "Plecy") &&
           compound(ex) &&
           pattern(ex, "Zawias biodrowy"),
         { protected: true },
       );
 
       // Slot 3: Calves / reactive lower chain.
-      // Calf raises and similar exercises build ankle stiffness and tendon
-      // capacity — critical for hopping, cutting, and change-of-direction quality.
-      // Falls back to any non-compound lower accessory if calves pool is empty.
+      // Falls back to any non-compound lower-body accessory if calves pool is empty.
       const plyoS3 = pick(
         "Calves / reactive lower chain",
         false,
@@ -1187,7 +1185,9 @@ export function runExerciseSelectionEngineV0(
         pick(
           "Lower accessory fallback",
           true,
-          (ex) => muscle(ex, "Uda", "Pośladki") && !compound(ex),
+          (ex) =>
+            muscle(ex, "Mięśnie czworogłowe uda", "Mięśnie dwugłowe uda", "Pośladki") &&
+            !compound(ex),
         );
       }
 
@@ -1196,7 +1196,7 @@ export function runExerciseSelectionEngineV0(
       pick(
         "Lower body accessory",
         false,
-        (ex) => muscle(ex, "Uda", "Pośladki", "Łydki"),
+        (ex) => muscle(ex, "Mięśnie czworogłowe uda", "Mięśnie dwugłowe uda", "Pośladki", "Łydki"),
       );
 
       // Slot 5 (optional): Core / trunk — always last.

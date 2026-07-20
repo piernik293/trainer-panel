@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useListExercises } from "@workspace/api-client-react";
-import BulkImportModal from "./BulkImportModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Search, Dumbbell, Upload, CheckCircle, AlertCircle } from "lucide-react";
+import { PlusCircle, Search, Dumbbell, CheckCircle, AlertCircle } from "lucide-react";
 import {
   MAIN_MUSCLE_GROUPS,
   EQUIPMENT_OPTIONS,
@@ -31,8 +30,6 @@ export default function ExerciseList() {
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [exerciseTypeFilter, setExerciseTypeFilter] = useState<string>("all");
   const [movementPatternFilter, setMovementPatternFilter] = useState<string>("all");
-  const [importOpen, setImportOpen] = useState(false);
-
   const { data: exercises, isLoading } = useListExercises({
     search: searchTerm || undefined,
     mainMuscleGroup: muscleFilter !== "all" ? muscleFilter : undefined,
@@ -75,10 +72,6 @@ export default function ExerciseList() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
-            <Upload size={16} />
-            Importuj ćwiczenia
-          </Button>
           <Button asChild>
             <Link href="/exercises/new" className="flex items-center gap-2">
               <PlusCircle size={18} />
@@ -308,7 +301,6 @@ export default function ExerciseList() {
         )}
       </div>
 
-      <BulkImportModal open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }
