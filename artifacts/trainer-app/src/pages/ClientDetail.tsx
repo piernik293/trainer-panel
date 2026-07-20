@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Printer, FileEdit, Phone, Mail, Calendar, ClipboardList, History, StickyNote, Trash2, Pencil, Dumbbell, Sparkles } from "lucide-react";
+import { ArrowLeft, Printer, FileEdit, Phone, Mail, Calendar, ClipboardList, History, StickyNote, Trash2, Pencil, Dumbbell, Sparkles, Link2 } from "lucide-react";
 import ExerciseRecommendationsTab from "./ExerciseRecommendationsTab";
 import WorkoutHistoryTab from "./WorkoutHistoryTab";
 import { formatDate } from "@/lib/utils";
@@ -310,7 +310,23 @@ export default function ClientDetail() {
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            className="gap-2"
+            disabled={!client.email}
+            onClick={() => {
+              const portalUrl = `${window.location.origin}/client-landing/plan?email=${encodeURIComponent(client.email ?? "")}`;
+              navigator.clipboard.writeText(portalUrl).then(() => {
+                toast({ title: "Link skopiowany do schowka" });
+              }).catch(() => {
+                toast({ title: "Nie udało się skopiować linku", variant: "destructive" });
+              });
+            }}
+          >
+            <Link2 size={16} />
+            Kopiuj link do portalu
+          </Button>
           {client.hasSurvey && (
             <Button variant="outline" onClick={handlePrint} className="gap-2">
               <Printer size={16} />

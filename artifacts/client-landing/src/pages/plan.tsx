@@ -145,25 +145,39 @@ const PHASE_ICONS: Record<string, React.ReactNode> = {
 // ─── EmailGate ────────────────────────────────────────────────────────────────
 
 function EmailGate({ onSuccess }: { onSuccess: (client: ClientInfo, plan: Plan, email: string) => void }) {
-  const [email, setEmail] = useState(() => sessionStorage.getItem("portal_email") ?? "");
+  const queryEmail = new URLSearchParams(window.location.search).get("email")?.trim().toLowerCase() ?? "";
+
+  const [email, setEmail] = useState(() => queryEmail || (sessionStorage.getItem("portal_email") ?? ""));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed) { setError("Podaj adres e-mail."); return; }
+  const submit = async (emailValue: string) => {
+    if (!emailValue) return;
     setLoading(true);
     setError("");
     try {
-      const data = await apiFetch<{ client: ClientInfo; plan: Plan }>(`/client-portal/plan?email=${encodeURIComponent(trimmed)}`);
-      sessionStorage.setItem("portal_email", trimmed);
-      onSuccess(data.client, data.plan, trimmed);
+      const data = await apiFetch<{ client: ClientInfo; plan: Plan }>(`/client-portal/plan?email=${encodeURIComponent(emailValue)}`);
+      sessionStorage.setItem("portal_email", emailValue);
+      onSuccess(data.client, data.plan, emailValue);
     } catch (err: unknown) {
       setError((err as Error).message);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Auto-submit when email is pre-filled via query param
+  useEffect(() => {
+    if (queryEmail) {
+      submit(queryEmail);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed) { setError("Podaj adres e-mail."); return; }
+    await submit(trimmed);
   };
 
   return (
