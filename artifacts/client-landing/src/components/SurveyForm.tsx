@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSubmitPublicSurvey } from "@workspace/api-client-react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { AvoidedExercisesPicker, type SelectedExercise } from "./AvoidedExercisesPicker";
+import { FavoriteExercisesPicker, type FavoriteExercise } from "./FavoriteExercisesPicker";
+import { MuscleGroupCombobox } from "./MuscleGroupCombobox";
 import { cn } from "@/lib/utils";
 
 import {
@@ -132,7 +134,7 @@ const formSchema = z.object({
   trainingGoal: z.string().min(1, "To pole jest wymagane"),
   experienceLevel: z.string().min(1, "Poziom doświadczenia jest wymagany"),
   trainingDuration: z.string().optional(),
-  injuryStatus: z.enum(["Brak", "Tak"]).optional(),
+  injuryStatus: z.enum(["Tak", "Nie"]).optional(),
   healthLimitations: z.string().optional(),
   sessionDuration: z.string().min(1, "To pole jest wymagane"),
   preferredMuscles: z.string().optional(),
@@ -282,6 +284,9 @@ export default function SurveyForm() {
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
   const [avoidedExerciseOtherText, setAvoidedExerciseOtherText] = useState("");
   const [avoidedExerciseOtherReason, setAvoidedExerciseOtherReason] = useState("");
+  const [showAvoidedExercises, setShowAvoidedExercises] = useState(false);
+  // ── Favorite exercises state (outside RHF — complex object, joins to string on submit) ─
+  const [selectedFavoriteExercises, setSelectedFavoriteExercises] = useState<FavoriteExercise[]>([]);
 
   useEffect(() => {
     form.setValue("equipment", buildEquipmentString(equipmentItems, equipmentOther));
@@ -315,6 +320,7 @@ export default function SurveyForm() {
       injuryStatus: injuryStatusVal,
       athleteStatus: athleteStatusVal,
       sportPerformanceNeeds: sportNeedsVal,
+      favoriteExercises: _favoriteExercisesRHF, // discarded — driven by picker state
       ...rest
     } = data;
     const avoidsAdvancedMethodsBool =
@@ -333,8 +339,11 @@ export default function SurveyForm() {
       ...rest,
       age: calculateAge(rest.dateOfBirth) ?? undefined,
       injuryStatus: injuryStatusVal,
-      // When "Brak" is selected, clear any leftover text so it's not stored
-      healthLimitations: injuryStatusVal === "Brak" ? "" : rest.healthLimitations,
+      // When "Nie" is selected, clear any leftover text so it's not stored
+      healthLimitations: injuryStatusVal === "Nie" ? "" : rest.healthLimitations,
+      favoriteExercises: selectedFavoriteExercises.length > 0
+        ? selectedFavoriteExercises.map((e) => e.name).join(", ")
+        : undefined,
       athleteStatus: mappedAthleteStatus,
       sportDiscipline: undefined,
       sportPerformanceNeeds: isSportGoalSubmit ? (sportNeedsVal ?? []) : [],
@@ -531,7 +540,7 @@ export default function SurveyForm() {
                       <FormControl>
                         <RadioGroupItem value={goal} className="peer sr-only" />
                       </FormControl>
-                      <FormLabel className="w-full flex items-center justify-center px-6 py-5 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                      <FormLabel className="w-full flex items-center justify-center px-6 py-5 min-h-[72px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
                         {goal}
                       </FormLabel>
                     </FormItem>
@@ -574,7 +583,7 @@ export default function SurveyForm() {
                               <FormControl>
                                 <RadioGroupItem value={opt} className="peer sr-only" />
                               </FormControl>
-                              <FormLabel className="w-full flex items-center justify-center px-5 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium text-sm">
+                              <FormLabel className="w-full flex items-center justify-center px-6 py-5 min-h-[72px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium text-sm">
                                 {opt}
                               </FormLabel>
                             </FormItem>
@@ -643,7 +652,7 @@ export default function SurveyForm() {
                       <FormControl>
                         <RadioGroupItem value={level} className="peer sr-only" />
                       </FormControl>
-                      <FormLabel className="w-full flex flex-col items-center justify-center gap-2 px-6 py-5 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                      <FormLabel className="w-full h-full flex flex-col items-center justify-center gap-2 px-6 py-5 min-h-[140px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
                         <span>{level}</span>
                         <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
                       </FormLabel>
@@ -680,10 +689,7 @@ export default function SurveyForm() {
           {/* Feature 2 — Structured injury / health-limitation capture */}
           <FormField control={form.control} name="injuryStatus" render={({field, fieldState}) => (
             <FormItem className="space-y-4">
-              <FormLabel className="text-muted-foreground">Uraz / ograniczenia zdrowotne *</FormLabel>
-              <FormDescription className="text-xs text-muted-foreground/70">
-                Czy masz jakiekolwiek kontuzje, dolegliwości bólowe lub ograniczenia ruchowe, o których trener powinien wiedzieć?
-              </FormDescription>
+              <FormLabel className="text-muted-foreground">Czy masz jakiekolwiek kontuzje, dolegliwości bólowe lub ograniczenia ruchowe, o których trener powinien wiedzieć? *</FormLabel>
               <FormControl>
                 <RadioGroup
                   onValueChange={(value) => {
@@ -693,12 +699,12 @@ export default function SurveyForm() {
                   value={field.value}
                   className={cn("grid grid-cols-2 gap-4 max-w-sm", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}
                 >
-                  {["Brak", "Tak"].map((opt) => (
+                  {["Tak", "Nie"].map((opt) => (
                     <FormItem key={opt} className="flex items-center space-x-0 space-y-0">
                       <FormControl>
                         <RadioGroupItem value={opt} className="peer sr-only" />
                       </FormControl>
-                      <FormLabel className="w-full flex items-center justify-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                      <FormLabel className="w-full flex items-center justify-center px-6 py-5 min-h-[64px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
                         {opt}
                       </FormLabel>
                     </FormItem>
@@ -710,7 +716,7 @@ export default function SurveyForm() {
           )} />
 
           {/* Conditional description — shown only when "Tak" is selected */}
-          {injuryStatus === "Tak" && (
+            {injuryStatus === "Tak" && (
             <FormField control={form.control} name="healthLimitations" render={({field, fieldState}) => (
               <FormItem className="mt-6">
                 <FormLabel className="text-muted-foreground">Opisz zdrowie i ograniczenia *</FormLabel>
@@ -995,7 +1001,7 @@ export default function SurveyForm() {
                       <FormControl>
                         <RadioGroupItem value={style} className="peer sr-only" />
                       </FormControl>
-                      <FormLabel className="w-full flex flex-col items-center justify-center gap-2 px-6 py-5 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                      <FormLabel className="w-full h-full flex flex-col items-center justify-center gap-2 px-6 py-5 min-h-[120px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
                         <span>{style}</span>
                         <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
                       </FormLabel>
@@ -1026,35 +1032,34 @@ export default function SurveyForm() {
                 </FormItem>
               )} />
             )}
-            {/* ── Ćwiczenia do unikania — widoczne dla wszystkich poziomów ─ */}
+            {/* ── Ćwiczenia do unikania — schowane za togglem ─ */}
             <div className="space-y-1">
-              <label className="text-sm font-medium text-muted-foreground">
-                Czy są ćwiczenia, których nie chcesz wykonywać?
-              </label>
-              <p className="text-xs text-muted-foreground/70">
-                Wyszukaj po nazwie lub opisz ćwiczenie, jeśli nie znasz jego nazwy.
-              </p>
-              <div className="mt-3">
-                <AvoidedExercisesPicker
-                  selectedExercises={selectedExercises}
-                  onSelectedChange={setSelectedExercises}
-                  otherText={avoidedExerciseOtherText}
-                  onOtherTextChange={setAvoidedExerciseOtherText}
-                  otherReason={avoidedExerciseOtherReason}
-                  onOtherReasonChange={setAvoidedExerciseOtherReason}
-                />
-              </div>
-              {/* NOTE (append-only model): each form submission creates a new
-                  survey record — nothing is ever overwritten. The trainer always
-                  sees the data from your most recent submission. If you re-fill
-                  this form and leave the avoided-exercises section blank, the
-                  trainer's view will show an empty list for this field (your
-                  previous answer is still stored in history, but no longer
-                  treated as current). Fill in all relevant fields each time
-                  you submit the form. */}
-              <p className="text-xs text-muted-foreground/60 mt-2">
-                Każde wysłanie formularza tworzy nowy wpis. Trener widzi dane z Twojego ostatniego zgłoszenia — wypełnij wszystkie pola na nowo przy każdej aktualizacji.
-              </p>
+              <button
+                type="button"
+                onClick={() => setShowAvoidedExercises((v) => !v)}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors underline-offset-2 hover:underline"
+              >
+                {showAvoidedExercises ? "▾" : "▸"}
+                Ćwiczenia do unikania
+              </button>
+              {showAvoidedExercises && (
+                <div className="pt-3 space-y-3">
+                  <p className="text-xs text-muted-foreground/70">
+                    Wyszukaj po nazwie lub opisz ćwiczenie, jeśli nie znasz jego nazwy.
+                  </p>
+                  <AvoidedExercisesPicker
+                    selectedExercises={selectedExercises}
+                    onSelectedChange={setSelectedExercises}
+                    otherText={avoidedExerciseOtherText}
+                    onOtherTextChange={setAvoidedExerciseOtherText}
+                    otherReason={avoidedExerciseOtherReason}
+                    onOtherReasonChange={setAvoidedExerciseOtherReason}
+                  />
+                  <p className="text-xs text-muted-foreground/50 mt-1">
+                    Każde wysłanie formularza tworzy nowy wpis. Trener widzi dane z Twojego ostatniego zgłoszenia.
+                  </p>
+                </div>
+              )}
             </div>
 
             {isIntermediateOrAdvanced && (
@@ -1070,44 +1075,60 @@ export default function SurveyForm() {
                     </FormControl>
                   </FormItem>
                 )} />
-                <FormField control={form.control} name="favoriteExercises" render={({field}) => (
-                  <FormItem>
-                    <FormLabel className="text-muted-foreground">Jakie są Twoje ulubione ćwiczenia?</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
-                    </FormControl>
-                  </FormItem>
-                )} />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Jakie są Twoje ulubione ćwiczenia?</label>
+                  <p className="text-xs text-muted-foreground/70">Wyszukaj po nazwie — możesz dodać kilka ćwiczeń.</p>
+                  <FavoriteExercisesPicker
+                    selectedExercises={selectedFavoriteExercises}
+                    onSelectedChange={setSelectedFavoriteExercises}
+                  />
+                </div>
               </>
             )}
           </div>
 
           {isIntermediateOrAdvanced && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-              <FormField control={form.control} name="priorityMuscle1" render={({field}) => (
-                <FormItem>
-                  <FormLabel className="text-muted-foreground">Partia priorytetowa 1</FormLabel>
-                  <FormControl>
-                    <Input placeholder="np. Barki" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
-                  </FormControl>
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="priorityMuscle2" render={({field}) => (
-                <FormItem>
-                  <FormLabel className="text-muted-foreground">Partia priorytetowa 2</FormLabel>
-                  <FormControl>
-                    <Input placeholder="np. Pośladki" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
-                  </FormControl>
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="priorityMuscle3" render={({field}) => (
-                <FormItem>
-                  <FormLabel className="text-muted-foreground">Partia priorytetowa 3</FormLabel>
-                  <FormControl>
-                    <Input placeholder="np. Plecy" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
-                  </FormControl>
-                </FormItem>
-              )} />
+            <div className="space-y-3 mt-12">
+              <p className="text-sm font-medium text-muted-foreground">Partie priorytetowe</p>
+              <p className="text-xs text-muted-foreground/70">Wybierz do 3 partii mięśniowych, na których zależy Ci najbardziej.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField control={form.control} name="priorityMuscle1" render={({field}) => (
+                  <FormItem>
+                    <FormLabel className="text-xs text-muted-foreground/80">Priorytet 1</FormLabel>
+                    <FormControl>
+                      <MuscleGroupCombobox
+                        value={field.value ?? ""}
+                        onChange={field.onChange}
+                        placeholder="np. Barki"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="priorityMuscle2" render={({field}) => (
+                  <FormItem>
+                    <FormLabel className="text-xs text-muted-foreground/80">Priorytet 2</FormLabel>
+                    <FormControl>
+                      <MuscleGroupCombobox
+                        value={field.value ?? ""}
+                        onChange={field.onChange}
+                        placeholder="np. Pośladki"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="priorityMuscle3" render={({field}) => (
+                  <FormItem>
+                    <FormLabel className="text-xs text-muted-foreground/80">Priorytet 3</FormLabel>
+                    <FormControl>
+                      <MuscleGroupCombobox
+                        value={field.value ?? ""}
+                        onChange={field.onChange}
+                        placeholder="np. Plecy"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )} />
+              </div>
             </div>
           )}
 
