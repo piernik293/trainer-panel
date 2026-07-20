@@ -638,7 +638,7 @@ export default function SurveyForm() {
               </FormDescription>
               <FormControl>
                 <Input
-                  placeholder="np. Chcę poprawić kondycję i schudnąć przed latem"
+                  placeholder="np. Chcę poprawić kondycję i schudnąć przed wakacjami"
                   {...field}
                   className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none"
                 />
@@ -954,7 +954,7 @@ export default function SurveyForm() {
               <FormItem className="space-y-4">
                 <FormLabel className="text-muted-foreground">Jaka forma aktywności tlenowej najbardziej Ci odpowiada?</FormLabel>
                 <FormControl>
-                  <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 gap-3">
+                  <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[
                       "Marsz",
                       "Szybki marsz",
