@@ -14,3 +14,4 @@
 - [trainer-app api-zod dependency setup](trainer-app-api-zod-dependency.md) — trainer-app needs explicit package.json dep + tsconfig reference to import from @workspace/api-zod.
 - [Stage 5 consolidation guard](stage5-consolidation-guard.md) — findBestConsolidation must guard against all-targets-resolved; consolidation-only tests require two targets and a tie-breaker setup.
 - [Safety & cardio rules placement](safety-cardio-rules.md) — pain detection + cardio/conditioning rules centralized in safetyAndCardioRules.ts; called from planDraftInputService; results returned as top-level API response fields alongside splitRecommendation.
+- [Athlete and Plyo planning rules](athlete-plyo-rules.md) — eligibility logic, scope boundaries, esbuild Polish-quote bug, Plyo slot structure, new DB columns.

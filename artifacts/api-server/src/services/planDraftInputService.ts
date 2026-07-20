@@ -20,6 +20,7 @@ import {
   getCardioRecommendation,
   getConditioningRecommendation,
 } from "./safetyAndCardioRules";
+import { getAthleteRecommendation, type AthleteRecommendationResult } from "./athleteAndPlyoRules";
 import {
   VALID_EXPERIENCE_LEVELS,
   SPLIT_TYPES,
@@ -128,6 +129,8 @@ export interface PlanDraftInputResult {
   cardioRecommendation: CardioRecommendationType | null;
   /** Conditioning-goal planning note (Feature 4) */
   conditioningRecommendation: ConditioningRecommendationType | null;
+  /** Athlete / sport recommendation — null for non-athlete clients */
+  athleteRecommendation: AthleteRecommendationResult | null;
 }
 
 export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInputResult | null> {
@@ -329,6 +332,9 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     recoveryQuality,
     healthLimitations: survey?.healthLimitations ?? null,
     injuryStatus: validInjuryStatus,
+    athleteStatus: survey?.athleteStatus ?? null,
+    sportDiscipline: survey?.sportDiscipline ?? null,
+    sportPerformanceNeeds: (survey?.sportPerformanceNeeds as string[] | null) ?? [],
     priorityMuscleGroups,
     excludedMuscleGroups,
     preferredExercises: survey?.favoriteExercises ?? null,
@@ -353,6 +359,13 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
 
   const conditioningRecommendation: ConditioningRecommendationType | null =
     getConditioningRecommendation(trainingGoal, availableDays);
+
+  const athleteRecommendation: AthleteRecommendationResult | null = getAthleteRecommendation(
+    survey?.athleteStatus,
+    survey?.sportDiscipline,
+    (survey?.sportPerformanceNeeds as string[] | null) ?? [],
+    rawLevel,
+  );
 
   // ── Default preferences ──────────────────────────────────────────────────────
   const trainingDays = availableDays ?? 3;
@@ -430,5 +443,6 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     safetyAlerts,
     cardioRecommendation,
     conditioningRecommendation,
+    athleteRecommendation,
   };
 }

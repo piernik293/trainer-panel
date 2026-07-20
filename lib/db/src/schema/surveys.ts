@@ -51,6 +51,14 @@ export const surveysTable = pgTable("surveys", {
   // injuryStatus: "Brak" | "Tak"  (null = not answered, legacy data)
   // healthLimitations (see above) stores the description when injuryStatus = "Tak"
   injuryStatus: text("injury_status"),
+  // Athlete / sport status — Feature: athlete-specific survey support
+  // athleteStatus: "Nie" | "Tak — amatorsko" | "Tak — półzawodowo" | "Tak — zawodowo"
+  athleteStatus: text("athlete_status"),
+  // Sport discipline — free text, required when athleteStatus != "Nie"
+  sportDiscipline: text("sport_discipline"),
+  // Sport performance needs — multiselect values from survey
+  // e.g. ["skoczność", "szybkość", "koordynacja", "zmiana kierunku", ...]
+  sportPerformanceNeeds: text("sport_performance_needs").array().notNull().default([]),
   // Ćwiczenia, których klient chce unikać — powiązanie z Exercise Library
   avoidedExerciseIds: integer("avoided_exercise_ids").array().notNull().default([]),
   avoidedExerciseReasons: jsonb("avoided_exercise_reasons").$type<Record<string, string>>().notNull().default({}),

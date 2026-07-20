@@ -206,7 +206,7 @@ export default function Step4Exercises({
   const hasAnyExercise = Object.values(exerciseDraft).some((day) => day.length > 0);
 
   /** V0 session types accepted by POST .../generate-day */
-  const V0_SESSION_TYPES = new Set(["push", "pull", "legs", "upper", "lower"]);
+  const V0_SESSION_TYPES = new Set(["push", "pull", "legs", "upper", "lower", "plyo"]);
 
   /**
    * handleGenerateFromEmpty — true empty-session generator.
@@ -269,7 +269,7 @@ export default function Step4Exercises({
       setAutoFillError(
         errors.length > 0
           ? errors.join("; ")
-          : "Brak dni z obsługiwanym typem sesji (push / pull / legs / upper / lower).",
+          : "Brak dni z obsługiwanym typem sesji (push / pull / legs / upper / lower / plyo).",
       );
       return;
     }

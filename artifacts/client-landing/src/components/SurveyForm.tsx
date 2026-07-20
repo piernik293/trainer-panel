@@ -156,6 +156,15 @@ const formSchema = z.object({
   cardioPreference: z.string().optional(),
   cardioFrequency: z.string().optional(),
   preferredCardioType: z.string().optional(),
+  // Athlete / sport fields
+  athleteStatus: z.enum([
+    "Nie",
+    "Tak — amatorsko",
+    "Tak — półzawodowo",
+    "Tak — zawodowo",
+  ]).optional(),
+  sportDiscipline: z.string().optional(),
+  sportPerformanceNeeds: z.array(z.string()).optional().default([]),
 }).superRefine((data, ctx) => {
   const requiresEquipment = data.trainingLocation === "Dom" || data.trainingLocation === "Siłownia plenerowa";
   if (requiresEquipment && (!data.equipment || data.equipment.trim() === "")) {
@@ -178,6 +187,18 @@ const formSchema = z.object({
       code: z.ZodIssueCode.custom,
       message: "Opisz swoje ograniczenia zdrowotne, kontuzje lub dolegliwości bólowe.",
       path: ["healthLimitations"],
+    });
+  }
+  // Athlete: sportDiscipline required when any "Tak" status is selected
+  const activeAthlete =
+    data.athleteStatus &&
+    data.athleteStatus !== "Nie" &&
+    data.athleteStatus !== undefined;
+  if (activeAthlete && (!data.sportDiscipline || data.sportDiscipline.trim() === "")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Podaj dyscyplinę sportową.",
+      path: ["sportDiscipline"],
     });
   }
 });
@@ -217,6 +238,9 @@ export default function SurveyForm() {
       trainingDuration: "",
       injuryStatus: undefined,
       healthLimitations: "",
+      athleteStatus: undefined,
+      sportDiscipline: "",
+      sportPerformanceNeeds: [],
       sessionDuration: "",
       preferredMuscles: "",
       avoidedMuscles: "",
@@ -242,6 +266,8 @@ export default function SurveyForm() {
 
   const experienceLevel = form.watch("experienceLevel");
   const injuryStatus = form.watch("injuryStatus");
+  const athleteStatus = form.watch("athleteStatus");
+  const isAthleteClient = athleteStatus && athleteStatus !== "Nie";
   const avoidsAdvancedMethods = form.watch("avoidsAdvancedMethods");
   const dateOfBirth = form.watch("dateOfBirth");
   const gender = form.watch("gender");
@@ -292,17 +318,41 @@ export default function SurveyForm() {
     }, 0);
   };
 
+  const SPORT_PERFORMANCE_NEEDS = [
+    "skoczność",
+    "szybkość",
+    "koordynacja",
+    "zmiana kierunku",
+    "wydolność",
+    "prewencja urazów",
+    "dynamika",
+    "stabilizacja / kontrola ruchu",
+  ];
+
   const onSubmit = (data: FormValues) => {
     setShowValidationBanner(false);
-    const { avoidsAdvancedMethods, advancedMethodsToAvoid, injuryStatus: injuryStatusVal, ...rest } = data;
+    const {
+      avoidsAdvancedMethods,
+      advancedMethodsToAvoid,
+      injuryStatus: injuryStatusVal,
+      athleteStatus: athleteStatusVal,
+      sportDiscipline: sportDisciplineVal,
+      sportPerformanceNeeds: sportNeedsVal,
+      ...rest
+    } = data;
     const avoidsAdvancedMethodsBool =
       avoidsAdvancedMethods === "Tak" ? true : avoidsAdvancedMethods === "Nie" ? false : undefined;
+    const isActiveAthlete = athleteStatusVal && athleteStatusVal !== "Nie";
     const payload = {
       ...rest,
       age: calculateAge(rest.dateOfBirth) ?? undefined,
       injuryStatus: injuryStatusVal,
       // When "Brak" is selected, clear any leftover text so it's not stored
       healthLimitations: injuryStatusVal === "Brak" ? "" : rest.healthLimitations,
+      athleteStatus: athleteStatusVal,
+      // Clear sport fields when "Nie" is selected
+      sportDiscipline: isActiveAthlete ? sportDisciplineVal : undefined,
+      sportPerformanceNeeds: isActiveAthlete ? (sportNeedsVal ?? []) : [],
       avoidsAdvancedMethods: avoidsAdvancedMethodsBool,
       advancedMethodsToAvoid: avoidsAdvancedMethodsBool === true ? advancedMethodsToAvoid : [],
       avoidedExerciseIds: selectedExercises.map((e) => e.id),
@@ -1079,6 +1129,105 @@ export default function SurveyForm() {
               </motion.div>
             )}
           </AnimatePresence>
+        </Section>
+
+        {/* ── Sport i aktywność sportowa ────────────────────────────────── */}
+        <Section
+          step={5}
+          title="Sport i aktywność sportowa"
+          description="Informacje o uprawianym sporcie pozwalają uwzględnić w planie elementy wspierające wydolność, koordynację i cechy motoryczne specyficzne dla Twojej dyscypliny."
+        >
+          {/* Required: athlete status */}
+          <FormField control={form.control} name="athleteStatus" render={({field, fieldState}) => (
+            <FormItem className="space-y-4">
+              <FormLabel className="text-muted-foreground">Czy uprawiasz sport? *</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    form.trigger(["athleteStatus", "sportDiscipline"]);
+                  }}
+                  value={field.value}
+                  className={cn(
+                    "grid grid-cols-1 sm:grid-cols-2 gap-3",
+                    fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2"
+                  )}
+                >
+                  {[
+                    "Nie",
+                    "Tak — amatorsko",
+                    "Tak — półzawodowo",
+                    "Tak — zawodowo",
+                  ].map((opt) => (
+                    <FormItem key={opt} className="flex items-center space-x-0 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value={opt} className="peer sr-only" />
+                      </FormControl>
+                      <FormLabel className="w-full flex items-center justify-center px-5 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium text-sm">
+                        {opt}
+                      </FormLabel>
+                    </FormItem>
+                  ))}
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          {/* Conditional: sport discipline + performance needs */}
+          {isAthleteClient && (
+            <div className="space-y-8 mt-2">
+              <FormField control={form.control} name="sportDiscipline" render={({field, fieldState}) => (
+                <FormItem>
+                  <FormLabel className="text-muted-foreground">Jaka dyscyplina sportowa? *</FormLabel>
+                  <FormDescription className="text-xs text-muted-foreground/70">
+                    Np. piłka nożna, koszykówka, siatkówka, tenis, lekkoatletyka, sporty walki, pływanie…
+                  </FormDescription>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="Wpisz dyscyplinę sportową"
+                      className={cn(
+                        "bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none",
+                        fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive"
+                      )}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="sportPerformanceNeeds" render={() => (
+                <FormItem>
+                  <FormLabel className="text-muted-foreground">Co chcesz poprawić najbardziej? (opcjonalne)</FormLabel>
+                  <FormDescription className="text-xs text-muted-foreground/70">
+                    Zaznacz obszary, które są dla Ciebie najważniejsze. Pomogą dobrać odpowiednie elementy treningowe.
+                  </FormDescription>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+                    {SPORT_PERFORMANCE_NEEDS.map((need) => (
+                        <FormField key={need} control={form.control} name="sportPerformanceNeeds" render={({field}) => (
+                          <FormItem className="flex flex-row items-center space-x-4 space-y-0 p-4 border border-white/5 bg-card/50 rounded-none hover:bg-card/80 transition-colors">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(need)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), need])
+                                    : field.onChange((field.value || []).filter((v: string) => v !== need));
+                                }}
+                                className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-white/20 h-5 w-5 rounded-none"
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer text-sm leading-snug flex-1">{need}</FormLabel>
+                          </FormItem>
+                        )} />
+                      ))
+                    }
+                  </div>
+                </FormItem>
+              )} />
+            </div>
+          )}
         </Section>
 
         <Section

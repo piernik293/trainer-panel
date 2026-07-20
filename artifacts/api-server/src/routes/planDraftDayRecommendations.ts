@@ -104,7 +104,7 @@ const QuerySchema = z.object({
    * V0 session type — required when useV0Selector=true.
    * "push" | "pull" | "legs" | "upper" | "lower"
    */
-  v0SessionType: z.enum(["push", "pull", "legs", "upper", "lower"]).optional(),
+  v0SessionType: z.enum(["push", "pull", "legs", "upper", "lower", "plyo"]).optional(),
 });
 
 router.get(

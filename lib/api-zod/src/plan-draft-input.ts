@@ -79,6 +79,27 @@ export const PlanDraftInputWarning = z.object({
 
 export type PlanDraftInputWarningType = z.infer<typeof PlanDraftInputWarning>;
 
+// ─── Athlete recommendation ───────────────────────────────────────────────────
+
+/**
+ * Derived athlete / sport state returned by the API alongside the plan input.
+ *
+ * isAthlete    – the client declared any "Tak" athlete status
+ * plyoRecommended – Plyo session type is appropriate for this client
+ * plyoReason   – trainer-facing explanation of why Plyo was added
+ * plyoSessionLabel – "Plyometria" when recommended, else null
+ */
+export const AthleteRecommendation = z.object({
+  isAthlete: z.literal(true),
+  athleteStatus: z.string(),
+  sportDiscipline: z.string().nullable(),
+  performanceNeeds: z.array(z.string()),
+  plyoRecommended: z.boolean(),
+  plyoReason: z.string().nullable(),
+  plyoSessionLabel: z.string().nullable(),
+});
+export type AthleteRecommendationType = z.infer<typeof AthleteRecommendation>;
+
 // ─── Safety alerts ────────────────────────────────────────────────────────────
 
 /**
@@ -153,6 +174,18 @@ export const PlanDraftGenerationInput = z.object({
    * null = field not answered (legacy surveys before this field was added).
    */
   injuryStatus: z.enum(["Brak", "Tak"]).nullable(),
+
+  // Athlete / sport fields (Feature: athlete-specific survey support)
+  /**
+   * "Nie" = not an athlete.
+   * "Tak — amatorsko" / "Tak — półzawodowo" / "Tak — zawodowo" = active sport.
+   * null = not answered (legacy surveys).
+   */
+  athleteStatus: z.string().nullable(),
+  /** Sport discipline — free text; non-null when athleteStatus is any "Tak". */
+  sportDiscipline: z.string().nullable(),
+  /** Selected performance needs (skoczność, szybkość, koordynacja, …). */
+  sportPerformanceNeeds: z.array(z.string()),
 
   // Priorities and preferences
   priorityMuscleGroups: z.array(z.string()),
@@ -272,6 +305,11 @@ export const GetClientPlanDraftInputResponse = z.object({
   cardioRecommendation: CardioRecommendation.nullable(),
   /** Conditioning-goal planning note — present when goal is "Poprawa kondycji" (Feature 4) */
   conditioningRecommendation: ConditioningRecommendation.nullable(),
+  /**
+   * Athlete / sport recommendation — present when the client declared any "Tak" athlete status.
+   * null for general-population non-athlete clients.
+   */
+  athleteRecommendation: AthleteRecommendation.nullable(),
 });
 
 export type GetClientPlanDraftInputResponseType = z.infer<typeof GetClientPlanDraftInputResponse>;

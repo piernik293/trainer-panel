@@ -72,6 +72,7 @@ import {
   Loader2,
   HeartPulse,
   Activity,
+  Trophy,
 } from "lucide-react";
 import Step4Exercises from "./Step4Exercises";
 import Step5Preview from "./Step5Preview";
@@ -293,6 +294,42 @@ function HealthLimitationBanner({ healthText }: { healthText: string | null }) {
 }
 
 /**
+ * INDIGO — athlete / sport info + Plyo recommendation (athlete-specific survey support).
+ */
+function AthletePlyoBanner({ athleteRec }: {
+  athleteRec: {
+    athleteStatus: string;
+    sportDiscipline: string | null;
+    performanceNeeds: string[];
+    plyoRecommended: boolean;
+    plyoReason: string | null;
+  };
+}) {
+  return (
+    <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-4 space-y-2">
+      <div className="flex items-center gap-2">
+        <Trophy size={15} className="text-indigo-600 shrink-0" />
+        <span className="font-semibold text-indigo-700 text-sm">Klient uprawia sport</span>
+      </div>
+      <div className="text-sm text-indigo-700 space-y-0.5">
+        {athleteRec.sportDiscipline && (
+          <p>Sport: <span className="font-medium">{athleteRec.sportDiscipline}</span></p>
+        )}
+        <p>Status: <span className="font-medium">{athleteRec.athleteStatus}</span></p>
+        {athleteRec.performanceNeeds.length > 0 && (
+          <p>Cele sportowe: <span className="font-medium">{athleteRec.performanceNeeds.join(", ")}</span></p>
+        )}
+      </div>
+      {athleteRec.plyoRecommended && athleteRec.plyoReason && (
+        <div className="text-sm text-indigo-700 bg-indigo-100 rounded px-3 py-2 leading-snug">
+          {athleteRec.plyoReason}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * INFO — cardio / steps recommendation (Feature 3) and conditioning note (Feature 4).
  */
 function CardioConditioningBanner({
@@ -336,10 +373,20 @@ function Step1Summary({
     safetyAlerts?: { painDetected: boolean; hasHealthLimitation: boolean; healthText: string | null } | null;
     cardioRecommendation?: { type: string; text: string; reason: string } | null;
     conditioningRecommendation?: { text: string } | null;
+    athleteRecommendation?: {
+      isAthlete: true;
+      athleteStatus: string;
+      sportDiscipline: string | null;
+      performanceNeeds: string[];
+      plyoRecommended: boolean;
+      plyoReason: string | null;
+      plyoSessionLabel: string | null;
+    } | null;
   };
   const safetyAlerts = d.safetyAlerts ?? null;
   const cardioRecommendation = d.cardioRecommendation ?? null;
   const conditioningRecommendation = d.conditioningRecommendation ?? null;
+  const athleteRecommendation = d.athleteRecommendation ?? null;
 
   const showPainAlert = safetyAlerts?.painDetected === true;
   const showHealthAlert = safetyAlerts?.hasHealthLimitation === true && !showPainAlert;
@@ -354,6 +401,11 @@ function Step1Summary({
 
   return (
     <div className="space-y-4">
+      {/* Athlete / sport info + Plyo recommendation */}
+      {athleteRecommendation?.isAthlete && (
+        <AthletePlyoBanner athleteRec={athleteRecommendation} />
+      )}
+
       {/* Feature 1 — RED pain alert (highest priority, always at top) */}
       {showPainAlert && (
         <PainAlertBanner healthText={safetyAlerts?.healthText ?? null} />

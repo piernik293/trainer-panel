@@ -32,7 +32,7 @@ import type {
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
-export type V0SessionType = "push" | "pull" | "legs" | "upper" | "lower";
+export type V0SessionType = "push" | "pull" | "legs" | "upper" | "lower" | "plyo";
 
 export interface V0Result {
   exercises: DayRecommendationExercise[];
@@ -1126,6 +1126,83 @@ export function runExerciseSelectionEngineV0(
       if (s4Calves !== null) {
         pick("Core", false, (ex) => muscle(ex, "Brzuch"));
       }
+      break;
+    }
+
+    // ── PLYO (Plyometria) ─────────────────────────────────────────────────────
+    //
+    // Athletic-support session for sport-performing clients.
+    // IMPORTANT — scope rules:
+    //   • Plyo is NOT a bodybuilding split and is NOT a legs replacement.
+    //   • It is an additional session that coexists with full_body / upper_lower /
+    //     push_pull_legs (e.g. FBW + Plyo, Upper/Lower + Plyo support day).
+    //   • Only offered when athlete-support logic is active (see athleteAndPlyoRules.ts).
+    //
+    // Session structure (logical order — mirrors the spec):
+    //   1. Lower-body explosive compound  → reactive / jumping qualities
+    //   2. Hip-hinge compound             → deceleration / eccentric / landing mechanics
+    //   3. Calves / reactive lower chain  → tendon stiffness, ankle reactivity
+    //   4. (opt) Second lower accessory   → supplementary athletic quality work
+    //   5. (opt) Core / trunk             → always last; stabilisation for reactive movements
+    //
+    // The exact exercise inventory depends on what is in the DB.
+    // Exercises tagged with higher exercisePriority / lower learningDifficulty
+    // naturally rank ahead via the existing sort — no special scoring is needed.
+    case "plyo": {
+      // Slot 1: Explosive knee-dominant compound (squat / lunge family).
+      // Provides the primary reactive / jumping stimulus.
+      pick(
+        "Explosive lower compound",
+        true,
+        (ex) =>
+          muscle(ex, "Uda", "Pośladki") &&
+          compound(ex) &&
+          pattern(ex, "Dominacja kolana"),
+        { protected: true },
+      );
+
+      // Slot 2: Hip-hinge compound — deceleration, landing mechanics, posterior chain.
+      // RDL / hinge patterns load the posterior chain eccentrically, which is
+      // central to landing quality and injury-prevention in reactive sports.
+      pick(
+        "Hip-hinge deceleration compound",
+        true,
+        (ex) =>
+          muscle(ex, "Uda", "Pośladki", "Plecy") &&
+          compound(ex) &&
+          pattern(ex, "Zawias biodrowy"),
+        { protected: true },
+      );
+
+      // Slot 3: Calves / reactive lower chain.
+      // Calf raises and similar exercises build ankle stiffness and tendon
+      // capacity — critical for hopping, cutting, and change-of-direction quality.
+      // Falls back to any non-compound lower accessory if calves pool is empty.
+      const plyoS3 = pick(
+        "Calves / reactive lower chain",
+        false,
+        (ex) => muscle(ex, "Łydki"),
+      );
+      if (!plyoS3) {
+        pick(
+          "Lower accessory fallback",
+          true,
+          (ex) => muscle(ex, "Uda", "Pośladki") && !compound(ex),
+        );
+      }
+
+      // Slot 4 (optional): Second lower-body accessory for supplementary
+      // athletic quality work (additional hip / quad / calf variety).
+      pick(
+        "Lower body accessory",
+        false,
+        (ex) => muscle(ex, "Uda", "Pośladki", "Łydki"),
+      );
+
+      // Slot 5 (optional): Core / trunk — always last.
+      // Trunk control is essential for all reactive movements; even a single
+      // core exercise meaningfully supports athletic performance.
+      pick("Core", false, (ex) => muscle(ex, "Brzuch"));
       break;
     }
   }

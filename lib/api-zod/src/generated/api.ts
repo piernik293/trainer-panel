@@ -564,6 +564,10 @@ export const SubmitPublicSurveyBody = zod.object({
   // NOTE: injuryStatus added manually (not auto-generated from OpenAPI spec).
   // "Brak" = no limitations; "Tak" = limitations present → healthLimitations is required.
   "injuryStatus": zod.enum(["Brak", "Tak"]).optional(),
+  // NOTE: athlete/sport fields added manually (not auto-generated from OpenAPI spec).
+  "athleteStatus": zod.string().optional(),
+  "sportDiscipline": zod.string().optional(),
+  "sportPerformanceNeeds": zod.array(zod.string()).optional(),
   "firstName": zod.string().min(1),
   "lastName": zod.string().min(1),
   "email": zod.string().min(1),
