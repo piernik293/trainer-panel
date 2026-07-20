@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -40,6 +40,9 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { ArrowLeft, Save } from "lucide-react";
+import { MuscleGroupCombobox } from "@/components/MuscleGroupCombobox";
+import { FavoriteExercisesPicker, type FavoriteExercise } from "@/components/FavoriteExercisesPicker";
+import { AvoidedExercisesPicker, type AvoidedExercise } from "@/components/AvoidedExercisesPicker";
 import { useToast } from "@/hooks/use-toast";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -312,6 +315,26 @@ function SurveyFormBody({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [equipmentItems, equipmentOther]);
 
+  // ── Exercise picker state ──
+  // Mirrors the client-side pattern: structured arrays managed outside RHF.
+  // Saved as both the legacy string fields (for older code) and the structured
+  // avoidedExerciseIds / avoidedExerciseReasons fields in the upsert payload.
+  const [selectedFavoriteExercises, setSelectedFavoriteExercises] = useState<FavoriteExercise[]>([]);
+  const [selectedAvoidedExercises, setSelectedAvoidedExercises] = useState<AvoidedExercise[]>([]);
+  // Guard so we only run the initialization once per survey load.
+  const exercisePickerInitialized = useRef(false);
+  useEffect(() => {
+    if (exercisePickerInitialized.current) return;
+    exercisePickerInitialized.current = true;
+    // Favorites: kept as string "Name A, Name B" in legacy storage.
+    // We can't reliably recover IDs from names, so the picker starts empty
+    // and the legacy string is shown as a hint below the picker.
+    setSelectedFavoriteExercises([]);
+    // Avoided: same — picker starts empty; old string shown as hint.
+    setSelectedAvoidedExercises([]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Submit ──
   const onSubmit = (data: SurveyFormValues) => {
     const avoidsAdvancedMethodsBool =
@@ -321,6 +344,31 @@ function SurveyFormBody({
         ? false
         : undefined;
     const isSportGoalSubmit = data.trainingGoal === "Cel sportowy";
+
+    // Serialize exercise picker state → string + structured ID fields.
+    // If the picker is empty (trainer didn't update it), preserve the old
+    // string value so previous entries aren't wiped on save.
+    const favoritesString =
+      selectedFavoriteExercises.length > 0
+        ? selectedFavoriteExercises.map((e) => e.name).join(", ")
+        : (data.favoriteExercises ?? "");
+    const avoidedString =
+      selectedAvoidedExercises.length > 0
+        ? selectedAvoidedExercises.map((e) => e.name).join(", ")
+        : (data.avoidedExercises ?? "");
+    const avoidedIds =
+      selectedAvoidedExercises.length > 0
+        ? selectedAvoidedExercises.map((e) => e.id)
+        : undefined;
+    const avoidedReasons =
+      selectedAvoidedExercises.length > 0
+        ? Object.fromEntries(
+            selectedAvoidedExercises
+              .filter((e) => e.reason)
+              .map((e) => [String(e.id), e.reason]),
+          )
+        : undefined;
+
     const payload = {
       ...data,
       gender: data.gender || undefined,
@@ -345,6 +393,11 @@ function SurveyFormBody({
       avoidsAdvancedMethods: avoidsAdvancedMethodsBool,
       advancedMethodsToAvoid:
         avoidsAdvancedMethodsBool === true ? data.advancedMethodsToAvoid : [],
+      // Exercise picker output
+      favoriteExercises: favoritesString,
+      avoidedExercises: avoidedString,
+      avoidedExerciseIds: avoidedIds,
+      avoidedExerciseReasons: avoidedReasons,
     };
     upsertSurvey.mutate(
       {
@@ -943,11 +996,12 @@ function SurveyFormBody({
                                     Priorytet {i + 1}
                                   </FormLabel>
                                   <FormControl>
-                                    <Input
+                                    <MuscleGroupCombobox
+                                      value={field.value ?? ""}
+                                      onChange={field.onChange}
                                       placeholder={
                                         ["np. Barki", "np. Pośladki", "np. Plecy"][i]
                                       }
-                                      {...field}
                                     />
                                   </FormControl>
                                   <FormMessage />
@@ -961,44 +1015,44 @@ function SurveyFormBody({
 
                     {/* Ćwiczenia */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="favoriteExercises"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Ulubione ćwiczenia</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="np. Martwy ciąg, Wyciskanie sztangielek"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
+                      {/* Ulubione ćwiczenia — exercise search picker */}
+                      <div className="space-y-1.5">
+                        <p className="text-sm font-medium leading-none">Ulubione ćwiczenia</p>
+                        <FavoriteExercisesPicker
+                          selectedExercises={selectedFavoriteExercises}
+                          onSelectedChange={setSelectedFavoriteExercises}
+                        />
+                        {/* Legacy hint: show old string when picker is empty */}
+                        {selectedFavoriteExercises.length === 0 &&
+                          !!form.getValues("favoriteExercises") && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Poprzedni zapis:{" "}
+                            <span className="italic">{form.getValues("favoriteExercises")}</span>
+                            {" "}— użyj wyszukiwarki, aby zastąpić.
+                          </p>
                         )}
-                      />
+                      </div>
 
-                      <FormField
-                        control={form.control}
-                        name="avoidedExercises"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              Ćwiczenia do unikania
-                            </FormLabel>
-                            <FormDescription className="text-xs">
-                              Wyszukaj po nazwie lub opisz ćwiczenie.
-                            </FormDescription>
-                            <FormControl>
-                              <Input
-                                placeholder="np. Przysiady ze sztangą (ból pleców)"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
+                      {/* Ćwiczenia do unikania — exercise search picker */}
+                      <div className="space-y-1.5">
+                        <p className="text-sm font-medium leading-none">Ćwiczenia do unikania</p>
+                        <p className="text-xs text-muted-foreground">
+                          Wyszukaj po nazwie i opcjonalnie dodaj powód.
+                        </p>
+                        <AvoidedExercisesPicker
+                          selectedExercises={selectedAvoidedExercises}
+                          onSelectedChange={setSelectedAvoidedExercises}
+                        />
+                        {/* Legacy hint: show old string when picker is empty */}
+                        {selectedAvoidedExercises.length === 0 &&
+                          !!form.getValues("avoidedExercises") && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Poprzedni zapis:{" "}
+                            <span className="italic">{form.getValues("avoidedExercises")}</span>
+                            {" "}— użyj wyszukiwarki, aby zastąpić.
+                          </p>
                         )}
-                      />
+                      </div>
                     </div>
 
                     {/* Metody intensyfikacji */}
