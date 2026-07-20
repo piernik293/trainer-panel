@@ -16,6 +16,11 @@ import {
 } from "./equipmentNormalizer";
 import { recommendSplit } from "./splitRecommendationService";
 import {
+  getHealthAlertState,
+  getCardioRecommendation,
+  getConditioningRecommendation,
+} from "./safetyAndCardioRules";
+import {
   VALID_EXPERIENCE_LEVELS,
   SPLIT_TYPES,
   SPLIT_TYPE_LABELS,
@@ -27,6 +32,9 @@ import {
   type SplitType,
   type GetClientPlanDraftInputResponseType,
   type SplitRecommendationType,
+  type HealthAlertStateType,
+  type CardioRecommendationType,
+  type ConditioningRecommendationType,
 } from "@workspace/api-zod";
 
 // ─── Experience level validation ──────────────────────────────────────────────
@@ -114,6 +122,12 @@ export interface PlanDraftInputResult {
   allowedSplitTypes: SplitType[];
   blockDurationRange: { min: number; max: number; default: number };
   splitRecommendation: SplitRecommendationType | null;
+  /** Derived safety alert state — pain detection + health limitation presence (Features 1 & 2) */
+  safetyAlerts: HealthAlertStateType | null;
+  /** Mandatory cardio / steps recommendation for sedentary or fat-loss clients (Feature 3) */
+  cardioRecommendation: CardioRecommendationType | null;
+  /** Conditioning-goal planning note (Feature 4) */
+  conditioningRecommendation: ConditioningRecommendationType | null;
 }
 
 export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInputResult | null> {
@@ -296,6 +310,10 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
   }
 
   // ── Compose input ────────────────────────────────────────────────────────────
+  const rawInjuryStatus = survey?.injuryStatus ?? null;
+  const validInjuryStatus: "Brak" | "Tak" | null =
+    rawInjuryStatus === "Brak" || rawInjuryStatus === "Tak" ? rawInjuryStatus : null;
+
   const input: PlanDraftGenerationInputType = {
     clientId,
     experienceLevel,
@@ -310,6 +328,7 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     stressLevel,
     recoveryQuality,
     healthLimitations: survey?.healthLimitations ?? null,
+    injuryStatus: validInjuryStatus,
     priorityMuscleGroups,
     excludedMuscleGroups,
     preferredExercises: survey?.favoriteExercises ?? null,
@@ -317,6 +336,23 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     avoidedExerciseReasons,
     avoidedExerciseOtherText,
   };
+
+  // ── Safety alerts & cardio / conditioning rules ──────────────────────────────
+  //
+  // All helpers receive only the relevant data fields — never arbitrary free text.
+  const safetyAlerts: HealthAlertStateType | null = survey
+    ? getHealthAlertState(survey.healthLimitations, survey.injuryStatus)
+    : null;
+
+  const cardioRecommendation: CardioRecommendationType | null = getCardioRecommendation(
+    trainingGoal,
+    dailyActivity,
+    availableDays,
+    rawLevel,
+  );
+
+  const conditioningRecommendation: ConditioningRecommendationType | null =
+    getConditioningRecommendation(trainingGoal, availableDays);
 
   // ── Default preferences ──────────────────────────────────────────────────────
   const trainingDays = availableDays ?? 3;
@@ -391,5 +427,8 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     allowedSplitTypes,
     blockDurationRange: { min: 4, max: 12, default: 6 },
     splitRecommendation,
+    safetyAlerts,
+    cardioRecommendation,
+    conditioningRecommendation,
   };
 }

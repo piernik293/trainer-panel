@@ -561,6 +561,9 @@ export const submitPublicSurveyBodyStressLevelMax = 10;
 
 
 export const SubmitPublicSurveyBody = zod.object({
+  // NOTE: injuryStatus added manually (not auto-generated from OpenAPI spec).
+  // "Brak" = no limitations; "Tak" = limitations present → healthLimitations is required.
+  "injuryStatus": zod.enum(["Brak", "Tak"]).optional(),
   "firstName": zod.string().min(1),
   "lastName": zod.string().min(1),
   "email": zod.string().min(1),

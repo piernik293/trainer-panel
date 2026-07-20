@@ -133,6 +133,7 @@ const formSchema = z.object({
   trainingGoalOther: z.string().optional(),
   experienceLevel: z.string().min(1, "Poziom doświadczenia jest wymagany"),
   trainingDuration: z.string().optional(),
+  injuryStatus: z.enum(["Brak", "Tak"]).optional(),
   healthLimitations: z.string().optional(),
   sessionDuration: z.string().min(1, "To pole jest wymagane"),
   preferredMuscles: z.string().optional(),
@@ -171,6 +172,14 @@ const formSchema = z.object({
       path: ["trainingGoalOther"],
     });
   }
+  // Feature 2: when injuryStatus = "Tak" the description is mandatory
+  if (data.injuryStatus === "Tak" && (!data.healthLimitations || data.healthLimitations.trim() === "")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Opisz swoje ograniczenia zdrowotne, kontuzje lub dolegliwości bólowe.",
+      path: ["healthLimitations"],
+    });
+  }
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -206,6 +215,7 @@ export default function SurveyForm() {
       trainingGoalOther: "",
       experienceLevel: "",
       trainingDuration: "",
+      injuryStatus: undefined,
       healthLimitations: "",
       sessionDuration: "",
       preferredMuscles: "",
@@ -231,6 +241,7 @@ export default function SurveyForm() {
   });
 
   const experienceLevel = form.watch("experienceLevel");
+  const injuryStatus = form.watch("injuryStatus");
   const avoidsAdvancedMethods = form.watch("avoidsAdvancedMethods");
   const dateOfBirth = form.watch("dateOfBirth");
   const gender = form.watch("gender");
@@ -283,12 +294,15 @@ export default function SurveyForm() {
 
   const onSubmit = (data: FormValues) => {
     setShowValidationBanner(false);
-    const { avoidsAdvancedMethods, advancedMethodsToAvoid, ...rest } = data;
+    const { avoidsAdvancedMethods, advancedMethodsToAvoid, injuryStatus: injuryStatusVal, ...rest } = data;
     const avoidsAdvancedMethodsBool =
       avoidsAdvancedMethods === "Tak" ? true : avoidsAdvancedMethods === "Nie" ? false : undefined;
     const payload = {
       ...rest,
       age: calculateAge(rest.dateOfBirth) ?? undefined,
+      injuryStatus: injuryStatusVal,
+      // When "Brak" is selected, clear any leftover text so it's not stored
+      healthLimitations: injuryStatusVal === "Brak" ? "" : rest.healthLimitations,
       avoidsAdvancedMethods: avoidsAdvancedMethodsBool,
       advancedMethodsToAvoid: avoidsAdvancedMethodsBool === true ? advancedMethodsToAvoid : [],
       avoidedExerciseIds: selectedExercises.map((e) => e.id),
@@ -561,17 +575,60 @@ export default function SurveyForm() {
           title="Zdrowie i ograniczenia"
           description="Informacje o kontuzjach i dolegliwościach są kluczowe dla bezpieczeństwa — pozwalają wykluczyć ryzykowne ćwiczenia i dobrać bezpieczne alternatywy."
         >
-          <FormField control={form.control} name="healthLimitations" render={({field}) => (
-            <FormItem>
-              <FormLabel className="text-muted-foreground">Czy występują u Ciebie kontuzje, dolegliwości bólowe lub ograniczenia ruchowe, które trener powinien uwzględnić podczas układania planu?</FormLabel>
+          {/* Feature 2 — Structured injury / health-limitation capture */}
+          <FormField control={form.control} name="injuryStatus" render={({field, fieldState}) => (
+            <FormItem className="space-y-4">
+              <FormLabel className="text-muted-foreground">Uraz / ograniczenia zdrowotne *</FormLabel>
               <FormDescription className="text-xs text-muted-foreground/70">
-                Przykłady: ból kolan, ból barków, ból odcinka lędźwiowego, strzelający łokieć, problemy z nadgarstkami, ograniczona ruchomość, przebyte operacje, inne przewlekłe dolegliwości.
+                Czy masz jakiekolwiek kontuzje, dolegliwości bólowe lub ograniczenia ruchowe, o których trener powinien wiedzieć?
               </FormDescription>
               <FormControl>
-                <Textarea placeholder="Brak / Opisz krótko" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[80px] p-4 rounded-none resize-y" />
+                <RadioGroup
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    form.trigger(["injuryStatus", "healthLimitations"]);
+                  }}
+                  value={field.value}
+                  className={cn("grid grid-cols-2 gap-4 max-w-sm", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}
+                >
+                  {["Brak", "Tak"].map((opt) => (
+                    <FormItem key={opt} className="flex items-center space-x-0 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value={opt} className="peer sr-only" />
+                      </FormControl>
+                      <FormLabel className="w-full flex items-center justify-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                        {opt}
+                      </FormLabel>
+                    </FormItem>
+                  ))}
+                </RadioGroup>
               </FormControl>
+              <FormMessage />
             </FormItem>
           )} />
+
+          {/* Conditional description — shown only when "Tak" is selected */}
+          {injuryStatus === "Tak" && (
+            <FormField control={form.control} name="healthLimitations" render={({field, fieldState}) => (
+              <FormItem className="mt-6">
+                <FormLabel className="text-muted-foreground">Opisz zdrowie i ograniczenia *</FormLabel>
+                <FormDescription className="text-xs text-muted-foreground/70">
+                  Przykłady: ból kolan, ból barków, ból odcinka lędźwiowego, strzelający łokieć, problemy z nadgarstkami, ograniczona ruchomość, przebyte operacje, inne przewlekłe dolegliwości.
+                </FormDescription>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    placeholder="Opisz krótko swoje kontuzje, dolegliwości lub ograniczenia ruchowe..."
+                    className={cn(
+                      "bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y",
+                      fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive"
+                    )}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
         </Section>
 
         <Section

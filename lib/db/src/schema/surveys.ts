@@ -47,6 +47,10 @@ export const surveysTable = pgTable("surveys", {
   preferredCardioType: text("preferred_cardio_type"),
   // Czy klient ma przeciwwskazania do metod intensyfikacji (pytanie tak/nie, poprzedzające listę checkboxów)
   avoidsAdvancedMethods: boolean("avoids_advanced_methods"),
+  // Uraz / ograniczenia zdrowotne — structured yes/no + free-text description
+  // injuryStatus: "Brak" | "Tak"  (null = not answered, legacy data)
+  // healthLimitations (see above) stores the description when injuryStatus = "Tak"
+  injuryStatus: text("injury_status"),
   // Ćwiczenia, których klient chce unikać — powiązanie z Exercise Library
   avoidedExerciseIds: integer("avoided_exercise_ids").array().notNull().default([]),
   avoidedExerciseReasons: jsonb("avoided_exercise_reasons").$type<Record<string, string>>().notNull().default({}),

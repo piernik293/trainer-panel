@@ -79,6 +79,40 @@ export const PlanDraftInputWarning = z.object({
 
 export type PlanDraftInputWarningType = z.infer<typeof PlanDraftInputWarning>;
 
+// ─── Safety alerts ────────────────────────────────────────────────────────────
+
+/**
+ * Derived safety state from the client's health fields.
+ *   painDetected        – pain keywords found in health-related text
+ *   hasHealthLimitation – any health limitation present (injuryStatus="Tak" or non-empty text)
+ *   healthText          – the raw health limitation description, or null
+ */
+export const HealthAlertState = z.object({
+  painDetected: z.boolean(),
+  hasHealthLimitation: z.boolean(),
+  healthText: z.string().nullable(),
+});
+export type HealthAlertStateType = z.infer<typeof HealthAlertState>;
+
+// ─── Cardio / steps recommendation ───────────────────────────────────────────
+
+export const CardioRecommendation = z.object({
+  /** "cardio_day" = extra training day as cardio; "steps" = daily step target */
+  type: z.enum(["cardio_day", "steps"]),
+  /** Human-readable recommendation text for the trainer */
+  text: z.string(),
+  reason: z.enum(["sedentary", "fat_loss", "sedentary_and_fat_loss"]),
+});
+export type CardioRecommendationType = z.infer<typeof CardioRecommendation>;
+
+// ─── Conditioning-goal recommendation ────────────────────────────────────────
+
+export const ConditioningRecommendation = z.object({
+  /** Human-readable note about required FBW + cardio structure */
+  text: z.string(),
+});
+export type ConditioningRecommendationType = z.infer<typeof ConditioningRecommendation>;
+
 // ─── Core input (normalized from survey) ─────────────────────────────────────
 
 export const PlanDraftGenerationInput = z.object({
@@ -105,8 +139,14 @@ export const PlanDraftGenerationInput = z.object({
   stressLevel: z.number().int().min(1).max(10).nullable(),
   recoveryQuality: z.enum(["excellent", "good", "standard", "poor"]).nullable(),
 
-  // Health
+  // Health — raw fields
   healthLimitations: z.string().nullable(),
+  /**
+   * Structured injury / health-limitation status captured in the survey.
+   * "Brak" = no limitations, "Tak" = limitations present (see healthLimitations).
+   * null = field not answered (legacy surveys before this field was added).
+   */
+  injuryStatus: z.enum(["Brak", "Tak"]).nullable(),
 
   // Priorities and preferences
   priorityMuscleGroups: z.array(z.string()),
@@ -220,6 +260,12 @@ export const GetClientPlanDraftInputResponse = z.object({
     default: z.number(),
   }),
   splitRecommendation: SplitRecommendation.nullable(),
+  /** Derived safety alert state from the client's health / injury fields (Feature 1 & 2) */
+  safetyAlerts: HealthAlertState.nullable(),
+  /** Mandatory cardio / steps recommendation for sedentary or fat-loss cases (Feature 3) */
+  cardioRecommendation: CardioRecommendation.nullable(),
+  /** Conditioning-goal planning note — present when goal is "Poprawa kondycji" (Feature 4) */
+  conditioningRecommendation: ConditioningRecommendation.nullable(),
 });
 
 export type GetClientPlanDraftInputResponseType = z.infer<typeof GetClientPlanDraftInputResponse>;

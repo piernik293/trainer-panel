@@ -70,6 +70,8 @@ import {
   Plus,
   RotateCcw,
   Loader2,
+  HeartPulse,
+  Activity,
 } from "lucide-react";
 import Step4Exercises from "./Step4Exercises";
 import Step5Preview from "./Step5Preview";
@@ -236,6 +238,89 @@ function LockedStepPlaceholder({ step }: { step: number }) {
   );
 }
 
+// ─── Safety alert banners (Features 1, 2, 3, 4) ──────────────────────────────
+
+/**
+ * RED — pain keywords detected in health-related text.
+ * Trainer warning only — no diagnosis, no automatic exercise blocking.
+ */
+function PainAlertBanner({ healthText }: { healthText: string | null }) {
+  return (
+    <div className="rounded-lg border-2 border-red-500 bg-red-50 px-4 py-4 space-y-2">
+      <div className="flex items-center gap-2">
+        <HeartPulse size={18} className="text-red-600 shrink-0" />
+        <span className="font-semibold text-red-700 text-sm">
+          Zwróć uwagę: klient zgłasza ból
+        </span>
+      </div>
+      {healthText && (
+        <p className="text-sm text-red-700 bg-red-100 rounded px-3 py-2 leading-snug">
+          &ldquo;{healthText}&rdquo;
+        </p>
+      )}
+      <ul className="text-sm text-red-700 space-y-1 pl-1 list-disc list-inside">
+        <li>Zwróć uwagę na ćwiczenia, które mogą pogłębić ból.</li>
+        <li>Zwróć uwagę na ćwiczenia, które mogą poprawić samopoczucie lub zmniejszyć dolegliwości, jeśli są dobrze tolerowane.</li>
+        <li>W przypadku utrzymującego się bólu skieruj klienta do fizjoterapeuty.</li>
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * YELLOW — health limitation declared without pain keywords.
+ * Less severe than RED — shows the client's description prominently.
+ */
+function HealthLimitationBanner({ healthText }: { healthText: string | null }) {
+  return (
+    <div className="rounded-lg border-2 border-amber-400 bg-amber-50 px-4 py-4 space-y-2">
+      <div className="flex items-center gap-2">
+        <AlertTriangle size={16} className="text-amber-600 shrink-0" />
+        <span className="font-semibold text-amber-700 text-sm">
+          Uwaga: zgłoszono zdrowie / ograniczenia
+        </span>
+      </div>
+      {healthText && (
+        <p className="text-sm text-amber-800 bg-amber-100 rounded px-3 py-2 leading-snug">
+          &ldquo;{healthText}&rdquo;
+        </p>
+      )}
+      <p className="text-xs text-amber-700">
+        Uwzględnij te informacje przy doborze ćwiczeń i obciążeń.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * INFO — cardio / steps recommendation (Feature 3) and conditioning note (Feature 4).
+ */
+function CardioConditioningBanner({
+  cardioText,
+  conditioningText,
+}: {
+  cardioText: string | null;
+  conditioningText: string | null;
+}) {
+  if (!cardioText && !conditioningText) return null;
+  return (
+    <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-4 space-y-2">
+      <div className="flex items-center gap-2">
+        <Activity size={15} className="text-blue-600 shrink-0" />
+        <span className="font-semibold text-blue-700 text-sm">
+          Rekomendacje aktywności
+        </span>
+      </div>
+      {cardioText && (
+        <p className="text-sm text-blue-700 leading-snug">{cardioText}</p>
+      )}
+      {conditioningText && (
+        <p className="text-sm text-blue-700 leading-snug">{conditioningText}</p>
+      )}
+    </div>
+  );
+}
+
 // ─── Step 1 — Client & data summary ──────────────────────────────────────────
 
 function Step1Summary({
@@ -246,6 +331,20 @@ function Step1Summary({
   const { input, sources, warnings } = data;
   const hasBlockingWarnings = warnings.some((w) => w.blocking);
 
+  // Safety alerts and recommendations from the API (new fields — cast for TS compatibility)
+  const d = data as unknown as {
+    safetyAlerts?: { painDetected: boolean; hasHealthLimitation: boolean; healthText: string | null } | null;
+    cardioRecommendation?: { type: string; text: string; reason: string } | null;
+    conditioningRecommendation?: { text: string } | null;
+  };
+  const safetyAlerts = d.safetyAlerts ?? null;
+  const cardioRecommendation = d.cardioRecommendation ?? null;
+  const conditioningRecommendation = d.conditioningRecommendation ?? null;
+
+  const showPainAlert = safetyAlerts?.painDetected === true;
+  const showHealthAlert = safetyAlerts?.hasHealthLimitation === true && !showPainAlert;
+  const showCardioNote = !!(cardioRecommendation?.text || conditioningRecommendation?.text);
+
   const recoveryLabels: Record<string, string> = {
     excellent: "Doskonała",
     good: "Dobra",
@@ -255,6 +354,24 @@ function Step1Summary({
 
   return (
     <div className="space-y-4">
+      {/* Feature 1 — RED pain alert (highest priority, always at top) */}
+      {showPainAlert && (
+        <PainAlertBanner healthText={safetyAlerts?.healthText ?? null} />
+      )}
+
+      {/* Feature 2 — YELLOW health limitation alert */}
+      {showHealthAlert && (
+        <HealthLimitationBanner healthText={safetyAlerts?.healthText ?? null} />
+      )}
+
+      {/* Features 3 & 4 — Cardio / conditioning recommendation */}
+      {showCardioNote && (
+        <CardioConditioningBanner
+          cardioText={cardioRecommendation?.text ?? null}
+          conditioningText={conditioningRecommendation?.text ?? null}
+        />
+      )}
+
       {warnings.length > 0 && (
         <Card className={`border-border/50 shadow-sm ${hasBlockingWarnings ? "border-destructive/40 bg-destructive/5" : "bg-amber-50/50 border-amber-200"}`}>
           <CardHeader className="pb-2 pt-4 px-4">
