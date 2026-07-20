@@ -563,7 +563,7 @@ export default function SurveyForm() {
                   {/* Sport level */}
                   <FormField control={form.control} name="athleteStatus" render={({field, fieldState}) => (
                     <FormItem className="space-y-4">
-                      <FormLabel className="text-muted-foreground">Poziom sportowy *</FormLabel>
+                      <FormLabel className="text-muted-foreground">Jak uprawiasz sport? *</FormLabel>
                       <FormControl>
                         <RadioGroup
                           onValueChange={(value) => {
@@ -572,11 +572,11 @@ export default function SurveyForm() {
                           }}
                           value={field.value}
                           className={cn(
-                            "grid grid-cols-1 sm:grid-cols-3 gap-3",
+                            "grid grid-cols-1 sm:grid-cols-2 gap-3",
                             fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2"
                           )}
                         >
-                          {["Amatorsko", "Półzawodowo", "Zawodowo"].map((opt) => (
+                          {["Hobbystycznie", "Zawodowo"].map((opt) => (
                             <FormItem key={opt} className="flex items-center space-x-0 space-y-0">
                               <FormControl>
                                 <RadioGroupItem value={opt} className="peer sr-only" />
