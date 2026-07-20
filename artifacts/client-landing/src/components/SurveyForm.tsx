@@ -138,7 +138,6 @@ const formSchema = z.object({
   healthLimitations: z.string().optional(),
   sessionDuration: z.string().min(1, "To pole jest wymagane"),
   preferredMuscles: z.string().optional(),
-  avoidedMuscles: z.string().optional(),
   avoidedExercises: z.string().optional(),
   favoriteExercises: z.string().optional(),
   desiredWeeklyFrequency: z.coerce.number({ invalid_type_error: "To pole jest wymagane" }).min(1, "To pole jest wymagane").max(14),
@@ -229,7 +228,6 @@ export default function SurveyForm() {
       sportPerformanceNeeds: [],
       sessionDuration: "",
       preferredMuscles: "",
-      avoidedMuscles: "",
       avoidedExercises: "",
       favoriteExercises: "",
       activityLevel: "",
@@ -284,7 +282,6 @@ export default function SurveyForm() {
   const [selectedExercises, setSelectedExercises] = useState<SelectedExercise[]>([]);
   const [avoidedExerciseOtherText, setAvoidedExerciseOtherText] = useState("");
   const [avoidedExerciseOtherReason, setAvoidedExerciseOtherReason] = useState("");
-  const [showAvoidedExercises, setShowAvoidedExercises] = useState(false);
   // ── Favorite exercises state (outside RHF — complex object, joins to string on submit) ─
   const [selectedFavoriteExercises, setSelectedFavoriteExercises] = useState<FavoriteExercise[]>([]);
 
@@ -1032,49 +1029,24 @@ export default function SurveyForm() {
                 </FormItem>
               )} />
             )}
-            {/* ── Ćwiczenia do unikania — schowane za togglem ─ */}
-            <div className="space-y-1">
-              <button
-                type="button"
-                onClick={() => setShowAvoidedExercises((v) => !v)}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors underline-offset-2 hover:underline"
-              >
-                {showAvoidedExercises ? "▾" : "▸"}
-                Ćwiczenia do unikania
-              </button>
-              {showAvoidedExercises && (
-                <div className="pt-3 space-y-3">
-                  <p className="text-xs text-muted-foreground/70">
-                    Wyszukaj po nazwie lub opisz ćwiczenie, jeśli nie znasz jego nazwy.
-                  </p>
-                  <AvoidedExercisesPicker
-                    selectedExercises={selectedExercises}
-                    onSelectedChange={setSelectedExercises}
-                    otherText={avoidedExerciseOtherText}
-                    onOtherTextChange={setAvoidedExerciseOtherText}
-                    otherReason={avoidedExerciseOtherReason}
-                    onOtherReasonChange={setAvoidedExerciseOtherReason}
-                  />
-                  <p className="text-xs text-muted-foreground/50 mt-1">
-                    Każde wysłanie formularza tworzy nowy wpis. Trener widzi dane z Twojego ostatniego zgłoszenia.
-                  </p>
-                </div>
-              )}
+            {/* ── Ćwiczenia do unikania ─ */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-muted-foreground">Ćwiczenia do unikania</label>
+              <p className="text-xs text-muted-foreground/70">
+                Wyszukaj po nazwie lub opisz ćwiczenie, jeśli nie znasz jego nazwy.
+              </p>
+              <AvoidedExercisesPicker
+                selectedExercises={selectedExercises}
+                onSelectedChange={setSelectedExercises}
+                otherText={avoidedExerciseOtherText}
+                onOtherTextChange={setAvoidedExerciseOtherText}
+                otherReason={avoidedExerciseOtherReason}
+                onOtherReasonChange={setAvoidedExerciseOtherReason}
+              />
             </div>
 
             {isIntermediateOrAdvanced && (
               <>
-                <FormField control={form.control} name="avoidedMuscles" render={({field}) => (
-                  <FormItem>
-                    <FormLabel className="text-muted-foreground">Czy są partie mięśniowe, których nie chcesz rozwijać? Jeżeli tak opisz dlaczego.</FormLabel>
-                    <FormDescription className="text-xs text-muted-foreground/70">
-                      Np. {MUSCLE_GROUPS.join(", ")}.
-                    </FormDescription>
-                    <FormControl>
-                      <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
-                    </FormControl>
-                  </FormItem>
-                )} />
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground">Jakie są Twoje ulubione ćwiczenia?</label>
                   <p className="text-xs text-muted-foreground/70">Wyszukaj po nazwie — możesz dodać kilka ćwiczeń.</p>
@@ -1144,7 +1116,10 @@ export default function SurveyForm() {
                 <div className="mt-12">
                   <FormField control={form.control} name="avoidsAdvancedMethods" render={({field}) => (
                     <FormItem className="space-y-4 mb-8">
-                      <FormLabel className="text-muted-foreground">Czy są metody treningowe, których nie chcesz stosować lub które są dla Ciebie przeciwwskazane?</FormLabel>
+                      <FormLabel className="text-muted-foreground">Czy chcesz, aby w planie były uwzględniane metody intensyfikacji treningu?</FormLabel>
+                      <FormDescription className="text-xs text-muted-foreground/70">
+                        Zaznacz tylko te metody, które chcesz stosować w planie.
+                      </FormDescription>
                       <FormControl>
                         <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 gap-4 max-w-sm">
                           {["Tak", "Nie"].map(opt => (
