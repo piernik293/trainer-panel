@@ -9,6 +9,21 @@ import { AvoidedExercisesPicker, type SelectedExercise } from "./AvoidedExercise
 import { FavoriteExercisesPicker, type FavoriteExercise } from "./FavoriteExercisesPicker";
 import { MuscleGroupCombobox } from "./MuscleGroupCombobox";
 import { cn } from "@/lib/utils";
+import {
+  MUSCLE_GROUPS,
+  ADVANCED_METHODS,
+  EQUIPMENT_OPTIONS,
+  SPORT_PERFORMANCE_NEEDS,
+  TRAINING_FREQUENCY_RECOMMENDATIONS,
+  BMI_RECOMMENDATION_TEXT,
+  CARDIO_RECOMMENDATION_TEXT,
+  CARDIO_AVOID_REASSURANCE_TEXT,
+  CARDIO_FREQUENCY_HELPER_TEXT,
+  calculateBmi,
+  calculateAge,
+  getLocalDateString,
+  buildEquipmentString,
+} from "@workspace/survey-config";
 
 import {
   Form,
@@ -26,87 +41,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-
-const MUSCLE_GROUPS = ["klatka piersiowa", "plecy", "barki", "biceps", "triceps", "brzuch", "uda", "pośladki", "łydki"];
-const ADVANCED_METHODS = ["Superserie", "Serie złożone (Compound Set)", "Drop sety", "Serie do upadku mięśniowego", "Serie wymuszone", "Rest-Pause"];
-
-function calculateBmi(heightCm: number | undefined, weightKg: number | undefined): number | undefined {
-  if (!heightCm || !weightKg) return undefined;
-  const heightM = heightCm / 100;
-  if (heightM <= 0) return undefined;
-  return weightKg / (heightM * heightM);
-}
-
-const BMI_RECOMMENDATION_TEXT =
-  "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj jednak, że BMI nie rozróżnia tkanki tłuszczowej od masy mięśniowej. W wielu przypadkach dobrym rozwiązaniem może być redukcja tkanki tłuszczowej lub rekompozycja sylwetki.";
-
-const EQUIPMENT_OPTIONS = [
-  "Hantle",
-  "Sztanga i talerze",
-  "Ławeczka treningowa",
-  "Kettlebell",
-  "Gumy oporowe",
-  "Drążek do podciągania",
-  "TRX / pasy treningowe",
-  "Rower stacjonarny / orbitrek",
-  "Brak sprzętu",
-];
-
-function buildEquipmentString(items: string[], other: string): string {
-  const parts = [...items];
-  if (other.trim()) parts.push(other.trim());
-  return parts.join(", ");
-}
-
-const CARDIO_RECOMMENDATION_TEXT =
-  "💡 Przy tym celu treningi cardio często wspierają osiąganie lepszych efektów. Ostateczna ilość zostanie indywidualnie dopasowana do Twoich możliwości, preferencji oraz planu treningowego.";
-
-const CARDIO_AVOID_REASSURANCE_TEXT =
-  "👍 To nie problem. W miarę możliwości plan zostanie przygotowany tak, aby ograniczyć ilość cardio lub zastąpić je innymi formami aktywności, jeśli będzie to zgodne z Twoim celem treningowym.";
-
-const CARDIO_FREQUENCY_HELPER_TEXT =
-  "💡 Ta informacja pomoże lepiej dopasować plan treningowy do Twojego celu oraz preferencji. Cardio nie jest obowiązkowym elementem każdego planu.";
-
-const TRAINING_FREQUENCY_RECOMMENDATIONS: Record<string, string> = {
-  "Brak aktywności fizycznej":
-    "Najczęściej zaleca się rozpoczęcie od 1–3 treningów tygodniowo, aby organizm mógł stopniowo przyzwyczaić się do regularnej aktywności.",
-  "Początkujący":
-    "Najczęściej sprawdza się 2–3 treningi tygodniowo, co pozwala rozwijać technikę oraz zapewnia odpowiednią regenerację.",
-  "Średniozaawansowany":
-    "Najczęściej wybierane jest 3–5 treningów tygodniowo. Ostateczna liczba zależy od celu treningowego oraz możliwości regeneracji.",
-  "Zaawansowany":
-    "Najczęściej sprawdza się 4–6 treningów tygodniowo. Liczbę treningów należy dopasować do objętości, celu oraz regeneracji.",
-};
-
-function getLocalDateString(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function calculateAge(dateOfBirth: string | undefined): number | undefined {
-  if (!dateOfBirth) return undefined;
-  // Parse the date-only string as local calendar values (year, month, day)
-  // rather than via `new Date(str)`, which parses YYYY-MM-DD as UTC midnight
-  // and can shift the date by a day when compared against local time.
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateOfBirth);
-  if (!match) return undefined;
-  const dobYear = Number(match[1]);
-  const dobMonth = Number(match[2]) - 1;
-  const dobDay = Number(match[3]);
-  const dob = new Date(dobYear, dobMonth, dobDay);
-  if (isNaN(dob.getTime()) || dob.getFullYear() !== dobYear || dob.getMonth() !== dobMonth || dob.getDate() !== dobDay) {
-    return undefined;
-  }
-  const today = new Date();
-  let age = today.getFullYear() - dobYear;
-  const monthDiff = today.getMonth() - dobMonth;
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDay)) {
-    age--;
-  }
-  return age;
-}
 
 const formSchema = z.object({
   firstName: z.string().min(1, "Imię jest wymagane"),
@@ -300,12 +234,6 @@ export default function SurveyForm() {
       }
     }, 0);
   };
-
-  const SPORT_PERFORMANCE_NEEDS = [
-    { value: "Dynamika", desc: "Moc, skoczność, eksplozywność i szybkie generowanie siły." },
-    { value: "Szybkość", desc: "Przyspieszenie, tempo ruchu i szybkie poruszanie się w akcji sportowej." },
-    { value: "Stabilizacja", desc: "Kontrola ruchu, równowaga, lądowanie i utrzymanie pozycji pod obciążeniem." },
-  ];
 
   const onSubmit = (data: FormValues) => {
     setShowValidationBanner(false);
