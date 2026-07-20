@@ -205,6 +205,55 @@ export const workoutPlanExercisesTable = pgTable("workout_plan_exercises", {
   index("wpe_day_order_idx").on(table.dayId, table.orderInDay),
 ]);
 
+// ─── Workout sessions (client execution layer) ───────────────────────────────
+// One row per training day a client actually performs.
+
+export const workoutSessionsTable = pgTable("workout_sessions", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id")
+    .notNull()
+    .references(() => clientsTable.id, { onDelete: "cascade" }),
+  planId: integer("plan_id")
+    .notNull()
+    .references(() => workoutPlansTable.id, { onDelete: "cascade" }),
+  planDayId: integer("plan_day_id")
+    .notNull()
+    .references(() => workoutPlanDaysTable.id, { onDelete: "cascade" }),
+  /** ISO date string YYYY-MM-DD */
+  sessionDate: date("session_date").notNull(),
+  isCompleted: boolean("is_completed").notNull().default(false),
+  /** Optional client note for the whole session */
+  notes: text("notes"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("ws_client_plan_idx").on(table.clientId, table.planId),
+]);
+
+// ─── Exercise execution logs ──────────────────────────────────────────────────
+// One row per exercise within a session (upserted on every client save).
+
+export const exerciseExecutionLogsTable = pgTable("exercise_execution_logs", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id")
+    .notNull()
+    .references(() => workoutSessionsTable.id, { onDelete: "cascade" }),
+  planExerciseId: integer("plan_exercise_id")
+    .notNull()
+    .references(() => workoutPlanExercisesTable.id, { onDelete: "cascade" }),
+  setsCompleted: integer("sets_completed"),
+  repsCompleted: integer("reps_completed"),
+  weightKg: numeric("weight_kg", { precision: 6, scale: 2 }),
+  rir: integer("rir"),
+  note: text("note"),
+  isCompleted: boolean("is_completed").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("eel_session_exercise_idx").on(table.sessionId, table.planExerciseId),
+]);
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type VolumeGuidelineVersion = typeof volumeGuidelineVersionsTable.$inferSelect;
@@ -214,3 +263,5 @@ export type VolumeGuideline = typeof volumeGuidelinesTable.$inferSelect;
 export type WorkoutPlan = typeof workoutPlansTable.$inferSelect;
 export type WorkoutPlanDay = typeof workoutPlanDaysTable.$inferSelect;
 export type WorkoutPlanExercise = typeof workoutPlanExercisesTable.$inferSelect;
+export type WorkoutSession = typeof workoutSessionsTable.$inferSelect;
+export type ExerciseExecutionLog = typeof exerciseExecutionLogsTable.$inferSelect;

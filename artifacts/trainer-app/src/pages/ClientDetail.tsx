@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Printer, FileEdit, Phone, Mail, Calendar, ClipboardList, History, StickyNote, Trash2, Pencil, Dumbbell, Sparkles } from "lucide-react";
 import ExerciseRecommendationsTab from "./ExerciseRecommendationsTab";
+import WorkoutHistoryTab from "./WorkoutHistoryTab";
 import { formatDate } from "@/lib/utils";
 import { clientStatusLabel, surveyStatusLabel } from "@/lib/client-status";
 import { useToast } from "@/hooks/use-toast";
@@ -336,6 +337,10 @@ export default function ClientDetail() {
           </TabsTrigger>
           <TabsTrigger value="notes">Notatki</TabsTrigger>
           <TabsTrigger value="plans">Plany treningowe</TabsTrigger>
+          <TabsTrigger value="workout-history" className="gap-1.5">
+            <Dumbbell size={13} />
+            Historia treningów
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="pt-4">
@@ -412,6 +417,10 @@ export default function ClientDetail() {
 
         <TabsContent value="plans" className="pt-4">
           <PlansTab clientId={id} />
+        </TabsContent>
+
+        <TabsContent value="workout-history" className="pt-4">
+          <WorkoutHistoryTab clientId={id} />
         </TabsContent>
 
         <TabsContent value="notes" className="pt-4">

@@ -12,6 +12,7 @@ import recommendationsRouter from "./recommendations";
 import planDraftInputRouter from "./planDraftInput";
 import planDraftDayRecommendationsRouter from "./planDraftDayRecommendations";
 import planDraftGenerateDayRouter from "./planDraftGenerateDay";
+import clientPortalRouter from "./clientPortal";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(recommendationsRouter);
 router.use(planDraftInputRouter);
 router.use(planDraftDayRecommendationsRouter);
 router.use(planDraftGenerateDayRouter);
+router.use(clientPortalRouter);
 
 export default router;
