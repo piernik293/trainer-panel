@@ -155,10 +155,11 @@ const formSchema = z.object({
   cardioPreference: z.string().optional(),
   cardioFrequency: z.string().optional(),
   preferredCardioType: z.string().optional(),
+  trainingMotivation: z.string().optional(),
+  hasAdditionalInfo: z.enum(["Tak", "Nie"]).optional(),
   // Athlete / sport fields (only active when trainingGoal === "Cel sportowy")
   athleteStatus: z.enum([
-    "Amatorsko",
-    "Półzawodowo",
+    "Hobbystycznie",
     "Zawodowo",
   ]).optional(),
   sportPerformanceNeeds: z.array(z.string()).optional().default([]),
@@ -235,6 +236,8 @@ export default function SurveyForm() {
       avoidsAdvancedMethods: undefined,
       advancedMethodsToAvoid: [],
       additionalInfo: "",
+      trainingMotivation: "",
+      hasAdditionalInfo: undefined,
       priorityMuscle1: "",
       priorityMuscle2: "",
       priorityMuscle3: "",
@@ -265,7 +268,10 @@ export default function SurveyForm() {
   const showEquipmentField = trainingLocation === "Dom" || trainingLocation === "Siłownia plenerowa";
   const trainingGoal = form.watch("trainingGoal");
   const isSportGoal = trainingGoal === "Cel sportowy";
-  const showCardioRecommendation = trainingGoal === "Redukcja tkanki tłuszczowej" || trainingGoal === "Poprawa kondycji";
+  const showCardioRecommendation = trainingGoal === "Redukcja tkanki tłuszczowej" || trainingGoal === "Poprawa kondycji" || trainingGoal === "Cel sportowy";
+  const activityLevel = form.watch("activityLevel");
+  const isCardioRelevant = showCardioRecommendation || activityLevel === "Siedzący";
+  const hasAdditionalInfoVal = form.watch("hasAdditionalInfo");
 
   const [equipmentItems, setEquipmentItems] = useState<string[]>([]);
   const [equipmentOther, setEquipmentOther] = useState<string>("");
@@ -317,8 +323,7 @@ export default function SurveyForm() {
     const isSportGoalSubmit = rest.trainingGoal === "Cel sportowy";
     // Map simplified sport-level value to the legacy API format the engine expects
     const levelToApiStatus: Record<string, string> = {
-      "Amatorsko": "Tak — amatorsko",
-      "Półzawodowo": "Tak — półzawodowo",
+      "Hobbystycznie": "Tak — amatorsko",
       "Zawodowo": "Tak — zawodowo",
     };
     const mappedAthleteStatus = isSportGoalSubmit && athleteStatusVal
@@ -519,6 +524,10 @@ export default function SurveyForm() {
                       form.setValue("athleteStatus", undefined);
                       form.setValue("sportPerformanceNeeds", []);
                     }
+                    // "Cel sportowy" + "Brak aktywności fizycznej" are logically contradictory
+                    if (value === "Cel sportowy" && form.getValues("experienceLevel") === "Brak aktywności fizycznej") {
+                      form.setValue("experienceLevel", "");
+                    }
                     form.trigger("trainingGoal");
                   }}
                   defaultValue={field.value}
@@ -619,6 +628,23 @@ export default function SurveyForm() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* ── Dlaczego chcesz trenować? ── */}
+          <FormField control={form.control} name="trainingMotivation" render={({field}) => (
+            <FormItem className="mt-8">
+              <FormLabel className="text-muted-foreground">Dlaczego chcesz trenować?</FormLabel>
+              <FormDescription className="text-xs text-muted-foreground/70">
+                Krótko napisz, po co chcesz trenować i co chcesz poprawić.
+              </FormDescription>
+              <FormControl>
+                <Input
+                  placeholder="np. Chcę poprawić kondycję i schudnąć przed latem"
+                  {...field}
+                  className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none"
+                />
+              </FormControl>
+            </FormItem>
+          )} />
         </Section>
 
         <Section
@@ -630,9 +656,12 @@ export default function SurveyForm() {
             <FormItem className="space-y-4 mt-12">
               <FormLabel className="text-muted-foreground">Który poziom najlepiej opisuje Twoje doświadczenie treningowe? *</FormLabel>
               <FormControl>
-                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}>
+                <RadioGroup onValueChange={(value) => {
+                      field.onChange(value);
+                      // Auto-reset if sport goal is active and "Brak aktywności" is somehow still selected
+                    }} defaultValue={field.value} className={cn("grid grid-cols-1 sm:grid-cols-2 gap-4", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}>
                   {[
-                    { level: "Brak aktywności fizycznej", desc: "Nie podejmuję regularnej aktywności fizycznej, nigdy wcześniej nie realizowałem/-am uporządkowanego treningu oporowego lub wracam po długiej przerwie. Chcę spokojnie zacząć, nauczyć się podstawowych wzorców ruchowych i stopniowo przygotować organizm do regularnego wysiłku." },
+                    ...(!isSportGoal ? [{ level: "Brak aktywności fizycznej", desc: "Nie podejmuję regularnej aktywności fizycznej, nigdy wcześniej nie realizowałem/-am uporządkowanego treningu oporowego lub wracam po długiej przerwie. Chcę spokojnie zacząć, nauczyć się podstawowych wzorców ruchowych i stopniowo przygotować organizm do regularnego wysiłku." }] : []),
                     { level: "Początkujący", desc: "Mam niewielkie doświadczenie treningowe. Nadal uczę się podstawowych ćwiczeń, poprawnej techniki oraz zasad treningowych i nie czuję się jeszcze pewnie w samodzielnym planowaniu treningów." },
                     { level: "Średniozaawansowany", desc: "Trenuję regularnie i swobodnie wykonuję większość podstawowych ćwiczeń. Rozumiem podstawowe zasady treningowe, potrafię kontrolować technikę i świadomie realizuję plan treningowy." },
                     { level: "Zaawansowany", desc: "Posiadam duże doświadczenie treningowe, bardzo dobrze znam swoje możliwości oraz świadomie wykorzystuję różne metody treningowe do osiągania konkretnych celów." },
@@ -860,33 +889,37 @@ export default function SurveyForm() {
 
         <Section
           step={7}
-          title="Cardio"
-          description="Twoje nastawienie do cardio pomaga określić, ile treningu wytrzymałościowego warto włączyć do planu, aby wspierał on Twój cel bez zbędnego dyskomfortu."
+          title="Aktywność tlenowa i cardio"
+          description="Pomaga dobrać ilość aktywności wspierającej redukcję, kondycję i ogólną wydolność."
         >
+          {isCardioRelevant && (
+            <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 mb-6 -mt-4">
+              {CARDIO_RECOMMENDATION_TEXT}
+            </p>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <FormField control={form.control} name="cardioPreference" render={({field}) => (
               <FormItem className="space-y-4">
-                <FormLabel className="text-muted-foreground">Jakie jest Twoje nastawienie do treningów cardio?</FormLabel>
-                {showCardioRecommendation && (
-                  <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
-                    {CARDIO_RECOMMENDATION_TEXT}
-                  </p>
-                )}
+                <FormLabel className="text-muted-foreground">Jak chcesz, aby w planie uwzględnić trening cardio?</FormLabel>
                 <FormControl>
-                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-1 gap-3">
-                    {["Lubię cardio", "Jest mi obojętne", "Wolę unikać cardio"].map((pref) => (
+                  <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 gap-3">
+                    {[
+                      "Chętnie uwzględnię cardio w planie",
+                      "Cardio może być dodatkiem do planu",
+                      "Wolę ograniczyć cardio do niezbędnego minimum",
+                    ].map((pref) => (
                       <FormItem key={pref} className="flex items-center space-x-0 space-y-0">
                         <FormControl>
                           <RadioGroupItem value={pref} className="peer sr-only" />
                         </FormControl>
-                        <FormLabel className="w-full flex items-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                        <FormLabel className="w-full flex items-center px-6 py-4 min-h-[56px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-sm leading-snug">
                           {pref}
                         </FormLabel>
                       </FormItem>
                     ))}
                   </RadioGroup>
                 </FormControl>
-                {field.value === "Wolę unikać cardio" && (
+                {field.value === "Wolę ograniczyć cardio do niezbędnego minimum" && (
                   <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
                     {CARDIO_AVOID_REASSURANCE_TEXT}
                   </p>
@@ -894,21 +927,55 @@ export default function SurveyForm() {
               </FormItem>
             )} />
             <FormField control={form.control} name="cardioFrequency" render={({field}) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Jak często wykonujesz trening cardio?</FormLabel>
-                <FormDescription className="text-xs text-muted-foreground/70">
-                  {CARDIO_FREQUENCY_HELPER_TEXT}
-                </FormDescription>
+              <FormItem className="space-y-4">
+                <FormLabel className="text-muted-foreground">Jak wygląda Twoja aktywność tlenowa obecnie?</FormLabel>
                 <FormControl>
-                  <Input placeholder="np. 2x w tygodniu" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
+                  <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 gap-3">
+                    {[
+                      "Nie wykonuję cardio",
+                      "1 raz w tygodniu",
+                      "2–3 razy w tygodniu",
+                      "4 lub więcej razy w tygodniu",
+                    ].map((opt) => (
+                      <FormItem key={opt} className="flex items-center space-x-0 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value={opt} className="peer sr-only" />
+                        </FormControl>
+                        <FormLabel className="w-full flex items-center px-6 py-4 min-h-[52px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-sm">
+                          {opt}
+                        </FormLabel>
+                      </FormItem>
+                    ))}
+                  </RadioGroup>
                 </FormControl>
               </FormItem>
             )} />
             <FormField control={form.control} name="preferredCardioType" render={({field}) => (
-              <FormItem>
-                <FormLabel className="text-muted-foreground">Jaki rodzaj cardio najbardziej Ci odpowiada?</FormLabel>
+              <FormItem className="space-y-4">
+                <FormLabel className="text-muted-foreground">Jaka forma aktywności tlenowej najbardziej Ci odpowiada?</FormLabel>
                 <FormControl>
-                  <Input placeholder="np. rower, bieganie, marsz" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
+                  <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 gap-3">
+                    {[
+                      "Marsz",
+                      "Szybki marsz",
+                      "Sport rekreacyjny",
+                      "Bieganie",
+                      "Rower",
+                      "Orbitrek",
+                      "Pływanie",
+                      "Wioślarz",
+                      "Stepper / schody",
+                    ].map((opt) => (
+                      <FormItem key={opt} className="flex items-center space-x-0 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value={opt} className="peer sr-only" />
+                        </FormControl>
+                        <FormLabel className="w-full flex items-center px-6 py-4 min-h-[52px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-sm">
+                          {opt}
+                        </FormLabel>
+                      </FormItem>
+                    ))}
+                  </RadioGroup>
                 </FormControl>
               </FormItem>
             )} />
@@ -1172,25 +1239,44 @@ export default function SurveyForm() {
 
         <Section
           step={10}
-          title="Informacje dodatkowe"
-          description="Miejsce na wszystko, co nie zmieściło się w powyższych pytaniach, a może mieć znaczenie przy przygotowaniu Twojego planu."
+          title="Dodatkowe informacje"
+          description="Miejsce na wszystko, co może mieć znaczenie przy przygotowaniu planu."
         >
-          {isBeginner && (
-            <p className="text-sm text-muted-foreground/70 mb-8 -mt-4">
-              Jako początkujący/a nie musisz znać zaawansowanych technik treningowych — trener dobierze je za Ciebie.
-            </p>
-          )}
-          <FormField control={form.control} name="additionalInfo" render={({field}) => (
-            <FormItem>
-              <FormLabel className="text-muted-foreground">Czy jest coś jeszcze, co powinienem wiedzieć przed przygotowaniem Twojego planu treningowego?</FormLabel>
-              <FormDescription className="text-xs text-muted-foreground/70">
-                Możesz wpisać informacje dotyczące diety, stylu życia, pracy, regeneracji, wcześniejszych doświadczeń treningowych lub innych ważnych informacji.
-              </FormDescription>
+          <FormField control={form.control} name="hasAdditionalInfo" render={({field}) => (
+            <FormItem className="space-y-4">
+              <FormLabel className="text-muted-foreground">Czy jest coś jeszcze, co powinienem wiedzieć?</FormLabel>
               <FormControl>
-                <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[120px] p-4 rounded-none resize-y" />
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  className="grid grid-cols-2 gap-4 max-w-sm"
+                >
+                  {["Tak", "Nie"].map((opt) => (
+                    <FormItem key={opt} className="flex items-center space-x-0 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value={opt} className="peer sr-only" />
+                      </FormControl>
+                      <FormLabel className="w-full flex items-center justify-center px-6 py-4 min-h-[56px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                        {opt}
+                      </FormLabel>
+                    </FormItem>
+                  ))}
+                </RadioGroup>
               </FormControl>
             </FormItem>
           )} />
+          {hasAdditionalInfoVal === "Tak" && (
+            <FormField control={form.control} name="additionalInfo" render={({field}) => (
+              <FormItem className="mt-6">
+                <FormDescription className="text-xs text-muted-foreground/70 mb-2">
+                  Krótko dopisz tylko to, co może mieć znaczenie dla planu.
+                </FormDescription>
+                <FormControl>
+                  <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
+                </FormControl>
+              </FormItem>
+            )} />
+          )}
         </Section>
 
         <div className="pt-8 flex justify-center">
