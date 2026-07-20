@@ -318,21 +318,6 @@ function SurveyFormBody({ id, client, survey }: { id: number; client: { firstNam
                 )}
               />
 
-              {trainingGoal === "Inny" && (
-                <FormField
-                  control={form.control}
-                  name="trainingGoalOther"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Opisz swój cel treningowy</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Np. poprawa sylwetki bez dużej redukcji, lepsza forma do sportu..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
 
               <FormField
                 control={form.control}

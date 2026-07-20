@@ -634,9 +634,6 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <SurveyBlock label="Cel treningowy" value={survey.trainingGoal} />
-        {survey.trainingGoal === "Inny" && (
-          <SurveyBlock label="Inny cel:" value={survey.trainingGoalOther} />
-        )}
         <SurveyBlock label="Poziom doświadczenia" value={survey.experienceLevel} />
         {survey.experienceLevel === "Brak aktywności fizycznej" && (
           <p className="sm:col-span-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
