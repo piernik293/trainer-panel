@@ -137,10 +137,9 @@ const formSchema = z.object({
   injuryStatus: z.enum(["Tak", "Nie"]).optional(),
   healthLimitations: z.string().optional(),
   sessionDuration: z.string().min(1, "To pole jest wymagane"),
-  preferredMuscles: z.string().optional(),
   avoidedExercises: z.string().optional(),
   favoriteExercises: z.string().optional(),
-  desiredWeeklyFrequency: z.coerce.number({ invalid_type_error: "To pole jest wymagane" }).min(1, "To pole jest wymagane").max(14),
+  desiredWeeklyFrequency: z.coerce.number({ invalid_type_error: "To pole jest wymagane" }).min(1, "To pole jest wymagane").max(7, "Maksymalna liczba treningów to 7"),
   activityLevel: z.string().min(1, "Poziom aktywności jest wymagany"),
   sleepHours: z.string().min(1, "To pole jest wymagane"),
   stressLevel: z.coerce.number().min(1).max(10).default(5),
@@ -227,7 +226,6 @@ export default function SurveyForm() {
       athleteStatus: undefined,
       sportPerformanceNeeds: [],
       sessionDuration: "",
-      preferredMuscles: "",
       avoidedExercises: "",
       favoriteExercises: "",
       activityLevel: "",
@@ -253,12 +251,6 @@ export default function SurveyForm() {
   const avoidsAdvancedMethods = form.watch("avoidsAdvancedMethods");
   const dateOfBirth = form.watch("dateOfBirth");
   const gender = form.watch("gender");
-  const genderMuscleSuggestion =
-    gender === "Kobieta"
-      ? "Podpowiedź: Często wybierane cele sylwetkowe to pośladki, uda, brzuch oraz barki."
-      : gender === "Mężczyzna"
-      ? "Podpowiedź: Często wybierane cele sylwetkowe to klatka piersiowa, barki, plecy oraz ramiona."
-      : undefined;
   const isBeginner = experienceLevel === "Brak aktywności fizycznej" || experienceLevel === "Początkujący";
   const isIntermediateOrAdvanced = experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
   const showTrainingDuration =
@@ -757,10 +749,13 @@ export default function SurveyForm() {
                   <Input 
                     type="number" 
                     min={1} 
-                    max={14} 
+                    max={7} 
                     {...field} 
                     value={field.value || ''} 
-                    onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} 
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? undefined : Math.min(7, Math.max(1, parseInt(e.target.value)));
+                      field.onChange(val);
+                    }}
                     className={cn("bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive")}
                   />
                 </FormControl>
@@ -768,13 +763,25 @@ export default function SurveyForm() {
               </FormItem>
             )} />
             <FormField control={form.control} name="sessionDuration" render={({field, fieldState}) => (
-              <FormItem>
+              <FormItem className="space-y-4">
                 <FormLabel className="text-muted-foreground">Ile czasu realnie możesz poświęcić na pojedynczy trening? *</FormLabel>
-                <FormDescription className="text-xs text-muted-foreground/70">
-                  Uwzględnij swoje codzienne obowiązki oraz możliwości regeneracji.
-                </FormDescription>
                 <FormControl>
-                  <Input placeholder="np. 60 min" {...field} className={cn("bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive")} />
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    className={cn("grid grid-cols-2 gap-3", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}
+                  >
+                    {["30–45 min", "45–60 min", "60–90 min", "90+ min"].map((opt) => (
+                      <FormItem key={opt} className="flex items-center space-x-0 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value={opt} className="peer sr-only" />
+                        </FormControl>
+                        <FormLabel className="w-full flex items-center justify-center px-4 py-4 min-h-[56px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium text-sm">
+                          {opt}
+                        </FormLabel>
+                      </FormItem>
+                    ))}
+                  </RadioGroup>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -1011,39 +1018,23 @@ export default function SurveyForm() {
           )} />
 
           <div className="grid grid-cols-1 gap-8 mt-12">
-            {isBeginner && (
-              <FormField control={form.control} name="preferredMuscles" render={({field}) => (
-                <FormItem>
-                  <FormLabel className="text-muted-foreground">Na których partiach mięśniowych najbardziej Ci zależy?</FormLabel>
-                  <FormDescription className="text-xs text-muted-foreground/70">
-                    Jeśli nie znasz nazw partii mięśniowych, nie martw się — wybierz partie, na których najbardziej Ci zależy. Przykłady: {MUSCLE_GROUPS.join(", ")}.
-                  </FormDescription>
-                  {genderMuscleSuggestion && (
-                    <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
-                      {genderMuscleSuggestion}
-                    </p>
-                  )}
-                  <FormControl>
-                    <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
-                  </FormControl>
-                </FormItem>
-              )} />
+            {/* ── Ćwiczenia do unikania — tylko dla Średniozaawansowany / Zaawansowany ─ */}
+            {isIntermediateOrAdvanced && (
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-muted-foreground">Ćwiczenia do unikania</label>
+                <p className="text-xs text-muted-foreground/70">
+                  Wyszukaj po nazwie lub opisz ćwiczenie, jeśli nie znasz jego nazwy.
+                </p>
+                <AvoidedExercisesPicker
+                  selectedExercises={selectedExercises}
+                  onSelectedChange={setSelectedExercises}
+                  otherText={avoidedExerciseOtherText}
+                  onOtherTextChange={setAvoidedExerciseOtherText}
+                  otherReason={avoidedExerciseOtherReason}
+                  onOtherReasonChange={setAvoidedExerciseOtherReason}
+                />
+              </div>
             )}
-            {/* ── Ćwiczenia do unikania ─ */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-muted-foreground">Ćwiczenia do unikania</label>
-              <p className="text-xs text-muted-foreground/70">
-                Wyszukaj po nazwie lub opisz ćwiczenie, jeśli nie znasz jego nazwy.
-              </p>
-              <AvoidedExercisesPicker
-                selectedExercises={selectedExercises}
-                onSelectedChange={setSelectedExercises}
-                otherText={avoidedExerciseOtherText}
-                onOtherTextChange={setAvoidedExerciseOtherText}
-                otherReason={avoidedExerciseOtherReason}
-                onOtherReasonChange={setAvoidedExerciseOtherReason}
-              />
-            </div>
 
             {isIntermediateOrAdvanced && (
               <>
