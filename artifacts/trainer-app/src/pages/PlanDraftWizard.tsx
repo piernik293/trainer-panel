@@ -1775,7 +1775,7 @@ export default function PlanDraftWizard() {
               )}
               <Button
                 onClick={() => { if (isExerciseStepUnlocked) setStep(2); }}
-                disabled={hasBlockingWarnings || !isExerciseStepUnlocked}
+                disabled={false}
                 className="gap-2"
                 title={
                   !isExerciseStepUnlocked
