@@ -1774,26 +1774,11 @@ export default function PlanDraftWizard() {
                 </span>
               )}
               <Button
-                onClick={() => { if (isExerciseStepUnlocked) setStep(2); }}
+                onClick={() => setStep(2)}
                 disabled={false}
                 className="gap-2"
-                title={
-                  !isExerciseStepUnlocked
-                    ? "Poczekaj na obliczenie objętości i rozkładu, aby kontynuować"
-                    : undefined
-                }
               >
-                {isExerciseStepUnlocked ? (
-                  <>
-                    Dobierz ćwiczenia
-                    <ArrowRight size={14} />
-                  </>
-                ) : (
-                  <>
-                    <Lock size={14} />
-                    Oczekiwanie na objętość…
-                  </>
-                )}
+                Dalej
               </Button>
             </>
           )}
