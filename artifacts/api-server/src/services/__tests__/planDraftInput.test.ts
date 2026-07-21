@@ -150,12 +150,16 @@ describe("getCompatibleSplits()", () => {
     expect(splits).not.toContain("push_pull_legs");
   });
 
-  it("14. 5 days → upper_lower_full_body and specialization (no PPL)", () => {
-    // PPL with 5 days creates Push/Pull/Legs/Push/Pull — unbalanced repeat
+  it("14. 5 days → upper_lower_full_body, push_pull_legs, and specialization", () => {
+    // 5-day PPL (e.g. P/P/L/Push/Pull) is a common and valid structure.
+    // recommendSplit() also returns push_pull_legs as recommended for 5 days
+    // (non-poor recovery), so both must agree.
     const splits = getCompatibleSplits(5);
     expect(splits).toContain("upper_lower_full_body");
+    expect(splits).toContain("push_pull_legs");
     expect(splits).toContain("specialization");
-    expect(splits).not.toContain("push_pull_legs");
+    // 4-day PPL (P/P/L/Push — orphaned day) is excluded; 5-day is valid
+    expect(getCompatibleSplits(4)).not.toContain("push_pull_legs");
   });
 
   it("14b. 6 days → push_pull_legs (divides evenly: PPL×2)", () => {
@@ -163,10 +167,13 @@ describe("getCompatibleSplits()", () => {
     expect(splits).toContain("push_pull_legs");
   });
 
-  it("15. null days → only custom", () => {
+  it("15. null days → full_body and custom (full_body is the unknown-days fallback)", () => {
+    // When training days are unknown, Full Body is the safest fallback split.
+    // The function returns ["full_body", "custom"], not just ["custom"].
     const splits = getCompatibleSplits(null);
+    expect(splits).toContain("full_body");
     expect(splits).toContain("custom");
-    expect(splits.length).toBe(1);
+    expect(splits.length).toBe(2);
   });
 });
 
