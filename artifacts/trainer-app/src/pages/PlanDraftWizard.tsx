@@ -1709,7 +1709,7 @@ export default function PlanDraftWizard() {
       )}
 
       {/* Step 2 — Ćwiczenia (was step 3) */}
-      {step === 2 && isExerciseStepUnlocked && distributionResult && (
+      {step === 2 && (
         <Step4Exercises
           distributionResult={distributionResult}
           exerciseDraft={exerciseDraft}
@@ -1719,16 +1719,6 @@ export default function PlanDraftWizard() {
           coverageLoading={coverageLoading}
           experienceLevel={typedData?.input.experienceLevel ?? null}
         />
-      )}
-      {step === 2 && !isExerciseStepUnlocked && (
-        <Card className="border-dashed border-border/60 shadow-sm">
-          <CardContent className="py-10 text-center">
-            <AlertCircle className="w-8 h-8 mx-auto mb-3 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">
-              Uzupełnij lub popraw wcześniejsze etapy, aby kontynuować dobór ćwiczeń.
-            </p>
-          </CardContent>
-        </Card>
       )}
 
       {/* Step 3 — Podgląd (was step 4) */}
@@ -1784,26 +1774,12 @@ export default function PlanDraftWizard() {
           )}
           {step === 2 && (
             <Button
-              onClick={() => { if (isPreviewStepUnlocked) setStep(3); }}
-              disabled={!isPreviewStepUnlocked}
+              onClick={() => setStep(3)}
+              disabled={false}
               className="gap-2"
-              title={
-                !isPreviewStepUnlocked
-                  ? "Uzupełnij wszystkie dni treningowe i popraw nieprawidłowe parametry ćwiczeń, aby przejść do podglądu."
-                  : undefined
-              }
             >
-              {isPreviewStepUnlocked ? (
-                <>
-                  Podgląd
-                  <ArrowRight size={14} />
-                </>
-              ) : (
-                <>
-                  <Lock size={14} />
-                  Uzupełnij ćwiczenia, aby przejść do podglądu
-                </>
-              )}
+              Podgląd
+              <ArrowRight size={14} />
             </Button>
           )}
           {step >= 3 && (
