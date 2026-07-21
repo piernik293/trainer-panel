@@ -369,6 +369,122 @@ describe("loadPlanDraftInput() with survey data", () => {
   });
 });
 
+// ─── 6/7-day survey: defaultPreferences.splitType ────────────────────────────
+//
+// Regression guard for the 6-7 day split compatibility bug:
+// previously recommendSplit() returned "upper_lower" for ≥6 days, which is
+// absent from getCompatibleSplits(≥6). planDraftInputService then set
+// defaultPreferences.splitType to that incompatible value.
+//
+// The fix (returning "push_pull_legs" for all 6-7 day branches) must keep
+// defaultPreferences.splitType inside the compatible set.
+
+describe("loadPlanDraftInput() — 6-day survey: defaultPreferences.splitType ∈ getCompatibleSplits(6)", () => {
+  let clientId: number;
+
+  beforeAll(async () => {
+    const client = await getOrCreateTestClient("plan-draft-6day-advanced@example.com");
+    clientId = client.id;
+    await insertSurvey(clientId, {
+      experienceLevel: "Zaawansowany",
+      trainingGoal: "Hipertrofia",
+      desiredWeeklyFrequency: 6,
+      sleepHours: "7",
+      stressLevel: 3,
+    });
+  });
+
+  it("38. defaultPreferences.splitType ∈ getCompatibleSplits(6) — advanced, good recovery", async () => {
+    const result = await loadPlanDraftInput(clientId);
+    expect(result).not.toBeNull();
+    const compatible = getCompatibleSplits(result!.input.availableDays);
+    expect(compatible).toContain(result!.defaultPreferences.splitType);
+  });
+
+  it("39. defaultPreferences.splitType is NOT upper_lower (incompatible at 6 days)", async () => {
+    const result = await loadPlanDraftInput(clientId);
+    expect(result!.defaultPreferences.splitType).not.toBe("upper_lower");
+  });
+
+  it("40. defaultPreferences.splitType is NOT upper_lower_full_body (incompatible at 6 days)", async () => {
+    const result = await loadPlanDraftInput(clientId);
+    expect(result!.defaultPreferences.splitType).not.toBe("upper_lower_full_body");
+  });
+
+  it("41. availableDays is 6 (loaded from desiredWeeklyFrequency)", async () => {
+    const result = await loadPlanDraftInput(clientId);
+    expect(result!.input.availableDays).toBe(6);
+  });
+});
+
+describe("loadPlanDraftInput() — 6-day survey: intermediate + poor recovery → splitType ∈ getCompatibleSplits(6)", () => {
+  let clientId: number;
+
+  beforeAll(async () => {
+    const client = await getOrCreateTestClient("plan-draft-6day-intermediate-poor@example.com");
+    clientId = client.id;
+    await insertSurvey(clientId, {
+      experienceLevel: "Średniozaawansowany",
+      trainingGoal: "Siła",
+      desiredWeeklyFrequency: 6,
+      // sleep 5h + stress 8 → poor recovery derived by the service
+      sleepHours: "5",
+      stressLevel: 8,
+    });
+  });
+
+  it("42. defaultPreferences.splitType ∈ getCompatibleSplits(6) — intermediate, poor recovery", async () => {
+    const result = await loadPlanDraftInput(clientId);
+    expect(result).not.toBeNull();
+    const compatible = getCompatibleSplits(result!.input.availableDays);
+    expect(compatible).toContain(result!.defaultPreferences.splitType);
+  });
+
+  it("43. defaultPreferences.splitType is NOT upper_lower or upper_lower_full_body", async () => {
+    const result = await loadPlanDraftInput(clientId);
+    expect(result!.defaultPreferences.splitType).not.toBe("upper_lower");
+    expect(result!.defaultPreferences.splitType).not.toBe("upper_lower_full_body");
+  });
+});
+
+describe("loadPlanDraftInput() — 7-day survey: defaultPreferences.splitType ∈ getCompatibleSplits(7)", () => {
+  let clientId: number;
+
+  beforeAll(async () => {
+    const client = await getOrCreateTestClient("plan-draft-7day-advanced@example.com");
+    clientId = client.id;
+    await insertSurvey(clientId, {
+      experienceLevel: "Zaawansowany",
+      trainingGoal: "Hipertrofia",
+      desiredWeeklyFrequency: 7,
+      sleepHours: "8",
+      stressLevel: 2,
+    });
+  });
+
+  it("44. defaultPreferences.splitType ∈ getCompatibleSplits(7) — advanced, excellent recovery", async () => {
+    const result = await loadPlanDraftInput(clientId);
+    expect(result).not.toBeNull();
+    const compatible = getCompatibleSplits(result!.input.availableDays);
+    expect(compatible).toContain(result!.defaultPreferences.splitType);
+  });
+
+  it("45. defaultPreferences.splitType is NOT upper_lower (incompatible at 7 days)", async () => {
+    const result = await loadPlanDraftInput(clientId);
+    expect(result!.defaultPreferences.splitType).not.toBe("upper_lower");
+  });
+
+  it("46. defaultPreferences.splitType is NOT upper_lower_full_body (incompatible at 7 days)", async () => {
+    const result = await loadPlanDraftInput(clientId);
+    expect(result!.defaultPreferences.splitType).not.toBe("upper_lower_full_body");
+  });
+
+  it("47. availableDays is 7 (loaded from desiredWeeklyFrequency)", async () => {
+    const result = await loadPlanDraftInput(clientId);
+    expect(result!.input.availableDays).toBe(7);
+  });
+});
+
 // ─── POST /api/plans/draft-input/validate ─────────────────────────────────────
 
 describe("POST /api/plans/draft-input/validate", () => {
