@@ -1,5 +1,5 @@
-import { allocateDaily } from "./dailyAllocationEngine"
-import { buildPlanFeedback } from "./planFeedback"
+import { allocateDaily } from "./dailyAllocationEngine.ts"
+import { buildPlanFeedback } from "./planFeedback.ts"
 
 const input = {
   days: [
