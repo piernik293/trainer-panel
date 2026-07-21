@@ -1710,15 +1710,17 @@ export default function PlanDraftWizard() {
 
       {/* Step 2 — Ćwiczenia (was step 3) */}
       {step === 2 && (
-        <Step4Exercises
-          distributionResult={distributionResult}
-          exerciseDraft={exerciseDraft}
-          onDraftChange={setExerciseDraft}
-          clientId={clientId}
-          previewResult={previewResult}
-          coverageLoading={coverageLoading}
-          experienceLevel={typedData?.input.experienceLevel ?? null}
-        />
+        <Card className="border-dashed border-border/60 shadow-sm">
+          <CardContent className="py-10 text-center">
+            <p className="text-sm font-medium mb-2">Step 2 debug</p>
+            <p className="text-sm text-muted-foreground">- isExerciseStepUnlocked: {String(isExerciseStepUnlocked)}</p>
+            <p className="text-sm text-muted-foreground">- hasDistributionResult: {String(!!distributionResult)}</p>
+            <p className="text-sm text-muted-foreground">- hasExerciseDraft: {String(!!exerciseDraft)}</p>
+            <p className="text-sm text-muted-foreground">- hasPreviewResult: {String(!!previewResult)}</p>
+            <p className="text-sm text-muted-foreground">- coverageLoading: {String(!!coverageLoading)}</p>
+            <p className="text-sm text-muted-foreground">- clientId: {String(clientId)}</p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Step 3 — Podgląd (was step 4) */}
