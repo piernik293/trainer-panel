@@ -1468,7 +1468,7 @@ export default function PlanDraftWizard() {
     if (!volumeDecisions || !effectivePrefs) return null;
     return buildDistributionRequest({
       clientId,
-      experienceLevel: typedData?.input.experienceLevel ?? null,
+      experienceLevel: typedData?.input.experienceLevel ?? volumeDecisions.metadata.experienceLevel ?? null,
       trainingDays: effectivePrefs.trainingDays,
       selectedSplitType: effectivePrefs.splitType,
       volumeDecisions,
