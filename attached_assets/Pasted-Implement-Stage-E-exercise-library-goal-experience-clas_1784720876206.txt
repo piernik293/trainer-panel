@@ -1,0 +1,239 @@
+Implement Stage E: exercise library goal/experience classification.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign UI
+- Do NOT touch wizard flow
+- Do NOT touch allocation engine
+- Do NOT rewrite the whole selection engine from scratch
+- Do NOT run tests
+- Keep changes local to:
+  - exercise-library metadata usage
+  - minimal metadata extension if needed
+  - goal-profile mapping
+  - exercise-selection filtering/ranking logic
+  - minimum necessary route/context wiring
+
+PRIMARY GOAL:
+Make the exercise library explicitly usable for smart selection by:
+1. training goal
+2. sport sub-goal
+3. experience level
+4. exercise class
+5. priority muscle support
+
+IMPORTANT PRODUCT DECISION:
+Treat these experience levels as DISTINCT:
+- Brak aktywności fizycznej
+- Początkujący
+- Średniozaawansowany
+- Zaawansowany
+
+Do NOT merge "Brak aktywności fizycznej" with "Początkujący".
+
+====================================================
+PART 1 — USE EXISTING LIBRARY METADATA FIRST
+====================================================
+
+The DB already contains useful fields such as:
+- suitable_experience_levels
+- training_goals
+- exercise_type
+- movement_pattern
+- equipment
+- neurological_fatigue
+- exercise_priority
+- suitable_for_no_activity
+- sub_target_biases
+
+Use these existing fields as the primary source of truth wherever possible.
+
+Do NOT create a giant new metadata system if current DB fields already support the decision.
+
+====================================================
+PART 2 — ADD ONLY THE MINIMUM MISSING METADATA LAYER
+====================================================
+
+If the current DB does NOT express some required concepts clearly enough,
+add the smallest practical local metadata layer only for what is missing.
+
+Allowed examples:
+- movementFamily
+- sportSpecificity tags
+- simple exerciseClass normalization
+- explicit regression/beginner classification where DB is ambiguous
+
+Do NOT create a huge taxonomy.
+Keep it practical and local.
+
+====================================================
+PART 3 — REQUIRED DECISION LAYERS
+====================================================
+
+The library / selection logic must explicitly support:
+
+A. Experience level filtering
+- Brak aktywności fizycznej → most conservative
+- Początkujący → simple and stable, but broader than no-activity
+- Średniozaawansowany → no default regression-style exercise choices when gym options exist
+- Zaawansowany → highest complexity/freedom
+
+B. Exercise class awareness
+At minimum distinguish:
+- main_compound
+- secondary_compound
+- isolation
+- core
+- plyometric_power
+- regression_beginner
+
+Use existing fields if possible:
+- exercise_type
+- movement_pattern
+- exercise_priority
+- suitable_for_no_activity
+and only supplement locally where needed.
+
+C. Goal suitability
+The library/selection must support these UI goals:
+- Budowa sylwetki
+- Zwiększenie siły
+- Redukcja tkanki tłuszczowej
+- Poprawa kondycji
+- Poprawa sprawności
+- Cel sportowy
+
+And for sport context:
+- Dynamika
+- Szybkość
+- Stabilizacja
+- athleteStatus (amatorsko / zawodowo)
+
+====================================================
+PART 4 — GOAL-TO-LIBRARY RULES
+====================================================
+
+Implement explicit library-selection bias for each goal.
+
+1. Budowa sylwetki
+- prefer hypertrophy-friendly compounds
+- prefer good local stimulus
+- allow/support more isolation than beginner/general-health flows
+- avoid random athletic/plyometric filler
+
+2. Zwiększenie siły
+- prefer main compounds and force-production patterns
+- isolation may exist as support, not as the main structure
+
+3. Redukcja tkanki tłuszczowej
+- choose fatigue-efficient resistance exercises
+- do NOT model fat loss as “just more exhausting exercise choices”
+- keep sensible resistance training quality
+
+4. Poprawa kondycji
+- prefer simple, global, repeatable movements
+- lower isolation clutter
+- do NOT treat as sport-power by default
+
+5. Poprawa sprawności
+- prefer movement quality, unilateral control, body control, trunk work
+- may allow some dynamic patterns when level allows
+- should feel more athletic than conditioning, but less specialized than sport
+
+6. Cel sportowy
+- must use sport sub-priority inputs:
+  - Dynamika
+  - Szybkość
+  - Stabilizacja
+  - athleteStatus
+- should create the strongest athletic/performance bias
+
+====================================================
+PART 5 — EXPERIENCE-SPECIFIC RULES
+====================================================
+
+A. Brak aktywności fizycznej
+- prefer very simple, stable, low-complexity exercises
+- heavily favor suitable_for_no_activity = true when available
+- minimal isolation clutter
+- no advanced plyometrics
+- no unnecessary technical lifts
+
+B. Początkujący
+- allow more basic compounds than no-activity
+- still prioritize simple and stable choices
+- more freedom than no-activity, but not full intermediate complexity
+
+C. Średniozaawansowany
+- strongly deprioritize regression/beginner-style defaults when gym equipment exists
+- plans must not be made mostly from regression exercises
+- direct shoulder/arm work should not disappear entirely when structure allows
+
+D. Zaawansowany
+- allow more targeted/direct work
+- allow more specialized choices
+- preserve logic and hierarchy
+
+====================================================
+PART 6 — METADATA GAPS THAT MUST BE ADDRESSED
+====================================================
+
+From the current library export, the biggest gaps are:
+- suitable_for_no_activity coverage is incomplete
+- sub_target_biases coverage is incomplete
+- sport-specific tags are weak or absent
+- movementFamily is not explicit
+
+Implement the smallest practical solution:
+
+1. If suitable_for_no_activity is NULL but the exercise is clearly not appropriate for no-activity,
+do NOT accidentally promote it through weak heuristics.
+
+2. If direct-work muscle bias is missing for important accessory areas
+(biceps, triceps, legs compounds, core),
+add the minimum local classification/bias logic needed for better selection.
+
+3. If sport-specific tagging is missing,
+create the smallest practical local mapping for:
+- Dynamika
+- Szybkość
+- Stabilizacja
+
+4. If movementFamily is needed for better goal/use-case matching,
+add only the minimum local movement-family mapping required.
+
+====================================================
+PART 7 — DO NOT OVERBUILD
+====================================================
+
+Important:
+- Do NOT manually rewrite the entire 156-exercise library if not necessary
+- Do NOT create a massive new DB migration unless clearly required
+- Prefer:
+  1. stronger use of current DB fields
+  2. a small local metadata supplement for missing concepts
+- Focus on the exercises actually used most often by the generator path
+- Keep the solution deterministic and explainable
+
+====================================================
+PART 8 — SUCCESS CRITERIA
+====================================================
+
+After this change:
+- the library is meaningfully usable for all 6 training goals
+- sport sub-priorities actually affect selection
+- no-activity and beginner remain clearly distinct
+- intermediate users stop getting default regression-style choices
+- direct work for shoulders/arms has better library support
+- the engine relies less on guessing from names and more on structured metadata
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause
