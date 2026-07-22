@@ -29,6 +29,7 @@ import type {
   ScoredAndFilteredExercise,
   DayRecommendationExercise,
 } from "./planDraftDayRecommendationsService";
+import type { GoalProfile } from "./goalProfileService";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -90,6 +91,13 @@ export interface V0PriorityContext {
    * a preferred exercise that fails the slot filter is never admitted.
    */
   preferredExerciseKeywords?: string[];
+  /**
+   * Goal-driven decision profile built from survey.trainingGoal.
+   * Controls regression penalty, isolation deprioritisation, dynamic-work
+   * exposure, and extra arm/shoulder slots for intermediate+ users.
+   * When absent, all goal-driven effects are disabled (safe default).
+   */
+  goalProfile?: GoalProfile;
 }
 
 /**
@@ -187,6 +195,34 @@ function isPreferredExercise(
   if (keywords.length === 0) return false;
   const lower = ex.name.trim().toLowerCase();
   return keywords.some((kw) => lower.includes(kw));
+}
+
+/**
+ * True when the exercise is flagged as suitable for no-activity clients.
+ *
+ * Used by the goal-profile regression penalty: for intermediate / advanced
+ * clients whose goal is hypertrophy or strength, these regression-style
+ * exercises are sorted AFTER non-flagged candidates so they don't win compound
+ * slots when more appropriate options exist in the pool.
+ *
+ * Safe fallback: when the field is absent or null, returns false — the penalty
+ * is never applied to exercises without explicit data.
+ */
+function isRegressionCandidate(ex: ScoredAndFilteredExercise): boolean {
+  return ex.suitableForNoActivity === true;
+}
+
+/**
+ * True when the exercise has explicit isolation (Izolowane) typing.
+ *
+ * Used by the isolation-deprioritisation branch in goal-profile sorting:
+ * for strength and conditioning goals, isolation exercises are ranked after
+ * compound exercises within mixed-type slots, without blocking them entirely.
+ *
+ * Safe fallback: null / missing exerciseType returns false (no penalty applied).
+ */
+function isIsolation(ex: ScoredAndFilteredExercise): boolean {
+  return ex.exerciseType != null && norm(ex.exerciseType) === "izolowane";
 }
 
 /**
@@ -396,26 +432,56 @@ function priorityRank(ex: ScoredAndFilteredExercise): number {
 /**
  * Sort candidates deterministically:
  *   0. Preferred exercise boost (keyword match → front of band)
- *   1. exercisePriority high → low  ("Bardzo wysoki" first)
- *   2. learningDifficulty ascending (simpler first)
- *   3. id ascending (stable numeric tie-breaker)
+ *   1. Regression penalty — for eligible clients with penalising goal profile,
+ *      suitableForNoActivity exercises rank after non-flagged ones
+ *   2. Isolation deprioritisation — for strength/conditioning goal profiles,
+ *      isolation exercises rank after compounds within mixed-type slots
+ *   3. exercisePriority high → low  ("Bardzo wysoki" first)
+ *   4. learningDifficulty ascending (simpler first)
+ *   5. id ascending (stable numeric tie-breaker)
  */
 function sortDeterministic(
   candidates: ScoredAndFilteredExercise[],
   preferredKeywords?: string[],
+  ctx?: V0PriorityContext,
 ): ScoredAndFilteredExercise[] {
+  const gp = ctx?.goalProfile;
+  const penalizeRegression = gp?.penalizeRegressionForEligible === true && ctx?.isPriorityEligible === true;
+  const deIsolation = gp?.deprioritizeIsolationInMixedSlots === true;
+
   return [...candidates].sort((a, b) => {
+    // 0. Preferred exercise boost
     if (preferredKeywords && preferredKeywords.length > 0) {
       const prefA = isPreferredExercise(a, preferredKeywords) ? 0 : 1;
       const prefB = isPreferredExercise(b, preferredKeywords) ? 0 : 1;
       if (prefA !== prefB) return prefA - prefB;
     }
+
+    // 1. Regression penalty (for eligible clients with hypertrophy/strength goal)
+    if (penalizeRegression) {
+      const regA = isRegressionCandidate(a) ? 1 : 0;
+      const regB = isRegressionCandidate(b) ? 1 : 0;
+      if (regA !== regB) return regA - regB;
+    }
+
+    // 2. Isolation deprioritisation (for strength/conditioning goal profiles)
+    if (deIsolation) {
+      const isoA = isIsolation(a) ? 1 : 0;
+      const isoB = isIsolation(b) ? 1 : 0;
+      if (isoA !== isoB) return isoA - isoB;
+    }
+
+    // 3. exercisePriority
     const pa = priorityRank(a),
       pb = priorityRank(b);
     if (pa !== pb) return pa - pb;
+
+    // 4. learningDifficulty
     const la = a.learningDifficulty ?? 99,
       lb = b.learningDifficulty ?? 99;
     if (la !== lb) return la - lb;
+
+    // 5. id
     return a.id - b.id;
   });
 }
@@ -459,8 +525,13 @@ function sortWithPriority(
   usedPatternsByMuscle: Map<string, Set<string>>,
 ): ScoredAndFilteredExercise[] {
   if (!ctx.isPriorityEligible || (ctx.tierA.length === 0 && ctx.tierB.length === 0)) {
-    return sortDeterministic(candidates, ctx.preferredExerciseKeywords);
+    return sortDeterministic(candidates, ctx.preferredExerciseKeywords, ctx);
   }
+
+  const gp = ctx.goalProfile;
+  const penalizeRegression = gp?.penalizeRegressionForEligible === true && ctx.isPriorityEligible;
+  const deIsolation = gp?.deprioritizeIsolationInMixedSlots === true;
+
   return [...candidates].sort((a, b) => {
     // 0. Preferred exercise boost (before tier rank)
     const preferred = ctx.preferredExerciseKeywords ?? [];
@@ -468,6 +539,15 @@ function sortWithPriority(
       const prefA = isPreferredExercise(a, preferred) ? 0 : 1;
       const prefB = isPreferredExercise(b, preferred) ? 0 : 1;
       if (prefA !== prefB) return prefA - prefB;
+    }
+
+    // 0.5. Regression penalty — regression exercises sink below non-regression
+    //      even before tier rank, because a regression exercise should not win
+    //      a compound slot just by being Tier A.
+    if (penalizeRegression) {
+      const regA = isRegressionCandidate(a) ? 1 : 0;
+      const regB = isRegressionCandidate(b) ? 1 : 0;
+      if (regA !== regB) return regA - regB;
     }
 
     // 1. Client muscle tier
@@ -512,6 +592,16 @@ function sortWithPriority(
           : 1;
         if (barbellA !== barbellB) return barbellA - barbellB;
       }
+    }
+
+    // 2.6. Isolation deprioritisation within the same tier (strength/conditioning)
+    //
+    // Applied after tier rank so Tier A isolation still beats Tier C compound —
+    // this only re-orders exercises that would otherwise tie on tier.
+    if (deIsolation) {
+      const isoA = isIsolation(a) ? 1 : 0;
+      const isoB = isIsolation(b) ? 1 : 0;
+      if (isoA !== isoB) return isoA - isoB;
     }
 
     // 3. Exercise library priority
@@ -610,7 +700,7 @@ export function runExerciseSelectionEngineV0(
     const candidates =
       ctx?.isPriorityEligible
         ? sortWithPriority(filtered, ctx, usedPatternsByMuscle)
-        : sortDeterministic(filtered, ctx?.preferredExerciseKeywords);
+        : sortDeterministic(filtered, ctx?.preferredExerciseKeywords, ctx);
 
     console.log(
       `SESSION_TYPE: ${sessionType} | SLOT: ${slotName} | CANDIDATE_COUNT: ${candidates.length}`,
@@ -997,8 +1087,18 @@ export function runExerciseSelectionEngineV0(
           (ex) => muscle(ex, "Triceps", "Barki"),
         );
 
-        // Slot 5: whitelist-gated — only sensible upper-body accessory / isolation / core.
-        // isUpperAccessorySafe is the primary gate; isLowerBodyDominant is an extra guard.
+        // Slot 5 (optional): for intermediate/advanced clients with an isolation-valued
+        // goal profile (hypertrophy / fat-loss), add a second arm or shoulder slot so
+        // biceps work doesn't disappear from chest-heavy days.
+        if (ctx?.isPriorityEligible && ctx.goalProfile?.isolationValued) {
+          pick(
+            "Second arm or shoulder",
+            false,
+            (ex) => muscle(ex, "Biceps", "Triceps", "Barki"),
+          );
+        }
+
+        // Slot 6 (optional): whitelist-gated accessory or core — always last.
         pick(
           "Accessory or core",
           false,
@@ -1073,6 +1173,19 @@ export function runExerciseSelectionEngineV0(
               norm(ex.exerciseType) === "izolowane" &&
               pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome")),
         );
+
+        // Slot 4.5 (optional): for intermediate/advanced clients with an isolation-valued
+        // goal profile (hypertrophy / fat-loss), guarantee a triceps slot so arm work
+        // doesn't disappear entirely from back-priority upper sessions.
+        // Back-priority already covers back well via slots 1–2; triceps rounds out the
+        // pressing synergist chain that overhead press and push days normally handle.
+        if (ctx?.isPriorityEligible && ctx.goalProfile?.isolationValued) {
+          pick(
+            "Triceps direct work",
+            false,
+            (ex) => muscle(ex, "Triceps"),
+          );
+        }
 
         // Slot 5: whitelist-gated — only sensible upper-body accessory / isolation / core.
         // isUpperAccessorySafe is the primary gate (rejects shrugs, back extensions,

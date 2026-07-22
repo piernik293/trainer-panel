@@ -43,6 +43,16 @@ export interface ScoredAndFilteredExercise {
    * null = no bias data; exercise competes on base score only (safe fallback).
    */
   subTargetBiases?: SubTargetBiases | null;
+  /**
+   * True when the DB marks this exercise as confirmed suitable for
+   * "Brak aktywności fizycznej" clients (no-activity / start-adaptive segment).
+   *
+   * Used by the goal-profile regression penalty in ExerciseSelectionEngineV0:
+   * for intermediate/advanced clients with hypertrophy or strength goals,
+   * exercises flagged here are sorted after non-flagged candidates so
+   * beginner-only regression movements don't default-win for experienced users.
+   */
+  suitableForNoActivity?: boolean | null;
 }
 
 export interface DayRecommendationExercise {

@@ -48,6 +48,7 @@ import {
   type V0SessionType,
   type V0PriorityContext,
 } from "../services/ExerciseSelectionEngineV0";
+import { buildGoalProfile } from "../services/goalProfileService";
 import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -197,6 +198,7 @@ router.post(
           ex.movementCategory ?? null,
         ),
         subTargetBiases: (ex.subTargetBiases as SubTargetBiases | null) ?? null,
+        suitableForNoActivity: ex.suitableForNoActivity ?? null,
       });
     }
 
@@ -262,6 +264,15 @@ router.post(
           .filter((s) => s.length >= 3)
       : [];
 
+    // ── Goal profile ───────────────────────────────────────────────────────────
+    //
+    // Maps survey.trainingGoal to a structured profile that drives:
+    //   - regression penalty (intermediate+ users no longer default to beginner moves)
+    //   - isolation de-ranking in mixed slots (for strength/conditioning goals)
+    //   - extra arm/shoulder slots in upper sessions (for hypertrophy/fat-loss goals)
+    //   - conditioning component marker (fat-loss / kondycja goals signal cardio layer)
+    const goalProfile = buildGoalProfile(survey.trainingGoal);
+
     const priorityContext: V0PriorityContext = {
       isPriorityEligible,
       tierA: survey.priorityMuscle1 ? [survey.priorityMuscle1] : [],
@@ -271,6 +282,7 @@ router.post(
       benchGoalActive: isPriorityEligible && isBenchGoal && hasBarbell,
       allowPlyometrics,
       preferredExerciseKeywords,
+      goalProfile,
     };
 
     // ── Session start — seed cross-session memory if provided ─────────────────
