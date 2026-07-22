@@ -383,6 +383,183 @@ function scoreNoActivityFit(ex: Exercise, sv: Survey): ScoreBreakdown {
   return { dimension: "noActivityFit", points, reason: null };
 }
 
+// ─── Stage E: exercise class alignment scoring ────────────────────────────────
+
+/**
+ * Derive the client's desired exercise class bias from their training goal.
+ * Mirrors the logic in goalProfileService.ts without importing from it so
+ * recommendation-engine.ts keeps its zero-HTTP-dependency contract.
+ *
+ * Bias values:
+ *   hypertrophy  — Budowa sylwetki / Redukcja tkanki tłuszczowej
+ *   strength     — Zwiększenie siły
+ *   conditioning — Poprawa kondycji
+ *   athletic     — Poprawa sprawności / Cel sportowy
+ *   general      — no recognised goal; scoring disabled
+ */
+type GoalBias = "hypertrophy" | "strength" | "conditioning" | "athletic" | "general";
+
+function inferGoalBias(sv: Survey): GoalBias {
+  const g = norm(sv.trainingGoal ?? "");
+  if (
+    g.includes("budow") || g.includes("sylwet") || g.includes("hipert") ||
+    g.includes("redukcj") || g.includes("tłuszcz") || g.includes("odchudzani") ||
+    g === "budowa sylwetki" || g === "redukcja tkanki tłuszczowej"
+  ) return "hypertrophy";
+  if (g.includes("siłę") || g.includes("siły") || g.includes("powerlifting") ||
+      g.includes("strength") || g === "zwiększenie siły") return "strength";
+  if (g.includes("kondycj") || g.includes("wytrzymałoś") || g.includes("cardio") ||
+      g.includes("aerob") || g === "poprawa kondycji") return "conditioning";
+  if (g.includes("sprawnoś") || g.includes("atletyczn") || g.includes("motoryk") ||
+      g.includes("koordynacj") || g.includes("zwinnoś") || g.includes("sportow") ||
+      g === "poprawa sprawności" || g === "cel sportowy") return "athletic";
+  return "general";
+}
+
+/**
+ * Derive the exercise's structural class from existing DB fields.
+ * No DB migration required — uses only columns already populated in the library.
+ *
+ * Class priority order (first match wins):
+ *   regression_beginner — suitableForNoActivity === true
+ *   core                — mainMuscleGroup "Brzuch"
+ *   isolation           — exerciseType "Izolowane"
+ *   plyometric_power    — movementCategory "plyometryczne" or jump/explosive pattern
+ *   main_compound       — compound with exercisePriority "Bardzo wysoki" | "Wysoki"
+ *   secondary_compound  — all remaining (compound with Średni/Niski priority, or unlabelled)
+ */
+type ExerciseClass =
+  | "regression_beginner"
+  | "core"
+  | "isolation"
+  | "plyometric_power"
+  | "main_compound"
+  | "secondary_compound";
+
+function deriveExerciseClass(ex: Exercise): ExerciseClass {
+  if (ex.suitableForNoActivity === true) return "regression_beginner";
+  if (norm(ex.mainMuscleGroup ?? "") === "brzuch") return "core";
+  if (ex.exerciseType != null && norm(ex.exerciseType) === "izolowane") return "isolation";
+
+  const mp = norm(ex.movementPattern ?? "");
+  const mc = norm(ex.movementCategory ?? "");
+  if (
+    mc === "plyometryczne" || mc.includes("plyomet") ||
+    mp === "skok" || mp === "wyskok" || mp.includes("wybici")
+  ) return "plyometric_power";
+
+  if (ex.exerciseType != null && norm(ex.exerciseType) === "złożone") {
+    const pri = ex.exercisePriority;
+    if (pri === "Bardzo wysoki" || pri === "Wysoki") return "main_compound";
+    return "secondary_compound";
+  }
+
+  return "secondary_compound"; // functional / unlabelled fallback
+}
+
+/**
+ * Exercise class alignment with the client's training goal.
+ *
+ * Rewards exercises whose structural class fits the goal's selection philosophy;
+ * mildly penalises mismatches (e.g. isolation in a strength context).
+ *
+ * Points ranges:
+ *   hypertrophy  → compound +6, isolation +4, plyometric −4
+ *   strength     → main_compound +8, secondary_compound +4, isolation −3
+ *   conditioning → compound +5, isolation −5
+ *   athletic     → main_compound +6, secondary_compound +3, plyometric_power +5, isolation −4
+ *   general      → 0 (no bias)
+ *
+ * MAX positive: +8 (strength / main compound).  Not added to MAX_RAW_SCORE —
+ * same pattern as scoreNoActivityFit: the Math.min(100, …) cap handles overshoot
+ * and these points only fire when the goal is set.
+ */
+function scoreExerciseClassAlignment(ex: Exercise, sv: Survey): ScoreBreakdown {
+  const bias = inferGoalBias(sv);
+  if (bias === "general") return { dimension: "exerciseClassAlignment", points: 0, reason: null };
+
+  const cls = deriveExerciseClass(ex);
+  let points = 0;
+
+  switch (bias) {
+    case "hypertrophy":
+      if (cls === "main_compound" || cls === "secondary_compound") points = 6;
+      else if (cls === "isolation") points = 4;
+      else if (cls === "plyometric_power") points = -4;
+      break;
+    case "strength":
+      if (cls === "main_compound") points = 8;
+      else if (cls === "secondary_compound") points = 4;
+      else if (cls === "isolation") points = -3;
+      break;
+    case "conditioning":
+      if (cls === "main_compound" || cls === "secondary_compound") points = 5;
+      else if (cls === "isolation") points = -5;
+      break;
+    case "athletic":
+      if (cls === "main_compound") points = 6;
+      else if (cls === "secondary_compound") points = 3;
+      else if (cls === "plyometric_power") points = 5;
+      else if (cls === "isolation") points = -4;
+      break;
+  }
+
+  return {
+    dimension: "exerciseClassAlignment",
+    points,
+    reason: points > 0 ? `Klasa ćwiczenia dopasowana do celu (${cls})` : null,
+  };
+}
+
+/**
+ * Sub-target muscle bias matching.
+ *
+ * Reads the exercise's sub_target_biases JSONB column (populated for ~62/156
+ * exercises — chest inner/outer, back width/thickness, shoulder front/lateral, etc.)
+ * and adds +5 per sub-target key that matches one of the client's priority muscles.
+ *
+ * This fills the gap where scorePriorityMuscles only checks mainMuscleGroup:
+ * a rear-delt exercise whose mainMuscleGroup is "Barki" would score full priority
+ * match, but a chest-emphasis cable fly whose mainMuscleGroup is "Klatka piersiowa"
+ * can now get an extra +5 when the client prioritises the chest inner region.
+ *
+ * Matching: sub-target key vs priority muscle via substring (both directions).
+ * Cap: +12 (prevents a single exercise from outranking everything via sub-biases alone).
+ *
+ * MAX positive: +12.  Not added to MAX_RAW_SCORE — same pattern as above.
+ */
+function scoreSubTargetBias(ex: Exercise, sv: Survey): ScoreBreakdown {
+  const biases = ex.subTargetBiases as Record<string, number> | null | undefined;
+  if (!biases || typeof biases !== "object" || Array.isArray(biases)) {
+    return { dimension: "subTargetBias", points: 0, reason: null };
+  }
+
+  const priorityMuscles = [sv.priorityMuscle1, sv.priorityMuscle2, sv.priorityMuscle3]
+    .filter((m): m is string => !!m?.trim())
+    .map(norm);
+
+  if (priorityMuscles.length === 0) {
+    return { dimension: "subTargetBias", points: 0, reason: null };
+  }
+
+  let points = 0;
+  for (const [key, weight] of Object.entries(biases)) {
+    if (typeof weight !== "number" || weight <= 0) continue;
+    const keyNorm = norm(key);
+    const matches = priorityMuscles.some(
+      (m) => keyNorm.includes(m) || m.includes(keyNorm),
+    );
+    if (matches) points += 5;
+  }
+
+  points = Math.min(points, 12);
+  return {
+    dimension: "subTargetBias",
+    points,
+    reason: points > 0 ? "Ćwiczenie angażuje priorytetowe partie cząstkowe" : null,
+  };
+}
+
 // ─── Main public function ─────────────────────────────────────────────────────
 
 /**
@@ -419,6 +596,14 @@ export function scoreExercise(exercise: Exercise, survey: Survey): ExerciseScore
     scoreExercisePriority(exercise),
     scoreDifficultyMatch(exercise, survey),
     scoreNoActivityFit(exercise, survey),
+    // Stage E: goal-class alignment and sub-target bias.
+    // These add up to +8 and +12 respectively for well-matched exercises.
+    // MAX_RAW_SCORE is intentionally not increased — following the same pattern
+    // as scoreNoActivityFit: the Math.min(100, …) cap handles overshoot, and
+    // these dimensions only fire meaningfully when the client has a specific goal
+    // or priority muscles set.
+    scoreExerciseClassAlignment(exercise, survey),
+    scoreSubTargetBias(exercise, survey),
     penaliseAvoidedMuscles(exercise, survey),
   ];
 

@@ -63,6 +63,7 @@ import {
   type V0SessionType,
 } from "../services/ExerciseSelectionEngineV0";
 import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
+import { buildGoalProfile } from "../services/goalProfileService";
 
 const router: IRouter = Router();
 
@@ -289,10 +290,24 @@ router.get(
       // merged with "Początkujący".  isNoActivityClient signals the sort to prefer
       // suitableForNoActivity exercises within each slot's band.
       const isNoActivityClient = survey.experienceLevel === "Brak aktywności fizycznej";
+      // "Początkujący" is a distinct, separate level — broader than no-activity
+      // but still prefers simpler exercises over complex isolation choices.
+      const isBeginnerClient = survey.experienceLevel === "Początkujący";
+
+      // Build goal profile so all goal-driven sort steps fire (regression penalty,
+      // isolation de-ranking, athletic compound bias, neuro-load, unilateral bias).
+      // Previously absent from this route — Stage E wires it in.
+      const goalProfile = buildGoalProfile(
+        survey.trainingGoal,
+        survey.sportPerformanceNeeds ?? [],
+        survey.athleteStatus,
+      );
 
       const v0PriorityContext: V0PriorityContext = {
         isPriorityEligible,
         isNoActivityClient,
+        isBeginnerClient,
+        goalProfile,
         tierA: survey.priorityMuscle1 ? [survey.priorityMuscle1] : [],
         tierB: [survey.priorityMuscle2, survey.priorityMuscle3].filter(
           (v): v is string => v !== null && v !== undefined && v.trim() !== "",

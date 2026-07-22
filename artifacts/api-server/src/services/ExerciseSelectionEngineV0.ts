@@ -75,6 +75,21 @@ export interface V0PriorityContext {
    * Note: isPriorityEligible is always false when isNoActivityClient is true.
    */
   isNoActivityClient?: boolean;
+  /**
+   * True when the client's experience level is exactly "Początkujący".
+   *
+   * Distinct from both "Brak aktywności fizycznej" (more conservative) and
+   * intermediate+ (where priority-muscle tier ranking applies).
+   *
+   * When true, sortDeterministic adds a mild preference for exercises with
+   * learningDifficulty ≤ 2 over those with learningDifficulty ≥ 4 within each
+   * slot's band.  The mid-range (3 or null) is neutral.
+   *
+   * This is NOT a hard filter — it only re-orders within the existing band so
+   * the slot structure (compound vs isolation, muscle group) is always respected.
+   * isPriorityEligible is always false when isBeginnerClient is true.
+   */
+  isBeginnerClient?: boolean;
   /** Tier A: the client's first-priority muscle group. */
   tierA: string[];
   /** Tier B: second and third priority muscle groups. */
@@ -473,6 +488,54 @@ function isPullRearDeltUpperBackSafe(ex: ScoredAndFilteredExercise): boolean {
   return false;
 }
 
+// ─── Exercise class derivation ────────────────────────────────────────────────
+
+/**
+ * Six-way structural classification of exercises using only existing DB fields.
+ * No DB migration required.
+ *
+ * Used by:
+ *   • sortDeterministic / sortWithPriority — for athleticCompoundBias step
+ *   • Future slot-level decision logic that needs finer class resolution than
+ *     the current compound / isolation binary
+ *
+ * Priority order (first match wins):
+ *   regression_beginner  suitableForNoActivity === true
+ *   core                 mainMuscleGroup "Brzuch"
+ *   isolation            exerciseType "Izolowane"
+ *   plyometric_power     movementCategory "plyometryczne" OR jump/explosive pattern
+ *   main_compound        compound with exercisePriority "Bardzo wysoki" | "Wysoki"
+ *   secondary_compound   all other compounds + unlabelled functional exercises
+ */
+export type ExerciseClass =
+  | "regression_beginner"
+  | "core"
+  | "isolation"
+  | "plyometric_power"
+  | "main_compound"
+  | "secondary_compound";
+
+export function deriveExerciseClass(ex: ScoredAndFilteredExercise): ExerciseClass {
+  if (ex.suitableForNoActivity === true) return "regression_beginner";
+  if (norm(ex.mainMuscleGroup) === "brzuch") return "core";
+  if (isIsolation(ex)) return "isolation";
+
+  const mc = norm(ex.movementCategoryKey ?? "");
+  const mp = normP(ex.movementPattern ?? "") ?? "";
+  if (
+    mc === "plyometryczne" || mc.includes("plyomet") ||
+    mp === "skok" || mp === "wyskok" || mp.includes("wybici")
+  ) return "plyometric_power";
+
+  if (compound(ex)) {
+    const pri = ex.exercisePriority;
+    if (pri === "Bardzo wysoki" || pri === "Wysoki") return "main_compound";
+    return "secondary_compound";
+  }
+
+  return "secondary_compound";
+}
+
 // ─── Deterministic candidate ordering ────────────────────────────────────────
 
 const PRIORITY_RANK: Record<string, number> = {
@@ -507,6 +570,12 @@ function sortDeterministic(
   const gp = ctx?.goalProfile;
   const penalizeRegression = gp?.penalizeRegressionForEligible === true && ctx?.isPriorityEligible === true;
   const deIsolation = gp?.deprioritizeIsolationInMixedSlots === true;
+  // Stage E: athleticCompoundBias — deprioritise isolation in sport/athletic
+  // contexts.  Kept separate from deIsolation (which serves strength/conditioning)
+  // because the rationale differs: sport goals need athletic multi-joint compounds,
+  // not bodybuilding-style isolation; strength/conditioning goals need dominant
+  // compound movements to be the primary session structure.
+  const athleticBias = gp?.athleticCompoundBias === true;
 
   return [...candidates].sort((a, b) => {
     // 0. Preferred exercise boost
@@ -528,6 +597,23 @@ function sortDeterministic(
       const naA = isRegressionCandidate(a) ? 0 : 1; // 0 = preferred (front)
       const naB = isRegressionCandidate(b) ? 0 : 1;
       if (naA !== naB) return naA - naB;
+    }
+
+    // 1c. Beginner preference (Stage E) — for "Początkujący" clients, rank
+    //     exercises with learningDifficulty ≤ 2 before complex ones (≥ 4).
+    //     Exercises in the middle (3 or null) are neutral.
+    //     "Początkujący" is explicitly distinct from "Brak aktywności":
+    //     beginners can handle basic compound lifting; inactive clients cannot.
+    if (ctx?.isBeginnerClient) {
+      const ldBucket = (v: number | null | undefined): number => {
+        if (v == null) return 1;
+        if (v <= 2) return 0;
+        if (v >= 4) return 2;
+        return 1;
+      };
+      const ldA = ldBucket(a.learningDifficulty);
+      const ldB = ldBucket(b.learningDifficulty);
+      if (ldA !== ldB) return ldA - ldB;
     }
 
     // 1b. Regression penalty (for eligible clients with hypertrophy/strength goal)
@@ -564,6 +650,17 @@ function sortDeterministic(
 
     // 4. Isolation deprioritisation (for strength/conditioning goal profiles)
     if (deIsolation) {
+      const isoA = isIsolation(a) ? 1 : 0;
+      const isoB = isIsolation(b) ? 1 : 0;
+      if (isoA !== isoB) return isoA - isoB;
+    }
+
+    // 4b. Athletic compound bias (Stage E) — for sport / athletic goals, isolation
+    //     exercises are deprioritised within the same slot band.  Kept separate
+    //     from deIsolation (which serves strength / conditioning) because the
+    //     rationale differs: sport goals need athletic multi-joint compounds,
+    //     not bodybuilding isolation clutter.
+    if (athleticBias) {
       const isoA = isIsolation(a) ? 1 : 0;
       const isoB = isIsolation(b) ? 1 : 0;
       if (isoA !== isoB) return isoA - isoB;
@@ -629,6 +726,8 @@ function sortWithPriority(
   const gp = ctx.goalProfile;
   const penalizeRegression = gp?.penalizeRegressionForEligible === true && ctx.isPriorityEligible;
   const deIsolation = gp?.deprioritizeIsolationInMixedSlots === true;
+  // Stage E: mirror of the athleticBias const in sortDeterministic (see there for rationale).
+  const athleticBias = gp?.athleticCompoundBias === true;
 
   return [...candidates].sort((a, b) => {
     // 0. Preferred exercise boost (before tier rank)
@@ -647,6 +746,22 @@ function sortWithPriority(
       const naA = isRegressionCandidate(a) ? 0 : 1;
       const naB = isRegressionCandidate(b) ? 0 : 1;
       if (naA !== naB) return naA - naB;
+    }
+
+    // 0.55. Beginner preference (Stage E) — same logic as in sortDeterministic.
+    //       isPriorityEligible is always false for "Początkujący" clients, so
+    //       sortWithPriority falls through to sortDeterministic in practice.
+    //       Included here for completeness / edge-case safety.
+    if (ctx.isBeginnerClient) {
+      const ldBucket = (v: number | null | undefined): number => {
+        if (v == null) return 1;
+        if (v <= 2) return 0;
+        if (v >= 4) return 2;
+        return 1;
+      };
+      const ldA = ldBucket(a.learningDifficulty);
+      const ldB = ldBucket(b.learningDifficulty);
+      if (ldA !== ldB) return ldA - ldB;
     }
 
     // 0.6. Regression penalty — regression exercises sink below non-regression
@@ -731,6 +846,16 @@ function sortWithPriority(
     // Applied after tier rank so Tier A isolation still beats Tier C compound —
     // this only re-orders exercises that would otherwise tie on tier.
     if (deIsolation) {
+      const isoA = isIsolation(a) ? 1 : 0;
+      const isoB = isIsolation(b) ? 1 : 0;
+      if (isoA !== isoB) return isoA - isoB;
+    }
+
+    // 2.7. Athletic compound bias (Stage E) — sport / athletic goals deprioritise
+    //      isolation within the same tier band.  Applied after tier rank so Tier A
+    //      isolation still beats Tier C compound; analogous to step 2.6 for
+    //      strength/conditioning but driven by a separate flag.
+    if (athleticBias) {
       const isoA = isIsolation(a) ? 1 : 0;
       const isoB = isIsolation(b) ? 1 : 0;
       if (isoA !== isoB) return isoA - isoB;

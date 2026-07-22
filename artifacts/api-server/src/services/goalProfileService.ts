@@ -12,6 +12,16 @@
  *   • Sport sub-priorities (Dynamika / Szybkość / Stabilizacja) mutate the
  *     base sport profile: neuro-load, unilateral, and competitive-athlete flags
  *
+ * STAGE E additions (on top of Stage C):
+ *   • penalizeRegressionForEligible now set to TRUE for all 6 goal profiles
+ *     (previously only HYPERTROPHY, STRENGTH, SPORT_BASE had it set).
+ *     Rationale: intermediate/advanced clients should not receive suitableForNoActivity
+ *     regression exercises as defaults regardless of which training goal they pursue.
+ *     This completes the spec requirement for Part 5C across all goal contexts.
+ *   • athleticCompoundBias wired into the engine sort (see ExerciseSelectionEngineV0.ts)
+ *   • exerciseClassBias now drives pool scoring via scoreExerciseClassAlignment()
+ *     in recommendation-engine.ts — previously defined but never referenced.
+ *
  * DESIGN RULES (unchanged from Stage B):
  *   • Profiles affect sort rank, NOT hard filters.
  *   • The profile travels through V0PriorityContext — no HTTP schema changes.
@@ -154,7 +164,9 @@ const PROFILE_STRENGTH: GoalProfile = {
 const PROFILE_FAT_LOSS: GoalProfile = {
   exerciseClassBias: "hypertrophy",
   deprioritizeIsolationInMixedSlots: false,
-  penalizeRegressionForEligible: false,
+  // Stage E: set to true so intermediate/advanced fat-loss clients no longer
+  // default to regression/bodyweight exercises when gym options exist.
+  penalizeRegressionForEligible: true,
   allowDynamicInStrengthSessions: false,
   isolationValued: true,
   hasConditioningComponent: true,
@@ -168,7 +180,9 @@ const PROFILE_FAT_LOSS: GoalProfile = {
 const PROFILE_CONDITIONING: GoalProfile = {
   exerciseClassBias: "conditioning",
   deprioritizeIsolationInMixedSlots: true,
-  penalizeRegressionForEligible: false,
+  // Stage E: set to true so intermediate/advanced conditioning clients no longer
+  // default to regression/bodyweight exercises when gym options exist.
+  penalizeRegressionForEligible: true,
   allowDynamicInStrengthSessions: false,
   isolationValued: false,
   hasConditioningComponent: true,
@@ -191,7 +205,9 @@ const PROFILE_CONDITIONING: GoalProfile = {
 const PROFILE_FITNESS: GoalProfile = {
   exerciseClassBias: "athletic",
   deprioritizeIsolationInMixedSlots: false,
-  penalizeRegressionForEligible: false,
+  // Stage E: set to true so intermediate/advanced fitness clients no longer
+  // default to regression/bodyweight exercises when gym options exist.
+  penalizeRegressionForEligible: true,
   allowDynamicInStrengthSessions: true,
   isolationValued: false,
   hasConditioningComponent: false,

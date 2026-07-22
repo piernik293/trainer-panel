@@ -300,10 +300,15 @@ router.post(
     // but isNoActivityClient additionally signals the sort to actively prefer
     // suitableForNoActivity exercises within each slot's band.
     const isNoActivityClient = survey.experienceLevel === "Brak aktywności fizycznej";
+    // "Początkujący" is a distinct, separate level from "Brak aktywności fizycznej".
+    // It allows more basic compound lifting but still prefers simpler exercises over
+    // complex isolation-heavy choices — the engine's isBeginnerClient sort step handles this.
+    const isBeginnerClient = survey.experienceLevel === "Początkujący";
 
     const priorityContext: V0PriorityContext = {
       isPriorityEligible,
       isNoActivityClient,
+      isBeginnerClient,
       tierA: survey.priorityMuscle1 ? [survey.priorityMuscle1] : [],
       tierB: [survey.priorityMuscle2, survey.priorityMuscle3].filter(
         (v): v is string => v !== null && v !== undefined && v.trim() !== "",
