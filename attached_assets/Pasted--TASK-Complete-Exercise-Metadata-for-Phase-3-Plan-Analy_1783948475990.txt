@@ -1,0 +1,814 @@
+# TASK — Complete Exercise Metadata for Phase 3 Plan Analysis
+
+This task improves the quality of the existing Exercise Library data so that Workout Builder Phase 3 can correctly analyse:
+
+- movement categories,
+- specific movement patterns,
+- compound vs isolation exercises,
+- bilateral vs unilateral exercises,
+- planes of motion,
+- suitability for experience levels,
+- exercise difficulty and fatigue characteristics.
+
+This is a DATA QUALITY AND METADATA COMPLETION task.
+
+Do NOT add a new Workout Builder phase.
+Do NOT implement automatic workout generation.
+Do NOT implement AI.
+Do NOT redesign the Exercise Library.
+Do NOT import hundreds of new exercises during this task.
+
+============================================================
+IMPORTANT SAFETY RULES
+============================================================
+
+Preserve all existing functionality.
+
+Do NOT:
+
+- modify the Volume Calculator formula,
+- modify approved volume-guideline values,
+- modify the existing 44 guideline rows,
+- modify the four experience levels,
+- change muscle coefficients without explicit evidence of an error,
+- delete existing muscle assignments,
+- create additional volume targets,
+- create a twelfth volume target,
+- delete existing exercises,
+- replace existing Exercise Library IDs,
+- reset or reseed the database,
+- modify Workout Builder Phase 1,
+- modify Workout Builder Phase 2,
+- modify Workout Builder Phase 3 formulas or thresholds,
+- modify Training Interview logic,
+- implement automatic exercise replacement.
+
+Specific anatomical muscles may remain assigned to exercises even when they are not separate volume targets.
+
+Example:
+
+- Mięsień obły większy may remain a specific secondary muscle assignment.
+- It must not become a new independent volume target.
+- It should map into an existing relevant target where the current target-membership architecture supports it.
+- The existing maximum-coefficient logic within one volume target must remain unchanged.
+
+============================================================
+OBJECTIVE
+============================================================
+
+Audit and complete the metadata of all exercises currently stored in the Exercise Library.
+
+The current database contains only a small number of exercises, including approximately:
+
+- Plank
+- Podciąganie na drążku
+- Przysiad ze sztangą
+- Wyciskanie hantli nad głowę
+- Wyciskanie sztangi leżąc
+
+Do not rely only on this list.
+
+First inspect the live database and process every existing exercise record.
+
+After this task, every existing exercise should contain enough metadata for:
+
+- Phase 3 movement analysis,
+- Exercise Recommendation Engine,
+- No Activity exercise ranking,
+- completeness validation,
+- future bulk import templates.
+
+============================================================
+STEP 1 — AUDIT CURRENT EXERCISES
+============================================================
+
+Before changing data, inspect every existing exercise.
+
+For each exercise report:
+
+- exercise ID,
+- exercise name,
+- current status,
+- current main muscle group,
+- current secondary muscle groups,
+- current movementPattern,
+- current movementCategory,
+- current exerciseType,
+- current execution,
+- current planeOfMotion,
+- current suitableExperienceLevels,
+- current trainingGoals,
+- current resistanceType,
+- current requiresSpotter value,
+- current canBePerformedToFailure value,
+- current jointStress,
+- current learningDifficulty,
+- current neurologicalFatigue,
+- current domsPotential,
+- current exercisePriority,
+- current muscle assignments,
+- current muscle coefficients,
+- current completeness status,
+- missing metadata fields.
+
+Do not modify any record before the audit is complete.
+
+============================================================
+STEP 2 — USE EXISTING CANONICAL VALUES
+============================================================
+
+Inspect the existing constants, enums, schemas and validation rules.
+
+Use the exact canonical values already supported by the project.
+
+Do not create spelling variants such as:
+
+- "Vertical pull"
+- "vertical_pull"
+- "Przyciąganie Pionowe"
+- "przyciąganie pionowe"
+
+when one canonical value already exists.
+
+Centralize normalization where required.
+
+Use existing project values for:
+
+Movement Category:
+
+- Push
+- Pull
+- Squat
+- Hinge
+- Lunge
+- Carry
+- Rotation
+- Core
+
+Exercise Type:
+
+- Compound
+- Isolation
+
+Execution:
+
+- Bilateral
+- Unilateral
+
+Plane of Motion:
+
+- Sagittal
+- Frontal
+- Transverse
+
+Use the current Polish labels in the user interface when the project already displays Polish labels.
+
+Do not rename existing database values without a safe compatibility layer.
+
+============================================================
+STEP 3 — REQUIRED ANALYSIS METADATA
+============================================================
+
+Every active exercise should contain:
+
+- movementPattern
+- movementCategory
+- exerciseType
+- execution
+- planeOfMotion
+- suitableExperienceLevels
+- learningDifficulty
+- jointStress
+- neurologicalFatigue
+- domsPotential
+- exercisePriority
+
+Also verify where applicable:
+
+- trainingGoals
+- resistanceType
+- requiresSpotter
+- canBePerformedToFailure
+- active status
+- description
+- execution instructions
+- common mistakes
+- coaching tips
+- muscle assignments
+- primary muscle assignment
+- coefficients
+
+An exercise must not be marked fully analysis-ready when the fields required by Phase 3 are missing.
+
+============================================================
+BASELINE CLASSIFICATION FOR CURRENT EXERCISES
+============================================================
+
+Use the following classifications as the approved baseline unless:
+
+- the existing canonical value names differ,
+- the exercise stored in the database is a different variation,
+- previously approved trainer data already contains a more precise classification.
+
+If a conflict exists, preserve approved data and document it.
+
+------------------------------------------------------------
+PLANK
+------------------------------------------------------------
+
+Movement category:
+- Core
+
+Movement pattern:
+- Anti-extension
+
+Exercise type:
+- Isolation
+- If the project has a more appropriate canonical core-specific type, use the existing supported type instead.
+- Do not create a new enum only for Plank.
+
+Execution:
+- Bilateral
+
+Plane of motion:
+- Sagittal
+
+Suitable experience levels:
+- Brak aktywności fizycznej
+- Początkujący
+- Średniozaawansowany
+- Zaawansowany
+
+Learning difficulty:
+- 1
+
+Joint stress:
+- Low / Niskie
+
+Neurological fatigue:
+- 1
+
+DOMS potential:
+- 1
+
+Exercise priority:
+- High / Wysoki
+
+Requires spotter:
+- No
+
+Can be performed to failure:
+- Use With Caution / Ostrożnie
+- Technique failure should end the set.
+
+------------------------------------------------------------
+PODCIĄGANIE NA DRĄŻKU
+------------------------------------------------------------
+
+Movement category:
+- Pull
+
+Movement pattern:
+- Vertical Pull / Przyciąganie pionowe
+
+Exercise type:
+- Compound
+
+Execution:
+- Bilateral
+
+Plane of motion:
+- Sagittal
+
+Suitable experience levels:
+- Średniozaawansowany
+- Zaawansowany
+
+Do not classify the standard unassisted pull-up as the default exercise for:
+
+- Brak aktywności fizycznej
+
+Assisted pull-up and pulldown variations should be separate exercises in the future.
+
+Learning difficulty:
+- 4
+
+Joint stress:
+- Medium / Średnie
+
+Neurological fatigue:
+- 3
+
+DOMS potential:
+- 3
+
+Exercise priority:
+- High / Wysoki
+
+Requires spotter:
+- No
+
+Can be performed to failure:
+- Use With Caution / Ostrożnie
+
+Preserve specific muscle assignments such as:
+
+- Mięsień najszerszy grzbietu
+- Mięsień dwugłowy ramienia
+- Mięsień czworoboczny grzbietu
+- Mięsień obły większy
+- Mięśnie przedramion
+
+Do not create a new volume target for Mięsień obły większy.
+
+------------------------------------------------------------
+PRZYSIAD ZE SZTANGĄ
+------------------------------------------------------------
+
+Movement category:
+- Squat
+
+Movement pattern:
+- Squat / Przysiad
+
+Exercise type:
+- Compound
+
+Execution:
+- Bilateral
+
+Plane of motion:
+- Sagittal
+
+Suitable experience levels:
+- Średniozaawansowany
+- Zaawansowany
+
+Do not rank it as a preferred first exercise for a client with:
+
+- Brak aktywności fizycznej
+
+Simpler future regressions should rank higher, for example:
+
+- box squat,
+- goblet squat,
+- supported squat.
+
+Learning difficulty:
+- 4
+
+Joint stress:
+- Medium or High according to the current canonical scale and stored variation
+
+Neurological fatigue:
+- 4
+
+DOMS potential:
+- 4
+
+Exercise priority:
+- High / Wysoki
+
+Requires spotter:
+- Yes, where the current equipment and loading context requires it
+
+Can be performed to failure:
+- No or Use With Caution
+- Do not recommend technical failure by default.
+
+------------------------------------------------------------
+WYCISKANIE HANTLI NAD GŁOWĘ
+------------------------------------------------------------
+
+Movement category:
+- Push
+
+Movement pattern:
+- Vertical Push / Wypychanie pionowe
+
+Exercise type:
+- Compound
+
+Execution:
+- Bilateral
+
+Plane of motion:
+- Frontal
+- Use the existing canonical plane supported by the application.
+
+Suitable experience levels:
+- Początkujący
+- Średniozaawansowany
+- Zaawansowany
+
+Do not automatically classify it as the highest-priority option for:
+
+- Brak aktywności fizycznej
+
+A stable machine or supported variation may be preferred for that level.
+
+Learning difficulty:
+- 2 or 3
+
+Joint stress:
+- Medium / Średnie
+
+Neurological fatigue:
+- 2
+
+DOMS potential:
+- 2
+
+Exercise priority:
+- Medium or High
+
+Requires spotter:
+- No by default for a controlled dumbbell variation
+
+Can be performed to failure:
+- Use With Caution / Ostrożnie
+
+------------------------------------------------------------
+WYCISKANIE SZTANGI LEŻĄC
+------------------------------------------------------------
+
+Movement category:
+- Push
+
+Movement pattern:
+- Horizontal Push / Wypychanie poziome
+
+Exercise type:
+- Compound
+
+Execution:
+- Bilateral
+
+Plane of motion:
+- Transverse
+
+Suitable experience levels:
+- Początkujący
+- Średniozaawansowany
+- Zaawansowany
+
+For:
+
+- Brak aktywności fizycznej
+
+rank a stable machine press, incline push-up or light dumbbell variation higher unless the trainer deliberately selects the barbell exercise.
+
+Learning difficulty:
+- 3
+
+Joint stress:
+- Medium / Średnie
+
+Neurological fatigue:
+- 3
+
+DOMS potential:
+- 3
+
+Exercise priority:
+- High / Wysoki
+
+Requires spotter:
+- Yes when meaningful external load is used
+
+Can be performed to failure:
+- Use With Caution / Ostrożnie
+
+============================================================
+NO-ACTIVITY METADATA QUALITY
+============================================================
+
+For exercises suitable for:
+
+"Brak aktywności fizycznej"
+
+verify that their metadata supports the existing introductory-stage scoring.
+
+Preferred characteristics:
+
+- learningDifficulty: 1–2
+- jointStress: Low or Medium
+- neurologicalFatigue: 1–2
+- domsPotential: 1–2
+- stable execution
+- simple movement pattern
+- no mandatory spotter where possible
+- complete execution instructions
+- clear coaching tips
+- available regression
+- active status
+
+Do not mark a technically advanced exercise as suitable for No Activity only to avoid a completeness warning.
+
+Suitability must be honest.
+
+============================================================
+MUSCLE ASSIGNMENTS
+============================================================
+
+Audit muscle assignments, but do not casually change approved coefficients.
+
+Verify:
+
+- at least one primary muscle exists,
+- primary coefficient is normally 1.00 where already approved,
+- secondary coefficients remain within the valid supported range,
+- no invalid coefficient is present,
+- specific muscles map correctly into existing volume targets,
+- one exercise does not create a new volume target,
+- multiple specific muscles in one target continue to use the existing maximum-coefficient rule.
+
+If a coefficient appears questionable:
+
+- report it,
+- do not change it automatically unless there is a clear existing specification.
+
+============================================================
+ANALYSIS READINESS
+============================================================
+
+After completing metadata, compute an analysis-readiness status.
+
+Recommended internal states:
+
+- Analysis Ready
+- Missing Analysis Metadata
+
+Required analysis fields:
+
+- movementPattern
+- movementCategory
+- exerciseType
+- execution
+- planeOfMotion
+- valid working metadata
+- existing Exercise Library record
+
+Reuse the existing completeness system where possible.
+
+Do not create a competing completeness engine.
+
+If the existing completeness service already supports configurable missing fields, extend it cleanly.
+
+Recommended Polish UI labels:
+
+- Gotowe do analizy planu
+- Brak danych do analizy
+
+When metadata is missing, show the exact missing fields.
+
+============================================================
+DATABASE UPDATE STRATEGY
+============================================================
+
+Update existing exercise records safely.
+
+Requirements:
+
+- Use existing exercise IDs.
+- Do not delete and recreate exercises.
+- Do not create duplicate names.
+- Do not overwrite unrelated approved text fields.
+- Do not erase existing descriptions or instructions.
+- Use an idempotent backfill or update script.
+- Running the update twice must not create duplicates.
+- Record the original and final values in the report.
+- Preserve all plan references to the exercises.
+
+Do not use destructive reseeding.
+
+============================================================
+PHASE 3 VERIFICATION
+============================================================
+
+After updating the metadata, verify Workout Builder Phase 3 with a real test plan containing the existing exercises.
+
+Confirm:
+
+- Bench Press is counted as Push and Horizontal Push.
+- Dumbbell Overhead Press is counted as Push and Vertical Push.
+- Pull-Up is counted as Pull and Vertical Pull.
+- Barbell Squat is counted as Squat.
+- Plank is counted as Core and Anti-extension.
+- Compound vs isolation totals are populated.
+- Bilateral vs unilateral totals are populated.
+- Plane-of-motion totals are populated.
+- Missing-metadata warnings disappear for completed fields.
+- Existing warnings remain for genuinely incomplete exercises.
+
+Do not modify Phase 3 formulas merely to make the test pass.
+
+Correct the exercise data instead.
+
+============================================================
+RECOMMENDATION ENGINE VERIFICATION
+============================================================
+
+Verify:
+
+- Plank ranks appropriately for No Activity clients.
+- Pull-Up receives a difficulty warning or lower score for No Activity clients.
+- Barbell Squat is not treated as the simplest No Activity option.
+- Beginner, Intermediate and Advanced recommendation behaviour remains unchanged.
+- No exercise is automatically blocked.
+- Trainer manual control remains available.
+
+Do not change the No Activity scoring formula during this task unless a verified metadata-value mismatch prevents it from working.
+
+============================================================
+FUTURE BULK IMPORT TEMPLATE
+============================================================
+
+Prepare a reusable metadata template for the next exercise-import batch.
+
+Do not import the large batch yet.
+
+Create or document a JSON or CSV template containing columns for:
+
+- name
+- mainMuscleGroup
+- secondaryMuscleGroups
+- movementPattern
+- movementCategory
+- exerciseType
+- execution
+- planeOfMotion
+- suitableExperienceLevels
+- trainingGoals
+- equipment
+- trainingLocation
+- resistanceType
+- difficultyLevel
+- learningDifficulty
+- jointStress
+- neurologicalFatigue
+- domsPotential
+- exercisePriority
+- requiresSpotter
+- canBePerformedToFailure
+- description
+- executionInstructions
+- commonMistakes
+- coachingTips
+- breathingTips
+- safetyNotes
+- muscleAssignments
+- muscleCoefficients
+- substitutions
+- progressions
+- regressions
+
+Use exact canonical project values in the template.
+
+Do not create placeholder records in the live database.
+
+============================================================
+AUTOMATED TESTS
+============================================================
+
+Add tests covering:
+
+1. Every current active exercise has movementPattern.
+2. Every current active exercise has movementCategory.
+3. Every current active exercise has exerciseType.
+4. Every current active exercise has execution.
+5. Every current active exercise has planeOfMotion.
+6. Every current active exercise has suitableExperienceLevels.
+7. Every current active exercise has learningDifficulty.
+8. Every current active exercise has jointStress.
+9. Every current active exercise has neurologicalFatigue.
+10. Every current active exercise has domsPotential.
+11. Every current active exercise has exercisePriority.
+12. No invalid muscle coefficient exists.
+13. No duplicate exercise was created.
+14. Existing exercise IDs remain unchanged.
+15. Existing plan references remain valid.
+16. Bench Press classifies as horizontal Push.
+17. Dumbbell Overhead Press classifies as vertical Push.
+18. Pull-Up classifies as vertical Pull.
+19. Barbell Squat classifies as Squat.
+20. Plank classifies as Core and Anti-extension.
+21. Compound/isolation analysis returns data.
+22. Bilateral/unilateral analysis returns data.
+23. Plane-of-motion analysis returns data.
+24. No Activity recommendation favours simpler exercises.
+25. No Activity recommendation warns for advanced exercises.
+26. Volume preview results remain unchanged.
+27. Phase 3 analysis formulas remain unchanged.
+28. Existing database row counts remain present.
+
+============================================================
+REGRESSION CHECKS
+============================================================
+
+Verify:
+
+- Exercise Library opens.
+- Every existing exercise opens.
+- Existing exercise details remain readable.
+- Editing and saving an exercise works.
+- Completeness status updates correctly.
+- Workout Builder opens.
+- Existing plans open.
+- Volume preview still works.
+- Phase 3 analysis still works.
+- Exercise recommendations still work.
+- Training Interview still works.
+- Four experience levels remain unchanged.
+- 44 volume guideline rows remain unchanged.
+- TypeScript checks pass.
+- API production build passes.
+- Trainer-app production build passes.
+- API server starts.
+- Trainer app starts.
+- Existing database data remains present.
+
+============================================================
+OUT OF SCOPE
+============================================================
+
+Do NOT implement:
+
+- large exercise-library import,
+- 60–100 new exercises,
+- automatic workout generation,
+- AI planning,
+- Phase 4 training methods,
+- supersets,
+- drop sets,
+- rest-pause,
+- client workout execution,
+- Client Portal,
+- chat,
+- progressive overload,
+- automatic exercise replacement,
+- new volume targets,
+- changes to approved volume coefficients.
+
+============================================================
+EXPECTED RESULT
+============================================================
+
+Every exercise currently stored in the Exercise Library should be fully usable by:
+
+- Phase 3 movement analysis,
+- Exercise Recommendation Engine,
+- No Activity suitability scoring,
+- completeness validation,
+- future bulk import workflows.
+
+Phase 3 should no longer display empty compound/isolation, bilateral/unilateral or plane-of-motion sections only because the existing exercise metadata was missing.
+
+============================================================
+REQUIRED FINAL REPORT
+============================================================
+
+After implementation provide:
+
+1. Initial exercise audit
+2. Existing exercise IDs
+3. Original missing fields
+4. Files changed
+5. Database records updated
+6. Final metadata for every exercise
+7. Muscle-assignment verification
+8. Confirmation that no new volume target was added
+9. Analysis-readiness result
+10. Phase 3 verification
+11. Recommendation Engine verification
+12. No Activity exercise-ranking evidence
+13. Automated-test results
+14. TypeScript results
+15. API build result
+16. Trainer-app build result
+17. Runtime smoke-test results
+18. Confirmation that volume calculations were unchanged
+19. Confirmation that Phase 3 formulas were unchanged
+20. Confirmation that exercise IDs and plan references were preserved
+21. Confirmation that database data was preserved
+22. Future bulk-import template location
+23. Remaining incomplete exercises or limitations
+
+Finish with exactly one verdict:
+
+- PASS
+- PASS WITH WARNINGS
+- FAIL
+
+Do not claim PASS unless:
+
+- all current active exercises have complete Phase 3 metadata,
+- current exercise IDs remain unchanged,
+- current plan references remain valid,
+- movement analysis returns populated results,
+- No Activity recommendations use the metadata correctly,
+- volume calculations remain unchanged,
+- automated tests pass,
+- TypeScript checks pass,
+- API and trainer-app builds pass,
+- existing database data remains present.

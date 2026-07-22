@@ -1,0 +1,77 @@
+Audit and fix target-group muscle mapping for exercises used by the active generator.
+
+Do NOT redesign the whole generator.
+Do NOT change UI.
+Do NOT change weekly volume formulas.
+Do NOT change selector logic except where needed to exclude broken exercises.
+This is a focused data-integrity task.
+
+==================================================
+GOAL
+==================================================
+
+The generator must not use exercises that fail to map into the system's target muscle groups.
+
+Current symptom:
+messages such as
+- "Mięsień ID ... nie należy do żadnej grupy docelowej objętości"
+- "Ćwiczenie ... nie zostało uwzględnione"
+
+This means weekly coverage and volume reporting are unreliable.
+
+==================================================
+REQUIRED TASK
+==================================================
+
+1. Audit all exercises that are currently selected by:
+- the empty-session generator
+- selector V0
+- priority-aware templates
+- controlled variety alternatives
+
+2. Identify every generated exercise that fails target-group coverage mapping.
+
+3. For each failing exercise:
+- determine whether it should map to an existing target group
+- fix the mapping if possible
+- if it cannot be mapped reliably, mark it as not eligible for V0 generation
+
+4. Ensure the following categories are checked carefully:
+- rows
+- pulldowns / pullups
+- curls
+- reverse pec deck / rear delt work
+- plank / core work
+- back support / hinge support
+- machine presses
+- triceps isolations
+- calf work
+- adductors
+
+5. After the fix:
+- generated exercises should contribute correctly to weekly target groups
+- coverage should no longer show those broken muscle-ID warnings for active generated exercises
+
+==================================================
+SAFETY RULE
+==================================================
+
+If an exercise still cannot be mapped reliably after review,
+exclude it from active V0 generation rather than keeping broken analytics.
+
+Data integrity is more important than pool size.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact exercises or mapping rules fixed
+3. exact exercises excluded from V0 if any
+4. whether weekly coverage for generated exercises is now reliable
+5. one before vs after example showing a previously broken exercise now mapping correctly
+
+End exactly with:
+
+TARGET-GROUP MAPPING RELIABILITY APPLIED

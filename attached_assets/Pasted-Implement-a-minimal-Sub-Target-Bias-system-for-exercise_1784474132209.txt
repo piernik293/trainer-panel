@@ -1,0 +1,207 @@
+Implement a minimal Sub-Target Bias system for exercise selection.
+
+Do NOT redesign the whole generator.
+Do NOT change weekly volume logic.
+Do NOT create separate weekly targets for upper chest / lower chest / rear delt etc.
+Do NOT touch UI yet unless required for compilation.
+Keep the patch small.
+
+==================================================
+GOAL
+==================================================
+
+The system should keep weekly volume at the MAIN muscle-group level, but improve exercise selection quality by tracking sub-target coverage biases.
+
+This is NOT a new volume system.
+This is a quality layer for exercise selection.
+
+Example:
+- Chest weekly target stays "Chest = 8 sets"
+- But exercise selection should avoid giving all chest work only to one region
+- It should understand bias such as:
+  - flat bench = more mid chest
+  - incline bench = more upper chest
+
+==================================================
+IMPORTANT RULE
+==================================================
+
+Do NOT create separate weekly volume targets for:
+- upper chest
+- lower chest
+- rear delt
+- triceps long head
+etc.
+
+Weekly targets remain only for main groups like:
+- chest
+- back
+- shoulders
+
+Sub-targets are used only for:
+- exercise diversity
+- better quality coverage
+- tie-breaking / scoring in selection
+
+==================================================
+PHASE 1 SCOPE ONLY
+==================================================
+
+Implement this ONLY for:
+1. chest
+2. back
+3. shoulders
+
+Do NOT expand to arms or legs yet.
+
+==================================================
+DATA MODEL CHANGE
+==================================================
+
+Add a new optional metadata field to exercises:
+
+subTargetBiases
+
+Example shape:
+
+subTargetBiases: {
+  upper_chest?: number
+  mid_chest?: number
+  lower_chest?: number
+
+  lats?: number
+  upper_back?: number
+
+  front_delt?: number
+  lateral_delt?: number
+  rear_delt?: number
+}
+
+Rules:
+- values should be normalized simple weights or proportions
+- they do NOT need fake scientific precision
+- they only need relative bias
+
+==================================================
+EXAMPLE BIASES
+==================================================
+
+Use reasonable coaching bias, not fake exact science.
+
+Examples:
+
+Flat Barbell Bench Press:
+- upper_chest: 0.2
+- mid_chest: 0.6
+- lower_chest: 0.2
+
+Incline Barbell Bench Press:
+- upper_chest: 0.6
+- mid_chest: 0.3
+- lower_chest: 0.1
+
+Pull-up / Lat Pulldown:
+- lats: 0.7
+- upper_back: 0.3
+
+Barbell / Cable Row:
+- lats: 0.3
+- upper_back: 0.7
+
+Overhead Press:
+- front_delt: 0.6
+- lateral_delt: 0.3
+- rear_delt: 0.1
+
+Lateral Raise:
+- lateral_delt: 0.8
+- front_delt: 0.1
+- rear_delt: 0.1
+
+Face Pull / Rear Delt Fly:
+- rear_delt: 0.7
+- lateral_delt: 0.2
+- upper_back: 0.1
+
+==================================================
+SELECTION LOGIC CHANGE
+==================================================
+
+After the existing hard filters still pass:
+- equipment
+- day type
+- deduplication
+- slot compatibility
+
+the selector should use subTargetBiases as a secondary scoring layer.
+
+Meaning:
+- first choose a valid exercise for the main muscle and slot
+- then prefer exercises that improve under-covered sub-targets for that main group
+
+Example:
+If Chest has already been covered mostly through mid-chest biased work,
+prefer an upper-chest biased option next.
+
+This must be:
+- a scoring preference
+- NOT a hard rejection rule
+
+If no bias metadata exists for a candidate, fall back safely to current behavior.
+
+==================================================
+TRACKING
+==================================================
+
+Track sub-target coverage only within the generated plan/session selection flow.
+
+Add a small internal structure like:
+
+subTargetCoverage = {
+  upper_chest: number,
+  mid_chest: number,
+  lower_chest: number,
+  lats: number,
+  upper_back: number,
+  front_delt: number,
+  lateral_delt: number,
+  rear_delt: number
+}
+
+Update it after each selected exercise using:
+selectedExercise.sets * subTargetBias
+
+This coverage is INTERNAL ONLY.
+Do not expose it in trainer-facing UI yet.
+
+==================================================
+RESTRICTIONS
+==================================================
+
+Do NOT:
+- change weekly volume calculations
+- add new weekly coverage widgets
+- add new tabs
+- add new warnings in UI
+- apply this to every muscle in the system
+- pretend these weights are scientific truths
+
+This is a practical coaching-quality improvement only.
+
+==================================================
+DELIVERABLE
+==================================================
+
+Return only:
+
+1. exact files changed
+2. exact fields added
+3. exact selection logic updated
+4. short explanation of how fallback works when exercises have no subTargetBiases
+5. one example:
+   - chest day before
+   - chest day after bias-aware selection
+
+END WITH:
+
+SUB-TARGET BIAS PHASE 1 APPLIED

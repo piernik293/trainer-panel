@@ -1,0 +1,166 @@
+Your understanding is mostly correct, but revise the architecture before implementation.
+
+Do not make code changes yet.
+Do not create migrations.
+Do not commit or push.
+
+Apply the following corrections and return an updated final architecture proposal.
+
+1. PER-SESSION VALUES
+
+Do not use only one avg_sets_per_session field.
+
+The source contains both single values and ranges.
+
+Use:
+
+- sessionMin
+- sessionMax
+
+Examples:
+
+2–4:
+- sessionMin = 2
+- sessionMax = 4
+
+4:
+- sessionMin = 4
+- sessionMax = 4
+
+These values are planning guidelines and warnings, not universal hard minimums.
+
+2. VALIDATION ENTITY
+
+Do not validate every limit only at broad guideline-group level.
+
+Some source limits apply directly to individual specific muscles:
+
+- Mięsień najszerszy grzbietu
+- Mięsień czworoboczny grzbietu
+- Mięsień piersiowy większy
+- Mięsień dwugłowy ramienia
+- Mięsień trójgłowy ramienia
+
+These must be validated directly using their calculated specific-muscle effective volume.
+
+Use aggregated guideline groups only where the supplied methodology defines a combined group, for example:
+
+- Mięśnie naramienne
+- Mięśnie pośladkowe
+- Grupa kulszowo-goleniowa
+- Mięśnie czworogłowe uda
+- Przywodziciele
+- Mięsień trójgłowy łydki
+
+Do not create one combined “Plecy” ceiling.
+
+Latissimus dorsi and trapezius have separate source limits and must remain separately validated.
+
+3. GUIDELINE TARGET TYPE
+
+Design the guideline structure so every guideline identifies what it validates.
+
+Suggested fields:
+
+- targetType: specific_muscle | muscle_group
+- specificMuscleId: nullable
+- muscleGroupId: nullable
+
+Exactly one target must be defined.
+
+Do not rely only on matching text names.
+
+4. GROUP DOUBLE COUNTING
+
+For a source-defined combined group, keep the proposed rule:
+
+group contribution for one exercise =
+working sets × highest coefficient among assigned muscles belonging to that group
+
+This prevents one physical set from being counted multiple times inside the same group.
+
+However, this aggregation must only be used for real source-defined groups.
+
+It must not merge muscles that have separate source limits.
+
+5. EXACT SOURCE VALUES
+
+The implementation must use the exact approved values supplied by the trainer.
+
+Do not use the hypothetical values from your previous examples.
+
+In your revised response, confirm that all beginner, intermediate and advanced values will be seeded exactly from the approved table.
+
+Do not repeat invented example ceilings.
+
+6. EXERCISES WITHOUT MUSCLE ASSIGNMENTS
+
+Draft behaviour:
+
+- allow the exercise
+- display a clear warning
+- calculate no volume until assignments exist
+
+Activation/finalisation behaviour:
+
+- block activation if any working exercise has no valid muscle assignments
+- explain which exercises are incomplete
+
+This prevents missing metadata from bypassing volume validation.
+
+7. NO INVENTED CONSERVATISM FACTOR
+
+Do not introduce a fixed 0.65 or other numerical factor for:
+
+“Brak aktywności fizycznej”
+
+unless explicitly approved later.
+
+For now:
+
+- use beginner absolute ceilings
+- prefer the lower session recommendations
+- target a plan clearly below the preferred weekly ceilings
+- use fewer exercises and simpler distribution
+
+Keep this as named generator behaviour, not an invented scientific percentage.
+
+8. SURVEY SNAPSHOT
+
+A workout plan must store:
+
+- surveyId used to generate the plan
+- guidelineVersionId
+- experienceLevelUsed
+
+Do not dynamically switch an existing plan to the newest survey after plan creation.
+
+9. NUMERIC PRECISION
+
+Use numeric/decimal database fields for:
+
+- coefficients
+- calculated guideline values if persisted
+- ceiling values
+
+Do not use float32/real where precision may affect limit validation.
+
+Do not round before validation.
+
+10. REQUIRED REVISED RESPONSE
+
+Return:
+
+1. Corrected database proposal.
+2. Corrected guideline target model.
+3. How direct specific-muscle limits work.
+4. How real aggregated-group limits work.
+5. How double counting is prevented.
+6. How exercises without assignments are handled.
+7. How exact source values will be seeded.
+8. One example using the real beginner pull-up-related limits.
+9. One example using the real beginner deltoid group limit.
+10. Any remaining ambiguity.
+
+Do not implement anything yet.
+Wait for approval.

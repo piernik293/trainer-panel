@@ -1,0 +1,161 @@
+Fix the exercise selection rules so the generated plan matches:
+- training goal
+- exercise class
+- user preferences
+- experience level
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign UI
+- Do NOT touch backend APIs unless directly required by the exercise selection logic
+- Do NOT run tests
+- Do NOT create unrelated files
+- Do NOT change allocation engine logic
+- Do NOT change wizard flow
+- Do NOT rewrite the whole exercise system
+
+PRIMARY GOAL:
+Improve exercise selection quality in the current generator output.
+
+KNOWN PROBLEMS TO FIX:
+1. The current output does not reflect the selected goal strongly enough
+2. Power / plyometric exercises are used incorrectly
+3. Intermediate users get too few isolation exercises
+4. Shoulder and arm work can disappear entirely
+5. Preferred exercises can be ignored too easily
+6. Beginner / no-activity users should rely mostly on simple compounds and basic stable movements
+7. Intermediate users should have more direct hypertrophy/accessory work than beginners
+8. The current plan can feel copy-pasted between A/B days
+
+REQUIRED RULES:
+
+1. GOAL-BASED SELECTION
+Implement explicit selection bias by goal:
+
+- Power / "zwiekszenie mocy":
+  - allow explosive / power exercises only when appropriate
+  - prefer movements that support force production, explosiveness, and athletic transfer
+  - do NOT treat power drills like generic accessories
+  - include supportive strength movements
+
+- Strength:
+  - prioritize major compounds and strength-relevant patterns
+
+- Hypertrophy:
+  - prioritize stable hypertrophy-friendly compounds + direct muscle work
+
+- General health / no-activity:
+  - prefer simple, stable, low-complexity movements
+  - no unnecessary plyometrics
+  - no excessive isolation clutter
+
+- Fat loss:
+  - choose manageable, fatigue-efficient exercises; not random plyometrics
+
+2. EXERCISE CLASS AWARENESS
+The selector must distinguish at least:
+- main compound
+- secondary compound
+- isolation
+- core
+- plyometric / power
+
+The selection rules must treat these classes differently.
+
+3. EXPERIENCE RULES
+Implement these rules clearly:
+
+- No activity / Beginner:
+  - mostly simple compounds and basic machine/stable patterns
+  - minimal isolation
+  - no advanced plyometrics unless explicitly justified
+  - focus on technique-friendly choices
+
+- Intermediate:
+  - more accessories and direct isolation than beginners
+  - direct work for shoulders and arms should not disappear
+  - plan should not be made only of compounds
+  - still preserve hierarchy: compounds first, isolation as support
+
+- Advanced:
+  - allow more targeted isolation, specialization, and goal-specific selection
+
+4. PREFERENCE RULES
+Preferred exercises should be strongly favored when:
+- they match the goal
+- they fit equipment
+- they fit the day type
+- there are no health conflicts
+
+If a preferred exercise is NOT selected, the code should make that outcome explainable by the rules, not random.
+
+Examples:
+- if the user prefers pull-up and deadlift, these should be prioritized when compatible
+- do not ignore preferences without strong reason
+
+5. PLYOMETRIC / POWER RESTRICTION
+Plyometric / explosive drills must NOT appear broadly for every goal.
+
+They should only be eligible when:
+- goal is power / sport performance
+- experience level is sufficient
+- no obvious incompatibility exists
+
+They should be excluded for:
+- no activity
+- beginner
+- general health
+- standard hypertrophy flows
+unless there is a very explicit reason in the existing logic.
+
+6. DAY-TYPE COMPATIBILITY
+Preserve and improve compatibility:
+- push days → push-dominant compounds/accessories
+- pull days → pull-dominant movements
+- lower days → lower-body patterns
+- upper days → balanced upper split
+- full body → mixed but controlled
+
+Also ensure that priority muscles actually appear in the correct day structure.
+
+7. PRIORITY MUSCLE PRESENCE
+If priorities include:
+- back
+- shoulders
+- legs
+
+then those muscles must be visibly represented in the selected exercise list.
+
+Shoulders and arms must not disappear entirely for intermediate users if the plan structure reasonably allows them.
+
+8. A/B VARIATION
+If the plan has repeated day types (for example Upper A / Upper B or Lower A / Lower B),
+avoid generating identical or nearly identical exercise lists unless there is a strong reason.
+
+The output should show meaningful variation:
+- different main movement
+- different angle / tool / emphasis
+- different accessory selection
+
+IMPORTANT LIMITS:
+- Do NOT change set/rep prescription logic in this task unless absolutely necessary for class handling
+- Do NOT rewrite progression logic
+- Do NOT fake data
+- Keep the fix local to exercise selection / recommendation logic
+- Preserve existing types if possible
+
+SUCCESS CRITERIA:
+After the fix:
+- power goals produce more appropriate power-supportive exercise choices
+- plyometric drills do not appear in irrelevant goals
+- intermediate users receive more direct accessory/isolation work than beginners
+- shoulder and arm work is present when appropriate
+- preferred exercises are actually reflected in the output when compatible
+- repeated upper/lower days are not copy-paste clones
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the root cause

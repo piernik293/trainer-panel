@@ -1,0 +1,134 @@
+Shift priority to core MVP execution flow.
+
+Do NOT redesign the whole app.
+Do NOT add new advanced modules like Plyo, TDEE, nutrition, animations, or large new UX systems in this task.
+This is a focused MVP-priority task.
+
+GOAL:
+Finish the core trainer-client training workflow first.
+
+Highest priority is now:
+
+1. training plan creation/editing
+2. connecting Client Page with Trainer Panel
+3. simple warm-up system based on RAMP
+4. saving workout changes such as weight and execution data
+
+==================================================
+SCOPE
+==================================================
+
+Build / finish the minimum viable flow where:
+
+TRAINER SIDE:
+- trainer creates or edits a workout plan
+- trainer sets exercises, sets, reps, RIR, rest, tempo
+- trainer assigns the plan to the client
+- trainer can later see client workout progress / saved execution data
+
+CLIENT SIDE:
+- client sees the assigned training plan
+- client sees the warm-up for the day
+- client can save workout execution data
+- client can save weight and any useful changes during the workout
+
+==================================================
+PART 1 — TRAINING PLAN FLOW
+==================================================
+
+Make sure the training plan flow is complete and practical:
+
+- create plan
+- save plan
+- assign plan to client
+- open the same plan from the client side
+- keep trainer/client views connected to the same underlying plan data
+
+==================================================
+PART 2 — CLIENT WORKOUT LOGGING
+==================================================
+
+Add or finish the ability for the client to save workout changes.
+
+Minimum fields that should be savable per exercise:
+- weight
+- sets completed
+- reps completed
+- RIR if applicable
+- short note / change note
+- completed / not completed status
+
+This should be practical, simple, and clearly stored.
+
+Goal:
+The client page must not be passive-only.
+It should support real workout tracking.
+
+==================================================
+PART 3 — SIMPLE RAMP WARM-UP
+==================================================
+
+Add a simple warm-up block based on RAMP.
+
+For MVP, keep it practical and template-based.
+
+Warm-up structure:
+- Raise
+- Activate
+- Mobilize
+- Potentiate
+
+The warm-up should be linked to the training day type where possible.
+It does NOT need to be highly advanced AI logic yet.
+
+Example intent:
+- Upper day -> upper-focused RAMP
+- Lower day -> lower-focused RAMP
+- Full body -> general RAMP
+
+Keep this simple and usable.
+
+==================================================
+PART 4 — CLIENT/TRAINER CONNECTION
+==================================================
+
+Make sure the Client Page and Trainer Panel are functionally connected.
+
+Trainer should be able to:
+- assign the plan
+- later inspect what the client saved
+
+Client should be able to:
+- open the assigned plan
+- save workout data
+- return later and still see their entries
+
+==================================================
+PART 5 — DEPRIORITIZE EVERYTHING ELSE
+==================================================
+
+In this task do NOT expand:
+- Plyo library
+- advanced sport modules
+- nutrition/TDEE
+- animations
+- cosmetic-only UX work
+- broad new planning systems
+
+Focus only on the core MVP workflow.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact MVP workflow completed
+3. exact trainer-client connection logic added or finished
+4. exact workout logging fields added or finished
+5. exact RAMP warm-up logic added
+6. confirmation of what was intentionally NOT touched
+
+End exactly with:
+
+CORE MVP TRAINER-CLIENT FLOW APPLIED

@@ -1,0 +1,186 @@
+Perform a read-only architecture and logic audit of the complete Weekly Planning Engine.
+
+DO NOT implement anything.
+DO NOT modify code.
+DO NOT create files.
+DO NOT refactor.
+DO NOT change tests.
+DO NOT suggest UI work yet.
+
+The purpose of this audit is to determine whether the workout generator can create a realistic, balanced and explainable weekly plan before we add any Decision Engine or Explanation Engine.
+
+====================================================
+PRODUCT CONTEXT
+====================================================
+
+This is a professional trainer SaaS.
+
+The intended final flow is:
+
+Client interview
+→ training constraints
+→ split recommendation
+→ weekly volume targets
+→ realistic distribution across training days
+→ exercise selection
+→ set assignment
+→ validation
+→ automatic repair
+→ editable weekly plan
+→ explanation of important decisions
+
+The system must eventually be able to explain:
+
+- why a split was selected,
+- why volume was assigned to specific days,
+- why an exercise was selected,
+- why another exercise was rejected,
+- what compromises were made,
+- whether the plan is realistically executable.
+
+However, do NOT implement explainability now.
+
+First verify whether the underlying planning logic is correct.
+
+====================================================
+AUDIT SCOPE
+====================================================
+
+Trace the exact production call path from:
+
+1. latest client survey,
+2. training frequency,
+3. split recommendation or trainer-selected split,
+4. weekly volume recommendation,
+5. trainer volume overrides,
+6. volume distribution across days,
+7. daily target allocations,
+8. uncovered target calculation,
+9. exercise recommendation endpoint,
+10. exercise scoring,
+11. autoFill.ts,
+12. set assignment,
+13. effective-volume recalculation,
+14. plan analysis,
+15. final validation,
+16. saved workout plan.
+
+For every stage identify:
+
+- source file,
+- function,
+- input type,
+- output type,
+- data consumed,
+- data ignored,
+- mutations,
+- assumptions,
+- validation,
+- possible failure modes.
+
+====================================================
+CORE QUESTIONS
+====================================================
+
+1. SOURCE OF TRUTH
+
+Determine the real source of truth for:
+
+- weekly volume target,
+- daily volume target,
+- current effective volume,
+- current direct volume,
+- current indirect volume,
+- selected exercises,
+- working sets,
+- exercise coefficients,
+- muscle deficits,
+- session capacity.
+
+Identify whether multiple competing representations exist.
+
+2. SPLIT FEASIBILITY
+
+Explain exactly how a split is recommended.
+
+Check whether the split engine evaluates:
+
+- number of training days,
+- client experience,
+- training goal,
+- priority muscles,
+- session duration,
+- recovery,
+- sleep,
+- stress,
+- available days,
+- expected session size,
+- realistic muscle frequency.
+
+Check whether the engine can detect cases such as:
+
+- PPL across 5 days with only one Legs day,
+- a priority muscle trained only once,
+- very high lower-body volume concentrated in one session,
+- too many muscle targets assigned to one day,
+- insufficient days to satisfy weekly volume.
+
+State clearly whether the split is:
+
+- selected by actual scoring,
+- selected through static rules,
+- selected by frequency only,
+- or merely mapped from a template.
+
+3. WEEKLY VOLUME CALCULATION
+
+Audit the complete weekly-volume calculation.
+
+For every adjustment state:
+
+- exact formula,
+- reason,
+- input,
+- maximum effect,
+- clamping behavior.
+
+Check whether these fields influence volume:
+
+- experience level,
+- training goal,
+- muscle priority,
+- frequency,
+- activity level,
+- sleep,
+- stress,
+- session duration,
+- training duration,
+- health limitations,
+- age,
+- body weight.
+
+Identify fields collected but ignored.
+
+4. DAILY VOLUME DISTRIBUTION
+
+Explain exactly how weekly target volume is distributed across days.
+
+Check whether the allocator considers:
+
+- day type,
+- expected compound exercise overlap,
+- secondary-muscle volume,
+- session minimum,
+- session maximum,
+- exercise count,
+- set count,
+- session duration,
+- fatigue,
+- movement-pattern requirements,
+- muscle frequency,
+- recovery between sessions,
+- priority-muscle frequency.
+
+Investigate why distributions can produce values such as:
+
+- Push = approximately

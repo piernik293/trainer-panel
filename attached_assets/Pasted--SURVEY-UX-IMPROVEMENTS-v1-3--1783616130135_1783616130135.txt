@@ -1,0 +1,269 @@
+==================================================
+SURVEY UX IMPROVEMENTS v1.3
+==================================================
+
+IMPORTANT
+
+Do not redesign the application.
+Do not modify unrelated functionality.
+Do not change database compatibility unless required.
+Do not remove existing data.
+Keep the current premium fitness design.
+
+The goal is to improve the questionnaire, make it more professional and easier for clients to understand.
+
+==================================================
+1. TRAINING EXPERIENCE
+==================================================
+
+The question:
+
+"Jak długo trenujesz?"
+
+should ONLY appear when the selected experience level is:
+
+• Początkujący
+• Średniozaawansowany
+• Zaawansowany
+
+Hide this question completely when:
+
+• Brak aktywności fizycznej
+
+because the answer is already obvious.
+
+--------------------------------------------------
+
+==================================================
+2. INJURIES / LIMITATIONS
+==================================================
+
+Improve the wording.
+
+Replace:
+
+"Czy masz kontuzje, urazy lub ograniczenia ruchowe?"
+
+with
+
+"Czy występują u Ciebie kontuzje, dolegliwości bólowe lub ograniczenia ruchowe, które trener powinien uwzględnić podczas układania planu?"
+
+Helper text:
+
+Przykłady:
+
+• ból kolan
+• ból barków
+• ból odcinka lędźwiowego
+• strzelający łokieć
+• problemy z nadgarstkami
+• ograniczona ruchomość
+• przebyte operacje
+• inne przewlekłe dolegliwości
+
+--------------------------------------------------
+
+==================================================
+3. TRAINING DURATION
+==================================================
+
+Replace
+
+"Ile czasu możesz przeznaczyć na jeden trening?"
+
+with
+
+"Ile czasu realnie możesz poświęcić na pojedynczy trening?"
+
+Helper:
+
+Uwzględnij swoje codzienne obowiązki oraz możliwości regeneracji.
+
+--------------------------------------------------
+
+==================================================
+4. TRAINING ORGANIZATION
+==================================================
+
+Currently there are two very similar questions.
+
+Merge them into a cleaner flow.
+
+Question:
+
+"Ile dni w tygodniu realnie możesz przeznaczyć na trening?"
+
+Helper:
+
+Uwzględnij pracę, szkołę, rodzinę oraz pozostałe obowiązki.
+
+Question:
+
+"Ile treningów tygodniowo chciałbyś wykonywać?"
+
+Helper:
+
+Pozwoli to lepiej dopasować plan do Twoich oczekiwań oraz możliwości.
+
+Do not duplicate information.
+
+--------------------------------------------------
+
+==================================================
+5. TRAINING LOCATION
+==================================================
+
+Create a separate section:
+
+"Miejsce treningu"
+
+Question:
+
+"Gdzie najczęściej będziesz trenować?"
+
+Options:
+
+🏋️ Siłownia
+
+Mam dostęp do pełnego wyposażenia siłowni.
+
+🏠 Dom
+
+Trenuję w domu.
+
+🌳 Siłownia plenerowa
+
+Trenuję głównie na drążkach, poręczach oraz sprzęcie dostępnym na świeżym powietrzu.
+
+--------------------------------------------------
+
+==================================================
+6. AVAILABLE EQUIPMENT
+==================================================
+
+Display ONLY when:
+
+• Dom
+or
+• Siłownia plenerowa
+
+Question:
+
+"Jakim sprzętem dysponujesz?"
+
+Allow selecting equipment from a list plus an optional text field "Inny sprzęt".
+
+Hide completely for gym users.
+
+--------------------------------------------------
+
+==================================================
+7. CARDIO
+==================================================
+
+Move Cardio into its own section.
+
+Section title:
+
+"Cardio"
+
+Question:
+
+"Jakie jest Twoje nastawienie do treningów cardio?"
+
+Options:
+
+Lubię cardio
+
+Jest mi obojętne
+
+Nie przepadam za cardio
+
+--------------------------------------------------
+
+Question:
+
+"Jak często wykonujesz trening cardio?"
+
+--------------------------------------------------
+
+Question:
+
+"Jaki rodzaj cardio najbardziej Ci odpowiada?"
+
+--------------------------------------------------
+
+If the selected training goal is:
+
+• Redukcja tkanki tłuszczowej
+
+OR
+
+• Poprawa kondycji
+
+display a recommendation:
+
+"Podpowiedź: Przy tym celu regularny trening cardio może wspierać osiąganie lepszych efektów. Ostateczna ilość cardio zostanie dopasowana indywidualnie."
+
+Do NOT automatically enable cardio.
+
+This is only a recommendation.
+
+--------------------------------------------------
+
+==================================================
+8. PROFESSIONAL LANGUAGE REVIEW
+==================================================
+
+Review all questions in these sections:
+
+• doświadczenie
+• zdrowie
+• organizacja treningów
+• miejsce treningu
+• cardio
+
+Rewrite every question so it sounds natural and professional.
+
+Avoid machine translations.
+
+Avoid duplicate wording.
+
+The application should sound like it was written by an experienced personal trainer.
+
+--------------------------------------------------
+
+==================================================
+9. TESTING
+==================================================
+
+Verify:
+
+✓ "Jak długo trenujesz?" is hidden for "Brak aktywności fizycznej"
+
+✓ Injury question displays new helper text
+
+✓ Training duration question works
+
+✓ No duplicate training organization questions
+
+✓ Equipment appears only for Home and Outdoor Gym
+
+✓ Cardio has its own section
+
+✓ Cardio recommendation appears only for:
+
+- Redukcja tkanki tłuszczowej
+- Poprawa kondycji
+
+✓ Existing survey logic still works
+
+✓ Trainer panel still works
+
+✓ PDF export still works
+
+Commit:
+
+feat: improve survey ux v1.3
+
+Push using Replit GitHub integration.

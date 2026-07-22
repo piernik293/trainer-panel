@@ -1,0 +1,412 @@
+Implement a structured goal-driven exercise selection layer for the training plan generator.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign UI broadly
+- Do NOT touch unrelated wizard logic
+- Do NOT rewrite the allocation engine
+- Do NOT run tests
+- Do NOT create unrelated files
+- Keep changes local to exercise selection, directly related helper logic, and only the minimum necessary frontend/backend data flow for the new goal logic
+
+PRIMARY GOAL:
+Make exercise selection clearly depend on:
+1. training goal
+2. sub-goal / sport priority when applicable
+3. experience level
+4. exercise class
+5. priority muscles
+6. preferred exercises
+7. repeated day-type variation
+
+This is NOT a cosmetic tweak.
+This is a decision-logic upgrade.
+
+====================================================
+KNOWN PRODUCT REQUIREMENTS
+====================================================
+
+The current generator still behaves too generically:
+- it can choose beginner/regression-style movements for intermediate gym users
+- it does not differentiate goals strongly enough
+- it can under-deliver direct work for shoulders and arms in intermediate users
+- it can use plyometric drills incorrectly
+- it can make repeated upper/lower days feel too similar
+- it can ignore the deeper meaning of training goals selected in the UI
+
+We want the generator to behave more like a trainer making decisions.
+
+====================================================
+PART 1 — TRAINING GOAL MUST CREATE A GOAL PROFILE
+====================================================
+
+Do NOT map goals directly to one exact exercise.
+Instead, each goal must create a GOAL PROFILE that affects:
+- preferred exercise classes
+- deprioritized exercise classes
+- acceptable complexity
+- acceptable use of plyometrics / power work
+- preferred support work
+- whether cardio / conditioning blocks should be part of the weekly structure
+
+Implement clear goal profiles for these goals:
+
+1. Budowa sylwetki
+2. Zwiększenie siły
+3. Redukcja tkanki tłuszczowej
+4. Poprawa kondycji
+5. Poprawa sprawności
+6. Cel sportowy
+
+====================================================
+PART 2 — GOAL PROFILE RULES
+====================================================
+
+----------------------------------------------------
+A. Budowa sylwetki
+----------------------------------------------------
+The generator should prefer:
+- stable hypertrophy-friendly compounds
+- machine and dumbbell options when they improve stimulus quality
+- more direct accessory/isolation work than in beginner/general-health flows
+- movements with good local muscular stimulus
+
+The generator should deprioritize:
+- random plyometrics
+- unnecessary athletic drills
+- overly technical choices that do not improve hypertrophy quality
+
+Important:
+This does NOT mean “always replace barbell with dumbbells”.
+It means bias selection toward higher-quality hypertrophy stimulus.
+
+----------------------------------------------------
+B. Zwiększenie siły
+----------------------------------------------------
+The generator should prefer:
+- main compounds
+- strength-relevant secondary compounds
+- stable force-production patterns
+- strength-supportive accessories
+
+The generator should NOT treat isolation as the main structure,
+but isolation/direct work may still exist when:
+- a priority muscle requires it
+- a preferred exercise requires it
+- the plan structure reasonably supports it
+
+Important:
+“Strength” does NOT mean zero isolation.
+It means isolation is supportive, not dominant.
+
+----------------------------------------------------
+C. Redukcja tkanki tłuszczowej
+----------------------------------------------------
+The generator should NOT interpret fat loss as “make exercises more exhausting”.
+
+Instead:
+- strength training should support muscle retention / muscle gain
+- exercise choices should be fatigue-efficient and manageable
+- the plan may still include good hypertrophy-supportive lifts
+- cardio / conditioning logic must be treated as a separate layer, not replaced by random harder lifts
+
+Important:
+Fat loss should not force nonsense exercise selection.
+It should combine sensible resistance training + cardio/conditioning logic.
+
+----------------------------------------------------
+D. Poprawa kondycji
+----------------------------------------------------
+The generator should prefer:
+- simple, global, repeatable movements
+- exercises compatible with higher-density work
+- less isolation clutter
+- manageable complexity
+
+Additionally:
+- this goal should explicitly support cardio / conditioning integration
+- cardio should be a real part of the training solution, not ignored
+
+For users with low weekly frequency:
+- the generator may use mixed development sessions plus cardio/conditioning exposure
+
+Important:
+Do NOT hardcode a rigid 1:1 ratio for every case.
+Instead, create reasonable defaults:
+- for low training days, cardio exposure should be guaranteed
+- for higher training days, cardio may be a separate or integrated element
+
+Also:
+very slow, heavy, high-rest strength work should not become the main structure for a pure conditioning goal.
+
+----------------------------------------------------
+E. Poprawa sprawności
+----------------------------------------------------
+This goal should emphasize:
+- movement quality
+- general athleticism
+- unilateral patterns
+- core
+- body control
+- more “alive” / dynamic patterns than plain health-oriented training
+
+Allow:
+- some dynamic / jump / power-oriented movements
+BUT only when:
+- the experience level is sufficient
+- no obvious incompatibility exists
+
+Important:
+Do NOT hardcode rigid 1:1 plyo ratio for every user.
+Instead:
+- beginner / low-activity → minimal or no true plyo
+- intermediate+ → dynamic exposure may be integrated sensibly
+
+----------------------------------------------------
+F. Cel sportowy
+----------------------------------------------------
+This goal is broader and must use the extra fields from the UI, such as:
+- hobby / zawodowo
+- dynamika
+- szybkość
+- stabilizacja
+
+The generator must use these sport-priority selections to bias exercise selection and weekly structure.
+
+Examples:
+- dynamika → more power / explosive bias
+- szybkość → speed-supportive / athletic choices
+- stabilizacja → control, landing, balance, trunk/position control
+
+Important:
+Do NOT assume every sport user must have 2–3 standalone plyometric sessions.
+Instead:
+- enforce at least 2 weekly power/athletic exposures when sport goal + suitable priority + suitable level are present
+- those exposures may be:
+  - separate sessions
+  - or blocks at the beginning of strength sessions
+
+This must scale with:
+- experience level
+- number of training days
+- athlete hobby/pro level
+- selected sport priorities
+
+====================================================
+PART 3 — EXPERIENCE LEVEL FILTERING
+====================================================
+
+Implement strong experience-aware filtering.
+
+----------------------------------------------------
+A. No activity / Beginner
+----------------------------------------------------
+Prefer:
+- simple, stable, technique-friendly patterns
+- machine or stable exercise choices
+- easy compounds
+- low complexity
+- minimal isolation
+- no advanced plyometrics
+- regression/beginner-friendly options are allowed here
+
+----------------------------------------------------
+B. Intermediate
+----------------------------------------------------
+Prefer:
+- strong base of compounds
+- meaningful accessories
+- visibly more direct work than beginners
+- fewer obvious regression-style choices
+
+Strongly deprioritize beginner/regression-style movements when gym equipment exists,
+unless:
+- health limitations require them
+- equipment limitations require them
+- no good alternative exists
+
+For intermediate users:
+- shoulders and arms must not disappear entirely when plan structure allows them
+- direct deltoid, biceps, and triceps work should exist across the week when appropriate
+
+----------------------------------------------------
+C. Advanced
+----------------------------------------------------
+Allow:
+- more targeted direct work
+- more specialization
+- more refined variation
+- higher accessory complexity
+while preserving logic and hierarchy
+
+====================================================
+PART 4 — EXERCISE CLASS AWARENESS
+====================================================
+
+The selector must distinguish at least these classes:
+- main_compound
+- secondary_compound
+- isolation
+- core
+- plyometric_power
+- regression_beginner
+
+If exact DB fields already exist, use them.
+If exact DB fields do not exist, implement the smallest practical local classification layer using current metadata and conservative heuristics.
+
+Do NOT create a giant taxonomy.
+Keep it practical.
+
+The generator must not treat all classes the same.
+
+Examples:
+- plyometric_power is not a generic 3x8–12 filler
+- core is not a substitute for main lower training
+- regression_beginner should not be a common default for intermediate gym users
+- isolation should be supportive for strength and more important for physique/intermediate+ flows
+
+====================================================
+PART 5 — PLYOMETRIC / POWER LOGIC
+====================================================
+
+Plyometric / explosive drills are allowed only when the context justifies them.
+
+Allowed when:
+- goal = power-oriented / sport-oriented / dynamic functionality
+- experience level is sufficient
+- no obvious incompatibility exists
+
+Not broadly allowed for:
+- no activity
+- beginner
+- plain hypertrophy
+- plain fat loss
+- general health flows
+
+When power drills are selected:
+- treat them as high-priority athletic tools
+- not generic accessories
+- they should be compatible with session structure
+- they should ideally precede the main developmental movement in that session
+
+Do NOT hardcode a universal fixed ratio for all goals.
+But for:
+- sport + dynamics
+- explicit power emphasis
+- intermediate+
+the generator should create repeated weekly athletic exposures, not a one-off random jump exercise.
+
+====================================================
+PART 6 — PRIORITY MUSCLE PRESENCE
+====================================================
+
+Priority muscles must be visibly represented in final exercise selection.
+
+If priorities include:
+- shoulders
+- chest
+- legs
+- back
+- arms
+etc.
+
+Then the final plan must visibly reflect them.
+
+For intermediate and advanced users:
+- shoulder priority should create visible direct shoulder work when session structure allows it
+- arm work (biceps/triceps) should not disappear completely in upper-oriented plans
+- direct work should not be replaced only by “indirect volume from compounds”
+
+This does NOT mean infinite isolation.
+It means minimum visible direct coverage.
+
+====================================================
+PART 7 — PREFERENCE HONORING
+====================================================
+
+Preferred exercises must strongly influence selection when compatible with:
+- goal
+- day type
+- equipment
+- health limitations
+
+If a user prefers exercises such as pull-up or deadlift,
+they must meaningfully influence selection when they fit.
+
+Do NOT force them blindly.
+Do NOT ignore them casually.
+
+====================================================
+PART 8 — A/B VARIATION
+====================================================
+
+Preserve and improve A/B anti-duplication logic.
+
+Repeated day types must not become near-clones.
+Variation should be meaningful through:
+- different main movement
+- different angle
+- different tool
+- different emphasis
+- different accessory pattern
+
+====================================================
+PART 9 — CARDIO / CONDITIONING LAYER
+====================================================
+
+For these goals:
+- Redukcja tkanki tłuszczowej
+- Poprawa kondycji
+- some sport contexts when appropriate
+
+the system should support a separate cardio / conditioning layer.
+
+Important:
+Do NOT try to replace cardio by making resistance exercise selection “more tiring”.
+That is not the goal.
+
+If the current generator architecture can only partially support this now,
+implement the smallest structured foundation that allows:
+- resistance-training selection profile
+- and a distinct cardio/conditioning bias or placeholder logic
+without breaking the current flow
+
+====================================================
+PART 10 — IMPORTANT LIMITS
+====================================================
+
+- Do NOT rewrite the entire selection engine from scratch unless absolutely required
+- Do NOT fake exercise data
+- Do NOT redesign the app
+- Do NOT change unrelated wizard flow
+- Do NOT rewrite allocation logic
+- Do NOT rewrite set/rep prescription logic in this task unless class handling absolutely requires a local adjustment
+- Build on top of the already implemented fixes:
+  - plyometric gating
+  - preference keywords
+  - A/B variation support
+
+====================================================
+SUCCESS CRITERIA
+====================================================
+
+After the fix:
+- intermediate users no longer default to obvious beginner/regression gym movements
+- shoulder and arm work is visibly present when appropriate
+- power-oriented goals create better power-supportive exercise choices
+- beginner/no-activity flows remain simple and safe
+- conditioning and fat loss stop being modeled as “just more exhausting exercises”
+- sport goal uses its extra fields meaningfully
+- repeated upper/lower days are less copy-paste
+- final plans look more like trainer decisions and less like generic slot-filling
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause

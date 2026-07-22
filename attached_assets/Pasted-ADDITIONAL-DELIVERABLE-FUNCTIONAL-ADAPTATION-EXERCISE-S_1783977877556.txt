@@ -1,0 +1,190 @@
+ADDITIONAL DELIVERABLE — FUNCTIONAL ADAPTATION EXERCISE SUGGESTIONS
+
+For clients whose latest Training Interview has exactly:
+
+experienceLevel = "Brak aktywności fizycznej"
+
+add a read-only section:
+
+"Sugerowane ćwiczenia — Start adaptacyjny"
+
+The purpose is general physical readiness, movement confidence and basic
+strength before regular gym programming.
+
+Do not call the client "najniższy poziom" in the UI.
+Use the canonical label:
+
+"Brak aktywności fizycznej"
+
+============================================================
+1. SUGGESTION GROUPS
+============================================================
+
+Group suitable exercises into these trainer-facing categories:
+
+1. Wstawanie i wzorzec przysiadu
+2. Zawias biodrowy i pośladki
+3. Pchanie
+4. Przyciąganie
+5. Noszenie i siła chwytu
+6. Stabilizacja tułowia
+7. Równowaga, chód i kondycja ogólna
+8. Mobilność i kontrola ruchu
+
+Use the existing movementPattern metadata and a centralized mapping.
+
+Do not add a new database field only for the display group unless genuinely
+required.
+
+============================================================
+2. EXAMPLE SUITABLE EXERCISES
+============================================================
+
+Prefer simple exercises such as:
+
+Wstawanie i przysiad:
+- wstawanie z ławki
+- przysiad do boxa
+- przysiad z podparciem
+- wejście na niski stopień z podparciem
+- lekka suwnica
+
+Zawias biodrowy i pośladki:
+- nauka zawiasu biodrowego z kijem
+- glute bridge
+- lekki hip thrust na maszynie
+- martwy ciąg z podwyższenia tylko w łatwym, kontrolowanym wariancie
+
+Pchanie:
+- pompka przy ścianie
+- pompka na wysokim podparciu
+- wyciskanie na stabilnej maszynie
+
+Przyciąganie:
+- wiosłowanie siedząc
+- wiosłowanie na maszynie z podparciem
+- ściąganie drążka wyciągu górnego
+
+Noszenie i chwyt:
+- spacer farmera
+- suitcase carry
+- proste przenoszenie lekkiego obciążenia
+
+Stabilizacja tułowia:
+- dead bug
+- bird dog
+- Pallof press
+- prosty plank na podwyższeniu, jeśli jest odpowiedni
+
+Równowaga, chód i kondycja:
+- marsz
+- spokojny rower stacjonarny
+- orbitrek o niskiej intensywności
+- stanie na jednej nodze z podparciem
+- chód stopa za stopą z asekuracją
+
+Mobilność i kontrola:
+- kontrolowana mobilizacja kostki
+- prosty zakres ruchu biodra
+- rotacja tułowia w bezpiecznym zakresie
+- przejście z pozycji siedzącej do stojącej
+
+Only use exercises that actually exist in the current Exercise Library.
+
+Do not invent or insert duplicate exercise records.
+If an example is missing, list it in the final report as a future library
+candidate.
+
+============================================================
+3. SUGGESTION ELIGIBILITY
+============================================================
+
+An exercise may appear in this section only when:
+
+- suitableForNoActivity = true
+- movementComplexity is very_easy or easy
+- equipment is available
+- it is not on the client's avoided-exercise list
+- it does not conflict with reported pain or contraindications
+- it has a simple setup
+- it allows low starting resistance
+- it can be stopped safely
+- it does not require advanced balance, coordination or technique
+
+Health limitations and pain always take priority over preferences.
+
+============================================================
+4. DISPLAY RULES
+============================================================
+
+Show the suggestions:
+
+- in the "Start adaptacyjny" client context,
+- and in the Exercise Library under the "Program adaptacyjny" filter.
+
+Display them grouped by the categories above.
+
+For each suggestion show:
+
+- exercise name
+- suggestion group
+- movement pattern
+- complexity
+- required equipment
+- reason why it is suitable
+
+Show a maximum of 3 strongest suggestions per group by default, with:
+
+"Pokaż więcej"
+
+Do not automatically add exercises to a workout plan.
+
+Trainer approval is always required.
+
+============================================================
+5. SUGGESTION PRIORITY
+============================================================
+
+Sort suggestions in this order:
+
+1. no conflict with pain or limitations
+2. suitableForNoActivity = true
+3. very_easy before easy
+4. stable and supported exercise before unsupported exercise
+5. preferred exercise when it is safe and suitable
+6. available equipment
+7. exercise name as deterministic tie-breaker
+
+A preferred exercise must never bypass safety checks.
+
+============================================================
+6. FUTURE PROGRAM COVERAGE
+============================================================
+
+Prepare a future-ready rule that an adaptation session should normally cover:
+
+- one squat or sit-to-stand pattern
+- one hinge or glute pattern
+- one push
+- one pull
+- one core/stability exercise
+- one carry, balance or conditioning element
+
+Do not generate this session yet.
+This is only a documented deterministic rule for the later selection phase.
+
+============================================================
+7. TESTS
+============================================================
+
+Add focused tests confirming:
+
+- suggestions appear only for "Brak aktywności fizycznej"
+- exercises are grouped correctly
+- unsuitable or advanced exercises are excluded
+- avoided exercises are excluded
+- pain conflicts override preferred exercises
+- missing equipment excludes an exercise
+- preferred safe exercise receives a higher position
+- maximum 3 suggestions per group in collapsed view
+- no exercise is automatically added to a workout plan

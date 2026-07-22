@@ -1,0 +1,160 @@
+Convert the current day-building flow from an autofill-after-first-exercise system into a true session generator that starts from an EMPTY day.
+
+Do NOT redesign the whole app.
+Do NOT change weekly volume logic.
+Do NOT change UI.
+Do NOT change plan assumptions screens.
+Do NOT change training rules unless required for wiring.
+Do NOT remove the old autofill path yet.
+
+This is a focused architecture + implementation task for generation flow.
+
+==================================================
+PROBLEM
+==================================================
+
+The current system behaves like an autofill continuation engine:
+- session generation effectively starts only after one exercise already exists
+- then autofill adds more exercises
+
+This is not acceptable.
+
+We need a true generator that can create a full day from an empty session.
+
+==================================================
+GOAL
+==================================================
+
+Build a new generation path where the system can generate a complete session from scratch using:
+
+- dayType
+- session template / slot structure
+- exercise pool
+- equipment/location filters
+- deterministic selector V0
+
+No preselected first exercise.
+No alreadyAdded seed requirement.
+The generator must start from EMPTY.
+
+==================================================
+NEW REQUIRED FLOW
+==================================================
+
+For a selected day type (push / pull / legs / upper / lower):
+
+1. Start with an empty session
+2. Load the session template for that day type
+3. Iterate slot by slot
+4. For each slot:
+   - build candidate pool
+   - apply hard filters
+   - select one valid exercise
+   - add it to session
+   - add it to usedExerciseIds
+5. Continue until all required slots are filled
+6. Optionally fill optional slots if valid
+7. Return the full generated session
+
+==================================================
+IMPORTANT
+==================================================
+
+The new generator must NOT depend on:
+- alreadyAdded exercises
+- manually selected first exercise
+- pre-seeded session state
+
+It must be able to generate from:
+EMPTY SESSION
+
+==================================================
+KEEP OLD PATH
+==================================================
+
+Do NOT delete the old autofill path yet.
+
+Instead:
+- create a new explicit generation entry point/path for full-day generation
+- keep the old path for safety until the new one is verified
+
+==================================================
+USE THESE INPUTS
+==================================================
+
+The new generator should use:
+
+- dayType
+- client equipment
+- training location
+- session template
+- exercise metadata
+- training rules
+- selector V0
+- usedExerciseIds (created empty at session start)
+
+==================================================
+HARD RULES
+==================================================
+
+Must enforce:
+- no duplicate exercises in one session
+- no wrong-day exercise
+- no wrong-equipment exercise
+- core only last
+- session built from slot order
+- fail safely if required slots cannot be filled
+
+==================================================
+MINIMUM SUCCESS CRITERIA
+==================================================
+
+The new generator must successfully generate from empty for:
+
+- Push
+- Pull
+- Legs
+- Upper
+- Lower
+
+Each session must:
+- have at least the required slots filled
+- start from zero selected exercises
+- not require alreadyAdded input to function
+
+==================================================
+DEBUG LOGS
+==================================================
+
+Add temporary logs showing the generator starts empty:
+
+SESSION_START: empty
+DAY_TYPE: ...
+USED_EXERCISE_IDS: []
+SLOT: ...
+SELECTED_EXERCISE: ...
+USED_EXERCISE_IDS: [ ... ]
+
+This must prove the session is built from scratch.
+
+==================================================
+DELIVERABLE
+==================================================
+
+Return only:
+
+1. exact files changed
+2. exact new function(s) created
+3. exact new generation flow
+4. how the new path is triggered
+5. one generated example for:
+   - Push
+   - Pull
+   - Legs
+   - Upper
+   - Lower
+6. confirmation that generation starts from EMPTY and does not require preselected exercises
+
+End exactly with:
+
+TRUE EMPTY-SESSION GENERATOR READY

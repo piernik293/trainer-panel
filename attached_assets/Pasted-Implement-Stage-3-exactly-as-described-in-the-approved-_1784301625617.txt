@@ -1,0 +1,172 @@
+Implement Stage 3 exactly as described in the approved architecture audit.
+
+Keep the implementation as small as possible.
+
+Current status:
+
+- Stage 1 (Exercise Classification) is complete.
+- Stage 2 (Session Ordering) is complete.
+- All tests pass.
+- TypeScript is clean.
+
+Goals:
+
+Introduce trainer-like exercise selection priority WITHOUT changing:
+
+- volume calculations
+- safety limits
+- candidate generation
+- evaluateCandidate()
+- ordering logic
+- API
+- database
+
+--------------------------------------------------
+1. Create a new helper
+--------------------------------------------------
+
+Create:
+
+artifacts/trainer-app/src/lib/trainerPriority.ts
+
+Responsibility:
+
+Only calculate trainer selection priority.
+
+Do not know anything about Auto Fill.
+
+Do not know anything about ScoreTuple.
+
+Export:
+
+export function trainerPriorityRank(...): number
+
+Input should contain only the metadata needed for trainer priority.
+
+--------------------------------------------------
+2. Ranking rules
+--------------------------------------------------
+
+Implement trainerPriorityRank() using:
+
+Session tier
++
+Exercise priority
+
+Reuse existing helpers:
+
+- getSessionTier()
+- getPriorityRank()
+
+Do not duplicate logic.
+
+Use explicit ordinal spacing instead of tier * 4.
+
+Example:
+
+PRIMARY_COMPOUND = 0
+SECONDARY_COMPOUND = 10
+ACCESSORY = 20
+ISOLATION = 30
+CORE_FINISHER = 40
+
+Then add priority rank.
+
+Result:
+
+Lower number = stronger trainer preference.
+
+Missing values should fall back exactly as existing helpers already define.
+
+--------------------------------------------------
+3. Auto Fill integration
+--------------------------------------------------
+
+Modify only:
+
+artifacts/trainer-app/src/lib/autoFill.ts
+
+Import:
+
+trainerPriorityRank()
+
+Extend ScoreTuple from 6 elements to 7 elements.
+
+Current:
+
+[numRemainingUnresolved,
+ totalWeeklyRemaining,
+ totalDailyRemaining,
+ setsPreference,
+ recOriginalRank,
+ varietyPenalty]
+
+New:
+
+[numRemainingUnresolved,
+ totalWeeklyRemaining,
+ totalDailyRemaining,
+ setsPreference,
+ trainerPriorityRank,
+ recOriginalRank,
+ varietyPenalty]
+
+Update:
+
+- tuple type
+- scoreBetter()
+- both ScoreTuple assembly locations
+
+Nothing else.
+
+--------------------------------------------------
+4. Do NOT modify
+--------------------------------------------------
+
+Do NOT modify:
+
+- evaluateCandidate()
+- commitExercise()
+- orderExercisesForSession()
+- exerciseOrdering.ts
+- exerciseClassification.ts
+- recommendation API
+- database
+- selection loop
+- hard constraints
+
+--------------------------------------------------
+5. Tests
+--------------------------------------------------
+
+Create:
+
+trainerPriority.test.ts
+
+Verify:
+
+- primary compound outranks isolation
+- exercisePriority affects ranking inside the same tier
+- missing values produce stable defaults
+- explicit ordinal spacing behaves correctly
+
+Extend autoFill tests with integration cases:
+
+- equal volume -> compound wins
+- better volume -> isolation still wins
+- existing safety behaviour unchanged
+
+--------------------------------------------------
+6. Validation
+--------------------------------------------------
+
+Run:
+
+- trainer-app TypeScript
+- api-server TypeScript
+- full trainer-app tests
+- full api-server tests
+
+Stop after Stage 3.
+
+Do not begin Stage 4.

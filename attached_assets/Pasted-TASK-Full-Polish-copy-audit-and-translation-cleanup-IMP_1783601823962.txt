@@ -1,0 +1,366 @@
+TASK — Full Polish copy audit and translation cleanup
+
+IMPORTANT
+
+Do not rebuild the application.
+Do not change the architecture.
+Do not change database schema.
+Do not modify API logic.
+Do not redesign UI.
+Do not add new features.
+Do not remove existing functionality.
+
+The goal is to fix all awkward Polish translations and make the application sound professional, natural and consistent.
+
+This task is about user-facing text only.
+
+Do NOT rename:
+- database tables
+- API endpoints
+- variables
+- schemas
+- internal code identifiers
+
+Only update visible labels, headings, descriptions, helper texts, buttons, option labels, PDF labels and trainer panel UI text.
+
+==================================================
+1. Global terminology
+==================================================
+
+Replace user-visible:
+
+"Ankieta"
+
+with:
+
+"Wywiad treningowy"
+
+Examples:
+
+Rozpocznij ankietę → Rozpocznij wywiad treningowy
+Status ankiety → Status wywiadu treningowego
+Historia ankiet → Historia wywiadów treningowych
+Podgląd ankiety → Podgląd wywiadu treningowego
+Ankieta ukończona → Wywiad treningowy ukończony
+
+Keep internal code names unchanged.
+
+==================================================
+2. Landing page fixes
+==================================================
+
+Replace broken/machine translated text such as:
+
+"Przed zastosowaniem urządzenia sprawdzającego ankietę..."
+"Odpowiedz odpowiedzieć..."
+"Detale ustaleń między przeciętnym planem, a strategią skazaną na sukces"
+"Eksploruj"
+
+with:
+
+Title:
+Twój indywidualny plan treningowy zaczyna się tutaj.
+
+Description:
+Wypełnij krótki wywiad treningowy, dzięki któremu przygotuję plan dopasowany do Twojego celu, poziomu zaawansowania, możliwości oraz stylu życia.
+
+Primary button:
+Rozpocznij wywiad treningowy
+
+Secondary button:
+Dowiedz się więcej
+
+Survey intro:
+Odpowiedz na kilka prostych pytań. Dzięki temu przygotuję plan treningowy dopasowany do Twoich potrzeb, możliwości oraz celu treningowego.
+
+==================================================
+3. Experience level
+==================================================
+
+Question:
+Który poziom najlepiej opisuje Twoje doświadczenie treningowe?
+
+Options:
+
+Początkujący
+Dopiero zaczynam swoją przygodę z treningiem lub nadal uczę się podstaw. Nie czuję się jeszcze pewnie w doborze ćwiczeń, technice oraz planowaniu treningów.
+
+Średniozaawansowany
+Trenuję regularnie, znam podstawowe ćwiczenia i potrafię poprawnie je wykonywać. Rozumiem podstawowe zasady treningowe i świadomie realizuję plan treningowy.
+
+Zaawansowany
+Posiadam duże doświadczenie treningowe, dobrze znam swoje możliwości i świadomie wykorzystuję różne metody treningowe do osiągania konkretnych celów.
+
+Helper:
+Nie kieruj się wyłącznie liczbą lat treningu. Wybierz poziom, który najlepiej opisuje Twoją wiedzę oraz samodzielność podczas treningów.
+
+Fix wrong translations like:
+- średnio zbudowany
+- średni
+- zaawansowane translated awkwardly
+
+Do not change conditional logic.
+
+==================================================
+4. Priority muscle groups
+==================================================
+
+IMPORTANT
+
+Fields:
+
+Partia priorytetowa 1
+Partia priorytetowa 2
+Partia priorytetowa 3
+
+must appear ONLY for:
+- Średniozaawansowany
+- Zaawansowany
+
+They must be completely hidden for:
+- Początkujący
+
+For beginner show only:
+
+Na których partiach mięśniowych najbardziej Ci zależy?
+
+Helper:
+Jeśli nie znasz nazw partii mięśniowych, przykłady to: klatka piersiowa, plecy, barki, biceps, triceps, brzuch, uda, pośladki, łydki.
+
+==================================================
+5. Sleep options
+==================================================
+
+Fix all sleep labels.
+
+Use exactly:
+
+Poniżej 5 godzin
+5–6 godzin
+6–7 godzin
+7–8 godzin
+Powyżej 8 godzin
+
+Do not use:
+- powyżej 8h
+- 7-8 godzin
+
+==================================================
+6. Stress
+==================================================
+
+Do not redesign the stress component.
+Do not replace it with a slider.
+Keep current functionality exactly as it is.
+
+Only fix visible wording if it is awkward.
+
+Use:
+Jak oceniasz swój poziom stresu?
+
+Helper:
+1 = bardzo niski poziom stresu, 10 = bardzo wysoki poziom stresu
+
+==================================================
+7. Training plan style
+==================================================
+
+Replace awkward options:
+
+Maksymalnie ekonomicznie
+Kompromis
+Prosty i trwały
+
+with:
+
+Maksymalna efektywność
+Najważniejsze są dla mnie jak najlepsze efekty.
+
+Balans efektywności i wygody
+Chcę osiągać dobre efekty przy zachowaniu komfortu treningów.
+
+Prosty i łatwy do utrzymania
+Zależy mi na prostym, przejrzystym planie, który będzie łatwy do realizacji nawet w gorsze dni.
+
+==================================================
+8. Advanced training methods
+==================================================
+
+Rename section:
+
+Zaawansowane metody treningowe
+
+Question:
+Czy są metody treningowe, których nie chcesz stosować lub które są dla Ciebie przeciwwskazane?
+
+Options:
+Nie
+Tak
+
+If user selects Tak, display:
+
+Superserie
+Serie złożone (Compound Set)
+Drop sety
+Serie do upadku mięśniowego
+Serie wymuszone
+Rest-Pause
+
+Fix wrong translations:
+- upuść zestaw → Drop sety
+- odpoczynek-pauza → Rest-Pause
+- zestaw złożony → Serie złożone
+- superserie lowercase → Superserie
+
+==================================================
+9. Method descriptions
+==================================================
+
+If descriptions exist, use:
+
+Superserie:
+Dwa ćwiczenia wykonywane jedno po drugim bez dłuższej przerwy.
+
+Serie złożone:
+Dwa ćwiczenia wykonywane kolejno na tę samą partię mięśniową.
+
+Drop sety:
+Po zakończeniu serii zmniejszasz ciężar i kontynuujesz ćwiczenie.
+
+Serie do upadku mięśniowego:
+Seria wykonywana do momentu, w którym nie jesteś w stanie wykonać kolejnego poprawnego powtórzenia.
+
+Serie wymuszone:
+Dodatkowe powtórzenia wykonywane z pomocą partnera treningowego.
+
+Rest-Pause:
+Krótka przerwa w trakcie serii pozwalająca wykonać kolejne powtórzenia.
+
+==================================================
+10. Additional information
+==================================================
+
+Replace:
+
+Czy chcesz dodać jeszcze coś? Styl życia, dieta, inne uwagi
+
+with:
+
+Czy jest coś jeszcze, co powinienem wiedzieć przed przygotowaniem Twojego planu treningowego?
+
+Helper:
+Możesz wpisać informacje dotyczące diety, stylu życia, pracy, regeneracji, wcześniejszych doświadczeń treningowych lub innych ważnych informacji.
+
+==================================================
+11. Gender field
+==================================================
+
+User-facing gender options must be only:
+
+Mężczyzna
+Kobieta
+
+Remove any third option from user-facing UI.
+
+Old database records must not crash the app.
+
+==================================================
+12. Gender-based suggestions
+==================================================
+
+Female:
+Podpowiedź: Często wybierane cele sylwetkowe to pośladki, uda, brzuch oraz barki.
+
+Male:
+Podpowiedź: Często wybierane cele sylwetkowe to klatka piersiowa, barki, plecy oraz ramiona.
+
+These are only suggestions.
+Do not automatically select anything.
+
+==================================================
+13. BMI helper
+==================================================
+
+Only for beginners.
+
+If BMI >= 25 show:
+
+Podpowiedź:
+BMI wskazuje podwyższoną masę ciała.
+Pamiętaj jednak, że BMI nie rozróżnia tkanki tłuszczowej od masy mięśniowej.
+W wielu przypadkach dobrym rozwiązaniem może być redukcja tkanki tłuszczowej lub rekompozycja sylwetki.
+
+Never display:
+- Masz nadwagę
+- Musisz schudnąć
+- Powinieneś redukować
+
+==================================================
+14. Goal labels
+==================================================
+
+Make sure the training goal options sound natural.
+
+Use:
+- Budowa sylwetki
+- Zwiększenie siły
+- Redukcja tkanki tłuszczowej
+- Poprawa kondycji
+- Poprawa sprawności
+- Inny
+
+Do not use awkward technical wording where simple Polish is better.
+
+==================================================
+15. General Polish audit
+==================================================
+
+Search the whole app for awkward machine translations and fix them.
+
+Pay special attention to:
+- landing page
+- client-facing wywiad treningowy
+- trainer panel
+- PDF export
+- buttons
+- empty states
+- success messages
+- error messages
+- section titles
+- option labels
+
+Fix any phrases that sound unnatural, for example:
+- literal translations from English
+- mixed grammar
+- lowercase labels where capitalization is needed
+- strange terms like "eksploruj", "upuść zestaw", "zestaw złożony", "średnio zbudowany"
+
+Keep professional Polish language.
+
+Do not invent new features.
+
+==================================================
+16. Testing
+==================================================
+
+Verify:
+
+- app builds successfully
+- beginner flow works
+- intermediate flow works
+- advanced flow works
+- priority fields show only for intermediate and advanced
+- beginner priority question works
+- BMI helper works only for beginners
+- advanced training methods labels are correct
+- landing page text is correct
+- trainer panel still works
+- PDF export still works
+- no database/API logic was changed
+- no unrelated functionality was changed
+
+Commit with message:
+
+fix: polish copy audit and translation cleanup
+
+Push using Replit GitHub integration.

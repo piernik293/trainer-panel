@@ -1,0 +1,335 @@
+Apply a combined survey wording refinement + cardio UX cleanup pass, with sport-goal eligibility refinement.
+
+Do NOT redesign the whole app.
+Do NOT add TDEE / kcal / nutrition logic in this task.
+Do NOT build the full Plyo planner in this task.
+Do NOT change generator architecture broadly.
+This is a focused survey UX + cardio logic alignment + sport-goal gating task.
+
+==================================================
+GOAL
+==================================================
+
+Refine the survey so it is:
+- cleaner
+- shorter
+- more professional
+- easier to complete
+- better aligned with the actual planning logic
+
+This task should improve:
+1. sport wording
+2. goal-related free-text UX
+3. additional-info UX
+4. cardio section UX
+5. cardio relevance depending on goal/lifestyle
+6. sport-goal experience-level logic
+7. survey-side readiness for future Plyo logic
+
+==================================================
+SECTION A — SPORT WORDING REFINEMENT
+==================================================
+
+Keep the existing "Cel sportowy" path in the training goal section,
+but refine the wording of the sport-related follow-up question.
+
+1. Do NOT bring back the old separate sport section.
+
+2. If "Cel sportowy" is selected, show the sport follow-up block.
+
+3. Replace the current sport-level wording with:
+
+Question:
+- "Jak uprawiasz sport?"
+
+Options:
+- "Hobbystycznie"
+- "Zawodowo"
+
+4. Keep the 3 sport priorities:
+- Dynamika
+- Szybkość
+- Stabilizacja
+
+Do NOT add extra sport-status options in this task.
+
+==================================================
+SECTION B — SHORT GOAL-MOTIVATION FIELD
+==================================================
+
+Add a short goal-related text field near the training goal section.
+
+Field label:
+- "Dlaczego chcesz trenować?"
+
+Helper text:
+- "Krótko napisz, po co chcesz trenować i co chcesz poprawić."
+
+Important:
+- this should be a short, compact motivation/purpose field
+- do NOT make it a large verbose textarea block if not necessary
+- it should feel like a concise goal-intent input
+
+==================================================
+SECTION C — ADDITIONAL INFO AS CONDITIONAL YES/NO
+==================================================
+
+Refine the additional-info section into a cleaner conditional format.
+
+Use:
+
+Section title:
+- "Dodatkowe informacje"
+
+Question:
+- "Czy jest coś jeszcze, co powinienem wiedzieć?"
+
+Options:
+- "Tak"
+- "Nie"
+
+Display order:
+1. "Tak"
+2. "Nie"
+
+Behavior:
+- if "Nie" is selected -> do not show a text field
+- if "Tak" is selected -> show a text field below
+
+Text field helper:
+- "Krótko dopisz tylko to, co może mieć znaczenie dla planu."
+
+Goal:
+This section should no longer look like a large always-open catch-all field.
+
+==================================================
+SECTION D — CARDIO SECTION TITLE AND INTRO
+==================================================
+
+Change the section title from:
+- "Cardio"
+
+to:
+- "Aktywność tlenowa i cardio"
+
+Replace the current longer intro text with:
+- "Pomaga dobrać ilość aktywności wspierającej redukcję, kondycję i ogólną wydolność."
+
+Keep the tone short and professional.
+
+==================================================
+SECTION E — PROFESSIONAL CARDIO PREFERENCE QUESTION
+==================================================
+
+Replace the current cardio-attitude wording with a more professional planning-oriented version.
+
+Question:
+- "Jak chcesz, aby w planie uwzględnić trening cardio?"
+
+Options:
+- "Chętnie uwzględnię cardio w planie"
+- "Cardio może być dodatkiem do planu"
+- "Wolę ograniczyć cardio do niezbędnego minimum"
+
+==================================================
+SECTION F — CURRENT CARDIO ACTIVITY
+==================================================
+
+Replace the current free-text cardio frequency field with a fixed-choice selector.
+
+Question:
+- "Jak wygląda Twoja aktywność tlenowa obecnie?"
+
+Options:
+- "Nie wykonuję cardio"
+- "1 raz w tygodniu"
+- "2–3 razy w tygodniu"
+- "4 lub więcej razy w tygodniu"
+
+Do NOT keep a free-text field here.
+
+==================================================
+SECTION G — PREFERRED CARDIO FORM
+==================================================
+
+Replace the free-text cardio-type field with a structured selector or autocomplete.
+
+Question:
+- "Jaka forma aktywności tlenowej najbardziej Ci odpowiada?"
+
+Suggested options:
+- Marsz
+- Szybki marsz
+- Sport rekreacyjny
+- Bieganie
+- Rower
+- Orbitrek
+- Pływanie
+- Wioślarz
+- Stepper / schody
+
+"Sport rekreacyjny" should cover things like:
+- rekreacyjna piłka nożna
+- koszykówka
+- tenis
+- podobne mniej formalne formy ruchu
+
+Do NOT use "Inna" as a generic empty option in this MVP version.
+
+==================================================
+SECTION H — CARDIO RELEVANCE / VISIBILITY
+==================================================
+
+Make the cardio section more intentionally visible when the client has:
+- "Redukcja tkanki tłuszczowej"
+- "Poprawa kondycji"
+- "Cel sportowy"
+- sedentary lifestyle
+
+For these cases, the cardio block should be more prominent in UX, for example:
+- shown higher in the section flow
+- expanded by default
+- visually treated as more relevant
+
+For other goals, cardio can remain available,
+but should feel less central and less emphasized.
+
+Do NOT remove it completely for other goals.
+Just make the UX emphasis intentional and explicit.
+
+==================================================
+SECTION I — KEEP CARDIO RULES CONSISTENT
+==================================================
+
+Do NOT redesign the deeper cardio rules from scratch in this task,
+but keep the UI aligned with the intended logic:
+
+1. If experience level is:
+- "Brak aktywności fizycznej"
+then max strength-training days = 2,
+and surplus days go to cardio / activity days.
+
+2. If experience level is:
+- "Początkujący"
+then max strength-training days = 3,
+and surplus days go to cardio / activity days.
+
+3. If sedentary lifestyle or fat-loss goal is present:
+- add a mandatory non-strength activity recommendation
+- cardio day or step target
+
+4. If training goal is:
+- "Poprawa kondycji"
+then:
+- include at least 1 FBW strength session
+- include cardio / conditioning as a required element
+
+5. If training goal is:
+- "Cel sportowy"
+then cardio / conditioning may be used as a meaningful support element.
+
+The survey UX should support these rules,
+not fight them.
+
+==================================================
+SECTION J — SPORT GOAL EXCLUDES "BRAK AKTYWNOŚCI FIZYCZNEJ"
+==================================================
+
+Add a clean survey logic rule:
+
+If the user selects:
+- "Cel sportowy"
+
+then the experience-level option:
+- "Brak aktywności fizycznej"
+
+must no longer be available.
+
+This can be implemented by:
+- hiding it
+- disabling it
+- or auto-resetting it if already selected
+
+But the final logic must ensure that:
+- "Cel sportowy" and "Brak aktywności fizycznej" cannot coexist
+
+Reason:
+These two paths are logically contradictory in this product.
+
+==================================================
+SECTION K — SPORT GOAL AND FUTURE PLYO READINESS
+==================================================
+
+Do NOT build the full Plyo planner in this task.
+
+Do NOT add new planner-side logic unless truly necessary.
+
+Only make sure the survey/state layer is cleanly ready for future Plyo logic, meaning:
+
+1. "Cel sportowy" should NOT automatically mean:
+- full Plyo day
+- automatic FBW + Plyo
+- forced Plyo session
+
+2. "Cel sportowy" should only open the possibility of future Plyo use,
+depending on training level.
+
+3. The intended interpretation should remain:
+- "Początkujący" -> future Plyo use should be lighter / simpler / lower-emphasis
+- "Średniozaawansowany" and "Zaawansowany" -> future Plyo use may be stronger / more frequent / more eligible
+
+In this task:
+- only preserve or prepare clean survey-side/state-side foundations if needed
+- do NOT force actual Plyo sessions
+- do NOT expand planner behavior
+
+==================================================
+SECTION L — PLAN SUMMARY MESSAGES
+==================================================
+
+Keep or improve concise trainer-facing summary messages such as:
+
+- "Ze względu na siedzący tryb życia dodano obowiązkową aktywność tlenową."
+- "Cel poprawy kondycji wymaga minimum jednej sesji FBW oraz cardio."
+- "Nadwyżka dni ponad zalecaną liczbę treningów siłowych została przeznaczona na cardio / aktywność."
+- "Cel sportowy aktywuje sportowy tryb planowania i wyklucza poziom: Brak aktywności fizycznej."
+
+Messages should be short, visible, and professional.
+
+==================================================
+SECTION M — DO NOT TOUCH
+==================================================
+
+Do NOT in this task:
+- add TDEE / kcal guidance
+- add diet recommendations
+- build full Plyo day templates
+- redesign unrelated survey sections
+- change generator architecture broadly
+- reintroduce the old separate sport section
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact sport wording changes made
+3. exact "Dlaczego chcesz trenować?" field added
+4. exact "Dodatkowe informacje" Tak/Nie conditional logic added
+5. exact cardio section wording changes
+6. exact professional cardio-preference question added
+7. exact fixed cardio-frequency selector added
+8. exact cardio-type selector options added
+9. exact visibility/relevance logic used
+10. exact sport-goal exclusion logic for "Brak aktywności fizycznej"
+11. exact survey/state-side future Plyo readiness preserved or added
+12. one example flow for:
+   - normal non-sport client
+   - sport-goal client
+   - sedentary fat-loss client
+   - conditioning-goal client
+
+End exactly with:
+
+SURVEY WORDING, CARDIO, AND SPORT-GOAL ELIGIBILITY APPLIED

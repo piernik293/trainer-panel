@@ -1,0 +1,97 @@
+Fix the split recommendation matrix to match the actual product rules.
+
+Do NOT redesign the whole app.
+Do NOT change generator architecture.
+Do NOT change selector V0.
+Do NOT change weekly volume logic.
+This is a focused correction task for the split recommendation rules.
+
+==================================================
+CORRECTIONS REQUIRED
+==================================================
+
+1. FULL_BODY_AB MEANING
+`full_body_ab` must NOT be treated as a separate public split family.
+It means:
+- Full Body with two non-identical A/B day variants
+- still part of the Full Body family
+
+Product-level split families remain:
+- full_body
+- upper_lower
+- upper_lower_full_body
+- push_pull_legs
+
+If `full_body_ab` is needed internally, keep it as an internal template variant only.
+Do not treat it as a separate strategic split recommendation category.
+
+2. BEGINNER / NO-ACTIVITY HARD CAP
+For:
+- Brak aktywności
+- Początkujący
+
+maximum recommended training frequency is 3 days/week.
+
+This is a hard rule.
+
+That means:
+- do NOT recommend 4-day splits
+- do NOT recommend 5-day splits
+- do NOT recommend 6-day splits
+- do NOT recommend upper_lower_full_body for a 5-day beginner
+- do NOT recommend push_pull_legs for these levels
+
+If survey says more than 3 days for these levels:
+- keep the user-entered value stored if needed
+- but recommendation must explicitly cap to max 3 days
+- explanation should clearly say that at this level the plan should not exceed 3 days/week
+
+3. BEGINNER / NO-ACTIVITY SPLIT RULE
+For these levels:
+- 2 days -> Full Body
+- 3 days -> Full Body
+- >3 days entered -> still recommend Full Body and explain that max recommended frequency is 3 days/week at this level
+
+4. INTERMEDIATE / ADVANCED
+Existing logic may remain, except it must no longer imply that beginner/no-activity can validly scale into higher split structures.
+
+==================================================
+OUTPUT / EXPLANATION RULE
+==================================================
+
+The recommendation response should clearly distinguish:
+- user-declared training availability
+vs
+- recommended frequency and split
+
+Example logic:
+- "Wywiad wskazuje 5 dni, ale na poziomie początkującym rekomendujemy maksymalnie 3 dni treningowe tygodniowo i plan ogólnorozwojowy Full Body."
+
+==================================================
+UI REQUIREMENT
+==================================================
+
+Make sure the UI explanation shown in the wizard reflects the corrected backend logic.
+
+If needed:
+- show the recommended split
+- show the recommended frequency cap
+- keep the original survey value visible separately
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact rule corrections applied
+3. how full_body_ab is now treated
+4. how beginner/no-activity max-3-days is enforced
+5. one example response for:
+   - 5-day beginner
+   - 3-day beginner
+   - 3-day intermediate
+
+End exactly with:
+
+SPLIT MATRIX CORRECTIONS APPLIED

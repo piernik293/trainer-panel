@@ -1,0 +1,98 @@
+Apply a strict correction patch to the CURRENT sport-goal survey block.
+
+Do NOT redesign the whole app.
+Do NOT touch cardio in this patch.
+Do NOT touch unrelated survey sections.
+This is only a wording + option correction for the current sport block.
+
+==================================================
+GOAL
+==================================================
+
+Fix the sport-goal follow-up block so it matches the final agreed UX.
+
+The current implementation is still wrong because it shows:
+- "Poziom sportowy"
+- "Amatorsko"
+- "Półzawodowo"
+- "Zawodowo"
+
+This must be replaced.
+
+==================================================
+REQUIRED CHANGES
+==================================================
+
+1. CHANGE THE QUESTION LABEL
+
+Replace:
+- "Poziom sportowy"
+
+with:
+- "Jak uprawiasz sport?"
+
+2. CHANGE THE AVAILABLE OPTIONS
+
+Remove the current options:
+- "Amatorsko"
+- "Półzawodowo"
+- "Zawodowo"
+
+Replace them with ONLY:
+- "Hobbystycznie"
+- "Zawodowo"
+
+There must be no middle option.
+
+3. REMOVE STALE VALUES / STALE UI
+
+Make sure the old options are fully gone from the UI:
+- no "Amatorsko"
+- no "Półzawodowo"
+- no old label "Poziom sportowy"
+
+If the old values still exist in component state or conditional rendering,
+clean that up so the UI reflects only the new version.
+
+4. KEEP EXISTING SPORT-GOAL CONDITIONAL LOGIC
+
+Keep the current rule:
+- this block appears only when "Cel sportowy" is selected
+
+Do not change that behavior.
+
+5. KEEP BACKEND COMPATIBILITY IF NEEDED
+
+If the backend/API still expects older saved strings,
+it is acceptable to map the new UI values internally, for example:
+- "Hobbystycznie" -> existing amateur-level value
+- "Zawodowo" -> existing professional-level value
+
+But the USER-FACING UI must show ONLY:
+- "Jak uprawiasz sport?"
+- "Hobbystycznie"
+- "Zawodowo"
+
+6. DO NOT TOUCH OTHER SPORT PRIORITIES
+
+Do not change in this patch:
+- Dynamika
+- Szybkość
+- Stabilizacja
+
+Only fix the question label and the 2-option wording.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact label change made
+3. exact old options removed
+4. exact new options added
+5. exact compatibility mapping used if any
+
+End exactly with:
+
+SPORT WORDING FIX APPLIED

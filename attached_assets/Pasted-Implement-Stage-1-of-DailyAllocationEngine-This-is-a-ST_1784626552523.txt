@@ -1,0 +1,223 @@
+Implement Stage 1 of DailyAllocationEngine.
+
+This is a STRICTLY LIMITED implementation.
+
+DO NOT refactor unrelated modules.
+DO NOT modify autoFill logic.
+DO NOT change exercise selection.
+DO NOT change ordering logic.
+DO NOT modify UI.
+DO NOT introduce new heuristics (no time estimation, no indirect volume modeling).
+DO NOT remove existing functionality.
+
+====================================================
+GOAL
+====================================================
+
+Replace the current per-target daily volume distribution with a global allocation system that:
+
+1. Allocates ALL muscle targets simultaneously across days
+2. Prevents session overload
+3. Preserves total weekly volume
+4. Tracks unresolved volume explicitly
+5. Returns feasibility status
+
+====================================================
+CURRENT PROBLEM
+====================================================
+
+The current system distributes each target independently:
+
+chest → distribute
+back → distribute
+shoulders → distribute
+
+This ignores that session capacity is shared.
+
+This results in overloaded days (e.g. Legs = 38 effective volume).
+
+====================================================
+SCOPE — STAGE 1 ONLY
+====================================================
+
+Implement ONLY:
+
+- global allocation (all targets at once)
+- session max constraint
+- session min constraint (soft)
+- weeklyAllocated tracking
+- weeklyUnresolved tracking
+- feasibility status
+
+DO NOT implement:
+
+- session duration estimation
+- indirect volume estimation
+- exercise-level logic
+- priority exercise logic
+- ordering rules
+- redistribution heuristics beyond basic pass
+- scoring systems
+
+====================================================
+INPUT CONTRACT
+====================================================
+
+Create a new type:
+
+DailyAllocationInput:
+
+{
+  days: Array<{
+    dayIndex: number
+    dayType: string   // e.g. "push", "pull", "legs", "upper", "lower", "full_body"
+  }>
+
+  weeklyTargets: Record<string, number>  // targetId → volume
+
+  priorities?: Record<string, number>    // optional, not required in Stage 1
+
+  constraints: {
+    sessionMax: number   // hard max total per day
+    sessionMin: number   // soft minimum per target per day
+  }
+}
+
+====================================================
+OUTPUT CONTRACT
+====================================================
+
+Create a new type:
+
+DailyAllocationResult:
+
+{
+  days: Array<{
+    dayIndex: number
+    dayType: string
+
+    allocations: Record<string, number>  // targetId → volume
+
+    total: number
+  }>
+
+  weeklyAllocated: Record<string, number>
+
+  weeklyUnresolved: Record<string, number>
+
+  status: "feasible" | "feasible_with_tradeoffs" | "infeasible"
+}
+
+====================================================
+ALLOCATION LOGIC (STAGE 1)
+====================================================
+
+1. Initialize empty allocation per day
+
+2. For each target:
+   - determine eligible days based on dayType
+   - if no eligible days → add full volume to weeklyUnresolved
+
+3. Distribute volume across eligible days BUT:
+
+   - NEVER exceed sessionMax
+   - Prefer even distribution
+   - Respect sessionMin as a guideline, not hard rule
+   - If remaining volume cannot fit → add to weeklyUnresolved
+
+4. After all targets processed:
+
+   - compute total per day
+   - compute weeklyAllocated per target
+   - compute weeklyUnresolved per target
+
+====================================================
+CONSTRAINTS
+====================================================
+
+HARD:
+
+- No day total may exceed sessionMax
+- No negative values
+- All allocated + unresolved must equal original weeklyTargets
+
+SOFT:
+
+- Avoid splitting tiny values (e.g. 1–2 across multiple days)
+- Prefer grouping volume
+
+====================================================
+FEASIBILITY STATUS
+====================================================
+
+Return:
+
+"feasible"
+→ if no unresolved volume AND no day close to max (safe margin)
+
+"feasible_with_tradeoffs"
+→ if unresolved > 0 OR days near max
+
+"infeasible"
+→ if large unresolved OR no valid distribution exists
+
+====================================================
+INTEGRATION
+====================================================
+
+- Do NOT remove current distribution logic yet
+- Implement new engine as separate function/module
+- Add adapter layer so existing pipeline can optionally use new result
+
+Target function to replace later:
+distributeTargetVolume()
+
+File:
+planDraftVolumeDistributionService.ts
+
+====================================================
+TESTS (MINIMUM REQUIRED)
+====================================================
+
+Add tests:
+
+1. Balanced case
+→ no unresolved
+→ status = feasible
+
+2. Overloaded case
+→ unresolved exists
+→ status = feasible_with_tradeoffs
+
+3. Impossible case (no eligible days)
+→ unresolved = full
+→ status = infeasible
+
+4. Conservation
+→ sum(allocated + unresolved) == weeklyTargets
+
+====================================================
+STRICT RULES
+====================================================
+
+- DO NOT change existing tests (except adding new ones)
+- DO NOT break current behavior
+- DO NOT integrate into autoFill yet
+- DO NOT optimize prematurely
+
+====================================================
+END RESULT
+====================================================
+
+A working DailyAllocationEngine that:
+
+- sees the entire week at once
+- respects session capacity
+- never hides missing volume
+- reports feasibility
+
+No further features.
+
+====================================================
+END
+====================================================

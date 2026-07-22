@@ -1,0 +1,170 @@
+Analyze the generated workout plan and evaluate its training logic quality.
+
+DO NOT modify code.
+DO NOT implement anything.
+
+This is a diagnostic and evaluation task.
+
+==================================================
+GOAL
+==================================================
+
+Evaluate whether the generated workout plan behaves like a real coach-designed plan.
+
+Focus on:
+- exercise logic
+- structure
+- movement diversity
+- sub-target coverage
+- fatigue balance
+
+==================================================
+INPUT
+==================================================
+
+You will receive a generated training day or full plan.
+
+==================================================
+ANALYSIS REQUIRED
+==================================================
+
+1. SESSION STRUCTURE
+
+Check:
+
+- Is there a clear main compound exercise?
+- Is there a logical progression from heavy → medium → isolation?
+- Are exercises ordered correctly?
+
+Return:
+PASS / FAIL + explanation
+
+--------------------------------------------------
+
+2. MOVEMENT PATTERN QUALITY
+
+Check:
+
+- Are movement patterns repeated excessively?
+- Is there diversity (push, pull, hinge, etc.)?
+
+Examples of BAD:
+- 3x horizontal push
+- 3x vertical pull
+
+Return:
+PASS / FAIL + explanation
+
+--------------------------------------------------
+
+3. SUB-TARGET COVERAGE (VERY IMPORTANT)
+
+Check:
+
+- Does the plan cover different parts of the muscle?
+
+Example for chest:
+- upper
+- mid
+- lower
+
+BAD:
+- only mid chest
+- only incline movements
+
+GOOD:
+- mix of angles
+
+Return:
+PASS / FAIL + explanation
+
+--------------------------------------------------
+
+4. EXERCISE ROLE DISTRIBUTION
+
+Check:
+
+- Is there:
+  - 1 main movement
+  - 1–2 secondary movements
+  - isolation work
+
+BAD:
+- all heavy compounds
+- no isolation
+- no variation in stimulus
+
+Return:
+PASS / FAIL + explanation
+
+--------------------------------------------------
+
+5. FATIGUE MANAGEMENT
+
+Check:
+
+- Are there too many high-fatigue exercises?
+
+BAD:
+- squat + RDL + hack squat + lunges
+
+GOOD:
+- heavy + medium + light balance
+
+Return:
+PASS / FAIL + explanation
+
+--------------------------------------------------
+
+6. DUPLICATION / REDUNDANCY
+
+Check:
+
+- Are exercises too similar?
+
+BAD:
+- bench + smith bench + machine press
+
+Return:
+PASS / FAIL + explanation
+
+--------------------------------------------------
+
+7. REALISM TEST (MOST IMPORTANT)
+
+Answer:
+
+Would a real experienced coach create this session?
+
+Options:
+- YES (good)
+- PARTIALLY (needs improvement)
+- NO (unrealistic)
+
+Explain WHY.
+
+==================================================
+OUTPUT FORMAT
+==================================================
+
+Return:
+
+1. Overall Score (1–10)
+
+2. PASS/FAIL for each section
+
+3. Biggest problems (max 5)
+
+4. Suggested improvements (clear and practical)
+
+==================================================
+IMPORTANT
+==================================================
+
+Do not evaluate code.
+Do not mention implementation.
+Focus only on training logic quality.
+
+Be strict and critical.
+
+If something is wrong — say it clearly.

@@ -1,0 +1,90 @@
+Logic audit only. Do not modify any code.
+
+I want to understand the current exercise-selection algorithm from a training-logic perspective.
+
+Do not focus on UI, components, database migrations or implementation details yet.
+Do not propose fixes yet.
+
+Explain the complete decision process used when the generator selects a specific exercise.
+
+Describe it step by step in plain language:
+
+1. What information from the training interview is used during exercise selection?
+   Include:
+   - training goal,
+   - experience level,
+   - training location,
+   - available equipment,
+   - health limitations or pain,
+   - exercises to avoid,
+   - muscle priorities,
+   - preferred or excluded exercises,
+   - number of training days,
+   - session type or split,
+   - any other relevant interview data.
+
+2. Which data is stored on each exercise and used by the algorithm?
+   For example:
+   - target muscles,
+   - primary and secondary muscles,
+   - equipment,
+   - difficulty,
+   - suitable experience levels,
+   - movement pattern,
+   - exercise category,
+   - compound or isolation classification,
+   - safety restrictions,
+   - training-goal suitability.
+
+3. In what exact order are exercises filtered out?
+   Explain every rejection rule and whether it is a hard exclusion or only a scoring penalty.
+
+4. After filtering, how are the remaining exercises ranked?
+   List every factor that increases or decreases the candidate score.
+
+5. When several exercises train the same muscle, explain why one exercise is selected over another.
+
+6. Explain whether the algorithm considers:
+   - current remaining weekly volume deficit,
+   - volume already assigned,
+   - oversupply created by secondary muscles,
+   - movement-pattern diversity,
+   - previous exercises selected in the same session,
+   - repeated exercises across the week,
+   - session limits,
+   - fatigue and exercise ordering.
+
+7. Provide three real examples using exercises from the current database:
+
+   Example A:
+   A client with no physical activity and a general fitness or hypertrophy goal.
+
+   Example B:
+   An intermediate client with a strength goal.
+
+   Example C:
+   A client with shoulder pain and limited equipment.
+
+For each example show:
+
+- the relevant interview inputs,
+- exercises rejected immediately and why,
+- the final candidate exercises,
+- the factors affecting their ranking,
+- why the winning exercise was selected instead of the second-best option.
+
+8. Clearly separate:
+   - hard filters,
+   - scoring preferences,
+   - tie-breakers,
+   - post-selection validation.
+
+9. Identify any interview answers that are collected in the UI but currently do not affect exercise selection.
+
+Return a decision-flow report in plain language.
+Mention file and function names only as references underneath each section.
+
+Do not implement anything.
+Do not change code.
+Do not change tests.
+Do not propose a redesign yet.

@@ -1,0 +1,92 @@
+Apply a focused UX correction patch to the CURRENT cardio section in the survey.
+
+Do NOT redesign the whole app.
+Do NOT change the deeper cardio rules.
+Do NOT touch unrelated survey sections.
+This is a strict layout correction only.
+
+==================================================
+GOAL
+==================================================
+
+Fix the cardio section layout so it matches this intended structure:
+
+TOP ROW:
+- cardio preference
+- current cardio activity
+
+SECOND ROW BELOW:
+- preferred cardio form
+
+The preferred-cardio-form block must NOT sit as a tall third column on the right.
+
+==================================================
+SECTION 1 — REQUIRED CARDIO LAYOUT
+==================================================
+
+Rebuild the layout of the cardio section like this:
+
+Row 1:
+1. "Jak chcesz, aby w planie uwzględnić trening cardio?"
+2. "Jak wygląda Twoja aktywność tlenowa obecnie?"
+
+Row 2:
+3. "Jaka forma aktywności tlenowej najbardziej Ci odpowiada?"
+
+Important:
+- the third block must appear BELOW the first row
+- it must NOT be rendered as the third tall column on the right
+- the section should feel visually balanced and easier to scan
+
+==================================================
+SECTION 2 — PREFERRED CARDIO FORM OPTIONS LAYOUT
+==================================================
+
+Inside the lower block:
+- keep the same options
+- render them as a compact responsive grid
+
+Options:
+- Marsz
+- Szybki marsz
+- Sport rekreacyjny
+- Bieganie
+- Rower
+- Orbitrek
+- Pływanie
+- Wioślarz
+- Stepper / schody
+
+Preferred layout:
+- 2 columns on desktop
+- 1 column on smaller screens
+
+Goal:
+The preferred-cardio-form choices should be placed lower, under the first row, not squeezed into a tall right-side column.
+
+==================================================
+SECTION 3 — DO NOT TOUCH
+==================================================
+
+Do NOT in this patch:
+- change cardio wording
+- change cardio rules
+- change sport-goal logic
+- change additional-info logic
+- redesign the rest of the survey
+
+This is only a layout correction.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact cardio layout correction made
+3. exact row structure used
+4. exact grid behavior used for the lower cardio-form block
+
+End exactly with:
+
+CARDIO ROW LAYOUT CORRECTION APPLIED

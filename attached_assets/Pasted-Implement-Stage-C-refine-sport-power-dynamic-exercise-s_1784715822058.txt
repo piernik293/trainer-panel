@@ -1,0 +1,193 @@
+Implement Stage C: refine sport / power / dynamic exercise selection.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign UI broadly
+- Do NOT touch wizard flow
+- Do NOT touch allocation engine
+- Do NOT rewrite the whole selection engine
+- Do NOT run tests
+- Do NOT create unrelated files
+- Keep changes local to the existing goal-profile / exercise-selection logic and the minimum necessary route/context wiring
+
+PRIMARY GOAL:
+Improve how the generator handles:
+- power / explosive intent
+- sport goal
+- sport sub-priorities:
+  - dynamika
+  - szybkość
+  - stabilizacja
+- distinction between:
+  - Poprawa sprawności
+  - Poprawa kondycji
+  - Cel sportowy
+
+KNOWN CURRENT STATE:
+- Stage B introduced a basic goal profile layer
+- Stage B improved regression filtering and some direct-work logic
+- Current remaining problem:
+  - "Cel sportowy" is still too broad
+  - "Poprawa sprawności" and "Cel sportowy" are not differentiated strongly enough
+  - dynamic / speed / stabilization choices from the UI are not yet meaningfully shaping exercise selection
+  - power/plyometric logic is still too shallow
+
+====================================================
+PART 1 — DIFFERENTIATE THESE GOALS CLEARLY
+====================================================
+
+Implement clear behavioral differences between:
+
+1. Poprawa kondycji
+2. Poprawa sprawności
+3. Cel sportowy
+
+Rules:
+
+A. Poprawa kondycji
+- prioritize conditioning-compatible exercise choices
+- prefer simple, repeatable, manageable movement patterns
+- minimize unnecessary isolation clutter
+- do NOT treat this as a power/plyo goal by default
+- cardio / conditioning bias may exist, but this task should focus only on exercise selection profile, not full cardio programming
+
+B. Poprawa sprawności
+- prioritize movement quality, unilateral control, trunk control, coordination, athletic generalism
+- allow some dynamic / “alive” movement patterns when level allows
+- but do NOT treat this like full sport-performance programming
+- this goal should feel more athletic than plain conditioning, but less specialized than sport
+
+C. Cel sportowy
+- this must use the extra sport-priority inputs from the UI
+- it should produce more clearly athletic / performance-oriented exercise choices than "Poprawa sprawności"
+- it should be the strongest context for power / dynamic / stabilization logic
+
+====================================================
+PART 2 — USE THE SPORT PRIORITY SUBFIELDS
+====================================================
+
+The UI contains sport-related selections such as:
+- dynamika
+- szybkość
+- stabilizacja
+(and hobby / zawodowo status)
+
+These must now influence exercise selection meaningfully.
+
+Implement these profiles:
+
+A. dynamika
+- stronger power / explosive bias
+- athletic / reactive movements can be favored when level allows
+- support with force-production movements
+- allow repeated athletic exposures through the week
+
+B. szybkość
+- prefer exercises supportive of speed qualities:
+  - force production
+  - unilateral drive
+  - athletic pull/push/lower patterns
+  - less random bodybuilding clutter
+- do NOT simply map this to “more jumps”; keep it speed-supportive, not cartoonish
+
+C. stabilizacja
+- prioritize control-oriented choices:
+  - unilateral stability
+  - trunk control
+  - anti-rotation / bracing / controlled landing / body control
+- this should not mean “everything becomes rehab”
+- it should still fit the user's level and training setting
+
+D. hobby vs zawodowo
+- zawodowo should allow a stronger athletic bias / repeated exposures than hobby
+- hobby should remain more conservative unless other inputs strongly justify athletic emphasis
+
+====================================================
+PART 3 — POWER / PLYOMETRIC LOGIC REFINEMENT
+====================================================
+
+Refine power logic beyond the current simple dynamic allowance.
+
+Rules:
+
+1. Power / plyometric selections should only appear when justified by:
+- goal context
+- sport priority context
+- experience level
+- no obvious incompatibility
+
+2. Power / plyometric exercises must not behave like generic accessory fillers.
+
+3. For:
+- sport goal + dynamika
+- explicit power-oriented context
+- intermediate+
+the selector should favor repeated weekly athletic exposures,
+not just one random jump exercise.
+
+4. Do NOT hardcode “2–3 standalone plyometric sessions” for everyone.
+Instead:
+- create a stronger athletic exposure bias
+- allow those exposures to be separate or embedded at the start of suitable sessions
+- make this scale with weekly training days and level
+
+5. For beginners / no activity / plain conditioning / plain hypertrophy:
+- power drills should remain restricted unless strongly justified
+
+====================================================
+PART 4 — SUPPORTIVE STRENGTH FOR POWER CONTEXT
+====================================================
+
+When the context is power / sport dynamics / speed:
+- do not select only explosive drills
+- also bias supportive strength movements that make sense for force production
+- keep the plan athletic and useful, not random
+
+This means:
+- power context = explosive tools + strength-supportive choices
+- not “plyo only”
+- not “random bodybuilding accessories”
+
+====================================================
+PART 5 — DO NOT OVERREACT
+====================================================
+
+Important:
+- Do NOT make every sport user get extreme plyometric saturation
+- Do NOT turn stabilization into rehab-only training
+- Do NOT turn speed into random jump spam
+- Do NOT collapse "sprawność" into the same profile as "sport"
+- Do NOT broaden this task into a full cardio-programming rewrite
+
+====================================================
+PART 6 — KEEP THE IMPLEMENTATION LOCAL
+====================================================
+
+Prefer extending the current:
+- goal profile service
+- route/context wiring
+- engine sort/filter/bias logic
+
+Do NOT rewrite architecture.
+
+====================================================
+SUCCESS CRITERIA
+====================================================
+
+After this fix:
+- "Poprawa kondycji", "Poprawa sprawności", and "Cel sportowy" produce visibly different exercise-selection behavior
+- sport priorities (dynamika / szybkość / stabilizacja) actually influence selected exercises
+- power/plyometric logic is more intentional and less random
+- sport-oriented plans feel more athletic than general fitness plans
+- dynamic/stability/speed contexts no longer collapse into one generic selection style
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause

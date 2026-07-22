@@ -1,0 +1,170 @@
+Make one final architectural correction to the Stage 5 plan.
+
+Do not implement yet.
+Do not modify code.
+Do not redesign unrelated parts of Auto Fill.
+
+The current plan is close, but Stage 5 still directly interprets:
+
+- expansion.score[0]
+- expansion.score[4]
+- ScoreTuple details
+- movementPatternPenalty
+
+This makes Stage 5 partially duplicate the responsibilities of the existing selection system.
+
+--------------------------------------------------
+Goal
+--------------------------------------------------
+
+Stage 5 must remain a pure fragmentation tie-breaker.
+
+It must not understand or interpret the internal structure of ScoreTuple.
+
+The existing trainer logic should determine whether expansion has a meaningful advantage.
+
+Stage 5 should only receive the final boolean result:
+
+- expansionHasClearAdvantage = true
+- expansionHasClearAdvantage = false
+
+--------------------------------------------------
+1. Introduce an advantage predicate
+--------------------------------------------------
+
+Design a small pure helper owned by the existing selection logic, not by Stage 5:
+
+hasClearExpansionAdvantage(
+  expansionCandidate,
+  consolidationCandidate
+): boolean
+
+This helper may inspect the existing evaluation outcomes required to compare the two actions.
+
+It should answer only:
+
+“Does adding the new exercise provide a concrete benefit that consolidation cannot provide?”
+
+Examples of a concrete advantage:
+
+- expansion resolves more remaining targets
+- expansion adds a movement category not currently represented
+- another already-existing trainer rule clearly requires expansion
+
+Do not add new scores, weights, thresholds, or heuristics.
+
+Do not use category-count thresholds such as:
+
+- penalty >= 2
+- two exercises are enough
+- three exercises are redundant
+
+--------------------------------------------------
+2. Keep Stage 5 independent
+--------------------------------------------------
+
+Stage 5 action resolution should not inspect ScoreTuple indices directly.
+
+Use this conceptual interface:
+
+resolveFragmentationAction({
+  hasExpansion,
+  hasConsolidation,
+  expansionHasClearAdvantage
+})
+
+Decision rules:
+
+1. no expansion and no consolidation
+   → NO_ACTION
+
+2. only expansion
+   → EXPAND
+
+3. only consolidation
+   → CONSOLIDATE
+
+4. both exist and expansionHasClearAdvantage is true
+   → EXPAND
+
+5. both exist and expansionHasClearAdvantage is false
+   → CONSOLIDATE
+
+This makes consolidation the final fallback only when expansion has no concrete advantage.
+
+--------------------------------------------------
+3. Responsibility boundaries
+--------------------------------------------------
+
+Existing selection logic owns:
+
+- ScoreTuple
+- target-resolution comparison
+- movement-balance comparison
+- trainerPriorityRank
+- recommendation rank
+- variety penalty
+- determining whether expansion has a clear advantage
+
+Stage 5 owns only:
+
+- choosing the less fragmented option when no clear advantage exists
+
+Stage 5 must not:
+
+- re-score candidates
+- rank exercises
+- count movement-category occurrences as redundancy
+- infer exercise-role equivalence
+- override an existing trainer preference
+
+--------------------------------------------------
+4. Preserve the existing candidate helpers
+--------------------------------------------------
+
+Keep the previous planned helpers:
+
+- checkContributionSafety()
+- findBestExpansion()
+- findBestConsolidation()
+- applyConsolidation()
+
+Only revise the action-resolution boundary.
+
+findBestExpansion() should preserve the existing Phase 1 selection behavior.
+
+findBestConsolidation() should still select the safest and most useful valid set increase.
+
+applyConsolidation() should remain mutation-only.
+
+--------------------------------------------------
+5. Tests required by the architecture
+--------------------------------------------------
+
+Recommend tests proving:
+
+- only expansion available → expand
+- only consolidation available → consolidate
+- neither available → no action
+- expansion with better target resolution → expand
+- expansion with a fresh movement category → expand
+- no concrete expansion advantage → consolidate
+- Stage 5 resolution does not inspect ScoreTuple indices
+- no category-count threshold exists
+- trainer priority and recommendation ranking remain unchanged
+
+--------------------------------------------------
+6. Final output
+--------------------------------------------------
+
+Provide only:
+
+- the revised responsibility boundary
+- the proposed function signatures
+- the minimal implementation sequence
+- the exact files that would change
+- confirmation that no API or DB changes are needed
+
+Do not implement.
+Do not start Stage 6.
+Stop after this final correction.

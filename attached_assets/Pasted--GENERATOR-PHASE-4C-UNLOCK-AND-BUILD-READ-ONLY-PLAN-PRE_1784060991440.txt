@@ -1,0 +1,672 @@
+# GENERATOR PHASE 4C — UNLOCK AND BUILD READ-ONLY PLAN PREVIEW
+
+Continue from the current repository state.
+
+Step 4 already supports:
+
+- manual exercise selection,
+- exercise recommendations,
+- local exercise draft state,
+- working sets,
+- repetition ranges,
+- RIR,
+- rest time,
+- exercise ordering inside a day,
+- live daily and weekly volume coverage,
+- separate Core coverage,
+- non-blocking over-volume warnings.
+
+Implement only the final read-only Step 5:
+
+"Podgląd"
+
+This task must remain frontend-focused and cost-controlled.
+
+Do not:
+
+- save the plan,
+- create workout-plan database records,
+- create workout-day records,
+- create workout-exercise records,
+- modify client records,
+- add a new API endpoint,
+- modify the Volume Calculator,
+- duplicate volume calculations,
+- modify recommendation scoring,
+- modify Step 3 proposed volume,
+- modify split or distribution logic,
+- automatically add exercises,
+- automatically remove exercises,
+- automatically change sets,
+- automatically reorder exercises,
+- implement AI,
+- implement supersets,
+- implement drop sets,
+- implement PDF export,
+- implement printing,
+- redesign unrelated pages,
+- install new dependencies,
+- inspect unrelated packages.
+
+============================================================
+1. VERIFY THE EXISTING FOUNDATION
+============================================================
+
+Inspect only files directly responsible for:
+
+- generator wizard step state,
+- Step4Exercises,
+- local selected-exercise state,
+- exercise-card validation,
+- useVolumeCoverage,
+- VolumeCoverageSection,
+- current Step 5 placeholder or locked-tab behaviour,
+- directly related focused tests.
+
+Confirm:
+
+- where the active wizard step is stored,
+- where selected exercises for every day are stored,
+- how Step 4 validity is currently calculated,
+- how live volume coverage results are exposed,
+- how the "Podgląd" tab is currently locked.
+
+Do not inspect the complete application.
+
+Do not change backend code.
+
+If the read-only preview cannot be created from the existing local generator
+state and existing coverage result without backend or database work, stop and
+report:
+
+PLAN PREVIEW FOUNDATION MISSING
+
+============================================================
+2. STEP 5 UNLOCK RULES
+============================================================
+
+Unlock "Podgląd" only when the generator draft is structurally valid.
+
+Required conditions:
+
+- client profile step is valid,
+- plan assumptions step is valid,
+- weekly volume preview is valid,
+- daily distribution preview is valid,
+- Step 4 is currently available,
+- every workout day contains at least one selected exercise,
+- every selected exercise has a stable exerciseId,
+- working sets are whole integers from 1 to 6,
+- minimum repetitions are valid positive integers,
+- maximum repetitions are valid positive integers,
+- minimum repetitions do not exceed maximum repetitions,
+- RIR is an integer from 0 to 5,
+- rest time is a positive integer.
+
+Do not block "Podgląd" because:
+
+- planned volume is not fully covered,
+- proposed volume is exceeded,
+- a muscle has additional unplanned volume,
+- an exercise creates indirect volume,
+- an informational recommendation warning exists,
+- an avoided exercise was consciously accepted by the trainer,
+- a non-blocking metadata warning exists.
+
+Volume warnings are advisory.
+
+They must not prevent the trainer from reviewing the plan.
+
+If Step 5 is locked, show:
+
+"Uzupełnij wszystkie dni treningowe i popraw nieprawidłowe parametry ćwiczeń, aby przejść do podglądu."
+
+Do not unlock Step 5 based only on the current tab number.
+
+Use real generator-draft validity.
+
+============================================================
+3. PRESERVE STATE
+============================================================
+
+Opening Step 5 must preserve all existing local wizard state.
+
+Preserve:
+
+- selected client,
+- experience level,
+- plan assumptions,
+- training days,
+- selected split,
+- Step 3 volume values,
+- daily distribution,
+- Core allocations,
+- selected exercises,
+- exercise order,
+- sets,
+- repetition ranges,
+- RIR,
+- rest time,
+- accepted avoided-exercise confirmations,
+- latest valid volume-coverage result.
+
+Returning from Step 5 to Step 4 must not reset or regenerate anything.
+
+Do not automatically call recommendations again.
+
+Do not automatically replace selected exercises.
+
+============================================================
+4. STEP 5 MAIN STRUCTURE
+============================================================
+
+Create a professional read-only page titled:
+
+"Podgląd planu"
+
+Add helper text:
+
+"Sprawdź strukturę planu, ćwiczenia, parametry treningowe oraz pokrycie objętości przed zapisaniem."
+
+The preview should contain these sections:
+
+1. Klient
+2. Założenia planu
+3. Podsumowanie objętości
+4. Dni treningowe
+5. Ostrzeżenia i informacje
+6. Gotowość szkicu
+
+Use existing UI components and application styling.
+
+Do not add a new design system.
+
+============================================================
+5. CLIENT SUMMARY
+============================================================
+
+Display only information already available in the generator state.
+
+Show where available:
+
+- client name,
+- experience level,
+- primary training goal,
+- training location,
+- available equipment,
+- number of training days,
+- session duration,
+- recovery status,
+- selected priorities,
+- relevant limitations or avoided exercises.
+
+Do not fetch unrelated client data.
+
+Do not display sensitive or unnecessary interview fields.
+
+Do not duplicate the full Training Interview.
+
+Use a compact summary card.
+
+============================================================
+6. PLAN ASSUMPTIONS SUMMARY
+============================================================
+
+Show:
+
+- selected split,
+- recommended split,
+- whether the trainer selected the recommendation or another compatible split,
+- number of workout days,
+- block duration,
+- training frequency,
+- recovery context,
+- selected priority muscle groups.
+
+Use existing labels and values.
+
+Do not recalculate the recommendation.
+
+Do not modify the selected split.
+
+============================================================
+7. WEEKLY VOLUME SUMMARY
+============================================================
+
+Reuse the existing live volume-coverage result.
+
+Do not calculate volume again in the preview component.
+
+Do not duplicate coefficient logic in React.
+
+For every planned target show compactly:
+
+- muscle name,
+- planned weekly volume,
+- completed effective volume,
+- remaining volume or exceeded volume,
+- current status.
+
+Use the same statuses already used in Step 4:
+
+- "Brak dobranego ćwiczenia"
+- "Pozostało: N pkt."
+- "Pokryto zaplanowaną objętość"
+- "Przekroczono propozycję o N pkt."
+- "Dodatkowa objętość: N pkt."
+
+Use the same semantic styles:
+
+- strong warning for no contribution,
+- neutral/informational for partial coverage,
+- green for covered,
+- orange for exceeded or additional unplanned volume.
+
+Exceeding the system proposal remains non-blocking.
+
+Also show Core separately:
+
+"Core / brzuch"
+
+Display:
+
+- weekly plan,
+- completed direct sets,
+- remaining or exceeded direct sets.
+
+Do not merge Core into the 11 analytical targets.
+
+============================================================
+8. WORKOUT-DAY PREVIEW
+============================================================
+
+Create one read-only card for every workout day.
+
+Header example:
+
+"Dzień 1 — Upper"
+
+Show:
+
+- day name,
+- day type,
+- planned effective target volume,
+- actual volume-coverage summary,
+- Core allocation when applicable,
+- number of selected exercises,
+- total working sets.
+
+Total working sets means the sum of actual selected exercise working sets.
+
+Do not confuse total working sets with analytical effective-volume points.
+
+Add helper text where needed:
+
+"Serie robocze są sumą serii przypisanych do ćwiczeń. Objętość efektywna uwzględnia współczynniki pracy mięśni."
+
+============================================================
+9. EXERCISE LIST IN PREVIEW
+============================================================
+
+Show exercises in exactly the order selected by the trainer.
+
+Do not automatically reorder them.
+
+For every exercise display:
+
+- order number,
+- exercise name,
+- main muscle group,
+- equipment,
+- working sets,
+- repetition range,
+- RIR,
+- rest time,
+- avoided-exercise warning when previously accepted,
+- existing metadata warnings when available.
+
+Example:
+
+1. Wyciskanie hantli na ławce płaskiej
+
+3 serie × 8–12 powtórzeń
+RIR 2
+Przerwa: 90 s
+
+Keep the preview read-only.
+
+Do not show editable number inputs in Step 5.
+
+Do not create duplicate exercise cards.
+
+============================================================
+10. EXERCISE CONTRIBUTION DETAILS
+============================================================
+
+Reuse existing volume-preview contribution data where available.
+
+Each exercise may optionally display a compact expandable section:
+
+"Wpływ na objętość"
+
+Example:
+
+- Mięsień piersiowy większy: 3.00 pkt.
+- Mięsień trójgłowy ramienia: 1.50 pkt.
+- Mięśnie naramienne: 0.75 pkt.
+
+Do not calculate contributions locally.
+
+If an existing preview warning says that an exercise could not be calculated,
+display that warning instead.
+
+Keep contribution details collapsed by default.
+
+============================================================
+11. DAILY VOLUME SUMMARY
+============================================================
+
+Inside every workout-day preview show the existing daily coverage.
+
+For every planned day target show:
+
+- plan for that day,
+- completed effective volume,
+- remaining or exceeded value,
+- status.
+
+Also show additional real contributions to muscles that were not planned for
+that day.
+
+Do not hide indirect or unplanned contributions.
+
+Show Core separately using direct working sets.
+
+Do not count incidental stabilization as direct Core.
+
+============================================================
+12. WARNINGS AND INFORMATION SUMMARY
+============================================================
+
+Add one consolidated section:
+
+"Ostrzeżenia i informacje"
+
+Group current draft information into:
+
+A. Wymaga poprawy
+
+Only structural problems that would make the draft invalid, such as:
+
+- empty workout day,
+- invalid working sets,
+- invalid repetition range,
+- invalid RIR,
+- invalid rest time,
+- missing exerciseId.
+
+B. Ostrzeżenia trenera
+
+Non-blocking issues such as:
+
+- uncovered planned muscle target,
+- exceeded proposed volume,
+- additional unplanned volume,
+- exercise without calculable muscle assignments,
+- avoided exercise accepted by the trainer,
+- incomplete recommendation metadata,
+- other existing non-blocking preview warnings.
+
+C. Informacje
+
+Examples:
+
+- selected split differs from recommended split but is compatible,
+- Core is handled as a separate direct-set block,
+- effective volume contains indirect muscle contributions.
+
+Do not generate medical diagnoses.
+
+Do not create new injury or rehabilitation recommendations.
+
+Do not duplicate the same warning several times.
+
+Deduplicate warnings by stable warning code plus exercise/day scope where
+possible.
+
+============================================================
+13. DRAFT READINESS
+============================================================
+
+At the bottom show one clear readiness card.
+
+When all structural requirements are valid:
+
+"Szkic gotowy do zapisania"
+
+Helper:
+
+"Plan został przygotowany do końcowej weryfikacji trenera. Ostrzeżenia objętościowe są informacyjne i nie blokują dalszej pracy."
+
+When structural issues exist:
+
+"Szkic wymaga poprawy"
+
+List only the exact structural issues.
+
+Do not call the plan "saved".
+
+Do not call it "active".
+
+Do not create any database record.
+
+============================================================
+14. NAVIGATION
+============================================================
+
+Add:
+
+"Wróć do ćwiczeń"
+
+This returns to Step 4 and preserves all draft state.
+
+Optionally allow a day-level action:
+
+"Edytuj dzień"
+
+It may return to Step 4 and focus or scroll to the matching day only when this
+can be done with a small local-state change.
+
+Do not add complex routing or URL-state architecture only for this feature.
+
+Do not add a working "Zapisz plan" action in this task.
+
+At most show a disabled informational button:
+
+"Zapis planu — kolejny etap"
+
+Do not create a fake save action.
+
+============================================================
+15. EMPTY AND LOADING STATES
+============================================================
+
+The preview must not briefly show incorrect zero values while the existing
+volume preview is recalculating.
+
+Use the last valid coverage result during recalculation.
+
+When no valid coverage result has been received yet, show a compact loading
+state.
+
+When coverage preview fails:
+
+- keep the exercise preview visible,
+- show a readable non-blocking error,
+- allow returning to Step 4.
+
+Suggested message:
+
+"Nie udało się odświeżyć analizy objętości. Ćwiczenia pozostają zapisane w lokalnym szkicu."
+
+Do not clear the selected exercises.
+
+============================================================
+16. ACCESSIBILITY AND POLISH LABELS
+============================================================
+
+Use visible text in addition to colours.
+
+Use correct Polish pluralization where displayed:
+
+- 1 seria
+- 2 serie
+- 3 serie
+- 4 serie
+- 5 serii
+- 6 serii and more
+
+Use:
+
+- "1 ćwiczenie"
+- "2 ćwiczenia"
+- "5 ćwiczeń"
+
+Use separators so labels never concatenate.
+
+Correct examples:
+
+- "Dzień 2 — 3 serie"
+- "Core / brzuch — 3 serie"
+- "Przerwa: 90 s"
+
+Do not perform a broad unrelated translation audit.
+
+Fix only labels directly rendered by the new Step 5 preview and directly reused
+small helper functions.
+
+============================================================
+17. LOCAL DRAFT ONLY
+============================================================
+
+Step 5 must read from the current local generator draft.
+
+Do not create or update:
+
+- workoutPlans,
+- workoutDays,
+- workoutExercises,
+- clients,
+- surveys,
+- volume guidelines,
+- Exercise Library records.
+
+Do not call a write endpoint.
+
+Do not add localStorage persistence unless it already exists for this wizard.
+
+Refresh persistence is out of scope.
+
+============================================================
+18. FOCUSED TESTS
+============================================================
+
+Add only focused tests for the new preview behaviour.
+
+Test:
+
+1. Step 5 remains locked when one workout day is empty.
+2. Step 5 remains locked when an exercise prescription is invalid.
+3. Step 5 unlocks when all days contain structurally valid exercises.
+4. Under-covered volume does not block Step 5.
+5. Over-covered volume does not block Step 5.
+6. Additional unplanned volume does not block Step 5.
+7. Step 5 shows client summary.
+8. Step 5 shows selected split and training days.
+9. Step 5 shows exercises in trainer-selected order.
+10. Step 5 shows sets, repetitions, RIR and rest.
+11. Step 5 uses existing weekly coverage result.
+12. Step 5 uses existing daily coverage result.
+13. Core is displayed separately.
+14. Avoided-exercise warning is visible when previously accepted.
+15. Returning to Step 4 preserves selected exercises.
+16. No workout database records are created.
+17. No write endpoint is called.
+18. The save action is absent or disabled.
+19. Volume preview failure does not clear selected exercises.
+20. Duplicate warnings are not shown repeatedly.
+
+Do not add browser or end-to-end tests.
+
+============================================================
+19. COST CONTROL
+============================================================
+
+This is a frontend-focused task.
+
+Do not run any root test command.
+
+Do not run:
+
+- the full test suite,
+- all 654 tests,
+- browser installation,
+- Playwright,
+- visual screenshot automation,
+- database audit,
+- migration checks,
+- API production build,
+- client-landing build,
+- Exercise Library audit,
+- unrelated TypeScript checks,
+- unrelated builds,
+- unrelated refactors.
+
+Run only:
+
+- exact new Step 5 preview test file or directly affected test files,
+- trainer-app TypeScript check,
+- trainer-app production build only once after TypeScript passes.
+
+Do not restart unrelated workflows.
+
+Do not inspect backend packages unless an imported shared type fails to resolve.
+
+If backend changes appear necessary, stop instead of expanding scope.
+
+============================================================
+20. REQUIRED FINAL REPORT
+============================================================
+
+Report only:
+
+1. existing local generator state reused
+2. existing volume coverage result reused
+3. exact Step 5 unlock conditions
+4. files changed
+5. client summary displayed
+6. plan assumptions displayed
+7. weekly coverage displayed
+8. daily preview behaviour
+9. Core preview behaviour
+10. warning grouping behaviour
+11. draft-readiness behaviour
+12. navigation and state preservation
+13. focused tests executed
+14. trainer-app TypeScript result
+15. trainer-app build result
+16. confirmation that no API route was added
+17. confirmation that no database records were created
+18. confirmation that no write endpoint was called
+19. confirmation that no automatic plan changes occur
+20. remaining limitations
+
+Do not continue automatically after completing this task.
+
+Finish exactly with one:
+
+PLAN PREVIEW COMPLETE
+
+PLAN PREVIEW FOUNDATION MISSING
+
+PLAN PREVIEW FAILED

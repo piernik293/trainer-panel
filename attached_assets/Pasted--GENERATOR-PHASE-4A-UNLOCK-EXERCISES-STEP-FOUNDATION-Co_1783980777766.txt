@@ -1,0 +1,311 @@
+# GENERATOR PHASE 4A — UNLOCK EXERCISES STEP FOUNDATION
+
+Continue from the current repository state.
+
+Work only on the workout-plan generator wizard.
+
+Do not implement supersets or drop sets.
+Do not implement AI.
+Do not generate a complete workout automatically.
+Do not save workout plans yet.
+Do not unlock the final "Podgląd" step.
+Do not redesign unrelated pages.
+Do not inspect unrelated files.
+
+============================================================
+1. VERIFY PREREQUISITES
+============================================================
+
+Before changing code, verify only the directly related generator files.
+
+The "Ćwiczenia" step may be unlocked only when:
+
+- client profile is valid,
+- plan assumptions are valid,
+- training days and split are valid,
+- weekly volume preview is valid,
+- daily distribution preview is valid,
+- there are no blocking volume errors.
+
+Core may remain a separate auxiliary block.
+
+If these prerequisites are not currently available in code, stop and report
+the exact missing condition instead of implementing unrelated fixes.
+
+============================================================
+2. UNLOCK STEP 4
+============================================================
+
+Unlock:
+
+"Ćwiczenia"
+
+when all previous generator steps are valid.
+
+Keep:
+
+"Podgląd"
+
+locked.
+
+Do not unlock steps based only on the current tab index.
+
+Use the actual validity of the draft generator state.
+
+If the user changes an earlier value and the draft becomes invalid:
+
+- lock "Ćwiczenia" again,
+- preserve valid local choices when possible,
+- show a clear message:
+
+"Uzupełnij lub popraw wcześniejsze etapy, aby kontynuować dobór ćwiczeń."
+
+============================================================
+3. EXERCISES STEP STRUCTURE
+============================================================
+
+Create the initial Step 4 UI.
+
+Show one section for every workout day returned by the current distribution.
+
+Example:
+
+Dzień 1 — Góra
+Dzień 2 — Dół
+Dzień 3 — Góra
+Dzień 4 — Dół
+
+Inside every day show:
+
+- day name,
+- assigned muscle targets,
+- analytical effective-volume summary,
+- auxiliary Core allocation when assigned,
+- empty exercise list,
+- button:
+
+"Dodaj ćwiczenie"
+
+Do not display analytical effective volume as real working sets.
+
+Use:
+
+"Objętość efektywna targetów"
+
+Add helper text:
+
+"To wartość analityczna. Rzeczywiste serie robocze wynikają z dobranych ćwiczeń."
+
+============================================================
+4. MANUAL EXERCISE ADDING
+============================================================
+
+After clicking "Dodaj ćwiczenie", open a compact selector using the existing
+Exercise Library.
+
+Allow the trainer to:
+
+- search by exercise name,
+- filter by target muscle,
+- filter by available equipment,
+- select one existing exercise,
+- add it to the selected workout day.
+
+Do not create new exercises.
+
+Use stable existing exercise IDs.
+
+Do not duplicate Exercise Library data inside generator code.
+
+============================================================
+5. CLIENT SAFETY AND PREFERENCES
+============================================================
+
+In the selector:
+
+- exclude inactive exercises,
+- exclude exercises incompatible with the selected training location or
+  available equipment,
+- clearly mark exercises avoided by the client,
+- do not block an avoided exercise absolutely,
+- require trainer confirmation before adding it.
+
+Warning:
+
+"Klient wskazał, że chce unikać tego ćwiczenia."
+
+Button:
+
+"Zastosuj mimo ostrzeżenia"
+
+If existing contraindication or pain-conflict metadata is available, show a
+non-blocking warning.
+
+Do not diagnose and do not prescribe rehabilitation.
+
+============================================================
+6. EXERCISE CARD
+============================================================
+
+After adding an exercise, display a compact card containing:
+
+- exercise name,
+- target muscle,
+- equipment,
+- working sets,
+- repetition range,
+- RIR,
+- rest time.
+
+Initial default values:
+
+- sets: 3
+- repetitions: 8–12
+- RIR: 2
+- rest: 90 seconds
+
+All working-set values must be whole integers.
+
+Trainer may edit:
+
+- sets: integer 1–6,
+- minimum repetitions: integer,
+- maximum repetitions: integer,
+- RIR: integer 0–5,
+- rest: integer seconds.
+
+Validate:
+
+- minimum repetitions cannot exceed maximum repetitions,
+- no decimal set counts,
+- no zero working sets.
+
+============================================================
+7. BASIC ORDERING
+============================================================
+
+Allow exercises to be reordered inside the same workout day.
+
+Use existing drag-and-drop components if already available.
+
+Do not allow dragging exercises between different workout days in this
+task.
+
+Default newly added exercise position:
+
+- before Core exercises,
+- after existing normal exercises.
+
+Core exercises, when later selected, should appear at the bottom of the day.
+
+Do not implement automatic exercise ordering yet.
+
+============================================================
+8. LOCAL DRAFT ONLY
+============================================================
+
+Keep all selected exercises in the current generator draft state only.
+
+Do not:
+
+- write to workout plan tables,
+- create workout days in the database,
+- create workout exercises in the database,
+- modify the linked client,
+- save a final plan.
+
+Refresh persistence is not required in this task unless the wizard already
+has existing local draft persistence.
+
+============================================================
+9. NEXT STEP LOCK
+============================================================
+
+Keep "Podgląd" locked until every workout day contains at least one exercise.
+
+Even when every day has an exercise, do not unlock "Podgląd" automatically
+in this task.
+
+Only prepare a deterministic validation result such as:
+
+EXERCISE_STEP_INCOMPLETE
+EXERCISE_DAY_EMPTY
+EXERCISE_SELECTION_VALID
+
+============================================================
+10. TESTS
+============================================================
+
+Add focused tests for:
+
+- Step 4 locked when an earlier step is invalid,
+- Step 4 unlocked when profile, assumptions, volume and distribution are
+  valid,
+- Step 5 remains locked,
+- one exercise can be added from the existing library,
+- exercise ID is preserved,
+- inactive exercises are excluded,
+- equipment-incompatible exercises are excluded,
+- avoided exercise requires trainer confirmation,
+- decimal set counts are rejected,
+- minimum repetitions greater than maximum are rejected,
+- exercise can be reordered within one day,
+- no workout database records are created.
+
+============================================================
+11. COST CONTROL
+============================================================
+
+Inspect only files directly responsible for:
+
+- generator wizard step state,
+- Step 4 UI,
+- Exercise Library query already used by trainer-app,
+- client avoided-exercise warning,
+- focused tests.
+
+Run only:
+
+- focused Step 4 tests,
+- TypeScript for affected packages,
+- trainer-app production build,
+- API build only if an existing read endpoint must be reused or minimally
+  changed.
+
+Do not run:
+
+- full test suite,
+- browser installation,
+- client-landing build,
+- database audit,
+- website audit,
+- full Exercise Library audit,
+- automatic exercise generator,
+- supersets,
+- drop sets,
+- plan persistence,
+- unrelated refactors.
+
+Report only:
+
+1. files changed
+2. prerequisite validation
+3. Step 4 unlock condition
+4. exercise selector behavior
+5. exercise card fields
+6. avoided-exercise behavior
+7. local draft behavior
+8. focused test results
+9. TypeScript/build results
+10. confirmation that "Podgląd" remains locked
+11. confirmation that no workout records were created
+
+Do not continue automatically.
+
+Finish exactly:
+
+EXERCISES STEP FOUNDATION COMPLETE
+
+or
+
+EXERCISES STEP FOUNDATION FAILED

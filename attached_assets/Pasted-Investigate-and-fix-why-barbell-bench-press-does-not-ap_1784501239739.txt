@@ -1,0 +1,71 @@
+Investigate and fix why barbell bench press does not appear for bench-goal clients.
+
+Do NOT redesign the generator.
+Do NOT change weekly volume logic.
+Do NOT change UI.
+Do NOT change split recommendation logic.
+This is a focused audit + fix task for the highest-priority blocker from the QA report.
+
+GOAL:
+For clients whose explicit goal is bench-related
+(example: "100 kg na klatę"),
+the generator should be able to select a barbell bench press family main lift
+when equipment and split allow it.
+
+PROBLEM:
+The QA report shows that chest-priority / bench-goal sessions currently use push-up variants and dumbbell presses,
+but barbell bench press never appears.
+This is the biggest visible coaching failure in the current output.
+
+REQUIRED TASK:
+
+1. Audit the full path for barbell bench press:
+- does the exercise exist in DB?
+- is it active?
+- is it complete enough to enter the pool?
+- does it have correct metadata?
+  - primary muscle
+  - movementPattern
+  - exerciseType
+  - family / priority-related fields
+  - equipment compatibility
+- is it excluded by any whitelist / slot rule / protected-slot band?
+
+2. Compare it against the actual winners currently used in chest-priority / bench-goal Push or Upper slots:
+- push-up variants
+- dumbbell incline press
+- dumbbell flat press
+Identify exactly why those exercises outrank or replace barbell bench press.
+
+3. If barbell bench press is missing or misclassified:
+- fix the DB/seed/metadata issue
+
+4. If barbell bench press is present but loses incorrectly:
+- fix the ranking / family / protected-slot logic
+only as much as needed so it can win when the goal explicitly supports it
+
+5. Add goal-aware preference:
+For clear bench-related goals,
+prefer a barbell bench press family main lift in the main chest slot
+when:
+- barbell + bench are available
+- the client is priority-eligible
+- the split/session type supports a chest main lift
+
+6. Keep sane fallbacks:
+If barbell bench is unavailable,
+DB press / incline / push-up variants may remain valid.
+
+7. Do NOT make barbell bench mandatory for all chest-priority clients.
+This should be stronger only for explicit bench-oriented goals.
+
+OUTPUT:
+1. exact files changed
+2. exact root cause found
+3. exact fix applied
+4. before vs after for a bench-goal client
+5. whether barbell bench press now appears in the correct main-lift slot when appropriate
+
+End exactly with:
+
+BENCH-GOAL MAIN LIFT FIX APPLIED

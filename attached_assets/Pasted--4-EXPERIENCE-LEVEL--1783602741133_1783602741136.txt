@@ -1,0 +1,85 @@
+==================================================
+4. EXPERIENCE LEVEL
+==================================================
+
+Question:
+
+Który poziom najlepiej opisuje Twoje doświadczenie treningowe?
+
+Options:
+
+⚪ Brak aktywności fizycznej
+
+Obecnie nie trenuję lub od bardzo dawna nie podejmuję regularnej aktywności fizycznej. Chcę dopiero rozpocząć swoją przygodę z treningiem.
+
+🟢 Początkujący
+
+Mam niewielkie doświadczenie treningowe. Nadal uczę się podstawowych ćwiczeń, poprawnej techniki oraz zasad treningowych i nie czuję się jeszcze pewnie w samodzielnym planowaniu treningów.
+
+🟡 Średniozaawansowany
+
+Trenuję regularnie i swobodnie wykonuję większość podstawowych ćwiczeń. Rozumiem podstawowe zasady treningowe, potrafię kontrolować technikę i świadomie realizuję plan treningowy.
+
+🔴 Zaawansowany
+
+Posiadam duże doświadczenie treningowe, bardzo dobrze znam swoje możliwości oraz świadomie wykorzystuję różne metody treningowe do osiągania konkretnych celów.
+
+Helper:
+
+Nie kieruj się wyłącznie liczbą lat treningu. Wybierz poziom, który najlepiej opisuje Twoją wiedzę, umiejętności oraz samodzielność podczas treningów.
+
+IMPORTANT
+
+Do NOT change the existing conditional survey logic except for the new experience level.
+
+The following survey version should be displayed ONLY for:
+
+• Średniozaawansowany
+• Zaawansowany
+
+The following survey version should be displayed for:
+
+• Brak aktywności fizycznej
+• Początkujący
+
+Both of these levels should use the beginner-friendly version of the survey.
+
+==================================================
+5. PRIORITY MUSCLE GROUPS
+==================================================
+
+IMPORTANT
+
+Fields:
+
+• Partia priorytetowa 1
+• Partia priorytetowa 2
+• Partia priorytetowa 3
+
+must ONLY be visible for:
+
+• Średniozaawansowany
+• Zaawansowany
+
+These fields must NEVER be visible for:
+
+• Brak aktywności fizycznej
+• Początkujący
+
+Instead display ONLY:
+
+Na których partiach mięśniowych najbardziej Ci zależy?
+
+Helper:
+
+Jeśli nie znasz nazw partii mięśniowych, nie martw się — wybierz partie, na których najbardziej Ci zależy. Przykłady:
+
+• Klatka piersiowa
+• Plecy
+• Barki
+• Biceps
+• Triceps
+• Brzuch
+• Uda
+• Pośladki
+• Łydki

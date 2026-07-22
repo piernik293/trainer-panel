@@ -1,0 +1,207 @@
+Stage 8A — Architecture Audit: Global Coverage Optimization & Training Philosophy
+
+Context
+
+Stage 7A is complete and working correctly.
+
+Current constraints:
+
+"Brak aktywności fizycznej" and "Początkujący"
+- max 5 exercises per session
+- max 45 minutes
+- allowed set counts: 2–3
+- simple exercises preferred
+- Full Body structure
+
+"Średniozaawansowany" and "Zaawansowany"
+- max 8 exercises per session
+- existing rules unchanged
+
+The limits themselves are NOT the problem.
+
+The current concern is how the generator chooses which exercises deserve those limited slots.
+
+--------------------------------------------------
+Observed behaviour
+--------------------------------------------------
+
+When exercise slots are limited, the generator may choose exercises such as:
+
+- Face Pull
+- Glute Bridge
+- multiple core exercises
+
+while leaving important muscle groups completely uncovered, for example:
+
+- Quadriceps
+- Latissimus Dorsi
+- Biceps
+
+even though available candidates such as:
+
+- Goblet Squat
+- Lat Pulldown
+- Assisted Pull-Up
+
+would produce much better overall session and weekly coverage.
+
+The goal is NOT to increase maxDayExercises.
+
+The goal is to improve exercise selection.
+
+--------------------------------------------------
+Intended training philosophy
+--------------------------------------------------
+
+The intended training philosophy is that an experienced personal trainer would generally prioritize large multi-joint movements covering major muscle groups and fundamental movement patterns before isolation and accessory work when exercise slots are limited.
+
+This generally means giving priority to:
+
+- Squat
+- Hip Hinge
+- Horizontal Push
+- Horizontal Pull
+- Vertical Push
+- Vertical Pull
+- Loaded Carry, when appropriate
+
+Additional compound exercises should generally be considered before isolation exercises.
+
+Core and accessory work should generally use the remaining slots only after major movement patterns and primary muscle groups have been reasonably addressed, unless the trainer explicitly prioritizes them or the program requires them.
+
+Please assess whether the current architecture supports this philosophy and, if not, what changes would be required.
+
+Do not assume that this exact priority structure must be implemented if a better architectural approach exists.
+
+--------------------------------------------------
+Desired decision quality
+--------------------------------------------------
+
+The generator should use limited exercise slots efficiently.
+
+It should evaluate candidates relative to the CURRENT state of the session and weekly plan rather than selecting exercises only by an isolated local score.
+
+Examples of intended behaviour:
+
+- Once glutes are already sufficiently covered, another glute-dominant exercise should become less valuable.
+- Exercises covering currently missing major movement patterns should become more valuable.
+- Compound exercises covering multiple uncovered muscle groups should usually be preferred over exercises that mainly add volume to already covered muscles.
+- Core, calves and isolation work should not consume valuable slots before important movement patterns and major muscle groups have received reasonable coverage.
+- The generator should avoid further increasing muscles already clearly above target while other important muscles remain completely uncovered.
+
+--------------------------------------------------
+Architecture audit only
+--------------------------------------------------
+
+Do NOT implement anything.
+
+Do NOT modify any files.
+
+Do NOT refactor existing Stage 1–7A logic.
+
+Inspect the real current architecture and answer:
+
+1. How are exercise candidates currently ranked?
+
+2. Which ScoreTuple fields and comparison stages determine the winning exercise?
+
+3. Is candidate scoring recalculated after every accepted exercise?
+
+4. Does the current logic consider:
+   - remaining session deficits,
+   - remaining weekly deficits,
+   - muscles already above target,
+   - completely uncovered muscles,
+   - movement-pattern coverage,
+   - remaining exercise slots?
+
+5. Why could exercises like Face Pull, Glute Bridge or duplicate core work outscore Goblet Squat or Lat Pulldown in the reported scenario?
+
+6. At what exact point does maxDayExercises terminate further exercise selection?
+
+7. Is core selected through the same candidate-ranking pipeline or through separate logic?
+
+8. Can duplicate core exercises consume slots intended for large compound movements?
+
+9. Does the current architecture naturally prioritize major compound movement patterns before isolation or accessory exercises?
+
+10. Can accessory exercises currently outscore major compound lifts even when important movement patterns remain uncovered?
+
+11. Do all major muscle groups receive at least one reasonable opportunity for coverage before accessory work is selected?
+
+12. Is the root problem mainly:
+   - candidate filtering,
+   - exercise ordering,
+   - ScoreTuple comparison,
+   - phase sequencing,
+   - slot allocation,
+   - core-specific logic,
+   - or another mechanism?
+
+13. Could the existing architecture support a dynamic global coverage mechanism without changing ScoreTuple?
+
+14. Would it be safer to:
+   - add a new scoring phase before the existing ScoreTuple,
+   - extend ScoreTuple,
+   - introduce a separate selection phase,
+   - change phase ordering,
+   - or use another approach?
+
+15. Which existing modules and functions would require changes?
+
+16. Which existing tests would most likely regress?
+
+17. What is the smallest architectural change that would produce the largest improvement while preserving Stages 1–7A?
+
+--------------------------------------------------
+Potential architectural direction to evaluate
+--------------------------------------------------
+
+Evaluate whether the following concept would be an appropriate architectural direction, or whether a better approach exists.
+
+Do not assume this is the required implementation.
+
+For every candidate, calculate its marginal useful coverage gain against the CURRENT plan state.
+
+Potential rewards:
+
+- reduction of uncovered session deficits,
+- reduction of uncovered weekly deficits,
+- covering completely uncovered major muscle groups,
+- covering missing major movement patterns,
+- compound exercises covering multiple useful missing targets,
+- efficient use of remaining exercise slots.
+
+Potential penalties:
+
+- increasing muscles already above target,
+- duplicate movement patterns while important patterns remain missing,
+- isolation exercises consuming valuable slots too early,
+- repeated accessory work,
+- repeated core selection after core is already sufficiently covered.
+
+The value of remaining candidates would be recalculated after every accepted exercise.
+
+Please determine:
+
+- whether this concept fits the current architecture,
+- whether it would require changing ScoreTuple,
+- whether a smaller and safer solution exists,
+- and which solution best balances improvement, regression risk and implementation cost.
+
+--------------------------------------------------
+Return only
+--------------------------------------------------
+
+1. Current architecture analysis
+2. Root cause of the observed behaviour
+3. Analysis of whether the current generator follows the intended training philosophy
+4. Evaluation of the proposed global coverage concept
+5. Recommended scoring or selection strategy
+6. Recommended implementation strategy
+7. Exact affected modules and functions
+8. Risks and possible regressions
+9. Recommended implementation stages
+10. Required tests
+
+Do NOT implement anything.

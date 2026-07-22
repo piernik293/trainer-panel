@@ -1,0 +1,66 @@
+Fix the current MVP flow so the final "PlanReadySummary" screen is actually useful.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole wizard
+- Do NOT touch backend APIs
+- Do NOT run tests
+- Do NOT create fake exercise data
+- Do NOT redesign unrelated screens
+- Do NOT keep temporary debug cards or temporary bypass hacks unless absolutely required during the fix
+- Only inspect the files directly needed for this fix
+
+PRIMARY GOAL:
+Make the MVP result path show REAL exercises and stop depending on the unfinished "Podgląd" step.
+
+FILES TO INSPECT FIRST:
+- artifacts/trainer-app/src/pages/PlanDraftWizard.tsx
+- artifacts/trainer-app/src/components/PlanReadySummary.tsx
+
+You may inspect directly related types or helper files only if needed to understand the shape of:
+- exerciseDraft
+- previewResult
+- distributionResult
+
+KNOWN FACTS:
+- The core engine works
+- exerciseDraft already exists in state
+- current PlanReadySummary path adds little value because it does not show real exercises
+- the current MVP path still requires clicking through the unfinished Preview step
+- temporary debug/bypass changes were added and should not remain as the final UX
+
+TASK:
+1. Identify the real available data source for exercises that should feed the final summary screen:
+   - prefer exerciseDraft if it is the actual current source of selected exercises
+   - otherwise use previewResult only if it is the authoritative source
+2. Update PlanReadySummary so it renders real exercises grouped by training day
+3. Update PlanDraftWizard so the MVP result screen can be opened as soon as there is a usable exercise draft
+4. Remove the requirement that the user must first enter the unfinished Preview step just to see the final summary
+5. Remove temporary debug cards and temporary forced unlock UI that are no longer needed
+6. Keep the change minimal and local
+7. Do NOT fake exercises, do NOT invent day content, do NOT hardcode business data
+
+EXPECTED MVP BEHAVIOR AFTER FIX:
+- user completes assumptions
+- user reaches/has exercise draft
+- user can open final summary directly
+- final summary shows:
+  - split
+  - status / feedback
+  - weekly day cards
+  - real exercises inside each day
+- no useless empty final screen
+- no dependency on unfinished preview gate
+
+IMPORTANT:
+- If PlanReadySummary needs a better prop shape, change it
+- If the "Generuj plan" trigger is currently attached too late, move it earlier to the first valid point where exerciseDraft is usable
+- Preserve existing types as much as possible
+- Do not rewrite the entire flow
+- This is a product fix, not an architecture rewrite
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of what was the real cause

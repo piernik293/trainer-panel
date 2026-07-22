@@ -1,0 +1,180 @@
+Build a new deterministic ExerciseSelectionEngineV0 from scratch.
+
+Stop patching the current selector.
+Do not redesign the whole generator.
+Do not change weekly volume logic.
+Do not change UI.
+Do not change SessionStructureEngine.
+Do not change set assignment.
+
+This is a controlled replacement of the selector only.
+
+==================================================
+GOAL
+==================================================
+
+Create a simple, stable selector that produces sane sessions for:
+- Push
+- Pull
+- Legs
+- Upper
+- Lower
+
+The new selector must run beside the old selector behind a flag so it can be tested safely.
+
+==================================================
+WHY
+==================================================
+
+The current selector is still unstable:
+- wrong-day exercises still appear
+- exercise library mapping issues make scoring unreliable
+- sessions do not follow structural templates consistently
+
+We need a simple selector that does not do anything clever.
+It must only follow hard rules and build coach-like session skeletons.
+
+==================================================
+GLOBAL HARD RULES
+==================================================
+
+For every session:
+1. no duplicate exercise in the same session
+2. no exercise incompatible with equipment
+3. no exercise incompatible with location
+4. no exercise outside the current day type
+5. no irrelevant drill-style exercises as structural lifts
+6. if metadata is missing, fail safely instead of guessing
+
+Create exactly one session-scoped:
+usedExerciseIds = Set<string>
+
+Create it once per session.
+Never recreate it inside loops.
+Add selected id immediately after each selection.
+
+==================================================
+DAY RULES
+==================================================
+
+PUSH must try to select in this order:
+1. chest push compound
+2. second push compound (chest or shoulders)
+3. shoulder accessory or isolation
+4. triceps isolation
+5. optional chest/triceps accessory
+6. optional core last
+
+PULL must try to select in this order:
+1. vertical OR horizontal pull compound
+2. complementary pull pattern compound
+3. rear delt / upper back accessory
+4. biceps isolation
+5. optional second biceps / rear delt
+6. optional core last
+
+LEGS must try to select in this order:
+1. knee-dominant movement
+2. hip-dominant movement
+3. lower-body accessory
+4. calves
+5. optional core
+6. optional second lower accessory
+
+UPPER must try to select in this order:
+1. chest compound
+2. back compound
+3. shoulders
+4. arms
+5. optional accessory/core
+
+LOWER must try to select in this order:
+1. knee-dominant movement
+2. hip-dominant movement
+3. lower-body accessory
+4. calves or core
+5. optional extra lower-body accessory
+
+==================================================
+ALLOWED EXERCISE LOGIC
+==================================================
+
+Use only exercises with trustworthy metadata:
+- primaryMuscle
+- movementPattern
+- exerciseType
+- equipment / location compatibility
+
+If an exercise has broken muscle mapping or cannot contribute to target groups reliably, do not let it be selected by V0.
+
+This means V0 should prefer a smaller clean pool over a bigger unreliable pool.
+
+==================================================
+EXCLUDE FROM V0
+==================================================
+
+Do not use as structural session exercises:
+- bear crawl
+- superman
+- random crawls
+- random mobility drills
+- back extension style fillers unless explicitly classified for a valid slot
+- anything that the system reports as not belonging to target groups
+
+==================================================
+MINIMUM VALID SESSION
+==================================================
+
+A valid Push/Pull/Upper/Lower session must have at least 4 exercises.
+A valid Legs session must have at least 4 exercises.
+
+If minimum structure cannot be satisfied:
+- return blocking failure
+- do not generate a broken session
+
+==================================================
+SELECTION STRATEGY
+==================================================
+
+No advanced scoring.
+No bias scoring.
+No clever ranking.
+
+For each slot:
+1. build candidate pool
+2. apply hard filters
+3. select the first valid deterministic candidate from a stable ordered list
+
+Stable > smart.
+
+==================================================
+DEBUG LOGS
+==================================================
+
+For every slot log:
+SESSION_TYPE: ...
+SLOT: ...
+CANDIDATE_COUNT: ...
+SELECTED_EXERCISE: <id> <name>
+USED_EXERCISE_IDS: [ ... ]
+
+If no valid candidate exists:
+NO_VALID_EXERCISE_FOR_SLOT: <slot name>
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files created or changed
+2. exact new selector function(s)
+3. how to enable V0
+4. one example Push session
+5. one example Pull session
+6. one example Legs session
+7. one example Upper session
+8. one example Lower session
+
+End exactly with:
+
+SELECTOR V0 READY

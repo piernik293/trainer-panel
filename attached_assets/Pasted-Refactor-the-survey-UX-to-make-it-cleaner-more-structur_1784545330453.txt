@@ -1,0 +1,190 @@
+Refactor the survey UX to make it cleaner, more structured, and easier to use.
+
+Do NOT redesign the whole app.
+Do NOT add nutrition/TDEE logic in this task.
+Do NOT add the Plyo module in this task.
+Do NOT change generator logic in this task.
+This is a focused survey UX cleanup task.
+
+==================================================
+GOAL
+==================================================
+
+Clean up and simplify the survey experience.
+
+Main objectives:
+1. improve clarity of sport-related flow
+2. improve exercise/priority input UX
+3. simplify health wording
+4. improve card/tile consistency
+5. remove or hide confusing fields from the main flow
+
+==================================================
+SECTION A — TRAINING GOAL / SPORT GOAL
+==================================================
+
+1. In "Cel treningowy":
+- remove "Inny"
+- replace it with "Cel sportowy"
+
+2. Remove the separate standalone sport section from its current location.
+
+3. Only if "Cel sportowy" is selected, show a conditional sport block directly below the training goal area.
+
+4. In that conditional sport block show only:
+- Poziom sportowy:
+  - Amatorski
+  - Półzawodowy
+  - Zawodowy
+- 3 główne priorytety sportowe:
+  - Dynamika
+  - Szybkość
+  - Stabilizacja
+
+5. Remove "Prewencja urazów" from the sport-priority area completely.
+
+6. Add short helper descriptions:
+- Dynamika:
+  "Moc, skoczność, eksplozywność i szybkie generowanie siły."
+- Szybkość:
+  "Przyspieszenie, tempo ruchu i szybkie poruszanie się w akcji sportowej."
+- Stabilizacja:
+  "Kontrola ruchu, równowaga, lądowanie i utrzymanie pozycji pod obciążeniem."
+
+==================================================
+SECTION B — FAVORITE EXERCISES
+==================================================
+
+Replace the free-text field:
+- "Jakie są Twoje ulubione ćwiczenia?"
+
+with the same kind of assisted input / autocomplete behavior already used in:
+- exercise search
+- exercise selection
+- "czy są ćwiczenia, których nie chcesz wykonywać?" if such helper already exists
+
+Required behavior:
+- typing should suggest exercises from the database
+- user can select known exercises cleanly
+- avoid pure raw textarea if possible
+
+==================================================
+SECTION C — PRIORITY MUSCLE INPUTS
+==================================================
+
+For:
+- Partia priorytetowa 1
+- Partia priorytetowa 2
+- Partia priorytetowa 3
+
+replace plain free typing with assisted autocomplete / suggestion input.
+
+Required behavior:
+- typing "k..." should suggest "Klatka piersiowa"
+- typing "p..." should suggest possible known matches like "Plecy", "Pośladki", etc.
+- only valid system-recognized muscle groups should be selectable cleanly
+
+==================================================
+SECTION D — EXERCISES TO AVOID
+==================================================
+
+The field:
+- "Czy są ćwiczenia, których nie chcesz wykonywać?"
+
+should no longer be strongly exposed in the main general flow.
+
+Reason:
+it currently suggests that the plan is built around avoiding exercises,
+which is not the intended impression.
+
+Required change:
+- hide it from the main default survey flow
+OR
+- move it behind a less prominent / advanced / conditional area
+OR
+- rename it to something more clinical and specific, such as:
+  "Ćwiczenia do unikania"
+
+Best outcome:
+it should no longer feel like a main standard question for everyone.
+
+Do NOT break the underlying functionality if it is still useful internally.
+
+==================================================
+SECTION E — HEALTH WORDING AND OPTION ORDER
+==================================================
+
+In "Zdrowie i ograniczenia" keep the labels:
+- "Tak"
+- "Nie"
+
+But change the display order so that:
+1. "Tak" is shown first
+2. "Nie" is shown second
+
+This applies to:
+- "Uraz / ograniczenia zdrowotne"
+
+The question should read clearly, for example:
+"Czy masz jakiekolwiek kontuzje, dolegliwości bólowe lub ograniczenia ruchowe, o których trener powinien wiedzieć?"
+
+Required behavior:
+- display "Tak" first
+- display "Nie" second
+- keep the existing conditional logic:
+  - if "Tak" is selected -> show required description field
+  - if "Nie" is selected -> no extra field
+
+==================================================
+SECTION F — TILE / CARD CONSISTENCY
+==================================================
+
+Unify the visual structure of the major option cards/tiles in sections such as:
+- Poziom doświadczenia treningowego
+- Jaki styl planu Ci odpowiada?
+- Cel treningowy
+- Poziom sportowy
+
+Required:
+- same overall tile height
+- same spacing / padding
+- same heading sizing
+- cleaner visual consistency
+- avoid awkward size mismatch between options
+
+Do NOT redesign the whole theme.
+Just make the option-card system visually consistent.
+
+==================================================
+SECTION G — DO NOT TOUCH YET
+==================================================
+
+Do NOT in this task:
+- redesign cardio logic
+- redesign recovery logic
+- add TDEE / kcal / nutrition guidance
+- add Plyo logic
+- add athlete discipline autocomplete
+- change plan generation logic
+
+This task is survey UX cleanup only.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact sport-goal UX changes made
+3. exact favorite-exercise autocomplete change
+4. exact priority-muscle autocomplete change
+5. exact handling of the "exercise to avoid" field
+6. exact "Tak/Nie" health wording and option-order change
+7. exact tile/card consistency changes
+8. one example flow for:
+   - normal non-sport client
+   - sport-goal client
+
+End exactly with:
+
+SURVEY UX CLEANUP APPLIED

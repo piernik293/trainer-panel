@@ -1,0 +1,159 @@
+Fix the 3 highest-priority blockers found in the end-to-end generator test report.
+
+Do NOT redesign the whole app.
+Do NOT change weekly volume logic.
+Do NOT change selector V0 architecture.
+Do NOT add randomness.
+Do NOT change split recommendation rules beyond the cap propagation bug.
+This is a focused blocker-resolution task.
+
+==================================================
+CONTEXT
+==================================================
+
+The current generator is partially ready for serious internal testing,
+but 3 blockers remain:
+
+1. Split recommendation cap mismatch:
+   - splitRecommendation.cappedTrainingDays is correct
+   - but defaultPreferences.trainingDays still uses the raw declared value
+   - and allowedSplitTypes are still computed from the raw declared value
+   This makes the wizard inconsistent.
+
+2. Pull session slot 3 semantic bug:
+   - the slot intended for "rear delt / upper back" can still pick hyperextension-style exercises
+   - example: Wznosy tułowia
+   This is semantically wrong for that slot.
+
+3. No cross-session memory across the generated week:
+   - generating the same session type twice in one week with the same alt index can return identical sessions
+   - example: Day 1 Upper and Day 3 Upper become duplicates
+   This is not coach-like.
+
+==================================================
+BLOCKER 1 — CAP PROPAGATION
+==================================================
+
+Fix the split-recommendation cap propagation.
+
+If splitRecommendation.cappedTrainingDays is set:
+- defaultPreferences.trainingDays must use the capped value, not the raw declared survey value
+- allowedSplitTypes must be computed from the capped value, not the raw declared value
+
+Important:
+- keep the raw survey/declaration stored separately if needed
+- but all planning defaults in the wizard must follow the capped recommendation
+- UI should no longer show contradictory signals:
+  example:
+  recommendation says "max 3 days"
+  while the form still defaults to 5
+
+Goal:
+make API response and wizard behavior consistent.
+
+==================================================
+BLOCKER 2 — PULL SLOT 3 SEMANTIC FIX
+==================================================
+
+Fix the Pull session slot intended for:
+- rear delt
+- upper back support
+
+This slot must NOT allow:
+- hyperextension / spinal erector style exercises
+- trunk extension fillers
+- shrug family as default winners
+- lumbar/back-extension style movements that do not involve meaningful shoulder-joint pulling work
+
+This slot should prefer only semantically correct families such as:
+- face pull
+- reverse fly / rear delt fly
+- cable rear-delt row
+- upper-back support pulls
+- shoulder-joint back-support isolations
+- other valid rear-delt / upper-back accessory work
+
+If needed:
+- add a helper like isPullRearDeltUpperBackSafe(ex)
+- whitelist the correct families instead of relying only on blacklist exclusions
+
+Goal:
+slot 3 in Pull should produce coach-like rear-delt / upper-back support work.
+
+==================================================
+BLOCKER 3 — CROSS-SESSION MEMORY ACROSS THE WEEK
+==================================================
+
+Add week-level generation memory so repeated session types in the same generated week do not produce identical days by default.
+
+Problem:
+if the same session type is generated twice in one week
+(e.g. Upper on Day 1 and Upper on Day 3),
+the system currently has no cross-session awareness and can return the exact same session.
+
+Required behavior:
+- keep default generation deterministic
+- do NOT add randomness
+- when generating a full week, carry generation context across days
+- later sessions of the same week should be aware of:
+  - already used exercise IDs
+  - already used exercise families / movement families where relevant
+  - already used main lifts for the same session type
+- the generator should prefer a valid alternative instead of repeating the exact same session
+
+Important:
+- this should primarily affect full-plan / multi-day generation flow
+- single isolated day generation may remain unchanged unless context is explicitly passed in
+- do not break safety, equipment filtering, or session structure
+
+Example:
+If Day 1 Upper used:
+- elevated push-up
+- one-arm DB row
+- lateral raise
+- DB curl
+- plank
+
+then Day 3 Upper in the same generated week should not return the exact same list if alternative valid options exist.
+
+Goal:
+same-week sessions should feel planned, not duplicated.
+
+==================================================
+CONSTRAINTS
+==================================================
+
+Do NOT:
+- add randomness
+- break beginner behavior
+- weaken priority-aware templates
+- weaken controlled variety
+- change split recommendation matrix logic itself except cap propagation
+- redesign UI
+
+Keep:
+- deterministic default generation
+- equipment correctness
+- day-type correctness
+- max 6 exercises
+- core last
+- priority-aware logic
+- controlled variety
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact logic added for blocker 1
+3. exact logic added for blocker 2
+4. exact logic added for blocker 3
+5. one before vs after example for:
+   - capped beginner case
+   - Pull slot 3
+   - repeated Upper days in one week
+
+End exactly with:
+
+TOP 3 BLOCKERS RESOLVED

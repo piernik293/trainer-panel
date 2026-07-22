@@ -1,0 +1,1228 @@
+# TASK — Workout Builder 2.0, Phase 3: Plan Analysis and Movement Balance
+
+This task extends the existing Workout Builder 2.0 after completion of:
+
+- Phase 1 — Stable Core Plan Editor
+- Phase 2 — Live Training Volume Calculation
+
+This is PHASE 3 only.
+
+The goal is to add live structural analysis of the workout plan, including movement-pattern coverage, Push/Pull balance, Squat/Hinge balance, exercise-type distribution and bilateral/unilateral balance.
+
+The system must analyse and explain the plan.
+
+It must never automatically modify the trainer’s decisions.
+
+============================================================
+IMPORTANT SAFETY RULES
+============================================================
+
+Preserve all existing functionality.
+
+Do NOT:
+
+- Rewrite or replace the Volume Calculator
+- Modify approved volume-guideline values
+- Modify muscle coefficients
+- Modify exercise muscle assignments
+- Modify Training Interview logic
+- Modify Exercise Recommendation Engine scoring
+- Modify Exercise Library relationships
+- Remove or replace Workout Builder functionality
+- Automatically add exercises
+- Automatically remove exercises
+- Automatically reorder days or exercises
+- Automatically change sets or repetitions
+- Automatically replace exercises
+- Introduce new activation-blocking rules
+- Implement automatic workout generation
+- Implement AI
+- Delete or reseed database data
+- Redesign unrelated parts of the application
+
+This phase should remain advisory.
+
+Warnings and analysis must not prevent the trainer from saving or editing a draft plan.
+
+If existing activation rules block specific issues, preserve them exactly. Do not add new blocking rules without explicit approval.
+
+Before implementation:
+
+1. Inspect the current Workout Builder.
+2. Inspect the Phase 2 preview architecture.
+3. Inspect existing exercise metadata.
+4. Inspect all existing movement-pattern and Exercise Intelligence fields.
+5. Inspect the current Plan Editor state structure.
+6. Inspect handwritten planApi.ts types.
+7. Inspect how unsaved plan snapshots are currently sent to backend preview endpoints.
+8. Report any architectural conflict before making a destructive change.
+
+============================================================
+OBJECTIVE
+============================================================
+
+While the trainer creates or edits a plan, display live analysis for:
+
+- Push movements
+- Pull movements
+- Squat patterns
+- Hinge patterns
+- Lunge patterns
+- Core exercises
+- Carry exercises
+- Rotation exercises
+- Vertical pushing
+- Horizontal pushing
+- Vertical pulling
+- Horizontal pulling
+- Bilateral exercises
+- Unilateral exercises
+- Compound exercises
+- Isolation exercises
+- Sagittal-plane exercises
+- Frontal-plane exercises
+- Transverse-plane exercises
+- Movement-pattern distribution between training days
+- Repeated use of the same movement pattern
+- Missing or incomplete exercise metadata
+
+Analyse:
+
+- Each training day separately
+- The full weekly plan
+
+The trainer should immediately understand:
+
+- Which movement patterns are present
+- Which movement patterns are absent
+- Whether Push and Pull are reasonably balanced
+- Whether Squat and Hinge are reasonably balanced
+- Whether the plan is excessively dominated by one movement category
+- Whether unilateral work is present
+- Whether the plan relies almost entirely on compound or isolation exercises
+- Whether movement patterns are distributed logically throughout the week
+- Which exercises could not be analysed because metadata is missing
+
+============================================================
+SOURCE OF TRUTH
+============================================================
+
+Use the existing Exercise Library metadata.
+
+Use fields already present in the project, including where applicable:
+
+- movementPattern
+- movementCategory
+- exerciseType
+- execution
+- planeOfMotion
+- primary muscle group
+- training goals
+- difficulty level
+- active status
+- completeness status
+
+Do not create duplicate movement metadata unless a genuinely required field is missing.
+
+Do not infer movement classification from the exercise name when structured metadata exists.
+
+Do not use muscle-volume coefficients as movement-pattern classifications.
+
+Volume analysis and movement analysis are separate systems.
+
+Phase 2 Volume Calculator must remain unchanged.
+
+============================================================
+MOVEMENT CATEGORIES
+============================================================
+
+Support the existing movement categories:
+
+- Push
+- Pull
+- Squat
+- Hinge
+- Lunge
+- Carry
+- Rotation
+- Core
+
+Also use more specific existing movement patterns where available, for example:
+
+- Horizontal push
+- Vertical push
+- Horizontal pull
+- Vertical pull
+- Squat
+- Hip hinge
+- Lunge
+- Knee flexion
+- Knee extension
+- Hip extension
+- Calf raise
+- Anti-extension
+- Anti-rotation
+- Rotation
+- Carry
+
+Do not rename existing database values unless required for compatibility.
+
+If current values use Polish labels, preserve them.
+
+Create a normalization layer only when necessary to map existing variants into stable analysis categories.
+
+Example:
+
+- "Przyciąganie pionowe" → Pull / Vertical Pull
+- "Przyciąganie poziome" → Pull / Horizontal Pull
+- "Wypychanie poziome" → Push / Horizontal Push
+- "Wypychanie pionowe" → Push / Vertical Push
+
+The normalization must be centralized and tested.
+
+Do not spread string-matching logic across multiple frontend components.
+
+============================================================
+ANALYSIS UNITS
+============================================================
+
+Calculate two separate measures:
+
+1. Exercise-entry count
+2. Working-set count
+
+Example:
+
+Plan contains:
+
+- Bench Press — 4 sets
+- Dumbbell Press — 3 sets
+- Cable Fly — 3 sets
+- Pull-Up — 4 sets
+
+Push:
+- 3 exercise entries
+- 10 working sets
+
+Pull:
+- 1 exercise entry
+- 4 working sets
+
+Use working-set count as the main balance signal.
+
+Show exercise-entry count as additional context.
+
+Do not use effective muscle-volume coefficients to calculate movement-pattern balance.
+
+One working set of an exercise contributes one set to its movement category.
+
+If one exercise legitimately belongs to multiple categories, use one primary movement category for balance calculations and additional tags only for informational display.
+
+Do not double-count one set in multiple primary categories.
+
+============================================================
+PLAN-LEVEL ANALYSIS
+============================================================
+
+For the full weekly plan calculate:
+
+- Total working sets
+- Total exercise entries
+- Sets per movement category
+- Entries per movement category
+- Push sets
+- Pull sets
+- Push-to-Pull ratio
+- Squat sets
+- Hinge sets
+- Squat-to-Hinge ratio
+- Bilateral sets
+- Unilateral sets
+- Compound sets
+- Isolation sets
+- Sets per plane of motion
+- Number of days containing each movement category
+- Percentage of total sets represented by every movement category
+
+Example response information:
+
+{
+  "totalWorkingSets": 54,
+  "totalExerciseEntries": 18,
+  "movementCategories": [
+    {
+      "category": "push",
+      "workingSets": 14,
+      "exerciseEntries": 4,
+      "percentageOfPlanSets": 25.93,
+      "daysPresent": 2
+    }
+  ]
+}
+
+Preserve decimals internally.
+
+Round only for display.
+
+============================================================
+DAY-LEVEL ANALYSIS
+============================================================
+
+For every training day calculate:
+
+- Total working sets
+- Exercise count
+- Movement categories present
+- Working sets per category
+- Compound vs isolation distribution
+- Bilateral vs unilateral distribution
+- Planes of motion present
+- Repeated movement patterns
+- Missing metadata warnings
+
+Example:
+
+Dzień A — Góra ciała
+
+- Push: 10 sets
+- Pull: 8 sets
+- Core: 3 sets
+- Compound: 14 sets
+- Isolation: 7 sets
+- Bilateral: 17 sets
+- Unilateral: 4 sets
+
+Do not require every day to include every movement pattern.
+
+Evaluate full-plan coverage separately from day-level composition.
+
+A Push-focused or Pull-focused training day is valid.
+
+Do not incorrectly warn that every single day must be perfectly balanced.
+
+============================================================
+BALANCE RULE ARCHITECTURE
+============================================================
+
+Do not scatter arbitrary thresholds throughout UI code.
+
+Create one centralized analysis configuration.
+
+Example structure:
+
+{
+  pushPull: {
+    warningRatio: 1.5,
+    strongWarningRatio: 2.0,
+    minimumCombinedSets: 6
+  },
+  squatHinge: {
+    warningRatio: 1.75,
+    strongWarningRatio: 2.5,
+    minimumCombinedSets: 4
+  },
+  categoryDominance: {
+    warningPercentage: 45,
+    strongWarningPercentage: 60
+  },
+  unilateral: {
+    informationalMinimumDays: 3
+  }
+}
+
+These are heuristic coaching signals, not medical rules.
+
+Keep thresholds transparent, documented and easy to adjust later.
+
+Do not present them as universal scientific limits.
+
+Do not store these thresholds in the database during this phase.
+
+============================================================
+PUSH / PULL ANALYSIS
+============================================================
+
+Calculate:
+
+pushPullRatio = pushWorkingSets / pullWorkingSets
+
+Handle zero safely.
+
+Possible statuses:
+
+- Balanced
+- Push dominant
+- Strongly push dominant
+- Pull dominant
+- Strongly pull dominant
+- Insufficient data
+
+Recommended Polish labels:
+
+- Zrównoważony Push/Pull
+- Przewaga ruchów wypychających
+- Duża przewaga ruchów wypychających
+- Przewaga ruchów przyciągających
+- Duża przewaga ruchów przyciągających
+- Za mało danych do oceny
+
+Do not issue a balance warning when the combined Push and Pull volume is too small for a useful comparison.
+
+Show the exact values that produced the status.
+
+Example:
+
+Push: 14 serii
+Pull: 8 serii
+Stosunek: 1,75 : 1
+
+============================================================
+SQUAT / HINGE ANALYSIS
+============================================================
+
+Calculate:
+
+squatHingeRatio = squatWorkingSets / hingeWorkingSets
+
+Possible statuses:
+
+- Balanced
+- Squat dominant
+- Strongly squat dominant
+- Hinge dominant
+- Strongly hinge dominant
+- Insufficient data
+
+Recommended Polish labels:
+
+- Zrównoważony Squat/Hinge
+- Przewaga wzorca przysiadu
+- Duża przewaga wzorca przysiadu
+- Przewaga wzorca zawiasowego
+- Duża przewaga wzorca zawiasowego
+- Za mało danych do oceny
+
+Do not interpret knee-extension isolation exercises as full squat-pattern work unless the existing movement metadata explicitly classifies them that way.
+
+Do not interpret leg curls as hip-hinge exercises.
+
+Use structured movement metadata.
+
+============================================================
+MOVEMENT COVERAGE
+============================================================
+
+Show plan-level coverage for:
+
+- Push
+- Pull
+- Squat
+- Hinge
+- Lunge
+- Core
+- Carry
+- Rotation
+
+Coverage statuses:
+
+- Present
+- Not present
+- Metadata unavailable
+
+Recommended Polish labels:
+
+- Obecny w planie
+- Brak w planie
+- Nie można ocenić
+
+Missing categories should normally be informational.
+
+Do not automatically classify every missing category as an error.
+
+For example:
+
+- Carry may be optional in a hypertrophy plan.
+- Rotation may be optional.
+- A specialized bodybuilding split may not require every category.
+- A short rehabilitation-style plan may intentionally omit several patterns.
+
+Warnings should consider the plan goal where reliable goal metadata already exists.
+
+Do not invent plan goals or silently assume General Health.
+
+============================================================
+COMPOUND / ISOLATION ANALYSIS
+============================================================
+
+Calculate:
+
+- Compound exercise entries
+- Isolation exercise entries
+- Compound working sets
+- Isolation working sets
+- Percentage of each
+
+Recommended labels:
+
+- Ćwiczenia wielostawowe
+- Ćwiczenia izolowane
+
+This section is mainly informational.
+
+Do not impose a universal required ratio.
+
+Potential warnings should be conservative:
+
+- Plan consists entirely of isolation exercises
+- Plan consists entirely of compound exercises and contains a high total number of sets
+- Exercise-type metadata is missing for a large part of the plan
+
+Do not block saving or activation.
+
+============================================================
+BILATERAL / UNILATERAL ANALYSIS
+============================================================
+
+Calculate:
+
+- Bilateral entries and sets
+- Unilateral entries and sets
+- Percentage of each
+- Days containing unilateral work
+
+Recommended labels:
+
+- Ćwiczenia obustronne
+- Ćwiczenia jednostronne
+
+This should primarily be informational.
+
+A plan without unilateral exercises may receive a mild informational note, not a critical warning.
+
+Do not assume every plan must contain unilateral work.
+
+============================================================
+PLANE OF MOTION ANALYSIS
+============================================================
+
+Calculate working sets and exercise entries for:
+
+- Sagittal
+- Frontal
+- Transverse
+
+Recommended Polish labels:
+
+- Płaszczyzna strzałkowa
+- Płaszczyzna czołowa
+- Płaszczyzna poprzeczna
+
+Do not force equal distribution between planes.
+
+Display coverage and concentration.
+
+Possible informational message:
+
+"Większość ćwiczeń w planie odbywa się w płaszczyźnie strzałkowej."
+
+Only issue this when enough exercises have valid plane-of-motion metadata.
+
+============================================================
+WEEKLY DISTRIBUTION
+============================================================
+
+Analyse how movement patterns are distributed between training days.
+
+For every category show:
+
+- Total weekly sets
+- Number of days containing the category
+- Highest number of sets in one day
+- Percentage concentrated in one day
+
+Example:
+
+Pull:
+- 12 sets weekly
+- Present on 2 days
+- 8 sets concentrated in Day A
+- 66.7% concentrated in one session
+
+Potential informational warnings:
+
+- All weekly sets for one major movement category occur in a single day
+- A movement category is repeated heavily on consecutive listed days
+- One day contains an unusually high percentage of the entire plan’s working sets
+
+Do not assume calendar dates or actual recovery time between days.
+
+The editor only knows plan order, not the exact weekly schedule.
+
+Phrase warnings carefully.
+
+Example:
+
+"Cała tygodniowa objętość ruchów przyciągających znajduje się w jednym dniu planu."
+
+Do not claim that recovery will definitely be insufficient.
+
+============================================================
+REPEATED MOVEMENT PATTERNS
+============================================================
+
+Detect repeated use of the same specific movement pattern within one day.
+
+Example:
+
+- Bench Press
+- Dumbbell Bench Press
+- Machine Chest Press
+- Push-Up
+
+All may belong to horizontal pushing.
+
+Display:
+
+- Pattern name
+- Number of exercises
+- Total sets
+- Contributing exercises
+
+Potential warning:
+
+"W tym dniu znajdują się 4 ćwiczenia o wzorcu wypychania poziomego."
+
+This is advisory.
+
+Do not automatically decide that repetition is incorrect.
+
+============================================================
+MISSING METADATA
+============================================================
+
+Handle incomplete Exercise Intelligence data safely.
+
+Return structured warnings for:
+
+- Missing movement pattern
+- Missing movement category
+- Missing exercise type
+- Missing execution type
+- Missing plane of motion
+- Exercise Library record not found
+- Invalid working sets
+- Inactive exercise
+
+Recommended warning codes:
+
+- MISSING_MOVEMENT_PATTERN
+- MISSING_MOVEMENT_CATEGORY
+- MISSING_EXERCISE_TYPE
+- MISSING_EXECUTION_TYPE
+- MISSING_PLANE_OF_MOTION
+- EXERCISE_NOT_FOUND
+- INVALID_WORKING_SETS
+- INACTIVE_EXERCISE
+
+Example:
+
+{
+  "code": "MISSING_MOVEMENT_PATTERN",
+  "scope": "exercise",
+  "dayId": 2,
+  "exerciseEntryId": 15,
+  "exerciseId": 5,
+  "exerciseName": "Plank",
+  "message": "Ćwiczenie nie ma przypisanego wzorca ruchowego i zostało częściowo pominięte w analizie."
+}
+
+Requirements:
+
+- Do not crash the Plan Editor.
+- Analyse all valid exercises.
+- Exclude only the missing analysis dimension.
+- Do not exclude the whole exercise from every analysis when one field is missing.
+- Do not invent missing metadata.
+- Do not silently classify unknown exercises.
+
+Inactive exercises in existing plans remain readable and analysable when metadata exists.
+
+Show a warning, but preserve their contribution.
+
+============================================================
+BACKEND ANALYSIS SERVICE
+============================================================
+
+Create a dedicated backend plan-analysis service.
+
+Do not calculate the main analysis only in React.
+
+The backend must remain the source of truth.
+
+Recommended architecture:
+
+- normalizePlanAnalysisInput()
+- calculatePlanAnalysisCore()
+- analyseSavedPlan()
+- analyseDraftPreview()
+
+The core calculation should be pure and testable.
+
+Saved-plan and unsaved-draft analysis must use the same core function.
+
+Do not maintain two separate algorithms.
+
+============================================================
+LIVE PREVIEW ENDPOINT
+============================================================
+
+Add a live preview endpoint consistent with the existing handwritten plan API architecture.
+
+Recommended route:
+
+POST /api/plans/analysis-preview
+
+The endpoint should accept the current unsaved plan snapshot.
+
+Recommended request:
+
+{
+  "clientId": 20,
+  "planId": 2,
+  "goal": "Budowa sylwetki",
+  "days": [
+    {
+      "dayId": 1,
+      "dayName": "Dzień A",
+      "dayOrder": 1,
+      "exercises": [
+        {
+          "exerciseEntryId": 15,
+          "exerciseId": 5,
+          "workingSets": 4,
+          "orderInDay": 1
+        }
+      ]
+    }
+  ]
+}
+
+The endpoint must:
+
+- Perform no database writes
+- Validate the client when provided
+- Validate the plan ownership/context when authentication exists
+- Load Exercise Library metadata in batches
+- Avoid N+1 queries
+- Return structured analysis and warnings
+- Use the same core function as saved-plan analysis
+
+Do not migrate all plan routes to OpenAPI.
+
+Use the existing handwritten planApi.ts architecture.
+
+============================================================
+RECOMMENDED RESPONSE STRUCTURE
+============================================================
+
+{
+  "summary": {
+    "totalWorkingSets": 54,
+    "totalExerciseEntries": 18,
+    "analysedExerciseEntries": 17,
+    "incompleteExerciseEntries": 1
+  },
+  "balance": {
+    "pushPull": {
+      "pushSets": 14,
+      "pullSets": 10,
+      "ratio": 1.4,
+      "status": "balanced",
+      "severity": "success",
+      "message": "Proporcja Push/Pull znajduje się w przyjętym zakresie."
+    },
+    "squatHinge": {
+      "squatSets": 10,
+      "hingeSets": 6,
+      "ratio": 1.67,
+      "status": "squat_dominant",
+      "severity": "warning",
+      "message": "W planie występuje przewaga wzorca przysiadu."
+    }
+  },
+  "movementCategories": [],
+  "exerciseTypes": {},
+  "executionTypes": {},
+  "planesOfMotion": {},
+  "weeklyDistribution": [],
+  "days": [],
+  "warnings": []
+}
+
+The exact naming may follow project conventions.
+
+Keep all interfaces strongly typed.
+
+============================================================
+FRONTEND LIVE UPDATES
+============================================================
+
+The analysis should update when relevant plan data changes.
+
+Relevant changes:
+
+- Adding an exercise
+- Removing an exercise
+- Duplicating an exercise
+- Moving an exercise
+- Reordering exercises
+- Reordering days
+- Changing working sets
+- Changing an exercise reference
+- Changing the plan goal
+- Changing assigned client
+
+Do not recalculate because of:
+
+- Trainer notes
+- Client instructions
+- Tempo
+- RIR
+- RPE
+- Rest time
+- Load prescription
+
+unless those fields become relevant to a future analysis phase.
+
+Use a reasonable debounce:
+
+- approximately 300–600 ms
+
+Reuse the existing Phase 2 stale-response strategy:
+
+- AbortController
+- Monotonic request ID or equivalent
+- Keep the last valid result visible while recalculating
+- Ignore outdated responses
+
+Avoid firing separate duplicate requests for the same unchanged snapshot.
+
+============================================================
+USER INTERFACE
+============================================================
+
+Add a new section to the Workout Builder.
+
+Recommended name:
+
+Analiza planu
+
+Do not replace the existing:
+
+- Plan summary
+- Volume analysis
+- Plan editing interface
+
+Recommended tabs:
+
+1. Balans ruchowy
+2. Wzorce ruchowe
+3. Struktura ćwiczeń
+4. Rozkład tygodniowy
+5. Ostrzeżenia
+
+============================================================
+TAB 1 — BALANS RUCHOWY
+============================================================
+
+Display:
+
+Push / Pull
+
+- Push working sets
+- Pull working sets
+- Ratio
+- Status
+- Explanation
+
+Squat / Hinge
+
+- Squat working sets
+- Hinge working sets
+- Ratio
+- Status
+- Explanation
+
+Use simple bars or progress indicators.
+
+Do not add a heavy charting library.
+
+Do not rely only on colour.
+
+Use text, labels and icons.
+
+============================================================
+TAB 2 — WZORCE RUCHOWE
+============================================================
+
+Display every movement category:
+
+- Push
+- Pull
+- Squat
+- Hinge
+- Lunge
+- Core
+- Carry
+- Rotation
+
+For each show:
+
+- Working sets
+- Exercise entries
+- Percentage of plan
+- Number of days present
+- Status
+
+Allow expanding a category to show contributing exercises.
+
+============================================================
+TAB 3 — STRUKTURA ĆWICZEŃ
+============================================================
+
+Display:
+
+- Compound vs isolation
+- Bilateral vs unilateral
+- Sagittal vs frontal vs transverse
+- Analysed vs incomplete exercise entries
+
+Recommended Polish labels:
+
+- Wielostawowe
+- Izolowane
+- Obustronne
+- Jednostronne
+- Płaszczyzna strzałkowa
+- Płaszczyzna czołowa
+- Płaszczyzna poprzeczna
+
+============================================================
+TAB 4 — ROZKŁAD TYGODNIOWY
+============================================================
+
+For every day show:
+
+- Total sets
+- Exercise entries
+- Dominant movement categories
+- Compound/isolation distribution
+- Bilateral/unilateral distribution
+
+Also show movement-category distribution between days.
+
+Example:
+
+Pull:
+
+- Dzień A: 8 sets
+- Dzień B: 4 sets
+- Present on 2 of 4 days
+
+============================================================
+TAB 5 — OSTRZEŻENIA
+============================================================
+
+Group warnings by severity:
+
+- Informacja
+- Warto sprawdzić
+- Istotne ostrzeżenie
+
+Do not use medical or injury claims.
+
+Examples:
+
+- "Plan nie zawiera ćwiczeń o wzorcu hip hinge."
+- "Ruchy wypychające mają ponad dwukrotnie więcej serii niż ruchy przyciągające."
+- "Wszystkie ćwiczenia jednostronne znajdują się w jednym dniu."
+- "Trzy ćwiczenia nie mają kompletnego wzorca ruchowego."
+- "W jednym dniu znajdują się cztery ćwiczenia o tym samym wzorcu."
+
+Every warning should include:
+
+- Why it appeared
+- Exact values
+- Affected day or exercises where applicable
+
+Do not automatically recommend exact replacements in this phase.
+
+============================================================
+EXERCISE-CARD ANALYSIS
+============================================================
+
+Inside each exercise card, optionally show a compact metadata summary:
+
+- Movement category
+- Specific movement pattern
+- Compound / isolation
+- Bilateral / unilateral
+- Plane of motion
+
+Example:
+
+Pull • Przyciąganie pionowe • Wielostawowe • Obustronne • Strzałkowa
+
+Keep this compact and collapsible.
+
+Do not overcrowd the exercise card.
+
+============================================================
+TRAINER CONTROL
+============================================================
+
+The trainer must always be able to:
+
+- Ignore an informational warning
+- Save the draft
+- Continue editing
+- Manually decide whether the plan needs changes
+
+Do not automatically:
+
+- Add missing patterns
+- Replace an exercise
+- Increase Pull sets
+- Reduce Push sets
+- Add unilateral work
+- Change the plan goal
+- Change Exercise Intelligence metadata
+
+This system explains.
+
+It does not take control.
+
+============================================================
+PERFORMANCE
+============================================================
+
+The analysis must remain responsive for plans containing:
+
+- Up to 7 training days
+- Up to 20 exercise entries per day
+- Repeated exercises
+- Incomplete metadata
+- Inactive historical exercises
+
+Avoid N+1 queries.
+
+Load all required exercise metadata using batched queries.
+
+Do not re-fetch full exercise records separately for every plan entry.
+
+============================================================
+BACKWARD COMPATIBILITY
+============================================================
+
+Existing plans must continue to load.
+
+Old plans may contain:
+
+- Null working sets
+- Missing exercise records
+- Inactive exercises
+- Exercises without Exercise Intelligence metadata
+- Null optional prescription fields
+
+Handle them safely.
+
+Do not modify historical data automatically.
+
+Do not write analysis results permanently into plan rows.
+
+Calculate analysis from current source data.
+
+============================================================
+AUTHORIZATION
+============================================================
+
+If authentication and trainer ownership already exist:
+
+- Verify that the trainer can analyse only their own plans and clients.
+- Reuse existing authorization middleware.
+- Do not create a new authentication system.
+- Do not trust clientId or planId blindly.
+
+If authentication is not yet implemented, preserve the current architecture and document the limitation.
+
+============================================================
+AUTOMATED TESTS
+============================================================
+
+Add focused automated tests for the pure analysis core.
+
+Test at minimum:
+
+1. Push and Pull with equal sets.
+2. Push dominance.
+3. Pull dominance.
+4. Zero Pull sets handled without division error.
+5. Squat and Hinge with equal sets.
+6. Squat dominance.
+7. Hinge dominance.
+8. Minimum combined-set threshold.
+9. Movement-category working-set totals.
+10. Exercise-entry totals.
+11. Compound vs isolation totals.
+12. Bilateral vs unilateral totals.
+13. Plane-of-motion totals.
+14. One exercise counted only once in its primary movement category.
+15. Repeated movement-pattern detection.
+16. Weekly distribution between multiple days.
+17. Missing movement pattern warning.
+18. Missing exercise type warning.
+19. Missing execution type warning.
+20. Missing plane-of-motion warning.
+21. Inactive exercise warning with preserved contribution.
+22. Missing exercise record warning.
+23. Invalid working sets warning.
+24. Saved-plan and draft-preview equality.
+25. Stale frontend responses cannot overwrite newer results.
+26. Existing volume preview remains unchanged.
+27. Existing Volume Calculator tests still pass.
+
+Do not rely only on curl requests and manual DB inspection.
+
+============================================================
+OUT OF SCOPE
+============================================================
+
+Do NOT implement during this task:
+
+- Estimated workout duration
+- Fatigue scoring
+- Recovery scoring
+- Joint-stress aggregation
+- DOMS aggregation
+- Supersets
+- Compound sets
+- Drop sets
+- Rest-pause
+- Cluster sets
+- Myo-reps
+- Automatic exercise substitutions
+- Exercise avoidance from the Training Interview
+- Automatic workout generation
+- AI planning
+- Progressive overload
+- Load progression
+- Client workout execution
+- Training history
+- Client Portal
+- Chat
+- Notifications
+- New activation-blocking rules
+
+These belong to later tasks.
+
+============================================================
+REGRESSION TESTS
+============================================================
+
+Verify:
+
+1. Existing plans open.
+2. Existing plans can still be edited.
+3. Drag-and-drop still works.
+4. Day order persists.
+5. Exercise order persists.
+6. Plan saving still works.
+7. Volume analysis still updates correctly.
+8. Volume preview result remains unchanged.
+9. Plan activation behaviour remains unchanged.
+10. Exercise Recommendation Engine remains unchanged.
+11. Training Interview remains unchanged.
+12. Existing database data remains present.
+13. TypeScript checks pass.
+14. API production build passes.
+15. Trainer-app production build passes.
+16. API server starts.
+17. Trainer app starts.
+
+============================================================
+EXPECTED RESULT
+============================================================
+
+The Workout Builder should provide a clear, live structural analysis of the plan.
+
+The trainer should understand:
+
+- Whether Push and Pull are reasonably balanced
+- Whether Squat and Hinge are reasonably balanced
+- Which movement patterns are present
+- Which patterns are absent
+- How patterns are distributed between days
+- Whether the plan is dominated by one movement category
+- How many exercises are compound or isolation
+- How many exercises are bilateral or unilateral
+- Which planes of motion are represented
+- Which exercises have incomplete analysis metadata
+
+The system must remain transparent, advisory and trainer-controlled.
+
+============================================================
+REQUIRED FINAL REPORT
+============================================================
+
+After implementation provide:
+
+1. Initial architecture findings
+2. Existing structures reused
+3. Files changed
+4. Backend analysis-service structure
+5. Preview endpoint
+6. Request and response types
+7. Normalization logic
+8. Exact balance formulas
+9. Centralized heuristic thresholds
+10. Missing-metadata handling
+11. Frontend components added or modified
+12. Live-preview debounce and stale-response handling
+13. Push/Pull test evidence
+14. Squat/Hinge test evidence
+15. Movement-category test evidence
+16. Compound/isolation test evidence
+17. Bilateral/unilateral test evidence
+18. Plane-of-motion test evidence
+19. Weekly-distribution test evidence
+20. Saved and preview equality evidence
+21. Automated-test results
+22. TypeScript results
+23. Build results
+24. Runtime smoke-test results
+25. Confirmation that Volume Calculator was not modified
+26. Confirmation that volume-guideline values were not modified
+27. Confirmation that Exercise Recommendation Engine was not modified
+28. Confirmation that Training Interview logic was not modified
+29. Confirmation that database data was preserved
+30. Remaining limitations
+
+Finish with exactly one verdict:
+
+- PASS
+- PASS WITH WARNINGS
+- FAIL
+
+Do not claim PASS unless:
+
+- Live plan analysis works
+- Push/Pull analysis is correct
+- Squat/Hinge analysis is correct
+- Day-level and weekly analysis are correct
+- Missing metadata is handled safely
+- Saved and draft analysis use the same core
+- Automated tests pass
+- TypeScript checks pass
+- API and trainer-app builds pass
+- API server and trainer app start successfully
+- Existing database data remains present

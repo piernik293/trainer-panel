@@ -1,0 +1,71 @@
+Fix the current trainer MVP flow so it works end-to-end without relying on the unfinished preview step.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole wizard
+- Do NOT redesign the app
+- Do NOT touch backend APIs
+- Do NOT run tests
+- Do NOT create fake exercise data
+- Do NOT keep temporary debug cards
+- Inspect only these files first:
+  - artifacts/trainer-app/src/pages/PlanDraftWizard.tsx
+  - artifacts/trainer-app/src/components/PlanReadySummary.tsx
+- Only inspect directly related helper/type files if absolutely required to make these two files work
+
+KNOWN FACTS:
+- The core engine works
+- volumeDecisions exists
+- effectivePrefs exists
+- exerciseDraft exists
+- The old wizard steps 2 and 3 are unfinished / fragile
+- The MVP should not depend on entering the unfinished Preview step
+- The summary screen must show real exercises from exerciseDraft, grouped by day
+- Temporary debug cards and forced bypasses were added and must not remain as final UX
+
+PRIMARY GOAL:
+Make the MVP flow work like this:
+1. user completes assumptions / volume
+2. user reaches exercises step normally
+3. once exerciseDraft has at least one usable exercise, a "Generuj plan" button is available on step 2
+4. clicking "Generuj plan" opens PlanReadySummary directly
+5. PlanReadySummary shows real exercises grouped by training day
+6. Preview step is NOT required for MVP
+7. debug cards are removed
+
+REQUIREMENTS:
+1. In PlanDraftWizard.tsx:
+   - remove temporary debug cards
+   - restore normal rendering of Step4Exercises
+   - do not require the unfinished Preview step in order to open the final summary
+   - expose "Generuj plan" on the earliest valid point where exerciseDraft is usable
+   - keep changes minimal and local
+
+2. In PlanReadySummary.tsx:
+   - render real exercises per day from exerciseDraft
+   - do not show only allocation group names
+   - keep existing structure if possible
+
+3. Data source priority:
+   - use exerciseDraft as the authoritative source of selected exercises for the summary
+   - only use other data as fallback if directly necessary
+
+4. Do NOT:
+   - hardcode business data
+   - fake successful backend results
+   - invent exercises
+   - rewrite unrelated flow
+
+SUCCESS CRITERIA:
+- user can get to exercises step without temporary hacks
+- "Generuj plan" is visible on step 2 when exerciseDraft contains at least one exercise
+- clicking it opens PlanReadySummary immediately
+- summary shows real exercise names grouped by day
+- no temporary debug UI remains
+- preview step is no longer required for MVP
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause

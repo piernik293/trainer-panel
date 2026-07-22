@@ -1,0 +1,96 @@
+# SMALL FIX — INTEGER SETS AND EFFECTIVE VOLUME LABEL
+
+Continue from the current repository state.
+
+Do not inspect unrelated files.
+Do not implement exercise selection.
+Do not add core exercises yet.
+Do not change priority rules yet.
+Do not modify the database.
+Do not create or save workout plans.
+Do not redesign the page.
+
+Inspect only the files directly responsible for:
+
+- Phase 2 weekly volume recommendations,
+- trainer volume overrides,
+- Phase 3 daily distribution,
+- the displayed daily volume total.
+
+Required corrections:
+
+1. Planned values shown to the trainer must be whole integers.
+
+This applies to:
+
+- automatic weekly recommendations,
+- trainer overrides,
+- daily target allocations.
+
+Forbidden planned values:
+
+- 1.5
+- 2.5
+- 6.5
+- 15.5
+
+Automatic recommendations:
+- round deterministically to a whole integer,
+- keep the result inside the allowed range.
+
+Trainer override:
+- reject non-integer values,
+- show VOLUME_OVERRIDE_NOT_INTEGER,
+- do not silently round trainer input.
+
+Daily allocations:
+- use integer units,
+- preserve the exact selected weekly total,
+- never create decimal allocations.
+
+2. Internal effective-volume calculations may remain decimal.
+
+Do not change exercise contribution coefficients.
+
+3. Rename the misleading daily total.
+
+Replace:
+
+"X serii"
+
+with:
+
+"Łączna objętość efektywna targetów: X"
+
+Add helper text:
+
+"To wartość analityczna uwzględniająca pracę kilku mięśni. Nie jest to liczba serii roboczych do wykonania."
+
+4. Do not implement any other feature.
+
+Run only:
+
+- focused affected tests,
+- TypeScript for affected packages,
+- API build if backend changed,
+- trainer-app build if frontend changed.
+
+Do not run the full suite unless the focused tests reveal a regression.
+Do not run browser installation, website audit or client-landing build.
+
+Report only:
+
+- files changed,
+- rounding rule,
+- override validation,
+- daily allocation result,
+- affected test result,
+- build result.
+
+Finish exactly:
+
+INTEGER VOLUME FIX COMPLETE
+
+or
+
+INTEGER VOLUME FIX FAILED

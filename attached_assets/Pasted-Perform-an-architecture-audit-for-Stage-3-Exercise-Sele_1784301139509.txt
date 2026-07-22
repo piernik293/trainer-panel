@@ -1,0 +1,293 @@
+Perform an architecture audit for Stage 3: Exercise Selection Priority.
+
+Do not modify any files.
+Do not implement anything.
+Analysis only.
+
+Current project status:
+
+- Stage 1 (Exercise Classification) is complete.
+- Stage 2 (Session Ordering) is complete.
+- All tests pass.
+- TypeScript is clean.
+
+Current behavior:
+
+- Auto Fill selects exercises using the existing ScoreTuple.
+- Session ordering now happens afterwards.
+- The selected exercises themselves are still chosen using the old volume-first logic.
+
+Goal:
+
+Determine the safest way to improve exercise selection so the generator behaves more like an experienced trainer instead of only maximizing volume coverage.
+
+Selection must continue to respect all existing safety limits.
+
+Do not redesign the system.
+
+Only determine where trainer-like priorities should enter the existing architecture.
+
+--------------------------------------------------
+1. Trace the complete selection pipeline
+--------------------------------------------------
+
+Follow the entire path from:
+
+candidate recommendations
+
+↓
+
+candidate scoring
+
+↓
+
+candidate comparison
+
+↓
+
+selected exercise
+
+↓
+
+commitExercise()
+
+Identify every function involved.
+
+Show exact files.
+
+Show exact responsibility of every function.
+
+--------------------------------------------------
+2. Explain the current ScoreTuple
+
+Locate the current ScoreTuple.
+
+Explain every element.
+
+Explain:
+
+- what each value represents
+
+- why it exists
+
+- whether lower or higher wins
+
+- how scoreBetter() compares tuples
+
+Determine exactly where a trainer-like priority could be inserted without changing unrelated logic.
+
+--------------------------------------------------
+3. Candidate evaluation
+
+Explain:
+
+evaluateCandidate()
+
+What information is available there?
+
+Can it already see:
+
+- exerciseType
+
+- neurologicalFatigue
+
+- learningDifficulty
+
+- exercisePriority
+
+- movementPattern
+
+- target coverage
+
+- remaining weekly volume
+
+- remaining daily volume
+
+- already used exercises
+
+List everything available.
+
+--------------------------------------------------
+4. Existing trainer heuristics
+
+Identify all existing heuristics already affecting selection.
+
+Examples:
+
+- variety
+
+- uncovered targets
+
+- already added
+
+- weekly limits
+
+- daily limits
+
+- equipment
+
+- location
+
+- avoided exercises
+
+Anything else.
+
+Separate:
+
+Hard constraints
+
+Soft preferences
+
+--------------------------------------------------
+5. Where should trainer priorities enter?
+
+Evaluate these possibilities.
+
+A
+
+Modify evaluateCandidate()
+
+B
+
+Extend ScoreTuple
+
+C
+
+Modify scoreBetter()
+
+D
+
+Modify candidate generation
+
+E
+
+New helper before evaluateCandidate()
+
+Recommend one.
+
+Reject the others with reasons.
+
+--------------------------------------------------
+6. Compound preference
+
+Determine the safest way to introduce:
+
+Compound preference
+
+WITHOUT making compounds always win.
+
+Example:
+
+A perfect isolation should still beat a terrible compound.
+
+Recommend the smallest architecture change.
+
+--------------------------------------------------
+7. Missing muscle protection
+
+Current concern:
+
+Auto Fill should never finish successfully if an important requested muscle group remains completely uncovered.
+
+Determine:
+
+Where should this validation exist?
+
+Before selection?
+
+During selection?
+
+After selection?
+
+Would it be:
+
+hard failure
+
+warning
+
+retry
+
+fallback
+
+Explain.
+
+--------------------------------------------------
+8. Future extensibility
+
+Determine how future trainer heuristics can be added without rewriting selection.
+
+Examples:
+
+- movement patterns
+
+- priority muscles
+
+- fatigue management
+
+- exercise frequency
+
+- fragmentation prevention
+
+- athlete mode
+
+- rehab mode
+
+Recommend the smallest extension point.
+
+--------------------------------------------------
+9. Tests
+
+Identify which existing tests protect selection.
+
+Recommend:
+
+pure tests
+
+integration tests
+
+regression tests
+
+Specifically ensure:
+
+same safety limits
+
+same volume calculations
+
+same target coverage
+
+only trainer priority changes.
+
+--------------------------------------------------
+10. Stage 3 plan
+
+Return:
+
+- architecture map
+
+- ScoreTuple analysis
+
+- safest integration point
+
+- rejected alternatives
+
+- exact files to change
+
+- files not to change
+
+- regression risks
+
+- implementation sequence
+
+Important:
+
+Do not implement.
+
+Do not change code.
+
+Do not propose weekly optimization.
+
+Do not propose movement balancing.
+
+Do not redesign Auto Fill.
+
+Stop after the audit.

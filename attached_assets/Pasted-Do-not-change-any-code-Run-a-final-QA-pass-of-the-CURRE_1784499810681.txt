@@ -1,0 +1,198 @@
+Do not change any code.
+
+Run a final QA pass of the CURRENT active planning system.
+I want a full end-to-end verification of the real workflow, not architecture notes.
+
+Check the system step by step and report only real behavior from the active code.
+
+==================================================
+FINAL QA CHECKLIST
+==================================================
+
+1. SPLIT RECOMMENDATION CONSISTENCY
+Test these cases:
+
+A) Beginner, 3 days
+- expected: Full Body
+- no cap
+
+B) Beginner, 5 days
+- expected: Full Body
+- cappedTrainingDays = 3
+- defaultPreferences.trainingDays must follow the cap
+- allowedSplitTypes must also follow beginner-safe rules
+
+C) Intermediate, 3 days
+- expected: Góra / Dół / Full Body
+
+For each case check:
+- splitRecommendation.recommended
+- cappedTrainingDays
+- defaultPreferences.trainingDays
+- allowedSplitTypes
+- whether UI-facing recommendation would be consistent with API
+
+==================================================
+2. EMPTY-DAY FULL PLAN GENERATION
+==================================================
+
+Check whether the full-plan generation works from EMPTY days.
+
+Verify:
+- button/action can start with no manually selected exercises
+- no first exercise is required
+- the system generates each day from zero
+- the correct route/path is used
+
+==================================================
+3. PARTIAL-DAY AUTOFILL
+==================================================
+
+Check the partial-day flow:
+- a day already contains one exercise
+- autofill should complete the day
+- it should not overwrite the whole day
+- it should still follow the correct day type and slot structure
+
+==================================================
+4. CLEAR DAY ACTION
+==================================================
+
+Check the "Wyczyść dzień" / bulk delete action.
+
+Verify:
+- it clears only one selected day
+- confirmation appears
+- plan state updates correctly
+- weekly coverage / summaries refresh correctly
+- the day can be generated again after clearing
+
+==================================================
+5. BEGINNER SAFETY
+==================================================
+
+Create a beginner 3-day case and generate the week.
+
+Check:
+- no aggressive specialization
+- no PPL recommendation
+- no advanced-looking session structure
+- no unsafe or semantically strange exercise choices
+- overall plan looks general-development focused
+
+==================================================
+6. CHEST PRIORITY CASE
+==================================================
+
+Profile:
+- intermediate
+- 3 days
+- chest priority
+- bench-oriented goal (example: 100 kg na klatę)
+- poor recovery if needed for recommendation logic
+
+Generate the full week.
+
+Check:
+- whether chest priority is visible in actual sessions
+- whether chest gets early meaningful slots
+- whether chest appears more than once across the week
+- whether exercise variety is sensible
+  (flat / incline / dips / fly type variety when feasible)
+- whether triceps / upper back / lats support the bench goal
+
+==================================================
+7. BACK PRIORITY CASE
+==================================================
+
+Profile:
+- intermediate
+- 3 days
+- back priority
+- normal recovery
+
+Generate the full week.
+
+Check:
+- whether back priority is visible
+- whether both horizontal and vertical pull appear when feasible
+- whether back wins contested slots
+- whether semantically wrong fillers are gone
+  (for example no hyperextension / shrug family in wrong slots)
+
+==================================================
+8. CONTROLLED VARIETY
+==================================================
+
+For one meaningful session type, compare:
+- alt=0
+- alt=1
+- alt=2
+
+Check:
+- are they meaningfully different?
+- are they still safe?
+- are they still structurally valid?
+- is the default stable?
+- is the main lift still protected?
+
+==================================================
+9. CROSS-SESSION MEMORY
+==================================================
+
+Generate a week containing repeated session types
+(example: two Upper-like days or two Full Body variants).
+
+Check:
+- does the later day avoid becoming an exact duplicate?
+- does the system use week-level memory / used exercise IDs correctly?
+- does the week feel planned rather than repeated?
+
+==================================================
+10. COVERAGE / MAPPING RELIABILITY
+==================================================
+
+After generating the week, inspect weekly coverage and warnings.
+
+Check:
+- whether any generated exercise still triggers broken target-group mapping warnings
+- whether weekly coverage looks reliable
+- whether generated exercises contribute correctly to target groups
+- whether there are any remaining suspicious "muscle ID not in target group" issues for active generated exercises
+
+==================================================
+OUTPUT FORMAT
+==================================================
+
+For each of the 10 sections return:
+
+SECTION X
+1. Result:
+- OK
+- PARTIALLY
+- FAIL
+
+2. What was tested
+
+3. What actually happened
+
+4. Biggest issue in this section (if any)
+
+==================================================
+FINAL VERDICT
+==================================================
+
+After all 10 sections answer:
+
+1. Is the planning system ready for serious internal testing?
+- yes
+- partially
+- no
+
+2. Top 5 remaining blockers
+
+3. Which blocker should be fixed first
+
+Do not patch anything.
+Do not redesign anything.
+Only test the active system and report real behavior.

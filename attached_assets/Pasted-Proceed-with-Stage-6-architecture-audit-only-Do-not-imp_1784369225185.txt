@@ -1,0 +1,190 @@
+Proceed with Stage 6 architecture audit only.
+
+Do not implement anything.
+Do not modify any files.
+Do not add tests yet.
+
+Stage 6 goal:
+
+Improve within-session fatigue management so the generator can softly avoid stacking exercises that heavily fatigue the same muscles or structures without a clear reason.
+
+This must be a soft preference, not a hard prohibition.
+
+Examples of undesirable stacking:
+
+- Bench Press followed by another heavy press when chest, triceps, and anterior delts are already heavily loaded
+- Romanian Deadlift followed by Good Morning
+- Heavy Barbell Row followed by another highly fatiguing unsupported row
+- Multiple demanding knee-dominant compounds in the same session without justification
+
+The system must still allow these combinations when they provide a clear volume, target-resolution, priority, or exercise-selection advantage.
+
+Audit the current architecture and answer the following.
+
+--------------------------------------------------
+1. Existing exercise metadata
+--------------------------------------------------
+
+Inspect the current exercise model, API response, normalization layer, and selection pipeline.
+
+List all existing fields that could support fatigue management, including:
+
+- primary muscles
+- secondary muscles
+- target contribution coefficients
+- neurological fatigue
+- exercise difficulty
+- movement pattern
+- movement category
+- compound / isolation classification
+- stability or support requirements
+- axial loading
+- any existing fatigue-related metadata
+
+For each field, state:
+
+- where it is defined
+- whether it is available inside autoFill.ts
+- whether it is reliable enough for Stage 6
+
+Do not assume a field exists.
+
+--------------------------------------------------
+2. Current session state
+--------------------------------------------------
+
+Explain what information is currently available when evaluating a new candidate.
+
+Check whether the selector can already determine:
+
+- which exercises have been committed
+- their set counts
+- their target contribution
+- their movement categories
+- their neurological fatigue
+- their primary and secondary muscles
+- accumulated fatigue for a muscle or movement pattern
+
+Identify what is missing.
+
+--------------------------------------------------
+3. Exact problem definition
+--------------------------------------------------
+
+Separate these concepts:
+
+A. target volume overlap
+B. movement-pattern repetition
+C. local muscular fatigue
+D. systemic / neurological fatigue
+E. exercise redundancy
+
+Explain which ones are already handled by Stages 2–5 and which ones Stage 6 should handle.
+
+Stage 6 must not duplicate movementPatternPenalty, trainerPriority, session ordering, or fragmentation logic.
+
+--------------------------------------------------
+4. Recommended architecture
+--------------------------------------------------
+
+Propose the smallest isolated Stage 6 design.
+
+Prefer a separate module, for example:
+
+fatigueManagement.ts
+
+But only recommend this if it fits the existing architecture.
+
+Describe:
+
+- proposed exported function or functions
+- exact inputs
+- exact output
+- whether the result should be a penalty, rank, category, or tie-breaker
+- where it should be integrated into candidate comparison
+- whether ScoreTuple must change
+
+Do not add a new ScoreTuple field unless clearly justified.
+
+Consider whether Stage 6 should operate as:
+
+- a candidate-level fatigue penalty
+- a late tie-breaker
+- part of trainerPriority
+- or another mechanism
+
+Choose one and justify it.
+
+--------------------------------------------------
+5. Data sufficiency
+--------------------------------------------------
+
+State whether the current metadata is sufficient to reliably detect:
+
+- repeated loading of the same primary muscle
+- repeated loading of secondary muscles
+- repeated heavy hip hinges
+- repeated axial loading
+- repeated unsupported rowing
+- repeated pressing stress on triceps and anterior delts
+
+For each case, answer:
+
+- reliable now
+- partially reliable
+- not possible without new metadata
+
+Do not propose database changes unless they are genuinely necessary.
+
+--------------------------------------------------
+6. Behaviour examples
+--------------------------------------------------
+
+Using the current data model, explain how the proposed Stage 6 logic would evaluate:
+
+1. Bench Press → Incline Dumbbell Press
+2. Bench Press → Cable Fly
+3. Romanian Deadlift → Good Morning
+4. Romanian Deadlift → Leg Curl
+5. Barbell Row → Chest-Supported Row
+6. Squat → Leg Extension
+
+For each pair, explain whether Stage 6 should apply:
+
+- no penalty
+- small penalty
+- moderate penalty
+- strong penalty
+
+Also explain what existing selection advantage could override that penalty.
+
+--------------------------------------------------
+7. Risks
+--------------------------------------------------
+
+Identify risks such as:
+
+- punishing valid specialization sessions
+- treating all muscle overlap as bad
+- duplicating movement balance
+- changing volume-resolution behaviour
+- making compounds lose too often to isolations
+- unstable ordering from too many scoring dimensions
+- relying on incomplete metadata
+
+--------------------------------------------------
+8. Final recommendation
+--------------------------------------------------
+
+Provide:
+
+- recommended Stage 6 architecture
+- exact files that would be created or modified
+- whether ScoreTuple changes are required
+- required metadata
+- estimated implementation risk: low / medium / high
+- proposed test categories
+
+Do not implement anything.
+
+Stop after the audit.

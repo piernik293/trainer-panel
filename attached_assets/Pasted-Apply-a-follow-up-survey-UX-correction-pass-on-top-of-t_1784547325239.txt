@@ -1,0 +1,106 @@
+Apply a follow-up survey UX correction pass on top of the CURRENT already-updated survey.
+
+Do NOT redesign the whole app.
+Do NOT touch sport-goal logic unless required by these specific fixes.
+Do NOT change generator logic.
+This is a focused follow-up cleanup task for the existing survey.
+
+==================================================
+GOAL
+==================================================
+
+Adjust the current survey UX after the previous cleanup.
+
+Only implement the specific corrections below.
+
+==================================================
+SECTION 1 — "ĆWICZENIA DO UNIKANIA"
+==================================================
+
+IMPORTANT:
+Do NOT remove this functionality.
+
+Current issue:
+It is currently hidden behind a small collapsible / toggle-style entry ("Ćwiczenia do unikania"), which is not the desired UX.
+
+Required change:
+- remove the collapsible / accordion / hidden-tab presentation
+- keep the full "Ćwiczenia do unikania" field visible in the normal survey flow
+- do NOT delete its functionality
+- do NOT break the exercise search / picker behavior
+
+Goal:
+The trainer/client should still be able to indicate exercises to avoid,
+but this should appear as a normal visible survey field, not as a hidden collapsed item.
+
+==================================================
+SECTION 2 — REMOVE THE MUSCLE-PART FIELD
+==================================================
+
+Remove this field completely from the survey:
+
+- "Czy są partie mięśniowe, których nie chcesz rozwijać? Jeżeli tak opisz dlaczego."
+
+Remove:
+- the label
+- the helper text
+- the textarea/input
+- any submit wiring / state / validation related only to this field
+- any stale display references if they exist in the survey flow
+
+Goal:
+This field should no longer exist in the survey at all.
+
+==================================================
+SECTION 3 — TRAINING METHODS QUESTION
+==================================================
+
+The current visibility logic is already correct:
+- show it only for:
+  - Średniozaawansowany
+  - Zaawansowany
+
+Keep that logic unchanged.
+
+But improve the wording so it sounds more professional and intentional.
+
+Preferred new wording:
+- "Czy chcesz, aby w planie były uwzględniane metody intensyfikacji treningu?"
+
+Optional helper text:
+- "Zaznacz tylko te metody, które chcesz stosować w planie."
+
+Do NOT change the underlying advanced-only behavior.
+Do NOT expose this question to:
+- Brak aktywności fizycznej
+- Początkujący
+
+==================================================
+SAFETY / SCOPE
+==================================================
+
+Do NOT:
+- reintroduce the old separate sport section
+- undo the "Cel sportowy" work
+- change the favorite exercise autocomplete
+- change the priority-muscle autocomplete
+- redesign health wording
+- redesign cardio logic
+- redesign tile/card sizing
+
+This is only a small follow-up patch to the current survey state.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact change made to "Ćwiczenia do unikania"
+3. exact removal of the muscle-part field
+4. exact wording change for the training-methods question
+5. confirmation that advanced-only visibility for training methods stayed unchanged
+
+End exactly with:
+
+SURVEY FOLLOW-UP PATCH APPLIED

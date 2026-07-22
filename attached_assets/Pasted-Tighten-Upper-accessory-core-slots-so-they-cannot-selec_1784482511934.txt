@@ -1,0 +1,76 @@
+Tighten Upper accessory/core slots so they cannot select heavy lower-body or systemic compounds.
+
+Do NOT redesign the generator.
+Do NOT change weekly volume logic.
+Do NOT change UI.
+Do NOT remove priority-aware templates.
+This is a focused slot-safety fix.
+
+GOAL:
+Prevent Upper sessions from selecting exercises like conventional deadlift or other lower-body/systemic compounds in optional accessory slots.
+
+PROBLEM:
+After the recent priority slot family constraints, Back-priority Upper still allows:
+- Martwy ciąg konwencjonalny
+to win the "Accessory or core" slot.
+
+This is wrong.
+
+==================================================
+REQUIRED FIX
+==================================================
+
+1. In UPPER templates, especially optional accessory/core slots,
+reject all exercises that are:
+
+- lower-body dominant compounds
+- hinge-dominant main lifts
+- systemic heavy compounds not appropriate for an Upper day
+- deadlift family
+- squat family
+- lower-body lunge family
+
+2. UPPER accessory/core slots should only allow:
+- upper-body accessory
+- upper-body isolation
+- rear delt / upper back support
+- arms
+- core
+- optional lighter chest/back/shoulder accessories
+
+3. Specifically forbid from UPPER accessory/core slots:
+- conventional deadlift
+- Romanian deadlift
+- squat variations
+- lunges
+- hip thrust / glute bridge if treated as lower-body slot content
+- any lower-day structural movement
+
+4. Keep Back-priority and Chest-priority template logic intact.
+Only tighten what can enter the optional upper slots.
+
+5. If needed, add a helper such as:
+- isUpperAccessorySafe(ex)
+or
+- isLowerBodyDominant(ex)
+or
+- isHeavySystemicCompound(ex)
+
+6. Keep deterministic behavior.
+No scoring redesign.
+No new features.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact filters/helpers added
+3. exact Upper slots tightened
+4. back-priority Upper before vs after
+5. chest-priority Upper before vs after
+
+End exactly with:
+
+UPPER ACCESSORY SLOT SAFETY APPLIED

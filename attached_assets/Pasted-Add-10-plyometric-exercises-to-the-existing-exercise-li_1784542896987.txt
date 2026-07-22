@@ -1,0 +1,220 @@
+Add 10 plyometric exercises to the existing exercise library using the CURRENT exercise model only.
+
+Do NOT redesign the whole app.
+Do NOT add a new exercise domain/category field yet.
+Do NOT add animation support.
+Do NOT add athlete/Plyo planner logic in this task.
+This is a focused exercise-library content task.
+
+==================================================
+GOAL
+==================================================
+
+Add 10 plyometric exercises to the library using the current exercise schema already supported by the app.
+
+Use the existing exercise model and the current import/library structure.
+Do not introduce any new database field such as exerciseDomain, trainingDiscipline, or exerciseCategory in this task.
+
+The goal is to get 10 usable plyometric exercises into the library as complete records,
+based on the current library form fields.
+
+==================================================
+IMPORTANT INTERPRETATION
+==================================================
+
+These exercises are plyometric in nature,
+but for now they must be stored using the CURRENT existing exercise schema only.
+
+That means:
+- use the current supported fields
+- fit them into the current library model cleanly
+- do not add a new structural category system yet
+
+If needed, use existing fields such as:
+- movement pattern
+- exercise type
+- description
+- coaching notes
+- intelligence fields
+
+to reflect that they are dynamic / explosive / coordination-oriented exercises.
+
+==================================================
+EXERCISES TO ADD
+==================================================
+
+Use these Polish names as the main exercise names:
+
+1. Skoki pogo
+2. Skok z zamachem
+3. Skok w dal z miejsca
+4. Zeskok z natychmiastowym wybiciem
+5. Wskok na podwyższenie
+6. Skoki boczne jednonóż
+7. Skok jednonóż
+8. Nauka lądowania
+9. Skok boczny z zatrzymaniem
+10. Przeskoki boczne z nogi na nogę
+
+==================================================
+USE THE CURRENT EXERCISE FIELDS
+==================================================
+
+Build the exercise records using the existing current library fields visible in the app, including at least:
+
+1. Basic info
+- Nazwa ćwiczenia
+- Główna partia mięśniowa
+- Poziom trudności
+- Wzorzec ruchowy
+- Typ ćwiczenia
+- Drugoplanowe partie mięśniowe
+- Wymagany sprzęt
+- Miejsce treningu
+
+2. Coaching info
+- Opis ćwiczenia
+- Instrukcje wykonania
+- Częste błędy
+- Wskazówki trenerskie
+- Wskazówki oddechowe
+- Uwagi dotyczące bezpieczeństwa
+- Tempo
+- Zalecany zakres ruchu
+- Link do wideo
+- Link do zdjęcia
+
+3. Intelligence fields
+- Odpowiedni poziom doświadczenia
+- Cel treningowy
+- Kategoria ruchu
+- Płaszczyzna ruchu
+- Wykonanie
+- Typ oporu
+- Możliwość wykonania do upadku
+- Obciążenie stawów
+- Priorytet ćwiczenia
+- Złożoność ruchu
+- Wymaga asekuracji (spotter)
+- Odpowiednie dla segmentu „Start adaptacyjny"
+- Trudność nauki (1–5)
+- Zmęczenie neurologiczne (1–5)
+- Potencjał DOMS (1–5)
+
+==================================================
+DATA QUALITY REQUIREMENTS
+==================================================
+
+All 10 exercises must be added as complete, well-described records.
+
+Do NOT add empty placeholders.
+Do NOT leave obvious blanks where the app expects meaningful trainer data.
+
+If a field is optional and not needed:
+- use the cleanest safe default
+- but keep the records practical and usable
+
+==================================================
+HOW TO INTERPRET THE EXERCISES
+==================================================
+
+Use sensible metadata for plyometric exercises inside the current schema.
+
+Examples of intended interpretation:
+
+- Skoki pogo
+  reactive, ankle stiffness, low-amplitude repeated jump
+
+- Skok z zamachem
+  explosive jump, vertical power, dynamic takeoff
+
+- Skok w dal z miejsca
+  horizontal power, full-body explosive effort
+
+- Zeskok z natychmiastowym wybiciem
+  reactive jump, landing quality, fast transition
+
+- Wskok na podwyższenie
+  explosive jump with controlled landing
+
+- Skoki boczne jednonóż
+  lateral power, balance, unilateral landing control
+
+- Skok jednonóż
+  unilateral explosiveness and control
+
+- Nauka lądowania
+  landing mechanics, deceleration, joint control
+
+- Skok boczny z zatrzymaniem
+  lateral jump + controlled stick landing
+
+- Przeskoki boczne z nogi na nogę
+  lateral reactive movement, rhythm, coordination
+
+==================================================
+DEFAULTS / SENSIBLE ASSUMPTIONS
+==================================================
+
+Use clean, practical defaults where needed.
+
+General assumptions that are likely valid for most of these:
+- equipment: mostly bodyweight / no equipment
+- place: home / gym / outdoor gym where appropriate
+- exercise type: usually compound / dynamic
+- canBeTakenToFailure: generally false
+- spotter: false
+- resistance type: bodyweight
+- training goals: sport performance, general health, coordination support, conditioning support where appropriate
+
+But do NOT blindly give all 10 exactly the same metadata if a better distinction makes sense.
+
+==================================================
+IMPLEMENTATION METHOD
+==================================================
+
+Add these exercises through the existing exercise data source used by the app:
+- JSON / seed / importer-compatible source
+whichever is the CURRENT actual source of truth in the codebase.
+
+Do NOT manually edit rows one by one in the UI unless the codebase already relies on that.
+Prefer the real data source used by the app.
+
+==================================================
+ADDITIONAL UI CLEANUP — REMOVE BROKEN IMPORT ENTRY
+==================================================
+
+Also remove or hide the exercise import entry from the exercise library UI for now.
+
+Reason:
+The current CSV/JSON import flow is not reliable enough for real use and creates unnecessary confusion.
+
+Required behavior:
+1. Remove the visible "Importuj ćwiczenia" button/entry from the exercise library screen
+2. Remove or disable the import modal entry point from the normal user flow
+3. Do NOT redesign the rest of the library page
+4. Do NOT break the rest of the exercise library functionality
+5. Do NOT remove the underlying import architecture unless truly necessary
+   - it is acceptable to only hide/disable the UI entry point for now
+6. Make sure no dead button, broken modal trigger, or runtime error remains
+
+Goal:
+The exercise library should no longer expose a broken or unused import feature in the UI.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact data source updated
+3. list of the 10 exercises inserted
+4. one fully written example record
+5. confirmation that the records use only the current exercise schema
+6. confirmation that no new category/domain field was added
+7. whether the import feature was removed from UI only
+   or whether any deeper cleanup was required
+
+End exactly with:
+
+PLYO EXERCISES ADDED TO CURRENT LIBRARY SCHEMA

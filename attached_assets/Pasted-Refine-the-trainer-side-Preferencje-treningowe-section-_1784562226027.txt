@@ -1,0 +1,96 @@
+Refine the trainer-side "Preferencje treningowe" section so it uses the same assisted inputs as the client-side survey.
+
+Do NOT redesign the whole app.
+Do NOT change generator logic.
+Do NOT change unrelated survey sections.
+This is a focused trainer-form UX consistency patch.
+
+==================================================
+GOAL
+==================================================
+
+Make the trainer-side preference inputs behave like the client-side survey wherever the client-side already has assisted autocomplete / picker behavior.
+
+Current issue:
+In the trainer form, these fields still behave like plain text inputs:
+- Priorytet 1
+- Priorytet 2
+- Priorytet 3
+- Ulubione ćwiczenia
+- Ćwiczenia do unikania
+
+This creates worse UX and worse data consistency than on the client side.
+
+==================================================
+REQUIRED CHANGES
+==================================================
+
+1. PRIORITY MUSCLE FIELDS
+For:
+- Priorytet 1
+- Priorytet 2
+- Priorytet 3
+
+replace plain text inputs with the same assisted muscle-group autocomplete / combobox behavior used on the client side.
+
+Required behavior:
+- typing should filter known system muscle groups
+- user should select from valid canonical values
+- no loose free text like "klata", "plecy", "nogi" should remain as the normal input mode
+- clear/remove control should still exist
+
+2. FAVORITE EXERCISES
+For:
+- Ulubione ćwiczenia
+
+replace the plain text input with the same exercise picker / autocomplete behavior used on the client side.
+
+Required behavior:
+- search by exercise name
+- select known exercises from the DB
+- selected items shown clearly (chips/tags or equivalent)
+- clean remove option for each selected item
+
+3. EXERCISES TO AVOID
+For:
+- Ćwiczenia do unikania
+
+replace the plain text input with the same exercise picker / autocomplete behavior used on the client side.
+
+Required behavior:
+- search by exercise name
+- select known exercises from the DB
+- selected items shown clearly
+- clean remove option for each selected item
+
+4. TRAINER-ONLY FIELD
+For:
+- Partie do pominięcia (jeżeli tak — opisz dlaczego)
+
+this may remain a trainer-only plain text field / note field.
+Do NOT force autocomplete here if it is intended as a more flexible trainer note.
+
+==================================================
+DATA CONSISTENCY GOAL
+==================================================
+
+The trainer-side form should stop producing loose text values where the client-side already produces structured selected values.
+
+Goal:
+- same input experience where appropriate
+- same canonical values
+- better consistency between trainer panel and client survey
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact fields upgraded from plain text to assisted input
+3. exact shared components or logic reused from the client-side survey
+4. confirmation of what remained plain text and why
+
+End exactly with:
+
+TRAINER PREFERENCES AUTOCOMPLETE ALIGNED

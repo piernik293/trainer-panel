@@ -1,0 +1,143 @@
+==================================================
+PROFESSIONAL SURVEY VALIDATION
+==================================================
+
+IMPORTANT
+
+Do not redesign the application.
+Do not modify database schema.
+Do not remove existing functionality.
+
+The goal is to prevent submitting an incomplete training interview while keeping the experience smooth and professional.
+
+--------------------------------------------------
+
+The training interview CANNOT be submitted until all required fields are completed.
+
+Required fields:
+
+Dane podstawowe
+
+• Imię
+• Nazwisko
+• Data urodzenia
+• Płeć
+• Wzrost
+• Waga
+
+Cel treningowy
+
+• Cel treningowy
+
+Doświadczenie
+
+• Poziom doświadczenia
+
+Organizacja treningów
+
+• Liczba treningów tygodniowo
+• Czas jednego treningu
+
+Miejsce treningu
+
+• Miejsce treningu
+
+If selected:
+
+Dom
+
+or
+
+Siłownia plenerowa
+
+then:
+
+• Sprzęt treningowy
+
+also becomes required.
+
+Regeneracja
+
+• Poziom aktywności fizycznej
+
+• Liczba godzin snu
+
+Dodatkowe preferencje
+
+• Styl planu treningowego
+
+--------------------------------------------------
+
+The following fields remain OPTIONAL:
+
+• Telefon
+
+• E-mail
+
+• Kontuzje i ograniczenia
+
+• Cardio
+
+• Informacje dodatkowe
+
+• Ulubione ćwiczenia
+
+• Ćwiczenia do unikania
+
+• Partie priorytetowe
+
+• Metody treningowe
+
+--------------------------------------------------
+
+VALIDATION UX
+
+If required fields are missing:
+
+Prevent form submission.
+
+Display a message:
+
+"Nie można wysłać wywiadu treningowego. Uzupełnij wymagane pola oznaczone na czerwono."
+
+Every missing field should:
+
+• receive a red border
+
+• display a short error message
+
+Example:
+
+"To pole jest wymagane."
+
+Automatically scroll to the first invalid field.
+
+As soon as the user corrects the value:
+
+• remove the red border
+
+• remove the error message
+
+No page refresh.
+
+--------------------------------------------------
+
+Verify:
+
+✓ Required fields block submission
+
+✓ Optional fields never block submission
+
+✓ Conditional equipment validation works
+
+✓ Auto-scroll works
+
+✓ Errors disappear immediately after correction
+
+✓ Existing survey logic remains unchanged
+
+Commit:
+
+feat: professional survey validation
+
+Push using Replit GitHub integration.

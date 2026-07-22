@@ -1,0 +1,120 @@
+Add controlled exercise variety to the current generator.
+
+Do NOT redesign the whole generator.
+Do NOT add randomness.
+Do NOT change weekly volume logic.
+Do NOT change UI except where strictly required for a future alternative-generation hook.
+Do NOT break selector V0 stability.
+
+This is a controlled variation task.
+
+==================================================
+GOAL
+==================================================
+
+The generator should stop always choosing the exact same exercises
+when multiple equally valid options exist.
+
+But this must NOT become random or unsafe.
+
+We need:
+- stable default generation
+- controlled alternative exercise possibilities
+
+==================================================
+CORE RULE
+==================================================
+
+Do NOT implement random selection.
+
+Instead implement controlled variety:
+
+- keep one stable "best" version as default
+- support alternative valid choices from a small candidate band
+- preserve session structure and safety rules
+
+==================================================
+REQUIRED BEHAVIOR
+==================================================
+
+1. DEFAULT BEHAVIOR
+The first generated version should remain deterministic and stable.
+
+2. CONTROLLED VARIETY
+For each slot, after hard filters and slot rules:
+- build a ranked candidate list
+- keep a small top candidate band (for example top 3 or top 5 valid options)
+- allow alternative generation to select a different candidate from that band
+- but only if it does not break session quality
+
+3. MAIN LIFT PROTECTION
+For important main-lift slots:
+- variation must stay conservative
+- only swap within a sensible family
+
+Example:
+bench priority / chest main lift:
+- bench press
+- dumbbell bench
+- incline press
+but not random machine filler unless it is a legitimate fallback
+
+4. ACCESSORY VARIETY
+Accessory and isolation slots may vary more than main lifts.
+
+5. FAMILY-LEVEL VARIETY
+Prefer exercise variety by family / stimulus, not just different IDs.
+
+Bad:
+- bench
+- smith bench
+- machine bench
+
+Better:
+- bench
+- incline DB
+- fly
+
+6. REGENERATION SUPPORT
+The system should support alternative generation / regeneration:
+- same day type
+- same structure
+- same constraints
+- different valid exercise choices where possible
+
+7. NO SAFETY REGRESSION
+Do not break:
+- day-type correctness
+- equipment correctness
+- no-duplicate rule
+- max 6 exercises
+- priority-aware template logic
+
+==================================================
+IMPLEMENTATION IDEA
+==================================================
+
+Use the current ranking logic,
+but introduce a "candidate band" or "alternative candidate pool"
+after ranking and hard filtering.
+
+This should allow:
+- primary choice = rank #1
+- alternative choice = rank #2 / #3 when explicitly generating an alternative
+
+Do NOT change default generation into randomness.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact variety logic added
+3. how default stable generation differs from alternative generation
+4. how main-lift protection works
+5. one example day before vs after controlled variety
+
+End exactly with:
+
+CONTROLLED VARIETY LAYER APPLIED

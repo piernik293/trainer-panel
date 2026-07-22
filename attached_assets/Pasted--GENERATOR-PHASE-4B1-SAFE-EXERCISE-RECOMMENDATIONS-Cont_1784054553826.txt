@@ -1,0 +1,306 @@
+# GENERATOR PHASE 4B1 — SAFE EXERCISE RECOMMENDATIONS
+
+Continue from the current repository state.
+
+Work only on Step 4 "Ćwiczenia" in the workout-plan generator.
+
+This is a focused, cost-controlled task.
+
+Do not:
+- generate a complete workout automatically,
+- automatically add or replace exercises,
+- create a new recommendation algorithm,
+- modify existing recommendation scores,
+- modify volume calculations,
+- modify split or distribution logic,
+- modify Exercise Library records,
+- modify database schema,
+- save workout plans,
+- unlock "Podgląd",
+- implement AI,
+- implement supersets or drop sets,
+- inspect unrelated files.
+
+============================================================
+1. DIRECT FOUNDATION CHECK
+============================================================
+
+Inspect only the files directly responsible for:
+
+- Step 4 generator UI,
+- generator local draft state,
+- existing Exercise Recommendation Engine,
+- existing recommendation endpoint or hook,
+- client training location and available equipment,
+- exercise active/completeness status,
+- existing avoided-exercise warning flow.
+
+Before implementation confirm:
+
+- which existing service calculates recommendations,
+- which request fields provide training location,
+- which request fields provide available equipment,
+- how target muscles are passed to the recommendation service,
+- whether active and complete exercise filters already exist,
+- whether avoided exercise information is available.
+
+Do not build a new recommendation architecture.
+
+If recommendations cannot be implemented without:
+- a database migration,
+- a new scoring system,
+- rewriting the recommendation engine,
+- broad changes outside the generator,
+
+stop and report the exact missing foundation.
+
+Finish in that case with:
+
+EXERCISE RECOMMENDATION FOUNDATION MISSING
+
+============================================================
+2. REUSE THE EXISTING ENGINE
+============================================================
+
+Use the existing Exercise Recommendation Engine as the only source of
+recommendation scoring and reasons.
+
+Do not duplicate scoring in React.
+
+Do not change the numeric recommendation score.
+
+Use an existing recommendation endpoint when possible.
+
+A minimal read-only generator adapter or endpoint is allowed only when it
+calls the existing recommendation service and contains no separate scoring
+formula.
+
+============================================================
+3. RECOMMENDATIONS FOR ONE DAY
+============================================================
+
+Add a button inside every workout-day section:
+
+"Pokaż rekomendacje"
+
+Do not load recommendations automatically when Step 4 opens.
+
+After clicking, request recommendations using:
+
+- target muscles assigned to the selected day,
+- current client experience level,
+- selected training location,
+- available equipment,
+- existing client limitations and preferences supported by the current engine.
+
+Display up to 3 recommendations per target.
+
+Deduplicate the final result by exerciseId.
+
+An exercise matching several targets must appear once and display all matching
+target labels.
+
+Limit the final visible recommendation list to a maximum of 8 unique exercises
+per workout day.
+
+============================================================
+4. AUTOMATIC COMPATIBILITY FILTERS
+============================================================
+
+Automatically exclude exercises that are:
+
+- inactive,
+- incomplete,
+- incompatible with the selected training location,
+- incompatible with available equipment,
+- already added to the same workout day.
+
+Do not require the trainer to manually configure these filters.
+
+The same exercise may still be used on another workout day.
+
+Do not silently assume full gym access.
+
+If training location or equipment information is unavailable, show:
+
+"Brak informacji o miejscu treningu lub dostępnym sprzęcie. Uzupełnij wcześniejsze dane, aby otrzymać dokładne rekomendacje."
+
+Manual exercise selection must remain available.
+
+============================================================
+5. RECOMMENDATION CARD
+============================================================
+
+Each recommendation must display:
+
+- exercise name,
+- matching target muscles,
+- equipment,
+- existing recommendation score or suitability label,
+- existing recommendation reason,
+- warnings supported by current metadata,
+- button:
+
+"Dodaj do dnia"
+
+Do not create new recommendation explanations when an existing reason is
+available.
+
+============================================================
+6. AVOIDED EXERCISES
+============================================================
+
+Do not change the existing numeric recommendation score.
+
+When an avoided exercise is returned by the existing engine:
+
+- display:
+
+"Klient wskazał, że chce unikać tego ćwiczenia."
+
+- require the existing confirmation action:
+
+"Zastosuj mimo ostrzeżenia"
+
+- use avoided status only as a deterministic tie-breaker so an equally scored
+  non-avoided exercise appears first.
+
+Do not introduce a new scoring penalty formula.
+
+If existing pain or contraindication metadata is already available, show its
+existing non-blocking warning.
+
+Do not diagnose or prescribe rehabilitation.
+
+============================================================
+7. ADDING A RECOMMENDATION
+============================================================
+
+Adding a recommendation must use the existing Step 4 exercise-card flow.
+
+Preserve the stable exercise ID.
+
+Use the existing defaults:
+
+- working sets: 3
+- repetitions: 8–12
+- RIR: 2
+- rest: 90 seconds
+
+Do not automatically change:
+
+- weekly volume targets,
+- analytical distribution,
+- other exercises,
+- exercise order,
+- client data.
+
+The trainer must still be able to:
+
+- ignore recommendations,
+- use the manual exercise selector,
+- edit an added exercise,
+- remove an added exercise.
+
+============================================================
+8. LOCAL DRAFT ONLY
+============================================================
+
+Recommendations and added exercises must update only the existing local
+generator draft state.
+
+Do not create or update:
+
+- workout plans,
+- workout days,
+- workout exercise database records,
+- client records.
+
+Keep "Podgląd" locked exactly as it currently is.
+
+============================================================
+9. UI STATES
+============================================================
+
+Provide:
+
+- compact loading state,
+- empty state,
+- readable error state,
+- retry button.
+
+Empty state:
+
+"Brak ćwiczeń spełniających aktualne kryteria sprzętu, miejsca treningu i profilu klienta."
+
+A recommendation request failure must not block manual exercise selection.
+
+============================================================
+10. FOCUSED TESTS
+============================================================
+
+Add only directly related tests for:
+
+- recommendations requested for one selected workout day,
+- current day target IDs are sent correctly,
+- inactive exercises are excluded,
+- incomplete exercises are excluded,
+- location-incompatible exercises are excluded,
+- equipment-incompatible exercises are excluded,
+- exercise already present in the day is excluded,
+- duplicate recommendations are deduplicated by exerciseId,
+- one exercise may show multiple target labels,
+- result contains no more than 8 unique exercises,
+- avoided exercise displays a warning,
+- avoided status does not modify the numeric score,
+- adding preserves the exercise ID,
+- adding uses the existing default prescription,
+- manual selector remains available,
+- no workout database records are created,
+- "Podgląd" remains locked.
+
+============================================================
+11. COST CONTROL
+============================================================
+
+Run only:
+
+- exact focused recommendation tests,
+- TypeScript for affected packages,
+- trainer-app production build because frontend code changed,
+- API build only if API code changed.
+
+Do not run:
+
+- full test suite,
+- all 596 tests,
+- browser installation,
+- database audit,
+- Exercise Library audit,
+- client-landing build,
+- unrelated builds,
+- unrelated refactors.
+
+Do not continue automatically after this task.
+
+Report only:
+
+1. existing recommendation service reused
+2. exact source of location and equipment data
+3. files changed
+4. filters applied
+5. deduplication behaviour
+6. avoided-exercise behaviour
+7. local draft behaviour
+8. focused tests executed
+9. TypeScript/build results
+10. confirmation that no workout records were created
+11. confirmation that "Podgląd" remains locked
+
+Finish exactly with one:
+
+EXERCISE RECOMMENDATIONS COMPLETE
+
+EXERCISE RECOMMENDATION FOUNDATION MISSING
+
+EXERCISE RECOMMENDATIONS FAILED

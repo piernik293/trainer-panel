@@ -1,0 +1,283 @@
+# GENERATOR PHASE 4D — WHOLE PLAN AUTO-FILL
+
+Continue from the current repository state in Build mode.
+
+Phase 4B3 is complete. It already provides:
+
+- exact uncovered targetIds for every workout day,
+- separate uncovered Core need,
+- existing recommendation scores and filtering,
+- live volume coverage.
+
+Implement one action in Step 4:
+
+"Ułóż wstępną propozycję całego planu"
+
+When any exercise already exists, display:
+
+"Uzupełnij brakujące ćwiczenia"
+
+The action should automatically add preliminary exercises to all workout days.
+The trainer must remain able to edit everything afterward.
+
+This is a preliminary draft only. It does not need to perfectly match every
+volume value. Existing live coverage must show remaining or exceeded volume.
+
+Do not save or activate the plan.
+
+============================================================
+1. REUSE EXISTING FUNCTIONALITY
+============================================================
+
+Reuse only:
+
+- existing Phase 4B3 uncovered-target calculation,
+- existing day-recommendations request,
+- existing recommendation response order and scores,
+- existing local Step 4 exercise draft,
+- existing default exercise prescription.
+
+Do not create:
+
+- a new recommendation algorithm,
+- a new volume calculation,
+- a new API endpoint,
+- backend orchestration,
+- database migrations.
+
+If this cannot be implemented using the existing frontend data and existing
+recommendation request, stop and report:
+
+WHOLE PLAN AUTO-FILL FOUNDATION MISSING
+
+============================================================
+2. AUTO-FILL FLOW
+============================================================
+
+After the trainer clicks the button:
+
+For every workout day:
+
+1. Read the current Phase 4B3 uncovered targetIds and Core need.
+2. Skip the day when nothing remains uncovered.
+3. Send exactly one existing recommendation request for that day.
+4. Include:
+   - uncovered targetIds,
+   - includeCore,
+   - exercise IDs already present in the day.
+5. Process returned recommendations in their existing order.
+6. For every uncovered target choose the first compatible recommendation that:
+   - supports that exact targetId,
+   - is not already present or selected for that day,
+   - is not avoided by the client.
+7. Add one exercise only once even when it supports several uncovered targets.
+8. Add at most one direct Core exercise and place it at the bottom.
+
+Do not request recommendations separately for every target.
+
+Do not create request loops.
+
+Maximum: one recommendation request per workout day.
+
+============================================================
+3. PRESERVE TRAINER WORK
+============================================================
+
+Do not remove, replace, reorder or edit exercises already selected by the
+trainer.
+
+Preserve their:
+
+- exerciseId,
+- workout day,
+- order,
+- sets,
+- repetition range,
+- RIR,
+- rest time,
+- accepted avoided-exercise state.
+
+Append generated normal exercises after existing normal exercises.
+
+Place generated Core exercises at the bottom without reordering existing
+trainer-selected exercises.
+
+============================================================
+4. GENERATED DEFAULTS
+============================================================
+
+Every automatically added exercise must use the existing defaults:
+
+- 3 working sets,
+- 8–12 repetitions,
+- RIR 2,
+- rest 90 seconds.
+
+Do not generate or modify:
+
+- tempo,
+- starting load,
+- notes,
+- supersets,
+- drop sets.
+
+Do not optimize the number of sets during this task.
+
+============================================================
+5. SAFETY LIMITS
+============================================================
+
+Per workout day enforce:
+
+- maximum 8 total exercises,
+- maximum 24 total working sets,
+- maximum one generated exercise for one exact uncovered target,
+- maximum one generated direct Core exercise.
+
+When no compatible recommendation exists, leave the target unresolved.
+
+Do not use:
+
+- avoided exercises,
+- inactive exercises,
+- incomplete exercises,
+- incompatible location or equipment,
+- exercises without an exact valid target assignment.
+
+============================================================
+6. ATOMIC LOCAL UPDATE
+============================================================
+
+Prepare all proposed additions in temporary frontend memory.
+
+Apply them to the local Step 4 draft only after all required day requests
+complete successfully.
+
+If any request fails:
+
+- do not modify the existing draft,
+- show:
+
+"Nie udało się przygotować pełnej propozycji. Dotychczasowy szkic nie został zmieniony."
+
+Keep manual adding and recommendations available.
+
+Do not call any write endpoint.
+
+Do not create or update database records.
+
+============================================================
+7. RESULT SUMMARY
+============================================================
+
+After success show:
+
+"Wstępna propozycja planu została przygotowana"
+
+Display:
+
+- exercises added,
+- workout days updated,
+- handled targets,
+- unresolved targets,
+- days already covered,
+- whether Core exercises were added,
+- safety-limit warnings.
+
+Do not call the plan saved, active or final.
+
+============================================================
+8. PRESERVE CURRENT SYSTEMS
+============================================================
+
+Do not modify:
+
+- recommendation scores or weights,
+- Phase 4B3 eligibility rules,
+- volume calculations,
+- Step 3 values,
+- distribution or split logic,
+- Step 5 preview,
+- Step 5 unlock rules,
+- Exercise Library,
+- database,
+- Workout Builder persistence.
+
+After auto-fill, existing live coverage may recalculate normally and show
+remaining or exceeded volume.
+
+Do not automatically run auto-fill again after trainer edits.
+
+============================================================
+9. FOCUSED TESTS
+============================================================
+
+Run only one directly affected auto-fill test file.
+
+Cover:
+
+- existing exercises and prescriptions are preserved,
+- one request maximum per required day,
+- covered day sends no request,
+- exact uncovered targetIds are passed,
+- already-added IDs are passed,
+- recommendation scores are unchanged,
+- one multi-target exercise is added once,
+- avoided exercise is not added,
+- generated defaults are correct,
+- Core is added at most once,
+- day limits are enforced,
+- unresolved target is reported,
+- failed request leaves the draft unchanged,
+- no write endpoint is called,
+- Step 5 rules are unchanged.
+
+Run only:
+
+- the exact auto-fill test file,
+- trainer-app TypeScript once,
+- trainer-app production build once.
+
+Do not run:
+
+- full frontend tests,
+- backend tests,
+- root tests,
+- browser or screenshot automation,
+- Playwright,
+- database audits,
+- API build,
+- workflow restarts,
+- unrelated inspections or refactors.
+
+============================================================
+10. REPORT
+============================================================
+
+Report only:
+
+1. existing Phase 4B3 data reused
+2. existing recommendation request reused
+3. files changed
+4. requests per workout day
+5. exercise-selection behaviour
+6. preservation of trainer work
+7. generated defaults
+8. Core behaviour
+9. unresolved targets and safety limits
+10. focused tests executed
+11. trainer-app TypeScript/build results
+12. confirmation that no backend or API route was changed
+13. confirmation that scores and volume formulas were unchanged
+14. confirmation that no write endpoint or database record was used
+15. remaining limitations
+
+Do not continue automatically.
+
+Finish exactly with one:
+
+WHOLE PLAN AUTO-FILL COMPLETE
+
+WHOLE PLAN AUTO-FILL FOUNDATION MISSING
+
+WHOLE PLAN AUTO-FILL FAILED

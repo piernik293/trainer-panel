@@ -1,0 +1,163 @@
+Design the architecture of a new DailyAllocationEngine.
+
+DO NOT implement anything.
+DO NOT modify code.
+DO NOT create files.
+DO NOT write tests.
+DO NOT refactor existing services.
+DO NOT redesign the UI.
+
+This is an architecture-only task.
+
+====================================================
+PRODUCT CONTEXT
+====================================================
+
+This is a professional trainer SaaS with a deterministic workout planning engine.
+
+The current production pipeline is approximately:
+
+Client survey
+→ Weekly volume recommendations
+→ Split recommendation
+→ Day template generation
+→ Daily target allocation
+→ Exercise recommendations
+→ autoFill
+→ Volume preview
+→ Validation
+→ Saved workout plan
+
+The current daily allocation logic uses broad muscle-category eligibility and distributes weekly volume across eligible days using a simple integer division / largest-remainder method.
+
+The audit showed that the current allocator does not properly account for:
+
+- session capacity,
+- session duration,
+- total session workload,
+- compound exercise overlap,
+- indirect muscle volume,
+- priority-muscle frequency,
+- recovery between sessions,
+- fatigue concentration,
+- asymmetrical split cycles,
+- overloaded single sessions.
+
+The purpose of the new DailyAllocationEngine is to replace the current simplistic distribution logic with a deterministic weekly planning component.
+
+====================================================
+PRIMARY RESPONSIBILITY
+====================================================
+
+The DailyAllocationEngine must answer:
+
+“How should each muscle target’s selected weekly volume be distributed across the available training days?”
+
+It must NOT:
+
+- select exercises,
+- assign exact exercises,
+- order exercises,
+- define progression,
+- calculate tempo,
+- manage authentication,
+- generate explanations with AI,
+- replace autoFill.
+
+It must produce a realistic daily volume plan that later modules can use.
+
+====================================================
+ARCHITECTURE TO DESIGN
+====================================================
+
+Design the module boundary, inputs, outputs, internal stages, constraints, validation model and integration point.
+
+The intended future pipeline should become:
+
+Survey
+→ Goal and recovery analysis
+→ Split selection
+→ Weekly volume targets
+→ DailyAllocationEngine
+→ SessionPlanningEngine
+→ Exercise selection
+→ Set assignment
+→ Exercise ordering
+→ Validation and repair
+
+Only design DailyAllocationEngine now.
+
+====================================================
+REQUIRED INPUTS
+====================================================
+
+Evaluate whether the engine should receive:
+
+- selected split,
+- day templates,
+- number of training days,
+- selected weekly volume per target,
+- target metadata,
+- muscle priorities,
+- experience level,
+- training goal,
+- session duration,
+- recovery profile,
+- sleep,
+- stress,
+- physical activity or physical work,
+- excluded or deprioritized muscles,
+- session minimum per target,
+- session maximum per target,
+- weekly preferred ceiling,
+- weekly absolute ceiling,
+- available days of week,
+- recovery spacing between sessions,
+- trainer overrides.
+
+For every input state:
+
+- whether it is required,
+- optional,
+- derived,
+- currently available,
+- currently missing,
+- where it should come from.
+
+Do not invent dependencies that are unnecessary.
+
+====================================================
+REQUIRED OUTPUT
+====================================================
+
+Design a typed output structure that contains at least:
+
+- dayIndex,
+- dayName,
+- dayType,
+- targetId,
+- targetName,
+- allocatedEffectiveVolume,
+- allocationMin,
+- allocationMax,
+- allocationPriority,
+- source of allocation,
+- warnings,
+- constraint violations,
+- estimated session load,
+- whether the allocation is feasible.
+
+The output should preserve enough information for future explainability, but do not implement a DecisionTrace system.
+
+Also determine whether the output should include:
+
+- target frequency,
+- session load score,
+- recovery spacing score,
+- capacity usage,
+- unresolved weekly volume,
+- trade-offs,
+- allocation confidence.
+
+====================================================
+ALLOCATION RULE

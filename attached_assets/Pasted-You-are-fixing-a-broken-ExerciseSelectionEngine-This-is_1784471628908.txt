@@ -1,0 +1,121 @@
+You are fixing a broken ExerciseSelectionEngine.
+
+This is NOT a redesign.
+This is NOT adding features.
+
+This is a STRICT BUG FIX.
+
+==================================================
+PROBLEM
+==================================================
+
+The system generates workout sessions with:
+
+- duplicate exercises (same exercise multiple times)
+- wrong exercises for the day (e.g. squat on upper day)
+- irrelevant exercises (e.g. bear crawl, superman as main lifts)
+
+This means the selection logic is broken.
+
+==================================================
+GOAL
+==================================================
+
+Fix the selection so that:
+
+1. No exercise appears more than once per session
+2. Exercises match the day type (Upper / Lower)
+3. Only valid training exercises are selected (no random or irrelevant ones)
+4. The system produces a realistic basic session
+
+==================================================
+REQUIREMENTS
+==================================================
+
+You MUST:
+
+1. Create ONE shared state:
+
+usedExercises = Set<string>
+
+- It must be created once per session
+- It must NOT be recreated in loops
+- It must be passed into selection logic
+
+2. Implement ONE function:
+
+selectExercise({
+  exercises,
+  dayType,
+  usedExercises,
+  clientEquipment
+})
+
+This function must:
+
+- remove exercises already used
+- remove exercises not matching day type
+- remove exercises that do not match available equipment
+
+3. DAY FILTER RULES:
+
+Upper day:
+- chest
+- back
+- shoulders
+- biceps
+- triceps
+
+Lower day:
+- legs only
+
+4. HARD FILTER (CRITICAL):
+
+Remove exercises like:
+- bear crawl
+- superman
+- random core movements as main selections
+
+Only allow:
+- compound lifts
+- standard gym exercises
+
+5. SELECTION FLOW (MANDATORY):
+
+Session must be built like this:
+
+UPPER DAY:
+1. chest movement
+2. back movement
+3. shoulders
+4. arms
+
+LOWER DAY:
+1. squat pattern
+2. hinge pattern
+3. accessory legs
+4. calves or core
+
+6. After selecting an exercise:
+
+- add it to usedExercises
+- log:
+
+USED_EXERCISES: [list of ids]
+
+==================================================
+OUTPUT
+==================================================
+
+Return:
+
+1. Where usedExercises is created
+2. The selectExercise function
+3. How it is called multiple times to build a session
+4. Example output session (Upper)
+
+Do NOT change anything outside selection logic.
+
+END WITH:
+
+SELECTION FIX COMPLETE

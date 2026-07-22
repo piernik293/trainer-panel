@@ -1,0 +1,131 @@
+Refactor the sport-related survey UX to make it clearer, simpler, and more goal-driven.
+
+Do NOT redesign the whole app.
+Do NOT add the Plyo module in this task.
+Do NOT add a large sports-discipline autocomplete system in this task.
+Do NOT change unrelated survey sections.
+This is a focused survey UX simplification task.
+
+==================================================
+GOAL
+==================================================
+
+Make sport-related planning clearer by moving sport logic under the training goal selection.
+
+Current issue:
+There is now a separate section "Sport i aktywność sportowa".
+This is not the desired UX.
+
+Desired UX:
+- remove the separate sport section from its current location
+- in "Cel treningowy", remove "Inny"
+- replace "Inny" with "Cel sportowy"
+- only after selecting "Cel sportowy" should the sport-related fields appear
+
+==================================================
+REQUIRED CHANGES
+==================================================
+
+1. TRAINING GOAL
+In the "Cel treningowy" section:
+- remove the option "Inny"
+- replace it with:
+  - "Cel sportowy"
+
+2. REMOVE SEPARATE SPORT SECTION
+Remove the standalone section:
+- "Sport i aktywność sportowa"
+from its current location in the survey flow.
+
+The sport-related inputs must no longer appear as their own separate section by default.
+
+3. CONDITIONAL SPORT BLOCK UNDER TRAINING GOAL
+If and only if "Cel sportowy" is selected,
+show a conditional sport block directly under that goal area.
+
+If "Cel sportowy" is NOT selected:
+- do not show sport-specific inputs at all
+
+4. SPORT LEVEL OPTIONS
+Inside the conditional sport block, show only:
+- Amatorsko
+- Półzawodowo
+- Zawodowo
+
+Use label:
+- "Poziom sportowy"
+
+Do NOT show "Nie", because this block only appears after selecting a sport goal.
+
+5. REMOVE SPORT DISCIPLINE FIELD FOR NOW
+Do NOT add a large discipline autocomplete system yet.
+Do NOT require choosing a specific sport on this MVP step.
+
+For now, the sport path should be driven by:
+- sport goal selected
+- sport level selected
+- 3 main sport-performance priorities
+
+6. PERFORMANCE PRIORITIES — SIMPLIFY
+Keep ONLY these 3 main sport-performance priorities:
+- Dynamika
+- Szybkość
+- Stabilizacja
+
+Each option should have a short helper description:
+
+- Dynamika:
+  "Moc, skoczność, eksplozywność i szybkie generowanie siły."
+
+- Szybkość:
+  "Przyspieszenie, tempo ruchu i szybkie poruszanie się w akcji sportowej."
+
+- Stabilizacja:
+  "Kontrola ruchu, równowaga, lądowanie i utrzymanie pozycji pod obciążeniem."
+
+7. REMOVE PREWENCJA URAZÓW
+Remove "Prewencja urazów" completely from this sport-priority block.
+
+Do NOT keep it:
+- in the main block
+- as a secondary option
+- as a checkbox in this section
+
+8. UX STRUCTURE
+Final desired UX:
+
+Training goal options:
+- Budowa sylwetki
+- Zwiększenie siły
+- Redukcja tkanki tłuszczowej
+- Poprawa kondycji
+- Poprawa sprawności
+- Cel sportowy
+
+If "Cel sportowy" is selected, then show:
+- Poziom sportowy
+- 3 główne priorytety sportowe:
+  - Dynamika
+  - Szybkość
+  - Stabilizacja
+
+This should replace the current separate sport section entirely.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact goal-option changes made
+3. exact removal of the old separate sport section
+4. exact conditional sport-block logic added
+5. exact simplified performance-priority logic added
+6. confirmation that "Prewencja urazów" was removed
+7. one example flow for:
+   - non-sport client
+   - sport-goal client
+
+End exactly with:
+
+SPORT GOAL UX SIMPLIFIED APPLIED

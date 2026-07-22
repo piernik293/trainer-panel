@@ -1,0 +1,68 @@
+Replace the current blacklist-style protection for Upper accessory/core slots with a positive whitelist.
+
+Do NOT redesign the generator.
+Do NOT change weekly volume logic.
+Do NOT change UI.
+Do NOT remove priority-aware templates.
+This is a focused slot-quality fix.
+
+GOAL:
+Upper accessory/core slots should only allow sensible upper-body accessory/isolation work or core.
+They should not admit unusual trunk-flexion / mobility / special-case exercises by default.
+
+PROBLEM:
+The current blacklist removed deadlifts and lower-body dominant exercises,
+but Upper accessory/core can still admit semantically weak winners such as Jefferson Curl.
+
+This is not acceptable for normal generated Upper sessions.
+
+==================================================
+REQUIRED FIX
+==================================================
+
+1. Stop relying only on blacklist exclusions for Upper accessory/core slots.
+
+2. Introduce a positive helper, for example:
+- isUpperAccessorySafe(ex)
+
+3. Upper accessory/core slots should allow only:
+- chest accessory / isolation
+- back accessory / isolation
+- rear delt / upper-back support
+- shoulder accessory / isolation
+- biceps / triceps work
+- core
+
+4. Explicitly reject from Upper accessory/core:
+- trunk-flexion special exercises
+- back-extension style fillers
+- mobility-style or odd specialty movements
+- any lower-body dominant exercise
+- any heavy systemic compound not appropriate for an Upper day
+
+5. Keep the current lower-body guards,
+but make the whitelist the real gate.
+
+6. Apply this to all Upper accessory/core slots:
+- default Upper slot 5
+- chest-priority Upper slot 5
+- back-priority Upper slot 5
+
+7. Keep deterministic behavior.
+No scoring redesign.
+No new product features.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact whitelist/helper added
+3. exact Upper slots changed
+4. back-priority Upper before vs after
+5. chest-priority Upper before vs after
+
+End exactly with:
+
+UPPER ACCESSORY POSITIVE WHITELIST APPLIED

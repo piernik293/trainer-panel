@@ -1,0 +1,167 @@
+Revise the Stage 5 implementation plan one final time.
+
+Do not implement.
+Do not modify code.
+Architecture only.
+
+One design concern remains.
+
+--------------------------------------------------
+Stage 5 should NOT become another scoring system.
+--------------------------------------------------
+
+Its purpose is only:
+
+Reduce unnecessary fragmentation
+
+when two valid decisions are already effectively equivalent.
+
+It must never override the trainer logic established by:
+
+- API recommendation ranking
+- trainerPriorityRank
+- movementPatternPenalty
+- varietyPenalty
+- existing ScoreTuple ordering
+
+--------------------------------------------------
+1. Remove category-count heuristics
+--------------------------------------------------
+
+The previous proposal used:
+
+movementPatternPenalty >= 2
+
+as a trigger for consolidation.
+
+Reject this approach.
+
+The number of exercises in one movement category does not reliably indicate redundancy.
+
+Examples:
+
+Bench Press
+Incline Bench
+Overhead Press
+
+are all "push"
+
+yet all three may legitimately belong in one session.
+
+Do not make consolidation depend on a category-count threshold.
+
+--------------------------------------------------
+2. Stage 5 must become a tie-breaker
+--------------------------------------------------
+
+Its purpose is NOT:
+
+"Should I add another exercise?"
+
+Its purpose is:
+
+"I already have two acceptable decisions.
+
+Neither clearly provides more value.
+
+Which one produces the cleaner program?"
+
+This is a fundamentally different responsibility.
+
+--------------------------------------------------
+3. Compare only equivalent actions
+--------------------------------------------------
+
+Audit whether consolidation should only be considered when:
+
+- expansion is already the best expansion candidate
+- consolidation is already the best consolidation candidate
+- neither clearly improves unresolved target coverage
+- neither clearly improves movement diversity
+- neither clearly wins according to the existing trainer logic
+
+Only then should Stage 5 choose the less fragmented option.
+
+--------------------------------------------------
+4. Preserve existing priorities
+--------------------------------------------------
+
+Stage 5 must never override:
+
+trainerPriorityRank
+
+movementPatternPenalty
+
+recommendation rank
+
+varietyPenalty
+
+If those systems already identify a better exercise,
+
+Stage 5 should immediately defer.
+
+--------------------------------------------------
+5. Define a true tie
+--------------------------------------------------
+
+Define precisely what constitutes:
+
+"a practical tie"
+
+Examples:
+
+- identical unresolved-target outcome
+- identical movement-balance outcome
+- identical safety outcome
+
+Only after these are equal
+
+may fragmentation become the deciding factor.
+
+--------------------------------------------------
+6. Revised decision flow
+--------------------------------------------------
+
+The desired philosophy is:
+
+Existing algorithm
+
+↓
+
+Best expansion candidate
+
+↓
+
+Best consolidation candidate
+
+↓
+
+Can one clearly be justified?
+
+YES
+
+→ choose that action
+
+NO
+
+↓
+
+Fragmentation tie-breaker
+
+↓
+
+Choose the simpler program
+
+Stage 5 should never become another optimisation layer.
+
+It should only break ties.
+
+--------------------------------------------------
+7. Final recommendation
+--------------------------------------------------
+
+Recommend the smallest architectural change needed to transform Stage 5 into a pure tie-breaker.
+
+Do not implement.
+
+Stop after the revised architecture.

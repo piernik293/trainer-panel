@@ -1,0 +1,116 @@
+Implement experience-aware priority logic in the workout planning system.
+
+Do NOT redesign the whole app.
+Do NOT change UI beyond what is necessary for wiring the survey logic.
+Do NOT change selector V0 structure yet unless required by compilation.
+
+This is a focused planning-logic task.
+
+==================================================
+GOAL
+==================================================
+
+Priority muscle logic must be connected to the survey.
+
+The system should NOT treat all experience levels the same.
+
+We need experience-aware behavior:
+
+- "brak aktywności" and "początkujący" -> general development only
+- "średniozaawansowany" and "zaawansowany" -> true priority-based planning allowed
+
+==================================================
+REQUIRED PLANNING RULE
+==================================================
+
+1. If experience level is:
+- brak aktywności
+- początkujący
+
+then the plan must default to GENERAL DEVELOPMENT.
+
+This means:
+- no true priority muscle allocation system
+- no major weekly-volume bias toward one muscle group
+- no Tier A / Tier B / Tier C priority split based on muscle preferences
+- use balanced development logic instead
+
+Muscle preferences from the survey may be stored,
+but they must not drive the core weekly volume allocation for these levels.
+
+2. If experience level is:
+- średniozaawansowany
+- zaawansowany
+
+then enable true priority planning.
+
+In this case:
+- survey priority muscle becomes Tier A
+- supporting muscles may become Tier B
+- remaining muscles become Tier C
+
+==================================================
+TIER MODEL
+==================================================
+
+For eligible users only (intermediate / advanced):
+
+Tier A:
+- main priority muscle or main priority exercise focus
+
+Tier B:
+- muscles supporting the main goal
+
+Tier C:
+- general development / maintenance muscles
+
+Tier A should influence:
+- weekly volume target
+- session slot priority
+- exercise selection preference
+- protection from being cut from the plan
+
+Tier B should receive moderate support.
+Tier C should receive minimum sensible development or maintenance.
+
+==================================================
+BEGINNER / NO-ACTIVITY RULE
+==================================================
+
+For:
+- brak aktywności
+- początkujący
+
+the system should generate:
+- general development plans
+- balanced templates
+- basic movement patterns
+- no aggressive specialization
+
+If these users provided a muscle preference,
+treat it only as a weak preference, not as a hard driver of volume.
+
+==================================================
+SURVEY INTEGRATION
+==================================================
+
+Wire the logic to existing survey/profile data.
+
+If needed:
+- keep priority fields stored for all users
+- but only activate true priority logic for intermediate/advanced
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact logic added
+3. how beginner/no-activity behavior differs from intermediate/advanced
+4. how Tier A / B / C are assigned
+5. whether survey priority fields are ignored or softened for beginners
+
+End exactly with:
+
+EXPERIENCE-AWARE PRIORITY LOGIC APPLIED

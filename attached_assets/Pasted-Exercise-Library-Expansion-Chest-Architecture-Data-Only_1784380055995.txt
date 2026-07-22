@@ -1,0 +1,100 @@
+Exercise Library Expansion — Chest (Architecture & Data Only)
+
+Context
+
+I want to build a professional exercise library that will later be used by the workout generator.
+
+This should become the standard structure for every future muscle group.
+
+Before implementing anything, inspect the existing exercise JSON structure and identify every currently supported field.
+
+Do NOT change the schema unless absolutely necessary.
+
+--------------------------------------------------
+Task
+--------------------------------------------------
+
+Expand the Chest exercise library using the existing JSON schema.
+
+Research and include a comprehensive list of commonly used chest exercises from reputable strength training sources.
+
+Include free weight, machine, cable and bodyweight variations where appropriate.
+
+Avoid duplicate exercises that only differ by insignificant naming.
+
+--------------------------------------------------
+Requirements
+--------------------------------------------------
+
+Populate all existing fields correctly for every exercise.
+
+If the current schema contains fields such as:
+
+- primary muscles
+- secondary muscles
+- movement pattern
+- equipment
+- exercise type
+- difficulty
+- unilateral/bilateral
+- push/pull
+- body region
+- beginner suitability
+
+fill them consistently for every exercise.
+
+Do not invent values that do not fit the current architecture.
+
+--------------------------------------------------
+Exercise quality
+--------------------------------------------------
+
+Prefer exercises commonly used in evidence-based strength training.
+
+Examples include (not exhaustive):
+
+- Bench Press
+- Incline Bench Press
+- Decline Bench Press
+- Dumbbell Bench Press
+- Incline Dumbbell Press
+- Decline Dumbbell Press
+- Machine Chest Press
+- Smith Bench Press
+- Push-Up
+- Weighted Push-Up
+- Dip (Chest)
+- Assisted Dip
+- Cable Fly
+- Low Cable Fly
+- High Cable Fly
+- Pec Deck
+- Plate Press
+- Svend Press
+
+Include additional legitimate chest exercises if appropriate.
+
+--------------------------------------------------
+Validation
+--------------------------------------------------
+
+Before writing data:
+
+1. Detect duplicate names.
+2. Detect duplicate movement variations.
+3. Keep naming consistent with the rest of the library.
+4. Ensure every exercise has complete metadata.
+5. Ensure movement patterns are assigned consistently.
+6. Ensure equipment types are consistent with the existing database.
+
+--------------------------------------------------
+Return
+--------------------------------------------------
+
+1. Number of chest exercises added.
+2. Any duplicate exercises removed.
+3. Any inconsistencies found in the existing library.
+4. Any schema improvements you recommend (DO NOT implement).
+5. Confirmation that every new exercise follows the existing JSON format.
+
+Do not modify any other muscle group.

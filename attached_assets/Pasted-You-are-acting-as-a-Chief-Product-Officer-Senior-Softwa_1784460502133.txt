@@ -1,0 +1,539 @@
+You are acting as a Chief Product Officer, Senior Software Architect, Strength & Conditioning expert and Senior Full-Stack Engineer.
+
+Your task is NOT to implement anything.
+
+Your task is to perform a COMPLETE PRODUCT AUDIT of the entire trainer application.
+
+Think like you are reviewing a SaaS product before investing millions into it.
+
+====================================================
+GOAL
+====================================================
+
+Understand the ENTIRE application.
+
+Do not only inspect code.
+
+Understand:
+
+- business logic
+- architecture
+- UX
+- workflow
+- data model
+- algorithms
+- exercise system
+- workout generator
+- validation
+- scalability
+- future maintainability
+
+I want one complete report describing how the application actually works.
+
+====================================================
+AUDIT EVERYTHING
+====================================================
+
+1. PROJECT STRUCTURE
+
+Explain:
+
+- complete architecture
+- folders
+- modules
+- responsibilities
+- dependencies
+- data flow
+
+Create a high-level architecture overview.
+
+----------------------------------------------------
+
+2. USER FLOW
+
+Trace every step.
+
+Client:
+
+Start
+↓
+
+Interview
+↓
+
+Profile creation
+↓
+
+Goal selection
+↓
+
+Split recommendation
+↓
+
+Volume calculation
+↓
+
+Workout generation
+↓
+
+Exercise assignment
+↓
+
+Validation
+↓
+
+Trainer review
+↓
+
+Export
+
+Explain exactly what happens in every step.
+
+----------------------------------------------------
+
+3. INTERVIEW
+
+Audit:
+
+- every question
+- why it exists
+- where it is used
+- where it is ignored
+- missing questions
+- duplicated questions
+- questions that have no influence
+
+For every field answer:
+
+"What does this actually change?"
+
+----------------------------------------------------
+
+4. DATA MODEL
+
+Inspect every important model.
+
+Examples:
+
+Client
+
+Exercise
+
+Workout
+
+Training day
+
+Weekly plan
+
+Volume
+
+Muscles
+
+Goals
+
+Movement patterns
+
+Exercise metadata
+
+Validation
+
+Overrides
+
+Recommendations
+
+Find:
+
+unused fields
+
+missing fields
+
+duplicated fields
+
+inconsistent naming
+
+bad architecture
+
+future problems
+
+----------------------------------------------------
+
+5. EXERCISE DATABASE
+
+Explain:
+
+How exercises are classified.
+
+Current metadata.
+
+Movement categories.
+
+Goals.
+
+Experience levels.
+
+Equipment.
+
+Muscles.
+
+Movement patterns.
+
+Primary and secondary muscles.
+
+Primary and secondary movement patterns.
+
+Weaknesses.
+
+Missing metadata.
+
+Possible simplifications.
+
+Future scalability.
+
+----------------------------------------------------
+
+6. WORKOUT GENERATOR
+
+This is the most important part.
+
+Trace the COMPLETE call path.
+
+Interview
+
+↓
+
+Goal analysis
+
+↓
+
+Split recommendation
+
+↓
+
+Weekly volume
+
+↓
+
+Daily allocation
+
+↓
+
+Exercise filtering
+
+↓
+
+Exercise ranking
+
+↓
+
+Exercise ordering
+
+↓
+
+Working sets
+
+↓
+
+Validation
+
+↓
+
+Repair
+
+↓
+
+Final workout
+
+Explain:
+
+Every decision.
+
+Every algorithm.
+
+Every score.
+
+Every prioritization.
+
+Every repair.
+
+----------------------------------------------------
+
+7. DECISION ENGINE
+
+For every important decision explain:
+
+Why was this option selected?
+
+What alternatives existed?
+
+How were they scored?
+
+Could the system explain this decision to a trainer?
+
+If not:
+
+What information is missing?
+
+----------------------------------------------------
+
+8. SPLIT SYSTEM
+
+Audit:
+
+Upper Lower
+
+PPL
+
+FBW
+
+Hybrid
+
+Other supported splits
+
+Explain:
+
+How they are selected.
+
+When.
+
+Why.
+
+Weaknesses.
+
+----------------------------------------------------
+
+9. VOLUME SYSTEM
+
+Explain:
+
+Weekly volume
+
+Daily allocation
+
+Effective volume
+
+Working sets
+
+Indirect volume
+
+Direct volume
+
+Upper limits
+
+Recommended limits
+
+Repair logic
+
+Find every weakness.
+
+----------------------------------------------------
+
+10. SESSION DESIGN
+
+Explain:
+
+How session size is determined.
+
+Exercise count.
+
+Working set count.
+
+Session duration.
+
+Fatigue.
+
+Recovery.
+
+Exercise order.
+
+Movement balance.
+
+Accessory placement.
+
+Find inconsistencies.
+
+----------------------------------------------------
+
+11. VALIDATION SYSTEM
+
+Audit every validation.
+
+Explain:
+
+What is validated.
+
+What is not validated.
+
+Missing validations.
+
+Critical risks.
+
+----------------------------------------------------
+
+12. USER EXPERIENCE
+
+Audit:
+
+Interview UX
+
+Trainer panel
+
+Workout generation
+
+Workout editor
+
+Warnings
+
+Reports
+
+Navigation
+
+Information overload
+
+Missing information
+
+Professional appearance
+
+Future improvements
+
+----------------------------------------------------
+
+13. PERFORMANCE
+
+Audit:
+
+Scalability
+
+Architecture
+
+Database
+
+Algorithm complexity
+
+Possible bottlenecks
+
+Technical debt
+
+----------------------------------------------------
+
+14. PRODUCT VISION
+
+Based on current implementation explain:
+
+What kind of application is this becoming?
+
+What is already excellent?
+
+What is average?
+
+What is dangerous?
+
+What would impress professional trainers?
+
+What would reduce trust?
+
+----------------------------------------------------
+
+15. MISSING FEATURES
+
+Without implementing anything identify:
+
+Missing product features.
+
+Missing trainer tools.
+
+Missing automation.
+
+Missing validation.
+
+Missing reports.
+
+Missing analytics.
+
+Missing AI capabilities.
+
+----------------------------------------------------
+
+16. CRITICAL PROBLEMS
+
+Rank all discovered problems.
+
+Critical
+
+High
+
+Medium
+
+Low
+
+Explain why.
+
+----------------------------------------------------
+
+17. IMPLEMENTATION ROADMAP
+
+Based ONLY on current architecture propose:
+
+Top 20 highest-value improvements.
+
+Order them by ROI.
+
+For every improvement explain:
+
+- Why it matters
+- Estimated complexity
+- Product impact
+- Technical risk
+- Dependencies
+
+====================================================
+RULES
+====================================================
+
+DO NOT IMPLEMENT ANYTHING.
+
+DO NOT MODIFY CODE.
+
+DO NOT CREATE NEW FILES.
+
+DO NOT REFACTOR.
+
+DO NOT CHANGE DATABASE.
+
+ONLY ANALYZE.
+
+Think critically.
+
+Question every architectural decision.
+
+Assume nothing.
+
+If something cannot be verified from the code, explicitly state:
+
+"Cannot be verified."
+
+Do not hallucinate.
+
+====================================================
+FINAL REPORT
+====================================================
+
+Produce one professional report containing:
+
+1. Executive Summary
+2. Architecture Overview
+3. Product Workflow
+4. Data Model Review
+5. Exercise System Review
+6. Workout Generator Review
+7. Decision Engine Review
+8. Validation Review
+9. UX Review
+10. Technical Review
+11. Product Review
+12. Critical Problems
+13. Top Priorities
+14. Recommended Roadmap
+
+This is an audit only.
+
+Do not implement anything.

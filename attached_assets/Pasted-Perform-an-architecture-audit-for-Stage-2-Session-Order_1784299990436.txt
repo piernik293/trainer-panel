@@ -1,0 +1,235 @@
+Perform an architecture audit for Stage 2: Session Ordering.
+
+Do not modify any files.
+Do not implement sorting yet.
+Do not refactor working code.
+
+Context:
+- Exercise Priority Engine Stage 1 is complete.
+- Exercise classification metadata now reaches Auto Fill.
+- The project test suite is green.
+- Trainer-app TypeScript is clean.
+- API-server TypeScript is clean.
+- Current Auto Fill selection, volume logic, safety limits, and session behavior are stable.
+
+Goal:
+Determine the smallest and safest place to introduce trainer-like exercise ordering without changing which exercises Auto Fill selects.
+
+The intended future ordering is:
+
+1. primary_compound
+2. secondary_compound
+3. accessory
+4. isolation
+5. core_finisher
+
+Within the same tier, future ordering may consider:
+- higher neurological fatigue first
+- higher exercise priority first
+- higher learning difficulty first
+- stable original order as the final tie-breaker
+
+Do not implement these rules in this audit.
+
+## Questions to answer
+
+### 1. Where is the final exercise list created?
+
+Trace the full path from Auto Fill selection to the final exercises visible in a training day.
+
+Identify:
+- where `selectExercisesForDay()` returns selected exercises
+- where `toAdd[]` is created
+- where exercises are inserted into the draft day
+- where `addExerciseToDay()` is called
+- where the final day exercise array is stored
+- where it is rendered in Step 4
+
+Provide exact files, functions, and relevant line ranges.
+
+### 2. What metadata exists at each stage?
+
+For each of these stages, list which classification fields are available:
+
+- recommendation API response
+- `AutoFillRecExercise`
+- selected Auto Fill result
+- `toAdd[]`
+- `DraftExercise`
+- final day exercise state
+
+Check specifically for:
+- exerciseType
+- neurologicalFatigue
+- learningDifficulty
+- exercisePriority
+- movementPattern
+- mainMuscleGroup
+
+Determine whether classification metadata survives after an exercise is committed to the draft.
+
+Do not assume it does.
+
+### 3. What is the safest integration point?
+
+Compare these possible approaches:
+
+A. Sort only `toAdd[]` before adding exercises.
+
+B. Add exercises first, then sort the entire day once after Auto Fill completes.
+
+C. Insert each new exercise directly into its correct session position.
+
+D. Change selection order inside `selectExercisesForDay()`.
+
+For each option, assess:
+- implementation complexity
+- regression risk
+- effect on existing manual exercise order
+- effect on core insertion behavior
+- ability to place a new compound before an existing isolation
+- future compatibility with manual drag-and-drop ordering
+- future compatibility with priority muscles
+
+Recommend one approach.
+
+The recommendation must preserve this behavior:
+
+- Auto Fill may organize the whole session after it finishes.
+- Normal manual editing must not repeatedly override trainer-created order.
+- The exercise selection result must remain unchanged.
+- Existing exercises must not disappear or duplicate.
+- Core exercises must remain last unless future explicit logic says otherwise.
+
+### 4. Does current ordering have hidden meaning?
+
+Inspect current code and tests to determine whether exercise array order affects anything besides display order.
+
+Check whether order affects:
+- volume calculations
+- IDs or persistence
+- exercise numbering
+- supersets
+- UI editing
+- delete/update actions
+- exercise lookup
+- tempo/RIR/weight editing
+- saved plan payloads
+- tests that assert exact array order
+
+Report any hidden coupling.
+
+### 5. Stable sorting requirements
+
+Determine whether the project/runtime can safely rely on native stable `Array.prototype.sort()`.
+
+Regardless of runtime support, recommend whether a helper should preserve original index explicitly as the final tie-breaker.
+
+The final design must be deterministic.
+
+### 6. Pure helper design
+
+Recommend the smallest useful pure helper, for example:
+
+`orderExercisesForSession()`
+
+Define:
+- proposed input type
+- proposed output type
+- whether it should mutate or return a new array
+- how it should obtain classification metadata
+- whether it should call `getSessionTier()`
+- exact comparator priority
+- fallback behavior for missing metadata
+- stable tie-breaking behavior
+
+Do not implement it.
+
+Do not add weighted scoring.
+Do not combine ordering with Auto Fill candidate scoring.
+
+### 7. Manual exercise behavior
+
+Determine the current behavior for:
+
+- exercises added manually
+- exercises added by Auto Fill
+- exercises already present before Auto Fill
+- core exercises
+- exercises manually reordered by the trainer, if reordering currently exists
+
+Answer explicitly:
+
+Should Stage 2 ordering run:
+- after every manual add,
+- after every edit,
+- only after Auto Fill,
+- or through an explicit “organize session” action?
+
+Recommend the safest Stage 2 scope.
+
+### 8. Existing helper reuse
+
+Identify reusable code from:
+
+- `exerciseClassification.ts`
+- `autoFill.ts`
+- `exerciseDraftHelpers.ts`
+- `Step4Exercises.tsx`
+- relevant draft state/store modules
+
+Do not duplicate existing classification logic.
+
+### 9. Tests
+
+Identify current tests that cover order directly or indirectly.
+
+Recommend focused tests for Stage 2, including at minimum:
+
+- primary compound before isolation
+- secondary compound before accessory
+- accessory before isolation
+- core always last
+- high-fatigue exercise before lower-fatigue exercise within the same tier
+- higher exercise priority before lower priority within the same tier
+- higher learning difficulty before lower difficulty within the same tier
+- original order preserved when all values are equal
+- missing metadata uses safe fallback
+- input array is not mutated
+- exercise count and IDs remain unchanged
+- Auto Fill still selects the same exercises as before
+
+Specify which tests should be pure helper tests and which should be integration tests.
+
+### 10. Exact Stage 2 plan
+
+Return:
+
+1. architecture map
+2. metadata availability map
+3. recommended integration point
+4. rejected alternatives and reasons
+5. exact files Stage 2 would change
+6. exact files Stage 2 should not change
+7. proposed pure helper contract
+8. test plan
+9. regression risks
+10. smallest implementation sequence
+
+Important restrictions:
+
+- analysis only
+- no file edits
+- no new files
+- no implementation
+- no database changes
+- no API changes unless the audit proves metadata is unavailable where ordering must occur
+- no Auto Fill scoring changes
+- no candidate selection changes
+- no volume logic changes
+- no weekly optimizer
+- no movement-pattern balancing
+- no priority-muscle logic
+- no refactor of working code
+
+Stop after the audit.

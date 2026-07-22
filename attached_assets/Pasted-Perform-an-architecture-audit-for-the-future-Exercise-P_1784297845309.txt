@@ -1,0 +1,118 @@
+Perform an architecture audit for the future Exercise Priority Engine.
+
+This is an analysis-only task.
+
+Do NOT modify any files.
+Do NOT write implementation code.
+Do NOT refactor anything.
+Do NOT change Auto Fill behavior.
+Do NOT create database migrations.
+Do NOT add fields speculatively.
+
+Current project status:
+- Step 4 manual editing for tempo, RIR, and weight is complete.
+- The current test suite passes.
+- TypeScript is clean.
+- Auto Fill currently generates exercises, but exercise selection and ordering still behave more like volume-point optimization than trainer-like programming.
+
+Long-term goals that the future engine must support:
+
+1. Prefer appropriate compound exercises before isolation exercises.
+2. Place heavy, technically demanding, high-fatigue exercises near the beginning of a session.
+3. Place lower-demand exercises with shorter rest periods, such as many core, calf, and small isolation movements, near the end of a session.
+4. Newly generated exercises must be inserted into the correct training position instead of simply being appended.
+5. Exercise order should generally follow:
+   - primary compound / main movement
+   - secondary compound
+   - accessory movement
+   - isolation
+   - core / low-fatigue finisher
+6. Priority muscle groups may be placed at the beginning of a relevant session, but priority must not override exercise safety or sensible compound-first ordering.
+7. Auto Fill must not consider a plan successful when an important required target remains completely uncovered, for example quadriceps at 0.
+8. The generator should eventually optimize the whole training week, not only individual sessions.
+9. It should avoid unnecessary fragmentation such as assigning the same exercise for 2 sets on two different days when one 4-set exposure would be more useful.
+10. Higher frequency should remain possible when it has a real programming purpose, such as skill practice, main lifts, fatigue management, or improved session quality.
+11. The future system may need concepts such as:
+   - movement pattern
+   - compound versus isolation
+   - exercise priority tier
+   - fatigue or demand level
+   - technical difficulty
+   - preferred session position
+   - preferred weekly frequency
+   - minimum useful sets per session
+   - maximum useful sets per session
+   - whether volume may be merged between sessions
+12. The final goal is trainer-like decision making, not only maximizing volume coverage points.
+
+Inspect the actual project and identify:
+
+- where exercise library data is defined
+- the current exercise type or schema
+- whether exercise metadata comes from static files, API data, or the database
+- where muscle targets and contribution values are stored
+- where Auto Fill builds its candidate exercise list
+- where candidates are scored and selected
+- where generated exercises are assigned to days
+- where exercise order is currently decided
+- whether generated exercises are appended or sorted
+- whether any existing fields already represent:
+  - movement pattern
+  - compound/isolation
+  - difficulty
+  - fatigue
+  - priority
+  - equipment
+  - exercise category
+- which existing helpers and types should be reused
+- which files would need to change for the smallest safe first implementation
+- which tests currently cover exercise selection and ordering
+
+Then propose the smallest safe Stage 1 implementation.
+
+Stage 1 must only create the foundation for exercise classification and priority.
+
+It must NOT yet:
+- change Auto Fill selection
+- change exercise ordering
+- optimize the week
+- merge volume between sessions
+- implement priority muscle ordering
+- modify UI
+- add persistence unless the current architecture makes it strictly necessary
+
+The proposal must answer:
+
+1. What is the smallest useful metadata model?
+2. Which fields should be stored explicitly?
+3. Which values can be derived instead of stored?
+4. Where should this metadata live in the current architecture?
+5. Should metadata be added to the existing exercise model or kept in a separate classification layer?
+6. How can existing exercises receive metadata without manually editing every exercise immediately?
+7. What fallback behavior should exist for exercises without complete metadata?
+8. What focused pure-function tests should be added?
+9. What exact files would be changed in Stage 1?
+10. What are the main regression risks?
+
+Important design constraints:
+- Prefer a small extensible model over many speculative fields.
+- Do not duplicate existing exercise information.
+- Do not introduce a second competing exercise type.
+- Do not mix UI concerns with selection logic.
+- Do not hard-code exercise names inside Auto Fill.
+- Do not solve this with a large chain of exercise-name conditionals.
+- Preserve current Auto Fill behavior during Stage 1.
+- Reuse existing project conventions and naming.
+- Do not propose new frameworks or dependencies.
+
+Return only:
+1. Current architecture map
+2. Existing reusable fields and helpers
+3. Missing capabilities
+4. Recommended minimal Stage 1 design
+5. Exact files that Stage 1 would change
+6. Tests that Stage 1 should add
+7. Risks and open questions
+
+Stop after the audit.
+Do not edit any files.

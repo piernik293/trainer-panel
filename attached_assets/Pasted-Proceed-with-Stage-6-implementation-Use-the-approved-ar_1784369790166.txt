@@ -1,0 +1,189 @@
+Proceed with Stage 6 implementation.
+
+Use the approved architecture from the audit with the following modifications.
+
+Do not redesign Stage 6.
+Do not expand the scope.
+Implement only what is described below.
+
+--------------------------------------------------
+Core principle
+--------------------------------------------------
+
+Stage 6 is a SESSION-LEVEL TIE BREAKER.
+
+It is NOT another primary scoring dimension.
+
+Do NOT add a new ScoreTuple field.
+
+Do NOT extend ScoreTuple from 8 to 9 elements.
+
+Do NOT modify scoreBetter() ordering.
+
+The existing Stage 1–5 decision hierarchy must remain exactly as it is.
+
+--------------------------------------------------
+Architecture
+--------------------------------------------------
+
+Create:
+
+trainer-app/src/lib/fatigueManagement.ts
+
+Export:
+
+- computeFatiguePenalty()
+- FatigueCandidateInput
+- FatigueCommittedInput
+
+Keep the module completely pure.
+
+No autoFill state.
+
+No ScoreTuple knowledge.
+
+--------------------------------------------------
+Pipeline
+--------------------------------------------------
+
+Forward secondaryMuscleGroups through the existing pipeline.
+
+The data already exists.
+
+Do NOT modify the database.
+
+Only propagate it through:
+
+- API mapping
+- AutoFillRecExercise
+- AutoFillExerciseToAdd
+
+No other metadata changes.
+
+--------------------------------------------------
+Fatigue calculation
+--------------------------------------------------
+
+Use the audit's proposed model.
+
+Inputs:
+
+- mainMuscleGroup
+- secondaryMuscleGroups
+- neurologicalFatigue
+- committed exercises
+- committed sets
+
+Primary muscles contribute full weight.
+
+Secondary muscles contribute reduced weight.
+
+Candidate neurologicalFatigue scales the final penalty.
+
+Return an integer:
+
+0–3
+
+Lower is better.
+
+--------------------------------------------------
+Integration
+--------------------------------------------------
+
+Keep the current Stage 1–5 selection logic completely unchanged.
+
+Candidate comparison must work exactly as before.
+
+Only if two candidates remain completely tied after the existing ScoreTuple comparison may Stage 6 break the tie.
+
+Pseudo-flow:
+
+ScoreTuple comparison
+
+↓
+
+If winner exists
+return winner
+
+↓
+
+If ScoreTuple is identical
+
+↓
+
+computeFatiguePenalty()
+
+↓
+
+Prefer the lower fatigue penalty.
+
+↓
+
+If still tied
+
+↓
+
+Existing final behaviour.
+
+Stage 6 must never overrule:
+
+- unresolved target resolution
+- weekly volume optimisation
+- daily volume optimisation
+- movement balance
+- trainer priority
+- API recommendation ranking
+- variety
+
+It only resolves otherwise-identical candidates.
+
+--------------------------------------------------
+Behaviour goals
+--------------------------------------------------
+
+Desired:
+
+Bench Press → Cable Fly
+small or zero penalty
+
+Squat → Leg Extension
+small or zero penalty
+
+Bench Press → Incline DB Press
+moderate penalty
+
+Romanian Deadlift → Good Morning
+strong penalty
+
+The penalty must never prohibit these combinations.
+
+It is only a soft tie breaker.
+
+--------------------------------------------------
+Tests
+--------------------------------------------------
+
+Create dedicated fatigueManagement tests.
+
+Add integration tests verifying:
+
+- no muscle overlap → penalty 0
+- isolation after compound stays low
+- repeated heavy compounds receive higher penalty
+- ScoreTuple winner is never overridden
+- fatigue only decides complete ties
+- existing Stage 1–5 behaviour remains unchanged
+
+Run:
+
+- full TypeScript
+- trainer-app tests
+- api-server tests
+
+Stop after implementation.
+
+Provide:
+
+- files changed
+- tests added
+- regression results.

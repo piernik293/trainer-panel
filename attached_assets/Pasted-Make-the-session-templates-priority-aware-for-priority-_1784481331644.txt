@@ -1,0 +1,176 @@
+Make the session templates priority-aware for priority-eligible users.
+
+Do NOT redesign the whole generator.
+Do NOT change weekly volume logic.
+Do NOT change UI.
+Do NOT change beginner / no-activity behavior.
+Do NOT remove selector V0.
+Do NOT add new features unrelated to session structure.
+
+This is a focused session-template upgrade.
+
+==================================================
+PROBLEM
+==================================================
+
+Priority-to-session integration currently works only in contested optional slots.
+
+That is not enough.
+
+Right now the generated week changes only at the margin:
+- extra chest accessory
+- extra back accessory
+
+But the overall session architecture does not change.
+
+For example:
+- chest-priority Upper still starts as a generic Upper day
+- back-priority Upper still starts as a generic Upper day
+
+We need priority-aware template variants so Tier A can influence the whole structure of the session, not just the last slot.
+
+==================================================
+GOAL
+==================================================
+
+Upgrade session templates so that, for priority-eligible users only
+(Średniozaawansowany / Zaawansowany),
+
+the template itself can change when a Tier A muscle is present.
+
+Priority should affect:
+- slot order
+- number of meaningful exposures inside the session
+- which muscle gets the best early slots
+
+==================================================
+IMPORTANT EXPERIENCE RULE
+==================================================
+
+For:
+- Brak aktywności
+- Początkujący
+
+do NOT change template structure.
+Keep general-development templates only.
+
+Priority-aware template variants must apply only to:
+- Średniozaawansowany
+- Zaawansowany
+
+==================================================
+REQUIRED TEMPLATE VARIANTS
+==================================================
+
+At minimum, implement priority-aware variants for UPPER.
+
+1. DEFAULT UPPER
+Current general structure may remain:
+- chest compound
+- back compound
+- shoulders
+- arms
+- accessory/core
+
+2. UPPER — CHEST PRIORITY
+When Tier A includes chest:
+Use a chest-priority upper structure.
+
+Recommended shape:
+- chest main lift
+- chest secondary lift or alternate chest pattern
+- back compound
+- shoulders or triceps
+- accessory/core
+
+Goal:
+- chest gets early slots
+- more than one meaningful exposure in the session
+- if possible, variety across chest work (flat + incline / press + fly / press + dips)
+
+3. UPPER — BACK PRIORITY
+When Tier A includes back:
+Use a back-priority upper structure.
+
+Recommended shape:
+- back main lift
+- complementary pull (horizontal vs vertical)
+- chest compound
+- rear delt / biceps / upper-back support
+- accessory/core
+
+Goal:
+- back gets early slots
+- more than one meaningful back exposure in the session
+- include vertical + horizontal pull when feasible
+
+==================================================
+OPTIONAL SECOND PHASE (ONLY IF CLEAN)
+==================================================
+
+If clean and low-risk, also add priority-aware variants for:
+- Push chest-priority
+- Pull back-priority
+
+But ONLY if this does not increase complexity too much.
+
+UPPER priority variants are the required minimum.
+
+==================================================
+TIER RULES
+==================================================
+
+Tier A:
+- can reshape the session template
+
+Tier B:
+- may win contested supporting slots
+- but should not override the main architecture
+
+Tier C:
+- should not take best early slots away from Tier A
+
+==================================================
+CONSTRAINTS
+==================================================
+
+Keep:
+- max 6 exercises
+- core last
+- quality over filler
+- no wrong-day exercises
+- no wrong-equipment exercises
+
+Do NOT:
+- force impossible frequency
+- create separate weekly targets for sub-targets
+- create over-specialized plans for 3-day users
+- destroy plan balance just to overfeed Tier A
+
+==================================================
+SUCCESS CRITERIA
+==================================================
+
+After this change:
+
+1. Chest-priority Upper should look visibly different from generic Upper
+2. Back-priority Upper should look visibly different from generic Upper
+3. Priority should affect the session architecture, not only slot 5
+4. Beginner plans must remain unchanged
+5. The generator should still remain deterministic and stable
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact template variants added
+3. how the engine chooses default vs chest-priority vs back-priority template
+4. one example generic Upper
+5. one example chest-priority Upper
+6. one example back-priority Upper
+
+End exactly with:
+
+PRIORITY-AWARE SESSION TEMPLATES APPLIED

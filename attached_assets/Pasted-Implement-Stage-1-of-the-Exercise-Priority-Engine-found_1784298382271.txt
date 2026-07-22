@@ -1,0 +1,298 @@
+Implement Stage 1 of the Exercise Priority Engine foundation.
+
+Use the conclusions from the completed architecture audit.
+
+Current confirmed architecture:
+- The exercise database schema already contains useful classification metadata.
+- Auto Fill currently does not receive most of that metadata because it is removed at the day-recommendations API boundary.
+- Current Auto Fill selection, scoring, volume calculations, safety limits, and exercise ordering must remain unchanged in this stage.
+- The full test suite currently passes and TypeScript is clean.
+
+Goal:
+Create a small, pure, extensible classification layer and pass existing exercise metadata through the current API response into Auto Fill.
+
+This stage must prepare the project for future:
+- compound-first exercise selection
+- trainer-like session ordering
+- priority muscle placement
+- movement-pattern balancing
+- weekly volume optimization
+- fragmentation and frequency decisions
+
+However, none of those behaviors should be activated yet.
+
+Before editing:
+1. Re-open the actual files identified in the audit.
+2. Confirm the exact database field names and TypeScript naming conventions.
+3. Reuse existing types and conventions where practical.
+4. Do not guess missing architecture.
+
+Files expected to be involved:
+- `artifacts/trainer-app/src/lib/autoFill.ts`
+- `artifacts/api-server/src/services/planDraftDayRecommendationsService.ts`
+- `artifacts/api-server/src/routes/planDraftDayRecommendations.ts`
+- new pure classification module
+- new focused test file
+
+Do not modify unrelated files unless TypeScript compilation strictly requires it.
+
+## 1. Create the classification foundation
+
+Create:
+
+`artifacts/trainer-app/src/lib/exerciseClassification.ts`
+
+The module must be pure:
+- no API calls
+- no database access
+- no React
+- no side effects
+- no UI logic
+
+Create a narrow input type based on existing metadata.
+
+Use the project’s actual naming conventions, but the logical input should support:
+
+- `exerciseType`
+- `neurologicalFatigue`
+- `learningDifficulty`
+- `exercisePriority`
+- `movementPattern`
+- `mainMuscleGroup`
+
+All properties must accept missing or null values.
+
+Do not create another general Exercise model.
+Do not duplicate the complete database exercise type.
+This must remain a narrow classification input only.
+
+## 2. Normalize existing metadata
+
+Export canonical constants or normalization helpers for the existing Polish database values so string literals are not duplicated across future modules.
+
+At minimum support the current values:
+
+Exercise type:
+- `Złożone`
+- `Izolowane`
+
+Exercise priority:
+- `Bardzo wysoki`
+- `Wysoki`
+- `Średni`
+- `Niski`
+
+Unknown, missing, differently cased, or unexpected values must not throw errors.
+
+Do not translate or modify values stored in the database.
+
+## 3. Add small derived helpers
+
+Implement focused deterministic helpers.
+
+### `getFatigueBand`
+
+Return:
+- `high`
+- `medium`
+- `low`
+
+Rules:
+- 4–5 → `high`
+- 2–3 → `medium`
+- 1 → `low`
+- null, undefined, invalid, or out-of-range → `medium`
+
+### `getPriorityRank`
+
+Lower rank means higher programming priority.
+
+Rules:
+- `Bardzo wysoki` → 0
+- `Wysoki` → 1
+- `Średni` → 2
+- `Niski` → 3
+- missing or unknown → 2
+
+### `isHighDemandExercise`
+
+Return true only when:
+- the exercise is compound
+- and neurological fatigue is at least 4
+
+Missing data must return false.
+
+### `getSessionTier`
+
+Return one of:
+
+- `primary_compound`
+- `secondary_compound`
+- `accessory`
+- `isolation`
+- `core_finisher`
+
+Safe initial rules:
+
+1. Recognized core or abdominal main muscle group → `core_finisher`
+2. Compound with high neurological fatigue → `primary_compound`
+3. Other recognized compound exercise → `secondary_compound`
+4. Recognized isolation exercise → `isolation`
+5. Missing or unknown classification → `accessory`
+
+Important:
+- Do not classify calves automatically as core.
+- Do not use exercise names for classification.
+- Do not create lists of specific exercise names.
+- Do not use movement pattern to change the tier yet.
+- `movementPattern` is passed through now only as a future extension point.
+- All-null input must return `accessory`.
+
+### Optional normalized classification result
+
+You may add one small helper such as `classifyExercise()` that combines the derived values into one read-only result, but only if it reduces duplication.
+
+It must not calculate a final weighted “AI score” yet.
+
+Do not introduce arbitrary scoring weights in Stage 1.
+
+## 4. Pass metadata through the existing API boundary
+
+Extend the existing recommendation response type additively.
+
+Pass through the existing database values for:
+
+- exercise type
+- neurological fatigue
+- learning difficulty
+- exercise priority
+- movement pattern
+
+Use the exact database-to-TypeScript field names already used by the project.
+
+Requirements:
+- fields must be optional and/or nullable
+- existing consumers must remain compatible
+- do not remove or rename current response fields
+- do not modify recommendation scoring
+- do not modify filtering
+- do not modify recommendation limits
+- do not modify database queries except where required to expose fields already present in the fetched record
+
+## 5. Extend `AutoFillRecExercise`
+
+Add the same classification metadata to the existing `AutoFillRecExercise` interface.
+
+The new properties must be optional so existing fixtures and callers remain valid.
+
+Do not create a competing Auto Fill exercise type.
+
+Do not use the new metadata anywhere in:
+- `evaluateCandidate`
+- `ScoreTuple`
+- `scoreBetter`
+- `sortedWithRank`
+- `selectExercisesForDay`
+- `commitExercise`
+
+Stage 1 is transport and classification only.
+
+## 6. Preserve current behavior exactly
+
+Do not change:
+
+- Auto Fill candidate scoring
+- exercise selection
+- target coverage
+- weekly or daily volume calculations
+- set-count decisions
+- variety penalty
+- already-added exercise logic
+- session ordering
+- core insertion behavior
+- `addExerciseToDay`
+- Step 4 UI
+- manual override helpers
+- database schema
+- migrations
+- persistence
+- trainer interview logic
+
+No generated plan should change as a result of Stage 1.
+
+## 7. Add focused pure-function tests
+
+Create:
+
+`artifacts/trainer-app/src/lib/__tests__/exerciseClassification.test.ts`
+
+Test at minimum:
+
+### `getFatigueBand`
+- 5 and 4 → high
+- 3 and 2 → medium
+- 1 → low
+- null and undefined → medium
+- invalid and out-of-range values → medium
+
+### `getPriorityRank`
+- all four known values
+- null
+- undefined
+- unknown string
+
+### `isHighDemandExercise`
+- compound + fatigue 4 or 5 → true
+- compound + fatigue below 4 → false
+- isolation + high fatigue → false
+- missing values → false
+
+### `getSessionTier`
+- high-fatigue compound → primary compound
+- lower-fatigue compound → secondary compound
+- isolation → isolation
+- recognized abdominal/core target → core finisher
+- unknown exercise type → accessory
+- all-null input → accessory
+- movement pattern alone must not force a tier
+- exercise names must not be required
+
+Use the project’s current Vitest setup.
+Do not introduce a new testing framework.
+
+## 8. Validation
+
+After implementation:
+
+1. Run the new classification tests.
+2. Run existing Auto Fill tests.
+3. Run API recommendation service tests.
+4. Run the complete test suite.
+5. Run the TypeScript check.
+
+## 9. Final report
+
+Report:
+
+- exact files changed
+- metadata fields passed through the API
+- exported classification types and helpers
+- fallback behavior
+- confirmation that Auto Fill behavior was not changed
+- focused test count
+- total passing tests
+- TypeScript result
+- any existing exact-shape API tests that required additive expectation updates
+
+Stop after Stage 1.
+
+Do not implement:
+- compound-first selection
+- automatic exercise sorting
+- priority muscle ordering
+- movement-pattern balancing
+- weekly optimization
+- volume merging
+- fragmentation heuristics
+- frequency recommendations
+- weighted exercise scoring

@@ -1,0 +1,234 @@
+Perform one final architecture audit before implementing Stage 5.
+
+Do not implement anything.
+Do not modify any files.
+Analysis only.
+
+The current Stage 5 architecture is almost accepted.
+
+One important design question remains:
+
+--------------------------------------------------
+How can Auto Fill determine that two exercises
+perform essentially the same training role,
+using ONLY metadata that already exists today?
+--------------------------------------------------
+
+Do not introduce new database fields.
+
+Do not propose schema changes.
+
+Use only information that already flows into Auto Fill.
+
+--------------------------------------------------
+1. Existing metadata inventory
+--------------------------------------------------
+
+List every piece of metadata currently available inside Auto Fill that could help distinguish two exercises.
+
+Examples include:
+
+- movementCategoryKey
+- exerciseType
+- exercisePriority
+- neurologicalFatigue
+- learningDifficulty
+- matchingTargetIds
+- target coefficients
+- recommendation rank
+- movementPatternPenalty inputs
+- classification metadata
+
+List everything available today.
+
+--------------------------------------------------
+2. Training-role analysis
+--------------------------------------------------
+
+A trainer knows that:
+
+Bench Press
+
+and
+
+Machine Chest Press
+
+are often interchangeable.
+
+But:
+
+Bench Press
+
+and
+
+Incline Dumbbell Press
+
+usually are not.
+
+Without adding new metadata:
+
+Can the current system reliably recognize this?
+
+If yes:
+
+Explain exactly how.
+
+If not:
+
+Explain why not.
+
+--------------------------------------------------
+3. Existing signals
+--------------------------------------------------
+
+Evaluate whether the following existing signals together are enough
+to approximate "same training role":
+
+- movementCategoryKey
+- matchingTargetIds
+- target coefficients
+- trainerPriorityRank
+- exerciseType
+- recommendation score
+- recommendation rank
+
+Explain strengths and weaknesses of each.
+
+--------------------------------------------------
+4. Conservative philosophy
+--------------------------------------------------
+
+The system must never assume:
+
+same movement category
+
+means
+
+same exercise.
+
+Determine whether movementCategoryKey should be treated only as:
+
+"a weak indication"
+
+rather than
+
+"a proof"
+
+of redundancy.
+
+--------------------------------------------------
+5. Decision confidence
+--------------------------------------------------
+
+Instead of asking:
+
+"Are these exercises identical?"
+
+audit whether the better question is:
+
+"How confident are we that adding this exercise provides little additional value?"
+
+Recommend whether Stage 5 should operate on confidence instead of certainty.
+
+--------------------------------------------------
+6. False positives
+--------------------------------------------------
+
+Give realistic examples where consolidation would be wrong.
+
+Examples:
+
+Bench Press
++
+Incline Bench
+
+Squat
++
+Leg Press
+
+Romanian Deadlift
++
+Hip Thrust
+
+Explain why reducing these to one exercise would produce a worse program.
+
+--------------------------------------------------
+7. False negatives
+--------------------------------------------------
+
+Give examples where consolidation should probably happen.
+
+Examples:
+
+Chest Press Machine
++
+Another Chest Press Machine
+
+Cable Curl
++
+Another Cable Curl
+
+Machine Leg Extension
++
+Nearly identical Leg Extension
+
+Explain why these are safe consolidations.
+
+--------------------------------------------------
+8. Recommendation
+--------------------------------------------------
+
+Determine whether Stage 5 should:
+
+A.
+Use only existing metadata.
+
+B.
+Remain intentionally conservative.
+
+C.
+Accept that some redundant exercises will remain.
+
+D.
+Avoid trying to detect every possible duplicate.
+
+If this is the safest approach,
+state it clearly.
+
+--------------------------------------------------
+9. Future extensibility
+--------------------------------------------------
+
+Without implementing it now,
+describe what future metadata would most improve this problem.
+
+Examples:
+
+- exercise family
+- movement angle
+- grip family
+- unilateral/bilateral family
+- equipment family
+
+Do not recommend adding them now.
+
+Only identify future possibilities.
+
+--------------------------------------------------
+10. Final verdict
+--------------------------------------------------
+
+Answer one question:
+
+Can Stage 5 be safely implemented today
+using only the existing metadata?
+
+Or
+
+Should duplicate-role detection wait for a future metadata expansion?
+
+Provide a clear recommendation.
+
+Do not implement.
+
+Stop after the audit.

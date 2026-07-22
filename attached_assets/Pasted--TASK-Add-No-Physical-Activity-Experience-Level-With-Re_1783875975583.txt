@@ -1,0 +1,172 @@
+# TASK — Add "No Physical Activity" Experience Level With Reduced Training Volume
+
+This task extends the already approved training volume system.
+
+Do NOT modify any existing logic unless explicitly requested below.
+
+The current application already supports:
+
+- Beginner
+- Intermediate
+- Advanced
+
+Add a fourth experience level:
+
+"No Physical Activity"
+
+This level is intended for clients who have not trained previously or have been inactive for a long period.
+
+------------------------------------------------------------
+
+PURPOSE
+
+People with no training history should NOT start with beginner volume.
+
+Instead, they should start with approximately 50% of beginner training volume to:
+
+- Reduce excessive DOMS
+- Improve recovery
+- Improve exercise adherence
+- Allow gradual adaptation
+
+This level should behave as a completely separate experience level.
+
+------------------------------------------------------------
+
+TRAINING VOLUME
+
+LOWER BODY
+
+Quadriceps
+- Sets per session: 2
+- Weekly maximum: 4–5
+
+Glutes
+- Sets per session: 2
+- Weekly maximum: 4–5
+
+Calves
+- Sets per session: 1
+- Weekly maximum: 2
+
+Adductors
+- Sets per session: 2
+- Weekly maximum: 3
+
+Hamstrings
+- Sets per session: 2
+- Weekly maximum: 3
+
+------------------------------------------------------------
+
+UPPER BODY
+
+Shoulders
+- Sets per session: 1–2
+- Weekly maximum: 4–6
+
+Triceps
+- Sets per session: 1
+- Weekly maximum: 2
+
+Chest
+- Sets per session: 1–2
+- Weekly maximum: 4–5
+
+Latissimus Dorsi
+- Sets per session: 1–2
+- Weekly maximum: 4
+
+Trapezius
+- Sets per session: 2
+- Weekly maximum: 4–6
+
+Biceps
+- Sets per session: 1
+- Weekly maximum: 2
+
+------------------------------------------------------------
+
+REQUIRED BEHAVIOUR
+
+When the trainer selects:
+
+"No Physical Activity"
+
+the workout generation algorithm must use ONLY the volume limits above.
+
+When any other experience level is selected:
+
+- Beginner
+- Intermediate
+- Advanced
+
+the application must continue using the already implemented volume tables without any modification.
+
+------------------------------------------------------------
+
+TRAINING INTERVIEW
+
+The Training Interview already contains an experience level selector.
+
+Add a new option:
+
+"No Physical Activity"
+
+Description:
+
+"The client has not exercised regularly in recent months or has never performed structured resistance training."
+
+This option should appear BEFORE Beginner.
+
+Final order:
+
+1. No Physical Activity
+2. Beginner
+3. Intermediate
+4. Advanced
+
+------------------------------------------------------------
+
+FUTURE WORKOUT GENERATION
+
+Clients classified as "No Physical Activity" should automatically receive:
+
+- Beginner-friendly movement patterns
+- Conservative weekly training volume
+- No advanced intensity techniques
+- Emphasis on movement quality
+- Gradual progression toward Beginner volume over time
+
+------------------------------------------------------------
+
+IMPORTANT
+
+Do NOT modify:
+
+- Exercise database
+- Exercise library
+- Muscle coefficient system
+- Movement pattern logic
+- Exercise eligibility logic
+- Existing volume calculator architecture
+- Beginner volume values
+- Intermediate volume values
+- Advanced volume values
+
+Only add support for the new experience level and ensure the volume calculator uses the values defined above.
+
+------------------------------------------------------------
+
+EXPECTED RESULT
+
+The application should support four independent experience levels:
+
+- No Physical Activity
+- Beginner
+- Intermediate
+- Advanced
+
+Each level must use its own training volume limits while preserving all existing application behaviour.
+
+Do not simplify or replace the existing architecture. Extend it cleanly and consistently with the current codebase.

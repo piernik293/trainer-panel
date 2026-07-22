@@ -1,0 +1,154 @@
+Implement a recommendation matrix for training split selection based on:
+- training days per week
+- experience level
+- training goal
+- recovery quality
+
+Do NOT redesign the whole app.
+Do NOT change generator architecture.
+Do NOT change UI beyond what is necessary to display the recommendation.
+Do NOT change selector V0.
+This is a focused split-recommendation logic task.
+
+==================================================
+GOAL
+==================================================
+
+The system should recommend the most sensible split
+instead of treating all splits as equally suitable.
+
+We want the recommendation to reflect:
+- number of training days
+- experience level
+- recovery quality
+- whether the plan should stay general-development or allow stronger specialization
+
+==================================================
+CORE RULES
+==================================================
+
+1. MAIN SPLITS FOR MVP
+Use only these core split families:
+- FBW
+- Góra / Dół
+- Góra / Dół / Full Body
+- Push / Pull / Legs
+
+2. EXPERIENCE GATING
+- "Brak aktywności" and "Początkujący" should default to more general-development splits
+- "Średniozaawansowany" and "Zaawansowany" may receive more specialized split recommendations
+
+3. RECOVERY MODIFIER
+If recovery is poor / weak:
+- prefer the simpler split
+- avoid over-specialized recommendations when a simpler structure is more realistic
+
+4. PRIORITY MUSCLE LOGIC
+Priority muscles should NOT override split recommendation for:
+- Brak aktywności
+- Początkujący
+
+Priority logic may influence split recommendation only for:
+- Średniozaawansowany
+- Zaawansowany
+
+==================================================
+RECOMMENDATION MATRIX
+==================================================
+
+Implement this recommendation logic:
+
+A) 2 training days/week
+- recommend: FBW
+- for all experience levels
+
+B) 3 training days/week
+- Brak aktywności -> FBW
+- Początkujący -> FBW
+- Średniozaawansowany -> Góra / Dół / Full Body
+- Zaawansowany -> Góra / Dół / Full Body
+- if recovery is poor, allow fallback to FBW
+
+C) 4 training days/week
+- Początkujący -> Góra / Dół
+- Średniozaawansowany -> Góra / Dół
+- Zaawansowany -> Góra / Dół
+- Brak aktywności -> only recommend cautiously; still prefer Góra / Dół over specialized options
+
+D) 5 training days/week
+- Brak aktywności / Początkujący -> do not recommend specialized split by default
+- Średniozaawansowany -> Push / Pull / Legs
+- Zaawansowany -> Push / Pull / Legs
+- if recovery is poor, allow fallback to Góra / Dół
+
+E) 6 training days/week
+- recommend Push / Pull / Legs only for advanced users
+- for lower levels, recommend a simpler split instead
+
+==================================================
+GOAL MODIFIERS
+==================================================
+
+Use goal as a secondary modifier:
+
+1. General development / health / starting activity
+- prefer simpler splits:
+  - FBW
+  - Góra / Dół
+
+2. Strength goal (example: bench-related goal)
+- 3 days: prefer Góra / Dół / Full Body
+- 4 days: prefer Góra / Dół
+- 5 days: Push / Pull / Legs only if recovery supports it
+
+3. Hypertrophy goal
+- 3 days: Góra / Dół / Full Body
+- 4 days: Góra / Dół
+- 5–6 days: Push / Pull / Legs when appropriate
+
+4. Fat loss + poor recovery
+- bias recommendation toward simpler splits
+- prefer one level simpler split than the aggressive option
+
+==================================================
+OUTPUT REQUIREMENTS
+==================================================
+
+The system should return:
+- recommended split
+- short explanation why
+- optionally acceptable alternative split(s)
+
+Examples of explanations:
+- "3 dni treningowe + poziom średniozaawansowany → rekomendowany układ Góra / Dół / Full Body"
+- "Słabsza regeneracja obniża rekomendację do prostszego splitu"
+- "Na tym poziomie plan powinien mieć charakter ogólnorozwojowy"
+
+==================================================
+IMPLEMENTATION NOTES
+==================================================
+
+Do NOT hardcode messy UI strings inside logic if avoidable.
+Prefer:
+- a clean recommendation helper/service
+- simple enums/constants for split families
+- a readable decision table or ruleset
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact recommendation logic added
+3. how recovery modifies the recommendation
+4. how beginner/no-activity differs from intermediate/advanced
+5. example outputs for:
+   - 3-day beginner
+   - 3-day intermediate
+   - 5-day advanced
+   - 4-day poor-recovery client
+
+End exactly with:
+
+SPLIT RECOMMENDATION MATRIX APPLIED

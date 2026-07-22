@@ -1,0 +1,105 @@
+Perform a final Stage 6 verification only.
+
+Do not modify any code.
+Do not add or remove tests.
+
+--------------------------------------------------
+1. Test-count discrepancy
+--------------------------------------------------
+
+Before Stage 6, trainer-app had 412 passing tests.
+
+After Stage 6, trainer-app has 437 passing tests.
+
+This is an increase of 25 tests.
+
+However, the delivery report states:
+
+- fatigueManagement.test.ts: 20 tests
+- autoFill.test.ts: 7 tests
+
+That totals 27 tests.
+
+Explain the discrepancy exactly.
+
+Provide:
+
+- exact number of tests added
+- exact number of tests removed
+- exact number of tests renamed or merged
+- test names for any removed or replaced tests
+
+--------------------------------------------------
+2. Full secondaryMuscleGroups pipeline
+--------------------------------------------------
+
+Show the complete data path for secondaryMuscleGroups from the database recommendation result to computeFatiguePenalty().
+
+List every file, type, mapping, and property involved in order.
+
+Confirm specifically that it reaches:
+
+- the API response
+- the frontend recommendation object
+- AutoFillRecExercise
+- AutoFillExerciseToAdd after commitExercise()
+- FatigueCandidateInput
+- FatigueCommittedInput
+
+Show the exact relevant code snippets.
+
+--------------------------------------------------
+3. Tie-breaker correctness
+--------------------------------------------------
+
+Show the exact candidate comparison code in:
+
+- findBestExpansion()
+- Phase 2 Core selection
+
+Explain why computeFatiguePenalty() runs only when both full existing 8-element ScoreTuples are identical.
+
+Confirm that this condition cannot trigger when either candidate has a better:
+
+- unresolved-target result
+- weekly-volume result
+- daily-volume result
+- sets preference
+- movement-pattern penalty
+- trainer priority
+- API rank
+- variety result
+
+--------------------------------------------------
+4. Positive integration test
+--------------------------------------------------
+
+Identify the exact integration test proving:
+
+- candidate A and candidate B have identical ScoreTuples
+- candidate A has a higher fatigue penalty
+- candidate B has a lower fatigue penalty
+- candidate B is selected specifically because of Stage 6
+
+Show the test name, setup, relevant assertions, and calculated penalties.
+
+If no such test exists, state that clearly.
+
+--------------------------------------------------
+5. Threshold calibration
+--------------------------------------------------
+
+Explain why the fatigue bucket threshold is exactly 12.
+
+Provide worked calculations for:
+
+- Bench Press → Cable Fly
+- Bench Press → Incline Dumbbell Press
+- Romanian Deadlift → Good Morning
+- Squat → Leg Extension
+
+Use the actual formula and realistic sets / neurologicalFatigue values from the test fixtures.
+
+Do not modify code.
+
+Stop after the verification.

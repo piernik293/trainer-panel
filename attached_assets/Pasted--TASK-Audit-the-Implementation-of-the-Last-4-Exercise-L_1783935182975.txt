@@ -1,0 +1,287 @@
+# TASK — Audit the Implementation of the Last 4 Exercise Library Tasks
+
+Do NOT modify the code yet.
+
+Do NOT fix anything yet.
+
+First perform a complete audit of the current codebase and database to verify whether all requirements from the last four approved tasks were actually implemented.
+
+The four tasks to verify are:
+
+1. Add "No Physical Activity" experience level with reduced training volume
+2. Expand the Exercise Library into a professional trainer database
+3. Add Exercise Completeness Validation and Bulk Import
+4. Add Intelligent Exercise Recommendation Engine
+
+============================================================
+AUDIT RULES
+============================================================
+
+Inspect:
+
+- Database schema
+- Database migrations
+- Seed files
+- API routes
+- Services
+- Validation logic
+- Frontend forms
+- Exercise Library list
+- Exercise details page
+- Plan Editor
+- Exercise picker
+- Existing database records
+- TypeScript types
+- Tests, if present
+
+Do not rely only on comments or planned architecture.
+
+Verify that each feature is actually connected end-to-end:
+
+Database → API → frontend → user-visible behaviour.
+
+============================================================
+PART 1 — NO PHYSICAL ACTIVITY VOLUME
+============================================================
+
+Verify:
+
+- "Brak aktywności fizycznej" exists as a separate experience level
+- It is not mapped to "Początkujący"
+- It has 11 dedicated volume guideline rows
+- The values match the approved specification
+- The volume calculator loads the dedicated values
+- Existing Beginner, Intermediate and Advanced values remain unchanged
+- Existing installations receive the new rows, not only empty databases
+- The survey keeps the correct experience-level order
+
+Report every relevant file and database table.
+
+============================================================
+PART 2 — EXERCISE LIBRARY EXPANSION
+============================================================
+
+Verify that exercises can store and edit:
+
+Basic information:
+- Name
+- Active status
+- Primary muscle group
+- Secondary muscle groups
+- Difficulty level
+- Movement pattern
+- Exercise type
+- Equipment
+- Training locations
+
+Coaching information:
+- Description
+- Execution instructions
+- Common mistakes
+- Coaching tips
+- Breathing tips
+- Safety notes
+- Tempo
+- Recommended range of motion
+
+Exercise Intelligence:
+- Suitable experience levels
+- Training goals
+- Movement category
+- Plane of motion
+- Bilateral or unilateral execution
+- Resistance type
+- Spotter requirement
+- Failure suitability
+- Joint stress
+- Learning difficulty
+- Neurological fatigue
+- DOMS potential
+- Exercise priority
+
+Related exercises:
+- Substitutions
+- Progressions
+- Regressions
+
+Muscle assignments:
+- Unlimited assignments
+- Primary and secondary roles
+- Coefficients
+- Existing volume-calculator compatibility
+
+For every field, verify:
+
+- Database storage exists
+- API accepts and returns it
+- Frontend displays and saves it
+- Editing an existing exercise preserves the data
+
+============================================================
+PART 3 — COMPLETENESS VALIDATION
+============================================================
+
+Verify:
+
+- Every exercise receives a computed completeness status
+- The Exercise Library shows Complete or Incomplete
+- Missing fields are listed precisely
+- Missing items disappear after completion
+- Completeness is calculated from actual stored data
+- Incomplete exercises remain manually selectable
+- Incomplete exercises are excluded from automatic systems
+- Existing exercises are handled safely
+- Required fields match the approved specification
+
+Also verify whether completeness is:
+
+- Stored in the database
+or
+- Computed dynamically
+
+State which approach is used and whether it is reliable.
+
+============================================================
+PART 4 — BULK IMPORT
+============================================================
+
+Verify:
+
+- Import Exercises button exists
+- CSV import works
+- JSON import works
+- Data mapping supports the approved exercise fields
+- Invalid rows are validated before import
+- Error messages identify the exact row and field
+- Trainer can skip invalid rows
+- Trainer can cancel the import
+- Duplicate detection exists
+- Duplicate options work:
+  - Skip
+  - Update existing
+  - Create duplicate
+- Import summary reports:
+  - Imported
+  - Updated
+  - Skipped
+  - Failed
+- Muscle assignments and coefficients are imported correctly
+- Exercise Intelligence metadata is imported correctly
+- Import does not corrupt existing data
+- Import is transactional or safely handles partial failure
+
+============================================================
+PART 5 — RECOMMENDATION ENGINE
+============================================================
+
+Verify that the Plan Editor exercise picker evaluates:
+
+- Client experience level
+- Equipment
+- Training location
+- Active status
+- Completeness
+- Exercise Intelligence metadata
+- Avoided exercises
+- Training goal
+- Target muscle
+- Movement pattern
+- Existing weekly volume, only if already available
+
+Verify recommendation scoring considers:
+
+- Experience suitability
+- Equipment compatibility
+- Location compatibility
+- Goal compatibility
+- Movement pattern
+- Exercise priority
+- Learning difficulty
+- Joint stress
+- Neurological fatigue
+- DOMS potential
+- Variety
+
+Verify user interface behaviour:
+
+- Exercises are sorted by score
+- Recommendation badges appear
+- Warning reasons are visible
+- Trainer can still manually select warned exercises
+- Avoided exercises are warned, not silently selected
+- Related exercises are displayed
+- Regressions are displayed
+- Progressions are displayed
+- Similar-equipment suggestions are displayed
+- Same-pattern suggestions are displayed
+- Same-muscle suggestions are displayed
+- Recommendation explanations are displayed
+- Smart search and filters work
+
+Verify safety restrictions:
+
+- No automatic workout generation was added
+- No AI planning was added
+- No automatic exercise replacement was added
+- No new replacement logic modified trainer control
+- Existing Volume Calculator was not changed
+- Missing data is handled gracefully
+- No fake placeholder scoring is presented as real logic
+
+============================================================
+REGRESSION CHECK
+============================================================
+
+Verify that the following still work:
+
+- Existing exercises open correctly
+- Existing exercises can be edited
+- New exercises can be created
+- Muscle coefficients still calculate volume correctly
+- Survey logic still works
+- Client records still load
+- Plan Editor still opens
+- Existing plans still load
+- Existing database data was not deleted
+- API starts without errors
+- Frontend builds without errors
+- TypeScript check passes
+- Database migrations pass
+- No duplicate or conflicting schema fields exist
+
+============================================================
+REQUIRED OUTPUT
+============================================================
+
+Provide a structured audit report with these sections:
+
+1. Fully implemented
+2. Partially implemented
+3. Not implemented
+4. Implemented differently than specified
+5. Bugs or risks found
+6. Database migration status
+7. Build and TypeScript status
+8. Recommended fixes in priority order
+
+For every finding include:
+
+- Requirement
+- Status
+- File path
+- Function, component or table name
+- Short evidence
+- Risk level:
+  - Low
+  - Medium
+  - High
+  - Critical
+
+Finish with a final verdict:
+
+- PASS
+- PASS WITH MINOR FIXES
+- PARTIAL
+- FAIL
+
+Do not modify any code until the audit report is complete and I explicitly approve the fixes.

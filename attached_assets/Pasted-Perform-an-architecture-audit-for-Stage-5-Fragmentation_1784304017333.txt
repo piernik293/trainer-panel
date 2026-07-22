@@ -1,0 +1,228 @@
+Perform an architecture audit for Stage 5: Fragmentation Prevention.
+
+Do not implement anything.
+Do not modify any files.
+Analysis only.
+
+Current status:
+
+- Stage 1 (Exercise Classification) is complete.
+- Stage 2 (Session Ordering) is complete.
+- Stage 3 (Trainer Priority) is complete.
+- Stage 4 (Movement Pattern Awareness) is complete.
+- All tests pass.
+- TypeScript is clean.
+
+Current behavior:
+
+Auto Fill selects exercises until volume targets are satisfied.
+
+Concern:
+
+The generator may spread volume across too many different exercises instead of increasing sets on already selected exercises.
+
+Goal:
+
+Determine the safest architecture for encouraging exercise consolidation WITHOUT reducing exercise quality or violating any existing safety rules.
+
+--------------------------------------------------
+1. Trace where new exercises are created
+--------------------------------------------------
+
+Follow the complete flow from:
+
+candidate evaluation
+
+↓
+
+candidate selected
+
+↓
+
+commitExercise()
+
+↓
+
+toAdd[]
+
+Explain exactly where the decision is made to:
+
+- add another exercise
+
+instead of
+
+- increase sets on an already selected exercise.
+
+--------------------------------------------------
+2. Current set assignment
+
+Explain:
+
+How are 2 / 3 / 4 sets chosen today?
+
+Can an already selected exercise receive more sets later?
+
+If not:
+
+Where would that capability naturally fit?
+
+--------------------------------------------------
+3. Existing state
+
+List every structure that already tracks selected exercises.
+
+Examples:
+
+addedIds
+
+toAdd
+
+currentSets
+
+weeklyAddedThisDay
+
+dailyAddedThisDay
+
+patternsAddedThisDay
+
+Anything else.
+
+Explain which structures could support consolidation.
+
+--------------------------------------------------
+4. Possible architectures
+
+Evaluate:
+
+A
+
+Increase sets before considering a new exercise.
+
+B
+
+Treat existing exercises as candidates.
+
+C
+
+Post-process consolidation.
+
+D
+
+New consolidation pass after selection.
+
+E
+
+Any better option.
+
+Recommend one.
+
+Reject the others with reasons.
+
+--------------------------------------------------
+5. Safety
+
+Consolidation must NEVER:
+
+- exceed ceilings
+- exceed redistribution limits
+- exceed daily limits
+- violate set limits
+- violate exercise limits
+
+Explain how existing safety can remain unchanged.
+
+--------------------------------------------------
+6. Trainer behaviour
+
+A trainer usually asks:
+
+"Can I simply add one more set to this exercise?"
+
+instead of
+
+"Should I introduce another exercise?"
+
+Determine where this question should enter the architecture.
+
+--------------------------------------------------
+7. Interaction with previous stages
+
+Explain interaction with:
+
+Stage 2 ordering
+
+Stage 3 trainer priority
+
+Stage 4 movement balance
+
+Should consolidation happen:
+
+before
+
+during
+
+or
+
+after
+
+those stages?
+
+--------------------------------------------------
+8. Future extensibility
+
+Determine whether this architecture can later support:
+
+- priority muscles
+- weekly optimizer
+- fatigue budget
+- athlete mode
+
+without redesign.
+
+--------------------------------------------------
+9. Tests
+
+Recommend:
+
+pure tests
+
+integration tests
+
+regression tests
+
+Especially verify:
+
+- fewer unnecessary exercises
+
+- same volume
+
+- same safety
+
+- same movement balance
+
+--------------------------------------------------
+10. Stage 5 plan
+
+Return:
+
+- architecture diagram
+
+- safest integration point
+
+- exact files to change
+
+- files not to change
+
+- rejected alternatives
+
+- regression risks
+
+- implementation sequence
+
+Important:
+
+Do not implement.
+
+Do not modify code.
+
+Stop after the audit.

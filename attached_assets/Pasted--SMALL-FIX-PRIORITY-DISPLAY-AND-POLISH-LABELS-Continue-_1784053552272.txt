@@ -1,0 +1,109 @@
+# SMALL FIX — PRIORITY DISPLAY AND POLISH LABELS
+
+Continue from the current repository state.
+
+Work only in the generator volume/distribution UI and directly related priority mapping.
+
+Do not modify:
+- exercise selection,
+- Exercise Library,
+- volume guideline values,
+- muscle coefficients,
+- split recommendation logic,
+- Workout Builder,
+- database schema,
+- AI,
+- plan persistence.
+
+1. BACK PRIORITY DISPLAY
+
+The client selected the broad priority:
+
+"Plecy — priorytet 3"
+
+Currently both targets display the same priority separately:
+
+- Mięsień najszerszy grzbietu — priorytet 3
+- Mięsień czworoboczny grzbietu — priorytet 3
+
+Change the presentation so the broad priority is displayed only once:
+
+"Plecy — priorytet 3"
+
+The individual target cards should still display their calculated volume values,
+but should not repeat the broad priority badge.
+
+Verify that the broad priority bonus is applied only once across the whole
+"Plecy" category.
+
+Do not change the priority formula unless the bonus is currently duplicated.
+
+2. POLISH PLURALIZATION
+
+Use correct Polish set labels everywhere in the affected generator screen:
+
+- 1 seria
+- 2 serie
+- 3 serie
+- 4 serie
+- 5 serii
+- 6 serii and more
+
+Fix examples such as:
+
+"4 serii" → "4 serie"
+
+3. SPACING AND SEPARATORS
+
+Fix labels so they display clearly:
+
+"Dzień 2 — 3 serie"
+"Dzień 4 — 3 serie"
+"Core / brzuch — 3 serie"
+
+Do not render concatenated text such as:
+
+"Dzień 23 serie"
+"Core / brzuch3 serie"
+
+4. EFFECTIVE VOLUME LABEL
+
+Replace the unclear text:
+
+"Wartości w sesjach efektywnych / tydzień."
+
+with:
+
+"Wartości w punktach objętości efektywnej na tydzień."
+
+Do not change any calculations.
+
+5. TESTING AND COST CONTROL
+
+Inspect only directly affected files.
+
+Run only:
+- focused tests for priority display/mapping and pluralization,
+- TypeScript for the affected package.
+
+Do not run:
+- full test suite,
+- all 596 tests,
+- production builds unless TypeScript requires a directly related fix,
+- database audit,
+- unrelated refactors.
+
+Report:
+
+1. whether the back priority bonus was duplicated or only displayed twice
+2. files changed
+3. focused tests executed
+4. TypeScript result
+
+Finish exactly with:
+
+PRIORITY DISPLAY FIX COMPLETE
+
+or
+
+PRIORITY DISPLAY FIX FAILED

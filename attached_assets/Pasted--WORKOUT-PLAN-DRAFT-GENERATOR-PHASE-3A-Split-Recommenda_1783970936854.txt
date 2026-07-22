@@ -1,0 +1,450 @@
+# WORKOUT PLAN DRAFT GENERATOR — PHASE 3A
+## Split Recommendation and Weekly Volume Distribution Engine
+
+Continue from the current verified Phase 2 repository state.
+
+Do not restart or refactor Phase 2.
+Do not implement exercise selection.
+Do not generate workout plans, plan days, exercises, sets, reps or prescriptions.
+Do not modify surveys, clients, existing plans or volume guideline rows.
+Do not build the Phase 3 UI yet.
+Do not use AI.
+Do not add database migrations.
+
+This phase is backend/contracts/tests only.
+
+============================================================
+1. GOAL
+============================================================
+
+Build a deterministic, read-only engine that:
+
+1. recommends a split type,
+2. accepts the trainer-selected split type,
+3. distributes the selected Phase 2 weekly volume targets across training days,
+4. respects per-session target limits where possible,
+5. verifies that daily allocations sum exactly to the selected weekly volume.
+
+The engine must use the final selected Phase 2 values, including valid trainer overrides.
+
+============================================================
+2. EXISTING SPLIT TYPES
+============================================================
+
+Reuse exactly these canonical split types:
+
+- full_body
+- full_body_ab
+- upper_lower
+- upper_lower_full_body
+- push_pull_legs
+- push_pull_lower_full_body
+- specialization
+- custom
+
+Do not create new split identifiers.
+
+============================================================
+3. SPLIT RECOMMENDATION RULES
+============================================================
+
+Create one centralized pure function for split recommendations.
+
+Inputs:
+
+- experienceLevel
+- trainingDays
+- priority target count
+
+Use these MVP rules:
+
+1 training day:
+- full_body
+
+2 training days:
+- full_body_ab
+
+3 training days:
+- Brak aktywności fizycznej or Początkujący:
+  full_body_ab
+- Średniozaawansowany or Zaawansowany:
+  upper_lower_full_body
+
+4 training days:
+- Brak aktywności fizycznej or Początkujący:
+  upper_lower
+- Średniozaawansowany or Zaawansowany:
+  push_pull_lower_full_body
+
+5 training days:
+- upper_lower_full_body
+
+6 training days:
+- push_pull_legs
+
+Never automatically recommend:
+
+- specialization
+- custom
+
+Those remain trainer-only choices.
+
+Add non-blocking warnings:
+
+- HIGH_FREQUENCY_FOR_NO_ACTIVITY when trainingDays > 3
+- HIGH_FREQUENCY_FOR_BEGINNER when trainingDays > 4
+- SPLIT_DIFFERS_FROM_RECOMMENDATION when the trainer-selected split differs from the recommendation
+
+Missing or invalid experience level must block calculation using the existing codes:
+
+- MISSING_EXPERIENCE_LEVEL
+- INVALID_EXPERIENCE_LEVEL
+
+Do not use a fallback level.
+
+============================================================
+4. DAY TEMPLATES
+============================================================
+
+Create centralized deterministic day templates.
+
+Examples:
+
+full_body:
+- Full Body 1
+- Full Body 2
+- Full Body 3
+- continue numbering when needed
+
+full_body_ab:
+- Full Body A
+- Full Body B
+- repeat A/B for additional days
+
+upper_lower:
+- Upper
+- Lower
+- repeat Upper/Lower
+
+upper_lower_full_body:
+- Upper
+- Lower
+- Full Body
+- repeat this sequence when more days are selected
+
+push_pull_legs:
+- Push
+- Pull
+- Legs
+- repeat this sequence
+
+push_pull_lower_full_body:
+- Push
+- Pull
+- Lower
+- Full Body
+- repeat this sequence when needed
+
+specialization:
+- use the same safe distribution rules as full_body for Phase 3A
+- add non-blocking warning SPECIALIZATION_REQUIRES_EXERCISE_PHASE
+
+custom:
+- create Custom Day 1, Custom Day 2, etc.
+- distribute volume evenly across all days
+- add non-blocking warning CUSTOM_SPLIT_REQUIRES_TRAINER_REVIEW
+
+The number of returned days must always equal trainingDays.
+
+============================================================
+5. TARGET CATEGORY MAPPING
+============================================================
+
+Inspect the existing 11 volume targets and their stable broadCategory values.
+
+Create one centralized mapping from broadCategory to eligible day types.
+
+Rules:
+
+Push days:
+- chest
+- shoulders
+- triceps
+
+Pull days:
+- back
+- biceps
+
+Lower/Legs days:
+- quadriceps
+- hamstrings
+- glutes
+- calves
+- other existing lower-body targets
+
+Upper days:
+- all upper-body categories
+
+Full Body days:
+- all targets
+
+Core targets:
+- distribute across all eligible training days as evenly as possible
+
+Use stable target IDs and broadCategory values from the database.
+
+Do not rely on loose target-name substring matching when broadCategory is available.
+
+Unknown broadCategory:
+- distribute across all days
+- return non-blocking warning UNKNOWN_TARGET_CATEGORY
+
+Document the exact mapping found in the current database.
+
+============================================================
+6. DISTRIBUTION ALGORITHM
+============================================================
+
+Input for every target:
+
+- targetId
+- targetName
+- selectedWeeklyVolume from Phase 2
+- sessionMin
+- sessionMax
+- eligible days based on split
+- priority order if present
+
+Distribute volume using units of 0.5.
+
+Requirements:
+
+1. Sum of all daily allocations for a target must exactly equal selectedWeeklyVolume.
+2. Prefer the most even distribution across eligible days.
+3. Use deterministic tie-breaking by day index.
+4. Priority targets may receive earlier-day placement when the distribution is uneven.
+5. Never change the selected weekly volume.
+6. Never allocate to an ineligible day unless there are no eligible days.
+7. If no eligible day exists:
+   - distribute across all days,
+   - return TARGET_WITHOUT_ELIGIBLE_DAY.
+8. Respect sessionMax for the target where mathematically possible.
+9. When weekly volume cannot fit under sessionMax across available eligible days:
+   - distribute as evenly as possible,
+   - do not reduce weekly volume,
+   - return TARGET_SESSION_MAX_EXCEEDED.
+10. sessionMin is informational only in Phase 3A:
+   - return TARGET_SESSION_BELOW_MIN when a positive allocation is below sessionMin,
+   - do not artificially increase the allocation.
+
+Use a largest-remainder or equivalent deterministic algorithm operating in 0.5 units.
+
+Avoid floating-point sum errors.
+
+============================================================
+7. DATA CONTRACTS
+============================================================
+
+Add contracts in lib/api-zod using the existing project conventions.
+
+Required concepts:
+
+WeeklyVolumeDistributionInput:
+- clientId
+- experienceLevel
+- trainingDays
+- selectedSplitType
+- recommendedSplitType
+- selectedWeeklyVolumes
+- priorityTargetIds or resolved priority order
+
+TrainingDayDistribution:
+- dayIndex
+- dayName
+- dayType
+- targetAllocations
+- totalEffectiveTargetVolume
+
+TargetDayAllocation:
+- targetId
+- targetName
+- dayIndex
+- allocatedVolume
+
+TargetDistributionDecision:
+- targetId
+- targetName
+- weeklySelectedVolume
+- allocatedWeeklyTotal
+- allocations
+- sessionMin
+- sessionMax
+- warnings
+- reasons
+
+WeeklyVolumeDistributionResponse:
+- recommendedSplitType
+- selectedSplitType
+- trainingDays
+- days
+- targetDecisions
+- warnings
+- hasBlockingIssues
+
+Use existing warning conventions.
+
+============================================================
+8. SERVICE AND API
+============================================================
+
+Create a read-only service, for example:
+
+planDraftVolumeDistributionService.ts
+
+Create endpoint:
+
+POST /api/plans/draft-distribution/preview
+
+The endpoint must:
+
+- load only the client data required for validation,
+- accept final Phase 2 selected weekly values from the request,
+- validate that all 11 existing target IDs are present exactly once,
+- reject unknown target IDs,
+- reject negative volume,
+- reject values outside 0.5 increments,
+- return the distribution preview,
+- perform zero database writes.
+
+Do not create:
+
+- workout_plans
+- workout_plan_days
+- workout_plan_exercises
+
+Repeated identical requests must return identical results.
+
+============================================================
+9. TESTS
+============================================================
+
+Add focused tests for:
+
+Split recommendation:
+- 1 through 6 training days
+- all four experience levels
+- high-frequency warnings
+- selected split differing from recommendation
+- specialization and custom never auto-recommended
+- missing and invalid level blocked
+
+Day templates:
+- correct number of days
+- correct deterministic sequence
+- all eight split types
+
+Distribution:
+- exact weekly sum for every target
+- 0.5 increments
+- equal distribution
+- uneven distribution
+- deterministic tie-breaking
+- priority target earlier placement
+- sessionMax respected when possible
+- impossible sessionMax returns warning
+- sessionMin warning
+- unknown broadCategory fallback
+- no eligible day fallback
+- fixed weekly value of zero
+- fixed-width target
+- all 11 real targets
+
+API:
+- exactly 11 target decisions
+- duplicate target ID rejected
+- missing target ID rejected
+- unknown target ID rejected
+- invalid increment rejected
+- identical requests deterministic
+- database writes = 0
+
+Regression:
+- all existing Phase 2 tests continue to pass
+- existing volume calculator remains unchanged
+- existing plan analysis remains unchanged
+- avoided-exercise functionality remains unchanged
+
+============================================================
+10. VERIFICATION
+============================================================
+
+Run:
+
+- focused Phase 3A tests
+- full automated test suite
+- TypeScript checks for affected packages
+- api-zod build
+- api-client-react build if affected
+- API production build
+- API runtime smoke test
+- repeated endpoint calls
+- database counts before and after
+
+Confirm unchanged:
+
+- 87 active exercises
+- 44 volume guideline rows
+- 11 volume targets
+- exactly four experience levels
+- existing clients
+- existing workout plans
+- existing workout plan days
+- existing workout plan exercises
+
+Expected database writes:
+
+0
+
+============================================================
+11. COST AND SCOPE CONTROL
+============================================================
+
+Do not inspect unrelated files.
+Do not perform a full UI audit.
+Do not install browser tools.
+Do not create screenshots.
+Do not run client-landing build because it is not affected.
+Do not add suggested tasks.
+Do not start Phase 3B.
+
+============================================================
+FINAL REPORT
+============================================================
+
+Report:
+
+1. files changed
+2. split recommendation rules implemented
+3. exact broadCategory mapping
+4. day templates
+5. distribution algorithm
+6. 0.5 rounding strategy
+7. sessionMin/sessionMax behaviour
+8. warning codes
+9. API contract and endpoint
+10. focused test result
+11. full test result
+12. TypeScript result
+13. API production build result
+14. runtime smoke result
+15. database write result
+16. reference-data counts
+17. confirmation that no plans, days, exercises or sets were created
+
+Finish with exactly:
+
+PHASE 3A COMPLETE
+
+or
+
+PHASE 3A FAILED

@@ -1,0 +1,101 @@
+Proceed with Stage 7 – Validation Planning only.
+
+Do not generate workout plans.
+Do not modify code.
+Do not create tests.
+Do not refactor anything.
+
+Your task is to determine whether the current generator is ready for large-scale validation.
+
+--------------------------------------------------
+1. Validation readiness
+--------------------------------------------------
+
+Review the current generator architecture (Stages 1–6).
+
+List every decision layer in execution order.
+
+For each layer explain:
+
+- purpose
+- inputs
+- outputs
+- possible failure modes
+
+--------------------------------------------------
+2. Validation scenarios
+--------------------------------------------------
+
+Design approximately 30 validation scenarios.
+
+Do NOT execute them.
+
+Group them into categories such as:
+
+- Beginner
+- Intermediate
+- Advanced
+- Fat loss
+- Hypertrophy
+- Strength
+- Upper/Lower
+- Push/Pull/Legs
+- Full Body
+- Limited equipment
+- Priority muscles
+- Time-limited sessions
+
+For each scenario provide only:
+
+- short title
+- goal
+- what behaviour should be verified
+
+No workout plans.
+
+--------------------------------------------------
+3. High-risk scenarios
+--------------------------------------------------
+
+Identify the 10 scenarios most likely to reveal weaknesses.
+
+Rank them from highest to lowest priority.
+
+Explain why.
+
+--------------------------------------------------
+4. Existing coverage
+--------------------------------------------------
+
+Based on the current implementation, estimate which scenarios should already perform well and which are most likely to expose issues.
+
+Do not speculate beyond the implemented logic.
+
+--------------------------------------------------
+5. Validation strategy
+--------------------------------------------------
+
+Recommend the cheapest validation order.
+
+Example:
+
+Phase 1
+- first 5 scenarios
+
+Review results.
+
+Phase 2
+- next 10
+
+Review again.
+
+Continue until confidence is high.
+
+--------------------------------------------------
+6. Stop
+
+Do not generate any plans.
+
+Do not implement anything.
+
+Only provide the validation roadmap.

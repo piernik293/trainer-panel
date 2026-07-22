@@ -1,0 +1,257 @@
+# GENERATOR PHASE 4A — EXERCISES STEP FOUNDATION
+
+Continue from the current repository state.
+
+The volume presentation and 4-day split recommendation are already complete.
+Do not modify them again.
+
+Supersets and drop sets are not part of this task.
+Do not implement, audit or modify them.
+
+Work only on the generator wizard step:
+
+"Ćwiczenia"
+
+Do not implement AI.
+Do not generate the full workout automatically.
+Do not save workout plans.
+Do not unlock "Podgląd".
+Do not modify volume guidelines, split rules, exercise coefficients or unrelated pages.
+
+============================================================
+1. VERIFY CORE PREREQUISITE
+============================================================
+
+Inspect only the directly related generator volume/distribution response.
+
+Verify whether a separate auxiliary Core / brzuch block currently exists
+and is available in the generator draft.
+
+It should contain:
+
+- weekly Core working sets,
+- integer day allocations,
+- separate presentation from the 11 normal volume targets.
+
+If the Core block does not exist, stop immediately.
+
+Report exactly:
+
+CORE_BLOCK_MISSING
+
+Do not implement Core inside this task.
+Do not inspect unrelated files.
+
+============================================================
+2. UNLOCK EXERCISES
+============================================================
+
+Unlock "Ćwiczenia" only when:
+
+- client profile is valid,
+- plan assumptions are valid,
+- selected days and split are valid,
+- weekly volume preview is valid,
+- daily distribution is valid,
+- there are no blocking errors,
+- the separate Core block is available.
+
+If an earlier step becomes invalid:
+
+- lock "Ćwiczenia" again,
+- show:
+
+"Uzupełnij lub popraw wcześniejsze etapy, aby kontynuować dobór ćwiczeń."
+
+Keep "Podgląd" locked.
+
+============================================================
+3. EXERCISE DAY SECTIONS
+============================================================
+
+Inside "Ćwiczenia" show every workout day from the current distribution.
+
+For every day display:
+
+- day name,
+- assigned muscle targets,
+- analytical effective-volume summary,
+- separate Core / brzuch allocation when assigned,
+- selected exercise list,
+- button "Dodaj ćwiczenie".
+
+Use:
+
+"Objętość efektywna targetów"
+
+Helper:
+
+"To wartość analityczna. Rzeczywiste serie robocze wynikają z dobranych ćwiczeń."
+
+Do not call analytical volume normal working sets.
+
+============================================================
+4. MANUAL EXERCISE SELECTOR
+============================================================
+
+After clicking "Dodaj ćwiczenie", open a compact selector using the existing
+Exercise Library.
+
+Allow:
+
+- search by exercise name,
+- target muscle filter,
+- equipment filter,
+- selection of one existing active exercise,
+- adding it to the selected workout day.
+
+Rules:
+
+- preserve the existing stable exercise ID,
+- do not create new exercises,
+- exclude inactive exercises,
+- exclude equipment/location-incompatible exercises,
+- do not duplicate library data inside generator code.
+
+============================================================
+5. CLIENT WARNINGS
+============================================================
+
+For an exercise avoided by the client show:
+
+"Klient wskazał, że chce unikać tego ćwiczenia."
+
+Require:
+
+"Zastosuj mimo ostrzeżenia"
+
+This warning is non-blocking.
+
+Use existing pain or contraindication data only when already available.
+Do not diagnose or create rehabilitation recommendations.
+
+============================================================
+6. EXERCISE CARD
+============================================================
+
+After adding an exercise display:
+
+- exercise name,
+- target muscle,
+- equipment,
+- working sets,
+- repetitions,
+- RIR,
+- rest time.
+
+Defaults:
+
+- sets: 3
+- repetitions: 8–12
+- RIR: 2
+- rest: 90 seconds
+
+Validation:
+
+- sets must be an integer from 1 to 6,
+- no decimal sets,
+- no zero sets,
+- minimum repetitions cannot exceed maximum repetitions,
+- RIR must be an integer from 0 to 5,
+- rest must be whole seconds.
+
+============================================================
+7. ORDER AND LOCAL DRAFT
+============================================================
+
+Allow reordering exercises only inside the same workout day.
+
+Do not allow dragging between days.
+
+Normal exercises appear before the Core section.
+Core exercises remain at the end of the day.
+
+Keep all selections only in the current generator draft.
+
+Do not create:
+
+- workout plans,
+- workout days,
+- workout exercises,
+- database records.
+
+============================================================
+8. VALIDATION
+============================================================
+
+Prepare:
+
+- EXERCISE_STEP_INCOMPLETE
+- EXERCISE_DAY_EMPTY
+- EXERCISE_SELECTION_VALID
+
+Even when all days contain exercises, keep "Podgląd" locked in this task.
+
+============================================================
+9. COST CONTROL
+============================================================
+
+Inspect only:
+
+- generator wizard state,
+- Step 4 UI,
+- existing Exercise Library read/query,
+- existing avoided-exercise warning,
+- focused Step 4 tests.
+
+Run only:
+
+- focused Step 4 tests,
+- TypeScript for affected packages,
+- trainer-app production build,
+- API build only if a minimal read change is required.
+
+Do not run:
+
+- full test suite,
+- all API tests,
+- browser installation,
+- client-landing build,
+- database audit,
+- website audit,
+- Exercise Library audit,
+- Core implementation,
+- automatic exercise selection,
+- supersets,
+- drop sets,
+- plan persistence,
+- unrelated refactors,
+- application restart unless required for the build.
+
+Report only:
+
+1. Core prerequisite result
+2. files changed
+3. unlock conditions
+4. exercise selector behavior
+5. exercise card behavior
+6. avoided-exercise warning
+7. local draft confirmation
+8. focused test results
+9. TypeScript/build results
+10. confirmation that "Podgląd" remains locked
+11. confirmation that no database records were created
+
+Do not continue automatically.
+
+Finish exactly:
+
+EXERCISES STEP FOUNDATION COMPLETE
+
+or
+
+CORE_BLOCK_MISSING
+
+or
+
+EXERCISES STEP FOUNDATION FAILED

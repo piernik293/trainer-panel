@@ -1,0 +1,154 @@
+Implement a Plan Feedback System based on DailyAllocationEngine output.
+
+This is a small, isolated feature.
+
+DO NOT modify existing allocation logic.
+DO NOT modify autoFill.
+DO NOT modify UI components (only return structured data).
+DO NOT use AI or external services.
+
+====================================================
+GOAL
+====================================================
+
+Create a function that explains:
+
+- whether the plan makes sense
+- what is wrong
+- what should be improved
+
+====================================================
+INPUT
+====================================================
+
+Use:
+
+DailyAllocationResult
+DailyAllocationInput
+
+====================================================
+OUTPUT
+====================================================
+
+Create a new type:
+
+PlanFeedbackResult:
+
+{
+  status: "feasible" | "feasible_with_tradeoffs" | "infeasible"
+
+  messages: string[]      // WHAT is wrong
+  suggestions: string[]   // WHAT to do
+}
+
+====================================================
+FUNCTION
+====================================================
+
+Create:
+
+buildPlanFeedback(
+  allocation: DailyAllocationResult,
+  input: DailyAllocationInput
+): PlanFeedbackResult
+
+====================================================
+RULES (CORE LOGIC)
+====================================================
+
+1. UNRESOLVED VOLUME
+
+If any weeklyUnresolved[target] > 0:
+
+- Add message:
+  "Nie cała objętość została rozłożona w tygodniu."
+
+- Add suggestion:
+  "Zmniejsz objętość lub zmień podział treningów."
+
+----------------------------------------------------
+
+2. LOW FREQUENCY
+
+For each target:
+
+- Count how many days contain allocation > 0
+
+If:
+
+- frequency === 1
+- AND weeklyTargets[target] >= 10
+
+Add message:
+"Niska częstotliwość dla: {target}"
+
+Add suggestion:
+"Zwiększ częstotliwość tej partii mięśniowej."
+
+----------------------------------------------------
+
+3. SESSION OVERLOAD
+
+For each day:
+
+If:
+
+day.total >= sessionMax * 0.9
+
+Add message:
+"Trening bardzo obciążony: dzień {dayIndex + 1}"
+
+Add suggestion:
+"Zmniejsz objętość lub zwiększ liczbę dni treningowych."
+
+----------------------------------------------------
+
+4. IMPOSSIBLE CASE
+
+If allocation.status === "infeasible":
+
+Add message:
+"Nie można poprawnie rozłożyć planu przy obecnych założeniach."
+
+Add suggestion:
+"Zmień split lub zmniejsz objętość."
+
+----------------------------------------------------
+
+5. CLEAN CASE
+
+If:
+
+- no unresolved
+- no overload
+- no low frequency
+
+Add message:
+"Plan jest dobrze zbalansowany."
+
+----------------------------------------------------
+
+====================================================
+IMPORTANT
+====================================================
+
+- DO NOT overcomplicate logic
+- DO NOT add more rules
+- DO NOT use ML or AI
+- DO NOT refactor other services
+
+====================================================
+TESTS
+====================================================
+
+Add tests:
+
+1. Case with unresolved → message + suggestion
+2. Case with 1-day frequency → message + suggestion
+3. Case with overloaded day → message + suggestion
+4. Clean case → "plan jest dobrze zbalansowany"
+5. Infeasible case → correct message
+
+====================================================
+END
+====================================================

@@ -1,0 +1,75 @@
+Add a bulk action to remove all exercises from a single training day in the workout editor.
+
+Do NOT redesign the whole UI.
+Do NOT change generation logic.
+Do NOT change weekly volume logic.
+Do NOT change selector logic.
+This is a focused UX/productivity improvement.
+
+==================================================
+GOAL
+==================================================
+
+The trainer must be able to remove all exercises from one selected day at once.
+
+Current behavior is too slow because exercises can only be removed one by one.
+
+==================================================
+REQUIRED BEHAVIOR
+==================================================
+
+1. Add a clear bulk action on each day card:
+- "Wyczyść dzień"
+or
+- "Usuń wszystkie ćwiczenia"
+
+2. This action must:
+- remove all exercises only from the selected day
+- leave other days unchanged
+- immediately update the local plan state
+- recalculate any dependent totals / coverage / summaries already used by the screen
+
+3. Add a confirmation step before deletion:
+Example:
+"Usunąć wszystkie ćwiczenia z dnia „Lower”?"
+
+Buttons:
+- "Anuluj"
+- "Usuń wszystko"
+
+4. If the day is already empty:
+- hide the action or disable it
+
+5. Keep the per-exercise delete buttons unchanged.
+
+==================================================
+UX REQUIREMENTS
+==================================================
+
+- place the action in a clear but safe position near the day header
+- do not make it too easy to click by accident
+- do not redesign the whole layout
+
+==================================================
+SAFETY
+==================================================
+
+- this must affect only one day
+- it must not clear the whole plan
+- it must not corrupt drag-and-drop state
+- it must not leave stale totals visible after deletion
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact component(s) updated
+3. where the new bulk-delete action was added
+4. how confirmation works
+5. how state recalculation is handled after clearing a day
+
+End exactly with:
+
+CLEAR-DAY ACTION APPLIED

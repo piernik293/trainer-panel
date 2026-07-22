@@ -1,0 +1,74 @@
+Clean up the exercise library filters in the UI.
+
+Do NOT redesign the whole app.
+Do NOT remove underlying data fields from the database/model unless truly necessary.
+This is a focused UI cleanup task.
+
+==================================================
+GOAL
+==================================================
+
+Remove two filters from the exercise library UI because they are unnecessary:
+
+1. the status filter:
+- Kompletne / Niekompletne
+
+2. the secondary-muscle filter:
+- Wszystkie wtórne
+
+==================================================
+IMPORTANT SAFETY RULE
+==================================================
+
+Remove these from the UI / visible filter bar,
+but do NOT break the underlying data model.
+
+If completeness state or secondary-muscle data is still used internally,
+keep the data and logic intact.
+Only remove the visible filter controls and related dead UI wiring cleanly.
+
+This must not cause:
+- runtime errors
+- broken queries
+- broken filtering logic for other filters
+- empty-state bugs
+- stale references in the component tree
+
+==================================================
+REQUIRED CHANGES
+==================================================
+
+1. Remove the visible filter for:
+- Kompletne / Niekompletne
+
+2. Remove the visible filter for:
+- Wszystkie wtórne
+
+3. Update the library filter state cleanly so no dangling references remain
+
+4. Ensure the rest of the filters still work:
+- search by name
+- muscle group
+- equipment
+- place
+- movement pattern
+- type
+- other existing filters
+
+5. If any backend/API parameters were only used by those two filters,
+clean that wiring safely without breaking anything else
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact UI filters removed
+3. exact state/query cleanup applied
+4. confirmation that no internal data model was broken
+5. confirmation that the remaining filters still work
+
+End exactly with:
+
+LIBRARY FILTER CLEANUP APPLIED

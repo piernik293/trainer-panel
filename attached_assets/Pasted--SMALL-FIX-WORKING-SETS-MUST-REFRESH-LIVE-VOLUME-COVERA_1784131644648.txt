@@ -1,0 +1,213 @@
+# SMALL FIX — WORKING SETS MUST REFRESH LIVE VOLUME COVERAGE
+
+Continue from the current repository state in Build mode.
+
+Fix only this confirmed Step 4 bug:
+
+Changing the "Serie" value of an exercise does not update:
+
+- daily "Zrealizowano" volume,
+- weekly "Zrealizowano" volume,
+- remaining or exceeded volume status.
+
+Do not modify:
+
+- volume formulas,
+- muscle coefficients,
+- muscle assignments,
+- Step 3 planned values,
+- recommendation scoring,
+- auto-fill selection,
+- exercise defaults,
+- Step 5,
+- database,
+- plan saving,
+- unrelated UI.
+
+============================================================
+1. TRACE THE REAL DATA FLOW
+============================================================
+
+Inspect only:
+
+- the Step 4 exercise "Serie" input,
+- the exercise draft update handler,
+- PlanDraftWizard local draft state,
+- useVolumeCoverage,
+- the volume-preview request payload,
+- directly affected focused tests.
+
+Trace:
+
+Serie input change
+→ exercise draft workingSets value
+→ onDraftChange
+→ PlanDraftWizard state
+→ useVolumeCoverage request key/dependencies
+→ POST /api/plans/volume-preview payload
+→ newest preview response
+→ daily and weekly coverage UI
+
+Use the actual existing state field names.
+
+Do not add duplicate set fields.
+
+============================================================
+2. REQUIRED BEHAVIOUR
+============================================================
+
+When the trainer changes an exercise from 3 sets to 4 sets:
+
+- the local draft must contain workingSets: 4,
+- a new volume-preview request must be triggered,
+- the request payload must contain workingSets: 4,
+- daily coverage must update,
+- weekly coverage must update,
+- "Pozostało" or "Przekroczono" must update,
+- recommendations based on remaining coverage may refresh only after the new
+  coverage result is available.
+
+Changing sets must not require:
+
+- page refresh,
+- removing and re-adding the exercise,
+- changing another field,
+- leaving and reopening Step 4.
+
+============================================================
+3. STATE SAFETY
+============================================================
+
+Ensure exercise draft updates are immutable.
+
+Do not mutate:
+
+- the existing day array,
+- the existing exercise array,
+- the existing exercise object.
+
+The changed exercise, its day, and the complete draft must receive new
+references where required by the current React state flow.
+
+Ensure the "Serie" input is controlled by the current draft value and writes a
+positive whole integer to the actual working-sets field.
+
+Preserve the existing validation range.
+
+============================================================
+4. COVERAGE REQUEST KEY
+============================================================
+
+The volume-coverage request identity or dependency key must include, for every
+exercise:
+
+- workout day identity,
+- exercise entry identity,
+- exerciseId,
+- workingSets.
+
+A workingSets change must produce a new request.
+
+Changes to:
+
+- repetitions,
+- RIR,
+- rest time,
+- notes,
+- order within the same day
+
+must not trigger a volume request unless the existing coverage calculation
+actually depends on them.
+
+============================================================
+5. STALE RESPONSE PROTECTION
+============================================================
+
+If the trainer changes quickly:
+
+3 sets
+→ 4 sets
+→ 5 sets
+
+only the response for 5 sets may update the UI.
+
+An older response for 3 or 4 sets must be ignored.
+
+Keep the last valid coverage visible while the newest request is loading.
+
+Do not clear the current draft or display permanent zero values during
+recalculation.
+
+============================================================
+6. BACKEND CHECK ONLY IF REQUIRED
+============================================================
+
+First verify the frontend request payload.
+
+If the request already contains the newest workingSets value but the backend
+returns the old calculation, inspect only the directly responsible existing
+volume-preview normalization/calculation path.
+
+Do not rewrite the calculator.
+
+Do not create a new endpoint.
+
+Do not modify backend code unless the frontend payload is confirmed correct and
+the backend is confirmed to ignore workingSets.
+
+============================================================
+7. FOCUSED TESTS
+============================================================
+
+Run only the exact directly affected test file or files.
+
+Required cases:
+
+1. Initial exercise has 3 sets.
+2. Changing the input to 4 updates the local draft to workingSets: 4.
+3. A new preview request is sent with workingSets: 4.
+4. Daily realized volume updates from the new response.
+5. Weekly realized volume updates from the new response.
+6. Remaining/exceeded status updates.
+7. A stale 3-set response cannot overwrite the 4-set result.
+8. Rapid 3 → 4 → 5 changes end with the 5-set result.
+9. Changing repetitions alone does not trigger a volume request.
+10. Existing selected exercises and prescriptions remain present.
+
+Do not run:
+
+- the full frontend test suite,
+- backend test suite unless backend code changes,
+- root tests,
+- production builds,
+- browser or screenshot automation,
+- workflow restarts,
+- unrelated refactors.
+
+Run trainer-app TypeScript only if code changes.
+
+Run API-server TypeScript only if backend code changes.
+
+============================================================
+8. REPORT
+============================================================
+
+Report only:
+
+1. confirmed root cause
+2. exact working-sets field used
+3. files changed
+4. request dependency/key fix
+5. immutable state update fix
+6. stale-response behaviour
+7. exact focused tests executed
+8. TypeScript result
+9. whether backend code changed
+
+Finish exactly with one:
+
+WORKING SETS LIVE COVERAGE FIXED
+
+WORKING SETS LIVE COVERAGE ALREADY CORRECT
+
+WORKING SETS LIVE COVERAGE FAILED

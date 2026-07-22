@@ -1,0 +1,127 @@
+# PHASE 3A — FIX SPLIT RECOMMENDATION RULES ONLY
+
+Continue from the current Phase 3A repository state.
+
+Do not restart Phase 3A.
+Do not implement UI or Phase 3B.
+Do not change the volume distribution algorithm unless required by the corrected split templates.
+Do not modify the database.
+Do not create plans, days, exercises or sets.
+
+The previous implementation used the wrong split recommendation table.
+
+Replace it with exactly these rules:
+
+1 training day:
+- full_body
+
+2 training days:
+- full_body_ab
+
+3 training days:
+- Brak aktywności fizycznej → full_body_ab
+- Początkujący → full_body_ab
+- Średniozaawansowany → upper_lower_full_body
+- Zaawansowany → upper_lower_full_body
+
+4 training days:
+- Brak aktywności fizycznej → upper_lower
+- Początkujący → upper_lower
+- Średniozaawansowany → push_pull_lower_full_body
+- Zaawansowany → push_pull_lower_full_body
+
+5 training days:
+- upper_lower_full_body
+
+6 training days:
+- push_pull_legs
+
+Never recommend specialization or custom automatically.
+
+trainingDays must be restricted to integers from 1 through 6.
+Reject 0, 7, negative, decimal and non-finite values.
+
+Correct the day templates to remain deterministic:
+
+- full_body:
+  Full Body 1, Full Body 2, Full Body 3...
+
+- full_body_ab:
+  Full Body A, Full Body B, then repeat A/B
+
+- upper_lower:
+  Upper, Lower, then repeat
+
+- upper_lower_full_body:
+  Upper, Lower, Full Body, then repeat the sequence
+
+- push_pull_legs:
+  Push, Pull, Legs, then repeat
+
+- push_pull_lower_full_body:
+  Push, Pull, Lower, Full Body, then repeat
+
+- specialization:
+  Specialization Day 1, Specialization Day 2...
+  Use Full Body eligibility in Phase 3A.
+
+- custom:
+  Custom Day 1, Custom Day 2...
+
+Do not invent names such as full_body_a unless they are display labels derived from the templates above.
+
+Preserve these warnings:
+
+- HIGH_FREQUENCY_FOR_NO_ACTIVITY when trainingDays > 3
+- HIGH_FREQUENCY_FOR_BEGINNER when trainingDays > 4
+- SPLIT_DIFFERS_FROM_RECOMMENDATION
+- SPECIALIZATION_REQUIRES_EXERCISE_PHASE
+- CUSTOM_SPLIT_REQUIRES_TRAINER_REVIEW
+
+Update the existing tests so they assert the exact table above.
+
+Add one table-driven test covering:
+
+- all 4 experience levels,
+- every trainingDays value from 1 to 6,
+- expected recommended split.
+
+Also test rejection of:
+
+- 0 days,
+- 7 days,
+- 2.5 days,
+- NaN,
+- Infinity.
+
+Run only:
+
+1. focused Phase 3A tests,
+2. full test suite once after the correction,
+3. TypeScript for affected packages,
+4. API production build,
+5. one live API smoke test for:
+   - 2 days beginner → full_body_ab
+   - 3 days advanced → upper_lower_full_body
+   - 4 days advanced → push_pull_lower_full_body
+   - 5 days beginner → upper_lower_full_body
+   - 6 days advanced → push_pull_legs
+
+Do not repeat DB write checks because this change is pure logic and introduces no writes.
+
+Report:
+
+- files changed,
+- corrected recommendation table,
+- live smoke-test outputs,
+- focused and full test counts,
+- TypeScript result,
+- API production-build result.
+
+Finish exactly:
+
+PHASE 3A COMPLETE
+
+or
+
+PHASE 3A FAILED

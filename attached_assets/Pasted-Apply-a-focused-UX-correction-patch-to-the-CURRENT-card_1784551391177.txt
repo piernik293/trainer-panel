@@ -1,0 +1,109 @@
+Apply a focused UX correction patch to the CURRENT cardio section in the survey.
+
+Do NOT redesign the whole app.
+Do NOT change the deeper cardio rules.
+Do NOT touch unrelated survey sections.
+This is a strict layout + wording correction only.
+
+==================================================
+GOAL
+==================================================
+
+Fix the current cardio section so it looks more compact, more horizontal, and more professional.
+
+The current problem:
+- the third cardio column ("Jaka forma aktywności tlenowej najbardziej Ci odpowiada?") is too tall
+- the options are stacked in one long vertical list
+- the whole section becomes visually unbalanced
+
+Also update the example placeholder in the short goal-motivation field.
+
+==================================================
+SECTION 1 — CARDIO LAYOUT FIX
+==================================================
+
+Keep the existing 3 main cardio sub-sections:
+1. cardio preference
+2. current cardio activity
+3. preferred cardio form
+
+But improve the layout.
+
+Current issue:
+The preferred-cardio-form options render as one long vertical stack.
+
+Required fix:
+- keep the section in a horizontal multi-column layout on desktop
+- keep the overall 3-column structure on desktop if possible
+- but inside the third block ("Jaka forma aktywności tlenowej najbardziej Ci odpowiada?"), do NOT render the options as one long single column
+
+Preferred layout:
+- third block options should render as a compact responsive grid
+- desktop: 2 columns inside that block
+- smaller screens: 1 column
+- keep the options readable and clearly clickable
+- reduce unnecessary vertical height
+
+Goal:
+The cardio section should feel balanced horizontally, not like one overly tall right-side column.
+
+==================================================
+SECTION 2 — KEEP THE SAME CARDIO OPTIONS
+==================================================
+
+Do NOT change the actual options.
+Keep them as they are:
+
+- Marsz
+- Szybki marsz
+- Sport rekreacyjny
+- Bieganie
+- Rower
+- Orbitrek
+- Pływanie
+- Wioślarz
+- Stepper / schody
+
+Only fix layout and visual balance.
+
+==================================================
+SECTION 3 — GOAL FIELD PLACEHOLDER FIX
+==================================================
+
+Update the example placeholder / helper example for:
+
+- "Dlaczego chcesz trenować?"
+
+Use:
+- "np. Chcę poprawić kondycję i schudnąć przed wakacjami"
+
+Do NOT use:
+- "przed latem"
+
+==================================================
+SECTION 4 — DO NOT TOUCH
+==================================================
+
+Do NOT in this patch:
+- change cardio rules
+- change cardio question wording
+- change sport-goal logic
+- change additional-info logic
+- redesign the rest of the survey
+- change generator logic
+
+This is only a visual/layout correction + one placeholder wording fix.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact cardio layout correction made
+3. exact grid behavior used for the preferred-cardio-form options
+4. exact placeholder text change made
+
+End exactly with:
+
+CARDIO LAYOUT CORRECTION APPLIED

@@ -1,0 +1,412 @@
+# WORKOUT PLAN GENERATOR — CORRECTION BEFORE EXERCISE SELECTION
+## Integer sets, priority bonuses, split compatibility and trainer guidance
+
+Continue from the current Phase 3B repository state.
+
+Do not implement the full exercise-selection engine yet.
+Do not create or save workout plans, workout days, exercises or prescriptions.
+Do not modify existing client, survey or workout-plan records.
+Do not redesign unrelated pages.
+Do not use AI.
+Do not start the next phase automatically.
+
+This is a focused correction of the generator rules before exercise selection.
+
+============================================================
+1. INTEGER WORKING SETS ONLY
+============================================================
+
+Planned working sets must always be whole integers.
+
+This applies to:
+
+- Phase 2 weekly selected volume,
+- trainer volume overrides,
+- Phase 3 daily allocations,
+- values displayed in the wizard.
+
+Allowed examples:
+
+2, 3, 4, 5, 6, 7...
+
+Forbidden examples:
+
+1.5, 2.5, 3.5, 13.5...
+
+Change volume inputs and steppers from 0.5 increments to 1-set increments.
+
+Automatic weekly recommendations must be rounded deterministically to a
+whole integer while remaining inside the allowed thresholds.
+
+Trainer overrides must reject non-integer values with:
+
+VOLUME_OVERRIDE_NOT_INTEGER
+
+Do not silently round trainer-entered values.
+
+Internal effective-volume analysis may still use decimal contribution
+coefficients, but a planned number of sets to perform must never be
+fractional.
+
+============================================================
+2. DAILY DISTRIBUTION QUALITY
+============================================================
+
+Daily allocations must be whole integers.
+
+For a positive target allocation:
+
+- preferred: 3–4 sets,
+- minimum: 2 sets,
+- never create 1 set when an alternative valid distribution exists.
+
+Prefer fewer meaningful exposures instead of distributing a target across
+every eligible day.
+
+Examples:
+
+3 → [3]
+4 → [4]
+5 → [3, 2]
+6 → [3, 3]
+7 → [4, 3]
+8 → [4, 4]
+9 → [3, 3, 3]
+10 → [4, 3, 3]
+11 → [4, 4, 3]
+12 → [4, 4, 4]
+
+The exact weekly total must remain unchanged.
+
+If selected weekly volume equals 1:
+
+- allocate [1] on one day,
+- emit TARGET_WEEKLY_VOLUME_TOO_LOW,
+- do not split it.
+
+Use integer arithmetic and deterministic tie-breaking.
+
+============================================================
+3. FIXED PRIORITY VOLUME BONUS
+============================================================
+
+Replace percentage-based priority-volume adjustments with fixed whole-set
+bonuses.
+
+Every selected priority group receives:
+
+Large muscle group:
+- +3 weekly working sets
+
+Smaller muscle group:
+- +2 weekly working sets
+
+Large groups:
+
+- chest,
+- back,
+- quadriceps,
+- hamstrings,
+- glutes.
+
+Smaller groups:
+
+- shoulders,
+- biceps,
+- triceps,
+- calves,
+- adductors,
+- core / lower-back auxiliary targets.
+
+Inspect the real 11 target IDs and broadCategory values and create one
+centralized stable mapping.
+
+The bonus is applied per priority body part / broadCategory, not separately
+to every target belonging to that broad category.
+
+Example:
+
+If "Plecy" maps to more than one internal target, the total added bonus for
+the entire priority remains +3, not +3 for every mapped target.
+
+Distribute a shared-category bonus deterministically across its targets.
+
+P1, P2 and P3 all receive the body-part bonus.
+Priority order remains available for:
+
+- earlier-week placement,
+- later exercise selection,
+- display order.
+
+Automatic recommendation:
+
+base recommendation + fixed priority bonus
+
+It may exceed preferredMax when caused by a priority, but must never exceed
+absoluteMax.
+
+If above preferredMax:
+
+PRIORITY_VOLUME_ABOVE_PREFERRED
+
+If the complete bonus cannot fit below absoluteMax:
+
+- cap only the automatic recommendation at absoluteMax,
+- emit PRIORITY_BONUS_LIMITED_BY_ABSOLUTE_MAX.
+
+Do not silently modify trainer overrides.
+
+============================================================
+4. SPLIT COMPATIBILITY WITH TRAINING DAYS
+============================================================
+
+Add one centralized compatibility map:
+
+- full_body: minimum 1 day
+- full_body_ab: minimum 2 days
+- upper_lower: minimum 2 days
+- upper_lower_full_body: minimum 3 days
+- push_pull_legs: minimum 3 days
+- push_pull_lower_full_body: minimum 4 days
+- specialization: minimum 2 days
+- custom: minimum 1 day
+
+Maximum remains 6 days.
+
+In the split-selection UI:
+
+- incompatible split cards must be disabled,
+- show: "Wymaga minimum X dni",
+- do not allow selection,
+- if the currently selected split becomes incompatible after changing
+  trainingDays, clear it or replace it with the backend recommendation and
+  show a clear message.
+
+Do not display the current training-day count as if every split were valid.
+
+Show separately:
+
+- recommended,
+- available,
+- unavailable.
+
+The backend must also reject an incompatible selected split using:
+
+SPLIT_INCOMPATIBLE_WITH_TRAINING_DAYS
+
+Do not rely only on frontend disabling.
+
+============================================================
+5. RECOVERY AND LIFESTYLE TRAINER GUIDANCE
+============================================================
+
+Add a deterministic read-only trainer-guidance section based on:
+
+- sleep hours,
+- stress,
+- recovery quality,
+- daily activity,
+- physical work,
+- health limitations / pain text.
+
+Do not diagnose medical conditions.
+
+Examples of practical guidance:
+
+Poor recovery or high stress:
+- avoid excessive training to failure,
+- prefer 2–3 reps in reserve,
+- reduce or avoid intensification methods,
+- monitor performance and recovery,
+- consider a lighter week when performance and recovery decline.
+
+Low sleep:
+- warn that progression and tolerance may be reduced,
+- recommend consistent sleep and conservative progression.
+
+Physical work:
+- account for additional fatigue, especially for overlapping muscle groups.
+
+Pain or health limitation:
+- show a prominent trainer warning,
+- suggest pain-free movement variants,
+- suggest controlled range of motion and tempo,
+- require trainer review before exercise assignment.
+
+For knee-pain text, provide non-diagnostic trainer suggestions such as:
+
+- verify pain location, intensity and aggravating movement,
+- avoid exercises and ranges that clearly increase symptoms,
+- consider low-load strengthening patterns available in the exercise library,
+  such as supported squat patterns, controlled low step-ups or isometric
+  quadriceps work,
+- recommend specialist consultation for acute injury, swelling, locking,
+  instability or worsening symptoms.
+
+Do not automatically add a rehabilitation exercise to a plan.
+Show candidates for trainer approval only.
+
+Return structured guidance entries:
+
+- category,
+- severity,
+- title,
+- message,
+- trainerAction,
+- relatedInputSource.
+
+============================================================
+6. PREFERRED EXERCISES
+============================================================
+
+Expand "Ćwiczenia preferowane".
+
+Use a searchable multi-select connected to the existing exercise library.
+
+Store stable exercise IDs, not only labels.
+
+Support at least 20 selected preferred exercises.
+
+For every selected exercise allow an optional trainer/client note.
+
+Keep an "Inne ćwiczenie" free-text field for exercises not found in the
+library.
+
+Do not remove previous free-text data.
+
+Prepare the data contract so the future exercise-selection engine can use:
+
+- preferredExerciseIds,
+- preferredExerciseNotes,
+- preferredExerciseOtherText.
+
+Do not automatically create workout-plan exercises in this task.
+
+Document this future selection rule:
+
+A preferred exercise should receive a strong recommendation boost and may be
+automatically proposed only when it:
+
+- matches the trained target and day type,
+- matches available equipment,
+- is not avoided,
+- is not contraindicated,
+- does not conflict with pain or health limitations.
+
+Trainer approval remains required before the draft is saved.
+
+============================================================
+7. UI
+============================================================
+
+Update only the required wizard/interview sections:
+
+- integer volume inputs,
+- split availability states,
+- trainer guidance under "Regeneracja i styl życia",
+- expanded preferred-exercise selection.
+
+Keep "Ćwiczenia" in the generator locked.
+
+Do not implement the complete exercise-selection screen.
+
+Use existing styling and responsive components.
+
+============================================================
+8. TESTS
+============================================================
+
+Add focused tests for:
+
+Integer sets:
+- automatic recommendations are integers,
+- non-integer override rejected,
+- daily allocations are integers,
+- exact weekly sums remain correct,
+- examples 3 through 12 above.
+
+Priority bonus:
+- large group +3,
+- small group +2,
+- bonus applied once per broad category,
+- multi-target broad category does not multiply the bonus,
+- priority above preferred warning,
+- absolute max protection.
+
+Split compatibility:
+- every minimum-day rule,
+- PPL unavailable for 2 days,
+- upper/lower/full-body unavailable for 2 days,
+- push/pull/lower/full-body unavailable for 2 or 3 days,
+- backend rejection of incompatible split.
+
+Guidance:
+- high stress + poor recovery,
+- low sleep,
+- physical work,
+- knee-pain text creates non-diagnostic trainer guidance,
+- medical diagnosis is never generated.
+
+Preferred exercises:
+- multiple IDs accepted,
+- at least 20 entries supported,
+- duplicate IDs removed,
+- notes preserved,
+- previous free text preserved.
+
+Run the full suite once after focused tests pass.
+
+============================================================
+9. VERIFICATION AND COST CONTROL
+============================================================
+
+Run only:
+
+- focused affected tests,
+- full test suite once,
+- TypeScript for affected packages,
+- api-zod build if contracts changed,
+- api-client-react build if hook/types changed,
+- API production build if backend changed,
+- trainer-app production build.
+
+Do not run:
+
+- client-landing build,
+- browser installation,
+- website audit,
+- repeated Phase 2/3 audits,
+- unrelated refactors,
+- suggested next tasks.
+
+Do not modify reference data unless required to store preferred-exercise IDs.
+If a migration is genuinely necessary, keep it minimal and non-destructive
+and explain it before applying.
+
+============================================================
+FINAL REPORT
+============================================================
+
+Report only:
+
+1. files changed
+2. integer-set rules
+3. priority group mapping and bonuses
+4. split compatibility matrix
+5. regeneration/lifestyle guidance rules
+6. preferred-exercise data flow
+7. focused/full tests
+8. TypeScript/build results
+9. whether any migration was required
+10. confirmation that no workout plan, day, exercise or set was created
+11. confirmation that the generator "Ćwiczenia" step remains locked
+
+Do not start another phase.
+
+Finish exactly:
+
+GENERATOR RULE CORRECTION COMPLETE
+
+or
+
+GENERATOR RULE CORRECTION FAILED

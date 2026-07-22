@@ -1,0 +1,295 @@
+# SMALL FIX — WORKING SETS MUST REFRESH LIVE VOLUME COVERAGE
+
+Continue from the current repository state in Build mode.
+
+Do not enter Plan mode.
+Do not repeat broad codebase exploration.
+
+CONFIRMED REPRODUCTION:
+
+In Step 4:
+
+- Core plan for the day: 3 sets
+- "Ab wheel rollout" was changed from 3 to 4 working sets
+- the exercise card displays 4 sets
+- coverage still displays "Zrealizowano: 3 serie"
+
+Expected:
+
+- Core coverage displays 4 completed sets
+- status becomes orange and non-blocking
+- the UI shows that the proposal was exceeded by 1 set
+
+Fix the underlying draft-state or derived-coverage refresh issue.
+Do not create a special case for this exercise.
+
+The same rule must work for normal muscle-target coverage.
+
+Do not modify:
+
+- volume formulas,
+- muscle coefficients,
+- muscle assignments,
+- Step 3 planned values,
+- recommendation scoring,
+- auto-fill selection,
+- exercise defaults,
+- Step 5,
+- database,
+- plan saving,
+- unrelated UI.
+
+============================================================
+1. TRACE THE CURRENT DATA FLOW
+============================================================
+
+Inspect only:
+
+- Step 4 exercise "Serie" input,
+- exercise draft update handler,
+- PlanDraftWizard local exercise draft state,
+- Step4Exercises props and state,
+- useVolumeCoverage,
+- VolumeCoverageSection,
+- coreCoverageHelpers,
+- volume-preview request payload,
+- directly affected focused tests.
+
+Trace both paths:
+
+A. Normal muscle targets:
+
+Serie input
+→ actual workingSets field
+→ immutable draft update
+→ PlanDraftWizard state
+→ useVolumeCoverage dependency/request key
+→ volume-preview payload
+→ newest preview response
+→ daily and weekly "Zrealizowano"
+
+B. Core:
+
+Serie input
+→ actual workingSets field
+→ immutable draft update
+→ current draft passed to Core coverage helper
+→ countCoreActualSetsForDay or current equivalent
+→ Core daily and weekly "Zrealizowano"
+
+Use the existing field names and helpers.
+
+Do not add a second working-sets field.
+Do not create a second volume calculation.
+
+============================================================
+2. REQUIRED BEHAVIOUR
+============================================================
+
+When working sets change from 3 to 4:
+
+- the local draft must immediately contain workingSets: 4,
+- the controlled input must display the current draft value,
+- Core direct-set coverage must use 4,
+- normal effective-volume preview must request workingSets: 4,
+- daily realized volume must update,
+- weekly realized volume must update,
+- remaining or exceeded status must update.
+
+Changing sets must not require:
+
+- page refresh,
+- removing and re-adding the exercise,
+- navigating away from Step 4,
+- changing another input.
+
+For the confirmed Core example:
+
+Plan: 3 serie
+Zrealizowano: 4 serie
+Przekroczono propozycję o: 1 serię
+
+The exceeded status remains orange and non-blocking.
+
+============================================================
+3. IMMUTABLE DRAFT UPDATE
+============================================================
+
+Verify that changing sets does not mutate existing objects or arrays.
+
+Where required by the current state architecture, create new references for:
+
+- changed exercise object,
+- exercise list for the workout day,
+- changed workout-day draft,
+- complete exercise draft.
+
+Preserve:
+
+- exerciseId,
+- temporary entry ID,
+- exercise order,
+- repetitions,
+- RIR,
+- rest time,
+- avoided-exercise acceptance state,
+- all exercises in other workout days.
+
+============================================================
+4. NORMAL VOLUME REQUEST DEPENDENCY
+============================================================
+
+The volume-preview request identity or dependency key must include, for every
+exercise:
+
+- workout-day identity,
+- exercise-entry identity,
+- exerciseId,
+- workingSets.
+
+Changing workingSets must trigger one new debounced preview request.
+
+Changes to:
+
+- repetitions,
+- RIR,
+- rest time,
+- notes,
+- order inside the same day
+
+must not trigger a volume request unless the existing backend calculation
+actually depends on them.
+
+Do not introduce a request loop between:
+
+- volume coverage,
+- remaining-volume recommendations,
+- auto-fill state.
+
+Recommendations may refresh only after the newest coverage result is available.
+
+============================================================
+5. CORE DERIVED COVERAGE
+============================================================
+
+Core coverage must always derive from the latest local exercise draft.
+
+Verify all relevant useMemo, useCallback and component dependencies.
+
+Do not keep a stale Core value captured before the exercise-set update.
+
+Use the existing direct Core classification.
+
+Do not:
+
+- infer Core from exercise names,
+- count incidental trunk stabilization,
+- change Core planning values,
+- call the backend only to calculate raw direct Core sets when the current
+  architecture already calculates them locally.
+
+============================================================
+6. STALE RESPONSE PROTECTION
+============================================================
+
+For rapid changes:
+
+3 sets
+→ 4 sets
+→ 5 sets
+
+only the newest 5-set result may update normal target coverage.
+
+Older responses for 3 or 4 sets must be ignored.
+
+Keep the last valid coverage result visible while recalculating.
+
+A stale response must not overwrite:
+
+- daily coverage,
+- weekly coverage,
+- remaining-volume recommendations.
+
+============================================================
+7. BACKEND CHANGE POLICY
+============================================================
+
+First verify the frontend draft and request payload.
+
+If the request payload already contains the newest workingSets value and the
+backend still calculates the previous value, inspect only the existing
+volume-preview normalization path.
+
+Do not:
+
+- rewrite the Volume Calculator,
+- add a new endpoint,
+- change coefficients,
+- change calculation formulas.
+
+Do not modify backend code unless the frontend payload is confirmed correct and
+the existing backend path is confirmed to ignore workingSets.
+
+============================================================
+8. FOCUSED TESTS
+============================================================
+
+Run only the exact directly affected focused test file or files.
+
+Required cases:
+
+1. Changing an exercise from 3 to 4 sets updates workingSets in the draft.
+2. Existing exercise metadata and prescription fields are preserved.
+3. Core actual direct sets update from 3 to 4.
+4. Core status changes from covered to exceeded by 1 set.
+5. Normal preview request contains workingSets: 4.
+6. Daily normal-target coverage updates from the newest response.
+7. Weekly normal-target coverage updates from the newest response.
+8. Remaining/exceeded status updates.
+9. Rapid 3 → 4 → 5 changes end with the 5-set result.
+10. A stale response cannot overwrite the newest result.
+11. Repetition-only change does not trigger volume preview.
+12. Other workout days and exercises remain unchanged.
+
+Do not run:
+
+- complete frontend test suite,
+- complete backend test suite,
+- root tests,
+- production builds,
+- browser or screenshot automation,
+- Playwright,
+- database audits,
+- workflow restarts,
+- unrelated refactors.
+
+Run trainer-app TypeScript only if frontend code changes.
+
+Run API-server TypeScript only if backend code changes.
+
+============================================================
+9. REPORT
+============================================================
+
+Report only:
+
+1. confirmed root cause
+2. exact working-sets field used
+3. files changed
+4. immutable state update behaviour
+5. normal volume request dependency fix
+6. Core derived-coverage fix
+7. stale-response behaviour
+8. exact focused tests executed
+9. TypeScript result
+10. whether backend code changed
+
+Do not continue automatically.
+
+Finish exactly with one:
+
+WORKING SETS LIVE COVERAGE FIXED
+
+WORKING SETS LIVE COVERAGE ALREADY CORRECT
+
+WORKING SETS LIVE COVERAGE FAILED

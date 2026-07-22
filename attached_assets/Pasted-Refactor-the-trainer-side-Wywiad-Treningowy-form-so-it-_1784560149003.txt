@@ -1,0 +1,130 @@
+Refactor the trainer-side "Wywiad Treningowy" form so it matches the current client-side survey structure and logic.
+
+Do NOT redesign the whole app.
+Do NOT change generator logic in this task.
+Do NOT add new product features in this task.
+This is a survey consistency / trainer-panel alignment task.
+
+==================================================
+GOAL
+==================================================
+
+Make the trainer-side interview form consistent with the client-side survey.
+
+The trainer should have the same planning-relevant information "pod ręką",
+but the form structure, wording, options, and conditional logic must match the client survey.
+
+Avoid having two divergent survey systems.
+
+==================================================
+REQUIRED DIRECTION
+==================================================
+
+Use the client-side survey as the source of truth.
+
+The trainer-side "Wywiad Treningowy" should match the client-side survey in:
+
+1. field set
+2. wording
+3. option labels
+4. conditional visibility logic
+5. helper texts
+6. validation rules
+7. autocomplete behavior where already used on the client side
+
+The trainer-side version can remain more compact / operational,
+but it must stay logically aligned with the client-side version.
+
+==================================================
+WHAT TO ALIGN
+==================================================
+
+Align the trainer-side form with the current client-side survey for at least:
+
+- Cel treningowy
+- Cel sportowy path
+- sport follow-up wording
+- "Dlaczego chcesz trenować?"
+- Zdrowie i ograniczenia
+- Aktywność tlenowa i cardio
+- Dodatkowe informacje
+- Ulubione ćwiczenia
+- Ćwiczenia do unikania
+- Partie priorytetowe
+- Aktywność / sen / stres
+- Dni treningowe
+- Czas treningu
+- Miejsce treningu / sprzęt
+
+==================================================
+IMPORTANT EXAMPLES
+==================================================
+
+1. If client-side uses:
+- "Cel sportowy"
+then trainer-side must also use:
+- "Cel sportowy"
+
+2. If client-side uses:
+- "Jak uprawiasz sport?"
+with:
+- "Hobbystycznie"
+- "Zawodowo"
+then trainer-side must use the same wording and the same 2 options.
+
+3. If client-side uses:
+- "Dlaczego chcesz trenować?"
+then trainer-side should also include that field.
+
+4. If client-side uses:
+- "Dodatkowe informacje"
+as:
+- Tak
+- Nie
+with conditional textarea after "Tak",
+then trainer-side must match that logic.
+
+5. If client-side cardio section uses:
+- "Aktywność tlenowa i cardio"
+- professional cardio wording
+- fixed current-cardio options
+- structured preferred-cardio-form options
+then trainer-side must match those same values and meanings.
+
+6. If some old field no longer exists on the client side,
+remove it from the trainer-side interview as well,
+unless it is absolutely necessary and intentionally trainer-only.
+If so, clearly keep it separate and justified.
+
+==================================================
+TECHNICAL DIRECTION
+==================================================
+
+Prefer a shared survey definition / shared config / shared schema approach
+instead of maintaining two diverging manual forms.
+
+Goal:
+one source of truth for:
+- labels
+- options
+- helper texts
+- conditional logic
+- validation
+
+The trainer panel and client page may render differently,
+but should not drift logically.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact trainer-side fields aligned to client-side survey
+3. exact old/stale trainer-side fields removed or changed
+4. exact shared logic/schema/config introduced if any
+5. confirmation that trainer-side and client-side now use the same survey logic foundation
+
+End exactly with:
+
+TRAINER INTERVIEW ALIGNED WITH CLIENT SURVEY

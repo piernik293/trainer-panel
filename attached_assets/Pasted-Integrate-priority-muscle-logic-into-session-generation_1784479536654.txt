@@ -1,0 +1,200 @@
+Integrate priority-muscle logic into session generation and exercise selection.
+
+Do NOT redesign the whole app.
+Do NOT change UI.
+Do NOT change weekly volume logic that was just implemented.
+Do NOT remove selector V0.
+Do NOT add AI logic.
+This is a focused planning + selection integration task.
+
+==================================================
+GOAL
+==================================================
+
+Priority muscle must influence not only weekly volume,
+but also how the generated plan is structured.
+
+Right now priority affects weekly allocation only.
+That is not enough.
+
+We need priority integration so that a priority muscle also gets:
+- better exercise slot placement
+- more suitable main lift exposure
+- frequency preference when feasible
+- higher protection from being cut
+- exercise variety within the same muscle group
+- sub-target diversity where relevant
+
+==================================================
+IMPORTANT RULE
+==================================================
+
+This must apply ONLY to priority-eligible experience levels:
+- Średniozaawansowany
+- Zaawansowany
+
+For:
+- Brak aktywności
+- Początkujący
+
+keep general-development logic.
+Do not apply aggressive specialization.
+
+==================================================
+PRIORITY MODEL
+==================================================
+
+Use the existing tier model:
+
+- Tier A = main priority muscle or main priority exercise focus
+- Tier B = supporting muscles
+- Tier C = general development / maintenance
+
+This task is about making Tier A and Tier B affect session generation and exercise selection.
+
+==================================================
+REQUIRED BEHAVIOR
+==================================================
+
+If a muscle is Tier A, the generator should prefer:
+
+1. BETTER SLOT POSITION
+- priority muscle should appear earlier in the session when possible
+- priority muscle should receive main or secondary compound slots before low-priority muscles
+
+2. MAIN LIFT SUPPORT
+- if the priority muscle has a suitable main lift available, it should prefer it
+- example:
+  - chest priority -> bench / DB press / incline press should be prioritized over machine-only filler work
+  - back priority -> row / pull-up / pulldown should be prioritized over low-value accessories
+
+3. FREQUENCY PREFERENCE
+- if the split allows it, priority muscles should receive more than one meaningful exposure across the week
+- do NOT force impossible frequency
+- use preference, not hard failure
+
+4. PROTECTION FROM CUTS
+- when session length is limited (max 6 exercises),
+  Tier A should be the last thing removed
+- Tier B should be reduced after Tier C
+- Tier C is the first candidate to lose optional volume
+
+5. EXERCISE VARIETY
+- do not repeat the same type of stimulus for the priority muscle across all exposures
+- avoid building all priority volume from near-identical exercises
+
+6. SUB-TARGET DIVERSITY
+- where bias metadata exists, use it as a preference layer
+
+Example:
+If chest is priority:
+- prefer a combination such as flat + incline
+- do not build all chest work only from one angle unless equipment constraints force it
+
+This is NOT a separate weekly volume system for upper chest/lower chest.
+This is only exercise-selection quality.
+
+==================================================
+CHEST EXAMPLE (VERY IMPORTANT)
+==================================================
+
+If chest is Tier A:
+- at least one main chest press should appear early in the week
+- if a second meaningful chest exposure exists, prefer variety:
+  - flat bench + incline bench
+  - or flat DB press + incline DB press
+  - or bench + dips
+depending on equipment and split
+
+Do not generate:
+- all chest work from one angle only
+- only machine chest work when better barbell/dumbbell options exist and the goal supports them
+
+If goal suggests strength focus (e.g. bench-related goal),
+prefer a more specific chest main lift.
+
+==================================================
+BACK / SHOULDERS EXAMPLES
+==================================================
+
+If back is Tier A:
+- prefer at least one strong pull compound early
+- across the week prefer both vertical and horizontal pull when feasible
+
+If shoulders are Tier A:
+- prefer press + lateral / rear delt diversity when feasible
+- do not build all shoulder work from only one pattern
+
+==================================================
+SESSION RULES
+==================================================
+
+Keep current max-session rules:
+- max 6 exercises
+- quality over perfect volume completion
+
+When the session is constrained:
+- Tier A stays
+- Tier B is reduced second
+- Tier C is reduced first
+
+==================================================
+IMPLEMENTATION EXPECTATION
+==================================================
+
+Use the current system pieces where possible:
+- survey priority fields
+- experience-aware priority logic
+- selector V0
+- session templates
+- subTargetBiases where available
+
+Do NOT create a new big architecture.
+Patch the current generation path so priority affects:
+- slot filling order
+- candidate preference
+- optional-slot trimming logic
+
+==================================================
+WHAT NOT TO DO
+==================================================
+
+Do NOT:
+- create separate weekly targets for upper chest / lower chest
+- force unrealistic specialization on 3-day plans
+- make Tier A dominate so much that the rest of the plan becomes nonsense
+- add random filler exercises to chase perfect coverage
+
+==================================================
+SUCCESS CRITERIA
+==================================================
+
+For an intermediate/advanced client with a priority muscle:
+
+1. weekly volume is already biased
+2. generated sessions also visibly reflect that priority
+3. the priority muscle gets:
+   - earlier slots
+   - better lift selection
+   - more meaningful exposures
+   - more variety
+4. low-priority muscles do not steal best slots from Tier A
+5. when the session hits the max-exercise cap, Tier C is trimmed first
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact priority-aware logic added
+3. how Tier A / B / C affect slot placement
+4. how Tier A / B / C affect trimming under session cap
+5. how chest priority now prefers flat/incline variety when feasible
+6. one example generated week before vs after for:
+   - chest priority
+   - back priority
+
+End exactly with:
+
+PRIORITY-TO-SESSION INTEGRATION APPLIED

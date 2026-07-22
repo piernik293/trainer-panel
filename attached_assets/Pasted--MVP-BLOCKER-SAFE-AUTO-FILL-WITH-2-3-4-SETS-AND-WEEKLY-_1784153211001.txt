@@ -1,0 +1,447 @@
+# MVP BLOCKER — SAFE AUTO-FILL WITH 2/3/4 SETS AND WEEKLY REDISTRIBUTION
+
+Continue from the current repository state in Build mode.
+
+Fix only the confirmed whole-plan auto-fill allocation failure.
+
+CONFIRMED CLEAN-DRAFT FAILURE:
+
+The automatic proposal:
+
+- assigned exercises with 1 and 6 working sets,
+- created large overshoots for glutes, delts and other targets,
+- left lats, calves, adductors and biceps without exercises despite existing
+  eligible exercises,
+- sometimes improved one target by creating a larger problem for another,
+- concentrated excessive volume in one workout day.
+
+Do not implement plan saving.
+Do not add exercises.
+Do not import an exercise database.
+Do not modify the Exercise Library database.
+Do not modify volume formulas, coefficients, muscle assignments,
+recommendation scoring, Step 3 weekly targets, Step 5 or unrelated UI.
+
+The existing POST /api/plans/volume-preview endpoint remains the single source
+of truth for actual muscle contributions.
+
+Do not change the backend contract.
+
+============================================================
+1. INSPECT ONLY THE CURRENT AUTO-FILL PATH
+============================================================
+
+Inspect only:
+
+- artifacts/trainer-app/src/lib/autoFill.ts
+- artifacts/trainer-app/src/lib/__tests__/autoFill.test.ts
+- the Step4Exercises auto-fill call site
+- existing volume-preview frontend client and response types
+
+Do not inspect unrelated modules.
+
+First confirm the exact reason why the previous implementation allowed:
+
+- 6-set exercises,
+- weekly overshoot above the declared tolerance,
+- unresolved targets with available recommendations.
+
+Check specifically:
+
+- trial candidate contribution mapping,
+- temporary exercise-entry IDs,
+- target resolution state,
+- daily and weekly accumulated-volume updates,
+- the final draft application step.
+
+============================================================
+2. EXACT CONTRIBUTION VECTOR MAPPING
+============================================================
+
+Every candidate included in the trial volume-preview request must have a unique
+temporary exercise-entry ID.
+
+Map returned contributions to the candidate using that unique entry ID.
+
+Do not map candidates only by:
+
+- exercise name,
+- recommendation array position,
+- target name,
+- exerciseId when the same exercise can occur in more than one trial context.
+
+For every candidate, create an exact one-working-set contribution vector
+containing every returned targetId and its backend-calculated contribution.
+
+Do not:
+
+- infer contributions from mainMuscleGroup,
+- infer contributions from exercise names,
+- assume missing contributions belong to the requested target,
+- recreate coefficient formulas in the frontend.
+
+If an exact candidate vector cannot be mapped deterministically, exclude that
+candidate from automatic selection.
+
+============================================================
+3. AUTOMATIC WORKING-SET RULES
+============================================================
+
+Auto-fill may assign only:
+
+- 3 working sets — standard choice,
+- 4 working sets — maximum,
+- 2 working sets — exceptional value used for safer volume completion.
+
+Auto-fill must never assign:
+
+- 1 working set,
+- 5 working sets,
+- 6 working sets.
+
+Evaluate exactly these values for every candidate:
+
+- 2,
+- 3,
+- 4.
+
+Selection preference:
+
+1. Prefer 3 sets when it safely improves the complete plan.
+2. Use 4 sets when more volume is required and all affected targets remain
+   safe.
+3. Use 2 sets only when:
+   - 3 sets would create an overshoot, or
+   - 2 sets safely closes a smaller remaining deficit.
+
+Do not add an exercise when none of 2, 3 or 4 sets safely improves the plan.
+
+A small unresolved deficit is preferable to a large overshoot.
+
+Apply the same automatic set restrictions to direct Core exercises.
+
+============================================================
+4. EVALUATE EVERY AFFECTED TARGET
+============================================================
+
+Before accepting a candidate and set count, evaluate its effect on every
+targetId in its contribution vector.
+
+Do not evaluate only the target that requested the recommendation.
+
+Reject a candidate when it improves one target by causing a materially larger
+problem for another target.
+
+Example:
+
+A quadriceps exercise that adds useful quadriceps volume but increases
+already-covered glutes by 4 effective points must be rejected.
+
+For a target not already exceeded in the original manual draft:
+
+- automatic fill may not create final weekly overshoot above 0.5 effective
+  points.
+
+For a target already exceeded by manual trainer work:
+
+- automatic fill may not increase that overshoot.
+
+The automatic proposal may never modify or reduce manual exercises to hide an
+overshoot.
+
+============================================================
+5. TARGET RESOLUTION MUST USE ACTUAL VOLUME
+============================================================
+
+Do not mark a target as resolved merely because an exercise was selected for
+it.
+
+A target is resolved only when its newest accumulated weekly volume reaches the
+planned weekly value within the accepted tolerance.
+
+After selecting a multi-target exercise:
+
+- add its exact contribution to every affected targetId,
+- recalculate daily accumulated volume,
+- recalculate weekly accumulated volume,
+- recalculate remaining deficits,
+- keep every still-underfilled target eligible for further selection.
+
+A covered or exceeded target must no longer be used as a reason for another
+recommendation.
+
+Continue checking the existing eligible recommendation pool for unresolved
+targets instead of stopping after the first rejected candidate.
+
+============================================================
+6. WEEKLY VOLUME IS AUTHORITATIVE
+============================================================
+
+The Step 3 weekly target remains authoritative.
+
+Auto-fill must not increase the planned weekly target.
+
+The Step 3 daily allocations are analytical proposals and may be redistributed
+between workout days when whole working sets and stored coefficients cannot
+match them exactly.
+
+Do not modify or overwrite the Step 3 planned values.
+
+Redistribution is only a derived result of the selected exercises.
+
+============================================================
+7. SAFE DAILY REDISTRIBUTION
+============================================================
+
+For one target, auto-fill may place up to 2 effective-volume points more than
+the Step 3 allocation in one workout day only when:
+
+- the final weekly volume does not exceed the weekly target by more than the
+  existing 0.5 tolerance,
+- the additional daily volume is effectively compensated by lower realization
+  in another workout day,
+- no secondary target receives an unsafe weekly overshoot,
+- the exercises use only 2, 3 or 4 working sets.
+
+Example allowed:
+
+Weekly quadriceps target: 10
+
+Step 3 allocation:
+- Lower 1: 5
+- Lower 2: 5
+
+Auto-fill result:
+- Lower 1: 6
+- Lower 2: 4
+- weekly: 10
+
+Example also allowed:
+
+- Lower 1: 7
+- Lower 2: 3
+- weekly: 10
+
+Example rejected:
+
+- Lower 1: 8
+- Lower 2: 2
+
+because the positive daily concentration is greater than 2 points.
+
+Example rejected:
+
+- Lower 1: 6
+- Lower 2: 5
+- weekly: 11
+
+because the weekly target increased.
+
+Only positive daily deviation is limited by this rule.
+
+An underfilled workout day may remain underfilled when no safe 2/3/4-set
+solution exists.
+
+Do not create a separate exercise only to provide one isolated working set.
+
+Do not change the backend contract to send Step 3 allocations.
+
+The backend volume-preview calculates actual daily and weekly volume only.
+
+Compare that backend result with the existing Step 3 daily allocations in the
+frontend auto-fill path.
+
+If Step 3 daily allocations are not already available at the auto-fill call
+site, stop without changing backend contracts and finish with:
+
+AUTO_FILL_REDISTRIBUTION_FOUNDATION_MISSING
+
+============================================================
+8. DETERMINISTIC SELECTION PRIORITY
+============================================================
+
+Use this priority when comparing valid candidate/set combinations:
+
+1. no new weekly overshoot above 0.5,
+2. no worsening of manual overshoot,
+3. no positive daily deviation above 2 points,
+4. reduce the number of unresolved weekly targets,
+5. reduce total weekly deficit,
+6. reduce total daily deficit,
+7. prefer 3 working sets when results are equally safe,
+8. use fewer unnecessary exercises,
+9. prefer the higher-ranked recommendation,
+10. preserve exercise variety across repeated Upper or Lower days.
+
+Do not add the same exercise ID twice in one workout day.
+
+When equally safe alternatives exist, repeated Upper or Lower days should not
+receive identical automatic exercise lists.
+
+Stop selection when no remaining candidate with 2, 3 or 4 sets safely improves
+the complete plan.
+
+============================================================
+9. FINAL WHOLE-PLAN BACKEND GUARD
+============================================================
+
+Before applying any automatically generated entries to the local draft:
+
+1. Build the complete proposed draft in memory.
+2. Send the complete proposal once through the existing
+   POST /api/plans/volume-preview endpoint.
+3. Compare the actual backend result with:
+   - weekly planned targets,
+   - Step 3 daily analytical allocations,
+   - the original manual draft.
+
+Reject the complete automatic proposal when it contains:
+
+- any automatically added exercise with sets outside 2, 3 or 4,
+- a new weekly overshoot above 0.5,
+- an increased existing manual overshoot,
+- positive daily concentration above 2 effective points,
+- an exercise that improves one target by creating a larger problem for
+  another.
+
+Underfilled targets do not invalidate the whole proposal.
+
+When the complete proposal is rejected:
+
+- apply none of the automatic entries,
+- do not partially update individual days,
+- preserve the trainer's existing draft unchanged,
+- show:
+
+"Nie udało się przygotować bezpiecznej propozycji objętości. Szkic nie został zmieniony."
+
+============================================================
+10. UNRESOLVED TARGET DIAGNOSTICS
+============================================================
+
+Do not add new exercises during this task.
+
+For every unresolved target include one diagnostic reason in the returned
+auto-fill result or final implementation report:
+
+- NO_RECOMMENDATIONS_RETURNED
+- NO_EXACT_CONTRIBUTION_VECTOR
+- ALL_CANDIDATES_CAUSE_OTHER_TARGET_OVERSHOOT
+- EQUIPMENT_OR_LOCATION_FILTERED
+- EXPERIENCE_FILTERED
+- AVOIDED_EXERCISE_FILTERED
+- NO_SAFE_2_3_4_SET_OPTION
+- DAILY_REDISTRIBUTION_LIMIT_REACHED
+
+This diagnostic is required to determine later whether the Exercise Library
+actually needs more exercises, especially for:
+
+- Grupa kulszowo-goleniowa,
+- Mięsień czworoboczny grzbietu,
+- Przywodziciele,
+- Łydki,
+- Biceps and Triceps.
+
+Do not create a new diagnostic UI during this task.
+
+Report the reasons using the existing result structure or implementation
+report.
+
+============================================================
+11. PRESERVE TRAINER CONTROL
+============================================================
+
+Preserve:
+
+- all manually added exercises,
+- all manually edited working sets,
+- repetitions,
+- RIR,
+- rest time,
+- exercise order selected by the trainer,
+- avoided-exercise decisions,
+- current Core handling,
+- current exact targetId matching,
+- local-draft-only behaviour.
+
+Only entries created during the current auto-fill calculation may be discarded
+before the proposal is applied.
+
+Do not save or modify workout-plan database records.
+
+============================================================
+12. FOCUSED TESTS ONLY
+============================================================
+
+Run the exact autoFill focused test file directly.
+
+Do not use a package test command that expands to the complete frontend suite.
+
+Required cases:
+
+1. Trial candidate contributions are mapped by unique temporary entry ID.
+2. Auto-fill never assigns 1, 5 or 6 working sets.
+3. A safe normal case prefers 3 sets.
+4. Four sets may be selected when required and safe.
+5. Two sets are selected when 3 sets would overshoot.
+6. A quadriceps deficit is not solved by increasing covered glutes by 4
+   points.
+7. Every affected targetId is evaluated.
+8. Selecting an exercise does not automatically resolve its target.
+9. A partially covered target remains eligible.
+10. A covered target stops triggering recommendations.
+11. Step 3 daily 5/5 may result in 6/4 while weekly remains 10.
+12. Step 3 daily 5/5 may result in 7/3 while weekly remains 10.
+13. Positive daily deviation above 2 points is rejected.
+14. Weekly 6/5 is rejected when the weekly target is 10.
+15. Existing manual overshoot is not increased.
+16. A small unresolved deficit is allowed when every 2/3/4 option is unsafe.
+17. Eligible lat, calf, adductor and biceps candidates are not skipped because
+    unrelated targets were incorrectly marked resolved.
+18. Invalid final backend preview leaves the manual draft unchanged.
+19. Existing manual exercises and prescriptions remain unchanged.
+20. Every unresolved target receives a diagnostic reason.
+
+Run trainer-app TypeScript only if code changes.
+
+Do not run:
+
+- the complete frontend test suite,
+- backend tests,
+- root tests,
+- production builds,
+- browser or screenshot automation,
+- Playwright,
+- Plan mode,
+- database audits,
+- workflow restarts,
+- unrelated refactors.
+
+============================================================
+13. REPORT
+============================================================
+
+Report only:
+
+1. confirmed root cause
+2. files changed
+3. exact trial contribution mapping
+4. 2/3/4-set selection behaviour
+5. multi-target overshoot protection
+6. target-resolution behaviour
+7. daily redistribution behaviour
+8. final backend whole-plan guard
+9. unresolved-target diagnostics
+10. exact focused tests executed
+11. trainer-app TypeScript result
+12. confirmation that backend contract and database were unchanged
+
+Do not continue automatically.
+
+Finish exactly with one:
+
+AUTO_FILL SAFE ALLOCATION FIXED
+
+AUTO_FILL_REDISTRIBUTION_FOUNDATION_MISSING
+
+AUTO_FILL SAFE ALLOCATION FAILED

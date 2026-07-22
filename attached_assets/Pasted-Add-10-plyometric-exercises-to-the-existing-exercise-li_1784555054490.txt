@@ -1,0 +1,77 @@
+Add 10 plyometric exercises to the existing exercise library using the CURRENT exercise schema only.
+
+Do NOT redesign the app.
+Do NOT add a new exercise domain/category field.
+Do NOT add animation support.
+Do NOT change planner/generator logic.
+Do NOT change UI.
+This is a minimal MVP library-data task only.
+
+GOAL:
+Insert 10 usable plyometric exercises into the current exercise library as complete records, using the existing exercise model already supported by the app.
+
+Use these Polish exercise names:
+1. Skoki pogo
+2. Skok z zamachem
+3. Skok w dal z miejsca
+4. Zeskok z natychmiastowym wybiciem
+5. Wskok na podwyższenie
+6. Skoki boczne jednonóż
+7. Skok jednonóż
+8. Nauka lądowania
+9. Skok boczny z zatrzymaniem
+10. Przeskoki boczne z nogi na nogę
+
+Use the CURRENT existing fields only, including:
+- Nazwa ćwiczenia
+- Główna partia mięśniowa
+- Poziom trudności
+- Wzorzec ruchowy
+- Typ ćwiczenia
+- Drugoplanowe partie mięśniowe
+- Wymagany sprzęt
+- Miejsce treningu
+- Opis ćwiczenia
+- Instrukcje wykonania
+- Częste błędy
+- Wskazówki trenerskie
+- Wskazówki oddechowe
+- Uwagi dotyczące bezpieczeństwa
+- Tempo
+- Zalecany zakres ruchu
+- Odpowiedni poziom doświadczenia
+- Cel treningowy
+- Kategoria ruchu
+- Płaszczyzna ruchu
+- Wykonanie
+- Typ oporu
+- Możliwość wykonania do upadku
+- Obciążenie stawów
+- Priorytet ćwiczenia
+- Złożoność ruchu
+- Wymaga asekuracji
+- Odpowiednie dla segmentu Start adaptacyjny
+- Trudność nauki
+- Zmęczenie neurologiczne
+- Potencjał DOMS
+
+Important:
+- use ONLY the current schema
+- do NOT add new DB fields
+- do NOT leave placeholder/empty low-quality entries
+- keep these exercises clearly plyometric in description and metadata
+- use practical defaults where needed
+- prefer bodyweight / no equipment where appropriate
+- keep entries usable for future planner logic
+
+Output only:
+1. exact files changed
+2. exact data source updated
+3. list of the 10 inserted exercises
+4. one full example exercise record
+5. confirmation that only the current schema was used
+6. confirmation that no UI/generator changes were made
+
+End exactly with:
+
+PLYO LIBRARY MVP APPLIED

@@ -1,0 +1,80 @@
+Tighten the allowed exercise families for priority-aware session templates.
+
+Do NOT redesign the generator.
+Do NOT change weekly volume logic.
+Do NOT change UI.
+Do NOT remove priority-aware templates.
+This is a focused exercise-family constraint task.
+
+GOAL:
+Keep the new priority-aware session templates,
+but improve exercise quality inside priority slots.
+
+PROBLEM:
+Priority-aware templates now work structurally,
+but some slots still allow weak or semantically poor winners.
+
+Examples of bad winners:
+- chest-priority choosing machine-only or weak filler options when better bench-oriented options exist
+- back-priority choosing back extensions or shrugs as high-value priority winners
+
+REQUIRED CHANGES:
+
+1. Add tighter allowed exercise-family rules for priority-sensitive slots.
+
+CHEST-PRIORITY UPPER
+- slot 1 (chest main lift):
+  prefer only true press families:
+  - barbell bench
+  - dumbbell bench
+  - incline bench
+  - machine chest press only as fallback
+- slot 2 (second chest lift):
+  must prefer a different chest family or angle than slot 1 when feasible
+  examples:
+  - bench -> incline
+  - incline -> flat
+  - press -> fly
+- slot 5:
+  chest accessory allowed, but low-value filler should not beat better press/fly options
+
+2. BACK-PRIORITY UPPER
+- slot 1:
+  true back main lift only
+  - row family
+  - pull-up / pulldown family
+- slot 2:
+  complementary pull family only
+  - if slot 1 is horizontal, slot 2 should prefer vertical
+  - if slot 1 is vertical, slot 2 should prefer horizontal
+- slot 4:
+  allow only sensible back-support families:
+  - rear delt fly
+  - face pull
+  - straight-arm pulldown if classified as back support
+  - rowing accessory
+  reject weak generic trunk/back-extension fillers unless no better option exists
+- slot 5:
+  allow back accessory/core, but shrugs should not become the default priority winner unless upper trap priority is explicitly justified
+
+3. Add family-level preference, not just muscle-level preference.
+Use existing metadata where possible.
+If needed, create a small normalized exercise-family helper.
+
+4. Keep deterministic behavior.
+No scoring redesign.
+No AI.
+No new product features.
+
+5. Do not break beginner generic templates.
+
+OUTPUT:
+1. exact files changed
+2. exact family constraints added
+3. exact slots tightened
+4. example chest-priority Upper before vs after
+5. example back-priority Upper before vs after
+
+End exactly with:
+
+PRIORITY SLOT FAMILY CONSTRAINTS APPLIED

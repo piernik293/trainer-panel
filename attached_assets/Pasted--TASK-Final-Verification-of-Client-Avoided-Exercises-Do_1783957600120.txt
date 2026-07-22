@@ -1,0 +1,165 @@
+# TASK — Final Verification of Client Avoided Exercises
+
+Do not add new features.
+
+Perform a complete final verification of the Client Avoided Exercises implementation after all recent fixes.
+
+============================================================
+DATABASE AND MIGRATION
+============================================================
+
+Verify that the database schema changes are safely represented in the project.
+
+Check whether a committed migration file exists for all new avoided-exercise fields and relations.
+
+Do not rely only on an undocumented `drizzle push`.
+
+If the schema was changed without a migration file:
+
+- create the proper non-destructive migration,
+- do not reapply destructive changes,
+- do not delete or overwrite existing survey answers,
+- verify the migration is idempotent in the supported deployment workflow.
+
+Report every new column, table, relation and index.
+
+============================================================
+END-TO-END RUNTIME TEST
+============================================================
+
+Test the feature in the running application using two separate clients.
+
+CLIENT A:
+
+1. Open Training Interview.
+2. Search for an active exercise using a partial name.
+3. Search again without Polish diacritics.
+4. Select at least two exercises.
+5. Add a separate reason to each exercise.
+6. Add an unmatched free-text exercise description.
+7. Add a reason to the unmatched description.
+8. Save the interview.
+9. Reload the page.
+10. Confirm all selected exercises and reasons are restored.
+
+CLIENT PROFILE:
+
+11. Open Client A profile.
+12. Confirm selected exercise names are visible.
+13. Confirm every reason is visible.
+14. Confirm the unmatched description is visible.
+15. Confirm no raw exercise IDs are displayed.
+
+WORKOUT BUILDER:
+
+16. Create or open a plan for Client A.
+17. Search for one of the avoided exercises.
+18. Confirm the picker displays:
+
+   Klient chce unikać tego ćwiczenia
+
+19. Confirm the saved reason is displayed.
+20. Add the avoided exercise anyway.
+21. Confirm the trainer is not blocked.
+22. Confirm the exercise card displays the warning.
+23. Save the plan successfully.
+24. Activate the plan successfully or complete the existing non-blocking confirmation flow.
+25. Confirm plan analysis returns CLIENT_AVOIDS_EXERCISE with blocking: false.
+
+CLIENT-SPECIFIC TEST:
+
+26. Open or create a plan for Client B.
+27. Confirm the same exercise does not show Client A's warning.
+
+PREFERENCE REMOVAL:
+
+28. Remove the avoided exercise from Client A's current Training Interview.
+29. Save the interview.
+30. Confirm the current Workout Builder warning disappears.
+31. Confirm historical survey data remains readable where survey history is supported.
+
+INACTIVE EXERCISE:
+
+32. Verify an existing saved preference remains readable if the linked exercise is inactive.
+33. Confirm no client profile or plan page crashes.
+
+============================================================
+REGRESSION VERIFICATION
+============================================================
+
+Confirm:
+
+- existing Training Interviews still open,
+- existing Training Interview conditional logic remains unchanged,
+- existing clients remain present,
+- existing plans remain present,
+- Exercise Library remains present,
+- exercise count is unchanged from before this task,
+- original exercise IDs remain unchanged,
+- four experience levels remain unchanged,
+- volume_guidelines remains exactly 44 rows,
+- volume_targets remains exactly 11 rows,
+- Phase 2 calculations remain unchanged,
+- Phase 3 formulas remain unchanged,
+- no exercise is automatically blocked,
+- no exercise is automatically replaced,
+- no AI was implemented.
+
+============================================================
+FINAL TECHNICAL CHECKS
+============================================================
+
+After all final code changes run:
+
+- complete automated test suite,
+- API TypeScript check,
+- trainer-app TypeScript check,
+- actual API production build,
+- actual trainer-app production build,
+- API runtime startup,
+- trainer-app runtime startup.
+
+Do not describe `tsc --noEmit` as a production build.
+
+============================================================
+FINAL REPORT
+============================================================
+
+Provide:
+
+1. Database changes
+2. Migration file location
+3. Files changed
+4. Final data model
+5. Training Interview runtime result
+6. Search and diacritic-normalization result
+7. Multiple-exercise and per-reason result
+8. Unknown-exercise fallback result
+9. Client profile result
+10. Workout Builder picker warning result
+11. Exercise-card warning result
+12. Plan-analysis warning result
+13. Plan save result
+14. Plan activation result
+15. Client-specific isolation result
+16. Preference-removal result
+17. Inactive-exercise result
+18. Automated-test result
+19. TypeScript result
+20. API production-build result
+21. Trainer-app production-build result
+22. Runtime smoke-test result
+23. Database row-count verification
+24. Confirmation that trainer manual control remains available
+25. Confirmation that no AI or automatic blocking was implemented
+26. Remaining limitations
+
+Finish with exactly one verdict:
+
+PASS
+
+PASS WITH WARNINGS
+
+or
+
+FAIL

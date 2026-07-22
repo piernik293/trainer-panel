@@ -1,0 +1,796 @@
+# TASK — Workout Plan Draft Generator
+# PHASE 1: Generator Input and Configuration Wizard
+
+Implement Phase 1 of the Workout Plan Draft Generator.
+
+This phase creates the trainer-facing input and configuration wizard.
+
+It must collect, validate and present all data required by later generator phases.
+
+Do NOT generate a workout plan yet.
+Do NOT select exercises.
+Do NOT allocate weekly volume.
+Do NOT calculate sets.
+Do NOT generate repetitions, RIR, tempo or rest periods.
+Do NOT generate warm-ups.
+Do NOT implement AI.
+Do NOT activate any plan automatically.
+
+Use the approved specification:
+
+docs/workout-plan-draft-generator-spec.md
+
+============================================================
+CORE PRODUCT PRINCIPLE
+============================================================
+
+The application will eventually generate:
+
+Szkic planu treningowego
+
+The trainer must always remain in control.
+
+Phase 1 must provide a fast and clear configuration experience that:
+
+- pre-fills values from the Training Interview,
+- clearly shows missing information,
+- allows trainer overrides,
+- separates basic and advanced options,
+- does not hide where information came from.
+
+The wizard must be usable by a beginner trainer without removing advanced control.
+
+============================================================
+APPROVED PRODUCT DECISIONS
+============================================================
+
+Implement the following approved decisions.
+
+1. TRAINING SPLIT STORAGE
+
+Add an optional canonical field to workout plans:
+
+splitType
+
+Supported stored values:
+
+- full_body
+- full_body_ab
+- upper_lower
+- upper_lower_full_body
+- push_pull_legs
+- push_pull_lower_full_body
+- specialization
+- custom
+
+User-facing Polish labels:
+
+- Full Body
+- Full Body A/B
+- Góra / Dół
+- Góra / Dół / Full Body
+- Push / Pull / Legs
+- Push / Pull / Dół / Full Body
+- Plan specjalizacyjny
+- Własny podział
+
+Do not store translated labels as canonical values.
+
+2. BLOCK DURATION
+
+Add:
+
+blockDurationWeeks
+
+Rules:
+
+- integer,
+- minimum 4,
+- maximum 12,
+- default 6,
+- trainer editable.
+
+User-facing label:
+
+Długość bloku treningowego
+
+Helper text:
+
+Najczęściej 4–8 tygodni. Wartość można później zmienić.
+
+3. EQUIPMENT NORMALIZATION
+
+Create one centralized equipment-normalization module.
+
+Do not create a new equipment database table.
+
+Use the existing canonical Exercise Library equipment values.
+
+The module may map safe aliases to existing canonical values.
+
+Examples:
+
+- hantle → Hantle
+- hantel → Hantle
+- sztanga → Sztanga
+- wyciąg → Wyciąg
+- maszyny → Maszyna
+- masa własna → Masa własnego ciała
+
+Do not modify Exercise Library records during this phase.
+
+4. FUTURE DEFAULTS — DOCUMENT ONLY
+
+Record the following approved future defaults in the implementation documentation, but do not apply generation logic yet:
+
+Weekly-volume starting position:
+
+- Brak aktywności fizycznej → lower boundary of the approved range
+- Początkujący → approximately 25% inside the approved range
+- Średniozaawansowany → middle of the approved range
+- Zaawansowany → middle of the range unless trainer priorities justify more
+
+Future adjustments:
+
+- priority muscle: increase within the approved range
+- poor recovery: move toward the lower boundary
+- high stress or physical work: move toward the lower boundary
+- good recovery and sufficient time: may move upward
+- never automatically exceed the approved range
+
+Tempo:
+
+- default UI uses a simple Polish description,
+- numeric tempo is shown in advanced settings,
+- suggested general text:
+  “Kontrolowane opuszczanie, płynne podniesienie”.
+
+Do not implement these generation rules in Phase 1.
+
+============================================================
+STEP 1 — DATABASE AND MIGRATION
+============================================================
+
+Add non-destructive fields to workout_plans:
+
+- split_type
+- block_duration_weeks
+
+Recommended types:
+
+- split_type: nullable text with application-level canonical validation
+- block_duration_weeks: integer, nullable or default 6 according to the existing plan-creation architecture
+
+Create a committed, non-destructive migration.
+
+Do not rely only on drizzle push.
+
+Migration requirements:
+
+- preserve all existing plans,
+- preserve all existing plan days,
+- preserve exercise references,
+- preserve clients,
+- preserve surveys,
+- preserve volume guidelines,
+- preserve volume targets,
+- do not recreate tables,
+- do not reset IDs.
+
+Existing plans should remain valid with:
+
+- splitType = null
+- blockDurationWeeks = 6 or null resolved to 6 in the application
+
+Choose the option that best matches the current project conventions and document it.
+
+============================================================
+STEP 2 — DATA CONTRACTS
+============================================================
+
+Implement or finalize reusable contracts for:
+
+PlanDraftGenerationInput
+
+PlanDraftGenerationPreferences
+
+PlanDraftInputSource
+
+PlanDraftInputWarning
+
+Recommended shape:
+
+PlanDraftGenerationInput:
+
+- clientId
+- experienceLevel
+- trainingGoal
+- availableDays
+- sessionDuration
+- trainingLocation
+- availableEquipment
+- dailyActivity
+- physicalWork
+- sleep
+- stress
+- healthLimitations
+- priorityMuscleGroups
+- excludedMuscleGroups
+- preferredExerciseIds
+- avoidedExerciseIds
+- avoidedExerciseReasons
+
+PlanDraftGenerationPreferences:
+
+- trainingDays
+- sessionDuration
+- splitType
+- blockDurationWeeks
+- trainingGoal
+- priorityMuscleGroups
+- preferredTrainingStyle
+- trainerRestrictions
+
+Every field must define:
+
+- source,
+- required status,
+- whether trainer override is allowed,
+- missing-data behaviour,
+- validation status.
+
+Reuse existing survey, plan, client and exercise types where possible.
+
+Do not create duplicate domain models unnecessarily.
+
+============================================================
+STEP 3 — INPUT PREPARATION SERVICE
+============================================================
+
+Create a deterministic backend service such as:
+
+planDraftInputService.ts
+
+Responsibilities:
+
+1. Load the selected client.
+2. Load the client's latest Training Interview.
+3. Resolve the exact experience level.
+4. Load available training days.
+5. Load session duration.
+6. Load location and equipment.
+7. Load activity, work, sleep and stress data.
+8. Load priorities.
+9. Load preferred exercises.
+10. Load avoided exercises and reasons.
+11. Normalize equipment values.
+12. Return source information for every field.
+13. Return structured warnings for missing data.
+
+Do not generate a plan.
+
+Do not select exercises.
+
+Do not calculate weekly volume.
+
+Avoid N+1 queries.
+
+============================================================
+STEP 4 — REQUIRED DATA VALIDATION
+============================================================
+
+Experience level is required.
+
+Valid values:
+
+- Brak aktywności fizycznej
+- Początkujący
+- Średniozaawansowany
+- Zaawansowany
+
+Missing value:
+
+MISSING_EXPERIENCE_LEVEL
+
+Invalid value:
+
+INVALID_EXPERIENCE_LEVEL
+
+Do not map missing or invalid values to:
+
+- Brak aktywności fizycznej
+- Początkujący
+- any other level.
+
+Draft generation will eventually be blocked until this is resolved.
+
+Phase 1 should clearly display the problem and allow an explicit trainer override where appropriate.
+
+Other useful warning codes:
+
+- MISSING_TRAINING_GOAL
+- MISSING_AVAILABLE_DAYS
+- MISSING_SESSION_DURATION
+- MISSING_TRAINING_LOCATION
+- MISSING_EQUIPMENT
+- MISSING_RECOVERY_DATA
+- INCOMPLETE_CLIENT_PROFILE
+
+Only critical missing data should block proceeding.
+
+============================================================
+STEP 5 — API
+============================================================
+
+Add a preparation endpoint consistent with the existing API architecture.
+
+Recommended example:
+
+GET /api/clients/:clientId/plan-draft-input
+
+Response should include:
+
+- client summary,
+- latest interview values,
+- resolved input values,
+- source of each value,
+- missing-data warnings,
+- default configuration,
+- available trainer overrides,
+- allowed split types,
+- allowed block-duration range.
+
+Do not expose:
+
+- trainer-only private notes unless explicitly required,
+- raw security tokens,
+- unrelated client data,
+- other clients' information.
+
+Optionally add a validation endpoint if it matches the current architecture:
+
+POST /api/plans/draft-input/validate
+
+This endpoint validates configuration only.
+
+It must not generate or save a workout plan.
+
+============================================================
+STEP 6 — WIZARD ENTRY POINTS
+============================================================
+
+Add two consistent entry points:
+
+Client profile:
+
+Utwórz plan
+
+Workout Builder:
+
+Wygeneruj szkic
+
+Both should open the same wizard implementation.
+
+Do not create two separate generator flows.
+
+When opened from a client profile:
+
+- preselect that client.
+
+When opened from Workout Builder:
+
+- use the currently selected plan client where available,
+- otherwise require client selection.
+
+============================================================
+STEP 7 — WIZARD STRUCTURE
+============================================================
+
+Create the generator wizard shell with five visible steps:
+
+1. Klient i dane
+2. Założenia planu
+3. Objętość
+4. Szkic planu
+5. Podsumowanie
+
+During Phase 1:
+
+- Step 1 is fully implemented.
+- Step 2 is fully implemented.
+- Steps 3–5 are visible but disabled or marked:
+  “Dostępne w kolejnych etapach”.
+
+Do not create fake generated results.
+
+Do not show placeholder exercises pretending to be generated.
+
+============================================================
+STEP 8 — STEP 1: CLIENT AND INPUT SUMMARY
+============================================================
+
+Display a concise trainer-facing summary.
+
+Include:
+
+- client name,
+- training goal,
+- experience level,
+- available days,
+- session duration,
+- training location,
+- equipment,
+- daily activity,
+- physical work,
+- sleep,
+- stress,
+- health limitations,
+- priority muscle groups,
+- excluded muscle groups,
+- preferred exercises,
+- avoided exercises with reasons.
+
+Each value should indicate its source:
+
+- Z Wywiadu treningowego
+- Ustawione przez trenera
+- Brak danych
+
+Use clear visual states.
+
+Recommended sections:
+
+Podstawowe dane
+
+Dostępność treningowa
+
+Regeneracja i styl życia
+
+Priorytety
+
+Preferencje ćwiczeń
+
+Ograniczenia i ostrzeżenia
+
+Do not display one enormous unstructured form.
+
+============================================================
+STEP 9 — MISSING DATA UX
+============================================================
+
+For missing critical data show a visible panel:
+
+Brakuje danych potrzebnych do przygotowania szkicu
+
+Example:
+
+Brak poziomu doświadczenia klienta.
+
+Actions:
+
+- Uzupełnij w Wywiadzie treningowym
+- Ustaw ręcznie dla tego szkicu
+
+Manual override must be explicit.
+
+Do not silently substitute a value.
+
+For non-critical missing information show a non-blocking notice.
+
+============================================================
+STEP 10 — STEP 2: PLAN ASSUMPTIONS
+============================================================
+
+Implement editable fields:
+
+- number of training days,
+- session duration,
+- split type,
+- block duration,
+- main goal,
+- priority muscle groups,
+- preferred training style,
+- trainer restrictions.
+
+Prefill values from the latest Training Interview.
+
+Display source labels.
+
+Recommended training-days range:
+
+- minimum 1,
+- maximum 7,
+- constrained further by current product rules where appropriate.
+
+Recommended session-duration validation:
+
+- minimum 20 minutes,
+- maximum 180 minutes.
+
+Do not invent a value when the interview is missing one.
+
+A trainer may explicitly enter a value.
+
+============================================================
+STEP 11 — SPLIT SELECTION UX
+============================================================
+
+Display split recommendations based only on training-day count at this phase.
+
+Do not implement the complete recommendation engine yet.
+
+Show compatible options as selectable cards.
+
+Examples:
+
+2 training days:
+
+- Full Body A/B
+- Custom
+
+3 training days:
+
+- Full Body
+- Upper / Lower / Full Body
+- Custom
+
+4 training days:
+
+- Upper / Lower
+- Push / Pull / Lower / Full Body
+- Custom
+
+5–6 days:
+
+- Push / Pull / Legs
+- Specialization
+- Custom
+
+These are initial UI compatibility suggestions only.
+
+Do not claim that the final split has been optimized by the generator.
+
+Trainer can always select Custom.
+
+============================================================
+STEP 12 — BASIC AND ADVANCED SETTINGS
+============================================================
+
+Default view should show only essential settings.
+
+Advanced options should be hidden in:
+
+Opcje zaawansowane
+
+Advanced options may include:
+
+- explicit split override,
+- custom block duration,
+- manual session-duration override,
+- preferred training style,
+- trainer restrictions,
+- manual priority edits.
+
+Do not hide critical validation warnings inside advanced options.
+
+============================================================
+STEP 13 — NAVIGATION
+============================================================
+
+Implement:
+
+- Dalej
+- Wstecz
+- Anuluj
+- Zapisz założenia
+
+At the end of Phase 1, the trainer may save the configuration or keep it in wizard state according to the existing architecture.
+
+Do not generate a workout plan.
+
+Recommended Phase 1 completion message:
+
+Założenia planu są gotowe.
+
+The next button may show:
+
+Przejdź do ustawienia objętości
+
+but must remain disabled until Phase 2 exists.
+
+============================================================
+STEP 14 — STATE MANAGEMENT
+============================================================
+
+Ensure:
+
+- changing client reloads client-specific input,
+- values from Client A never appear for Client B,
+- trainer overrides survive navigation between Step 1 and Step 2,
+- resetting an override restores the interview value,
+- cancelling does not modify an existing plan unexpectedly,
+- reopening the wizard behaves predictably.
+
+Do not store avoidance state globally.
+
+Do not mutate Training Interview answers when changing generator preferences.
+
+Trainer overrides belong to the plan-draft configuration, not to the client's historical survey.
+
+============================================================
+STEP 15 — ACCESSIBILITY AND RESPONSIVENESS
+============================================================
+
+Ensure:
+
+- all fields have labels,
+- keyboard navigation works,
+- stepper status is announced accessibly,
+- error messages are connected to fields,
+- warnings are not communicated only through color,
+- mobile layout remains usable,
+- long client summaries collapse cleanly,
+- advanced settings are keyboard accessible.
+
+============================================================
+STEP 16 — AUTOMATED TESTS
+============================================================
+
+Add tests covering:
+
+1. Input service loads the correct client.
+2. Latest Training Interview is used.
+3. Client A data does not appear for Client B.
+4. Valid experience level resolves correctly.
+5. Missing experience level returns MISSING_EXPERIENCE_LEVEL.
+6. Invalid level returns INVALID_EXPERIENCE_LEVEL.
+7. No fallback level is used.
+8. Training goal is loaded.
+9. Available days are loaded.
+10. Session duration is loaded.
+11. Equipment is normalized.
+12. Training location is loaded.
+13. Recovery data is loaded.
+14. Priority muscle groups are loaded.
+15. Preferred exercises are loaded.
+16. Avoided exercises and reasons are loaded.
+17. Missing optional data creates non-blocking notices.
+18. Split type accepts only canonical values.
+19. Block duration rejects values below 4.
+20. Block duration rejects values above 12.
+21. Default block duration resolves to 6.
+22. Wizard opens from client profile.
+23. Wizard opens from Workout Builder.
+24. Client summary displays source labels.
+25. Manual override does not modify survey data.
+26. Reset override restores interview value.
+27. Changing client clears previous client state.
+28. Steps 3–5 do not display fake generated content.
+29. Existing plans remain valid.
+30. Existing plan CRUD remains functional.
+31. Four experience levels remain unchanged.
+32. Volume guidelines remain exactly 44.
+33. Volume targets remain exactly 11.
+34. Volume calculator remains unchanged.
+35. Phase 2 plan volume remains unchanged.
+36. Phase 3 analysis remains unchanged.
+37. Avoided-exercise warnings remain non-blocking.
+
+============================================================
+REGRESSION CHECKS
+============================================================
+
+Verify:
+
+- Client List opens.
+- Client profile opens.
+- Training Interview opens.
+- Survey history opens.
+- Exercise Library opens.
+- Workout Builder opens.
+- Existing plans open.
+- Plan save works.
+- Plan activation works.
+- Avoided exercise warnings work.
+- Volume preview works.
+- Plan analysis works.
+- Existing exercise IDs remain unchanged.
+- Existing client data remains present.
+
+Run:
+
+- all automated tests,
+- TypeScript checks for all packages,
+- actual API production build,
+- actual trainer-app production build,
+- actual client-landing production build where affected,
+- API runtime startup,
+- trainer-app runtime startup.
+
+Do not describe tsc --noEmit as a production build.
+
+============================================================
+OUT OF SCOPE
+============================================================
+
+Do not implement:
+
+- volume starting-value calculation,
+- weekly volume distribution,
+- full split recommendation scoring,
+- exercise selection,
+- exercise ordering,
+- set allocation,
+- repetitions,
+- RIR generation,
+- tempo generation,
+- rest-period generation,
+- warm-up generation,
+- session-duration estimation,
+- automatic progression,
+- AI,
+- automatic plan activation.
+
+============================================================
+REQUIRED DOCUMENTATION
+============================================================
+
+Update:
+
+docs/workout-plan-draft-generator-spec.md
+
+Add a Phase 1 implementation section containing:
+
+- implemented data contracts,
+- implemented API,
+- implemented migrations,
+- wizard entry points,
+- Step 1 behaviour,
+- Step 2 behaviour,
+- override behaviour,
+- canonical split types,
+- block-duration rules,
+- equipment-normalization rules,
+- remaining work for Phase 2.
+
+============================================================
+FINAL REPORT
+============================================================
+
+Provide:
+
+1. Files changed
+2. Database migration
+3. Data contracts
+4. Input-preparation service
+5. API endpoints
+6. Wizard entry points
+7. Step 1 implementation
+8. Step 2 implementation
+9. Source-label behaviour
+10. Missing-data behaviour
+11. Trainer override behaviour
+12. Split-type implementation
+13. Block-duration implementation
+14. Equipment normalization
+15. Accessibility result
+16. Automated-test results
+17. TypeScript results
+18. API production-build result
+19. Trainer-app production-build result
+20. Runtime smoke-test result
+21. Confirmation that no plan was generated
+22. Confirmation that no exercises were selected automatically
+23. Confirmation that no volume was allocated
+24. Confirmation that volume formulas remained unchanged
+25. Confirmation that 44 guideline rows remain
+26. Confirmation that 11 volume targets remain
+27. Remaining limitations
+
+Finish with exactly one verdict:
+
+PHASE 1 COMPLETE
+
+or
+
+PHASE 1 FAILED

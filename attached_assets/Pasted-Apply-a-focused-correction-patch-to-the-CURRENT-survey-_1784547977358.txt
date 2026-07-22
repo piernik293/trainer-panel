@@ -1,0 +1,112 @@
+Apply a focused correction patch to the CURRENT survey implementation.
+
+Do NOT redesign the whole app.
+Do NOT touch unrelated sections.
+Do NOT change generator logic.
+This is a strict follow-up fix for the current survey state.
+
+==================================================
+GOAL
+==================================================
+
+Fix the current survey implementation so it matches the intended UX.
+
+The previous cleanup did NOT fully apply the intended behavior.
+
+==================================================
+SECTION 1 — REMOVE THE MUSCLE-PRIORITY TEXTAREA
+==================================================
+
+Remove this field completely from the survey:
+
+- "Na których partiach mięśniowych najbardziej Ci zależy?"
+
+Remove:
+- the label
+- the helper/description text
+- the textarea/input
+- any state / submit wiring / validation used only by this field
+- any stale rendering references
+
+This field should no longer exist anywhere in the survey UI.
+
+==================================================
+SECTION 2 — "ĆWICZENIA DO UNIKANIA" VISIBILITY
+==================================================
+
+Keep the "Ćwiczenia do unikania" functionality,
+but show it ONLY for these experience levels:
+- Średniozaawansowany
+- Zaawansowany
+
+Do NOT show this field for:
+- Brak aktywności fizycznej
+- Początkujący
+
+Keep the existing picker/search behavior working.
+Only change its visibility rule.
+
+==================================================
+SECTION 3 — WEEKLY TRAINING COUNT
+==================================================
+
+For:
+- "Ile treningów tygodniowo chciałbyś wykonywać?"
+
+Change the input so the accepted range is strictly:
+- minimum: 1
+- maximum: 7
+
+The user must not be able to enter values above 7.
+
+Use a clean UX for this numeric field.
+If helper text remains, it should stay compatible with this rule.
+
+==================================================
+SECTION 4 — SESSION DURATION INPUT
+==================================================
+
+Replace the current free-text input for:
+
+- "Ile czasu realnie możesz poświęcić na pojedynczy trening?"
+
+with fixed selectable options only:
+
+- 30–45 min
+- 45–60 min
+- 60–90 min
+- 90+ min
+
+Do NOT keep the current free-text field here.
+
+This should be a clean single-choice selection consistent with the rest of the survey UI.
+
+==================================================
+SECTION 5 — DO NOT TOUCH
+==================================================
+
+Do NOT in this patch:
+- undo "Cel sportowy"
+- bring back "Inny"
+- change health wording
+- change favorite-exercise autocomplete
+- change priority-muscle comboboxes if they still exist elsewhere
+- redesign cardio logic
+- redesign tile/card styles globally
+
+This patch is only for the 4 corrections above.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact removal of the muscle-priority textarea
+3. exact visibility rule for "Ćwiczenia do unikania"
+4. exact 1–7 training-count constraint added
+5. exact session-duration option selector added
+
+End exactly with:
+
+SURVEY CORRECTION PATCH APPLIED

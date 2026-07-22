@@ -1,0 +1,405 @@
+Implement Stage 5 exactly according to the final accepted architecture:
+
+Stage 5 = pure fragmentation tie-breaker.
+
+Do not redesign the architecture.
+Do not change unrelated behavior.
+Do not change API, database, UI, shared schemas, or volume calculator code.
+Do not start Stage 6.
+
+The change must remain confined to:
+
+- artifacts/trainer-app/src/lib/autoFill.ts
+- artifacts/trainer-app/src/lib/__tests__/autoFill.test.ts
+- new file:
+  artifacts/trainer-app/src/lib/__tests__/stage5.test.ts
+
+--------------------------------------------------
+1. Extract checkContributionSafety()
+--------------------------------------------------
+
+Extract the action-agnostic contribution safety logic currently inside evaluateCandidate() into a pure module-level helper:
+
+checkContributionSafety()
+
+It must be reusable by both:
+
+- new-exercise evaluation
+- consolidation evaluation
+
+It must preserve all existing safety behavior exactly, including:
+
+- manual overshoot protection
+- weekly ceiling protection
+- daily overshoot protection
+- daily session maximum
+- daily redistribution limit
+- unresolved-target calculation
+- weekly remaining calculation
+- daily remaining calculation
+
+Return a discriminated result:
+
+Safe result:
+
+{
+  safe: true;
+  numRemainingUnresolved: number;
+  totalWeeklyRemaining: number;
+  totalDailyRemaining: number;
+}
+
+Rejected result:
+
+{
+  safe: false;
+  cause: existing rejection cause type;
+}
+
+Keep new-exercise-only logic inside evaluateCandidate(), including:
+
+- empty coefficient rejection
+- AllowedSets validation
+- setsPreference
+- existing EvalAccepted / EvalRejected return shape
+
+evaluateCandidate() must remain behaviorally identical.
+
+--------------------------------------------------
+2. Extract findBestExpansion()
+--------------------------------------------------
+
+Extract the existing Phase 1 inner candidate-selection loop into a named closure:
+
+findBestExpansion()
+
+Return:
+
+{
+  rec;
+  sets;
+  score: ScoreTuple;
+} | null
+
+Requirements:
+
+- preserve the current ScoreTuple exactly
+- preserve scoreBetter() behavior exactly
+- preserve trainerPriorityRank
+- preserve movementPatternPenalty
+- preserve recommendation rank
+- preserve varietyPenalty
+- preserve all filtering and safety rules
+- preserve original iteration order
+- do not simplify or rewrite scoring logic
+
+This step must be a pure refactor with no behavioral change.
+
+--------------------------------------------------
+3. Implement findBestConsolidation()
+--------------------------------------------------
+
+Add a decision-only closure:
+
+findBestConsolidation()
+
+Return:
+
+{
+  index: number;
+  delta: number;
+  numRemainingUnresolved: number;
+} | null
+
+It must not mutate state.
+
+Inspect already committed exercises in toAdd.
+
+Rules:
+
+- skip core exercises
+- skip exercises already at 4 sets
+- inspect delta 1 and delta 2
+- reject when existing sets + delta > 4
+- reject when currentSets + delta > MAX_DAY_SETS
+- obtain the committed exercise coefficient map from candidateCoefficients
+- reject missing or empty coefficient maps
+- call checkContributionSafety() using coeff * delta contribution
+- reject unsafe candidates
+
+Candidate preference:
+
+1. lower numRemainingUnresolved
+2. lower delta
+3. earlier index in toAdd
+
+Do not use:
+
+- movement-category thresholds
+- exercise-count thresholds
+- exercise-role inference
+- new scoring weights
+
+--------------------------------------------------
+4. Implement hasClearExpansionAdvantage()
+--------------------------------------------------
+
+Add a pure module-level helper owned by the selection logic:
+
+function hasClearExpansionAdvantage(
+  expansion: {
+    score: ScoreTuple;
+  },
+  consolidation: {
+    numRemainingUnresolved: number;
+  },
+): boolean
+
+Return true when either:
+
+1. expansion.score[0] < consolidation.numRemainingUnresolved
+
+or:
+
+2. expansion.score[4] === 0
+
+Meaning:
+
+- expansion resolves more remaining targets
+- or expansion adds a movement category not yet represented
+
+Return false otherwise.
+
+Do not inspect:
+
+- score[1]
+- score[2]
+- score[3]
+- score[5]
+- score[6]
+- score[7]
+
+Do not add:
+
+- weights
+- thresholds
+- category-count heuristics
+- redundancy guesses
+
+Add a comment explaining that this helper belongs to selection logic because it understands ScoreTuple semantics.
+
+--------------------------------------------------
+5. Implement resolveFragmentationAction()
+--------------------------------------------------
+
+Add:
+
+type FragmentationAction =
+  | "EXPAND"
+  | "CONSOLIDATE"
+  | "NO_ACTION";
+
+Add a pure module-level helper:
+
+function resolveFragmentationAction(options: {
+  hasExpansion: boolean;
+  hasConsolidation: boolean;
+  expansionHasClearAdvantage: boolean;
+}): FragmentationAction
+
+Decision rules:
+
+1. no expansion and no consolidation
+   → NO_ACTION
+
+2. expansion only
+   → EXPAND
+
+3. consolidation only
+   → CONSOLIDATE
+
+4. both exist and expansionHasClearAdvantage is true
+   → EXPAND
+
+5. both exist and expansionHasClearAdvantage is false
+   → CONSOLIDATE
+
+This helper must receive booleans only.
+
+It must not know about:
+
+- ScoreTuple
+- target IDs
+- movement categories
+- recommendation rank
+- trainer priority
+- penalties
+
+--------------------------------------------------
+6. Implement applyConsolidation()
+--------------------------------------------------
+
+Add a mutation-only closure:
+
+applyConsolidation(candidate)
+
+It must atomically update:
+
+- toAdd[candidate.index].sets += candidate.delta
+- currentSets += candidate.delta
+- weeklyAddedThisDay
+- dailyAddedThisDay
+
+For every target coefficient belonging to the committed exercise:
+
+contribution = coefficient * candidate.delta
+
+Add that contribution to both volume accumulators.
+
+It must NOT update:
+
+- currentCount
+- addedIds
+- patternsAddedThisDay
+
+It must not perform safety checks or make decisions.
+
+--------------------------------------------------
+7. Replace only the Phase 1 control flow
+--------------------------------------------------
+
+Use this structure:
+
+let didImprove = true;
+
+while (didImprove && canAddMore()) {
+  didImprove = false;
+
+  const expansion = findBestExpansion();
+  const consolidation = findBestConsolidation();
+
+  const expansionHasClearAdvantage =
+    expansion !== null && consolidation !== null
+      ? hasClearExpansionAdvantage(expansion, consolidation)
+      : false;
+
+  const action = resolveFragmentationAction({
+    hasExpansion: expansion !== null,
+    hasConsolidation: consolidation !== null,
+    expansionHasClearAdvantage,
+  });
+
+  if (action === "EXPAND") {
+    commitExercise(expansion!.rec, expansion!.sets, false);
+    didImprove = true;
+  } else if (action === "CONSOLIDATE") {
+    applyConsolidation(consolidation!);
+    didImprove = true;
+  }
+}
+
+Do not modify:
+
+- Phase 2 Core pass
+- commitExercise()
+- computeDiagnosticReason()
+- sortedWithRank
+- scoreBetter()
+- orderExercisesForSession()
+- Stage 2 ordering
+- Stage 3 trainer priority
+- Stage 4 movement balance
+
+--------------------------------------------------
+8. Unit tests in stage5.test.ts
+--------------------------------------------------
+
+Add tests for checkContributionSafety(), findBestConsolidation(), hasClearExpansionAdvantage(), and resolveFragmentationAction().
+
+At minimum verify:
+
+checkContributionSafety:
+
+- safe delta accepted
+- weekly ceiling rejection
+- daily ceiling rejection
+- session maximum rejection
+- redistribution rejection
+- unresolved result calculated correctly
+
+findBestConsolidation:
+
+- null when toAdd is empty
+- null when all exercises have 4 sets
+- core exercises skipped
+- MAX_DAY_SETS respected
+- unsafe deltas rejected
+- lower unresolved result wins
+- lower delta wins
+- earlier index wins final tie
+
+hasClearExpansionAdvantage:
+
+- better target resolution → true
+- fresh movement category → true
+- both advantages → true
+- equal target resolution and existing category → false
+- penalty magnitude above zero does not matter
+
+resolveFragmentationAction:
+
+- neither candidate → NO_ACTION
+- expansion only → EXPAND
+- consolidation only → CONSOLIDATE
+- both with clear advantage → EXPAND
+- both without clear advantage → CONSOLIDATE
+- advantage value ignored when only one candidate exists
+
+--------------------------------------------------
+9. Integration tests in autoFill.test.ts
+--------------------------------------------------
+
+Add tests proving:
+
+- only expansion available → new exercise is added
+- only consolidation available → existing exercise gains sets
+- neither available → loop exits
+- expansion resolving more targets wins
+- expansion with a fresh movement category wins
+- equal target result plus already-present category → consolidation
+- consolidation updates weeklyAddedThisDay correctly
+- consolidation updates dailyAddedThisDay correctly
+- consolidation does not increment currentCount
+- consolidation does not update addedIds
+- consolidation does not update patternsAddedThisDay
+- consolidation never exceeds 4 sets per exercise
+- consolidation respects MAX_DAY_SETS
+- all existing contribution safety rules remain enforced
+- trainerPriorityRank selection behavior remains unchanged
+- recommendation ranking remains unchanged
+- Stage 4 movement penalty behavior remains unchanged for expansion selection
+
+--------------------------------------------------
+10. Regression verification
+--------------------------------------------------
+
+Run:
+
+- trainer-app TypeScript check
+- api-server TypeScript check
+- complete trainer-app test suite
+- complete api-server test suite
+
+Report:
+
+- exact files changed
+- exact helpers added
+- exact tests added
+- final test counts
+- TypeScript check results
+- confirmation that all previous tests still pass
+- confirmation that evaluateCandidate behavior is unchanged
+- confirmation that no API, DB, UI, shared schema, or volume-calculator files changed
+
+Stop after Stage 5.
+Do not implement Stage 6.

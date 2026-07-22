@@ -1,0 +1,163 @@
+# SMALL FIX — VOLUME PRESENTATION AND 4-DAY SPLIT RECOMMENDATION
+
+Continue from the current repository state.
+
+Do not implement exercise selection.
+Do not create or save workout plans.
+Do not modify volume guidelines, target coefficients or exercise metadata.
+Do not modify the database.
+Do not change the auxiliary Core block.
+Do not inspect unrelated files.
+Do not redesign the whole wizard.
+
+Fix only the presentation issues and the 4-day split recommendation below.
+
+============================================================
+1. EFFECTIVE VOLUME PRESENTATION
+============================================================
+
+The daily value currently shown as, for example:
+
+"32 serie"
+
+is analytical effective target volume, not the number of working sets the
+trainer will perform.
+
+Replace the daily label with:
+
+"Łączna objętość efektywna targetów: 32"
+
+Add the helper text:
+
+"To wartość analityczna uwzględniająca pracę kilku mięśni. Nie jest to
+liczba serii roboczych do wykonania."
+
+In the detailed analysis, prefer the unit label:
+
+"punkty objętości efektywnej"
+
+instead of calling decimal analytical values normal working sets.
+
+Decimal values may remain in this analytical view.
+
+============================================================
+2. REAL WORKING SETS PLACEHOLDER
+============================================================
+
+Do not fabricate the real number of workout sets before exercises are
+selected.
+
+Until the exercise-selection phase is complete, display:
+
+"Serie robocze do wykonania: dostępne po doborze ćwiczeń"
+
+Later, this value will be calculated from actual exercise prescriptions and
+must use whole integers only.
+
+============================================================
+3. DIRECT AND INDIRECT VOLUME
+============================================================
+
+Do not currently describe biceps, triceps or trapezius target totals as
+direct exercise sets.
+
+Add a short note where appropriate:
+
+"Podział na objętość bezpośrednią i pośrednią będzie dostępny po doborze
+ćwiczeń."
+
+Do not invent this division without selected exercises.
+
+============================================================
+4. FOUR-DAY SPLIT RECOMMENDATION
+============================================================
+
+Change the default recommendation for exactly 4 training days to:
+
+upper_lower
+
+Trainer-facing label:
+
+"Góra / Dół"
+
+Reason:
+
+- simple and readable four-day structure,
+- every major body part trained twice per week,
+- easy balancing of weekly volume,
+- appropriate default without a specific specialization requirement.
+
+Do not automatically recommend:
+
+push_pull_lower_full_body
+
+for every intermediate or advanced client training 4 days.
+
+That split may remain available as a trainer-selected option.
+
+If the trainer selects a different compatible split:
+
+- allow the choice,
+- show SPLIT_DIFFERS_FROM_RECOMMENDATION as non-blocking,
+- do not automatically replace the trainer's selection.
+
+Update only the affected 4-day recommendation tests.
+Keep the existing rules for 1, 2, 3, 5 and 6 days unchanged.
+
+============================================================
+5. RECOMMENDATION EXPLANATION
+============================================================
+
+Near:
+
+"Rekomendowany podział"
+
+show a short explanation of why it was recommended.
+
+For 4-day upper/lower use:
+
+"Rekomendacja wynika z 4 dni treningowych, możliwości trenowania każdej
+głównej partii 2 razy w tygodniu oraz prostego rozłożenia objętości."
+
+Do not generate random or generic explanations.
+
+============================================================
+6. TESTS AND COST CONTROL
+============================================================
+
+Run only:
+
+- focused tests for the affected split rule and presentation helpers,
+- TypeScript for affected packages,
+- API production build only if backend recommendation logic changed,
+- trainer-app production build.
+
+Do not run:
+
+- the full test suite,
+- client-landing build,
+- browser installation,
+- database audit,
+- exercise coefficient audit,
+- website audit,
+- unrelated refactors.
+
+Report only:
+
+1. files changed,
+2. new effective-volume labels,
+3. real-working-set placeholder,
+4. corrected 4-day split rule,
+5. recommendation explanation,
+6. focused test results,
+7. affected TypeScript/build results.
+
+Do not continue automatically.
+
+Finish exactly:
+
+VOLUME PRESENTATION FIX COMPLETE
+
+or
+
+VOLUME PRESENTATION FIX FAILED

@@ -1,0 +1,106 @@
+Fix the trainer-app flow so the button
+"Ułóż wstępną propozycję całego planu"
+works from EMPTY days.
+
+Do NOT redesign the whole app.
+Do NOT change weekly volume logic.
+Do NOT change the selector logic itself.
+Do NOT change training rules.
+This is a focused frontend + integration fix.
+
+==================================================
+PROBLEM
+==================================================
+
+The current UI still behaves like the old autofill flow:
+the user cannot generate the initial full plan unless exercises were already manually selected.
+
+This is wrong.
+
+We now have a true empty-session generator.
+The button must generate the plan from zero.
+
+==================================================
+GOAL
+==================================================
+
+Make the button
+"Ułóż wstępną propozycję całego planu"
+available and functional even when no exercises were manually selected yet.
+
+The trainer should be able to click it on empty days and receive an initial full plan proposal.
+
+==================================================
+REQUIRED BEHAVIOR
+==================================================
+
+1. The button must NOT require manually selected exercises.
+2. Empty days must be considered a valid starting state.
+3. Clicking the button should call the new empty-session generation path for each day.
+4. The generation should use the day type / split structure to create each day from scratch.
+
+==================================================
+WHAT TO CHANGE
+==================================================
+
+Find the current disable / guard conditions for:
+- "Ułóż wstępną propozycję całego planu"
+- any related "generate whole plan" action
+
+Remove all conditions that require:
+- existing exercises in the day
+- preselected first exercise
+- non-empty day cards before generation
+
+Keep only valid blockers such as:
+- missing client/survey data
+- missing split/day type information
+- missing generator prerequisites
+
+==================================================
+INTEGRATION REQUIREMENT
+==================================================
+
+The full-plan generation action should use the new true empty-session generator route.
+
+For each day:
+- determine the correct session type (push / pull / legs / upper / lower)
+- call the empty-session generation endpoint
+- receive generated exercises
+- populate the day
+
+It must no longer depend on the old autofill continuation path.
+
+==================================================
+UX REQUIREMENT
+==================================================
+
+If days are empty, the button should still be clickable.
+
+Optional small helper text is acceptable, for example:
+"System wygeneruje wstępną propozycję planu od zera."
+
+But do not redesign the screen.
+
+==================================================
+DEBUG / SAFETY
+==================================================
+
+Add temporary logs for the full-plan action:
+- which day types are being generated
+- whether the empty-session route is called
+- whether any day failed and why
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact disabled-condition(s) removed or changed
+3. exact integration point updated to use the empty-session generator
+4. short summary of the new button behavior
+
+End exactly with:
+
+EMPTY-DAY FULL-PLAN GENERATION ENABLED

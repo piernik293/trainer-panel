@@ -1,0 +1,161 @@
+Do not change any code.
+
+Run final end-to-end generator tests on real planning cases using the CURRENT active system.
+
+I want to validate:
+- split recommendation
+- priority-aware templates
+- empty-session generation
+- controlled variety (alt=0 / alt=1 / alt=2)
+- safety of generated sessions
+- whether the final plan looks coach-like
+
+==================================================
+TEST CASE 1 — BEGINNER / GENERAL DEVELOPMENT
+==================================================
+
+Profile:
+- experience level: Początkujący
+- goal: rozwój ogólny
+- training days declared: 3
+- recovery: normal
+- equipment: full gym
+- no true priority logic
+
+Check:
+1. recommended split
+2. generated full week
+3. whether plan stays general-development focused
+4. whether no aggressive specialization appears
+5. whether alt=0 / alt=1 produce safe variations without breaking beginner logic
+
+==================================================
+TEST CASE 2 — INTERMEDIATE / CHEST PRIORITY / BENCH GOAL
+==================================================
+
+Profile:
+- experience level: Średniozaawansowany
+- goal: 100 kg na klatę
+- priority muscle 1: Klatka piersiowa
+- training days: 3
+- recovery: poor
+- equipment: full gym
+- preferred split should reflect current recommendation logic
+
+Check:
+1. recommended split
+2. generated full week
+3. whether chest priority is visible in the actual plan
+4. whether the week includes meaningful chest exposure more than once
+5. whether chest exercise variety is sensible:
+   - flat / incline / dips / fly style diversity when feasible
+6. whether support for the bench goal is present:
+   - triceps
+   - upper back / lats
+7. compare alt=0 / alt=1 / alt=2 for at least one Upper or Push-like day
+
+==================================================
+TEST CASE 3 — INTERMEDIATE / BACK PRIORITY
+==================================================
+
+Profile:
+- experience level: Średniozaawansowany
+- goal: hypertrophy / back development
+- priority muscle 1: Plecy
+- training days: 3
+- recovery: normal
+- equipment: full gym
+
+Check:
+1. recommended split
+2. generated full week
+3. whether back priority is visible in the week
+4. whether both horizontal and vertical pull appear when feasible
+5. whether back wins contested slots over lower-priority muscles
+6. compare alt=0 / alt=1 / alt=2 for one Upper/Pull-like day
+
+==================================================
+TEST CASE 4 — HOME / DUMBBELLS ONLY
+==================================================
+
+Profile:
+- experience level: Średniozaawansowany
+- goal: general hypertrophy
+- training days: 3
+- recovery: normal
+- location: home
+- equipment: dumbbells only
+
+Check:
+1. recommended split
+2. generated full week
+3. confirm no machine / cable / barbell exercises appear
+4. confirm plan is still structurally valid
+5. compare alt=0 / alt=1 for one day
+
+==================================================
+TEST CASE 5 — DECLARED DAYS ABOVE RECOMMENDED CAP
+==================================================
+
+Profile:
+- experience level: Początkujący
+- goal: general development
+- declared training days: 5
+- recovery: normal
+- equipment: full gym
+
+Check:
+1. recommended split
+2. cappedTrainingDays
+3. whether UI-facing explanation and API response are aligned
+4. confirm the plan remains beginner-safe and does not behave like a 5-day specialization plan
+
+==================================================
+OUTPUT FORMAT
+==================================================
+
+For each case return:
+
+CASE X
+1. Recommended split
+2. Capped training days (if any)
+3. Generated week:
+   - Day 1
+   - Day 2
+   - Day 3
+   - etc.
+4. Safety check:
+   - wrong-day exercise: yes/no
+   - wrong-equipment exercise: yes/no
+   - suspicious filler exercise: yes/no
+5. Coach-like verdict:
+   - yes
+   - partially
+   - no
+6. Biggest weakness in this case
+
+For alt testing, include:
+- alt=0
+- alt=1
+- alt=2 (where supported)
+and say whether the alternatives are:
+- meaningfully different
+- still safe
+- still structurally valid
+
+==================================================
+FINAL VERDICT
+==================================================
+
+After all cases answer:
+
+1. Is the generator ready for serious internal testing?
+   - yes
+   - partially
+   - no
+
+2. What are the top 3 remaining blockers?
+
+Do not patch anything.
+Do not redesign anything.
+Only run the current active system and report real outputs.

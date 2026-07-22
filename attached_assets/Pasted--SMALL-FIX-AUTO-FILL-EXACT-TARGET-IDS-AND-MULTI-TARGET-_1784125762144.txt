@@ -1,0 +1,86 @@
+# SMALL FIX — AUTO-FILL EXACT TARGET IDS AND MULTI-TARGET HANDLING
+
+Continue from the current repository state.
+
+Fix only the completed whole-plan auto-fill helper.
+
+Do not modify:
+- recommendation scoring,
+- recommendation endpoint,
+- volume calculations,
+- Step 4 layout,
+- Step 5,
+- backend,
+- database,
+- default prescriptions,
+- safety limits.
+
+1. EXACT TARGET MATCHING
+
+The current auto-fill reportedly checks whether recommendation.matchingTargets
+contains a target name.
+
+Replace this with exact targetId matching using the existing target IDs returned
+or available from the Phase 4B3 recommendation response.
+
+Auto-fill selection must never depend only on visible target names.
+
+If the current response does not expose exact matching target IDs, stop and
+report:
+
+AUTO_FILL_EXACT_TARGET_ID_FOUNDATION_MISSING
+
+Do not modify the backend in this task.
+
+2. MULTI-TARGET EXERCISE
+
+When one selected exercise supports several currently uncovered exact targetIds:
+
+- add the exercise only once,
+- mark every supported uncovered targetId as handled in the current auto-fill
+  pass,
+- do not leave those supported targets unresolved,
+- do not add another exercise solely for a target already handled by that
+  selected exercise.
+
+Only targets not supported by any selected recommendation may remain unresolved.
+
+3. FOCUSED TESTS
+
+Update only the autoFill focused test file.
+
+Required cases:
+
+- matching target name with wrong targetId is rejected,
+- exact matching targetId is accepted,
+- one exercise supporting two uncovered targetIds is added once,
+- both supported targetIds are marked handled,
+- neither supported target remains unresolved,
+- recommendation scores remain unchanged.
+
+Run only the exact autoFill test file.
+
+Do not run:
+- the complete 163-test suite,
+- root tests,
+- production build,
+- backend tests,
+- browser automation.
+
+Run trainer-app TypeScript only if code changes.
+
+Report only:
+
+1. exact targetId field used
+2. files changed
+3. multi-target handling result
+4. exact focused tests executed
+5. TypeScript result
+
+Finish exactly with one:
+
+AUTO_FILL TARGET MATCHING FIXED
+
+AUTO_FILL_EXACT_TARGET_ID_FOUNDATION_MISSING
+
+AUTO_FILL TARGET MATCHING FAILED

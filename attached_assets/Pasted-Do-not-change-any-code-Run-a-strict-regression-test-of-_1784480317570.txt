@@ -1,0 +1,128 @@
+Do not change any code.
+
+Run a strict regression test of the CURRENT active generator after the priority-to-session integration.
+
+I want to verify whether priority is visible in REAL generated plans, not just in internal logic.
+
+==================================================
+TEST CASE 1 — CHEST PRIORITY
+==================================================
+
+Client profile:
+- experience level: Średniozaawansowany
+- goal: 100 kg na klatę
+- priority muscle 1: Klatka piersiowa
+- 3 training days
+- full gym equipment available
+- training split: Góra / Dół / Full Body
+- session duration: 90 min
+- recovery: poor
+
+Generate the full week.
+
+Check:
+1. Does chest get an early main lift?
+2. Does chest get more than one meaningful exposure across the week?
+3. Does chest show variety when feasible?
+   Example:
+   - flat + incline
+   - flat + dips
+   - DB press + incline
+4. Does the plan visibly support the chest goal, or is priority only visible in volume math?
+5. Are support muscles for bench/chest present in a sensible way?
+   Example:
+   - triceps
+   - upper back
+   - lats
+
+==================================================
+TEST CASE 2 — BACK PRIORITY
+==================================================
+
+Client profile:
+- experience level: Średniozaawansowany
+- goal: hypertrophy / back development
+- priority muscle 1: Plecy
+- 3 training days
+- full gym equipment available
+- training split: Góra / Dół / Full Body
+- session duration: 90 min
+- recovery: normal
+
+Generate the full week.
+
+Check:
+1. Does back get early and meaningful exposure?
+2. Does the week include both:
+   - vertical pull
+   - horizontal pull
+   when feasible?
+3. Does back win contested mixed slots over lower-priority muscles?
+4. Does the plan look like a real back-priority week, or only like a generic plan with slightly different numbers?
+
+==================================================
+TEST CASE 3 — BEGINNER WITH CHEST PREFERENCE
+==================================================
+
+Client profile:
+- experience level: Początkujący
+- goal: general development
+- priority muscle 1: Klatka piersiowa
+- 3 training days
+- full gym equipment available
+- training split: Góra / Dół / Full Body
+- session duration: 90 min
+- recovery: normal
+
+Generate the full week.
+
+Check:
+1. Does the plan remain general-development focused?
+2. Does chest preference stay soft, rather than creating hard specialization?
+3. Does the beginner still get a balanced plan?
+
+==================================================
+OUTPUT FORMAT
+==================================================
+
+For each case return:
+
+CASE X
+1. Weekly generated plan
+   - Day 1
+   - Day 2
+   - Day 3
+
+2. Priority verdict
+   - clearly visible
+   - partially visible
+   - not really visible
+
+3. Why
+   Explain in plain language.
+
+4. Structural check
+   State whether the generated week looks coach-like:
+   - yes
+   - partially
+   - no
+
+5. Biggest weakness in this case
+
+==================================================
+FINAL VERDICT
+==================================================
+
+After all 3 cases, answer:
+
+1. Is priority-to-session integration working in real plans?
+   - yes
+   - partially
+   - no
+
+2. If only partially or no:
+   state the single biggest blocker
+
+Do not patch anything.
+Do not redesign anything.
+Only test the active code and evaluate the generated weeks.

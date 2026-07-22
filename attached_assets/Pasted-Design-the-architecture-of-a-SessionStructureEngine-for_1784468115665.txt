@@ -1,0 +1,231 @@
+Design the architecture of a SessionStructureEngine for a professional workout generation system.
+
+DO NOT implement anything.
+DO NOT modify code.
+DO NOT create files.
+DO NOT refactor existing services.
+DO NOT write TypeScript or pseudocode.
+
+This is an architecture-only task.
+
+==================================================
+GOAL
+==================================================
+
+The SessionStructureEngine defines the structure of each training day BEFORE exercises are selected.
+
+It answers:
+
+“What should a training session look like?”
+
+This is NOT about volume numbers.
+This is about logical structure used by real coaches.
+
+==================================================
+POSITION IN PIPELINE
+==================================================
+
+Survey
+→ Weekly Volume
+→ Split Selection
+→ Daily Allocation
+→ SessionStructureEngine   ← YOU DESIGN THIS
+→ Exercise Selection
+→ Set Assignment
+→ Exercise Ordering
+→ Validation
+
+==================================================
+RESPONSIBILITY
+==================================================
+
+The engine must:
+
+- Define the number of exercise slots per session
+- Define the TYPE of each slot
+- Define the ORDER of slots
+- Define constraints for each slot
+- Define optional vs required slots
+
+It must NOT:
+
+- choose specific exercises
+- assign sets or reps
+- calculate tempo
+- calculate volume
+- override DailyAllocation
+- generate explanations
+
+==================================================
+CORE CONCEPT
+==================================================
+
+Each training day is composed of structured slots.
+
+Example:
+
+Push Day:
+
+1. MAIN_COMPOUND
+2. SECONDARY_COMPOUND
+3. SECONDARY_COMPOUND (optional)
+4. ACCESSORY
+5. ISOLATION
+6. ISOLATION (optional)
+7. CORE (optional)
+
+==================================================
+SLOT TYPES
+==================================================
+
+Define these slot types:
+
+- MAIN_COMPOUND
+- SECONDARY_COMPOUND
+- ACCESSORY
+- ISOLATION
+- CALVES
+- CORE
+
+For each slot define:
+
+- purpose
+- expected fatigue level
+- expected position in workout
+- eligible movement types
+- whether it can host a priority exercise
+
+==================================================
+STRUCTURE TEMPLATES
+==================================================
+
+Design templates for:
+
+1. PUSH
+2. PULL
+3. LEGS
+4. UPPER
+5. LOWER
+6. FULL BODY
+
+Each template must include:
+
+- ordered slot list
+- required slots
+- optional slots
+- maximum slots
+- minimum slots
+
+==================================================
+SESSION LENGTH ADAPTATION
+==================================================
+
+The structure must adapt to available time:
+
+Example:
+
+45 min:
+- fewer slots
+- remove optional slots
+
+60 min:
+- standard structure
+
+75+ min:
+- full structure
+
+Design how the engine scales:
+
+- number of slots
+- number of compound exercises
+- number of isolations
+
+==================================================
+PRIORITY EXERCISE HANDLING
+==================================================
+
+If a user has a priority exercise:
+
+- it must be placed in MAIN_COMPOUND
+- unless unsafe or conflicting
+
+Define:
+
+- when priority overrides default structure
+- when it should not override
+
+==================================================
+CONSTRAINTS
+==================================================
+
+Define rules such as:
+
+- every session must have at least 1 MAIN_COMPOUND
+- max 3 compound movements
+- isolation must not appear before compounds
+- core must be last
+- calves must be near the end
+
+==================================================
+OUTPUT DESIGN
+==================================================
+
+Design a structure like:
+
+Day:
+- dayType
+- slots[]
+
+Each slot contains:
+
+- slotType
+- required (true/false)
+- allowedMovementPatterns
+- allowsPriorityExercise
+- fatigueCategory
+- positionIndex
+
+==================================================
+INTEGRATION
+==================================================
+
+Explain:
+
+- how SessionStructureEngine uses output from DailyAllocation
+- how ExerciseSelection consumes this structure
+- how SetAssignment uses slot types
+
+==================================================
+SCENARIOS
+==================================================
+
+Describe behavior for:
+
+1. 5-day PPL, hypertrophy, 60 min
+2. 4-day upper/lower, beginner
+3. 3-day full body
+4. low recovery client (sleep 5h)
+5. priority: pull-up
+
+==================================================
+FINAL OUTPUT
+==================================================
+
+Produce:
+
+1. Module responsibility
+2. Slot system design
+3. Templates per split
+4. Time adaptation model
+5. Priority handling
+6. Constraints
+7. Output format
+8. Integration with pipeline
+9. Scenario walkthroughs
+10. Risks
+
+NO CODE.
+
+End with:
+
+SESSION STRUCTURE ARCHITECTURE COMPLETE — NO IMPLEMENTATION PERFORMED

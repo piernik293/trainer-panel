@@ -1,0 +1,103 @@
+TASK — Small survey improvements only
+
+IMPORTANT
+
+Do not rebuild the application.
+Do not change the architecture.
+Do not redesign the UI.
+Do not add extra features.
+Do not modify unrelated files unless necessary.
+Do not delete existing data.
+Keep the current survey logic working.
+
+The goal is to make ONLY these two changes:
+
+1. Replace "Wiek" with "Data urodzenia"
+2. Add a simple training goal option for endurance/conditioning
+
+------------------------------------------------
+
+1. Replace Age with Date of Birth
+
+Current field:
+- Wiek
+
+Change it to:
+- Data urodzenia
+
+Requirements:
+
+- Add a new field called dateOfBirth.
+- The client should select or enter their date of birth.
+- The app should automatically calculate and display the current age from dateOfBirth.
+- In the trainer panel, show:
+  - Data urodzenia
+  - Wiek calculated automatically
+- In PDF/print export, show:
+  - Data urodzenia
+  - Wiek calculated automatically
+
+Important compatibility:
+
+- Do not delete the existing age field from the database if it already exists.
+- Keep age as legacy fallback for older surveys.
+- If an old survey has age but no dateOfBirth, display the old age value.
+- For new survey submissions, dateOfBirth should be the main source of age.
+
+Validation:
+
+- dateOfBirth is required for new submissions.
+- dateOfBirth cannot be in the future.
+- calculated age should be reasonable.
+
+------------------------------------------------
+
+2. Add new training goal option
+
+In "Cel treningowy", add a new option:
+
+"Poprawa kondycji"
+
+This should mean improving endurance/fitness, but use simple client-friendly language.
+
+Do not use the word "wydolność" in the form because it may sound too technical.
+
+Use:
+
+"Poprawa kondycji"
+
+Make sure this new option works everywhere:
+
+- client-facing survey
+- trainer-facing form, if it exists
+- trainer panel display
+- PDF/print export
+- database/API validation
+- any enum or schema validation
+
+Do not change the current goal selection behavior.
+If the form currently allows only one goal, keep it as one goal.
+If it already allows multiple goals, keep multiple goals.
+
+------------------------------------------------
+
+3. Testing
+
+After implementation, verify:
+
+- app builds successfully
+- client survey opens correctly
+- dateOfBirth saves correctly
+- calculated age displays correctly
+- old surveys with only age still display correctly
+- "Poprawa kondycji" appears as a training goal option
+- submitting the form with "Poprawa kondycji" works
+- trainer panel displays the new goal correctly
+- PDF/print export displays the new goal correctly
+- no unrelated functionality was changed
+
+After testing, commit changes with message:
+
+"feat: add date of birth and conditioning goal"
+
+Then push to GitHub using Replit GitHub integration.

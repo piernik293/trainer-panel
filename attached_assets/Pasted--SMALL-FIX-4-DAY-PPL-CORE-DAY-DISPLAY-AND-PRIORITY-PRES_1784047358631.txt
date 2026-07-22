@@ -1,0 +1,155 @@
+# SMALL FIX — 4-DAY PPL, CORE DAY DISPLAY AND PRIORITY PRESENTATION
+
+Continue from the current repository state.
+
+Do not modify exercise selection.
+Do not modify volume guideline ranges.
+Do not modify effective-volume coefficients.
+Do not redesign the wizard.
+Do not run the full test suite.
+
+Fix only the following three issues.
+
+============================================================
+1. PUSH / PULL / LEGS COMPATIBILITY
+============================================================
+
+For a fixed weekly plan, push_pull_legs is compatible only with:
+
+- exactly 3 training days,
+- exactly 6 training days.
+
+Do not allow push_pull_legs for 4 or 5 training days because repeating the
+first day creates an unbalanced weekly structure such as:
+
+Push / Pull / Legs / Push
+
+For 4 days keep available:
+
+- upper_lower
+- push_pull_lower_full_body
+- other explicitly compatible splits
+
+When push_pull_legs is selected and training days change to an incompatible
+number:
+
+- clear the selected split or replace it with the current recommendation,
+- show:
+
+"Push / Pull / Legs wymaga 3 lub 6 dni treningowych."
+
+Use blocking validation code:
+
+SPLIT_INCOMPATIBLE_WITH_TRAINING_DAYS
+
+Do not implement a rotating multi-week PPL schedule in this task.
+
+============================================================
+2. CORE ALLOCATION INSIDE DAY CARDS
+============================================================
+
+The auxiliary Core block already contains integer day allocations.
+
+Inside every affected workout-day card show at the bottom:
+
+"Core / brzuch — {N} serie"
+
+Example:
+
+"Core / brzuch — 3 serie"
+
+Show it only when that day has a Core allocation greater than zero.
+
+Keep Core separate from the analytical effective target total.
+
+Do not add Core to the 11 normal target decisions.
+
+============================================================
+3. BROAD PRIORITY PRESENTATION
+============================================================
+
+A broad client priority such as "Plecy" may map internally to:
+
+- latissimus target,
+- trapezius target.
+
+Do not present both internal targets as if they independently received the
+full priority bonus.
+
+Show the broad category priority once:
+
+"Plecy — priorytet 3"
+
+The internal targets may still display their allocated analytical volume,
+but the broad priority bonus must be applied once and distributed
+deterministically between mapped targets.
+
+Do not add the full category bonus separately to every internal target.
+
+Add a focused test confirming that one broad Back priority does not create
+two full priority bonuses.
+
+============================================================
+4. REASON FORMATTING
+============================================================
+
+Display recommendation reasons as separate list items or separate rows.
+
+Do not concatenate text such as:
+
+"poziom doświadczenia...wybrano środek...obniżenie..."
+
+Correct Polish set pluralization:
+
+- 1 seria
+- 2, 3, 4 serie
+- 5 and more serii
+
+============================================================
+5. COST CONTROL
+============================================================
+
+Inspect only:
+
+- split compatibility helper/service,
+- distribution day-card Core rendering,
+- broad-priority mapping/presentation,
+- directly affected focused tests.
+
+Run only:
+
+- focused split compatibility tests,
+- focused Core rendering tests,
+- focused broad-priority test,
+- TypeScript for affected packages,
+- affected application build.
+
+Do not run:
+
+- all 596 tests,
+- full API test suite,
+- browser installation,
+- client landing build,
+- database audit,
+- exercise library audit,
+- unrelated refactors.
+
+Report:
+
+1. files changed
+2. PPL compatibility result
+3. Core day-card result
+4. broad-priority handling
+5. reason formatting
+6. focused tests
+7. affected build results
+
+Do not continue automatically.
+
+Finish exactly:
+
+DISTRIBUTION CONSISTENCY FIX COMPLETE
+
+or
+
+DISTRIBUTION CONSISTENCY FIX FAILED

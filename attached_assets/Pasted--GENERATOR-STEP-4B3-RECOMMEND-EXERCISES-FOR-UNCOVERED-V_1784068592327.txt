@@ -1,0 +1,503 @@
+# GENERATOR STEP 4B3 — RECOMMEND EXERCISES FOR UNCOVERED VOLUME ONLY
+
+Continue from the current repository state.
+
+Step 4 already contains:
+
+- manual exercise selection,
+- exercise recommendations,
+- live daily and weekly volume coverage,
+- local selected-exercise state,
+- separate Core coverage.
+
+Implement only adaptive recommendation targeting based on the remaining planned
+volume.
+
+The recommendation engine must suggest exercises for targets that still need
+volume instead of continuing to suggest exercises for targets that are already
+covered or exceeded.
+
+Do not modify:
+
+- the existing exercise scoring formula,
+- score values or score weights,
+- volume-calculation formulas,
+- muscle coefficients,
+- exercise muscle assignments,
+- Step 3 planned volume,
+- daily distribution values,
+- split logic,
+- exercise prescription defaults,
+- database schema,
+- plan persistence,
+- Step 5 preview,
+- AI,
+- supersets,
+- drop sets.
+
+Do not create a second recommendation engine.
+
+============================================================
+1. REUSE CURRENT SOURCES OF TRUTH
+============================================================
+
+Reuse the existing:
+
+- generator volume coverage result,
+- distributionResult,
+- targetDecisions,
+- daily targetAllocations,
+- auxiliaryCoreBlock,
+- Exercise Recommendation Engine,
+- recommendation endpoint and service,
+- selected exercises for the current workout day.
+
+Do not calculate effective volume again.
+
+Use the existing coverage result produced by the backend Volume Calculator.
+
+Use the actual existing typed field names after inspecting the directly related
+types.
+
+Expected sources are currently:
+
+Weekly planned volume:
+distributionResult.targetDecisions[].weeklySelectedVolume
+
+Daily planned volume:
+distributionResult.days[].targetAllocations[].allocatedVolume
+
+Weekly actual volume:
+existing coverage result weekly target effectiveSets
+
+Daily actual volume:
+existing coverage result day muscle effectiveSets
+
+Match normal volume targets by targetId.
+
+Do not match only by visible muscle name.
+
+============================================================
+2. DETERMINE ELIGIBLE TARGETS
+============================================================
+
+For every normal target assigned to the selected workout day calculate only the
+remaining need:
+
+dailyRemaining =
+plannedDailyVolume - actualDailyEffectiveVolume
+
+weeklyRemaining =
+plannedWeeklyVolume - actualWeeklyEffectiveVolume
+
+Use tolerance:
+
+0.01
+
+A normal target is eligible for recommendations only when:
+
+- plannedDailyVolume > 0,
+- dailyRemaining > 0.01,
+- weeklyRemaining > 0.01.
+
+Exclude a target when:
+
+- daily planned volume is already covered,
+- daily planned volume is exceeded,
+- weekly planned volume is already covered,
+- weekly planned volume is exceeded,
+- the target has no planned allocation in the selected day.
+
+Do not mutate any planned or actual values.
+
+============================================================
+3. EXACT TARGET PRECISION
+============================================================
+
+Use targetId as the exact source of recommendation need.
+
+Broad category may be used only to obtain the initial candidate set from the
+existing recommendation engine.
+
+It must not be the final eligibility check.
+
+Example:
+
+Broad category:
+Plecy
+
+Targets:
+- Latissimus
+- Trapezius
+
+If Latissimus is covered but Trapezius remains uncovered:
+
+- Trapezius remains eligible,
+- Latissimus is excluded,
+- recommendations must match an exercise assignment connected to the uncovered
+  Trapezius targetId.
+
+If Trapezius is covered but Latissimus remains uncovered, apply the inverse.
+
+Do not mark the whole broad category as completed merely because one target in
+that category is completed.
+
+============================================================
+4. MINIMAL EXISTING-ENDPOINT EXTENSION
+============================================================
+
+Prefer extending the existing read-only day-recommendations request with
+optional exact target IDs rather than creating a new endpoint.
+
+Allowed minimal request additions:
+
+- uncoveredTargetIds
+- includeCore, only when required
+
+The existing recommendation service must still calculate all exercise scores.
+
+Do not add a scoring formula to the route or React.
+
+After existing scoring, keep a candidate only when its stored muscle
+assignments contain at least one currently uncovered targetId with a valid
+positive coefficient.
+
+Return or expose the matching uncovered target IDs and labels needed by the UI.
+
+If the current endpoint response already contains sufficient assignment data,
+reuse it instead of extending the response.
+
+Do not add database columns or migrations.
+
+============================================================
+5. CORE RECOMMENDATION NEED
+============================================================
+
+Core remains separate from the 11 analytical targets.
+
+Use the same reliable Core classification already used by current coverage:
+
+mainMuscleGroup === "Brzuch"
+
+Do not use exercise-name matching.
+
+Calculate Core recommendation eligibility from the existing direct-set coverage:
+
+dailyCoreRemaining =
+planned daily Core sets - actual daily direct Core sets
+
+weeklyCoreRemaining =
+planned weekly Core sets - actual weekly direct Core sets
+
+Core is eligible only when both values are greater than zero.
+
+When Core is covered or exceeded, do not automatically recommend more direct
+Core exercises.
+
+Do not count incidental trunk stabilization as direct Core.
+
+============================================================
+6. TARGET NEED ORDER
+============================================================
+
+Order eligible recommendation needs as follows:
+
+1. planned target with zero actual contribution,
+2. partially covered target with the highest remaining percentage,
+3. original daily target-allocation order as the stable final tie-breaker.
+
+For partial coverage:
+
+remainingPercentage =
+dailyRemaining / plannedDailyVolume
+
+This ordering affects which target needs are handled first.
+
+It must not alter individual exercise scores.
+
+Within each target, preserve the existing Exercise Recommendation Engine
+ranking.
+
+============================================================
+7. RECOMMENDATION RESULTS
+============================================================
+
+For each eligible target:
+
+- use the existing scored candidate exercises,
+- require a stored assignment to that exact uncovered targetId,
+- select up to 3 matching recommendations.
+
+For Core:
+
+- require the existing direct Core classification.
+
+Deduplicate the final result by exerciseId.
+
+One exercise matching several uncovered targets must:
+
+- appear once,
+- show all currently uncovered targets it supports.
+
+Keep the existing maximum:
+
+8 unique recommendations per workout day.
+
+Do not display an exercise already added to that workout day.
+
+The same exercise may still be selected on another workout day.
+
+============================================================
+8. LIVE UPDATE BEHAVIOUR
+============================================================
+
+When the recommendation panel is open, update recommendation needs after the
+existing volume coverage finishes recalculating following:
+
+- adding an exercise from recommendations,
+- adding an exercise manually,
+- removing an exercise,
+- replacing an exercise,
+- changing working sets.
+
+Do not refresh recommendation needs after changing:
+
+- repetitions,
+- RIR,
+- rest time,
+- notes,
+- exercise order within the same day.
+
+Do not send recommendation requests while volume coverage is still loading.
+
+Use a short debounce.
+
+Ignore stale recommendation responses.
+
+An older response must never replace recommendations based on newer coverage.
+
+Do not create repeated request loops between coverage and recommendations.
+
+============================================================
+9. COMPLETED DAY STATE
+============================================================
+
+When no normal target and no Core allocation in the selected workout day has
+remaining eligible volume, hide the automatic recommendation list and show:
+
+"Zaplanowana objętość tego dnia została pokryta."
+
+Helper:
+
+"Możesz nadal dodać ćwiczenie ręcznie. Dodatkowa objętość zostanie oznaczona jako przekroczenie propozycji."
+
+Keep the manual action:
+
+"Dodaj ćwiczenie"
+
+Do not block trainer control.
+
+Do not automatically remove exercises or reduce sets.
+
+============================================================
+10. COMPACT MISSING-VOLUME SUMMARY
+============================================================
+
+Above the recommendation list show:
+
+"Rekomendacje dla brakującej objętości"
+
+For each currently eligible target display compactly:
+
+- target name,
+- plan na dzień,
+- zrealizowano,
+- pozostało.
+
+Example:
+
+Mięsień najszerszy grzbietu
+
+Plan: 4 pkt.
+Zrealizowano: 2 pkt.
+Pozostało: 2 pkt.
+
+For Core use direct sets instead of effective-volume points.
+
+Do not duplicate the complete Step 4 volume-coverage panel.
+
+============================================================
+11. PRESERVE CURRENT RECOMMENDATION BEHAVIOUR
+============================================================
+
+Preserve all existing behaviour for eligible targets:
+
+- existing numeric recommendation scoring,
+- existing recommendation reasons,
+- active-exercise filtering,
+- completeness filtering,
+- location filtering,
+- equipment filtering,
+- already-added exercise exclusion,
+- avoided-exercise warning,
+- avoided-exercise confirmation,
+- stable exercise IDs,
+- existing default prescription,
+- local draft only,
+- loading state,
+- empty state,
+- error and retry state,
+- manual exercise selector.
+
+Avoided status must not change the numeric recommendation score.
+
+Do not automatically add any exercise.
+
+============================================================
+12. FAILURE AND MISSING DATA
+============================================================
+
+When coverage data is temporarily unavailable:
+
+- keep manual exercise selection available,
+- do not assume all targets are uncovered,
+- do not request broad unrestricted recommendations,
+- show a compact informational state.
+
+Suggested text:
+
+"Trwa aktualizacja brakującej objętości."
+
+When an exercise lacks valid target assignments:
+
+- do not treat it as matching an uncovered target,
+- preserve existing non-blocking warning behaviour,
+- do not assume coefficient 1.00.
+
+============================================================
+13. LOCAL DRAFT AND READ-ONLY BACKEND
+============================================================
+
+Recommendations may update only the current local generator draft after the
+trainer explicitly selects an exercise.
+
+Do not create or update:
+
+- workout plans,
+- workout days,
+- workout exercises,
+- clients,
+- surveys,
+- exercises,
+- muscle assignments.
+
+The recommendation endpoint remains read-only.
+
+Do not call a write endpoint.
+
+============================================================
+14. FOCUSED TESTS
+============================================================
+
+Add or update only directly related focused tests.
+
+Required cases:
+
+1. Target with planned volume and zero actual contribution is eligible.
+2. Partially covered target remains eligible.
+3. Fully covered daily target is excluded.
+4. Exceeded daily target is excluded.
+5. Weekly-covered target is excluded even when daily coverage still has a
+   remaining value.
+6. Target with no daily allocation is excluded.
+7. Uncovered Latissimus remains eligible when Trapezius is covered.
+8. Uncovered Trapezius remains eligible when Latissimus is covered.
+9. Exercise must have a stored assignment to the exact uncovered targetId.
+10. One exercise matching several uncovered targets is displayed once.
+11. All matching uncovered target labels are displayed.
+12. Zero-coverage targets are ordered before partial targets.
+13. Partial targets are ordered by remaining percentage.
+14. Adding a recommended exercise updates eligible targets.
+15. Adding a manual exercise updates eligible targets.
+16. Changing working sets updates eligible targets.
+17. Removing an exercise restores its target to recommendations.
+18. Repetitions, RIR and rest changes do not trigger target refresh.
+19. Covered Core is excluded.
+20. Uncovered Core remains eligible.
+21. Completed workout day shows the completed-state message.
+22. Manual exercise selection remains available.
+23. Individual exercise score values remain unchanged.
+24. No write endpoint is called.
+25. No database records are created.
+
+============================================================
+15. COST CONTROL
+============================================================
+
+Inspect only:
+
+- Step 4 recommendation component,
+- current recommendation hook/request,
+- existing day-recommendation route and service,
+- existing volume coverage result passed to Step 4,
+- current generator distribution data,
+- directly affected focused tests.
+
+Do not inspect unrelated application areas.
+
+Run only:
+
+- exact affected recommendation frontend test file,
+- exact affected recommendation service or route test file when backend code
+  changes,
+- trainer-app TypeScript when frontend code changes,
+- API-server TypeScript only when API code changes,
+- trainer-app production build once only when frontend code changes,
+- API production build once only when API code changes.
+
+Do not run:
+
+- root tests,
+- the complete test suite,
+- all existing tests,
+- browser installation,
+- screenshot automation,
+- Playwright,
+- database audits,
+- migration checks,
+- client-landing build,
+- unrelated builds,
+- workflow restarts,
+- unrelated refactors.
+
+Do not continue automatically after completing this task.
+
+============================================================
+16. REQUIRED REPORT
+============================================================
+
+Report only:
+
+1. exact weekly and daily coverage fields reused
+2. exact targetId matching implementation
+3. whether the existing endpoint was reused or minimally extended
+4. files changed
+5. normal target eligibility rules
+6. Core eligibility rules
+7. target ordering behaviour
+8. exact-assignment filtering behaviour
+9. deduplication behaviour
+10. completed-day state
+11. focused tests executed
+12. TypeScript results
+13. affected build results
+14. confirmation that exercise score values were not changed
+15. confirmation that volume calculations were not duplicated
+16. confirmation that no write endpoint was called
+17. confirmation that no database records were created
+
+Finish exactly with one:
+
+REMAINING VOLUME RECOMMENDATIONS COMPLETE
+
+REMAINING VOLUME RECOMMENDATIONS FAILED

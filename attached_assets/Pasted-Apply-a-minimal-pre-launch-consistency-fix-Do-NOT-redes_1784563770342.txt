@@ -1,0 +1,86 @@
+Apply a minimal pre-launch consistency fix.
+
+Do NOT redesign the app.
+Do NOT add new features.
+Do NOT touch unrelated planner logic.
+This is a small pre-launch fix only.
+
+==================================================
+GOAL
+==================================================
+
+Fix the one real blocking contradiction before testing,
+and remove or hide the trainer-only excluded-muscle field that currently has no planning effect.
+
+==================================================
+FIX 1 — 6–7 DAY SPLIT CONTRADICTION
+==================================================
+
+Fix the recommendation/allowed-list inconsistency for 6–7 day cases.
+
+Current problem:
+- recommended split can be returned as "upper_lower"
+- but "upper_lower" is not present in the allowed split list for 6–7 days
+
+Required behavior:
+- the recommended split must always exist in the allowed split list
+- recommendation banner and visible/allowed options must stay fully consistent
+
+For intermediate 6–7 day cases:
+- do NOT return "upper_lower" if it is not allowed
+
+For advanced poor-recovery 6–7 day cases:
+- also do NOT return a split that is outside the allowed list
+
+Fix this in the cleanest minimal way.
+
+==================================================
+FIX 2 — TRAINER-ONLY EXCLUDED MUSCLE FIELD
+==================================================
+
+Do NOT implement excludedMuscleGroups planning logic right now.
+
+Instead:
+- remove or hide the trainer-only field that currently feeds excludedMuscleGroups / avoidedMuscles
+- ensure the UI no longer suggests that this field affects planning if it actually does nothing
+
+Goal:
+Do not silently collect data that has no effect.
+
+If the cleanest option is:
+- hide it from the trainer interview
+that is acceptable.
+
+If the cleanest option is:
+- remove it from the current planning flow only
+that is also acceptable.
+
+But do NOT leave a visible field that is ignored by the planner.
+
+==================================================
+DO NOT TOUCH
+==================================================
+
+Do NOT in this patch:
+- add favorite exercise prioritization
+- add advancedMethodsToAvoid planner logic
+- change cardio logic
+- change survey wording broadly
+- redesign the planner
+- add new split systems
+
+Only fix the contradiction and remove/hide the dead trainer-only field.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact fix for the 6–7 day split contradiction
+3. exact removal/hiding change for the trainer-only excluded-muscle field
+4. confirmation that no unrelated features were touched
+
+End exactly with:
+
+PRE-LAUNCH CONSISTENCY FIX APPLIED

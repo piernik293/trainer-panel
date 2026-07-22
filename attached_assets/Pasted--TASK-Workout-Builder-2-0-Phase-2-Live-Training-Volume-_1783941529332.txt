@@ -1,0 +1,766 @@
+# TASK — Workout Builder 2.0, Phase 2: Live Training Volume Calculation
+
+This task extends the existing Workout Builder 2.0 Phase 1.
+
+This is PHASE 2 only.
+
+The goal is to add live session and weekly muscle-volume calculations to the Plan Editor by reusing the existing Volume Calculator, exercise muscle assignments, muscle coefficients and approved volume guidelines.
+
+Do NOT implement plan balance analysis, estimated workout duration, advanced training methods, automatic plan generation or AI during this task.
+
+============================================================
+IMPORTANT SAFETY RULES
+============================================================
+
+Preserve all existing functionality from Workout Builder Phase 1.
+
+Do NOT:
+
+- Replace or rewrite the existing Volume Calculator
+- Duplicate volume-calculation business logic in the frontend
+- Change muscle coefficients
+- Change exercise muscle assignments
+- Change approved volume-guideline values
+- Change the 44 existing volume-guideline rows
+- Change the four experience levels
+- Change Training Interview logic
+- Change Exercise Recommendation Engine scoring
+- Delete or reseed database data
+- Remove existing plans
+- Add automatic exercise selection
+- Automatically modify a trainer’s plan
+- Introduce new activation-blocking rules
+- Implement AI
+
+The existing backend Volume Calculator must remain the single source of truth.
+
+If existing activation logic already blocks a specific absolute-volume violation, preserve that behaviour exactly. Do not create additional blocking rules during this task.
+
+Before modifying anything:
+
+1. Inspect the existing Volume Calculator.
+2. Inspect the current volume-guideline schema and live database rows.
+3. Inspect the 11 existing volume targets.
+4. Inspect exercise muscle assignments and coefficients.
+5. Inspect Workout Builder Phase 1 plan, day and exercise structures.
+6. Inspect current plan activation volume validation.
+7. Report any architectural conflict before making a destructive change.
+
+============================================================
+OBJECTIVE
+============================================================
+
+While the trainer creates or edits a workout plan, the application should calculate and display:
+
+- Effective sets added by every exercise
+- Volume for every muscle in each training day
+- Total weekly volume for every muscle
+- Current volume compared with the client’s approved guideline values
+- Session minimum
+- Session maximum
+- Weekly preferred ceiling
+- Weekly absolute ceiling
+- Exact exercise contributions to each muscle
+- Clear warnings about missing data or exceeded guidelines
+
+Calculations must update without requiring the trainer to activate the plan.
+
+The trainer must always remain in control.
+
+The system should calculate, explain and warn — never automatically remove exercises, reduce sets or change the plan.
+
+============================================================
+SOURCE OF VOLUME GUIDELINES
+============================================================
+
+Use only the existing approved volume-guideline records stored in the database.
+
+The application currently supports four independent experience levels:
+
+1. Brak aktywności fizycznej
+2. Początkujący
+3. Średniozaawansowany
+4. Zaawansowany
+
+The existing database contains 11 muscle targets for each level, for a total of 44 guideline rows.
+
+Every guideline contains the existing fields:
+
+- sessionMin
+- sessionMax
+- weeklyPreferredCeiling
+- weeklyAbsoluteCeiling
+
+Do not hardcode these values in the frontend.
+
+Do not recreate the numeric tables in another service.
+
+Do not change or reinterpret the existing approved values.
+
+The client’s experience level must be taken from the existing Training Interview and mapped through the existing guideline-level mapping.
+
+============================================================
+VOLUME CALCULATION RULES
+============================================================
+
+Effective volume must use the existing muscle assignments and coefficients.
+
+For each exercise entry:
+
+effective sets for one muscle =
+workingSets × muscle coefficient
+
+Example:
+
+Exercise:
+- Working sets: 4
+
+Muscle assignments:
+- Latissimus dorsi: coefficient 1.00
+- Biceps: coefficient 0.50
+- Trapezius: coefficient 0.25
+
+Result:
+- Latissimus dorsi: 4.00 effective sets
+- Biceps: 2.00 effective sets
+- Trapezius: 1.00 effective set
+
+Requirements:
+
+- Use all valid muscle assignments connected to the exercise.
+- Include primary and secondary assignments.
+- Use the stored coefficient exactly.
+- Do not infer volume only from exercises.mainMuscleGroup.
+- Do not treat every secondary muscle as a full set.
+- Do not round individual contributions before summing.
+- Preserve fractional effective sets.
+- Round only for display, preferably to a maximum of two decimal places.
+- Calculations must be deterministic.
+- The same saved plan must always return the same volume result.
+
+============================================================
+SESSION VOLUME
+============================================================
+
+Calculate volume separately for every training day.
+
+For each day show:
+
+- Muscle name
+- Effective sets in this session
+- Session minimum
+- Session maximum
+- Session status
+- Exercises contributing to the result
+
+Session statuses:
+
+- Below minimum
+- Within recommended session range
+- Above session maximum
+- Guideline unavailable
+
+Recommended Polish UI labels:
+
+- Poniżej zalecanej objętości
+- W zalecanym zakresie
+- Powyżej zalecanej objętości na jednostkę
+- Brak wytycznych
+
+Do not treat being below session minimum as a critical error.
+
+It should be an informational signal, especially for draft plans.
+
+============================================================
+WEEKLY VOLUME
+============================================================
+
+Calculate weekly volume by summing all training days in the plan.
+
+Unless the current architecture already stores a separate weekly frequency for each day, count every workout day exactly once per week.
+
+Do not invent a frequency field during this task.
+
+For each muscle show:
+
+- Current weekly effective sets
+- Weekly preferred ceiling
+- Weekly absolute ceiling
+- Remaining volume before preferred ceiling
+- Remaining volume before absolute ceiling
+- Weekly status
+
+Weekly statuses:
+
+1. Below or equal to preferred ceiling
+2. Above preferred ceiling but below or equal to absolute ceiling
+3. Above absolute ceiling
+4. Guideline unavailable
+
+Recommended Polish labels:
+
+- W bezpiecznym zakresie
+- Przekroczono preferowany limit
+- Przekroczono absolutny limit
+- Brak wytycznych
+
+Do not introduce a weekly minimum if it does not exist in the approved database structure.
+
+============================================================
+LIVE PREVIEW ARCHITECTURE
+============================================================
+
+The trainer must see updated volume while editing a draft, including before saving it.
+
+Do not duplicate the calculation formula in React.
+
+Create or extend a backend preview mechanism that accepts the current unsaved plan structure and calculates volume using the existing backend Volume Calculator logic.
+
+Preferred architecture:
+
+- A preview endpoint accepts the current plan draft snapshot.
+- It does not save or mutate the plan.
+- It validates the provided exercise IDs and working sets.
+- It loads muscle assignments and coefficients from the database.
+- It loads the client’s experience level and approved guidelines.
+- It returns a calculated preview.
+- It uses the same calculation functions as saved-plan volume calculations.
+
+The frontend should call the preview endpoint with a reasonable debounce.
+
+Recommended debounce:
+
+- approximately 300–600 ms after the last relevant edit
+
+Do not call the endpoint on every keypress without debounce.
+
+Relevant changes that should refresh the preview:
+
+- Adding an exercise
+- Removing an exercise
+- Duplicating an exercise
+- Moving an exercise between days
+- Changing working sets
+- Reordering days or exercises when the displayed breakdown depends on order
+- Changing the assigned client
+- Changing an exercise reference
+
+Changes such as trainer notes should not trigger unnecessary volume recalculation.
+
+============================================================
+PREVIEW API RESPONSE
+============================================================
+
+Return a clear structured response.
+
+Recommended shape:
+
+{
+  "clientId": 20,
+  "experienceLevel": "Początkujący",
+  "guidelineLevel": "Początkujący",
+  "hasGuidelines": true,
+  "days": [
+    {
+      "dayId": 1,
+      "dayName": "Dzień A",
+      "muscles": [
+        {
+          "targetId": 1,
+          "muscleName": "Klatka piersiowa",
+          "effectiveSets": 8,
+          "sessionMin": 4,
+          "sessionMax": 8,
+          "status": "within_range",
+          "contributions": [
+            {
+              "exerciseEntryId": 15,
+              "exerciseId": 5,
+              "exerciseName": "Wyciskanie sztangi leżąc",
+              "workingSets": 4,
+              "coefficient": 1,
+              "effectiveSets": 4
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "weekly": [
+    {
+      "targetId": 1,
+      "muscleName": "Klatka piersiowa",
+      "effectiveSets": 12,
+      "weeklyPreferredCeiling": 12,
+      "weeklyAbsoluteCeiling": 16,
+      "remainingToPreferred": 0,
+      "remainingToAbsolute": 4,
+      "status": "within_preferred"
+    }
+  ],
+  "warnings": []
+}
+
+The exact property names may follow existing project conventions, but the response must remain strongly typed and reusable.
+
+============================================================
+MISSING DATA AND WARNINGS
+============================================================
+
+The calculator must handle incomplete data safely.
+
+Return structured warnings for:
+
+- Exercise without muscle assignments
+- Exercise with invalid coefficient
+- Missing exercise record
+- Missing client survey
+- Missing experience level
+- Missing guideline level
+- Missing guideline for a muscle target
+- Invalid working sets
+- Exercise entry without an exercise ID
+
+Recommended warning structure:
+
+{
+  "code": "EXERCISE_WITHOUT_MUSCLE_ASSIGNMENTS",
+  "scope": "exercise",
+  "dayId": 2,
+  "exerciseEntryId": 15,
+  "exerciseId": 5,
+  "message": "Ćwiczenie nie ma przypisanych mięśni i nie zostało uwzględnione w objętości."
+}
+
+Requirements:
+
+- Do not crash the editor because one exercise is incomplete.
+- Calculate all valid contributions.
+- Clearly list what was excluded.
+- Do not silently treat missing assignments as coefficient 1.00.
+- Do not silently assign a guideline level.
+- Do not silently map “Brak aktywności fizycznej” to “Początkujący”.
+
+Inactive exercises already present in existing plans should remain readable and should still contribute to volume when valid muscle assignments exist.
+
+Show an inactive-exercise warning, but do not erase its historical contribution.
+
+============================================================
+WORKOUT BUILDER USER INTERFACE
+============================================================
+
+Add a professional volume-analysis panel to the existing Workout Builder.
+
+Keep the Polish UI consistent with the application.
+
+Recommended main section name:
+
+Objętość treningowa
+
+The interface should contain two views:
+
+1. Objętość tygodniowa
+2. Objętość na jednostkę
+
+============================================================
+WEEKLY VOLUME VIEW
+============================================================
+
+For every one of the 11 muscle targets display:
+
+- Muscle name
+- Current weekly effective sets
+- Preferred weekly ceiling
+- Absolute weekly ceiling
+- Status
+- Progress indicator
+- Expandable exercise-contribution breakdown
+
+Example:
+
+Klatka piersiowa
+
+12 / 12 preferowane
+12 / 16 absolutne
+
+Status:
+W bezpiecznym zakresie
+
+Contributions:
+- Wyciskanie sztangi leżąc: 4.00
+- Wyciskanie hantli: 4.00
+- Rozpiętki: 4.00
+
+Use the existing UI component system.
+
+Do not add a heavy charting dependency only for simple progress indicators.
+
+============================================================
+SESSION VOLUME VIEW
+============================================================
+
+Allow selecting or expanding a training day.
+
+For each day show:
+
+- Day name
+- Muscle name
+- Current effective sets
+- Session minimum
+- Session maximum
+- Status
+- Contributing exercises
+
+Example:
+
+Dzień A — Góra ciała
+
+Klatka piersiowa:
+8 serii efektywnych
+Zakres na jednostkę: 4–8
+W zalecanym zakresie
+
+============================================================
+LIVE EXERCISE CONTRIBUTION PREVIEW
+============================================================
+
+Inside each exercise entry, show a compact volume contribution summary.
+
+Example:
+
+Wpływ na objętość:
+
+- Klatka piersiowa: 4.00
+- Triceps: 2.00
+- Barki: 1.00
+
+This summary should update when working sets change.
+
+Do not make the exercise card visually overcrowded.
+
+Use an expandable or compact secondary section when appropriate.
+
+============================================================
+COLOURS AND STATUS DESIGN
+============================================================
+
+Use the application’s existing design system and semantic status styles.
+
+Recommended meaning:
+
+- Neutral or muted:
+  below session minimum
+
+- Green:
+  within session range or weekly preferred ceiling
+
+- Amber:
+  above session maximum or above preferred weekly ceiling
+
+- Red:
+  above absolute weekly ceiling
+
+Do not rely only on colour.
+
+Always include visible text and icons or labels for accessibility.
+
+============================================================
+TRAINER CONTROL
+============================================================
+
+The application must never automatically:
+
+- Remove exercises
+- Reduce working sets
+- Change coefficients
+- Replace an exercise
+- Reorder a plan
+- Change the client level
+- Modify an active plan
+- Adjust a guideline
+
+Warnings must remain informational in the editor.
+
+If existing backend activation rules already enforce an absolute ceiling, preserve and display those rules consistently.
+
+Do not create a new frontend-only blocking rule that disagrees with the backend.
+
+============================================================
+SAVED PLAN CALCULATION
+============================================================
+
+The same calculation result should be available for a saved plan.
+
+Requirements:
+
+- Reloading the page produces the same result.
+- A saved plan can request its calculated volume without sending the entire draft snapshot.
+- Draft preview and saved-plan calculation use the same core calculation functions.
+- Avoid separate formulas for preview and persisted plans.
+
+Recommended approach:
+
+- A pure internal calculation function receives normalized plan days and exercise entries.
+- Saved-plan endpoint loads the plan from the database and calls it.
+- Draft-preview endpoint validates and normalizes the request and calls the same function.
+
+============================================================
+PERFORMANCE
+============================================================
+
+Avoid N+1 database queries.
+
+Load in batches where possible:
+
+- Exercise records
+- Muscle assignments
+- Muscle targets
+- Volume guidelines
+
+The calculation should remain responsive for plans containing:
+
+- Up to 7 training days
+- Up to 20 exercise entries per day
+- Multiple muscle assignments per exercise
+
+Frontend preview requests should:
+
+- Be debounced
+- Cancel or ignore stale responses
+- Show a loading state
+- Keep the last valid result visible during recalculation
+- Not display an older response after a newer edit
+
+============================================================
+VALIDATION
+============================================================
+
+Validate preview input on the backend.
+
+At minimum:
+
+- Client ID exists
+- Day structure is valid
+- Exercise ID exists when provided
+- workingSets is a positive integer when included in calculation
+- coefficient is a valid non-negative number
+- Duplicate temporary frontend IDs do not corrupt the response
+- Invalid entries produce structured warnings or validation errors
+
+Draft plans may remain incomplete.
+
+Do not require complete exercise prescriptions such as load, RIR, RPE or tempo for volume calculation.
+
+Only exercise identity, working sets and valid muscle assignments are required to calculate effective sets.
+
+============================================================
+BACKWARD COMPATIBILITY
+============================================================
+
+Existing plans must continue to load.
+
+Plans created before Phase 2 may contain:
+
+- Missing working sets
+- Missing exercise assignments
+- Inactive exercises
+- Null prescription fields
+- Old optional fields
+
+Handle them safely.
+
+Do not change historical plan data automatically.
+
+Do not write calculated volume totals permanently into plan rows unless the current architecture already does this and has a verified invalidation mechanism.
+
+Prefer calculating from current source data rather than storing stale totals.
+
+============================================================
+OPENAPI AND TYPES
+============================================================
+
+The plan API currently uses the existing handwritten planApi.ts architecture.
+
+Do not migrate all plan routes to OpenAPI during this task.
+
+Add strongly typed request and response interfaces to the existing plan API layer.
+
+If a new preview route is added, keep it consistent with the existing plan route architecture.
+
+Rebuild affected workspace packages and run full TypeScript checks.
+
+Do not use any, @ts-ignore or unsafe casts to hide type errors.
+
+============================================================
+ACTIVATION CONSISTENCY
+============================================================
+
+Inspect the existing activation volume checks.
+
+The volume shown in the editor must use the same:
+
+- Muscle assignments
+- Coefficients
+- Guideline level
+- Preferred ceilings
+- Absolute ceilings
+
+as activation validation.
+
+A plan must not display one result in the editor and a different result during activation.
+
+Do not weaken existing activation validation.
+
+Do not add new activation restrictions without explicit approval.
+
+============================================================
+OUT OF SCOPE
+============================================================
+
+Do NOT implement during this task:
+
+- Push/Pull balance
+- Squat/Hinge balance
+- Movement-pattern analysis
+- Estimated training duration
+- Fatigue analysis
+- Recovery scoring
+- Joint-stress analysis
+- Exercise-variety analysis
+- Supersets
+- Compound sets
+- Drop sets
+- Rest-pause
+- Cluster sets
+- Myo-reps
+- Automatic exercise selection
+- Automatic plan generation
+- AI planning
+- Progressive overload
+- Automatic load recommendations
+- Client workout execution
+- Training history
+- Client Portal
+- Chat
+- Notifications
+- Editing guideline numeric values
+
+These belong to later phases.
+
+============================================================
+TESTING REQUIREMENTS
+============================================================
+
+Test at minimum:
+
+1. Load a client with “Brak aktywności fizycznej”.
+2. Confirm dedicated guidelines are used, not Beginner guidelines.
+3. Load a Beginner client.
+4. Load an Intermediate client.
+5. Load an Advanced client.
+6. Create a draft with one exercise and one primary muscle coefficient 1.00.
+7. Confirm 4 working sets produce 4.00 effective sets.
+8. Add a secondary coefficient 0.50.
+9. Confirm 4 working sets produce 2.00 secondary effective sets.
+10. Add coefficient 0.25.
+11. Confirm 4 working sets produce 1.00 effective set.
+12. Add multiple exercises contributing to the same muscle.
+13. Confirm the values are summed correctly.
+14. Add the same muscle across multiple days.
+15. Confirm weekly volume equals the sum of session volumes.
+16. Confirm fractional values are not rounded before summing.
+17. Change working sets in the editor.
+18. Confirm live preview updates.
+19. Rapidly change sets several times.
+20. Confirm stale responses do not overwrite the newest result.
+21. Exercise without muscle assignments produces a warning.
+22. Missing guideline produces a warning without crashing.
+23. Inactive exercise in an old plan remains readable.
+24. Save the plan and refresh.
+25. Confirm saved and preview calculations match.
+26. Confirm preferred-ceiling status.
+27. Confirm above-preferred warning.
+28. Confirm above-absolute warning.
+29. Confirm session-minimum status.
+30. Confirm session-maximum warning.
+31. Confirm existing activation behaviour remains unchanged.
+32. Confirm existing old plans still load.
+33. Confirm Volume Calculator remains the single source of truth.
+34. Run TypeScript checks.
+35. Run API production build.
+36. Run trainer-app production build.
+37. Confirm API server starts.
+38. Confirm trainer app starts.
+39. Confirm database data remains present.
+
+============================================================
+EXPECTED RESULT
+============================================================
+
+The Workout Builder should display accurate live training volume for every muscle.
+
+The trainer should immediately understand:
+
+- Which muscles receive volume
+- How much each exercise contributes
+- How much volume exists in each session
+- How much weekly volume exists
+- Whether session limits are respected
+- Whether weekly preferred ceilings are exceeded
+- Whether weekly absolute ceilings are exceeded
+- Which exercises could not be calculated and why
+
+The system must remain an advisory tool.
+
+It must not take control away from the trainer.
+
+============================================================
+REQUIRED FINAL REPORT
+============================================================
+
+After implementation provide:
+
+1. Initial architecture findings
+2. Existing Volume Calculator functions reused
+3. Files changed
+4. API routes added or modified
+5. Request and response types
+6. Frontend components added or modified
+7. Exact volume formula used
+8. Guideline-loading logic
+9. Live-preview debounce and stale-response handling
+10. Missing-data warning logic
+11. Session-volume test evidence
+12. Weekly-volume test evidence
+13. Coefficient test evidence for 1.00, 0.50 and 0.25
+14. Evidence that “Brak aktywności fizycznej” uses its own guidelines
+15. Evidence that saved and draft calculations match
+16. Evidence that activation and editor calculations are consistent
+17. TypeScript results
+18. Build results
+19. Runtime smoke-test results
+20. Confirmation that volume-guideline values were not changed
+21. Confirmation that Exercise Recommendation Engine was not modified
+22. Confirmation that Training Interview logic was not modified
+23. Confirmation that existing database data was preserved
+24. Remaining limitations
+
+Finish with exactly one verdict:
+
+- PASS
+- PASS WITH WARNINGS
+- FAIL
+
+Do not claim PASS unless:
+
+- Live preview works
+- Session calculations are correct
+- Weekly calculations are correct
+- Muscle coefficients are respected
+- All four experience levels use the correct guidelines
+- Missing assignments are handled safely
+- Saved and draft results match
+- TypeScript checks pass
+- API and trainer-app production builds pass
+- API server and trainer app start successfully
+- Existing database data remains present

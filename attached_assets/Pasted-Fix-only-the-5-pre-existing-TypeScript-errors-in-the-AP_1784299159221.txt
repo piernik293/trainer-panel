@@ -1,0 +1,67 @@
+Fix only the 5 pre-existing TypeScript errors in the API server test files.
+
+Current status:
+- Exercise Priority Engine Stage 1 is complete.
+- Trainer app TypeScript is clean.
+- All trainer-app tests pass.
+- All api-server tests pass.
+- The api-server TypeScript check still reports 5 pre-existing errors in:
+  - `avoided-exercises.test.ts`
+  - `exercise-metadata.test.ts`
+- These errors were confirmed to exist before the Stage 1 changes.
+
+Goal:
+Make the api-server TypeScript check clean without changing production behavior.
+
+Before editing:
+1. Run the api-server TypeScript check and capture the exact 5 errors.
+2. Inspect only the affected test files and the types they depend on.
+3. Determine whether the errors come from outdated fixtures, outdated mocks, invalid test data, or incorrect test-only typing.
+4. Reuse the current production types as the source of truth.
+
+Do not modify:
+- production route behavior
+- service logic
+- database schema
+- migrations
+- Auto Fill
+- Exercise Priority Engine
+- exercise classification logic
+- trainer-app files
+- unrelated tests
+- dependencies
+- TypeScript compiler configuration
+
+Implementation rules:
+- Make the smallest possible changes.
+- Prefer updating outdated test fixtures or mocks to match current production types.
+- Do not weaken production types.
+- Do not add `any`.
+- Do not add `@ts-ignore`.
+- Do not add `@ts-expect-error` unless the test explicitly verifies an intentional type error; these current errors should be fixed normally.
+- Do not disable strict TypeScript checks.
+- Do not cast entire objects blindly with `as`.
+- Narrow casts are allowed only if they accurately represent the real tested type and there is no cleaner fixture correction.
+- Preserve the meaning and assertions of the tests.
+- Do not change runtime logic merely to satisfy tests.
+
+Validation:
+1. Run the affected test files.
+2. Run the full api-server test suite.
+3. Run the api-server TypeScript check.
+4. Run the trainer-app TypeScript check to confirm no cross-package regression.
+5. Run the full project test suite if the repository already has one command for it.
+
+Final report:
+- exact original TypeScript errors
+- root cause of each error
+- exact files changed
+- what was corrected in the fixtures or mocks
+- confirmation that no production files were changed, or a clear explanation if one was strictly necessary
+- affected test results
+- full api-server test count
+- api-server TypeScript result
+- trainer-app TypeScript result
+
+Stop after all 5 TypeScript errors are resolved.
+Do not begin session ordering or any other AI feature.

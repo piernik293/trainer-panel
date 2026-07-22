@@ -1,0 +1,247 @@
+Implement athlete-specific survey support and a new Plyo session type in the planning system.
+
+Do NOT redesign the whole app.
+Do NOT change weekly volume formulas for standard strength planning unless required for athlete/Plyo integration.
+Do NOT change selector V0 more than necessary to support the new session type.
+Do NOT mix this task with pain alerts, injury alerts, or cardio rules.
+This is a focused athlete + sport + Plyo task.
+
+==================================================
+GOAL
+==================================================
+
+Add:
+1. explicit athlete / sport status in the survey
+2. sport discipline capture
+3. sport-performance needs capture
+4. a new session type:
+   - Plyo
+   - Plyometria
+
+This is for sport-supportive planning:
+- explosiveness
+- coordination
+- landing mechanics
+- tendon / joint stiffness support
+- reactivity
+- change of direction support
+- athletic qualities relevant to sport
+
+==================================================
+FEATURE 1 — ATHLETE / SPORT SURVEY SECTION
+==================================================
+
+Add a clear athlete/sport section to the survey.
+
+Required field:
+"Czy uprawiasz sport?"
+Options:
+- "Nie"
+- "Tak — amatorsko"
+- "Tak — półzawodowo"
+- "Tak — zawodowo"
+
+Behavior:
+- If "Nie" -> no extra athlete fields
+- If any "Tak" option is selected -> show additional required fields
+
+Required extra field:
+"Jaka dyscyplina sportowa?"
+
+Optional but strongly recommended field:
+"Co chcesz poprawić najbardziej?"
+Suggested selectable options:
+- skoczność
+- szybkość
+- koordynacja
+- zmiana kierunku
+- wydolność
+- prewencja urazów
+- dynamika
+- stabilizacja / kontrola ruchu
+
+These values must be stored and made available to planning logic.
+
+==================================================
+FEATURE 2 — ATHLETE PLANNING FLAG
+==================================================
+
+Add a clean helper / derived state that determines whether athlete-support logic should activate.
+
+Athlete-support logic should activate only if:
+- the client selected any "Tak" athlete option
+OR
+- sport-performance-related needs clearly justify it
+
+Do NOT activate Plyo for normal general-population clients by default.
+
+==================================================
+FEATURE 3 — NEW SESSION TYPE: PLYO
+==================================================
+
+Add a new session type / template family:
+- plyo
+- "Plyometria"
+
+Purpose:
+- athletic support
+- reactive ability
+- landing quality
+- stiffness / elasticity support
+- coordination
+- explosiveness
+
+Important:
+Plyo is NOT a replacement for strength training.
+It is an additional session type that may coexist with:
+- full_body
+- upper_lower
+- upper_lower_full_body
+- push_pull_legs
+
+Do NOT treat Plyo as a normal bodybuilding split.
+It is an athletic-support session.
+
+==================================================
+FEATURE 4 — WHEN PLYO SHOULD BE USED
+==================================================
+
+Plyo should be considered only when athlete logic is active.
+
+Examples of valid weekly structures:
+- FBW + Plyo
+- FBW + Plyo x2
+- Upper / Lower + Plyo
+- Góra / Dół / Full Body + Plyo support day
+
+Examples of intended meaning:
+- FBW + Plyo x2 =
+  1 day general strength development
+  2 days athletic / plyometric support
+
+Do NOT force Plyo for every athlete.
+Use it when the sport / need profile supports it.
+
+==================================================
+FEATURE 5 — PLYO SESSION CONTENT LOGIC
+==================================================
+
+Create a clean Plyo session structure.
+
+The session should not be random.
+It should follow a sensible order.
+
+Recommended structure example:
+1. low-volume explosive jump / hop pattern
+2. landing / deceleration / control pattern
+3. lateral / directional movement or coordination element
+4. optional supportive athletic drill
+5. optional mobility / trunk / low-fatigue finish if appropriate
+
+The exact exercise inventory depends on what already exists in the database,
+but the template should be logically separated from:
+- Push
+- Pull
+- Legs
+- Upper
+- Lower
+- Full Body
+
+Plyo should not become:
+- random conditioning
+- generic cardio
+- a duplicate of Legs day
+
+==================================================
+FEATURE 6 — ATHLETE / PLYO RECOMMENDATION RULES
+==================================================
+
+When athlete-support logic is active:
+
+1. The plan summary should clearly say that the client practices sport
+2. The system may recommend adding Plyo when appropriate
+3. The summary should explain WHY:
+   example:
+   - "Klient uprawia sport: piłka nożna"
+   - "Dodano jednostkę Plyo dla wsparcia koordynacji, dynamiki i pracy reaktywnej"
+
+Do NOT add Plyo silently.
+
+Make the recommendation visible in:
+- plan assumptions
+- plan summary
+- trainer-facing planning context
+
+==================================================
+FEATURE 7 — SAFETY / SCOPE RULES
+==================================================
+
+1. Do NOT force Plyo on:
+- Brak aktywności fizycznej
+- standard beginner general-population clients
+unless athlete context clearly exists
+
+2. Do NOT let Plyo replace all strength work
+There must still be sensible general strength support when the goal requires it
+
+3. Keep plan structures realistic
+Do not explode the number of session types shown to non-athlete users
+
+4. Prefer Plyo as a specialized support option,
+not as the default answer to every sport-related case
+
+==================================================
+UI / DISPLAY REQUIREMENTS
+==================================================
+
+In the survey:
+- athlete/sport section should be clear and structured
+
+In the trainer-facing planning view:
+- clearly show athlete status
+- clearly show sport discipline
+- clearly show when Plyo has been added or recommended
+
+Example text:
+- "Sport: koszykówka"
+- "Status: półzawodowo"
+- "Dodano jednostkę Plyo ze względu na cel sportowy"
+
+Do not redesign the entire layout.
+Just add clear, visible, practical information.
+
+==================================================
+IMPLEMENTATION NOTES
+==================================================
+
+Please keep this clean and structured:
+
+- survey field updates
+- backend response updates if needed
+- helper(s) for athlete detection
+- helper(s) for Plyo eligibility
+- new session template for Plyo
+- summary/recommendation rendering
+
+Prefer centralized logic instead of scattered conditional code.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact survey fields added
+3. exact athlete / sport logic added
+4. exact Plyo session logic added
+5. when Plyo is recommended or used
+6. where athlete/sport info is shown in the planning flow
+7. one example:
+   - non-athlete case
+   - athlete case without Plyo
+   - athlete case with Plyo
+   - example weekly structure like FBW + Plyo x2
+
+End exactly with:
+
+ATHLETE AND PLYO SUPPORT APPLIED

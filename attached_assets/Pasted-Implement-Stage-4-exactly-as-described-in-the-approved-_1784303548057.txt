@@ -1,0 +1,221 @@
+Implement Stage 4 exactly as described in the approved architecture audit.
+
+Keep the implementation as small as possible.
+
+Current status:
+
+- Stage 1 (Exercise Classification) is complete.
+- Stage 2 (Session Ordering) is complete.
+- Stage 3 (Trainer Priority) is complete.
+- All tests pass.
+- TypeScript is clean.
+
+Goals:
+
+Introduce movement-pattern awareness into exercise selection WITHOUT changing:
+
+- volume calculations
+- safety limits
+- evaluateCandidate()
+- trainerPriority.ts
+- ordering logic
+- API scoring
+- database schema
+
+--------------------------------------------------
+1. API normalization
+--------------------------------------------------
+
+Do NOT duplicate any movement normalization tables.
+
+Reuse the existing exported:
+
+normalizeMovementCategory()
+
+inside the API.
+
+Add one new field to recommendation objects:
+
+movementCategoryKey
+
+The trainer-app should receive only the canonical category key.
+
+No client-side normalization.
+
+--------------------------------------------------
+2. New helper
+--------------------------------------------------
+
+Create:
+
+artifacts/trainer-app/src/lib/movementBalance.ts
+
+Export:
+
+movementPatternPenalty()
+
+Pure function.
+
+No Auto Fill knowledge.
+
+No ScoreTuple knowledge.
+
+--------------------------------------------------
+3. Movement balance
+--------------------------------------------------
+
+IMPORTANT:
+
+Unlike the architecture draft, DO NOT measure movement balance using accumulated SETS.
+
+Instead measure:
+
+number of exercises already committed for the same movement category.
+
+Example:
+
+Bench
+↓
+
+push = 1
+
+OHP
+↓
+
+push = 2
+
+Not:
+
+Bench 4 sets
+↓
+
+push = 4
+
+Reason:
+
+Volume is already represented by ScoreTuple indices 0–3.
+
+Movement balancing should only encourage movement variety.
+
+Return:
+
+0 = pattern not yet used
+
+1 = one exercise already exists
+
+2 = two exercises
+
+etc.
+
+Missing movementCategoryKey:
+
+return 0
+
+(neutral)
+
+--------------------------------------------------
+4. Auto Fill integration
+--------------------------------------------------
+
+Modify only the minimum necessary inside:
+
+artifacts/trainer-app/src/lib/autoFill.ts
+
+Add:
+
+patternsAddedThisDay
+
+Track exercise count per movement category.
+
+Update only when commitExercise() succeeds.
+
+Do NOT track sets.
+
+--------------------------------------------------
+5. ScoreTuple
+--------------------------------------------------
+
+Extend ScoreTuple.
+
+Current:
+
+[numRemainingUnresolved,
+ totalWeeklyRemaining,
+ totalDailyRemaining,
+ setsPreference,
+ trainerPriorityRank,
+ recOriginalRank,
+ varietyPenalty]
+
+New:
+
+[numRemainingUnresolved,
+ totalWeeklyRemaining,
+ totalDailyRemaining,
+ setsPreference,
+ movementPatternPenalty,
+ trainerPriorityRank,
+ recOriginalRank,
+ varietyPenalty]
+
+Update:
+
+- tuple type
+- scoreBetter()
+- both ScoreTuple assembly sites
+
+Nothing else.
+
+--------------------------------------------------
+6. Do NOT modify
+--------------------------------------------------
+
+Do NOT modify:
+
+- evaluateCandidate()
+- trainerPriority.ts
+- exerciseOrdering.ts
+- orderExercisesForSession()
+- selection loop
+- hard constraints
+- volume calculations
+- DB schema
+
+--------------------------------------------------
+7. Tests
+--------------------------------------------------
+
+Create:
+
+movementBalance.test.ts
+
+Verify:
+
+- empty session -> 0
+- null category -> 0
+- unknown category -> 0
+- one existing exercise -> penalty 1
+- two existing exercises -> penalty 2
+- different movement categories do not affect each other
+
+Extend autoFill integration tests:
+
+- equal volume -> underrepresented movement wins
+- volume still dominates movement balance
+- trainerPriority still breaks ties after movement balance
+- safety behaviour unchanged
+
+--------------------------------------------------
+8. Validation
+--------------------------------------------------
+
+Run:
+
+- trainer-app TypeScript
+- api-server TypeScript
+- full trainer-app tests
+- full api-server tests
+
+Stop after Stage 4.
+
+Do not begin Stage 5.

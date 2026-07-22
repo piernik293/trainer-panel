@@ -1,0 +1,102 @@
+Proceed with implementation of Stage 7A only.
+
+Do not modify Stages 1–6 scoring logic.
+Do not refactor unrelated code.
+Do not implement hard movement-pattern deduplication yet.
+
+Business requirement for:
+"Brak aktywności fizycznej"
+
+The final session must:
+- contain no more than 5 exercises,
+- have an estimated total duration of no more than 45 minutes,
+- prioritize simple compound exercises and fundamental movement patterns,
+- use only 2 or 3 working sets per exercise.
+
+The 45-minute limit is mandatory.
+Do not treat max 5 exercises and 2–3 sets as sufficient by themselves.
+
+1. Candidate pool
+- Add optional poolSize support to the day-recommendations request.
+- Default must remain 8 for existing callers.
+- For "Brak aktywności fizycznej", request 20 candidates.
+- Enforce a safe server-side maximum of 30.
+- Candidate pool size must remain independent from final session size.
+
+2. Final exercise limit
+- Add optional maxDayExercises to RunAutoFillDayInput.
+- Default remains MAX_DAY_EXERCISES = 8.
+- For "Brak aktywności fizycznej", set maxDayExercises = 5.
+- Existing manually added exercises must count toward the limit.
+
+3. Working-set restriction
+- Add optional allowedSetCounts to RunAutoFillDayInput.
+- Default remains [2, 3, 4].
+- For "Brak aktywności fizycznej", use [2, 3].
+- Apply this to expansion, core selection, and consolidation.
+- No path may assign or consolidate an exercise to 4 sets.
+
+4. Mandatory 45-minute session cap
+First inspect what duration-related data already exists, including:
+- repetitions,
+- tempo,
+- rest time,
+- warm-up time,
+- exercise transition time,
+- existing session duration fields or estimators.
+
+Implement the smallest deterministic duration-estimation mechanism needed to enforce:
+estimatedSessionDurationMinutes <= 45.
+
+The generator must check estimated duration before:
+- adding a new exercise,
+- adding working sets,
+- consolidating sets.
+
+A candidate or consolidation must be rejected when it would make the estimated session exceed 45 minutes.
+
+Do not silently use an undocumented approximation.
+
+If the current data is insufficient to create a defensible deterministic estimate:
+- do not invent arbitrary production values,
+- stop the time-cap implementation,
+- report exactly which data is missing,
+- propose the smallest required architecture and default assumptions,
+- still complete the independent poolSize, maxDayExercises, and allowedSetCounts changes.
+
+5. Wiring
+- Use distributionResult.experienceLevelUsed in Step4Exercises.tsx.
+- Apply these settings only to "Brak aktywności fizycznej".
+- Początkujący, Średniozaawansowany, and Zaawansowany must remain unchanged.
+
+6. Tests
+Add tests verifying:
+- absent poolSize still returns at most 8 candidates,
+- poolSize=20 returns up to 20 candidates,
+- the server-side maximum is respected,
+- maxDayExercises=5 is respected,
+- manually added exercises count toward the limit,
+- allowedSetCounts=[2,3] prevents all 4-set assignments,
+- consolidation cannot raise an exercise to 4 sets,
+- an exercise is rejected when it would push duration above 45 minutes,
+- consolidation is rejected when it would push duration above 45 minutes,
+- the generated session never exceeds 45 estimated minutes,
+- all other experience levels retain current behavior,
+- all existing tests remain green.
+
+Do not implement:
+- maxPerMovementPattern,
+- hard movement-pattern exclusions,
+- UI redesign,
+- unrelated database changes.
+
+After implementation, report:
+- files changed,
+- duration calculation formula,
+- assumptions used,
+- exact behavior added,
+- tests added,
+- full regression results,
+- any unresolved risks.
+
+Stop after Stage 7A.

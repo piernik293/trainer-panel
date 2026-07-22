@@ -1,0 +1,130 @@
+Implement a product simplification in the workout generator:
+
+WEEKLY VOLUME stays.
+DAY-LEVEL PLANNED VOLUME must be removed from the trainer-facing flow.
+
+This is a focused implementation task.
+Do not redesign the whole system.
+Do not touch the recent selection-engine bug fix unless required by compilation.
+Do not build new features.
+
+==================================================
+GOAL
+==================================================
+
+The product should stop presenting or relying on pre-assigned day-level effective volume as the main planning concept.
+
+Keep:
+- weekly target volume per muscle group
+
+Remove from trainer-facing UX and primary workflow:
+- planned daily effective volume
+- daily "Plan vs Realized" target tables
+- day-level effective-volume points as a visible concept
+
+==================================================
+NEW PRODUCT RULE
+==================================================
+
+1. Weekly volume is the only visible source of truth.
+2. A training day should be built from:
+   - split/day type
+   - session structure
+   - exercise selection
+   - set assignment
+3. Daily effective volume may still exist internally for analytics/debug/validation,
+   but it must NOT be shown as the main concept and must NOT drive the visible UX.
+
+==================================================
+WHAT TO REMOVE FROM UI
+==================================================
+
+Remove or hide from the trainer-facing screen:
+
+- "Zaplanowana obj. efektywna: X pkt."
+- per-session target tables such as:
+  - Plan: X pkt. / Zrealizowano: Y pkt.
+  - Pozostało / Przekroczono
+- day-level target coverage blocks
+- wording suggesting that the session is defined by daily effective-volume points
+
+==================================================
+WHAT TO KEEP IN UI
+==================================================
+
+Keep:
+
+1. Weekly volume summary
+   Example:
+   - Klatka: 12–16 serii tygodniowo
+   - Plecy: 14–18
+   - Barki: 10–14
+
+2. Day cards showing:
+   - day type (Upper / Lower / Push / Pull / Legs)
+   - number of exercises
+   - total working sets
+   - actual selected exercises
+   - optional simple plain-language summary:
+     "Akcent: klatka + plecy"
+     "Główne ruchy: pchanie poziome + przyciąganie poziome"
+
+3. Actual realized volume can remain available only in:
+   - weekly summary
+   - advanced/debug view if needed
+
+==================================================
+BACKEND / LOGIC CHANGE
+==================================================
+
+Do NOT delete useful internal calculations if they are still needed.
+
+But change the product logic so that:
+
+- weekly target volume remains the main target
+- session structure defines what kind of session should exist
+- exercise selection fills session slots
+- set assignment determines final daily work
+- realized effective volume is calculated AFTER exercise selection
+
+The system should NOT behave as:
+"Day gets 21 points first, then exercises are forced into that"
+
+It should behave as:
+"Build a valid Upper/Lower session first, then reconcile realized work against weekly targets"
+
+==================================================
+ACCEPTANCE CRITERIA
+==================================================
+
+After the change:
+
+1. A trainer should no longer see:
+   - planned day effective volume
+   - daily Plan vs Realized muscle target tables
+
+2. A trainer should still see:
+   - weekly target volume
+   - generated exercises for each day
+   - total exercises and total working sets per day
+
+3. The day should feel like a real training session, not an analytical target table.
+
+4. Internal validation/debug may still use hidden daily calculations if necessary,
+   but these must not dominate the product flow.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+
+1. exact files changed
+2. exact components/services changed
+3. short summary of what was removed from UI
+4. short summary of what remains as weekly volume
+5. confirmation whether daily volume still exists internally or was fully detached
+
+END WITH:
+
+WEEKLY-VOLUME-ONLY FLOW APPLIED

@@ -1,0 +1,321 @@
+# WORKOUT BUILDER — MANUAL SUPERSETS AND DROP SETS
+
+Continue from the current repository state.
+
+Implement only two trainer-controlled workout methods:
+
+1. Superserie
+2. Drop sety
+
+Do not implement:
+
+- rest-pause,
+- myo-reps,
+- forced repetitions,
+- cluster sets,
+- automatic method selection,
+- AI suggestions,
+- automatic plan generation,
+- exercise selection,
+- volume guideline changes,
+- Core volume changes,
+- unrelated redesigns.
+
+The trainer must always make the final decision.
+
+============================================================
+1. UI — ADD METHOD
+============================================================
+
+Inside each exercise card in Workout Builder add:
+
+"Dodaj metodę"
+
+After clicking, show exactly:
+
+- Superseria
+- Drop set
+
+If a method is already active, show:
+
+- method name,
+- configuration summary,
+- "Edytuj metodę",
+- "Usuń metodę".
+
+Use Polish trainer-facing labels.
+
+============================================================
+2. SUPERSET
+============================================================
+
+The trainer may connect exactly two exercises from the same workout day.
+
+Flow:
+
+1. Trainer clicks "Dodaj metodę"
+2. Selects "Superseria"
+3. Selects the second exercise from the same day
+4. Configures:
+   - przerwa między ćwiczeniami,
+   - przerwa po rundzie
+5. Confirms manually
+
+Default values:
+
+- przerwa między ćwiczeniami: 15 seconds
+- przerwa po rundzie: 90 seconds
+
+Rules:
+
+- both exercises must belong to the same workout day,
+- one exercise cannot belong to multiple supersets,
+- the two exercises must have the same number of working sets,
+- do not automatically change their set counts,
+- if set counts differ, block pairing and show:
+
+"Ćwiczenia w superserii muszą mieć tę samą liczbę serii. Zmień liczbę serii przed połączeniem."
+
+- after pairing, keep both exercises adjacent,
+- display labels such as:
+  A1
+  A2
+
+Example:
+
+A1. Wyciskanie hantli — 3 × 8–10
+A2. Wiosłowanie na wyciągu — 3 × 10–12
+
+Przerwa między ćwiczeniami: 15 s
+Przerwa po rundzie: 90 s
+
+Removing the superset must not remove either exercise.
+
+Deleting one exercise from a superset must safely unlink the second
+exercise.
+
+============================================================
+3. SUPERSET VALIDATION
+============================================================
+
+Add deterministic validation codes:
+
+- SUPERSET_DIFFERENT_DAY
+- SUPERSET_SET_COUNT_MISMATCH
+- SUPERSET_EXERCISE_ALREADY_ASSIGNED
+- SUPERSET_EXERCISE_MISSING
+
+Do not silently repair invalid supersets.
+
+A trainer may use two compound exercises, but show a non-blocking warning:
+
+"Połączenie dwóch wymagających ćwiczeń wielostawowych może obniżyć jakość wykonania."
+
+The trainer may still confirm:
+
+"Zastosuj mimo ostrzeżenia"
+
+============================================================
+4. DROP SET
+============================================================
+
+The trainer may add a drop set to one selected exercise.
+
+Configuration:
+
+- zastosowanie:
+  "Ostatnia seria"
+- liczba redukcji:
+  1 or 2
+- zmniejszenie ciężaru:
+  whole integer from 10% to 40%
+- przerwa po redukcji:
+  whole integer from 0 to 20 seconds
+
+Defaults:
+
+- ostatnia seria,
+- 1 redukcja,
+- 25% zmniejszenia ciężaru,
+- 10 sekund przerwy.
+
+Example display:
+
+Drop set — ostatnia seria
+1 redukcja ciężaru o 25%
+Przerwa po redukcji: 10 s
+
+Do not create an additional normal working set.
+
+Display separately:
+
+"Serie robocze: 3"
+"Metoda intensyfikacji: 1 drop set"
+
+============================================================
+5. DROP SET WARNINGS
+============================================================
+
+Drop sets are allowed on every exercise because the trainer controls the
+plan.
+
+Show a non-blocking warning when the exercise is:
+
+- a technically demanding compound exercise,
+- a heavy free-weight exercise,
+- inappropriate for fatigue-based execution according to existing exercise
+  metadata.
+
+Warning:
+
+"Drop set w wymagającym technicznie ćwiczeniu może zwiększyć ryzyko utraty poprawnej techniki."
+
+When the linked client has experience level:
+
+- Brak aktywności fizycznej
+- Początkujący
+
+show:
+
+"Metody intensyfikacji zwykle nie są potrzebne na tym poziomie. Trener powinien ocenić zasadność ich użycia."
+
+Do not block trainer confirmation.
+
+============================================================
+6. VOLUME SEMANTICS
+============================================================
+
+Superseria:
+
+- does not add working sets,
+- changes only workout organization and rest structure.
+
+Example:
+
+3 chest sets + 3 back sets remain exactly 6 working sets.
+
+Drop set:
+
+- does not count as an additional normal working set,
+- remains separate method metadata,
+- may later affect fatigue analysis,
+- must not increase the displayed normal set count.
+
+Do not modify weekly volume recommendations or effective-volume
+coefficients in this task.
+
+============================================================
+7. PERSISTENCE
+============================================================
+
+Both methods must:
+
+- save with the workout plan,
+- survive page refresh,
+- load correctly when reopening the plan,
+- remain connected after editing exercise parameters,
+- be removable without deleting exercises.
+
+Use the existing plan/exercise metadata structure when possible.
+
+Prefer no database migration.
+
+If persistence requires a migration, create only one minimal,
+backward-compatible migration and do not modify unrelated tables.
+
+Existing plans without methods must continue to load normally.
+
+============================================================
+8. DAILY SUMMARY
+============================================================
+
+At the top or bottom of the workout day show a compact summary only when
+methods are present:
+
+"Metody treningowe: 1 superseria, 1 drop set"
+
+When there are no methods, do not show an empty summary.
+
+If more than 2 intensity methods are used in one workout day, show a
+non-blocking warning:
+
+"W tym dniu zastosowano wiele metod intensyfikacji. Sprawdź, czy poziom zmęczenia jest odpowiedni dla klienta."
+
+A superset counts as one organizational method.
+Each drop set counts as one intensity method.
+
+============================================================
+9. TESTS
+============================================================
+
+Add focused tests for:
+
+- pairing two exercises from the same day,
+- rejecting exercises from different days,
+- rejecting exercises with different set counts,
+- preventing one exercise from joining multiple supersets,
+- keeping paired exercises adjacent,
+- removing a superset without removing exercises,
+- deleting one paired exercise safely unlinks the other,
+- saving and loading a superset,
+- saving and loading a drop set,
+- drop reduction percentage accepts only integers from 10 to 40,
+- drop pause accepts only integers from 0 to 20,
+- reductions accept only 1 or 2,
+- drop set does not add a normal working set,
+- superset does not change normal working-set totals,
+- existing plans without methods still load correctly,
+- beginner/no-activity warning is non-blocking.
+
+============================================================
+10. COST CONTROL
+============================================================
+
+Inspect only files directly responsible for:
+
+- Workout Builder exercise cards,
+- workout-day ordering,
+- plan exercise persistence,
+- affected validation,
+- focused tests.
+
+Run only:
+
+- focused method tests,
+- TypeScript for affected packages,
+- API build only if backend persistence changed,
+- trainer-app production build.
+
+Do not run:
+
+- the full test suite,
+- client-landing build,
+- browser installation,
+- database audit,
+- website audit,
+- generator audit,
+- exercise library audit,
+- unrelated refactors.
+
+Report only:
+
+1. files changed
+2. Superset data structure
+3. Drop set data structure
+4. trainer UI flow
+5. validation and warnings
+6. persistence result
+7. confirmation that working-set totals are unchanged
+8. focused test results
+9. affected TypeScript/build results
+10. migration status
+
+Do not continue with additional methods or suggested features.
+
+Finish exactly:
+
+SUPERSETS AND DROP SETS COMPLETE
+
+or
+
+SUPERSETS AND DROP SETS FAILED

@@ -1,0 +1,136 @@
+Do not change any code.
+
+Run a focused regression test of the CURRENT active system after the bench-goal main lift fix.
+
+I want to verify that the fix works for all priority-eligible experience levels,
+under the SAME planning conditions.
+
+Priority-eligible levels to test:
+- Średniozaawansowany
+- Zaawansowany
+
+IMPORTANT:
+Use the same:
+- training days
+- recovery
+- equipment
+- goal
+- priority muscle
+for both profiles.
+
+Only change:
+- experience level
+
+==================================================
+TEST GROUP — BENCH GOAL / CHEST PRIORITY
+==================================================
+
+Run the same test for 2 profiles:
+
+PROFILE A
+- experience level: Średniozaawansowany
+- goal: 100 kg na klatę
+- priority muscle 1: Klatka piersiowa
+- training days: 3
+- recovery: normal
+- full gym equipment available
+- barbell available
+
+PROFILE B
+- experience level: Zaawansowany
+- goal: 100 kg na klatę
+- priority muscle 1: Klatka piersiowa
+- training days: 3
+- recovery: normal
+- full gym equipment available
+- barbell available
+
+==================================================
+CHECK 1 — SPLIT RECOMMENDATION
+==================================================
+
+For each profile return:
+1. recommended split
+2. cappedTrainingDays (if any)
+3. fallbackApplied
+4. short explanation
+
+==================================================
+CHECK 2 — MAIN CHEST DAY
+==================================================
+
+For each profile generate the main chest-focused day and compare:
+- alt=0
+- alt=1
+- alt=2
+
+For each alt return:
+1. exact exercises in order
+2. identify the main chest slot
+3. state whether barbell bench press family appears
+4. state whether the slot winner is:
+   - barbell bench family
+   - dumbbell press family
+   - push-up family
+   - machine press family
+
+==================================================
+CHECK 3 — FULL WEEK
+==================================================
+
+For each profile generate the full week and return:
+- Day 1
+- Day 2
+- Day 3
+
+Then answer:
+1. does chest get more than one meaningful exposure across the week?
+2. does the week visibly support a bench-oriented goal?
+3. are support muscles present in a sensible way?
+   - triceps
+   - upper back
+   - lats
+
+==================================================
+CHECK 4 — REGRESSION SAFETY
+==================================================
+
+Also verify:
+1. beginner case is unchanged
+   - beginner 3-day general-development case
+   - confirm no forced barbell bench behavior appears
+
+2. non-bench chest case is still natural
+   - intermediate chest-priority without explicit bench goal
+   - confirm bench is not being forced unnaturally
+
+==================================================
+OUTPUT FORMAT
+==================================================
+
+Return only:
+
+PROFILE A — Średniozaawansowany
+SECTION 1 — Split recommendation
+SECTION 2 — Main chest day alt comparison
+SECTION 3 — Full generated week
+SECTION 4 — Verdict
+
+PROFILE B — Zaawansowany
+SECTION 1 — Split recommendation
+SECTION 2 — Main chest day alt comparison
+SECTION 3 — Full generated week
+SECTION 4 — Verdict
+
+REGRESSION SAFETY
+- beginner unchanged: yes/no
+- non-bench chest case still natural: yes/no
+
+FINAL VERDICT
+- bench-goal fix working for priority-eligible levels: yes/no
+- if not, state the exact weakest profile
+- biggest remaining weakness in this feature
+
+Do not patch anything.
+Do not redesign anything.
+Only test the active system and report the real outputs.

@@ -1,0 +1,222 @@
+TASK — Confirm understanding of experience-based weekly volume system
+
+IMPORTANT:
+
+Do not make any code changes.
+Do not create database migrations.
+Do not implement the workout plan generator.
+Do not commit or push.
+
+First inspect the existing application architecture and explain how you understand the proposed system.
+
+Wait for approval before implementation.
+
+==================================================
+1. SOURCE DATA INTERPRETATION
+==================================================
+
+We have trainer-provided volume tables for:
+
+- Początkujący
+- Średniozaawansowany
+- Zaawansowany
+
+The source columns are:
+
+- average sets per training session
+- maximum weekly sets
+
+Some weekly maximum values are ranges, for example:
+
+Beginner quadriceps:
+- average per session: 4
+- weekly maximum range: 8–10
+
+Interpret this as:
+
+- 8 = preferred conservative weekly ceiling used by automatic generation
+- 10 = absolute application ceiling
+- values below 8 are allowed
+- 8 is not a mandatory weekly minimum
+- a generated or finalised plan must never exceed 10
+
+These are configurable coaching rules from the supplied methodology, not universal biological limits.
+
+Confirm that you understand this distinction.
+
+==================================================
+2. EXPERIENCE LEVEL MAPPING
+==================================================
+
+The client’s experience level must come automatically from the existing training interview.
+
+Mappings:
+
+- Początkujący → beginner guidelines
+- Średniozaawansowany → intermediate guidelines
+- Zaawansowany → advanced guidelines
+- Brak aktywności fizycznej → conservative beginner profile
+
+For “Brak aktywności fizycznej”:
+
+- use beginner ceilings
+- generate below or near the lower conservative values
+- prefer fewer exercises and lower per-session volume
+- do not treat this level identically to a regular beginner
+
+The trainer must see which interview level was used.
+
+==================================================
+3. EFFECTIVE MUSCLE VOLUME
+==================================================
+
+Weekly volume must use the existing precise muscle-assignment coefficients.
+
+Formula:
+
+effective sets =
+working sets × muscle coefficient
+
+Weekly effective sets =
+sum of effective sets across all workout days
+
+Example:
+
+Podciąganie na drążku — 3 working sets:
+
+- Mięsień najszerszy grzbietu, coefficient 1.0 → 3.0
+- Mięsień dwugłowy ramienia, coefficient 0.5 → 1.5
+- Mięsień obły większy, coefficient 0.5 → 1.5
+- Mięsień czworoboczny grzbietu, coefficient 0.25 → 0.75
+
+Only working sets count.
+
+Warm-up sets do not count.
+
+Do not round before validation.
+
+==================================================
+4. SPECIFIC MUSCLES AND GROUP LIMITS
+==================================================
+
+The application must calculate:
+
+1. volume for each specific muscle
+2. volume for source-defined guideline groups
+
+The source sometimes defines a limit for a complete group, for example:
+
+- Mięśnie naramienne
+- Mięśnie pośladkowe
+- Mięsień czworogłowy uda
+- Grupa kulszowo-goleniowa
+
+Do not apply the complete group limit separately to every muscle inside the group.
+
+Do not sum multiple coefficients from the same exercise in a way that counts one physical set several times toward the same group limit.
+
+Proposed initial group rule:
+
+For one exercise and one guideline group:
+
+group contribution coefficient =
+the highest coefficient among assigned muscles belonging to that group
+
+Example:
+
+Wyciskanie hantli nad głowę — 3 sets:
+
+- anterior deltoid coefficient: 1.0
+- lateral deltoid coefficient: 0.5
+
+Specific-muscle results:
+
+- anterior deltoid: 3.0
+- lateral deltoid: 1.5
+
+Deltoid guideline-group result:
+
+- 3 × max(1.0, 0.5) = 3.0 group sets
+
+Not 4.5.
+
+Explain whether this can be implemented consistently with the current data model.
+
+If you recommend a safer architecture, explain it before changing anything.
+
+==================================================
+5. WEEKLY LIMIT BEHAVIOUR
+==================================================
+
+The automatic generator should:
+
+- normally stay at or below the lower weekly ceiling
+- never exceed the upper weekly ceiling
+- not attempt to fill every muscle to its maximum
+- allow lower volume
+- use higher volume mainly for client priorities
+- still respect the upper ceiling for priorities
+
+Draft plans may temporarily exceed a limit during manual editing.
+
+However, a plan above the upper ceiling cannot be:
+
+- finalised
+- activated
+- assigned to a client
+
+The system must show which exercises caused the excess.
+
+Confirm that validation will exist on the server, not only in the frontend.
+
+==================================================
+6. PER-SESSION VALUES
+==================================================
+
+Values described as average sets per training session are planning guidelines.
+
+They are not mandatory minimums for every training day.
+
+The generator should use them when distributing the weekly volume, but a lower session value may be valid when:
+
+- volume is divided across more sessions
+- the exercise contributes only secondary effective volume
+- the client has a short available session
+- the client has no prior physical activity
+
+Per-session deviations should create a trainer-visible warning when relevant, not automatically invalidate every plan.
+
+==================================================
+7. VERSIONED GUIDELINES
+==================================================
+
+Explain how the volume data should be stored so it is:
+
+- database-backed
+- versioned
+- traceable to a source label
+- globally editable in the future
+- not hardcoded separately in multiple UI components
+
+A workout plan should record which guideline version was used.
+
+==================================================
+8. REQUIRED RESPONSE
+==================================================
+
+Before implementation, provide:
+
+1. Your understanding of the complete calculation.
+2. Proposed database tables or additions.
+3. How interview levels map to guideline levels.
+4. How specific-muscle volume is calculated.
+5. How group-level double counting is prevented.
+6. How weekly ceilings are validated.
+7. How drafts differ from finalised plans.
+8. One complete beginner example.
+9. One complete intermediate example.
+10. Ambiguities or risks you found.
+
+Do not change any files.
+
+Wait for approval.

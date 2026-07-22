@@ -1,0 +1,101 @@
+# VERIFY ONLY — DISTRIBUTION CONSISTENCY
+
+Continue from the current repository state.
+
+Do not rely on previous conversation context.
+Inspect the current code and verify only the items below.
+
+Do not modify unrelated files.
+Do not touch exercise selection, Exercise Library, database, volume guidelines,
+muscle coefficients, Workout Builder, AI, supersets or drop sets.
+
+1. PPL COMPATIBILITY
+
+Verify that push_pull_legs is allowed only for:
+
+- 3 training days
+- 6 training days
+
+It must be unavailable for 4 and 5 days.
+
+For an incompatible selection show:
+
+"Push / Pull / Legs wymaga 3 lub 6 dni treningowych."
+
+Use:
+
+SPLIT_INCOMPATIBLE_WITH_TRAINING_DAYS
+
+2. CORE DISPLAY
+
+Verify that existing auxiliaryCoreBlock allocations are shown inside the
+correct workout-day cards as:
+
+"Core / brzuch — {N} serie"
+
+Show only when the day allocation is greater than zero.
+
+Core must remain separate from:
+
+- the 11 normal volume targets,
+- effective-volume totals.
+
+3. BROAD PRIORITY
+
+Verify that a broad priority such as "Plecy" is applied only once.
+
+It may map to latissimus and trapezius internally, but the full priority
+bonus must not be added independently to both targets.
+
+Display the broad priority once, for example:
+
+"Plecy — priorytet 3"
+
+4. REASON FORMATTING
+
+Verify that recommendation reasons are displayed as separate rows or list
+items, not concatenated into one text block.
+
+Verify Polish pluralization:
+
+- 1 seria
+- 2, 3, 4 serie
+- 5 or more: serii
+
+5. CHANGE POLICY
+
+If all four requirements are already implemented correctly:
+
+- do not change any files,
+- do not run tests,
+- do not run builds,
+- report exactly:
+
+DISTRIBUTION CONSISTENCY ALREADY COMPLETE
+
+If something is missing:
+
+- change only the directly affected files,
+- run only exact focused tests for the changed behavior,
+- run TypeScript only for the affected package,
+- run one affected build only if code changed.
+
+Do not run the full test suite.
+Do not run all 596 tests.
+Do not perform audits or unrelated refactors.
+
+Report only:
+
+1. what was already correct
+2. what was missing
+3. files changed
+4. exact focused tests executed
+5. TypeScript/build result
+
+Finish exactly with one:
+
+DISTRIBUTION CONSISTENCY ALREADY COMPLETE
+
+DISTRIBUTION CONSISTENCY FIX COMPLETE
+
+DISTRIBUTION CONSISTENCY FIX FAILED

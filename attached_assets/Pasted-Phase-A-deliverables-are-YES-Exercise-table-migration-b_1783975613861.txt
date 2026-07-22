@@ -1,0 +1,102 @@
+Phase A deliverables are:
+
+YES — Exercise table migration, but only these 3 non-destructive fields:
+- suitableForNoActivity
+- movementComplexity
+- movementPattern
+
+Do not add client/adaptation-status columns.
+Do not add adaptationSuitabilityReason as a persisted field in Phase A.
+
+YES — Inspect all 87 exercises conservatively and mark only clearly suitable exercises as suitableForNoActivity.
+
+Final report must include for every marked exercise:
+- exercise ID
+- exercise name
+- suitableForNoActivity
+- movementComplexity
+- movementPattern
+
+YES — Add the "Start adaptacyjny" filter/segment to the trainer client list.
+
+It must include only clients whose latest Training Interview has:
+experienceLevel = "Brak aktywności fizycznej"
+
+Default displayed status:
+- Nie rozpoczęto
+
+Do not persist "W trakcie" or "Ukończono" yet.
+
+YES — Add a small "Start adaptacyjny" badge on matching client rows/cards.
+
+YES — Add a centralized read-only defaults object:
+
+- durationWeeks: min 4, max 8, default 4
+- trainingDays: allowed 2–3, default 2
+- preferredSplit: full_body_ab
+- exercisesPerSession: min 5, max 7
+- workingSets: whole integers only, minimum 2
+- early phase: usually 2 sets
+- later phase: usually 2–3 sets
+- recommendedRIR: 3–4
+- failureTraining: false
+- progressionOrder:
+  technique → repetitions → load
+
+Do not wire this object into full plan generation yet.
+
+YES — Add the visible label:
+"Program adaptacyjny 4–8 tygodni"
+
+Use it in:
+- the Exercise Library suitability filter,
+- the Start adaptacyjny segment/header where appropriate.
+
+Do not add it to the Plan Draft Wizard yet.
+
+YES — Add exercise create/edit controls for:
+- suitableForNoActivity
+- movementComplexity
+- movementPattern
+
+Trainer must be able to manually edit these values.
+
+YES — Add an Exercise Library filter:
+"Program adaptacyjny"
+
+It must show only:
+suitableForNoActivity = true
+
+NO — Do not add a separate movementComplexity filter in Phase A.
+
+NO — Do not build the full exercise-selection engine.
+NO — Do not unlock the generator "Ćwiczenia" step.
+NO — Do not generate or save workout plans.
+NO — Do not create workout days, exercises, sets or prescriptions.
+NO — Do not add adaptation progress persistence.
+NO — Do not build a separate adaptation application or client table.
+
+Also prepare future-ready completion criteria in code/documentation only:
+
+Transition from "Brak aktywności fizycznej" to "Początkujący" must require trainer approval and should consider:
+- attendance consistency,
+- acceptable movement control,
+- tolerance of current volume,
+- no worsening pain,
+- basic effort-control understanding,
+- adequate recovery.
+
+Do not automatically change the experience level.
+
+Run:
+- focused tests,
+- full suite once,
+- TypeScript for affected packages,
+- api-zod build if changed,
+- API build if backend changed,
+- trainer-app build if UI changed.
+
+Finish with:
+ADAPTATION PROGRAM PHASE A COMPLETE
+or
+ADAPTATION PROGRAM PHASE A FAILED

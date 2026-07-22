@@ -1,0 +1,204 @@
+Exercise Library Expansion — Remaining Muscle Groups
+
+Context
+
+The Chest batch was successfully created, previewed, imported and verified.
+
+The confirmed working process is:
+
+JSON batch file
+→ POST /api/exercises/import/preview
+→ POST /api/exercises/import
+→ database
+→ exercise library API
+→ recommendation pool
+
+Use the exact same existing JSON schema, naming conventions, validation rules and import architecture as:
+
+docs/exercise-import-batch-02-chest.json
+
+Do not redesign the schema.
+Do not modify the importer.
+Do not modify validation sets.
+Do not refactor unrelated code.
+
+--------------------------------------------------
+Goal
+--------------------------------------------------
+
+Create comprehensive exercise batches for all remaining major muscle groups:
+
+1. Back
+   - horizontal pull
+   - vertical pull
+   - spinal erectors where appropriate
+
+2. Shoulders
+   - front delts
+   - lateral delts
+   - rear delts
+
+3. Biceps
+
+4. Triceps
+
+5. Quadriceps
+
+6. Hamstrings
+
+7. Glutes
+
+8. Calves
+
+9. Core
+   - trunk flexion
+   - anti-extension
+   - anti-rotation
+   - lateral flexion
+   - hip flexion where appropriate
+
+10. Adductors
+
+11. Abductors
+
+12. Forearms
+
+--------------------------------------------------
+Batch structure
+--------------------------------------------------
+
+Create separate JSON files for each logical group.
+
+Suggested files:
+
+- docs/exercise-import-batch-03-back.json
+- docs/exercise-import-batch-04-shoulders-arms.json
+- docs/exercise-import-batch-05-lower-body.json
+- docs/exercise-import-batch-06-core-accessories.json
+
+Do not create one oversized file.
+
+--------------------------------------------------
+Data rules
+--------------------------------------------------
+
+Use only values already accepted by the existing importer.
+
+Before writing each exercise:
+
+- inspect existing canonical values,
+- reuse existing Polish naming conventions,
+- reuse existing muscle names exactly,
+- reuse existing movementCategory values,
+- reuse existing movementPattern values,
+- reuse existing equipment values,
+- reuse existing trainingLocation values.
+
+Do not introduce unsupported values.
+
+Use "Inny" only when no valid existing equipment category fits.
+
+--------------------------------------------------
+Exercise quality
+--------------------------------------------------
+
+Include commonly used, legitimate strength-training exercises across:
+
+- barbells,
+- dumbbells,
+- cables,
+- machines,
+- bodyweight,
+- Smith machine,
+- resistance bands,
+- kettlebells where supported.
+
+Include beginner-friendly and advanced variations where appropriate.
+
+Avoid:
+
+- duplicate exercises,
+- cosmetic naming differences,
+- extremely niche variations,
+- exercises with unclear or redundant purpose,
+- multiple entries that differ only by grip unless the grip meaningfully changes the movement or target.
+
+--------------------------------------------------
+Metadata quality
+--------------------------------------------------
+
+Every exercise must:
+
+- have exactly one primary muscle assignment,
+- use valid secondary muscle assignments,
+- use a valid movement pattern,
+- use a valid movement category,
+- use valid equipment values,
+- use valid training locations,
+- have isActive: true,
+- have duplicateStrategy: "skip",
+- pass completeness validation,
+- be suitable for recommendation-pool use.
+
+Keep compound exercises classified consistently with the existing library.
+
+Keep isolation exercises classified consistently with the existing library.
+
+--------------------------------------------------
+Relations
+--------------------------------------------------
+
+Add substitutions, progressions and regressions only when the relation is clear and useful.
+
+Do not create excessive or speculative relations.
+
+All relation targets must either:
+
+- already exist in the database,
+- or exist within the same batch.
+
+--------------------------------------------------
+Validation workflow
+--------------------------------------------------
+
+For each batch:
+
+1. Create the JSON file.
+2. Run:
+   POST /api/exercises/import/preview
+3. If preview has any blocking error:
+   - stop for that batch,
+   - report the exact error,
+   - do not import that batch.
+4. If preview succeeds:
+   - run POST /api/exercises/import
+5. Verify:
+   - exercises exist in the database,
+   - muscle assignments exist,
+   - exercises are returned by the library API,
+   - exercises are available to the recommendation pool,
+   - no duplicates were created.
+
+Continue to the next batch only after the previous batch succeeds.
+
+--------------------------------------------------
+Return
+--------------------------------------------------
+
+For each batch return:
+
+1. File created
+2. Muscle groups covered
+3. Exercises added
+4. Preview result
+5. Import result
+6. Imported / updated / skipped / failed counts
+7. Substitutions / progressions / regressions counts
+8. Verification result
+9. Duplicates found
+10. Any inconsistencies or unsupported values encountered
+
+Do not modify unrelated files.
+Do not change the schema.
+Do not change the importer.
+Do not change validation sets.

@@ -1,0 +1,278 @@
+Revise the Stage 5 architecture audit.
+
+Do not implement anything.
+Do not modify any files.
+Analysis only.
+
+The previous Stage 5 audit was mostly accepted, but several architectural concerns must be corrected.
+
+--------------------------------------------------
+1. Avoid duplicated safety logic
+--------------------------------------------------
+
+The previous proposal introduced:
+
+evaluateSetDelta()
+
+with safety checks similar to:
+
+evaluateCandidate()
+
+This risks maintaining the same ceiling, redistribution, daily-limit, and overshoot rules in two separate places.
+
+Audit whether the existing safety logic can be extracted into a shared pure evaluator used by both:
+
+- new exercise evaluation
+- consolidation delta evaluation
+
+The shared evaluator should validate contribution deltas without knowing whether the action comes from:
+
+- a new exercise
+- an existing exercise receiving more sets
+
+Then:
+
+evaluateCandidate()
+
+may remain responsible for new-exercise-specific rules such as:
+
+- allowed initial set counts
+- empty contribution rejection
+- candidate scoring
+
+Consolidation should reuse only the shared safety layer.
+
+Important:
+
+Do not refactor unless the audit proves this can be done safely and minimally.
+
+Return the exact safest design.
+
+--------------------------------------------------
+2. Separate decision from mutation
+--------------------------------------------------
+
+Do not design one function that both selects and applies consolidation.
+
+Use two distinct concepts:
+
+findBestConsolidation()
+
+Returns a decision only, for example:
+
+{
+  index,
+  delta
+}
+
+It must not mutate any state.
+
+applyConsolidation()
+
+Applies the already-approved decision and updates atomically:
+
+- toAdd[index].sets
+- currentSets
+- weeklyAddedThisDay
+- dailyAddedThisDay
+
+It must not update:
+
+- currentCount
+- addedIds
+- patternsAddedThisDay
+
+Audit where both functions should live and whether they should be pure helpers or closures.
+
+--------------------------------------------------
+3. Prevent over-aggressive consolidation
+--------------------------------------------------
+
+The previous proposal effectively asked:
+
+“Can any existing exercise safely receive another set?”
+
+That is not enough.
+
+A trainer does not always prefer:
+
+Bench Press 4 sets
+
+over:
+
+Bench Press 3 sets
+Incline Press 2–3 sets
+
+A new exercise may add meaningful value through:
+
+- a different movement category
+- a different exercise type
+- a different muscle emphasis
+- coverage of another unresolved target
+- a different training role
+- improved session balance
+
+Consolidation should happen only when adding a new exercise would create unnecessary fragmentation rather than meaningful variety.
+
+Audit how the algorithm can distinguish:
+
+A. unnecessary additional exercise
+
+from
+
+B. valuable additional exercise.
+
+--------------------------------------------------
+4. Compare consolidation with expansion
+--------------------------------------------------
+
+Do not automatically run consolidation first and immediately continue.
+
+Audit whether the safest architecture is:
+
+1. Find the best valid consolidation action.
+2. Find the best valid new-exercise action using the existing selection logic.
+3. Compare the two actions using a small, explicit decision layer.
+4. Consolidate only when the new exercise does not provide enough additional value.
+
+Do not force both actions into the existing ScoreTuple unless that is clearly safe.
+
+Propose a separate comparison model such as:
+
+ConsolidationDecision
+
+versus
+
+ExpansionDecision.
+
+Explain the minimum signals required for this comparison.
+
+--------------------------------------------------
+5. Define meaningful exercise value
+--------------------------------------------------
+
+Audit which existing metadata can indicate that a new exercise adds real value:
+
+- movementCategoryKey
+- session tier
+- exercise type
+- exercise priority
+- matchingTargetIds
+- target coefficients
+- neurological fatigue
+- learning difficulty
+- recommendation rank
+- unresolved target coverage
+
+Do not invent new database fields unless necessary.
+
+Prefer existing metadata.
+
+--------------------------------------------------
+6. Conservative Stage 5 behavior
+--------------------------------------------------
+
+Stage 5 should be a soft preference, not a hard rule.
+
+Recommended behavior:
+
+- prefer consolidation when both actions solve effectively the same problem
+- prefer a new exercise when it improves movement balance or unresolved-target coverage
+- never consolidate solely because it reduces exercise count
+- never remove useful exercise variety
+- never reduce achieved volume
+- never weaken existing safety behavior
+
+Audit how to encode this conservatively.
+
+--------------------------------------------------
+7. Beginner versus advanced clients
+--------------------------------------------------
+
+Audit whether consolidation should behave differently by experience level.
+
+Possible principle:
+
+- beginners: stronger consolidation preference
+- intermediate: moderate preference
+- advanced: more exercise variety allowed
+
+Determine whether experience level is currently available in this execution path.
+
+If not available, do not add it during Stage 5.
+
+Document it only as future extensibility.
+
+--------------------------------------------------
+8. Revised architecture options
+--------------------------------------------------
+
+Evaluate these approaches:
+
+A. Consolidation always before expansion.
+
+B. Consolidation and expansion evaluated separately, then compared.
+
+C. Consolidation only when no useful new-exercise candidate exists.
+
+D. Consolidation only when both actions cover the same unresolved targets and movement role.
+
+E. A better conservative alternative.
+
+Recommend one architecture.
+
+Reject the others with concrete reasons.
+
+--------------------------------------------------
+9. Safety architecture
+--------------------------------------------------
+
+Return the safest way to avoid duplicated validation logic.
+
+Show whether the architecture should become:
+
+sharedContributionSafetyEvaluator()
+        ↑
+        ├── evaluateCandidate()
+        └── evaluateConsolidationDelta()
+
+or another structure.
+
+List exactly which rules belong in the shared layer and which remain action-specific.
+
+--------------------------------------------------
+10. Revised test plan
+--------------------------------------------------
+
+Tests must verify:
+
+- consolidation happens when a second exercise adds no meaningful value
+- a new exercise still wins when it adds a missing movement category
+- a new exercise still wins when it covers an additional unresolved target
+- trainer priority remains relevant
+- volume remains identical or better
+- ceilings and redistribution rules remain unchanged
+- patternsAddedThisDay is not changed by consolidation
+- currentCount is not increased by consolidation
+- safety logic is not duplicated or behaviorally inconsistent
+
+--------------------------------------------------
+11. Final revised plan
+--------------------------------------------------
+
+Return:
+
+- revised architecture diagram
+- recommended decision flow
+- shared safety design
+- definition of meaningful new-exercise value
+- exact integration point
+- exact files that would change
+- files that must not change
+- rejected alternatives
+- regression risks
+- smallest safe implementation sequence
+
+Do not implement.
+
+Stop after the revised audit.

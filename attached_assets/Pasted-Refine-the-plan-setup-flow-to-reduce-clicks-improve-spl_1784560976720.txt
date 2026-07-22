@@ -1,0 +1,185 @@
+Refine the plan-setup flow to reduce clicks, improve split UX, and integrate cardio/activity guidance from the survey.
+
+Do NOT redesign the whole app.
+Do NOT change the full generator architecture.
+This is a focused plan-setup UX and flow refinement task.
+
+==================================================
+GOAL
+==================================================
+
+Make the plan-building flow:
+- shorter
+- more intuitive
+- less click-heavy
+- more consistent with the survey logic
+
+Main objectives:
+1. unify split naming
+2. make visible split options depend mainly on training days
+3. carry cardio / steps guidance from the survey into the planner
+4. remove unnecessary manual recalculation friction
+5. reduce the number of plan-building steps
+
+==================================================
+SECTION 1 — SPLIT NAMING
+==================================================
+
+Replace all visible Polish split labels based on "Góra / Dół" with English naming:
+
+- "Góra / Dół" -> "Upper / Lower"
+- "Góra / Dół / Full Body" -> "Upper / Lower / Full Body"
+
+Keep naming consistent everywhere in the planner UI.
+
+==================================================
+SECTION 2 — SPLIT OPTIONS SHOULD DEPEND MAINLY ON DAYS
+==================================================
+
+In the planner UI, the visible split options should be driven primarily by:
+- number of training days per week
+
+Do NOT make the visible split list feel heavily driven by experience level at this stage,
+because much of that logic is already handled earlier by the survey and gating rules.
+
+Experience level / recovery / goal may still influence:
+- banner messaging
+- fallback recommendation
+- warnings
+- cardio/activity guidance
+
+But the actual visible split option list should mainly depend on day count.
+
+Examples of intended behavior:
+
+3 days:
+- Full Body
+- Upper / Lower / Full Body
+- Push / Pull / Legs
+- Własny podział
+
+4 days:
+- Upper / Lower
+- Upper / Lower / Full Body
+- Push / Pull / Legs / Full Body
+- Własny podział
+
+5 days:
+- Upper / Lower / Full Body
+- Push / Pull / Legs
+- Push / Pull / Lower / Full Body
+- Plan specjalizacyjny
+- Własny podział
+
+Avoid showing weak default options like:
+- Full Body 5x
+- Full Body A/B as a main recommendation for 5 days
+- Upper / Lower alone as a primary normal option for 5 days
+
+==================================================
+SECTION 3 — CARDIO / STEPS MUST FLOW FROM THE SURVEY INTO THE PLANNER
+==================================================
+
+Integrate survey-driven cardio/activity guidance directly into the planner UI.
+
+If survey logic detects:
+- Brak aktywności fizycznej
+- Początkujący with too many requested days
+- sedentary lifestyle
+- fat-loss goal
+- conditioning goal
+- sport goal
+
+then planner should show a visible activity/cardio guidance block.
+
+This block should include things like:
+- cardio recommendation
+- steps target
+- reason why it was added
+- whether it comes from inactivity, fat loss, conditioning, or sport support
+
+The planner should let the trainer:
+- see it clearly
+- keep it
+- slightly adjust it if needed
+
+It should not remain hidden only in survey logic.
+
+==================================================
+SECTION 4 — REMOVE MANUAL RECALCULATION FRICTION
+==================================================
+
+The current flow should not require a manual "Przelicz rozkład" click just to continue.
+
+Instead:
+- whenever the trainer changes key inputs such as:
+  - training days
+  - session time
+  - split
+the allocation should auto-recalculate in the background
+
+Use lightweight UX such as:
+- "Przeliczam..."
+- "Rozkład zaktualizowany"
+
+Do NOT force a separate locked continuation step if the recalculation can happen automatically.
+
+Goal:
+Remove unnecessary blocking and clicking.
+
+==================================================
+SECTION 5 — MERGE VOLUME INTO PLAN ASSUMPTIONS
+==================================================
+
+Reduce the total number of steps in the planner.
+
+Current process feels too long:
+- Profil klienta
+- Założenia planu
+- Objętość
+- Ćwiczenia
+- Podgląd
+
+Refine it to:
+- Profil klienta
+- Założenia planu
+- Ćwiczenia
+- Podgląd
+
+Move the volume/allocation controls into:
+- "Założenia planu"
+
+Do NOT keep "Objętość" as a separate full step if it can be part of plan assumptions.
+
+Goal:
+Shorter process, fewer clicks, less friction.
+
+==================================================
+SECTION 6 — DO NOT TOUCH
+==================================================
+
+Do NOT in this task:
+- redesign the whole visual system
+- rebuild the full planning engine
+- add new advanced sports modules
+- add nutrition/TDEE
+- add animations
+
+This is a focused planner-flow refinement task.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact split naming changes made
+3. exact visible split-option logic by day count
+4. exact cardio/steps planner block added from survey logic
+5. exact auto-recalculation change made
+6. exact step reduction / volume-merge change made
+7. one before vs after example of the planner flow
+
+End exactly with:
+
+PLAN SETUP FLOW REFINED

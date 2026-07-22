@@ -1,0 +1,214 @@
+# WORKOUT PLAN DRAFT GENERATOR — PHASE 3B MINIMAL
+## Connect Phase 3A distribution preview to the wizard
+
+Continue from the current verified and pushed Phase 3A state.
+
+Do not change Phase 2 or Phase 3A formulas.
+Do not implement exercise selection.
+Do not create or save plans, workout days, exercises, sets or prescriptions.
+Do not modify the database or add migrations.
+Do not use AI.
+Do not redesign unrelated pages.
+Do not inspect unrelated files.
+Do not start another phase.
+
+============================================================
+GOAL
+============================================================
+
+Connect the existing read-only endpoint:
+
+POST /api/plans/draft-distribution/preview
+
+to the existing PlanDraftWizard.
+
+Show the returned daily volume distribution in the existing "Objętość" step, below the weekly-volume cards.
+
+Keep the "Ćwiczenia" step locked.
+
+============================================================
+REQUEST DATA
+============================================================
+
+Use current wizard state only:
+
+- clientId
+- effective experienceLevel
+- current trainingDays
+- trainer-selected splitType
+- exactly 11 final weekly target values
+- current priority order
+
+For weekly volume use:
+
+- valid trainer override when present,
+- otherwise the current Phase 2 selectedValue.
+
+Do not use stale survey priorities or stale survey split settings when the trainer changed them in the wizard.
+
+Do not send recommendedSplitType.
+The backend calculates it.
+
+Do not call the endpoint until:
+
+- Phase 2 decisions are loaded,
+- exactly 11 targets exist,
+- experienceLevel is valid,
+- trainingDays is an integer from 1 to 6,
+- splitType exists.
+
+============================================================
+API CLIENT
+============================================================
+
+Add the smallest api-client-react mutation/hook following existing conventions.
+
+Reuse the existing api-zod Phase 3A contracts.
+
+Handle only:
+
+- loading,
+- success,
+- validation/API error,
+- manual retry.
+
+Do not create duplicate contracts.
+
+============================================================
+RECALCULATION
+============================================================
+
+Recalculate when:
+
+- trainingDays changes,
+- splitType changes,
+- priorities change,
+- a weekly-volume override changes,
+- an override is reset.
+
+Avoid duplicate identical requests.
+
+Add a button:
+
+"Przelicz rozkład"
+
+============================================================
+UI
+============================================================
+
+Below the weekly cards add:
+
+"Rozkład objętości na dni"
+
+Summary:
+
+- Rekomendowany podział
+- Wybrany podział
+- Liczba dni
+- Ostrzeżenia
+
+Render exactly the days returned by the backend.
+
+Each day shows:
+
+- day number and name,
+- day type,
+- total allocated volume,
+- only targets whose allocatedVolume is greater than 0,
+- target name and allocated volume in effective sets.
+
+Use existing cards/components and existing responsive layout.
+Do not perform a general UI redesign.
+
+Display warning messages returned by the backend.
+Do not recalculate or reinterpret distribution rules in the frontend.
+
+If the response is inconsistent:
+
+- decisions count is not 11,
+- days count differs from trainingDays,
+- allocatedWeeklyTotal differs from weeklySelectedVolume,
+
+show:
+
+"Dane rozkładu są niespójne. Spróbuj przeliczyć ponownie."
+
+Do not silently repair the response.
+
+============================================================
+TESTS
+============================================================
+
+Add only focused tests for pure request/display helpers:
+
+- request contains exactly 11 target values,
+- valid override becomes selectedVolume,
+- reset uses Phase 2 selectedValue,
+- selected split is included,
+- recommended split is not sent,
+- priority order is included,
+- incomplete input prevents request,
+- wrong decisions/day count is detected,
+- weekly sum mismatch is detected,
+- zero allocations are hidden.
+
+Do not install browser tools or new large test dependencies.
+
+============================================================
+VERIFICATION
+============================================================
+
+Run:
+
+- focused Phase 3B tests,
+- full test suite once,
+- TypeScript for affected packages,
+- api-client-react build,
+- trainer-app production build.
+
+Run the API production build only if backend code was changed.
+
+Do not run:
+
+- client-landing build,
+- DB audit,
+- Phase 2 or Phase 3A audits,
+- browser installation,
+- website audit,
+- unrelated refactors.
+
+If a browser preview is already available, confirm:
+
+- daily distribution appears,
+- changing split refreshes it,
+- changing one volume override refreshes it,
+- "Ćwiczenia" remains locked.
+
+If browser access is unavailable, say so honestly.
+
+============================================================
+FINAL REPORT
+============================================================
+
+Report only:
+
+1. files changed
+2. request data flow
+3. recalculation triggers
+4. UI added
+5. focused/full test results
+6. TypeScript/build results
+7. whether backend changed
+8. runtime UI verification result
+9. confirmation that "Ćwiczenia" remains locked
+10. confirmation that no plan/day/exercise/set records were created
+
+Do not continue automatically.
+
+Finish exactly:
+
+PHASE 3B COMPLETE
+
+or
+
+PHASE 3B FAILED

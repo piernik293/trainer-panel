@@ -1,0 +1,243 @@
+# MVP BLOCKER FIX — AUTO-FILL VOLUME FIT AND EXERCISE VARIETY
+
+Continue from the current repository state in Build mode.
+
+Fix only the automatic whole-plan fill quality.
+
+Do not implement plan saving.
+Do not modify the Exercise Library database.
+Do not add new exercises.
+Do not modify volume formulas, coefficients, muscle assignments, Step 3 values,
+recommendation scoring, Step 5 structure or unrelated UI.
+
+CONFIRMED BAD RESULT:
+
+The automatic fill generated:
+
+- Latissimus: planned 7, realized 24
+- Biceps: planned 4, realized 12
+- Glutes: planned 10, realized 19.25
+- nearly identical Upper days
+- four similar vertical-pull exercises in one Upper day
+- almost every added exercise with a fixed default of 3 sets
+
+The current result is not acceptable for an automatic proposal.
+
+============================================================
+1. INSPECT ONLY THE CURRENT AUTO-FILL PATH
+============================================================
+
+Inspect only:
+
+- artifacts/trainer-app/src/lib/autoFill.ts
+- artifacts/trainer-app/src/lib/__tests__/autoFill.test.ts
+- the Step4Exercises auto-fill call site
+- existing recommendation response types
+- the existing volume-preview client/helper already used by Step 4
+
+Do not inspect unrelated modules.
+
+Confirm whether exact per-exercise contributions for all volume targets are
+already available from:
+
+- recommendation data,
+- Exercise Library data already loaded in Step 4,
+- or the existing POST /api/plans/volume-preview response.
+
+The existing volume calculator must remain the only source of volume truth.
+
+Do not recreate coefficient calculations in the frontend.
+
+If exact contribution vectors cannot be obtained without changing the backend
+or API contract, stop without implementing a heuristic and finish with:
+
+AUTO_FILL_VOLUME_FOUNDATION_MISSING
+
+============================================================
+2. USE A BROADER EXISTING CANDIDATE POOL
+============================================================
+
+For every uncovered target, consider up to 5 unique eligible recommendations
+when the current endpoint already returns that many.
+
+Do not request or create new database exercises.
+
+Preserve all existing filters:
+
+- active exercises only,
+- compatible equipment and location,
+- experience suitability,
+- avoided-exercise behaviour,
+- exact target IDs,
+- Core handling.
+
+Do not use a recommendation because of a target that is already covered or
+exceeded.
+
+============================================================
+3. EVALUATE THE COMPLETE VOLUME EFFECT
+============================================================
+
+Before accepting an exercise, evaluate its effect on every target it
+contributes to, not only the target for which it was recommended.
+
+Evaluate both:
+
+- daily coverage,
+- weekly coverage.
+
+The automatic fill must never increase an existing manual overshoot.
+
+For targets that were not already exceeded by manual work, automatically added
+exercises may not exceed the planned value by more than 0.5 effective-volume
+points.
+
+It is better to leave a small amount unfilled than to create a large
+overshoot.
+
+Examples:
+
+- leaving 1.25 points missing is acceptable,
+- producing 24 points for a 7-point target is not acceptable.
+
+============================================================
+4. CHOOSE WORKING SETS DYNAMICALLY
+============================================================
+
+Do not assign 3 sets to every exercise automatically.
+
+For every selected exercise, evaluate whole-integer working sets from 1 to 6.
+
+Choose the set count using this deterministic priority:
+
+1. minimize total weekly overshoot,
+2. minimize the number of exceeded targets,
+3. minimize session overshoot,
+4. minimize total remaining volume,
+5. use fewer unnecessary exercises and sets,
+6. use the higher-ranked recommendation when the volume result is equal.
+
+Do not add a candidate unless it improves the current plan result.
+
+Stop filling when no remaining candidate and valid set count improve the plan.
+
+Do not force exact coverage when exact coverage is impossible with whole sets
+and stored coefficients.
+
+============================================================
+5. EXERCISE VARIETY
+============================================================
+
+Do not add the same exercise ID twice within one workout day.
+
+Across repeated split days, prefer a different eligible exercise when an
+alternative exists that does not worsen volume fit.
+
+Example:
+
+Upper 1 and Upper 2 should not automatically receive the exact same exercise
+list when suitable alternatives exist.
+
+Do not select several nearly identical exercises only because they all match
+the same already-covered target.
+
+When one selected compound exercise addresses several uncovered target IDs,
+mark all of those exact targets as addressed in the current selection pass.
+
+============================================================
+6. PRESERVE TRAINER CONTROL
+============================================================
+
+Preserve every exercise manually added by the trainer.
+
+The optimizer may change or remove only entries added during the current
+automatic-fill operation.
+
+Do not modify older manual entries.
+
+Do not save anything to workout-plan database tables.
+
+Keep the result as a local editable draft.
+
+============================================================
+7. PERFORMANCE SAFETY
+============================================================
+
+The selection process must be bounded and deterministic.
+
+Use at most:
+
+- 5 candidate exercises per uncovered target,
+- 6 possible set counts per candidate,
+- one controlled optimization pass with a clear termination condition.
+
+No recursive unbounded search.
+No infinite recommendation or volume-preview loop.
+No repeated request for unchanged inputs.
+
+Reuse existing data or batch existing preview requests where possible.
+
+============================================================
+8. FOCUSED TESTS
+============================================================
+
+Run only the exact autoFill focused test file directly.
+
+Do not use a package test command if it expands to the complete frontend suite.
+
+Required cases:
+
+1. A 7-point target is not automatically increased to 24 points.
+2. A covered target is not used as a reason for another recommendation.
+3. An exercise is evaluated against all targets it affects.
+4. Sets are selected dynamically from 1–6 instead of always using 3.
+5. A small remaining deficit is preferred over a large overshoot.
+6. Existing manual overshoot is not worsened.
+7. Manual exercises remain unchanged.
+8. The same exercise is not duplicated within one day.
+9. Repeated Upper days use different exercises when an equivalent eligible
+   alternative exists.
+10. One compound exercise may address multiple exact target IDs once.
+11. No database writes occur.
+12. The process terminates when no candidate improves the result.
+
+Run trainer-app TypeScript only if code changes.
+
+Do not run:
+
+- full frontend tests,
+- backend tests,
+- root tests,
+- production builds,
+- browser or screenshot automation,
+- Plan mode,
+- database audits,
+- unrelated refactors.
+
+============================================================
+9. REPORT
+============================================================
+
+Report only:
+
+1. confirmed root cause
+2. source of exact exercise contribution data
+3. files changed
+4. candidate-pool behaviour
+5. dynamic working-set behaviour
+6. overshoot protection
+7. exercise-variety behaviour
+8. manual-draft preservation
+9. exact focused tests executed
+10. TypeScript result
+11. whether backend or database changed
+
+Do not continue automatically.
+
+Finish exactly with one:
+
+AUTO_FILL VOLUME AND VARIETY FIXED
+
+AUTO_FILL_VOLUME_FOUNDATION_MISSING
+
+AUTO_FILL VOLUME AND VARIETY FAILED

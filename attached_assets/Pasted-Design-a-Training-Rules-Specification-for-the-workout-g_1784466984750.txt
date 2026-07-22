@@ -1,0 +1,224 @@
+Design a Training Rules Specification for the workout generation engine.
+
+DO NOT implement anything.
+
+DO NOT modify code.
+
+DO NOT create files.
+
+DO NOT change the current architecture.
+
+This is an architecture and specification task only.
+
+==================================================
+GOAL
+==================================================
+
+Create a deterministic rulebook that defines how every workout should be generated.
+
+This rulebook will become the foundation used by future modules:
+
+- DailyAllocationEngine
+- SessionPlanningEngine
+- ExerciseSelectionEngine
+- SetAssignmentEngine
+- ExerciseOrderingEngine
+- ValidationEngine
+- RepairEngine
+
+The rulebook must describe WHAT the generator should do.
+
+It must NOT describe HOW the code should implement it.
+
+==================================================
+RULE CATEGORIES
+==================================================
+
+Organize rules into categories.
+
+Examples:
+
+1. Training Frequency
+
+2. Weekly Volume
+
+3. Session Volume
+
+4. Exercise Selection
+
+5. Movement Pattern Coverage
+
+6. Exercise Ordering
+
+7. Priority Muscles
+
+8. Priority Exercises
+
+9. Set Assignment
+
+10. Fatigue Management
+
+11. Recovery
+
+12. Progression Readiness
+
+13. Validation
+
+==================================================
+FOR EVERY RULE
+==================================================
+
+For every rule provide:
+
+- Rule ID
+- Name
+- Description
+- Why it exists
+- Scientific support level:
+    - Strong evidence
+    - Moderate evidence
+    - Expert practice
+- Priority:
+    Critical
+    High
+    Medium
+    Low
+- Which future module should enforce it
+- Possible exceptions
+
+==================================================
+INCLUDE RULES SUCH AS
+==================================================
+
+Training frequency
+
+- Prefer approximately twice-weekly frequency for major muscle groups when feasible.
+
+Weekly volume
+
+- Weekly volume is more important than frequency.
+- Frequency should help distribute weekly volume.
+
+Fragmentation
+
+- Avoid excessive fragmentation.
+- Do not spread very small weekly allocations across many sessions without justification.
+
+Movement patterns
+
+Back should preferably include:
+
+- vertical pull
+- horizontal pull
+
+Legs should preferably include:
+
+- knee dominant movement
+- hip dominant movement
+
+Shoulders should preferably include:
+
+- press
+- lateral raise
+- rear delt work
+
+Exercise ordering
+
+Default order:
+
+1. Priority exercise
+2. Primary compound
+3. Secondary compound
+4. Accessories
+5. Isolation
+6. Calves
+7. Core
+
+Priority exercise
+
+If a client wants to improve a specific exercise
+(for example Pull-up, Bench Press or Squat)
+
+that exercise may start the workout.
+
+Exercise duplication
+
+Avoid selecting multiple exercises with nearly identical roles unless there is a specific reason.
+
+Sets
+
+Prefer ranges instead of fixed values.
+
+Examples:
+
+Primary compounds:
+3–5 sets
+
+Secondary compounds:
+2–4 sets
+
+Isolation:
+2–4 sets
+
+Core:
+2–4 sets
+
+Calves:
+2–5 sets
+
+Recovery
+
+Avoid placing large workloads for the same muscle on consecutive sessions if better spacing exists.
+
+Validation
+
+The generator should validate:
+
+- frequency
+- movement pattern coverage
+- weekly volume
+- fragmentation
+- ordering
+- session feasibility
+- priority implementation
+
+==================================================
+IMPORTANT
+==================================================
+
+The specification should distinguish between:
+
+HARD RULES
+
+Rules that should almost never be violated.
+
+Examples:
+
+- no duplicate exercise
+- no impossible session
+
+SOFT RULES
+
+Rules that can be broken if required.
+
+Examples:
+
+- twice weekly frequency
+- preferred ordering
+- preferred set ranges
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return only a specification document.
+
+No implementation.
+
+No pseudocode.
+
+No TypeScript.
+
+No code.
+
+The final document should be detailed enough that future modules can reference it as the official training rulebook.

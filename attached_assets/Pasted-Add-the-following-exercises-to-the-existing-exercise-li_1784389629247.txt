@@ -1,0 +1,102 @@
+Add the following exercises to the existing exercise library.
+
+Before changing anything, inspect:
+- the current exercise schema,
+- existing exercise naming conventions,
+- muscle classification fields,
+- equipment enums,
+- difficulty enums,
+- location enums,
+- the existing exercise import workflow.
+
+Do not modify the database schema.
+Do not create new enums unless absolutely necessary.
+Do not import duplicate or near-duplicate exercises.
+
+For every proposed exercise:
+1. Search the current library for exact duplicates, aliases and biomechanically equivalent variants.
+2. If an equivalent exercise already exists, skip it and report the matching existing exercise.
+3. Use a natural Polish display name.
+4. Keep the English/common name only as an alias when useful.
+5. Assign:
+   - one main muscle group,
+   - primary muscles,
+   - synergistic muscles,
+   - stabilizing muscles where supported by the existing schema,
+   - movement pattern,
+   - equipment,
+   - difficulty,
+   - training locations,
+   - unilateral/bilateral classification if supported,
+   - exercise type such as compound, isolation, prehab, mobility or explosive.
+6. Follow the structure and metadata quality of the best existing exercise records.
+
+Exercises to evaluate and add:
+
+BACK
+- Ściąganie jednorącz wyciągu górnego
+- Wiosłowanie jednorącz hantlem w stylu Kroca (Kroc Row)
+
+BICEPS
+- Uginanie ramion w podporze klatki (Spider Curl)
+- Uginanie ramienia na wyciągu zza ciała (Bayesian Curl)
+- Uginanie ramion ze sztangą nachwytem (Reverse Curl)
+- Uginanie jednorącz na modlitewniku z hantlem
+
+SHOULDERS / SHOULDER HEALTH
+- Jednorącz odwodzenie ramienia w tył na wyciągu
+- Rozciąganie gumy przed klatką (Band Pull-Apart)
+- Rotacja zewnętrzna barku na wyciągu
+- Rotacja zewnętrzna barku z gumą oporową
+
+TRICEPS
+- Jednorącz prostowanie ramienia zza głowy na wyciągu (Katana Extension)
+- Wyciskanie JM (JM Press)
+- Francuskie prostowanie ramion gumą oporową zza głowy
+
+CHEST
+- Wyciskanie na maszynie Hammer Strength
+- Wyciskanie jednorącz na wyciągu
+- Wyciskanie hantli z dociskiem (Squeeze Press)
+- Wyciskanie na maszynie zbieżnej
+- Pompki z gumą oporową
+- Pompki na uchwytach
+- Pompki na kółkach gimnastycznych
+- Pompki z nogami na podwyższeniu
+
+TRAPEZIUS
+- Szrugsy z hantlami
+- Szrugsy na suwnicy Smitha
+- High Pull
+
+QUADRICEPS / COMPOUND LOWER BODY
+- Przysiad na jednej nodze (Pistol Squat)
+- Przysiad Zerchera (Zercher Squat)
+
+CORE
+- Skłony boczne z hantlem
+
+MOBILITY / LOADED MOBILITY
+- Jefferson Curl
+
+Important classification rules:
+- High Pull must be classified as an explosive compound movement, not as a simple trapezius isolation exercise.
+- Band Pull-Apart should include rear deltoids, middle trapezius and rhomboids.
+- External shoulder rotations should primarily target the rotator cuff, especially infraspinatus and teres minor, and should be marked as prehab/accessory exercises.
+- Jefferson Curl should be marked as loaded mobility and advanced, not as a standard hypertrophy exercise.
+- JM Press should primarily target the triceps, with chest and anterior deltoids as synergists.
+- Zercher Squat should primarily target quadriceps, with glutes, adductors, spinal erectors and core as secondary/stabilizing muscles.
+- Kroc Row should primarily target the back, with biceps, rear deltoids, forearms, grip and trunk stabilizers as secondary muscles.
+
+Create a new import batch using the project’s existing import format.
+
+Run validation and the import preview only.
+Do not execute the final database import yet.
+
+At the end, report:
+- exercises ready to import,
+- exercises skipped as duplicates,
+- existing exercises they matched,
+- naming changes made,
+- validation errors,
+- any unsupported equipment, muscle or category values.

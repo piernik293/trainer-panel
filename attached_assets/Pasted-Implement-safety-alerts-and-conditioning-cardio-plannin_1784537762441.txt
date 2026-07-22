@@ -1,0 +1,266 @@
+Implement safety alerts and conditioning/cardio planning rules in the planning system.
+
+Do NOT redesign the whole app.
+Do NOT change selector V0 architecture.
+Do NOT add diagnosis logic.
+Do NOT add the athlete/Plyo module yet.
+This is a focused survey + alert + cardio/conditioning task.
+
+==================================================
+GOAL
+==================================================
+
+Add:
+1. strong pain alerting
+2. explicit injury / health-limitation capture
+3. mandatory cardio / steps support for sedentary lifestyle or fat-loss cases
+4. conditioning-specific planning rules
+
+These features must be visible, practical, and trainer-facing.
+
+==================================================
+FEATURE 1 — PAIN DETECTION / RED ALERT
+==================================================
+
+If the client writes words suggesting pain in HEALTH-RELATED free-text fields,
+show a very clear RED warning prominently on the trainer planning screen.
+
+IMPORTANT SCOPE RULE:
+Pain keyword detection must run ONLY in health / limitation / condition description fields.
+Do NOT scan unrelated survey fields such as:
+- training goal
+- split preference
+- general notes unrelated to health
+- other non-medical preference fields
+
+Pain detection must be:
+- case-insensitive
+- accent-insensitive
+
+Minimum requirement:
+- "ból"
+- "bol"
+
+These must be treated as equivalent.
+Example:
+- "bol barku"
+- "ból barku"
+must trigger the same warning logic.
+
+Relevant fields for pain detection should include only health-related free text, for example:
+- "Opisz zdrowie i ograniczenia"
+- health notes / limitations notes
+- any survey textarea explicitly meant for health, injury, pain, or limitations
+
+When pain is detected:
+- show a strong RED alert banner
+- the banner must be clearly visible near the top of the relevant trainer-facing planning screen(s)
+
+Banner title example:
+"Zwróć uwagę: klient zgłasza ból"
+
+Banner content must clearly say:
+- Zwróć uwagę na ćwiczenia, które mogą pogłębić ból
+- Zwróć uwagę na ćwiczenia, które mogą poprawić samopoczucie lub zmniejszyć dolegliwości, jeśli są dobrze tolerowane
+- W przypadku utrzymującego się bólu skieruj klienta do fizjoterapeuty
+
+Important:
+- do NOT diagnose
+- do NOT pretend to know which specific exercise is medically correct automatically
+- this is a trainer warning only
+
+==================================================
+FEATURE 2 — INJURY / HEALTH LIMITATIONS IN SURVEY
+==================================================
+
+Add an explicit survey section for injury / health limitations.
+
+Required survey logic:
+
+Field 1:
+"Uraz / ograniczenia zdrowotne"
+Options:
+- "Brak"
+- "Tak"
+
+Behavior:
+- If "Brak" is selected -> do not show extra field
+- If "Tak" is selected -> show a REQUIRED textarea field:
+
+"Opisz zdrowie i ograniczenia"
+
+IMPORTANT:
+If "Tak" is selected and the description is empty:
+- the survey must not be considered complete
+- the user must be required to enter a description before continuing
+
+This text must be stored and available in the planning flow.
+
+If this field contains any message:
+- show a strong YELLOW warning banner
+- make it clearly visible for the trainer
+
+Banner title example:
+"Uwaga: zgłoszono zdrowie / ograniczenia"
+
+Banner content:
+- show the actual client-entered text
+- do not hide it in a collapsed section by default
+- this should be prominent but less severe than the red pain banner
+
+Severity logic:
+- pain keyword found in health-related text -> RED alert
+- health limitation text present without pain keywords -> YELLOW alert
+
+If both exist:
+- RED should take visual priority
+- it is acceptable to show:
+  - one combined block with RED priority
+  OR
+  - a RED pain block + separate YELLOW health details block
+
+==================================================
+FEATURE 3 — MANDATORY CARDIO / STEPS RULE
+==================================================
+
+Add a planning rule for:
+- sedentary lifestyle
+OR
+- fat-loss goal / reduction of body fat
+
+If either condition is true:
+- the system must add a mandatory non-strength activity recommendation
+
+This should be implemented as:
+EITHER
+- a cardio day
+OR
+- a step target / walking prescription
+
+Use sensible planning logic:
+
+1. If the person is beginner / no-activity and declares more days than recommended for strength training:
+- keep maximum 3 strength days
+- convert extra days into cardio / activity days
+- do NOT turn all extra days into more strength sessions
+
+2. If there is no extra day available:
+- add a mandatory step target instead
+
+3. If the trigger is fat-loss goal or sedentary lifestyle:
+- the recommendation must appear in the plan summary / assumptions
+- it must not be optional or hidden
+
+Examples:
+- sedentary + 4 or 5 declared days + beginner -> 3 strength days max + extra cardio / activity day(s)
+- sedentary + fat loss + 3 days -> keep strength split, add mandatory daily steps
+- fat loss goal even without sedentary lifestyle may still trigger steps/cardio support
+
+Required output in plan assumptions / summary:
+- clearly show the cardio / activity recommendation
+- examples:
+  - "Dodatkowa aktywność: 1 dzień cardio tygodniowo"
+  - "Cel aktywności: 8000–10000 kroków dziennie"
+  - "Ze względu na siedzący tryb życia dodano obowiązkową aktywność tlenową"
+
+Do NOT make this optional when sedentary lifestyle or fat-loss trigger is present.
+It should be a required recommendation in the plan output.
+
+==================================================
+FEATURE 4 — CONDITIONING GOAL RULE
+==================================================
+
+If the client chooses a training goal related to:
+- "Poprawa kondycji"
+
+then the plan must explicitly reflect that.
+
+Rule:
+- regardless of selected training frequency, the plan must include at least 1 Full Body strength session for general physical development
+- and must prioritize cardio / conditioning work, because conditioning cannot be improved from strength training alone
+
+This means:
+- the plan must not become only strength-based
+- cardio / conditioning must be clearly present as a required part of the plan
+
+Suggested planning logic:
+1. 2 training days:
+- 1 FBW
+- 1 cardio / conditioning day
+
+2. 3 training days:
+- minimum 1 FBW
+- at least 1 cardio / conditioning day
+- remaining day may be FBW or conditioning depending on recovery and level
+
+3. 4+ declared days:
+- keep strength simple
+- prioritize cardio / conditioning in the additional days
+- do NOT over-specialize the strength split
+
+Required summary text example:
+- "Cel poprawy kondycji → dodano obowiązkową jednostkę cardio oraz minimum jedną sesję FBW dla rozwoju ogólnego"
+
+==================================================
+UI / DISPLAY REQUIREMENTS
+==================================================
+
+Trainer-facing visibility must be strong.
+
+1. RED pain alert:
+- very visible
+- high on the page
+- red styling
+
+2. YELLOW health limitation alert:
+- very visible
+- yellow styling
+- show entered description
+
+3. Cardio / steps recommendation:
+- visible in plan assumptions / summary
+- not buried in hidden details
+
+Do not redesign the entire layout.
+Just add clear, prominent, practical alert blocks and recommendation text.
+
+==================================================
+IMPLEMENTATION NOTES
+==================================================
+
+Please keep this clean and structured:
+
+- survey fields / schema updates
+- backend response updates if needed
+- frontend alert rendering
+- helper function(s) for:
+  - pain keyword detection
+  - survey health warning state
+  - cardio / steps trigger rule
+  - conditioning-goal trigger
+
+Prefer centralized logic instead of duplicating conditions across many components.
+
+Pain detection helper should explicitly take only health-related text inputs,
+not arbitrary survey fields.
+
+==================================================
+OUTPUT
+==================================================
+
+Return only:
+1. exact files changed
+2. exact survey fields added
+3. exact pain / health warning logic added
+4. exact cardio / steps rule added
+5. exact conditioning-goal rule added
+6. where RED and YELLOW alerts are shown
+7. one example:
+   - pain case
+   - health limitation case
+   - sedentary / fat-loss cardio case
+   - conditioning-goal case
+
+End exactly with:
+
+SAFETY ALERTS AND CONDITIONING RULES APPLIED

@@ -1,0 +1,223 @@
+Run a full consistency audit of the current training-planning system.
+
+Do NOT redesign the whole app.
+Do NOT add new features in this task.
+Do NOT build new UI unless a small fix is strictly required to resolve a found inconsistency.
+This is an audit + bug/logic validation task.
+
+==================================================
+GOAL
+==================================================
+
+Check whether the full flow is logically consistent:
+
+1. client survey
+2. trainer interview
+3. planner assumptions
+4. split recommendation
+5. volume/distribution
+6. final generated plan
+
+The system should behave like one coherent product, not a set of disconnected screens.
+
+==================================================
+WHAT TO AUDIT
+==================================================
+
+Audit whether the following inputs from the interview/survey actually influence planning correctly and consistently:
+
+- trainingGoal
+- sportGoal path
+- athlete/sport values
+- trainingMotivation
+- experienceLevel
+- trainingDays
+- sessionDuration
+- dailyActivityLevel
+- sleep
+- stress
+- health limitations / pain / injury status
+- favorite exercises
+- avoided exercises
+- priority muscles
+- cardio preference
+- current cardio frequency
+- preferred cardio type
+- additional info
+- place of training
+- equipment
+- preferred plan style
+
+==================================================
+REQUIRED AUDIT QUESTIONS
+==================================================
+
+For each important survey/input field, determine:
+
+1. Is it collected?
+2. Is it stored correctly?
+3. Does it affect planner logic?
+4. If yes, where exactly?
+5. If not, is that intentional or a bug / dead field?
+6. Does trainer-side behavior match client-side behavior?
+7. Does the final generated plan reflect the input in a coach-like way?
+
+==================================================
+CRITICAL CONSISTENCY CHECKS
+==================================================
+
+Check these especially carefully:
+
+1. SPORT GOAL CONSISTENCY
+- "Cel sportowy" must align across:
+  - client survey
+  - trainer interview
+  - planner assumptions
+  - split recommendation
+  - cardio/conditioning guidance
+- confirm that "Cel sportowy" excludes "Brak aktywności fizycznej"
+- confirm that sport priorities are preserved and visible where relevant
+
+2. CARDIO CONSISTENCY
+- sedentary lifestyle
+- fat loss goal
+- conditioning goal
+- sport goal
+must influence planner guidance consistently
+
+Check whether cardio/steps guidance:
+- appears in planner
+- matches the survey input
+- is only banner-level guidance or actually affects planning decisions
+
+3. EXPERIENCE-LEVEL CONSISTENCY
+Check whether level influences:
+- split recommendation
+- allowed/recommended structure
+- advanced methods visibility
+- sport logic restrictions
+- beginner day caps
+- future plyo readiness gating if relevant
+
+4. TIME / DAYS CONSISTENCY
+Check whether:
+- trainingDays
+- sessionDuration
+actually constrain the planner realistically
+
+Examples:
+- 30–45 min should not produce bloated sessions
+- 5 days should not show weak split suggestions like FBW 5x as a primary path
+- beginner/high inactivity rules should remain respected
+
+5. HEALTH / PAIN CONSISTENCY
+Check whether injury/pain flags:
+- are stored correctly
+- surface clearly to the trainer
+- affect exercise avoidance / caution logic if applicable
+- do not silently disappear between screens
+
+6. FAVORITES / AVOIDED EXERCISES CONSISTENCY
+Check whether:
+- client-selected favorite exercises survive through data flow
+- avoided exercises survive through data flow
+- trainer-side and client-side values stay compatible
+- final planning logic can actually use them or at least preserve them visibly
+
+7. PRIORITY MUSCLE CONSISTENCY
+Check whether priority muscles:
+- are collected consistently
+- preserved through the flow
+- affect planning/generation in a visible way
+- do not get lost between survey, trainer panel, and planner
+
+8. SPLIT RECOMMENDATION CONSISTENCY
+Check whether:
+- split banner text
+- visible split list
+- fallback logic
+- day-count logic
+all agree with each other
+
+No contradictions like:
+- banner says one thing
+- visible options suggest something clearly worse
+- selected split conflicts with the rules
+
+9. VOLUME / DISTRIBUTION CONSISTENCY
+Check whether:
+- volume calculation
+- distribution
+- auto-recalculation
+- merged step flow
+all work together without stale or contradictory states
+
+10. TRAINER ↔ CLIENT CONSISTENCY
+Check whether trainer-side and client-side survey/interview now really use the same logic foundation.
+
+Identify any fields that still:
+- exist only on one side
+- use different wording
+- use different options
+- use different conditional logic
+without a good reason
+
+==================================================
+TEST CASES TO RUN
+==================================================
+
+Run at least these representative cases end-to-end:
+
+1. Beginner, 5 declared days, sedentary, fat-loss goal
+Expected:
+- strength-day cap respected
+- cardio/steps guidance visible
+- no unrealistic 5-day strength recommendation
+
+2. Intermediate, 3 days, hypertrophy, good recovery
+Expected:
+- sensible split options
+- no weird fallback
+- priority muscles preserved
+
+3. Intermediate, 5 days, weak recovery
+Expected:
+- fallback recommendation makes sense
+- visible splits do not contradict banner
+
+4. Sport goal, hobby-level, beginner
+Expected:
+- no "Brak aktywności fizycznej"
+- sport path works
+- cardio/conditioning guidance sensible
+- no forced advanced plyo logic
+
+5. Sport goal, advanced
+Expected:
+- sport path preserved
+- stronger sport-oriented planning compatibility
+- no contradictory beginner gating
+
+6. Pain / health limitation case
+Expected:
+- warning/alert preserved
+- trainer sees it clearly
+- no silent loss of health context
+
+==================================================
+OUTPUT FORMAT
+==================================================
+
+Return only:
+
+1. fields that are fully consistent
+2. fields that are collected but currently do not affect planning
+3. fields that behave inconsistently across client/trainer/planner
+4. exact contradictions found
+5. exact files that would need changes
+6. recommended fix order from highest priority to lowest
+7. whether the system is ready for real user testing as-is
+
+End exactly with:
+
+INTERVIEW-TO-PLANNING CONSISTENCY AUDIT COMPLETE

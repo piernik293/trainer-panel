@@ -1,0 +1,295 @@
+Implement Stage 2: Session Ordering.
+
+Use the completed Stage 2 architecture audit.
+
+Do not redesign the architecture.
+Do not introduce alternative approaches.
+Implement only the audited solution.
+
+Current state:
+
+- Stage 1 (Exercise Priority Engine foundation) is complete.
+- Classification metadata already reaches AutoFillRecExercise.
+- All tests pass.
+- Trainer-app TypeScript is clean.
+- API-server TypeScript is clean.
+
+Goal:
+
+Improve the order in which Auto Fill inserts exercises into a session.
+
+Do NOT change:
+
+- which exercises are selected
+- volume calculations
+- set allocation
+- scoring
+- recommendation ranking
+- target coverage
+- weekly logic
+- movement-pattern balancing
+- priority-muscle logic
+
+Only change insertion order.
+
+--------------------------------------------------
+1. Create a dedicated ordering module
+--------------------------------------------------
+
+Do NOT place ordering logic inside exerciseClassification.ts.
+
+Create a new file:
+
+artifacts/trainer-app/src/lib/exerciseOrdering.ts
+
+Reason:
+
+Classification and ordering are separate responsibilities.
+
+exerciseClassification.ts should remain responsible only for:
+
+- classification
+- tiers
+- fatigue
+- priority
+- helper functions
+
+exerciseOrdering.ts should own:
+
+- ordering
+- comparators
+- session ordering rules
+- future ordering extensions
+
+--------------------------------------------------
+2. Reuse existing helpers
+--------------------------------------------------
+
+Import and reuse:
+
+- getSessionTier()
+- getPriorityRank()
+
+Do not duplicate logic.
+
+--------------------------------------------------
+3. Extend AutoFillExerciseToAdd
+--------------------------------------------------
+
+Extend AutoFillExerciseToAdd with optional metadata:
+
+- exerciseType?
+- neurologicalFatigue?
+- learningDifficulty?
+- exercisePriority?
+
+Do not add movementPattern yet.
+
+Keep every new field optional.
+
+--------------------------------------------------
+4. Preserve metadata
+--------------------------------------------------
+
+Inside commitExercise()
+
+copy the four classification fields from AutoFillRecExercise into AutoFillExerciseToAdd.
+
+Nothing else should change.
+
+--------------------------------------------------
+5. Implement orderExercisesForSession()
+--------------------------------------------------
+
+Create a pure function:
+
+orderExercisesForSession<T>()
+
+Requirements:
+
+- accepts ReadonlyArray<T>
+
+- returns NEW array
+
+- never mutates input
+
+Comparator:
+
+1.
+Session tier
+
+primary_compound
+
+↓
+
+secondary_compound
+
+↓
+
+accessory
+
+↓
+
+isolation
+
+↓
+
+core_finisher
+
+2.
+Higher neurological fatigue first
+
+3.
+Higher exercise priority first
+(using getPriorityRank())
+
+4.
+Higher learning difficulty first
+
+5.
+Original array order
+
+Always preserve deterministic ordering.
+
+--------------------------------------------------
+6. Stable ordering
+--------------------------------------------------
+
+Capture original index before sorting.
+
+Use it as the final comparator.
+
+Do not rely only on JS engine stability.
+
+--------------------------------------------------
+7. Integration
+--------------------------------------------------
+
+In Step4Exercises.tsx
+
+Inside handleAutoFill()
+
+Before the addExerciseToDay loop:
+
+Replace
+
+dayResult.toAdd
+
+with
+
+orderExercisesForSession(dayResult.toAdd)
+
+Nothing else in handleAutoFill should change.
+
+--------------------------------------------------
+8. Do NOT change
+--------------------------------------------------
+
+Do NOT modify:
+
+exerciseDraftHelpers.ts
+
+DraftExercise
+
+addExerciseToDay()
+
+selection logic
+
+ScoreTuple
+
+evaluateCandidate()
+
+scoreBetter()
+
+selectExercisesForDay()
+
+candidate ranking
+
+API
+
+database
+
+manual exercise adding
+
+manual editing
+
+drag & drop
+
+--------------------------------------------------
+9. Tests
+--------------------------------------------------
+
+Create
+
+exerciseOrdering.test.ts
+
+Include focused pure tests covering:
+
+✓ compound before isolation
+
+✓ secondary compound before accessory
+
+✓ accessory before isolation
+
+✓ core always last
+
+✓ fatigue ordering
+
+✓ priority ordering
+
+✓ learning difficulty ordering
+
+✓ original order preserved on ties
+
+✓ missing metadata fallback
+
+✓ input array not mutated
+
+✓ exercise IDs preserved
+
+✓ exercise count preserved
+
+Do not duplicate Stage 1 classification tests.
+
+--------------------------------------------------
+10. Validation
+--------------------------------------------------
+
+Run:
+
+- exerciseOrdering tests
+
+- trainer-app tests
+
+- api-server tests
+
+- trainer-app TypeScript
+
+- api-server TypeScript
+
+--------------------------------------------------
+11. Final report
+
+Report:
+
+- exact files changed
+
+- ordering module API
+
+- comparator rules
+
+- metadata flow
+
+- test count
+
+- TypeScript status
+
+- confirmation that Auto Fill selects exactly the same exercises as before
+
+Stop after Stage 2.
+
+Do not begin movement-pattern balancing.
+
+Do not begin weekly optimization.
+
+Do not introduce weighted AI scoring.

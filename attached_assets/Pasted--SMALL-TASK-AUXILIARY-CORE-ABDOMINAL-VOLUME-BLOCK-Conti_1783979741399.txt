@@ -1,0 +1,229 @@
+# SMALL TASK — AUXILIARY CORE / ABDOMINAL VOLUME BLOCK
+
+Continue from the current repository state.
+
+Do not restart previous phases.
+Do not add a 12th volume target.
+Do not modify volume_guidelines or volume_targets.
+Do not add a database migration.
+Do not select exercises automatically.
+Do not create or save workout plans, workout days, exercises or sets.
+Do not unlock the generator "Ćwiczenia" step.
+Do not inspect unrelated files.
+
+============================================================
+GOAL
+============================================================
+
+Add a separate auxiliary volume block:
+
+"Core / brzuch"
+
+It must be independent from the existing 11 muscle-volume targets.
+
+The block represents direct core working sets, not indirect work from
+squats, deadlifts or other compound exercises.
+
+All values must be whole integers.
+
+============================================================
+1. DEFAULT WEEKLY CORE VOLUME
+============================================================
+
+Use these deterministic recommendations:
+
+- Brak aktywności fizycznej:
+  4 working sets per week
+
+- Początkujący:
+  6 working sets per week
+
+- Średniozaawansowany:
+  6 working sets per week
+
+- Zaawansowany:
+  8 working sets per week
+
+If core / brzuch is explicitly selected as a priority:
+
+- add +2 weekly working sets,
+- maximum automatic recommendation: 10 sets.
+
+Do not use fractional values.
+
+Examples:
+
+4, 6, 8, 10
+
+Never:
+
+4.5, 6.5, 8.5
+
+============================================================
+2. DAY DISTRIBUTION
+============================================================
+
+Distribute direct core work across 2–3 training days.
+
+Rules:
+
+- use whole integers only,
+- normally 2–3 sets in one session,
+- place core near the end of the session,
+- do not place core on every available day unnecessarily,
+- preserve the exact weekly total.
+
+Examples:
+
+4 sets:
+- 2 + 2
+
+6 sets:
+- 3 + 3
+or
+- 2 + 2 + 2
+
+8 sets:
+- 3 + 3 + 2
+
+10 sets:
+- 4 + 3 + 3
+
+Prefer the selected days with the lowest current session workload.
+Use day index as deterministic tie-breaking.
+
+============================================================
+3. RESPONSE CONTRACT
+============================================================
+
+Do not add Core to the existing 11 targetDecisions.
+
+Add a separate response concept such as:
+
+auxiliaryCoreBlock:
+- weeklyRecommendedSets
+- weeklySelectedSets
+- isPriority
+- dayAllocations:
+  - dayIndex
+  - sets
+- placement:
+  - end_of_session
+- reasons
+- warnings
+
+The existing API must still return exactly 11 normal muscle target decisions.
+
+============================================================
+4. WIZARD UI
+============================================================
+
+Inside the "Objętość" step add a separate card:
+
+"Core / brzuch"
+
+Show:
+
+- proposed weekly working sets,
+- distribution across selected days,
+- information:
+  "Bezpośrednie serie na mięśnie brzucha i stabilizację tułowia."
+
+Do not include indirect work from compound exercises in this displayed
+number.
+
+Inside daily distribution cards show, for example:
+
+"Core / brzuch — 3 serie"
+
+Place it visually at the bottom of the day card.
+
+Do not display decimals.
+
+============================================================
+5. FUTURE EXERCISE RULES
+============================================================
+
+Prepare only a deterministic future-use rule.
+
+For "Brak aktywności fizycznej" prefer:
+
+- dead bug
+- bird dog
+- Pallof press
+
+For other levels the future selector may also consider:
+
+- plank
+- side plank
+- cable crunch
+- rollout variations
+- carries
+
+Do not assign or add an exercise to the plan in this task.
+
+============================================================
+6. TESTS
+============================================================
+
+Add focused tests for:
+
+- No Activity → 4 sets
+- Beginner → 6 sets
+- Intermediate → 6 sets
+- Advanced → 8 sets
+- core priority adds exactly +2
+- automatic recommendation never exceeds 10
+- all values are integers
+- 4 → 2 + 2
+- 6 → 3 + 3 or deterministic equivalent
+- 8 → 3 + 3 + 2
+- 10 → 4 + 3 + 3
+- exact weekly sum is preserved
+- core uses no more than 3 sessions
+- core appears separately from the 11 target decisions
+- existing target decision count remains exactly 11
+- "Ćwiczenia" remains locked
+
+============================================================
+7. COST CONTROL
+============================================================
+
+Run only:
+
+- focused core-block tests,
+- existing Phase 3 distribution tests,
+- TypeScript for affected packages,
+- api-zod build only if the response contract changed,
+- API production build if backend changed,
+- trainer-app production build if UI changed.
+
+Do not run:
+
+- client-landing build,
+- browser installation,
+- full website audit,
+- database audit,
+- unrelated full-project exploration,
+- suggested next tasks.
+
+Report only:
+
+1. files changed
+2. core recommendation rules
+3. day distribution examples
+4. API response structure
+5. UI result
+6. focused test results
+7. TypeScript/build results
+8. confirmation that normal target count remains 11
+9. confirmation that no workout records were created
+10. confirmation that "Ćwiczenia" remains locked
+
+Finish exactly:
+
+AUXILIARY CORE BLOCK COMPLETE
+
+or
+
+AUXILIARY CORE BLOCK FAILED
