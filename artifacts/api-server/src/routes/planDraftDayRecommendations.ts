@@ -285,8 +285,14 @@ router.get(
         ? survey.equipment.toLowerCase().includes("sztanga")
         : false;
 
+      // "Brak aktywności fizycznej" is a distinct, more conservative level — not
+      // merged with "Początkujący".  isNoActivityClient signals the sort to prefer
+      // suitableForNoActivity exercises within each slot's band.
+      const isNoActivityClient = survey.experienceLevel === "Brak aktywności fizycznej";
+
       const v0PriorityContext: V0PriorityContext = {
         isPriorityEligible,
+        isNoActivityClient,
         tierA: survey.priorityMuscle1 ? [survey.priorityMuscle1] : [],
         tierB: [survey.priorityMuscle2, survey.priorityMuscle3].filter(
           (v): v is string => v !== null && v !== undefined && v.trim() !== "",

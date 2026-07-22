@@ -59,6 +59,22 @@ export interface V0Result {
 export interface V0PriorityContext {
   /** True only for "Średniozaawansowany" / "Zaawansowany". */
   isPriorityEligible: boolean;
+  /**
+   * True when the client's experience level is exactly "Brak aktywności fizycznej".
+   *
+   * This is explicitly separate from "Początkujący" — "Brak aktywności" is the
+   * most conservative level: only regression-style, very low complexity, very
+   * stable movements are preferred.  "Początkujący" may allow basic compound
+   * lifting that is still too complex or too unstable for this level.
+   *
+   * When true, sortDeterministic / sortWithPriority promote exercises with
+   * suitableForNoActivity === true before non-flagged ones in every slot's band.
+   * This is the mirror of the regression penalty applied to intermediate+ clients
+   * (which pushes those same exercises DOWN in the opposite direction).
+   *
+   * Note: isPriorityEligible is always false when isNoActivityClient is true.
+   */
+  isNoActivityClient?: boolean;
   /** Tier A: the client's first-priority muscle group. */
   tierA: string[];
   /** Tier B: second and third priority muscle groups. */
@@ -500,7 +516,21 @@ function sortDeterministic(
       if (prefA !== prefB) return prefA - prefB;
     }
 
-    // 1. Regression penalty (for eligible clients with hypertrophy/strength goal)
+    // 1. No-activity preference — mirror of the regression penalty, runs first
+    //    so that "Brak aktywności fizycznej" clients see the safest exercises at
+    //    the front of every slot's band regardless of exercise_priority tier.
+    //
+    //    "Brak aktywności" is treated as a DISTINCT level from "Początkujący":
+    //    some exercises valid for beginners are still too complex / unstable for
+    //    a fully inactive client.  Only exercises explicitly flagged
+    //    suitableForNoActivity === true are promoted here.
+    if (ctx?.isNoActivityClient) {
+      const naA = isRegressionCandidate(a) ? 0 : 1; // 0 = preferred (front)
+      const naB = isRegressionCandidate(b) ? 0 : 1;
+      if (naA !== naB) return naA - naB;
+    }
+
+    // 1b. Regression penalty (for eligible clients with hypertrophy/strength goal)
     if (penalizeRegression) {
       const regA = isRegressionCandidate(a) ? 1 : 0;
       const regB = isRegressionCandidate(b) ? 1 : 0;
@@ -609,7 +639,17 @@ function sortWithPriority(
       if (prefA !== prefB) return prefA - prefB;
     }
 
-    // 0.5. Regression penalty — regression exercises sink below non-regression
+    // 0.5. No-activity preference — same logic as in sortDeterministic.
+    //      Applied before tier rank for consistency: a "Brak aktywności" client
+    //      will never reach isPriorityEligible = true so this path only fires
+    //      if the flag is set programmatically (test / edge-case safety).
+    if (ctx.isNoActivityClient) {
+      const naA = isRegressionCandidate(a) ? 0 : 1;
+      const naB = isRegressionCandidate(b) ? 0 : 1;
+      if (naA !== naB) return naA - naB;
+    }
+
+    // 0.6. Regression penalty — regression exercises sink below non-regression
     //      even before tier rank, because a regression exercise should not win
     //      a compound slot just by being Tier A.
     if (penalizeRegression) {

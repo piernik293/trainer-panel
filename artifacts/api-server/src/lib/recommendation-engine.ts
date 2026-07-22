@@ -90,8 +90,20 @@ const BODYWEIGHT_EQUIPMENT = new Set([
 ]);
 
 // Maps client experience level → difficulty levels that are appropriate.
+//
+// "Brak aktywności fizycznej" is intentionally NOT mapped to ["Początkujący"].
+// Its suitability scoring is handled by the dedicated scoreNoActivityFit function
+// (learningDifficulty ≤2 → +6, neurologicalFatigue ≤2 → +4, jointStress
+// "Niskie" → +6, domsPotential ≤2 → +3, with corresponding penalties for
+// high values).  Adding a difficultyLevel match here would give "Brak aktywności"
+// clients the same +10 bonus as "Początkujący" clients on identically-tagged
+// exercises, collapsing the two levels into the same scoring profile.
+//
+// Mapping it to [] means scoreDifficultyMatch contributes 0 for this level —
+// the dedicated scoreNoActivityFit signal is the sole difficulty proxy, which is
+// richer, more specific, and correctly distinguishes the two levels.
 const APPROPRIATE_DIFFICULTY: Record<string, string[]> = {
-  "brak aktywności fizycznej": ["Początkujący"],
+  "brak aktywności fizycznej": [],
   "początkujący": ["Początkujący"],
   "średniozaawansowany": ["Średniozaawansowany", "Początkujący"],
   "zaawansowany": ["Zaawansowany", "Średniozaawansowany"],

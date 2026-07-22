@@ -295,8 +295,15 @@ router.post(
       survey.athleteStatus,
     );
 
+    // "Brak aktywności fizycznej" is treated as a distinct, more conservative level.
+    // isPriorityEligible is always false for this level (handled by the set above),
+    // but isNoActivityClient additionally signals the sort to actively prefer
+    // suitableForNoActivity exercises within each slot's band.
+    const isNoActivityClient = survey.experienceLevel === "Brak aktywności fizycznej";
+
     const priorityContext: V0PriorityContext = {
       isPriorityEligible,
+      isNoActivityClient,
       tierA: survey.priorityMuscle1 ? [survey.priorityMuscle1] : [],
       tierB: [survey.priorityMuscle2, survey.priorityMuscle3].filter(
         (v): v is string => v !== null && v !== undefined && v.trim() !== "",
