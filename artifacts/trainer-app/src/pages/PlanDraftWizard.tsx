@@ -1465,10 +1465,10 @@ export default function PlanDraftWizard() {
 
   /** Build distribution request from current wizard state; null when preconditions unmet. */
   const distributionRequest = useMemo(() => {
-    if (!volumeDecisions || !effectivePrefs || !typedData) return null;
+    if (!volumeDecisions || !effectivePrefs) return null;
     return buildDistributionRequest({
       clientId,
-      experienceLevel: typedData.input.experienceLevel ?? null,
+      experienceLevel: typedData?.input.experienceLevel ?? null,
       trainingDays: effectivePrefs.trainingDays,
       selectedSplitType: effectivePrefs.splitType,
       volumeDecisions,
