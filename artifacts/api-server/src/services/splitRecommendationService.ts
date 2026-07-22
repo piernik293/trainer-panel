@@ -37,6 +37,14 @@ export interface SplitRecommendationInput {
   recoveryQuality: "excellent" | "good" | "standard" | "poor" | null;
   trainingGoal: string | null;
   priorityMuscleGroups?: string[];
+  /** Athlete status from survey ("Tak — zawodowo" | "Tak — amatorsko" | "Nie" | null). */
+  athleteStatus?: string | null;
+  /** Sport performance sub-priorities (e.g. ["Dynamika", "Szybkość", "Stabilizacja"]). */
+  sportPerformanceNeeds?: string[];
+  /** Session duration in minutes — used to gate the competitive-athlete override (≥90). */
+  sessionDurationMinutes?: number | null;
+  /** Whether the client has gym access (barbell + machines). Defaults to true when omitted. */
+  hasGymAccess?: boolean;
 }
 
 export interface SplitRecommendationResult {
@@ -52,6 +60,15 @@ export interface SplitRecommendationResult {
    * Null when no cap was applied.
    */
   cappedTrainingDays: number | null;
+  /**
+   * Set when a competitive sport profile justifies substituting one session type
+   * with a more athletic alternative (e.g. replacing the 4th Lower session with
+   * a FBW/Plyo day for competitive athletes with Dynamika/Szybkość priorities).
+   *
+   * Plain-language explanation for the trainer / plan summary.
+   * Null when no override was applied.
+   */
+  structureOverrideReason?: string | null;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -214,6 +231,50 @@ export function recommendSplit(input: SplitRecommendationInput): SplitRecommenda
 
   // ─── 4 days ─────────────────────────────────────────────────────────────────
   if (trainingDays === 4) {
+    // ── Competitive athlete structure override (Stage G — Part 3) ─────────────
+    //
+    // For competitive sport clients with Dynamika/Szybkość priorities, long
+    // sessions (≥ 90 min), and gym access: swap the plain Upper/Lower × 2 for
+    // upper_lower_full_body, whose 4th day maps to an FBW/athletic session
+    // rather than a second identical Lower session.
+    //
+    // Gate: poor recovery takes priority over this override — a fatigued
+    // competitive athlete still needs the simpler structure.
+    {
+      const isSportGoal =
+        input.trainingGoal != null &&
+        (input.trainingGoal.includes("sportow") ||
+          input.trainingGoal.toLowerCase().includes("cel sport"));
+      const isCompetitiveSport =
+        isSportGoal &&
+        (input.athleteStatus === "Tak — zawodowo" ||
+          (input.athleteStatus ?? "").toLowerCase().includes("zawodowo"));
+      const needs = (input.sportPerformanceNeeds ?? []).map((s) => s.toLowerCase());
+      const hasDynSpeed =
+        needs.includes("dynamika") || needs.includes("szybkość");
+      const hasLongSessions = (input.sessionDurationMinutes ?? 0) >= 90;
+      const hasGym = input.hasGymAccess !== false; // default true when not supplied
+
+      if (isCompetitiveSport && hasDynSpeed && hasLongSessions && hasGym && !poorRecovery) {
+        return {
+          recommended: "upper_lower_full_body",
+          explanation:
+            `4 dni treningowe + poziom ${lvl(experienceLevel)} + sportowiec zawodowy ` +
+            `+ priorytet Dynamika/Szybkość → układ Górna / Dolna / Górna / FBW-atletyczny. ` +
+            `Czwarty dzień zamieniony na sesję FBW z komponentem plyo/atletycznym.`,
+          structureOverrideReason:
+            `Zmieniono klasyczny układ Góra/Dół 2× na Górna A / Dolna / Górna B / FBW-Plyo. ` +
+            `Powód: klient jest sportowcem zawodowym z priorytetem Dynamika/Szybkość, ` +
+            `sesje ≥ 90 min, dostęp do siłowni. ` +
+            `Czwarty dzień powinien zawierać ćwiczenia o wysokim obciążeniu neurologicznym ` +
+            `i/lub plyometryczne zamiast drugiej sesji Dolnej.`,
+          alternatives: ["upper_lower"],
+          fallbackApplied: false,
+          cappedTrainingDays: null,
+        };
+      }
+    }
+
     // Fat loss + poor recovery → simplify
     if (goal === "fat_loss" && poorRecovery) {
       return {

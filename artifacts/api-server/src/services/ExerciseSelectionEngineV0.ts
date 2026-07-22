@@ -123,6 +123,20 @@ export interface V0PriorityContext {
    */
   preferredExerciseKeywords?: string[];
   /**
+   * When true, "Pompki" (push-up) exercises are ranked after barbell and
+   * dumbbell pressing alternatives within every slot's candidate band.
+   *
+   * Activated when ALL of:
+   *   1. Full gym equipment is available (barbell + machines)
+   *   2. Client is intermediate or advanced (isPriorityEligible)
+   *   3. Goal bias is strength, athletic, or hypertrophy
+   *   4. The client did NOT explicitly list push-ups as a preferred exercise
+   *
+   * Push-ups are NOT banned — they remain in the pool as a fallback when no
+   * barbell/dumbbell alternative passes the slot's hard filter.
+   */
+  deprioritizePushUps?: boolean;
+  /**
    * Goal-driven decision profile built from survey.trainingGoal.
    * Controls regression penalty, isolation deprioritisation, dynamic-work
    * exposure, and extra arm/shoulder slots for intermediate+ users.
@@ -669,6 +683,19 @@ function sortDeterministic(
       if (regA !== regB) return regA - regB;
     }
 
+    // 1d. Push-up contextual deprioritisation (Stage G — Part 2)
+    //
+    // When deprioritizePushUps is true (full gym + intermediate+ + strength/athletic/
+    // hypertrophy goal + no explicit push-up preference), Pompki exercises are ranked
+    // after barbell and dumbbell pressing alternatives within the same sort band.
+    // NOT a ban — they remain in the pool as a fallback.
+    if (ctx?.deprioritizePushUps) {
+      const isPU = (ex: ScoredAndFilteredExercise) =>
+        ex.name.trim().toLowerCase().startsWith("pompki") ? 1 : 0;
+      const puA = isPU(a), puB = isPU(b);
+      if (puA !== puB) return puA - puB;
+    }
+
     // 2. High neurological load boost (sport + Dynamika / Szybkość contexts)
     //
     // Exercises with neurologicalFatigue >= 4 rank before lower-fatigue ones.
@@ -817,6 +844,19 @@ function sortWithPriority(
       const regA = isRegressionCandidate(a) ? 1 : 0;
       const regB = isRegressionCandidate(b) ? 1 : 0;
       if (regA !== regB) return regA - regB;
+    }
+
+    // 0.7. Push-up contextual deprioritisation (Stage G — Part 2)
+    //      Same logic as step 1d in sortDeterministic — included here so the
+    //      penalty fires for intermediate/advanced clients (isPriorityEligible)
+    //      who reach sortWithPriority rather than sortDeterministic.
+    //      Pompki are ranked behind barbell/dumbbell alternatives in the same
+    //      sort band; they are never banned from the pool entirely.
+    if (ctx.deprioritizePushUps) {
+      const isPU = (ex: ScoredAndFilteredExercise) =>
+        ex.name.trim().toLowerCase().startsWith("pompki") ? 1 : 0;
+      const puA = isPU(a), puB = isPU(b);
+      if (puA !== puB) return puA - puB;
     }
 
     // 1. Client muscle tier

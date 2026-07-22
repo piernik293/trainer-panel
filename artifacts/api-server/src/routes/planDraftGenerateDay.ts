@@ -183,6 +183,55 @@ router.post(
       return isComplete;
     });
 
+    // ── Family-level exercise blocking (Stage G — Part 1 — hard constraints) ──
+    //
+    // An excluded exercise often implies the entire movement family, not just
+    // the exact DB row.  E.g. avoiding "martwy ciąg" should block "martwy ciąg
+    // rumuński", "martwy ciąg sumo", etc.
+    //
+    // This expansion runs BEFORE pool building so that isAvoided propagates to
+    // every family member via the same avoidedExerciseIds Set used in the pool
+    // loop below.
+    //
+    // Conservative design: 6 practical families are mapped.  Any excluded
+    // exercise whose name does not match a trigger is blocked exactly (exact-only).
+    const FAMILY_BLOCKING_MAP: Array<{
+      trigger: string;        // substring matched against the avoided exercise name
+      blocksFragment: string; // substring matched against ALL active exercise names
+      label: string;          // human-readable description for the explanation block
+    }> = [
+      { trigger: "martwy ciąg",          blocksFragment: "martwy ciąg",        label: "martwy ciąg i warianty (cała rodzina)" },
+      { trigger: "wyciskanie nad głowę",  blocksFragment: "nad głowę",          label: "wyciskanie nad głowę i warianty (cała rodzina)" },
+      { trigger: "ohp",                   blocksFragment: "nad głowę",          label: "wyciskanie nad głowę i warianty (cała rodzina)" },
+      { trigger: "wiosłowanie",           blocksFragment: "wiosłowanie",        label: "wiosłowanie i warianty (cała rodzina)" },
+      { trigger: "przysiad",              blocksFragment: "przysiad",           label: "przysiady i warianty (cała rodzina)" },
+      { trigger: "wyciskanie sztangą",    blocksFragment: "wyciskanie sztangą", label: "wyciskanie sztangą i warianty (cała rodzina)" },
+    ];
+
+    // Tracks what was blocked and how — surfaced in the explanation block.
+    const blockedFamilies: Array<{ avoidedName: string; label: string }> = [];
+    const exactOnlyBlocks: string[] = [];
+
+    for (const ex of exercises) {
+      if (!avoidedExerciseIds.has(ex.id)) continue;
+      const lowerName = (ex.name ?? "").trim().toLowerCase();
+
+      const familyRule = FAMILY_BLOCKING_MAP.find((rule) =>
+        lowerName.includes(rule.trigger),
+      );
+      if (familyRule) {
+        // Expand: add every active exercise whose name contains the family fragment.
+        blockedFamilies.push({ avoidedName: ex.name ?? "", label: familyRule.label });
+        for (const candidate of exercises) {
+          if ((candidate.name ?? "").toLowerCase().includes(familyRule.blocksFragment)) {
+            avoidedExerciseIds.add(candidate.id);
+          }
+        }
+      } else {
+        exactOnlyBlocks.push(ex.name ?? "");
+      }
+    }
+
     // ── Build scored pool — equipment + location hard filters applied ──────────
     //
     // KEY DIFFERENCE from the recommendations route:
@@ -305,6 +354,34 @@ router.post(
     // complex isolation-heavy choices — the engine's isBeginnerClient sort step handles this.
     const isBeginnerClient = survey.experienceLevel === "Początkujący";
 
+    // ── Push-up contextual deprioritisation (Stage G — Part 2) ────────────────
+    //
+    // In full-gym intermediate+ contexts, "Pompki" should not win the chest-compound
+    // slot by default when barbell and dumbbell presses are available.
+    //
+    // Fires when ALL of:
+    //   1. Full gym available — "Sztanga i talerze" (or "Maszyny") in equipment
+    //   2. Client is intermediate or advanced (isPriorityEligible)
+    //   3. Goal bias is strength, athletic, or hypertrophy
+    //   4. Client did NOT explicitly list push-ups in preferred exercises
+    //
+    // Push-ups are NOT banned — they remain in the pool as a fallback.
+    const isFullGym =
+      !!(survey.equipment) &&
+      (survey.equipment.toLowerCase().includes("sztanga i talerze") ||
+        survey.equipment.toLowerCase().includes("maszyny") ||
+        (survey.equipment.toLowerCase().includes("sztanga") &&
+          survey.equipment.toLowerCase().includes("maszynami")));
+    const prefersPushUps = preferredExerciseKeywords.some((kw) =>
+      "pompki".includes(kw) || kw.includes("pompk"),
+    );
+    const isDeprioritizableBias =
+      goalProfile.exerciseClassBias === "strength" ||
+      goalProfile.exerciseClassBias === "athletic" ||
+      goalProfile.exerciseClassBias === "hypertrophy";
+    const deprioritizePushUps =
+      isFullGym && isPriorityEligible && isDeprioritizableBias && !prefersPushUps;
+
     const priorityContext: V0PriorityContext = {
       isPriorityEligible,
       isNoActivityClient,
@@ -316,6 +393,7 @@ router.post(
       benchGoalActive: isPriorityEligible && isBenchGoal && hasBarbell,
       allowPlyometrics,
       preferredExerciseKeywords,
+      deprioritizePushUps,
       goalProfile,
     };
 
@@ -364,11 +442,103 @@ router.post(
       `SESSION_COMPLETE: ${v0Result.exercises.length} exercises selected for ${v0SessionType.toUpperCase()}`,
     );
 
+    // ── Explanation block (Stage G — Part 4) ─────────────────────────────────
+    //
+    // Compact, trainer-facing explanation of what was selected, what was blocked,
+    // and why.  Returned alongside exercises so trainers can hand a reasoned
+    // plan to clients.  All strings are in Polish.
+
+    // 1. Plan rationale — context bullets
+    const explanationRationale: string[] = [];
+    explanationRationale.push(
+      `Poziom zaawansowania: ${survey.experienceLevel ?? "nieznany"}.`,
+    );
+    explanationRationale.push(
+      `Cel treningowy: ${survey.trainingGoal ?? "ogólny"}.`,
+    );
+    explanationRationale.push(`Typ sesji: ${v0SessionType.toUpperCase()}.`);
+    if (isPriorityEligible &&
+      (priorityContext.tierA.length > 0 || priorityContext.tierB.length > 0)) {
+      const allPriorities = [...priorityContext.tierA, ...priorityContext.tierB];
+      explanationRationale.push(`Priorytety mięśniowe: ${allPriorities.join(", ")}.`);
+    }
+    if (goalProfile.isCompetitiveAthlete) {
+      explanationRationale.push(
+        "Profil sportowca zawodowego — ćwiczenia o wysokim obciążeniu neurologicznym mają pierwszeństwo.",
+      );
+    }
+
+    // 2. Preferred exercise outcomes — keyword → used / not_used
+    const preferredOutcomes = preferredExerciseKeywords.map((kw) => {
+      const matched = v0Result.exercises.find((e) =>
+        e.name.trim().toLowerCase().includes(kw),
+      );
+      return {
+        keyword: kw,
+        status: matched ? ("used" as const) : ("not_used" as const),
+        note: matched
+          ? `Użyte: "${matched.name}"`
+          : "Brak pasującego ćwiczenia lub nie przeszło filtra slotu w tej sesji.",
+      };
+    });
+
+    // 3. Excluded exercise outcomes — exact-only vs whole-family blocks
+    const excludedOutcomes: Array<{
+      name: string;
+      scope: "exact" | "family";
+      label?: string;
+      reason: string;
+    }> = [
+      ...blockedFamilies.map((bf) => ({
+        name: bf.avoidedName,
+        scope: "family" as const,
+        label: bf.label,
+        reason: `Zablokowano całą rodzinę ruchową: ${bf.label}.`,
+      })),
+      ...exactOnlyBlocks.map((name) => ({
+        name,
+        scope: "exact" as const,
+        reason: "Zablokowano dokładnie to ćwiczenie (bez rozszerzenia na rodzinę).",
+      })),
+    ];
+
+    // 4. Generator notes — contextual decisions surfaced for the trainer
+    const generatorNotes: string[] = [];
+    if (deprioritizePushUps) {
+      generatorNotes.push(
+        "Pompki: zepchnięte za wyciskanie sztangą/hantlami — dostępny pełen sprzęt, " +
+        "poziom i cel nie preferują ćwiczeń z masą ciała jako domyślnego wyboru. " +
+        "Pompki nadal dostępne jako awaryjny wybór gdy brak innych opcji w slocie.",
+      );
+    }
+    if (goalProfile.deprioritizeIsolationInMixedSlots) {
+      generatorNotes.push(
+        "Izolacja: w mieszanych slotach zepchnięta za wielostawowe — cel siłowy/kondycyjny.",
+      );
+    }
+    if (goalProfile.preferHighNeurologicalLoad && goalProfile.isCompetitiveAthlete) {
+      generatorNotes.push(
+        "Obciążenie neurologiczne: priorytet ćwiczeń ≥ 4 — sport zawodowy z Dynamika/Szybkość.",
+      );
+    }
+    if (blockedFamilies.length > 0) {
+      generatorNotes.push(
+        `Rozszerzenie blokad: ${blockedFamilies.length} rodzina(y) ruchowych zablokowana(ych) ` +
+        "na podstawie podanych unikanych ćwiczeń.",
+      );
+    }
+
     res.json({
       hasProfile: true,
       hasLocationData,
       sessionType: v0SessionType,
       exercises: v0Result.exercises,
+      explanation: {
+        rationale: explanationRationale,
+        preferredExercises: preferredOutcomes,
+        excludedExercises: excludedOutcomes,
+        notes: generatorNotes,
+      },
     });
   },
 );

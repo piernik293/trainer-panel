@@ -370,6 +370,14 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
   // ── Default preferences ──────────────────────────────────────────────────────
   const trainingDays = availableDays ?? 3;
 
+  // Derive gym access from training location and equipment fields.
+  // Used to gate the competitive-athlete weekly-structure override.
+  const hasGymAccess =
+    !!(trainingLocation?.toLowerCase().includes("siłowni")) ||
+    (rawEquipment ?? "").toLowerCase().includes("sztanga i talerze") ||
+    ((rawEquipment ?? "").toLowerCase().includes("sztanga") &&
+      (rawEquipment ?? "").toLowerCase().includes("maszynami"));
+
   // Build the rich split recommendation first so defaultPreferences uses it.
   const splitRecommendation: SplitRecommendationType | null = experienceLevel
     ? recommendSplit({
@@ -378,6 +386,10 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
         recoveryQuality,
         trainingGoal,
         priorityMuscleGroups,
+        athleteStatus: survey?.athleteStatus ?? null,
+        sportPerformanceNeeds: (survey?.sportPerformanceNeeds as string[] | null) ?? [],
+        sessionDurationMinutes,
+        hasGymAccess,
       })
     : null;
 
