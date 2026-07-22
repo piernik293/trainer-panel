@@ -452,6 +452,52 @@ function isRearDeltBarki(ex: ScoredAndFilteredExercise): boolean {
 }
 
 /**
+ * True when the exercise's exercisePriority is "Niski" (lowest library tier).
+ *
+ * Used to hard-block low-priority filler exercises from intermediate+ lower
+ * accessory slots when higher-quality alternatives remain in the pool.
+ * Applied as a "try-hard-first" pattern with a full-pool fallback so
+ * low-priority exercises can still be selected when no other option exists.
+ */
+function isLowPriority(ex: ScoredAndFilteredExercise): boolean {
+  return ex.exercisePriority === "Niski";
+}
+
+/**
+ * True when the exercise is a carry or loaded-walk movement.
+ * Identified by common Polish carry name fragments: "spacer farmera", "spacer z",
+ * "chód z", "marsz z".
+ *
+ * Used to open the preferred-exercise gateway for functional carries in
+ * sprawność / sport upper accessory slots, where isUpperAccessorySafe would
+ * normally reject them (they may be catalogued as back/full-body movements).
+ */
+function isCarryMovement(name: string): boolean {
+  const lower = name.trim().toLowerCase();
+  return ["spacer farmera", "spacer z", "chód z", "marsz z"].some((f) =>
+    lower.includes(f),
+  );
+}
+
+/**
+ * True when the exercise name explicitly identifies a beginner teaching drill.
+ *
+ * Polish instructional exercises start with "nauka " (meaning "learning of …"),
+ * e.g. "Nauka lądowania" (landing mechanics drill), "Nauka techniki przysiadu",
+ * etc.  These are appropriate for beginners learning movement patterns but should
+ * not fill accessory slots in plans for intermediate / advanced clients when
+ * real exercise alternatives are available.
+ *
+ * The check is conservative — it only flags exercises that explicitly name
+ * themselves as "nauka …", so regular compound exercises are never affected.
+ * Used alongside the isLowPriority / isRegressionCandidate hard-block in lower
+ * support slots for isPriorityEligible clients.
+ */
+function isBeginnerDrillByName(name: string): boolean {
+  return name.trim().toLowerCase().startsWith("nauka ");
+}
+
+/**
  * BLOCKER 2 FIX — Pull slot 3 semantic guard.
  *
  * True when an exercise is appropriate for the "Rear delt / upper back" slot
@@ -1260,10 +1306,10 @@ export function runExerciseSelectionEngineV0(
 
       // Lower-body accessory: exclude same movement pattern as knee-dominant.
       // Example: if slot 1 was a squat, no second squat-pattern exercise here.
-      pick(
-        "Lower-body accessory",
-        true,
-        (ex) =>
+      // For intermediate+ clients, hard-block low-priority and regression filler
+      // exercises first; full pool is only used when no better option exists.
+      {
+        const legsAccBase = (ex: ScoredAndFilteredExercise) =>
           muscle(
             ex,
             "Pośladki",
@@ -1272,17 +1318,26 @@ export function runExerciseSelectionEngineV0(
             "Mięśnie dwugłowe uda",
           ) &&
           (kneeDominantPattern === null ||
-            normP(ex.movementPattern) !== kneeDominantPattern),
-      );
+            normP(ex.movementPattern) !== kneeDominantPattern);
+
+        if (ctx?.isPriorityEligible) {
+          pick(
+            "Lower-body accessory",
+            false,
+            (ex) => legsAccBase(ex) && !isLowPriority(ex) && !isRegressionCandidate(ex) && !isBeginnerDrillByName(ex.name),
+          ) ?? pick("Lower-body accessory", true, legsAccBase);
+        } else {
+          pick("Lower-body accessory", true, legsAccBase);
+        }
+      }
 
       pick("Calves", true, (ex) => muscle(ex, "Łydki"));
 
       // Second lower accessory: also blocks near-duplicate of knee pattern.
       // Placed BEFORE Core so that Core is always the final slot.
-      pick(
-        "Second lower accessory",
-        false,
-        (ex) =>
+      // For intermediate+ clients, hard-block low-priority and regression filler.
+      {
+        const legsAcc2Base = (ex: ScoredAndFilteredExercise) =>
           muscle(
             ex,
             "Pośladki",
@@ -1292,8 +1347,18 @@ export function runExerciseSelectionEngineV0(
             "Łydki",
           ) &&
           (kneeDominantPattern === null ||
-            normP(ex.movementPattern) !== kneeDominantPattern),
-      );
+            normP(ex.movementPattern) !== kneeDominantPattern);
+
+        if (ctx?.isPriorityEligible) {
+          pick(
+            "Second lower accessory",
+            false,
+            (ex) => legsAcc2Base(ex) && !isLowPriority(ex) && !isRegressionCandidate(ex) && !isBeginnerDrillByName(ex.name),
+          ) ?? pick("Second lower accessory", false, legsAcc2Base);
+        } else {
+          pick("Second lower accessory", false, legsAcc2Base);
+        }
+      }
 
       // Core always last
       pick("Core", false, (ex) => muscle(ex, "Brzuch"));
@@ -1512,15 +1577,84 @@ export function runExerciseSelectionEngineV0(
           { protected: true },
         );
         pick("Shoulders", true, (ex) => muscle(ex, "Barki"));
-        pick("Arms", true, (ex) => muscle(ex, "Biceps", "Triceps"));
 
-        // Slot 5: whitelist-gated — only sensible upper-body accessory / isolation / core.
-        // isUpperAccessorySafe is the primary gate; isLowerBodyDominant is an extra guard.
-        pick(
-          "Accessory or core",
-          false,
-          (ex) => isUpperAccessorySafe(ex) && !isLowerBodyDominant(ex),
-        );
+        // ── Slot 4: Goal-aware arm slot ────────────────────────────────────────
+        //
+        // The generic "pick Biceps or Triceps" default produces identical output
+        // across all goals because every candidate in that filter is isolation —
+        // deIsolation / athleticBias sort steps have no effect within a slot that
+        // only admits isolation exercises in the first place.
+        //
+        // Goal-specific behaviour:
+        //   strength   → try Triceps first (bench-press synergist for pressing strength);
+        //                 fall back to Biceps/Triceps if no Triceps candidate remains.
+        //   athletic   → try Triceps OR rear-delt pull first (functional support over
+        //                 bodybuilding curl); fall back to Biceps/Triceps.
+        //   physique / fat-loss / conditioning / general
+        //              → unchanged: both Biceps and Triceps are valid, isolation valued.
+        {
+          const goalBiasArm = ctx?.goalProfile?.exerciseClassBias;
+          if (goalBiasArm === "strength") {
+            pick("Triceps support", false, (ex) => muscle(ex, "Triceps")) ??
+              pick("Arms", true, (ex) => muscle(ex, "Biceps", "Triceps"));
+          } else if (goalBiasArm === "athletic") {
+            // Prefer triceps compounds/isolation OR rear-delt pulls (face pull,
+            // reverse fly) over a plain biceps curl as the "default" arm slot.
+            pick(
+              "Athletic arm support",
+              false,
+              (ex) =>
+                muscle(ex, "Triceps") ||
+                (muscle(ex, "Barki") &&
+                  !compound(ex) &&
+                  (pattern(ex, "Przyciąganie poziome") ||
+                    (pattern(ex, "Odwodzenie") &&
+                      isRearDeltMovement(ex.name)))),
+            ) ?? pick("Arms", true, (ex) => muscle(ex, "Biceps", "Triceps"));
+          } else {
+            pick("Arms", true, (ex) => muscle(ex, "Biceps", "Triceps"));
+          }
+        }
+
+        // ── Slot 5: Preferred-exercise gateway + standard accessory ────────────
+        //
+        // For athletic/sprawność goals: preferred functional exercises (carries,
+        // landmine variants, shoulder-support compounds) that would be blocked by
+        // isUpperAccessorySafe are tried first via a broader gate.  The gateway
+        // only opens when the client has preferred keywords set AND the goal bias
+        // is "athletic" — it does not fire for physique, strength, or general goals.
+        //
+        // For all other goals: standard whitelist-gated accessory or core.
+        {
+          const gwKeywords = ctx?.preferredExerciseKeywords ?? [];
+          const isAthleticSlot5 = ctx?.goalProfile?.exerciseClassBias === "athletic";
+
+          if (gwKeywords.length > 0 && isAthleticSlot5) {
+            pick(
+              "Preferred functional support",
+              false,
+              (ex) =>
+                !isLowerBodyDominant(ex) &&
+                isPreferredExercise(ex, gwKeywords) &&
+                (isUpperAccessorySafe(ex) ||
+                  isCarryMovement(ex.name) ||
+                  (muscle(ex, "Barki", "Plecy") &&
+                    compound(ex) &&
+                    !pattern(ex, "Zawias biodrowy"))),
+            ) ??
+              pick(
+                "Accessory or core",
+                false,
+                (ex) => isUpperAccessorySafe(ex) && !isLowerBodyDominant(ex),
+              );
+          } else {
+            pick(
+              "Accessory or core",
+              false,
+              (ex) => isUpperAccessorySafe(ex) && !isLowerBodyDominant(ex),
+            );
+          }
+        }
       }
       break;
     }
@@ -1562,10 +1696,10 @@ export function runExerciseSelectionEngineV0(
       );
 
       // Lower-body accessory: exclude near-duplicate of knee-dominant pattern.
-      pick(
-        "Lower-body accessory",
-        true,
-        (ex) =>
+      // For intermediate+ clients, hard-block low-priority and regression filler
+      // exercises first; full pool is the fallback when no better option exists.
+      {
+        const lowerAccBase = (ex: ScoredAndFilteredExercise) =>
           muscle(
             ex,
             "Pośladki",
@@ -1574,8 +1708,18 @@ export function runExerciseSelectionEngineV0(
             "Mięśnie dwugłowe uda",
           ) &&
           (kneeDominantPattern === null ||
-            normP(ex.movementPattern) !== kneeDominantPattern),
-      );
+            normP(ex.movementPattern) !== kneeDominantPattern);
+
+        if (ctx?.isPriorityEligible) {
+          pick(
+            "Lower-body accessory",
+            false,
+            (ex) => lowerAccBase(ex) && !isLowPriority(ex) && !isRegressionCandidate(ex) && !isBeginnerDrillByName(ex.name),
+          ) ?? pick("Lower-body accessory", true, lowerAccBase);
+        } else {
+          pick("Lower-body accessory", true, lowerAccBase);
+        }
+      }
 
       // Slot 4: prefer calves; fall back to core if unavailable.
       const s4Calves = pick("Calves", false, (ex) => muscle(ex, "Łydki"));
@@ -1586,10 +1730,9 @@ export function runExerciseSelectionEngineV0(
 
       // Extra lower accessory: also blocks near-duplicate of knee pattern.
       // Placed BEFORE the optional Core slot so Core remains last.
-      pick(
-        "Extra lower-body accessory",
-        false,
-        (ex) =>
+      // For intermediate+ clients, hard-block low-priority and regression filler.
+      {
+        const extraLowerBase = (ex: ScoredAndFilteredExercise) =>
           muscle(
             ex,
             "Pośladki",
@@ -1599,8 +1742,18 @@ export function runExerciseSelectionEngineV0(
             "Łydki",
           ) &&
           (kneeDominantPattern === null ||
-            normP(ex.movementPattern) !== kneeDominantPattern),
-      );
+            normP(ex.movementPattern) !== kneeDominantPattern);
+
+        if (ctx?.isPriorityEligible) {
+          pick(
+            "Extra lower-body accessory",
+            false,
+            (ex) => extraLowerBase(ex) && !isLowPriority(ex) && !isRegressionCandidate(ex) && !isBeginnerDrillByName(ex.name),
+          ) ?? pick("Extra lower-body accessory", false, extraLowerBase);
+        } else {
+          pick("Extra lower-body accessory", false, extraLowerBase);
+        }
+      }
 
       // Core always last — only added when Calves successfully filled slot 4.
       // When core was the slot 4 fallback it is already present; adding it again

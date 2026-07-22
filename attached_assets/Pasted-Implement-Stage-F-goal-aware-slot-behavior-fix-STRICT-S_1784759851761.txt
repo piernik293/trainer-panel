@@ -1,0 +1,186 @@
+Implement Stage F: goal-aware slot behavior fix.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign UI
+- Do NOT touch wizard flow
+- Do NOT touch allocation engine
+- Do NOT rewrite the whole selection engine
+- Do NOT run tests
+- Keep changes local to:
+  - slot-template / slot-behavior logic
+  - exercise-selection slot filtering/ranking
+  - minimum necessary route/context wiring only if required
+
+PRIMARY GOAL:
+Fix the remaining problem where slot templates override goal logic and produce overly similar plans across goals.
+
+KNOWN PROBLEMS TO FIX:
+1. Upper sessions for:
+   - Poprawa sprawności
+   - Redukcja tkanki tłuszczowej
+   - Zwiększenie siły
+   are still too similar
+2. The arm/accessory slot resolves incorrectly across goals:
+   - strength → too often biceps curl / isolation instead of more appropriate triceps/compound-support
+   - sprawność → too often bodybuilding-style curl instead of more functional support
+   - sport → too often generic accessory instead of athletic support
+3. Lower support slots still allow beginner/regression-style exercises for intermediate+ when gym equipment exists
+4. Preferred exercises like pull-up, dips, push press, landmine press, farmer walk can still fail to enter the plan because there is no proper slot-family gateway
+5. Goal-aware scoring exists, but slot compatibility is still too rigid and overrides it
+
+====================================================
+PART 1 — GOAL-AWARE SLOT BEHAVIOR
+====================================================
+
+Do NOT let one generic slot behave the same for all goals.
+
+Implement goal-aware behavior for repeated problematic slots, especially:
+- upper accessory / arm slot
+- upper support slot
+- lower support slot
+
+Rules:
+
+A. Budowa sylwetki
+- accessory slots may freely choose direct isolation
+- biceps / triceps / lateral delt / rear delt are valid and often desirable
+- do not over-constrain physique slots
+
+B. Zwiększenie siły
+- upper accessory/arm slots should prefer:
+  - triceps support for pressing strength
+  - rear delt / upper-back support
+  - only then biceps isolation if justified by priority/preference
+- do NOT let generic curl become the default arm slot across all strength outputs
+
+C. Redukcja tkanki tłuszczowej
+- accessory slots should remain efficient and sensible
+- direct work is allowed, but avoid weak/regression filler
+- do not let lower support become beginner-only drill selection
+
+D. Poprawa sprawności
+- accessory/support slots should prefer:
+  - unilateral support
+  - trunk/control support
+  - carries / scapular / control-oriented support where compatible
+- do NOT let classic bodybuilding curl become the default “functional” support slot
+
+E. Cel sportowy
+- accessory/support slots should prefer:
+  - athletic support
+  - shoulder stability / rear delt / scapular support
+  - trunk/control support
+  - sport-useful assistance
+- do NOT default to generic bodybuilding accessory unless strongly justified
+
+====================================================
+PART 2 — ARM / ACCESSORY SLOT FIX
+====================================================
+
+This is the highest-priority fix.
+
+Implement a goal-aware slot mapping for the upper arm/accessory slot.
+
+Required behavior:
+- Strength: triceps-supportive / compound-supportive choices should outrank generic biceps isolation unless biceps is priority/preference
+- Sprawność: functional support / control / athletic-support choices should outrank generic curl default
+- Sport: athletic support should outrank generic curl default
+- Physique: direct isolation remains fully valid
+- Fat loss: use sensible direct work, but not identical default curl behavior every time
+
+Do NOT simply add a small score bonus.
+If needed, introduce slot-family preference rules so the slot searches different compatible exercise families by goal.
+
+====================================================
+PART 3 — LOWER SUPPORT SLOT ANTI-REGRESSION HARD FILTER
+====================================================
+
+For:
+- Średniozaawansowany
+- Zaawansowany
+- full gym access
+- no health restriction requiring regression
+
+Lower support slots must strongly block obvious beginner/regression choices unless no reasonable alternative exists.
+
+Examples that should not win by default for intermediate+ gym users:
+- Nauka lądowania
+- bodyweight-only box squat variants
+- obvious beginner drill fillers
+
+Important:
+This should be stronger than a mild score penalty.
+Use a hard filter or near-hard block where appropriate.
+
+====================================================
+PART 4 — PREFERRED EXERCISE SLOT GATEWAY
+====================================================
+
+Implement a proper gateway from preferred exercises to slot families.
+
+The issue:
+some preferred exercises are compatible with the user’s goal/equipment/day,
+but never enter because they do not match current slot assumptions strongly enough.
+
+Add a minimal local mapping so these preferred exercises can compete in the right slot families, for example:
+- pull-up → vertical pull main / upper pull primary
+- dips → push secondary / triceps-compound-support
+- push press → athletic press / power-support upper slot
+- landmine press → athletic push / shoulder-support / sprawność upper support
+- farmer walk → full-body support / carry / trunk-support / sprawność support
+
+Do NOT force them blindly.
+Do ensure they can meaningfully enter the correct slot families when compatible.
+
+====================================================
+PART 5 — SLOT TEMPLATES SHOULD DIFFER BY GOAL
+====================================================
+
+Do NOT rewrite the entire weekly structure.
+But do make slot behavior meaningfully different by goal.
+
+At minimum:
+- Upper_strength should not behave like Upper_fitness or Upper_sport
+- Lower_strength should not behave like Lower_fat_loss or Lower_fitness
+- Upper_sport and Upper_sprawnosc should stop collapsing into nearly the same accessory choices
+
+This can be implemented through:
+- goal-aware slot family preferences
+- goal-aware slot family exclusions
+- goal-aware ranking inside slots
+
+====================================================
+PART 6 — DO NOT OVERCORRECT
+====================================================
+
+Important:
+- Do NOT randomize selection
+- Do NOT make all days wildly different
+- Do NOT remove all direct arm work from strength/sport/sprawność
+- Do NOT force every preferred exercise into every plan
+- Do NOT weaken main compounds just to create variety
+
+The fix should make slot behavior more intentional, not chaotic.
+
+====================================================
+SUCCESS CRITERIA
+====================================================
+
+After this fix:
+- Upper sessions for siła / redukcja / sprawność are more clearly differentiated
+- The arm/accessory slot no longer defaults to the same curl-style solution across goals
+- Lower support slots stop leaking obvious regression drills into intermediate+ gym plans
+- Preferred exercises like pull-up / dips / push press / landmine press / farmer walk can enter appropriate plans when compatible
+- Goal-aware slot behavior becomes stronger than generic slot inertia
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause
