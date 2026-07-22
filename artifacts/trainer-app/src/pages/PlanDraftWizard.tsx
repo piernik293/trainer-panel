@@ -1705,6 +1705,19 @@ export default function PlanDraftWizard() {
               trainingDays={effectivePrefs.trainingDays}
             />
           )}
+
+          <Card className="border-dashed border-border/60 shadow-sm">
+            <CardContent className="py-6 text-center">
+              <p className="text-sm font-medium mb-2">Step 1 debug</p>
+              <p className="text-sm text-muted-foreground">- hasVolumeDecisions: {String(!!volumeDecisions)}</p>
+              <p className="text-sm text-muted-foreground">- hasEffectivePrefs: {String(!!effectivePrefs)}</p>
+              <p className="text-sm text-muted-foreground">- hasDistributionRequest: {String(!!distributionRequest)}</p>
+              <p className="text-sm text-muted-foreground">- hasDistributionResult: {String(!!distributionResult)}</p>
+              <p className="text-sm text-muted-foreground">- distributionMutationPending: {String(!!distributionMutation.isPending)}</p>
+              <p className="text-sm text-muted-foreground">- distributionMutationError: {String(!!distributionMutation.isError)}</p>
+              <p className="text-sm text-muted-foreground">- distributionMutationErrorMessage: {String(distributionMutation.error?.message ?? "none")}</p>
+            </CardContent>
+          </Card>
         </>
       )}
 
