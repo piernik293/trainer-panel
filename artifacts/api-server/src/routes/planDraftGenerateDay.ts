@@ -97,6 +97,24 @@ const BodySchema = z.object({
    *     to subsequent calls; the server holds no inter-request state
    */
   weekUsedExerciseIds: z.array(z.coerce.number().int().positive()).optional(),
+  /**
+   * Exercises from the previous occurrence of this same session type
+   * (e.g. Upper A's exercises when generating Upper B).
+   *
+   * These exercises are already hard-excluded from the pool via weekUsedExerciseIds.
+   * This list provides the equipment context needed to also deprioritize exercises
+   * that use the SAME IMPLEMENT as the previous same-type selection — steering each
+   * slot's band selection toward genuine angle, grip, or tool variation.
+   *
+   * When omitted (first occurrence or single-session call), the engine still applies
+   * pattern + equipment diversity within the local band.
+   */
+  sameTypePreviousExercises: z.array(
+    z.object({
+      id: z.number().int().positive(),
+      equipment: z.array(z.string()),
+    }),
+  ).optional().default([]),
 });
 
 router.post(

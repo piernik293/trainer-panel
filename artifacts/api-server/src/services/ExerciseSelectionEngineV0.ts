@@ -115,6 +115,19 @@ export interface V0PriorityContext {
  */
 export interface V0EngineOptions {
   alternativeIndex?: number;
+  /**
+   * Exercises selected in the previous occurrence of this same session type
+   * (e.g., Upper A's exercises when generating Upper B).
+   *
+   * These exercises are already hard-excluded from the pool via weekUsedExerciseIds.
+   * This list provides equipment-class context so the band selection can also
+   * deprioritize exercises that use the SAME IMPLEMENT as the previous same-type
+   * selection — steering each slot toward genuine angle, grip, or tool variation.
+   *
+   * When omitted (first occurrence or single-session call), the engine falls back
+   * to pattern + equipment diversity within the local band.
+   */
+  sameTypePreviousExercises?: Array<{ id: number; equipment: string[] }>;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -124,6 +137,14 @@ const MIN_EXERCISES = 4;
 
 /** Band size for protected main-lift slots — variety stays within the same stimulus family. */
 const BAND_MAIN = 3;
+
+/**
+ * Band size for protected main-lift slots when generating an alternative session
+ * (alternativeIndex > 0).  Wider than BAND_MAIN so there are more candidates to
+ * search for implement / angle diversity — e.g. barbell vs dumbbell vs machine
+ * within the same movement pattern.
+ */
+const BAND_MAIN_ALT = 5;
 
 /** Band size for accessory / isolation / optional slots — more variety permitted. */
 const BAND_ACCESSORY = 5;
@@ -182,6 +203,28 @@ function isBlocklisted(name: string): boolean {
 function isPlyometric(name: string): boolean {
   const lower = name.trim().toLowerCase();
   return PLYO_FRAGMENTS.some((f) => lower.includes(f));
+}
+
+/**
+ * Returns a coarse equipment-class label for A/B band diversity comparisons.
+ *
+ * Used to detect "same implement" repetition across A/B session occurrences:
+ * barbell flat bench and barbell incline bench share both "Pchanie poziome"
+ * AND "barbell" — so when Upper A used barbell, Upper B should prefer dumbbell
+ * or machine over another barbell variant.
+ *
+ * Returns "machine" for any gym-machine / cable / undefined equipment so that
+ * unknown equipment doesn't incorrectly trigger the diversity bonus.
+ */
+function primaryEquipmentClass(equipment: string[]): string {
+  if (equipment.includes("Sztanga i talerze")) return "barbell";
+  if (equipment.includes("Hantle")) return "dumbbell";
+  if (equipment.includes("Kettlebell")) return "kettlebell";
+  if (equipment.includes("TRX / pasy treningowe")) return "trx";
+  if (equipment.includes("Gumy oporowe")) return "bands";
+  if (equipment.includes("Drążek do podciągania")) return "pullup_bar";
+  if (equipment.length === 0 || equipment.includes("Brak sprzętu")) return "bodyweight";
+  return "machine"; // gym machine / cable / unspecified
 }
 
 /**
@@ -778,7 +821,12 @@ export function runExerciseSelectionEngineV0(
     // Diversity fallback: if the band does not contain enough pattern-diverse
     // candidates, falls back to band[min(altIdx, band.length-1)].
     const altIdx = options?.alternativeIndex ?? 0;
-    const bandSize = pickOpts?.protected ? BAND_MAIN : BAND_ACCESSORY;
+    // Protected main-lift slots: use a wider band for alt sessions so there are
+    // more candidates to search for implement / angle diversity.  Default sessions
+    // (altIdx=0) keep the tighter BAND_MAIN to stay within the quality tier.
+    const bandSize = pickOpts?.protected
+      ? (altIdx > 0 ? BAND_MAIN_ALT : BAND_MAIN)
+      : BAND_ACCESSORY;
     const band = candidates.slice(0, bandSize);
 
     let selected: ScoredAndFilteredExercise;
@@ -787,14 +835,50 @@ export function runExerciseSelectionEngineV0(
       selected = band[0];
     } else {
       const defaultPattern = normP(band[0].movementPattern);
-      // Collect candidates whose pattern differs from the default winner.
+      const defaultEquip = primaryEquipmentClass(band[0].equipment);
+
+      // Diverse candidates: different movementPattern OR different equipment class.
+      //
+      // The previous logic compared only movementPattern, which is too coarse —
+      // flat/incline/decline/machine press all share "Pchanie poziome", so diverse
+      // was almost always empty and the fallback to band[1] gave only a minor rank
+      // variant rather than a genuinely different implement or angle.
+      //
+      // Adding equipment class as a second axis means barbell vs dumbbell vs machine
+      // are now recognised as distinct even within the same pattern family.
       const diverse = band
         .slice(1)
-        .filter((ex) => normP(ex.movementPattern) !== defaultPattern);
-      // diverse[altIdx-1]: first diverse pick for alt=1, second for alt=2, etc.
-      // Falls back to the raw band index when diversity is exhausted.
-      selected =
-        diverse[altIdx - 1] ?? band[Math.min(altIdx, band.length - 1)];
+        .filter(
+          (ex) =>
+            normP(ex.movementPattern) !== defaultPattern ||
+            primaryEquipmentClass(ex.equipment) !== defaultEquip,
+        );
+
+      // Same-type session refinement:
+      // When the previous occurrence of this session type is known (e.g. Upper A
+      // when generating Upper B), sub-prefer exercises whose equipment class was
+      // NOT used in that session.  This prevents "barbell flat bench → barbell
+      // incline bench" when dumbbell or machine variants are available.
+      //
+      // Selection order:
+      //   1. diverse candidates with equipment class NOT in previous same-type session
+      //   2. any diverse candidate (pattern or equip differs from local band[0])
+      //   3. fallback: band[min(altIdx, band.length-1)]
+      const prevExercises = options?.sameTypePreviousExercises ?? [];
+      if (prevExercises.length > 0 && diverse.length > 0) {
+        const prevEquipClasses = new Set(
+          prevExercises.map((p) => primaryEquipmentClass(p.equipment)),
+        );
+        const freshEquip = diverse.filter(
+          (ex) => !prevEquipClasses.has(primaryEquipmentClass(ex.equipment)),
+        );
+        const source = freshEquip.length > 0 ? freshEquip : diverse;
+        selected = source[altIdx - 1] ?? source[source.length - 1];
+      } else {
+        // No same-type context: use pattern/equip diverse candidates directly.
+        selected =
+          diverse[altIdx - 1] ?? band[Math.min(altIdx, band.length - 1)];
+      }
     }
 
     usedExerciseIds.add(String(selected.id));

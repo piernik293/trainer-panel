@@ -244,7 +244,27 @@ export default function Step4Exercises({
       const altIdx = sessionTypeCount[sessionType] ?? 0;
       sessionTypeCount[sessionType] = altIdx + 1;
 
-      console.log(`[GenerateDay] Calling empty-session route — day ${day.dayIndex} (${sessionType}) altIdx=${altIdx}`);
+      // For repeated session types (altIdx > 0), find exercises from the previous
+      // occurrence of this session type.  The engine uses this to prefer implements
+      // and angles NOT used in that session — e.g. Upper B avoids barbell when
+      // Upper A already used barbell for the main compound slot.
+      const sameTypePreviousExercises =
+        altIdx > 0
+          ? (() => {
+              const prev = [...dayResults].reverse().find((r) => {
+                const d = distributionResult.days.find(
+                  (dd) => dd.dayIndex === r.dayIndex,
+                );
+                return d?.dayType?.toLowerCase() === sessionType;
+              });
+              return (prev?.exercises ?? []).map((ex) => ({
+                id: ex.id,
+                equipment: ex.equipment,
+              }));
+            })()
+          : [];
+
+      console.log(`[GenerateDay] Calling empty-session route — day ${day.dayIndex} (${sessionType}) altIdx=${altIdx} prevSameType=${sameTypePreviousExercises.length}`);
 
       try {
         const resp = await fetch(`/api/clients/${clientId}/plan-draft/generate-day`, {
@@ -254,6 +274,7 @@ export default function Step4Exercises({
             v0SessionType: sessionType,
             alternativeIndex: altIdx,
             weekUsedExerciseIds: [...weekUsedIds],
+            sameTypePreviousExercises,
           }),
         });
 

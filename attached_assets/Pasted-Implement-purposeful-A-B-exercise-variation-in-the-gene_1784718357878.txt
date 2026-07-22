@@ -1,0 +1,101 @@
+Implement purposeful A/B exercise variation in the generator.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign UI
+- Do NOT touch wizard flow
+- Do NOT touch allocation engine
+- Do NOT rewrite the whole selection engine
+- Do NOT run tests
+- Keep changes local to exercise selection / recommendation logic and directly related helpers only
+
+PRIMARY GOAL:
+Prevent repeated day types (Upper A / Upper B, Lower A / Lower B, Push A / Push B, Pull A / Pull B, etc.) from becoming near-clones.
+
+IMPORTANT:
+This is NOT random variety.
+This is purposeful variation.
+
+REQUIRED RULES:
+
+1. REPEATED DAY TYPES MUST NOT BE COPY-PASTE
+If the weekly plan contains repeated day types, the second occurrence should prefer a different:
+- main movement
+- angle / grip
+- tool / implement
+- accessory pattern
+- emphasis
+
+2. DO NOT OVERCORRECT
+Do NOT make every exercise different just for the sake of difference.
+Variation should preserve training logic and progression.
+
+Good:
+- Upper A: pull-up + OHP + chest-supported row
+- Upper B: pulldown + incline DB press + cable row
+
+Bad:
+- random full replacement of everything with unrelated exercises
+
+3. KEEP PURPOSEFUL REPEATS WHEN THEY MAKE SENSE
+The same exercise may repeat only when there is a strong reason:
+- it is a preferred exercise
+- it is a high-priority movement
+- it strongly supports the main goal
+- it is intentionally repeated for progression
+
+But even then, the whole day should not become a clone.
+
+4. ADD A VARIATION PENALTY / BIAS
+When selecting exercises for a repeated day type:
+- penalize exercises already used in the earlier same-type day
+- penalize exercises that are too similar to earlier same-type selections
+- prefer alternatives within the same movement family when available
+
+Examples:
+- if Upper A already used machine row, Upper B should prefer another row pattern before repeating the same machine row
+- if Lower A used bilateral squat pattern, Lower B may prefer unilateral knee-dominant or another squat variation when compatible
+
+5. MAIN MOVEMENT VARIATION HAS HIGHEST PRIORITY
+For repeated day types, first try to vary:
+- the main compound
+then vary:
+- the secondary compound
+then vary:
+- accessory / isolation pattern
+
+6. STILL RESPECT:
+- training goal
+- experience level
+- priority muscles
+- preferred exercises
+- equipment
+- health constraints
+
+Variation must NEVER break these priorities.
+
+7. A/B VARIATION SHOULD BE VISIBLE IN FINAL OUTPUT
+After the fix:
+- repeated upper/lower days should look related, but clearly different
+- repeated push/pull days should not show the same 4–5 exercises in the same order
+- the plan should look like a trainer intentionally created A and B versions
+
+IMPORTANT LIMITS:
+- Do NOT add randomization
+- Do NOT make day B weaker or lower quality just to be different
+- Do NOT remove meaningful preferred exercises if repeating them is justified
+- Do NOT fake diversity by changing only trivial details
+- Keep the logic deterministic and explainable
+
+SUCCESS CRITERIA:
+- repeated day types are no longer near-clones
+- variation is meaningful, not random
+- preferred / priority movements may still repeat when justified
+- plans look more intentional and coach-like
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause
