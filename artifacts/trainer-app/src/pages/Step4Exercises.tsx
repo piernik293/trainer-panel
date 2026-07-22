@@ -226,6 +226,14 @@ export default function Step4Exercises({
     }> = [];
     const errors: string[] = [];
 
+    // Track how many times each session type has been requested so that
+    // repeated day types (Upper A / Upper B, Lower A / Lower B) receive a
+    // different alternativeIndex and produce meaningfully varied exercise lists.
+    const sessionTypeCount: Record<string, number> = {};
+    // Accumulate exercise IDs selected in earlier days so V0 excludes them
+    // from later days — prevents the same exercise appearing in two sessions.
+    const weekUsedIds: number[] = [];
+
     for (const day of distributionResult.days) {
       const sessionType = day.dayType?.toLowerCase() ?? "";
       if (!V0_SESSION_TYPES.has(sessionType)) {
@@ -233,13 +241,20 @@ export default function Step4Exercises({
         continue;
       }
 
-      console.log(`[GenerateDay] Calling empty-session route — day ${day.dayIndex} (${sessionType})`);
+      const altIdx = sessionTypeCount[sessionType] ?? 0;
+      sessionTypeCount[sessionType] = altIdx + 1;
+
+      console.log(`[GenerateDay] Calling empty-session route — day ${day.dayIndex} (${sessionType}) altIdx=${altIdx}`);
 
       try {
         const resp = await fetch(`/api/clients/${clientId}/plan-draft/generate-day`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ v0SessionType: sessionType }),
+          body: JSON.stringify({
+            v0SessionType: sessionType,
+            alternativeIndex: altIdx,
+            weekUsedExerciseIds: [...weekUsedIds],
+          }),
         });
 
         console.log(`[GenerateDay] Day ${day.dayIndex} (${sessionType}): HTTP ${resp.status}`);
@@ -257,6 +272,11 @@ export default function Step4Exercises({
         };
         console.log(`[GenerateDay] Day ${day.dayIndex}: ${data.exercises.length} exercises received`);
         dayResults.push({ dayIndex: day.dayIndex, exercises: data.exercises });
+
+        // Add this day's exercise IDs to the cross-session exclusion list.
+        for (const ex of data.exercises) {
+          weekUsedIds.push(ex.id);
+        }
       } catch (err) {
         const msg = `Dzień ${day.dayIndex + 1} (${sessionType}): ${err instanceof Error ? err.message : "Nieznany błąd"}`;
         console.error(`[GenerateDay] Error:`, msg);

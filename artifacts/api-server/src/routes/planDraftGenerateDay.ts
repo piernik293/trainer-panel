@@ -217,9 +217,6 @@ router.post(
     //
     // Activates barbell-preference sort (step 2.5 in sortWithPriority) when the
     // client's goal is explicitly bench-oriented AND barbell equipment is available.
-    // Keywords cover common Polish phrasings ("100 kg na klatę", "ławka", etc.)
-    // plus the English "bench".  Only enabled for priority-eligible experience
-    // levels — beginners use sortDeterministic (simpler-first) regardless.
     const BENCH_GOAL_KEYWORDS = [
       "klatę", "klatą", "bench", "wyciskanie", "wycisk", "ławka",
     ];
@@ -233,6 +230,38 @@ router.post(
       ? survey.equipment.toLowerCase().includes("sztanga")
       : false;
 
+    // ── Plyometric permission ──────────────────────────────────────────────────
+    //
+    // Plyometric / explosive exercises are restricted to clients whose goal is
+    // explicitly power / sport performance, or who have athlete status.
+    // For all other goals (hypertrophy, fat loss, general health, beginner),
+    // ctx.allowPlyometrics = false and the engine's Step 1 filter removes them.
+    // The plyo session type always permits plyometrics regardless of this flag.
+    const POWER_GOAL_KEYWORDS = [
+      "moc", "power", "sport", "atletyczn", "wybuchow",
+      "szybko", "skoczno", "zawodnik", "wydajno",
+    ];
+    const isPowerGoal = survey.trainingGoal
+      ? POWER_GOAL_KEYWORDS.some((kw) =>
+          survey.trainingGoal!.toLowerCase().includes(kw),
+        )
+      : false;
+    const isAthleteClient =
+      !!survey.athleteStatus && survey.athleteStatus !== "Nie";
+    const allowPlyometrics = isPowerGoal || isAthleteClient || v0SessionType === "plyo";
+
+    // ── Preferred exercise keywords ────────────────────────────────────────────
+    //
+    // Parse survey.favoriteExercises (free text, comma/semicolon/newline separated)
+    // into lowercase keywords.  The engine boosts matching exercises to the front
+    // of each slot's candidate band — they still must pass the slot's hard filter.
+    const preferredExerciseKeywords: string[] = survey.favoriteExercises
+      ? survey.favoriteExercises
+          .split(/[,;\n]+/)
+          .map((s) => s.trim().toLowerCase())
+          .filter((s) => s.length >= 3)
+      : [];
+
     const priorityContext: V0PriorityContext = {
       isPriorityEligible,
       tierA: survey.priorityMuscle1 ? [survey.priorityMuscle1] : [],
@@ -240,6 +269,8 @@ router.post(
         (v): v is string => v !== null && v !== undefined && v.trim() !== "",
       ),
       benchGoalActive: isPriorityEligible && isBenchGoal && hasBarbell,
+      allowPlyometrics,
+      preferredExerciseKeywords,
     };
 
     // ── Session start — seed cross-session memory if provided ─────────────────

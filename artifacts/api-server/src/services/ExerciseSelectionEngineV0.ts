@@ -74,6 +74,22 @@ export interface V0PriorityContext {
    * Has no effect outside Klatka piersiowa (chest) Tier A candidates.
    */
   benchGoalActive?: boolean;
+  /**
+   * When false, plyometric / explosive exercises (identified by PLYO_FRAGMENTS)
+   * are excluded from all non-plyo session types.
+   *
+   * Default: true (allow plyometrics) — set to false for goals unrelated to
+   * power / sport performance (hypertrophy, fat loss, general health, beginner).
+   */
+  allowPlyometrics?: boolean;
+  /**
+   * Lowercase keyword fragments parsed from survey.favoriteExercises.
+   * An exercise whose name contains any of these keywords is sorted to the
+   * front of every slot's candidate band (rank 0 vs rank 1 for all others).
+   * The preference is overridden only by the slot's hard filter predicate —
+   * a preferred exercise that fails the slot filter is never admitted.
+   */
+  preferredExerciseKeywords?: string[];
 }
 
 /**
@@ -115,6 +131,22 @@ const HARD_FILTER_FRAGMENTS = [
 ] as const;
 
 /**
+ * Name fragments (lowercase Polish) that identify plyometric / explosive exercises.
+ *
+ * These exercises are excluded from non-plyo session slots when
+ * ctx.allowPlyometrics is false — they only appear in plyo sessions or when
+ * the client's goal is explicitly power / sport performance.
+ */
+const PLYO_FRAGMENTS = [
+  "skok",     // catches: Skoki pogo, Skoki na skrzynkę, Wyskok …
+  "wyskoki",
+  "pogo",
+  "rzut",     // medicine-ball throws
+  "sprint",
+  "biegani",  // running drills
+] as const;
+
+/**
  * Name fragments that identify lateral raises and front raises.
  * These are excluded from rear-delt / upper-back slots — they train the
  * lateral or anterior deltoid head, not the posterior/upper back.
@@ -136,6 +168,25 @@ function normP(p: string | null | undefined): string | null {
 function isBlocklisted(name: string): boolean {
   const lower = name.trim().toLowerCase();
   return HARD_FILTER_FRAGMENTS.some((f) => lower.includes(f));
+}
+
+/** True when the exercise name matches a plyometric / explosive movement. */
+function isPlyometric(name: string): boolean {
+  const lower = name.trim().toLowerCase();
+  return PLYO_FRAGMENTS.some((f) => lower.includes(f));
+}
+
+/**
+ * True when any preferred keyword appears in the exercise name.
+ * Used as a sort tie-breaker (rank 0 = preferred, rank 1 = not preferred).
+ */
+function isPreferredExercise(
+  ex: ScoredAndFilteredExercise,
+  keywords: string[],
+): boolean {
+  if (keywords.length === 0) return false;
+  const lower = ex.name.trim().toLowerCase();
+  return keywords.some((kw) => lower.includes(kw));
 }
 
 /**
@@ -343,15 +394,22 @@ function priorityRank(ex: ScoredAndFilteredExercise): number {
 }
 
 /**
- * Sort candidates deterministically (no score, no bias):
+ * Sort candidates deterministically:
+ *   0. Preferred exercise boost (keyword match → front of band)
  *   1. exercisePriority high → low  ("Bardzo wysoki" first)
  *   2. learningDifficulty ascending (simpler first)
  *   3. id ascending (stable numeric tie-breaker)
  */
 function sortDeterministic(
   candidates: ScoredAndFilteredExercise[],
+  preferredKeywords?: string[],
 ): ScoredAndFilteredExercise[] {
   return [...candidates].sort((a, b) => {
+    if (preferredKeywords && preferredKeywords.length > 0) {
+      const prefA = isPreferredExercise(a, preferredKeywords) ? 0 : 1;
+      const prefB = isPreferredExercise(b, preferredKeywords) ? 0 : 1;
+      if (prefA !== prefB) return prefA - prefB;
+    }
     const pa = priorityRank(a),
       pb = priorityRank(b);
     if (pa !== pb) return pa - pb;
@@ -401,9 +459,17 @@ function sortWithPriority(
   usedPatternsByMuscle: Map<string, Set<string>>,
 ): ScoredAndFilteredExercise[] {
   if (!ctx.isPriorityEligible || (ctx.tierA.length === 0 && ctx.tierB.length === 0)) {
-    return sortDeterministic(candidates);
+    return sortDeterministic(candidates, ctx.preferredExerciseKeywords);
   }
   return [...candidates].sort((a, b) => {
+    // 0. Preferred exercise boost (before tier rank)
+    const preferred = ctx.preferredExerciseKeywords ?? [];
+    if (preferred.length > 0) {
+      const prefA = isPreferredExercise(a, preferred) ? 0 : 1;
+      const prefB = isPreferredExercise(b, preferred) ? 0 : 1;
+      if (prefA !== prefB) return prefA - prefB;
+    }
+
     // 1. Client muscle tier
     const ta = clientTierRank(a, ctx),
       tb = clientTierRank(b, ctx);
@@ -488,8 +554,14 @@ export function runExerciseSelectionEngineV0(
 ): V0Result {
   // ── Step 1: Global hard filter ────────────────────────────────────────────
   // Exclude avoided exercises and blocklisted names from the entire session.
+  // Also exclude plyometric exercises when ctx.allowPlyometrics is false —
+  // plyometrics are only appropriate for power goals / athlete clients / plyo sessions.
+  const allowPlyo = ctx?.allowPlyometrics !== false || sessionType === "plyo";
   const eligible = pool.filter(
-    (ex) => !ex.isAvoided && !isBlocklisted(ex.name),
+    (ex) =>
+      !ex.isAvoided &&
+      !isBlocklisted(ex.name) &&
+      (allowPlyo || !isPlyometric(ex.name)),
   );
 
   // ── Step 2: Selection state ───────────────────────────────────────────────
@@ -538,7 +610,7 @@ export function runExerciseSelectionEngineV0(
     const candidates =
       ctx?.isPriorityEligible
         ? sortWithPriority(filtered, ctx, usedPatternsByMuscle)
-        : sortDeterministic(filtered);
+        : sortDeterministic(filtered, ctx?.preferredExerciseKeywords);
 
     console.log(
       `SESSION_TYPE: ${sessionType} | SLOT: ${slotName} | CANDIDATE_COUNT: ${candidates.length}`,
