@@ -76,6 +76,7 @@ import {
 } from "lucide-react";
 import Step4Exercises from "./Step4Exercises";
 import Step5Preview from "./Step5Preview";
+import { PlanReadySummary } from "@/components/PlanReadySummary";
 import {
   type ExerciseDraftByDay,
   validatePrescription,
@@ -1396,6 +1397,7 @@ export default function PlanDraftWizard() {
   const [, navigate] = useLocation();
 
   const [step, setStep] = useState(0);
+  const [showPlanReadySummary, setShowPlanReadySummary] = useState(false);
   const [prefs, setPrefs] = useState<PlanDraftGenerationPreferencesType | null>(null);
   const [volumeDecisions, setVolumeDecisions] = useState<WeeklyVolumeDecisionResponseType | null>(null);
   const [volumeOverrides, setVolumeOverrides] = useState<Record<number, number>>({});
@@ -1619,6 +1621,64 @@ export default function PlanDraftWizard() {
     );
   }
 
+  // ── MVP result screen ────────────────────────────────────────────────────────
+  if (showPlanReadySummary && effectivePrefs) {
+    const splitLabel = (SPLIT_TYPE_LABELS as Record<string, string>)[effectivePrefs.splitType] ?? effectivePrefs.splitType;
+    const weeklyLayout = distributionResult
+      ? distributionResult.days.map((d, i) => ({
+          name: `Dzień ${i + 1}`,
+          type: d.dayType,
+          note: Object.keys(d.allocations ?? {}).slice(0, 3).join(", ") || "—",
+        }))
+      : Array.from({ length: effectivePrefs.trainingDays }, (_, i) => ({
+          name: `Dzień ${i + 1}`,
+          type: effectivePrefs.splitType,
+          note: "—",
+        }));
+
+    return (
+      <div className="space-y-6 max-w-3xl pb-12 animate-in fade-in duration-300">
+        <Link
+          href={`/clients/${clientId}`}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
+        >
+          <ArrowLeft size={16} />
+          Powrót do klienta
+        </Link>
+        <PlanReadySummary
+          split={splitLabel}
+          trainingDays={effectivePrefs.trainingDays}
+          sessionDurationMinutes={effectivePrefs.sessionDurationMinutes}
+          priority={(effectivePrefs.priorityMuscleGroups ?? [])[0] ?? "—"}
+          status={distributionResult ? "Rozkład obliczony" : volumeDecisions ? "Wolumin obliczony" : "Dane wstępne"}
+          whyThisPlan={
+            typedData?.warnings?.filter((w: PlanDraftInputWarningType) => !w.blocking).slice(0, 5).map((w: PlanDraftInputWarningType) => w.message) ??
+            [`Split: ${splitLabel}`, `Liczba dni: ${effectivePrefs.trainingDays}`, `Czas sesji: ${effectivePrefs.sessionDurationMinutes} min`]
+          }
+          warnings={distributionResult?.hasBlockingIssues ? ["Plan zawiera problemy blokujące — przejrzyj ustawienia."] : []}
+          suggestions={distributionResult?.hasBlockingIssues ? ["Wróć do kroku 1 i zmodyfikuj założenia."] : []}
+          weeklyLayout={weeklyLayout}
+          clientProfile={{
+            level: typedData?.input?.experienceLevel ?? "—",
+            goal: effectivePrefs.trainingGoal ?? "—",
+            days: effectivePrefs.trainingDays,
+            duration: effectivePrefs.sessionDurationMinutes,
+            priorities: effectivePrefs.priorityMuscleGroups ?? [],
+            preferredExercises: typedData?.input?.favoriteExercises
+              ? [typedData.input.favoriteExercises as string].filter(Boolean)
+              : [],
+            restrictions: effectivePrefs.trainerRestrictions
+              ? [effectivePrefs.trainerRestrictions as string].filter(Boolean)
+              : [],
+          }}
+          onEditAssumptions={() => { setShowPlanReadySummary(false); setStep(1); }}
+          onRegenerate={() => { setShowPlanReadySummary(false); setStep(1); }}
+          onSavePlan={() => {}}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-3xl pb-12 animate-in fade-in duration-300">
       {/* Header */}
@@ -1798,9 +1858,9 @@ export default function PlanDraftWizard() {
             </Button>
           )}
           {step >= 3 && (
-            <Button disabled className="gap-2 opacity-50 cursor-not-allowed">
-              <Lock size={14} />
-              Zapis planu — kolejny etap
+            <Button className="gap-2" onClick={() => setShowPlanReadySummary(true)}>
+              <Sparkles size={14} />
+              Generuj plan
             </Button>
           )}
         </div>
