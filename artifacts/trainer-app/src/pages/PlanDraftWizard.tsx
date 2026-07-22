@@ -1784,7 +1784,7 @@ export default function PlanDraftWizard() {
           clientId={clientId}
           distributionResult={distributionResult}
           exerciseDraft={exerciseDraft}
-          setExerciseDraft={setExerciseDraft}
+          onDraftChange={setExerciseDraft}
           previewResult={previewResult}
           coverageLoading={coverageLoading}
         />
