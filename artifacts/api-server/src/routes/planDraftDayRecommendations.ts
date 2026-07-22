@@ -228,6 +228,10 @@ router.get(
         ),
         // Sub-target bias weights — passed through from DB; null when not assigned.
         subTargetBiases: (ex.subTargetBiases as SubTargetBiases | null) ?? null,
+        // Regression / no-activity flag — must be passed so isRegressionCandidate()
+        // returns the correct value and "Brak aktywności fizycznej" clients see
+        // safest exercises first (matches generate-day behaviour).
+        suitableForNoActivity: ex.suitableForNoActivity ?? null,
       });
     }
 
