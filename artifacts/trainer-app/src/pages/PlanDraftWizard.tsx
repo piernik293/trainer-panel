@@ -1625,15 +1625,24 @@ export default function PlanDraftWizard() {
   if (showPlanReadySummary && effectivePrefs) {
     const splitLabel = (SPLIT_TYPE_LABELS as Record<string, string>)[effectivePrefs.splitType] ?? effectivePrefs.splitType;
     const weeklyLayout = distributionResult
-      ? distributionResult.days.map((d, i) => ({
-          name: `Dzień ${i + 1}`,
-          type: d.dayType,
-          note: Object.keys(d.allocations ?? {}).slice(0, 3).join(", ") || "—",
-        }))
+      ? distributionResult.days.map((d, i) => {
+          const dayExercises = exerciseDraft[d.dayIndex] ?? [];
+          return {
+            name: `Dzień ${i + 1}`,
+            type: d.dayType,
+            note: dayExercises.length > 0
+              ? dayExercises.slice(0, 4).map((e) => e.exerciseName).join(", ")
+              : Object.keys(d.allocations ?? {}).slice(0, 3).join(", ") || "—",
+            exercises: dayExercises.map(
+              (e) => `${e.exerciseName} — ${e.sets}×${e.repsMin}–${e.repsMax}`,
+            ),
+          };
+        })
       : Array.from({ length: effectivePrefs.trainingDays }, (_, i) => ({
           name: `Dzień ${i + 1}`,
           type: effectivePrefs.splitType,
           note: "—",
+          exercises: [] as string[],
         }));
 
     return (
@@ -1766,34 +1775,22 @@ export default function PlanDraftWizard() {
             />
           )}
 
-          <Card className="border-dashed border-border/60 shadow-sm">
-            <CardContent className="py-6 text-center">
-              <p className="text-sm font-medium mb-2">Step 1 debug</p>
-              <p className="text-sm text-muted-foreground">- hasVolumeDecisions: {String(!!volumeDecisions)}</p>
-              <p className="text-sm text-muted-foreground">- hasEffectivePrefs: {String(!!effectivePrefs)}</p>
-              <p className="text-sm text-muted-foreground">- hasDistributionRequest: {String(!!distributionRequest)}</p>
-              <p className="text-sm text-muted-foreground">- hasDistributionResult: {String(!!distributionResult)}</p>
-              <p className="text-sm text-muted-foreground">- distributionMutationPending: {String(!!distributionMutation.isPending)}</p>
-              <p className="text-sm text-muted-foreground">- distributionMutationError: {String(!!distributionMutation.isError)}</p>
-              <p className="text-sm text-muted-foreground">- distributionMutationErrorMessage: {String(distributionMutation.error?.message ?? "none")}</p>
-            </CardContent>
-          </Card>
         </>
       )}
 
-      {/* Step 2 — Ćwiczenia (was step 3) */}
-      {step === 2 && (
-        <Card className="border-dashed border-border/60 shadow-sm">
-          <CardContent className="py-10 text-center">
-            <p className="text-sm font-medium mb-2">Step 2 debug</p>
-            <p className="text-sm text-muted-foreground">- isExerciseStepUnlocked: {String(isExerciseStepUnlocked)}</p>
-            <p className="text-sm text-muted-foreground">- hasDistributionResult: {String(!!distributionResult)}</p>
-            <p className="text-sm text-muted-foreground">- hasExerciseDraft: {String(!!exerciseDraft)}</p>
-            <p className="text-sm text-muted-foreground">- hasPreviewResult: {String(!!previewResult)}</p>
-            <p className="text-sm text-muted-foreground">- coverageLoading: {String(!!coverageLoading)}</p>
-            <p className="text-sm text-muted-foreground">- clientId: {String(clientId)}</p>
-          </CardContent>
-        </Card>
+      {/* Step 2 — Ćwiczenia */}
+      {step === 2 && isExerciseStepUnlocked && distributionResult && (
+        <Step4Exercises
+          clientId={clientId}
+          distributionResult={distributionResult}
+          exerciseDraft={exerciseDraft}
+          setExerciseDraft={setExerciseDraft}
+          previewResult={previewResult}
+          coverageLoading={coverageLoading}
+        />
+      )}
+      {step === 2 && !isExerciseStepUnlocked && (
+        <LockedStepPlaceholder step={2} />
       )}
 
       {/* Step 3 — Podgląd (was step 4) */}
@@ -1840,7 +1837,7 @@ export default function PlanDraftWizard() {
               )}
               <Button
                 onClick={() => setStep(2)}
-                disabled={false}
+                disabled={!isExerciseStepUnlocked}
                 className="gap-2"
               >
                 Dalej
@@ -1848,14 +1845,23 @@ export default function PlanDraftWizard() {
             </>
           )}
           {step === 2 && (
-            <Button
-              onClick={() => setStep(3)}
-              disabled={false}
-              className="gap-2"
-            >
-              Podgląd
-              <ArrowRight size={14} />
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setStep(3)}
+                disabled={!isPreviewStepUnlocked}
+                className="gap-2"
+              >
+                Podgląd
+                <ArrowRight size={14} />
+              </Button>
+              {Object.keys(exerciseDraft).length > 0 && (
+                <Button className="gap-2" onClick={() => setShowPlanReadySummary(true)}>
+                  <Sparkles size={14} />
+                  Generuj plan
+                </Button>
+              )}
+            </>
           )}
           {step >= 3 && (
             <Button className="gap-2" onClick={() => setShowPlanReadySummary(true)}>

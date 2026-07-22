@@ -5,6 +5,7 @@ interface WeeklyDay {
   name: string;
   type: string;
   note: string;
+  exercises?: string[];
 }
 
 interface PlanReadySummaryProps {
@@ -143,7 +144,17 @@ export function PlanReadySummary({
                 <CardContent className="p-3 text-sm">
                   <p className="font-medium">{day.name}</p>
                   <p className="text-muted-foreground">{day.type}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{day.note}</p>
+                  {day.exercises && day.exercises.length > 0 ? (
+                    <ul className="mt-2 space-y-0.5">
+                      {day.exercises.map((ex, j) => (
+                        <li key={j} className="text-xs text-muted-foreground leading-snug">
+                          {ex}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">{day.note}</p>
+                  )}
                 </CardContent>
               </Card>
             ))}
