@@ -271,7 +271,11 @@ router.post(
     //   - isolation de-ranking in mixed slots (for strength/conditioning goals)
     //   - extra arm/shoulder slots in upper sessions (for hypertrophy/fat-loss goals)
     //   - conditioning component marker (fat-loss / kondycja goals signal cardio layer)
-    const goalProfile = buildGoalProfile(survey.trainingGoal);
+    const goalProfile = buildGoalProfile(
+      survey.trainingGoal,
+      survey.sportPerformanceNeeds ?? [],
+      survey.athleteStatus,
+    );
 
     const priorityContext: V0PriorityContext = {
       isPriorityEligible,

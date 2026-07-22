@@ -464,14 +464,39 @@ function sortDeterministic(
       if (regA !== regB) return regA - regB;
     }
 
-    // 2. Isolation deprioritisation (for strength/conditioning goal profiles)
+    // 2. High neurological load boost (sport + Dynamika / Szybkość contexts)
+    //
+    // Exercises with neurologicalFatigue >= 4 rank before lower-fatigue ones.
+    // This promotes force-production compounds (heavy squats, deadlifts,
+    // Olympic-style movements) for sport/power goals without changing slot filters.
+    // null neurological fatigue = treated as 0 (no boost, safe fallback).
+    if (gp?.preferHighNeurologicalLoad) {
+      const hiA = (a.neurologicalFatigue ?? 0) >= 4 ? 0 : 1;
+      const hiB = (b.neurologicalFatigue ?? 0) >= 4 ? 0 : 1;
+      if (hiA !== hiB) return hiA - hiB;
+    }
+
+    // 3. Unilateral pattern preference (sport + Stabilizacja / Poprawa sprawności)
+    //
+    // "Wykrok" (lunge / split squat) patterns rank before "Przysiad" (bilateral
+    // squat) patterns in lower-body compound slots — unilateral movements demand
+    // more stabilisation, proprioception, and body control.
+    // Only meaningful in lower-body slots where both patterns compete; no effect
+    // in upper-body slots (no Wykrok exercises there).
+    if (gp?.preferUnilateralPatterns) {
+      const uniA = normP(a.movementPattern) === "wykrok" ? 0 : 1;
+      const uniB = normP(b.movementPattern) === "wykrok" ? 0 : 1;
+      if (uniA !== uniB) return uniA - uniB;
+    }
+
+    // 4. Isolation deprioritisation (for strength/conditioning goal profiles)
     if (deIsolation) {
       const isoA = isIsolation(a) ? 1 : 0;
       const isoB = isIsolation(b) ? 1 : 0;
       if (isoA !== isoB) return isoA - isoB;
     }
 
-    // 3. exercisePriority
+    // 5. exercisePriority
     const pa = priorityRank(a),
       pb = priorityRank(b);
     if (pa !== pb) return pa - pb;
@@ -554,6 +579,30 @@ function sortWithPriority(
     const ta = clientTierRank(a, ctx),
       tb = clientTierRank(b, ctx);
     if (ta !== tb) return ta - tb;
+
+    // 1.5. High neurological load boost (same tier; sport + Dynamika / Szybkość)
+    //
+    // Applied within-tier so Tier A muscle priority is preserved.
+    // A Tier A exercise with neuro-load 3 still beats a Tier C exercise with 5;
+    // but between two Tier A candidates the higher-neuro one is preferred for
+    // sport/power goals — pushing deadlifts / heavy squats over machine variants.
+    if (gp?.preferHighNeurologicalLoad) {
+      const hiA = (a.neurologicalFatigue ?? 0) >= 4 ? 0 : 1;
+      const hiB = (b.neurologicalFatigue ?? 0) >= 4 ? 0 : 1;
+      if (hiA !== hiB) return hiA - hiB;
+    }
+
+    // 1.6. Unilateral pattern preference (same tier; sport + Stabilizacja / sprawność)
+    //
+    // Within a tier, Wykrok (lunge / split squat) patterns rank before Przysiad
+    // for stabilisation / sprawność contexts.  Has no effect on upper-body slots
+    // (no Wykrok patterns there) and never blocks bilateral squats from being
+    // selected — only re-orders within the same tier band.
+    if (gp?.preferUnilateralPatterns) {
+      const uniA = normP(a.movementPattern) === "wykrok" ? 0 : 1;
+      const uniB = normP(b.movementPattern) === "wykrok" ? 0 : 1;
+      if (uniA !== uniB) return uniA - uniB;
+    }
 
     // 2. Movement-pattern freshness — only between two Tier A candidates
     if (ta === 0 && tb === 0) {
