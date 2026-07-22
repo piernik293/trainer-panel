@@ -74,8 +74,8 @@ export function buildDistributionRequest(
   // Precondition: split type present
   if (!selectedSplitType) return null;
 
-  // Precondition: exactly 11 Phase 2 decisions
-  if (volumeDecisions.decisions.length !== 11) return null;
+  // Precondition: at least one Phase 2 decision
+  if (volumeDecisions.decisions.length < 1) return null;
 
   // Build selected weekly volumes: override > Phase 2 selectedValue
   const selectedWeeklyVolumes = volumeDecisions.decisions.map((d) => ({
@@ -112,9 +112,8 @@ export interface ConsistencyCheckResult {
 
 /**
  * Verify that the distribution response is internally consistent:
- *   1. Exactly 11 target decisions
- *   2. days.length equals expectedTrainingDays
- *   3. allocatedWeeklyTotal === weeklySelectedVolume for every target (±0.01)
+ *   1. days.length equals expectedTrainingDays
+ *   2. allocatedWeeklyTotal === weeklySelectedVolume for every target (±0.01)
  *
  * Returns { isConsistent: true } when all checks pass.
  * Returns { isConsistent: false, reason } for the first failing check.
@@ -123,13 +122,6 @@ export function checkDistributionConsistency(
   result: WeeklyVolumeDistributionResponseType,
   expectedTrainingDays: number,
 ): ConsistencyCheckResult {
-  if (result.targetDecisions.length !== 11) {
-    return {
-      isConsistent: false,
-      reason: `decisions count ${result.targetDecisions.length} ≠ 11`,
-    };
-  }
-
   if (result.days.length !== expectedTrainingDays) {
     return {
       isConsistent: false,
