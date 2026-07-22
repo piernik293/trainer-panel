@@ -1,0 +1,106 @@
+Do NOT modify code.
+Do NOT refactor anything.
+Do NOT create files.
+Do NOT run migrations.
+Do NOT change UI.
+Do NOT change backend logic.
+
+I want a pure generator-output validation pass after Stage E.
+
+TASK:
+Using the current trainer plan generator, run 4 difficult comparison scenarios and summarize the generated outputs.
+
+For each scenario:
+1. generate the plan
+2. summarize the final weekly exercise selection
+3. assess whether the output matches:
+   - training goal
+   - experience level
+   - priority muscles
+   - preferred exercises
+   - A/B variation quality
+4. score each scenario from 0 to 2 in these categories:
+   - goal match
+   - experience match
+   - priority muscle visibility
+   - preferred exercise honoring
+   - A/B variation
+   - overall exercise quality
+   - shoulder/arm presence where appropriate
+   - difference from other goals
+5. give total score out of 16
+6. list the biggest remaining issues for that scenario
+
+SCENARIO 1 — SPORT + DYNAMIKA
+- Goal: Cel sportowy
+- Athlete status: Tak — zawodowo
+- Sport priorities: Dynamika, Szybkość
+- Experience: Średniozaawansowany
+- Days: 4
+- Session time: 90 min
+- Location: Siłownia
+- Equipment: full gym
+- Daily activity: Lekko aktywny
+- Sleep: 7 h
+- Stress: 4/10
+- Priority muscles: nogi, barki, plecy
+- Preferred exercises: martwy ciąg, push press, podciąganie
+- Health limits: none
+
+SCENARIO 2 — SPRAWNOŚĆ
+- Goal: Poprawa sprawności
+- Experience: Średniozaawansowany
+- Days: 3
+- Session time: 75 min
+- Location: Siłownia
+- Equipment: full gym
+- Daily activity: Siedzący
+- Sleep: 6.5 h
+- Stress: 5/10
+- Priority muscles: nogi, barki, core
+- Preferred exercises: wykroki, spacer farmera, landmine press
+- Health limits: none
+
+SCENARIO 3 — REDUKCJA
+- Goal: Redukcja tkanki tłuszczowej
+- Experience: Średniozaawansowany
+- Days: 4
+- Session time: 60 min
+- Location: Siłownia
+- Equipment: full gym
+- Daily activity: Siedzący
+- Sleep: 6 h
+- Stress: 6/10
+- Priority muscles: barki, klatka, plecy
+- Preferred exercises: wyciskanie hantli na skosie, podciąganie, unoszenia bokiem
+- Health limits: none
+
+SCENARIO 4 — SIŁA
+- Goal: Zwiększenie siły
+- Experience: Średniozaawansowany
+- Days: 4
+- Session time: 90 min
+- Location: Siłownia
+- Equipment: full gym
+- Daily activity: Praca fizyczna
+- Sleep: 7 h
+- Stress: 4/10
+- Priority muscles: barki, triceps, plecy
+- Preferred exercises: OHP, podciąganie, dips
+- Health limits: none
+
+IMPORTANT:
+- Do not propose code changes yet
+- Do not fix anything yet
+- This is validation only
+- Focus on whether the actual generated plans now look coach-like and distinct
+
+Return only:
+1. Scenario 1 summary + score
+2. Scenario 2 summary + score
+3. Scenario 3 summary + score
+4. Scenario 4 summary + score
+5. Final comparison:
+   - what improved after Stage E
+   - what is still weak
+   - which single area should be fixed next
