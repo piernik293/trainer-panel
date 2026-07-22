@@ -1,0 +1,248 @@
+Implement the next product-critical step: hard constraints + explainability + athlete weekly-structure override.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign the whole UI
+- Do NOT touch allocation engine broadly
+- Do NOT rewrite the whole selection engine from scratch
+- Do NOT implement client portal, login, plan saving, notes, progression tracking, RIR/tempo/weight editing, RAMP warm-up, or cooldown in this task
+- Keep changes local to:
+  - exercise-selection hard constraints
+  - preferred / excluded exercise handling
+  - weekly structure override logic for athlete profiles
+  - plan summary / explainability output
+  - minimum necessary route/context wiring
+
+PRIMARY GOAL:
+Improve trust and product usefulness by making the generator:
+1. respect excluded exercises as true hard constraints
+2. explain what it selected and what it rejected
+3. optionally change weekly structure for competitive sport clients when the selected sport priorities justify it
+4. treat push-ups as a conditional exercise, not a default generic press choice
+
+====================================================
+PART 1 — HARD CONSTRAINTS FOR EXCLUDED EXERCISES
+====================================================
+
+IMPORTANT:
+Negative exercise preferences / exercises to avoid must NOT behave like weak preferences.
+They must behave like hard constraints.
+
+Required behavior:
+- if the client excludes "martwy ciąg", the generator must block the entire deadlift/hinge family when appropriate:
+  - martwy ciąg konwencjonalny
+  - martwy ciąg sumo
+  - martwy ciąg rumuński
+  - kettlebell deadlift
+  - and equivalent deadlift-family variants
+- if the client excludes "wyciskanie nad głowę", the generator should block OHP-family variants
+- if the client excludes another exercise, support either:
+  - blocking the exact exercise only
+  - or blocking the whole movement family
+depending on the current available data/model
+
+Implementation intent:
+- prefer family-level blocking when the excluded exercise clearly implies a movement family
+- do NOT let near-synonyms or variants slip through
+- if a blocked family removes many exercises, the generator must choose the next best compatible family, not silently ignore the constraint
+
+IMPORTANT:
+Show this logic explicitly in the final plan explanation:
+- what was excluded
+- whether the exact exercise only or the whole movement family was blocked
+- why
+
+====================================================
+PART 2 — PUSH-UP RULE (CONDITIONAL, NOT DEFAULT)
+====================================================
+
+Push-ups must NOT be treated as universally bad or universally good.
+They must be context-dependent.
+
+Push-ups should be favored when:
+- training location = home
+- training location = outdoor gym / plener
+- equipment is limited
+- the client explicitly prefers push-ups
+- goal = sprawność / kondycja / bodyweight-oriented work / athletic bodyweight work
+- client is beginner or no-activity and push-ups are used as an appropriate simple pattern
+
+Push-ups should be deprioritized when:
+- full gym is available
+- experience = intermediate or advanced
+- better pressing options exist for the selected goal
+- goal = siła / budowa sylwetki / cel sportowy and gym equipment gives stronger alternatives
+- the client did NOT prefer push-ups
+
+IMPORTANT:
+Do NOT ban push-ups.
+Do NOT let them appear as a default main-ish upper press in profiles where better options clearly exist.
+
+====================================================
+PART 3 — COMPETITIVE ATHLETE WEEKLY STRUCTURE OVERRIDE
+====================================================
+
+This is a product rule, not just a scoring tweak.
+
+For profiles such as:
+- Goal = Cel sportowy
+- athleteStatus = zawodowo
+- sport priorities include Dynamika and/or Szybkość
+- sufficient experience level
+- enough weekly training days (for example 4)
+- enough session duration (for example 90 min)
+- gym access available
+
+the generator must be allowed to override a generic weekly structure like:
+- Upper / Lower / Upper / Lower
+
+and propose a more athletic structure, for example:
+- Upper / Lower / FBW athletic / Plyo-Speed
+or
+- Power Lower / Upper Strength / Plyo-Dynamic / FBW support
+
+IMPORTANT:
+Do NOT force this for every sport client.
+Do it only when the profile justifies it.
+
+The generator must also explain this clearly in the summary:
+Example intent:
+- "Zmieniono klasyczny układ Upper/Lower 2x na układ Upper/Lower/FBW/Plyo, ponieważ klient jest sportowcem zawodowym i wybrał priorytet dynamika/szybkość."
+
+This explanation is required.
+Do NOT silently change structure without telling the user why.
+
+====================================================
+PART 4 — PLAN EXPLAINABILITY IN SUMMARY
+====================================================
+
+The current summary is too weak and does not build enough trust.
+
+Add a compact but clear explainability block to the final plan summary.
+
+Required sections:
+
+A. "Dlaczego taki plan?"
+Include short structured bullets such as:
+- poziom
+- cel
+- sport priority if applicable
+- priorytetowe partie
+- miejsce treningu
+- weekly structure used
+- why this structure was chosen
+
+B. "Preferowane ćwiczenia"
+Show:
+- exercises preferred by the client
+- whether they were used
+- if used: in which day/session
+- if not used: short reason why not
+Examples:
+- "Podciąganie — użyte w Dniu 3"
+- "Push press — nie użyto, ponieważ plan nie zawiera jeszcze zgodnego slotu athletic press"
+- "Brak wskazanych preferowanych ćwiczeń"
+
+C. "Ćwiczenia wykluczone"
+Show:
+- excluded exercise name
+- whether only the exact exercise or the whole family was blocked
+- short reason
+Examples:
+- "Martwy ciąg — wykluczono zgodnie z preferencjami klienta"
+- "Warianty martwego ciągu — wykluczono jako ta sama rodzina ruchu"
+
+D. "Uwagi generatora"
+Short trust-building notes, for example:
+- higher priority on back/shoulders/legs
+- athletic emphasis due to sport profile
+- bodyweight options deprioritized because full gym is available
+- push-ups not selected because stronger gym pressing options existed
+
+IMPORTANT:
+Keep this compact and readable.
+Do NOT dump raw engine internals.
+Do NOT expose ugly debugging data.
+
+====================================================
+PART 5 — POSITIVE AND NEGATIVE PREFERENCES MUST BE VISIBLE
+====================================================
+
+The summary should no longer show empty/meaningless preference sections when real preference logic exists.
+
+If the client gave:
+- preferred exercises
+- avoided exercises
+- excluded movement families
+these must be reflected clearly in the final plan summary.
+
+The user should be able to understand:
+- what the generator respected
+- what it intentionally avoided
+- why
+
+This is a product trust requirement, not just cosmetic UI.
+
+====================================================
+PART 6 — DO NOT IMPLEMENT FUTURE ROADMAP NOW
+====================================================
+
+Do NOT implement in this task:
+- editable weights
+- editable RIR
+- editable tempo
+- plan save flow
+- client login/portal
+- trainer/client notes
+- progression methods
+- RAMP warm-up
+- cooldown/stretching
+
+Those are future roadmap items.
+This task is only about:
+- hard constraints
+- explainability
+- athlete weekly structure override
+- contextual push-up behavior
+
+====================================================
+PART 7 — DO NOT OVERBUILD
+====================================================
+
+Important:
+- Do NOT create a giant family-taxonomy system if a small practical local mapping solves the current problem
+- Do NOT rewrite the whole weekly planner
+- Do NOT randomly change all structures
+- Do NOT weaken main compounds just to satisfy explainability
+- Do NOT ignore hard constraints when they are inconvenient
+
+Prefer:
+1. small practical family blocking
+2. clear explanation in summary
+3. selective weekly structure override only for justified athlete profiles
+
+====================================================
+SUCCESS CRITERIA
+====================================================
+
+After this change:
+- excluded exercises behave like real hard constraints
+- excluded deadlift-family movements no longer leak into plans when the client rejected deadlifts
+- push-ups no longer appear as a default press choice in full-gym intermediate/advanced strength/sport contexts unless justified
+- some competitive sport clients can receive a more athletic weekly structure than generic Upper/Lower repetition
+- the final plan summary clearly shows:
+  - why the plan looks this way
+  - which preferred exercises were used or not used
+  - which exercises/families were excluded
+  - why the structure was chosen
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause
