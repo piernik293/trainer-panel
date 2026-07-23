@@ -14,7 +14,10 @@ import {
   getListClientNotesQueryKey,
   getListClientsQueryKey,
   useGetClientAvoidedExercises,
+  useUpsertClientSurvey,
+  getClientAvoidedExercisesQueryKey,
 } from "@workspace/api-client-react";
+import { AvoidedExercisesPicker, type AvoidedExercise } from "@/components/AvoidedExercisesPicker";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -615,15 +618,121 @@ function SurveyTab({ client, survey, surveyLoading, id, bmi, showBmiRecommendati
 
   if (!survey) return null;
 
-  return <SurveyDetails survey={survey} bmi={bmi} showBmiRecommendation={showBmiRecommendation} clientEmail={clientEmail} />;
+  return <SurveyDetails survey={survey} bmi={bmi} showBmiRecommendation={showBmiRecommendation} clientEmail={clientEmail} editable />;
 }
 
-function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientEmail }: any) {
-  const { data: avoidedExercises } = useGetClientAvoidedExercises(survey?.clientId);
+function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientEmail, editable }: any) {
+  const { data: avoidedExercises, isLoading: avoidedExercisesLoading } = useGetClientAvoidedExercises(survey?.clientId);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const upsertSurvey = useUpsertClientSurvey();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedExercises, setEditedExercises] = useState<AvoidedExercise[]>([]);
+  const [editedOtherText, setEditedOtherText] = useState("");
+  const [editedOtherReason, setEditedOtherReason] = useState("");
 
   // Separate real exercises from the "other" entry (id === 0)
   const avoidedExList = (avoidedExercises ?? []).filter((e) => e.id > 0);
   const avoidedOther = (avoidedExercises ?? []).find((e) => e.id === 0);
+
+  const startEdit = () => {
+    setEditedExercises(
+      avoidedExList.map((e) => ({ id: e.id, name: e.name, reason: e.reason ?? "" }))
+    );
+    setEditedOtherText(avoidedOther?.otherText ?? "");
+    setEditedOtherReason(avoidedOther?.otherReason ?? "");
+    setIsEditing(true);
+  };
+
+  const handleSaveAvoidedExercises = () => {
+    const avoidedExerciseReasons: Record<string, string> = {};
+    editedExercises.forEach((e) => {
+      if (e.reason.trim()) avoidedExerciseReasons[String(e.id)] = e.reason.trim();
+    });
+
+    // Build a clean payload that matches UpsertClientSurveyBody:
+    // - only include fields the API schema accepts
+    // - convert null → undefined (omit) for optional scalars so zod doesn't reject them
+    // - handle dateOfBirth: Date → YYYY-MM-DD string
+    const s = survey ?? {};
+
+    function strOrUndef(v: unknown): string | undefined {
+      return v != null && v !== "" ? String(v) : undefined;
+    }
+    function numOrUndef(v: unknown): number | undefined {
+      return v != null ? Number(v) : undefined;
+    }
+    function boolOrUndef(v: unknown): boolean | undefined {
+      return v != null ? Boolean(v) : undefined;
+    }
+
+    const dateOfBirth: string | undefined = s.dateOfBirth != null
+      ? (s.dateOfBirth instanceof Date
+          ? s.dateOfBirth.toISOString().split("T")[0]
+          : String(s.dateOfBirth).split("T")[0])
+      : undefined;
+
+    const payload = {
+      // scalar string fields
+      trainingGoal: strOrUndef(s.trainingGoal),
+      trainingGoalOther: strOrUndef(s.trainingGoalOther),
+      experienceLevel: strOrUndef(s.experienceLevel),
+      trainingDuration: strOrUndef(s.trainingDuration),
+      healthLimitations: strOrUndef(s.healthLimitations),
+      sessionDuration: strOrUndef(s.sessionDuration),
+      preferredMuscles: strOrUndef(s.preferredMuscles),
+      avoidedMuscles: strOrUndef(s.avoidedMuscles),
+      avoidedExercises: strOrUndef(s.avoidedExercises),
+      favoriteExercises: strOrUndef(s.favoriteExercises),
+      additionalInfo: strOrUndef(s.additionalInfo),
+      gender: strOrUndef(s.gender) as "Mężczyzna" | "Kobieta" | undefined,
+      planStylePreference: strOrUndef(s.planStylePreference) as any,
+      activityLevel: strOrUndef(s.activityLevel) as any,
+      sleepHours: strOrUndef(s.sleepHours) as any,
+      priorityMuscle1: strOrUndef(s.priorityMuscle1),
+      priorityMuscle2: strOrUndef(s.priorityMuscle2),
+      priorityMuscle3: strOrUndef(s.priorityMuscle3),
+      trainingLocation: strOrUndef(s.trainingLocation),
+      equipment: strOrUndef(s.equipment),
+      cardioPreference: strOrUndef(s.cardioPreference),
+      cardioFrequency: strOrUndef(s.cardioFrequency),
+      preferredCardioType: strOrUndef(s.preferredCardioType),
+      // scalar number fields
+      weeklyFrequency: numOrUndef(s.weeklyFrequency),
+      desiredWeeklyFrequency: numOrUndef(s.desiredWeeklyFrequency),
+      age: numOrUndef(s.age),
+      heightCm: numOrUndef(s.heightCm),
+      weightKg: numOrUndef(s.weightKg),
+      stressLevel: numOrUndef(s.stressLevel),
+      // boolean fields
+      avoidsAdvancedMethods: boolOrUndef(s.avoidsAdvancedMethods),
+      // array fields — keep as-is, default to []
+      advancedMethodsToAvoid: Array.isArray(s.advancedMethodsToAvoid) ? s.advancedMethodsToAvoid : [],
+      // date
+      ...(dateOfBirth ? { dateOfBirth } : {}),
+      // avoided exercise fields (what we're actually editing)
+      avoidedExerciseIds: editedExercises.map((e) => e.id),
+      avoidedExerciseReasons,
+      avoidedExerciseOtherText: editedOtherText.trim() || null,
+      avoidedExerciseOtherReason: editedOtherReason.trim() || null,
+    };
+
+    upsertSurvey.mutate(
+      { clientId: survey.clientId, data: payload },
+      {
+        onSuccess: () => {
+          toast({ title: "Zapisano ćwiczenia do unikania" });
+          setIsEditing(false);
+          queryClient.invalidateQueries({ queryKey: getClientAvoidedExercisesQueryKey(survey.clientId) });
+          queryClient.invalidateQueries({ queryKey: ["client-survey", survey.clientId] as any });
+        },
+        onError: () => {
+          toast({ title: "Nie udało się zapisać zmian", variant: "destructive" });
+        },
+      }
+    );
+  };
 
   return (
     <div className="space-y-6 print-page-break-before">
@@ -699,41 +808,98 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
       </div>
 
       {/* ── Unikane ćwiczenia (nowa struktura) ─────────────────────────── */}
-      {(avoidedExList.length > 0 || avoidedOther) && (
-        <div className="bg-card border border-amber-200/60 rounded-xl p-5 shadow-sm col-span-full print-break-inside-avoid">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            Ćwiczenia do unikania
-          </h4>
-          <div className="space-y-2">
-            {avoidedExList.map((ex) => (
-              <div key={ex.id} className="flex items-start gap-2">
-                <span className={`text-sm font-medium ${ex.isActive ? "text-foreground" : "text-muted-foreground line-through"}`}>
-                  {ex.name}
-                </span>
-                {!ex.isActive && (
-                  <Badge variant="secondary" className="text-xs shrink-0">nieaktywne</Badge>
-                )}
-                {ex.reason && (
-                  <span className="text-xs text-muted-foreground">— {ex.reason}</span>
-                )}
-              </div>
-            ))}
-            {avoidedOther && (avoidedOther.otherText || avoidedOther.otherReason) && (
-              <div className="border-t border-border/40 pt-2 mt-2">
-                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Opis słowny</p>
-                {avoidedOther.otherText && (
-                  <p className="text-sm text-foreground">{avoidedOther.otherText}</p>
-                )}
-                {avoidedOther.otherReason && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{avoidedOther.otherReason}</p>
-                )}
-              </div>
+      {(avoidedExList.length > 0 || avoidedOther || editable) && (
+        <div className="bg-card border border-amber-200/60 rounded-xl shadow-sm col-span-full print-break-inside-avoid">
+          <div className="flex items-center justify-between px-5 pt-4 pb-3">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Ćwiczenia do unikania
+            </h4>
+            {editable && !isEditing && (
+              <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs" onClick={startEdit} disabled={avoidedExercisesLoading}>
+                <Pencil size={12} />
+                {avoidedExercisesLoading ? "Ładowanie…" : "Edytuj"}
+              </Button>
             )}
           </div>
+
+          {isEditing ? (
+            <div className="px-5 pb-5 space-y-4">
+              <AvoidedExercisesPicker
+                selectedExercises={editedExercises}
+                onSelectedChange={setEditedExercises}
+              />
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">Opis słowny / ćwiczenia spoza biblioteki</p>
+                <textarea
+                  value={editedOtherText}
+                  onChange={(e) => setEditedOtherText(e.target.value)}
+                  placeholder="Opisz ćwiczenia, których klient ma unikać (np. wyciskanie nad głowę)..."
+                  rows={2}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+                <textarea
+                  value={editedOtherReason}
+                  onChange={(e) => setEditedOtherReason(e.target.value)}
+                  placeholder="Powód unikania tych ćwiczeń (opcjonalne)..."
+                  rows={1}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs resize-y placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(false)} disabled={upsertSurvey.isPending}>
+                  Anuluj
+                </Button>
+                <Button size="sm" onClick={handleSaveAvoidedExercises} disabled={upsertSurvey.isPending}>
+                  {upsertSurvey.isPending ? "Zapisywanie…" : "Zapisz zmiany"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="px-5 pb-5 space-y-2">
+              {avoidedExList.length === 0 && !avoidedOther ? (
+                /* Show legacy free-text when there are no structured entries */
+                survey?.avoidedExercises ? (
+                  <div>
+                    <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Opis (legacy)</p>
+                    <p className="text-sm text-foreground whitespace-pre-wrap">{survey.avoidedExercises}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">Brak ćwiczeń do unikania</p>
+                )
+              ) : (
+                <>
+                  {avoidedExList.map((ex) => (
+                    <div key={ex.id} className="flex items-start gap-2">
+                      <span className={`text-sm font-medium ${ex.isActive ? "text-foreground" : "text-muted-foreground line-through"}`}>
+                        {ex.name}
+                      </span>
+                      {!ex.isActive && (
+                        <Badge variant="secondary" className="text-xs shrink-0">nieaktywne</Badge>
+                      )}
+                      {ex.reason && (
+                        <span className="text-xs text-muted-foreground">— {ex.reason}</span>
+                      )}
+                    </div>
+                  ))}
+                  {avoidedOther && (avoidedOther.otherText || avoidedOther.otherReason) && (
+                    <div className="border-t border-border/40 pt-2 mt-2">
+                      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Opis słowny</p>
+                      {avoidedOther.otherText && (
+                        <p className="text-sm text-foreground">{avoidedOther.otherText}</p>
+                      )}
+                      {avoidedOther.otherReason && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{avoidedOther.otherReason}</p>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
       {/* Fallback: legacy free-text field from old surveys */}
-      {!avoidedExList.length && !avoidedOther && survey.avoidedExercises && (
+      {!avoidedExList.length && !avoidedOther && !editable && survey.avoidedExercises && (
         <SurveyBlock label="Czego unikać (legacy)" value={survey.avoidedExercises} />
       )}
 
