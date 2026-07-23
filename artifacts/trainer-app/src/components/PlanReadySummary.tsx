@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 interface WeeklyDay {
   name: string;
@@ -30,6 +31,7 @@ interface PlanReadySummaryProps {
   onEditAssumptions?: () => void;
   onRegenerate?: () => void;
   onSavePlan?: () => void;
+  isSaving?: boolean;
 }
 
 export function PlanReadySummary({
@@ -46,6 +48,7 @@ export function PlanReadySummary({
   onEditAssumptions,
   onRegenerate,
   onSavePlan,
+  isSaving,
 }: PlanReadySummaryProps) {
   return (
     <div className="space-y-6 max-w-3xl">
@@ -215,7 +218,11 @@ export function PlanReadySummary({
         <Button variant="outline" onClick={onRegenerate}>
           Wygeneruj ponownie
         </Button>
-        <Button onClick={onSavePlan}>Zapisz plan</Button>
+        <Button onClick={onSavePlan} disabled={isSaving} className="gap-2">
+          {isSaving ? (
+            <><Loader2 size={14} className="animate-spin" />Zapisywanie…</>
+          ) : "Zapisz plan"}
+        </Button>
       </div>
     </div>
   );

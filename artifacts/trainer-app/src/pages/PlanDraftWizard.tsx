@@ -85,6 +85,8 @@ import {
   type GeneratedDayExplanation,
 } from "@/lib/exerciseDraftHelpers";
 import { useVolumeCoverage } from "@/hooks/useVolumeCoverage";
+import { useSaveDraftPlan } from "@/lib/planApi";
+import { useToast } from "@/hooks/use-toast";
 
 // ─── Source badge ─────────────────────────────────────────────────────────────
 
@@ -1417,6 +1419,8 @@ export default function PlanDraftWizard() {
   const { data, isLoading, isError } = useGetClientPlanDraftInput(clientId);
   const volumeMutation = useDraftVolumePreview();
   const distributionMutation = useDraftDistributionPreview();
+  const saveDraftPlan = useSaveDraftPlan(clientId);
+  const { toast } = useToast();
 
   // Initialize preferences from default when data first loads
   const effectivePrefs = useMemo<PlanDraftGenerationPreferencesType | null>(() => {
@@ -1464,6 +1468,55 @@ export default function PlanDraftWizard() {
       delete next[targetId];
       return next;
     });
+  }
+
+  function handleSavePlan() {
+    if (!effectivePrefs || !distributionResult || !typedData) return;
+    if (!typedData.surveyId) {
+      toast({
+        title: "Brak wywiadu treningowego",
+        description: "Plan wymaga powiązanego wywiadu treningowego. Uzupełnij wywiad przed zapisem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const splitLabel = (SPLIT_TYPE_LABELS as Record<string, string>)[effectivePrefs.splitType] ?? effectivePrefs.splitType;
+    const clientName = `${typedData.client.firstName} ${typedData.client.lastName}`;
+    const title = `${splitLabel} — ${clientName}`;
+
+    const descParts: string[] = [];
+    if ((effectivePrefs.priorityMuscleGroups ?? []).length > 0) {
+      descParts.push(`Priorytety mięśniowe: ${effectivePrefs.priorityMuscleGroups.join(", ")}`);
+    }
+    if (effectivePrefs.trainingGoal) {
+      descParts.push(`Cel treningowy: ${effectivePrefs.trainingGoal}`);
+    }
+
+    const days = distributionResult.days.map((day) => ({
+      dayIndex: day.dayIndex,
+      dayName: day.dayName,
+      dayType: day.dayType,
+      exercises: exerciseDraft[day.dayIndex] ?? [],
+    }));
+
+    saveDraftPlan.mutate(
+      {
+        surveyId: typedData.surveyId,
+        title,
+        goal: effectivePrefs.trainingGoal ?? null,
+        description: descParts.length > 0 ? descParts.join("\n") : null,
+        splitType: effectivePrefs.splitType ?? null,
+        blockDurationWeeks: effectivePrefs.blockDurationWeeks ?? null,
+        sessionDurationMinutes: effectivePrefs.sessionDurationMinutes ?? null,
+        days,
+      },
+      {
+        onError: (err) => {
+          toast({ title: "Błąd zapisu planu", description: err.message, variant: "destructive" });
+        },
+      },
+    );
   }
 
   // ── Distribution (Phase 3B) ────────────────────────────────────────────────
@@ -1624,6 +1677,39 @@ export default function PlanDraftWizard() {
     );
   }
 
+  // ── Success state — evaluated BEFORE showPlanReadySummary so saving from either
+  // path (Step 5 preview or PlanReadySummary screen) shows the confirmation card.
+  if (saveDraftPlan.data && effectivePrefs) {
+    const splitLabel = (SPLIT_TYPE_LABELS as Record<string, string>)[effectivePrefs.splitType] ?? effectivePrefs.splitType;
+    return (
+      <div className="space-y-6 max-w-3xl pb-12 animate-in fade-in duration-300">
+        <Link
+          href={`/clients/${clientId}`}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
+        >
+          <ArrowLeft size={16} />
+          Powrót do klienta
+        </Link>
+        <Card className="border-emerald-300 bg-emerald-50/50 shadow-sm">
+          <CardContent className="py-10 text-center">
+            <CheckCircle2 className="w-10 h-10 mx-auto mb-3 text-emerald-600" />
+            <h3 className="text-base font-semibold text-emerald-900 mb-1">Plan zapisany!</h3>
+            <p className="text-sm text-emerald-700 mb-1">{saveDraftPlan.data.title}</p>
+            <p className="text-xs text-emerald-600 mb-6">{splitLabel} · {effectivePrefs.trainingDays} dni/tydz.</p>
+            <div className="flex gap-3 justify-center flex-wrap">
+              <Button asChild>
+                <Link href={`/plans/${saveDraftPlan.data.id}`}>Otwórz plan</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href={`/clients/${clientId}`}>Powrót do klienta</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // ── MVP result screen ────────────────────────────────────────────────────────
   if (showPlanReadySummary && effectivePrefs) {
     const splitLabel = (SPLIT_TYPE_LABELS as Record<string, string>)[effectivePrefs.splitType] ?? effectivePrefs.splitType;
@@ -1685,7 +1771,8 @@ export default function PlanDraftWizard() {
           }}
           onEditAssumptions={() => { setShowPlanReadySummary(false); setStep(1); }}
           onRegenerate={() => { setShowPlanReadySummary(false); setStep(1); }}
-          onSavePlan={() => {}}
+          onSavePlan={handleSavePlan}
+          isSaving={saveDraftPlan.isPending}
         />
       </div>
     );
@@ -1810,6 +1897,9 @@ export default function PlanDraftWizard() {
           clientId={clientId}
           onBack={() => setStep(2)}
           generatedExplanations={generatedExplanations}
+          onSave={handleSavePlan}
+          isSaving={saveDraftPlan.isPending}
+          savedPlanId={saveDraftPlan.data?.id ?? null}
         />
       )}
       {step > 3 && <LockedStepPlaceholder step={step} />}

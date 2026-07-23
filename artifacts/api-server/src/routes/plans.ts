@@ -43,6 +43,9 @@ const CreatePlanBody = z.object({
   startDate: z.string().nullable().optional(),
   endDate: z.string().nullable().optional(),
   trainerNotes: z.string().nullable().optional(),
+  // Generator fields — set at creation when saving from the wizard
+  splitType: z.enum(["full_body","full_body_ab","upper_lower","upper_lower_full_body","push_pull_legs","push_pull_lower_full_body","specialization","custom"]).nullable().optional(),
+  blockDurationWeeks: z.number().int().min(4).max(12).nullable().optional(),
 });
 
 const UpdatePlanBody = z.object({
@@ -535,7 +538,7 @@ router.post("/clients/:clientId/plans", async (req, res): Promise<void> => {
     return;
   }
 
-  const { title, surveyId, goal, description, startDate, endDate, trainerNotes } = parsed.data;
+  const { title, surveyId, goal, description, startDate, endDate, trainerNotes, splitType, blockDurationWeeks } = parsed.data;
 
   // Verify survey belongs to this client.
   const [survey] = await db
@@ -592,6 +595,8 @@ router.post("/clients/:clientId/plans", async (req, res): Promise<void> => {
       endDate: endDate ?? null,
       trainerNotes: trainerNotes ?? null,
       status: "draft",
+      splitType: splitType ?? null,
+      blockDurationWeeks: blockDurationWeeks ?? null,
     })
     .returning({ id: workoutPlansTable.id });
 

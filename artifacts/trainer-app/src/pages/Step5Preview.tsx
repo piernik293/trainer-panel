@@ -14,6 +14,7 @@
  */
 
 import { useState, useMemo } from "react";
+import { Link } from "wouter";
 import {
   useGetClientAvoidedExercises,
 } from "@workspace/api-client-react";
@@ -39,7 +40,9 @@ import {
   ChevronDown,
   ChevronRight,
   Info,
+  Loader2,
   Lock,
+  Save,
   TrendingUp,
 } from "lucide-react";
 
@@ -221,6 +224,12 @@ interface Step5PreviewProps {
   onBack: () => void;
   /** Per-day explanation blocks from the generator. Empty when exercises were added manually. */
   generatedExplanations?: Record<number, GeneratedDayExplanation>;
+  /** Called when the trainer clicks "Zapisz plan". */
+  onSave?: () => void;
+  /** True while the save mutation is in-flight. */
+  isSaving?: boolean;
+  /** Set to the saved plan ID after a successful save. */
+  savedPlanId?: number | null;
 }
 
 // ─── Generator insights card ───────────────────────────────────────────────────
@@ -1047,6 +1056,9 @@ export default function Step5Preview({
   clientId,
   onBack,
   generatedExplanations = {},
+  onSave,
+  isSaving = false,
+  savedPlanId = null,
 }: Step5PreviewProps) {
   const { data: avoidedExercises = [] } = useGetClientAvoidedExercises(clientId);
 
@@ -1206,16 +1218,48 @@ export default function Step5Preview({
       {/* 6. Gotowość szkicu */}
       <DraftReadinessCard prescriptionIssues={prescriptionIssues} />
 
+      {/* Save success banner */}
+      {savedPlanId !== null && (
+        <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-4 flex items-center gap-3">
+          <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-emerald-900">Plan zapisany pomyślnie!</p>
+          </div>
+          <Link
+            href={`/plans/${savedPlanId}`}
+            className="text-sm font-medium text-emerald-700 hover:text-emerald-900 underline underline-offset-2 shrink-0"
+          >
+            Otwórz plan →
+          </Link>
+        </div>
+      )}
+
       {/* Navigation */}
       <div className="flex items-center justify-between pt-2 border-t border-border/30">
-        <Button variant="outline" size="sm" onClick={onBack} className="gap-2">
+        <Button variant="outline" size="sm" onClick={onBack} className="gap-2" disabled={isSaving}>
           <ArrowLeft size={13} />
           Wróć do ćwiczeń
         </Button>
-        <Button disabled className="gap-2 opacity-50 cursor-not-allowed" size="sm">
-          <Lock size={13} />
-          Zapis planu — kolejny etap
-        </Button>
+        {savedPlanId !== null ? (
+          <Button asChild size="sm" variant="outline" className="gap-2">
+            <Link href={`/plans/${savedPlanId}`}>
+              Otwórz zapisany plan
+            </Link>
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            className="gap-2"
+            onClick={onSave}
+            disabled={isSaving || !onSave}
+          >
+            {isSaving ? (
+              <><Loader2 size={13} className="animate-spin" />Zapisywanie…</>
+            ) : (
+              <><Save size={13} />Zapisz plan</>
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );
