@@ -1,0 +1,59 @@
+Implement a narrow bug fix: exercise search/autocomplete shows no results while typing.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign the whole UI
+- Do NOT touch generator logic
+- Keep changes local to:
+  - exercise search inputs for:
+    - "Ćwiczenia do unikania"
+    - "Jakie są Twoje ulubione ćwiczenia?"
+  - their query/fetch/render flow
+  - minimum necessary mobile dropdown rendering fixes
+
+PRIMARY GOAL:
+When the trainer types an exercise name (for example "Wyciskanie"), matching exercise results must visibly appear.
+
+KNOWN OBSERVED ISSUE:
+Typing into the exercise search field currently shows nothing:
+- no result list
+- no visible suggestions
+- no fallback "brak wyników"
+
+This is happening in the real UI flow on mobile.
+
+REQUIRED DEBUG PATH:
+Check the full chain:
+1. does the input state update while typing?
+2. does the search request/fire path actually run?
+3. does the backend return results?
+4. does the frontend receive results?
+5. are the results filtered out incorrectly?
+6. is the dropdown/list rendered but hidden by CSS/layout?
+7. on mobile, is the results list clipped by overflow, z-index, or parent container rules?
+
+REQUIRED FIX:
+- typing a valid fragment like "Wyciskanie" must show matching exercises
+- if results exist, render them visibly below the input
+- if no results exist, show a clear "brak wyników" state
+- make sure this works on mobile too
+- do not require a full page reload or blur/focus trick
+
+IMPORTANT:
+- Do NOT overbuild a new search system
+- Do NOT rewrite the entire form
+- Fix the current autocomplete/search flow end-to-end
+
+SUCCESS CRITERIA:
+- "Ćwiczenia do unikania" search shows visible results while typing
+- "Ulubione ćwiczenia" search shows visible results while typing
+- mobile rendering works
+- if no results exist, the user gets a visible empty state instead of silence
+
+OUTPUT FORMAT:
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause

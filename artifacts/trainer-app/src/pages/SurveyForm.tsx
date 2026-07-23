@@ -286,6 +286,10 @@ function SurveyFormBody({
 
   const isSportGoal = goalIsSport(trainingGoal);
   const isIntermAdv = isIntermediateOrAdvancedLevel(experienceLevel);
+  // Ref to the animated "Preferencje treningowe" motion.div.
+  // Used to restore overflow:visible after the open animation so the
+  // absolutely-positioned exercise search dropdowns are not clipped.
+  const prefsMotionRef = useRef<HTMLDivElement>(null);
   const showTrainingDuration = showTrainingDurationField(experienceLevel);
   const showEquipment = showEquipmentField(trainingLocation);
   const showCardioRec = showCardioRecommendation(trainingGoal);
@@ -967,11 +971,28 @@ function SurveyFormBody({
               <AnimatePresence>
                 {isIntermAdv && (
                   <motion.div
+                    ref={prefsMotionRef}
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="overflow-hidden space-y-6"
+                    className="space-y-6"
+                    style={{ overflow: "hidden" }}
+                    onAnimationStart={() => {
+                      // Re-clip while collapsing/re-expanding so the height
+                      // animation correctly hides content below the fold.
+                      if (prefsMotionRef.current) {
+                        prefsMotionRef.current.style.overflow = "hidden";
+                      }
+                    }}
+                    onAnimationComplete={() => {
+                      // Once fully open, remove the clip so absolutely-positioned
+                      // exercise search dropdowns (FavoriteExercisesPicker,
+                      // AvoidedExercisesPicker) are not cut off by the container.
+                      if (prefsMotionRef.current) {
+                        prefsMotionRef.current.style.overflow = "visible";
+                      }
+                    }}
                   >
                     {/* Partie priorytetowe */}
                     <div>
