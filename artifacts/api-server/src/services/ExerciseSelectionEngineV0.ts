@@ -1910,6 +1910,7 @@ export function runExerciseSelectionEngineV0(
       movementPattern: ex.movementPattern ?? null,
       movementCategoryKey: ex.movementCategoryKey ?? null,
       secondaryMuscleGroups: ex.secondaryMuscleGroups ?? null,
+      suitableForNoActivity: ex.suitableForNoActivity ?? null,
     }),
   );
 

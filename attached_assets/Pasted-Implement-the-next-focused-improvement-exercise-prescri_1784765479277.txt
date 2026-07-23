@@ -1,0 +1,221 @@
+Implement the next focused improvement: exercise prescription logic by exercise class + goal, and session ordering.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign UI broadly
+- Do NOT touch wizard flow
+- Do NOT touch plan saving / client portal / notes / progression tracking
+- Do NOT rewrite the whole generator
+- Do NOT run broad test suites
+- Keep changes local to:
+  - exercise prescription logic
+  - session ordering logic
+  - minimum necessary summary/explanation output if needed
+  - directly related helpers/types only
+
+PRIMARY GOAL:
+Stop treating all exercises as if they should use the same sets/reps/rest/positioning logic.
+
+The generator must now prescribe exercises differently depending on:
+1. exercise class
+2. training goal
+3. sport context when applicable
+4. role of the exercise in the session
+
+KNOWN CURRENT PROBLEMS:
+- plyometric / jump / explosive drills can still look like normal 3x8–12 accessory work
+- core can be treated too similarly to generic isolation
+- exercise ordering is still too generic
+- athletic/power work is not clearly placed before the main developmental lift
+- main compounds, secondary compounds, isolation, core, and plyo do not yet feel clearly separated in prescription logic
+
+====================================================
+PART 1 — REQUIRED EXERCISE CLASSES
+====================================================
+
+Use the class system already introduced/derived in the engine.
+At minimum support:
+- main_compound
+- secondary_compound
+- isolation
+- core
+- plyometric_power
+- regression_beginner
+
+Do NOT treat these classes the same in prescription logic.
+
+====================================================
+PART 2 — SESSION ORDERING RULES
+====================================================
+
+Implement a clear ordering hierarchy inside each session.
+
+Default ordering principle:
+1. plyometric_power / explosive primer (only when justified by goal/context)
+2. main_compound
+3. secondary_compound
+4. isolation / accessory
+5. core / trunk work
+6. optional low-priority finishers
+
+Rules:
+- power / explosive drills should appear near the start of the session, not buried late as normal accessories
+- main compounds should come before secondary compounds
+- isolation should usually come after the main structural lifts
+- core should usually be near the end unless a specific goal/context requires otherwise
+- do NOT randomize ordering
+- keep the order coach-like and explainable
+
+====================================================
+PART 3 — CLASS-BASED PRESCRIPTION LOGIC
+====================================================
+
+Implement different prescription behavior by exercise class.
+
+A. plyometric_power
+- must NOT default to generic hypertrophy-style 3x8–12 logic
+- use lower-rep / lower-fatigue / higher-quality intent logic
+- shorter exercise duration, higher movement quality emphasis
+- should feel like explosive work, not bodybuilding accessory work
+
+B. main_compound
+- use the most serious prescription in the session
+- more rest than isolation
+- goal-sensitive rep logic:
+  - strength → lower rep bias
+  - hypertrophy → moderate rep bias
+  - sport/power → strength-supportive but not random bodybuilding prescription
+
+C. secondary_compound
+- supportive to the session main lift
+- moderate prescription
+- usually less dominant than main_compound
+
+D. isolation
+- more hypertrophy/accessory-oriented prescription
+- generally more reps / less rest than big compounds
+- valid for physique goals and intermediate+ direct work
+- should not overpower the session structure
+
+E. core
+- must NOT simply inherit generic accessory logic
+- use trunk/control-oriented prescription logic
+- should look different from biceps curl / triceps pushdown logic
+
+F. regression_beginner
+- keep conservative/simple prescription
+- especially for no-activity and beginner contexts
+- should not dominate intermediate+ full-gym plans
+
+====================================================
+PART 4 — GOAL-SENSITIVE PRESCRIPTION
+====================================================
+
+The same exercise class should still adjust somewhat by goal.
+
+A. Budowa sylwetki
+- more classic hypertrophy-friendly prescription
+- moderate rep ranges
+- isolation and accessory work remain valuable
+
+B. Zwiększenie siły
+- main compounds should shift toward more strength-oriented prescription
+- secondary compounds support strength
+- isolation remains supportive, not dominant
+
+C. Redukcja tkanki tłuszczowej
+- resistance training should still look like quality resistance training
+- do NOT convert everything into random “fat-burning” fatigue prescriptions
+- keep sessions manageable and structurally solid
+
+D. Poprawa kondycji
+- still use sensible resistance training logic
+- but avoid overbuilding slow, maximal, high-rest structure as the core identity
+
+E. Poprawa sprawności
+- support control, coordination, athletic generalism
+- dynamic work may appear earlier where justified
+- prescription should feel more alive/athletic than generic bodybuilding
+
+F. Cel sportowy
+- power/athletic drills must look clearly different from normal accessory work
+- supportive strength lifts should still be present
+- the session should feel like athletic preparation, not generic upper/lower hypertrophy
+
+====================================================
+PART 5 — SPORT / POWER SPECIFICS
+====================================================
+
+For:
+- Cel sportowy
+- Dynamika / Szybkość
+- explicit athletic/power context
+
+Implement these rules:
+- explosive work should appear before the main developmental lift when present
+- explosive work must use quality-focused prescription, not generic 8–12 rep accessory logic
+- supportive strength work should follow
+- do NOT turn the whole session into random plyo spam
+- do NOT leave explosive work at the end of the workout
+
+====================================================
+PART 6 — PUSH-UPS AND BODYWEIGHT MOVES
+====================================================
+
+Push-ups and similar bodyweight movements should also receive contextual prescription:
+- in home/outdoor/bodyweight-friendly contexts they can remain valid and usable
+- in full-gym intermediate/advanced contexts, when they do appear, they should not automatically mimic the same prescription as a machine or dumbbell main press
+- keep them context-sensitive and role-sensitive
+
+====================================================
+PART 7 — EXPLAINABILITY (LIGHTWEIGHT)
+====================================================
+
+If the current summary can easily support it without broad UI work,
+add a compact note in the explanation/summary when relevant, for example:
+- “Element eksplozywny ustawiono na początku sesji ze względu na cel sportowy / dynamikę”
+- “Ćwiczenia główne otrzymały dłuższe przerwy niż akcesoria”
+- “Core ustawiono na końcu jako wsparcie kontroli tułowia”
+
+Do NOT build a giant explanation system.
+Only add small useful notes if they fit naturally.
+
+====================================================
+PART 8 — DO NOT OVERBUILD
+====================================================
+
+Important:
+- Do NOT create a massive periodization system
+- Do NOT add advanced progression logic in this task
+- Do NOT add client-editable weights/RIR/tempo UI in this task
+- Do NOT try to perfect every exact rep number scientifically
+- Focus on making the prescription and order clearly more correct than the current generic behavior
+
+====================================================
+SUCCESS CRITERIA
+====================================================
+
+After this fix:
+- plyometric / explosive drills no longer look like generic 3x8–12 accessory work
+- main compounds, secondary compounds, isolation, and core have visibly different prescription behavior
+- session ordering becomes coach-like:
+  - explosive primer (when justified)
+  - main lift
+  - secondary work
+  - accessory/isolation
+  - core
+- sport/power sessions feel more athletic
+- strength sessions feel more strength-oriented
+- physique sessions still support hypertrophy well
+- the generator stops making everything feel like the same template with different exercise names
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause

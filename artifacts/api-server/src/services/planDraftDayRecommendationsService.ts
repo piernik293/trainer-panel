@@ -83,6 +83,11 @@ export interface DayRecommendationExercise {
   movementCategoryKey?: string | null;
   /** Stage 6: secondary muscle groups for session fatigue tie-breaking. */
   secondaryMuscleGroups?: string[] | null;
+  /**
+   * Pass-through from the DB `suitable_for_no_activity` flag.
+   * Required by the prescription service to identify regression_beginner class.
+   */
+  suitableForNoActivity?: boolean | null;
 }
 
 // ─── Sub-target bias system (Phase 1: Chest / Back / Shoulders) ──────────────

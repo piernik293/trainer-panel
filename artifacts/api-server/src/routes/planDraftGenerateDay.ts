@@ -49,6 +49,11 @@ import {
   type V0PriorityContext,
 } from "../services/ExerciseSelectionEngineV0";
 import { buildGoalProfile } from "../services/goalProfileService";
+import {
+  deriveExerciseClassForOutput,
+  sessionOrderRank,
+  prescribeExercise,
+} from "../services/exercisePrescriptionService.js";
 import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -528,11 +533,68 @@ router.post(
       );
     }
 
+    // ── Class-based prescription + coach-like session ordering (Stage H) ──────
+    //
+    // Every selected exercise is enriched with:
+    //   exerciseClass  — plyometric_power | main_compound | secondary_compound |
+    //                    isolation | core | regression_beginner
+    //   prescription   — sets / repsLabel / restSeconds / prescriptionNote,
+    //                    calibrated per class × goal bias so that:
+    //                      • plyometric drills never look like 3×8-12 accessories
+    //                      • main compounds get heavier prescription than isolation
+    //                      • core always looks different from a biceps curl
+    //                      • bodyweight moves in full-gym contexts are demoted from
+    //                        main_compound to secondary_compound prescription
+    //
+    // Exercises are then stable-sorted by session position rank so the output
+    // order is coach-like regardless of which slot the engine filled first:
+    //   0  plyometric_power    — explosive primer before CNS fatigue
+    //   1  main_compound       — structural anchor
+    //   2  secondary_compound  — supportive / complementary lifts
+    //   3  isolation / regression — direct / accessory work
+    //   5  core                — trunk-control finisher
+    const goalBias = goalProfile.exerciseClassBias;
+
+    const enrichedExercises = v0Result.exercises
+      .map((ex) => {
+        const exerciseClass = deriveExerciseClassForOutput(ex);
+        // Part 6: Pompki that survive into a full-gym plan receive secondary_compound
+        // prescription rather than main_compound — they are fallbacks, not anchors.
+        const isBodyweightInGym =
+          deprioritizePushUps && ex.name.trim().toLowerCase().startsWith("pompki");
+        const prescription = prescribeExercise(exerciseClass, goalBias, isBodyweightInGym);
+        return { ...ex, exerciseClass, prescription, _rank: sessionOrderRank(exerciseClass) };
+      })
+      .sort((a, b) => a._rank - b._rank)
+      .map(({ _rank, ...ex }) => ex);
+
+    // ── Ordering / prescription explanation notes ──────────────────────────────
+    const hasPlyo      = enrichedExercises.some((e) => e.exerciseClass === "plyometric_power");
+    const hasMainLift  = enrichedExercises.some((e) => e.exerciseClass === "main_compound");
+    const hasAccessory = enrichedExercises.some(
+      (e) => e.exerciseClass === "isolation" || e.exerciseClass === "regression_beginner",
+    );
+    const hasCore      = enrichedExercises.some((e) => e.exerciseClass === "core");
+
+    if (hasPlyo) {
+      generatorNotes.push(
+        "Element eksplozywny ustawiono na początku sesji ze względu na cel sportowy / dynamikę.",
+      );
+    }
+    if (hasMainLift && (hasAccessory || hasCore)) {
+      generatorNotes.push(
+        "Ćwiczenia główne otrzymały dłuższe przerwy niż akcesoria — zgodnie z hierarchią sesji.",
+      );
+    }
+    if (hasCore) {
+      generatorNotes.push("Core ustawiono na końcu jako wsparcie kontroli tułowia.");
+    }
+
     res.json({
       hasProfile: true,
       hasLocationData,
       sessionType: v0SessionType,
-      exercises: v0Result.exercises,
+      exercises: enrichedExercises,
       explanation: {
         rationale: explanationRationale,
         preferredExercises: preferredOutcomes,
