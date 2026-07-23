@@ -127,6 +127,66 @@ export interface GoalProfile {
   isCompetitiveAthlete: boolean;
 }
 
+// ─── Canonical goal normalization ──────────────────────────────────────────────
+
+/** The six canonical training goal strings as stored by the survey wizard. */
+const CANONICAL_GOALS = new Set([
+  "Budowa sylwetki",
+  "Zwiększenie siły",
+  "Redukcja tkanki tłuszczowej",
+  "Poprawa kondycji",
+  "Poprawa sprawności",
+  "Cel sportowy",
+]);
+
+/**
+ * Maps shorthand / free-text training goal strings to their canonical survey
+ * values.  Case-insensitive; trims surrounding whitespace.
+ *
+ * Returns the canonical value when a shorthand is recognised, the trimmed input
+ * when it is already canonical or unrecognised, or null when input is empty.
+ *
+ * This is the single source of truth for goal normalisation.  All
+ * goal-dependent logic — goal profiles, split recommendation, push-up gate,
+ * athlete structure override — must call this before comparing or matching
+ * trainingGoal strings, so that shorthand entries ("Siła", "Masa", …) behave
+ * identically to their canonical equivalents ("Zwiększenie siły", …).
+ *
+ * The shorthand patterns handle the most common Polish word-form variants:
+ *   "Siła" / "siłę" / "siły"      → "Zwiększenie siły"
+ *   "Masa" / "Masa mięśniowa"      → "Budowa sylwetki"
+ *   "Hipertrofia" / "hipertofia"   → "Budowa sylwetki"
+ *   "Redukcja"                     → "Redukcja tkanki tłuszczowej"
+ *   "Kondycja"                     → "Poprawa kondycji"
+ *   "Sprawność"                    → "Poprawa sprawności"
+ *   "Sport" / "Sportowy"           → "Cel sportowy"
+ *
+ * Unrecognised free-text values are returned unchanged so the downstream
+ * keyword-substring matching in buildGoalProfile() still applies.
+ */
+export function normalizeTrainingGoal(raw: string | null | undefined): string | null {
+  if (!raw?.trim()) return null;
+  const trimmed = raw.trim();
+
+  // Already a canonical value (exact, case-sensitive) — fast pass-through.
+  if (CANONICAL_GOALS.has(trimmed)) return trimmed;
+
+  const lower = trimmed.toLowerCase();
+
+  // Shorthand / word-form variant → canonical.
+  // Patterns are intentionally anchored or tightly scoped to avoid false positives.
+  if (/^siła$|^siłę$|^siły$|siłown/.test(lower))  return "Zwiększenie siły";
+  if (/^masa$|^masa mięśni|^hipert/.test(lower))   return "Budowa sylwetki";
+  if (/^redukcja$|^odchudzani/.test(lower))        return "Redukcja tkanki tłuszczowej";
+  if (/^kondycja$/.test(lower))                    return "Poprawa kondycji";
+  if (/^sprawność$/.test(lower))                   return "Poprawa sprawności";
+  if (/^sport$|^sportow/.test(lower))              return "Cel sportowy";
+
+  // No shorthand match — return the trimmed original so keyword matching
+  // in buildGoalProfile() can still handle arbitrary free-text entries.
+  return trimmed;
+}
+
 // ─── Canonical base profiles ───────────────────────────────────────────────────
 
 /** Budowa sylwetki — hypertrophy-quality stimulus; isolation is valued */
@@ -362,19 +422,21 @@ export function buildGoalProfile(
   sportPerformanceNeeds?: string[],
   athleteStatus?: string | null,
 ): GoalProfile {
-  if (!trainingGoal?.trim()) return PROFILE_GENERAL;
+  // Normalise first — converts shorthands to canonical values so the exact-match
+  // and keyword checks below work correctly regardless of how the goal was entered.
+  const normalized = normalizeTrainingGoal(trainingGoal);
+  if (!normalized) return PROFILE_GENERAL;
 
-  const trimmed = trainingGoal.trim();
-  const lower = trimmed.toLowerCase();
+  const lower = normalized.toLowerCase();
 
-  // "Cel sportowy" — always build a mutated sport profile
-  if (trimmed === "Cel sportowy" || lower.includes("sportow") || lower.includes("cel sport")) {
+  // "Cel sportowy" — always build a freshly-mutated sport profile
+  if (normalized === "Cel sportowy" || lower.includes("sportow") || lower.includes("cel sport")) {
     return buildSportProfile(sportPerformanceNeeds ?? [], athleteStatus);
   }
 
   // All other goals — match from keyword map
   for (const { exact, keywords, profile } of KEYWORD_MAP) {
-    if (trimmed === exact) return profile;
+    if (normalized === exact) return profile;
     if (keywords.some((kw) => lower.includes(kw))) return profile;
   }
 

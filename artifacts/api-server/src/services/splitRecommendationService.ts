@@ -28,6 +28,7 @@
  */
 
 import type { SplitType } from "@workspace/api-zod";
+import { normalizeTrainingGoal } from "./goalProfileService.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -86,8 +87,11 @@ const LOWER_LEVEL_MAX_DAYS = 3;
 type GoalCategory = "general" | "strength" | "hypertrophy" | "fat_loss" | "unknown";
 
 function classifyGoal(goal: string | null): GoalCategory {
-  if (!goal) return "unknown";
-  const g = goal.toLowerCase();
+  // Normalise first so shorthands ("Siła", "Masa", …) map to canonical values
+  // before the regex matching runs.
+  const normalized = normalizeTrainingGoal(goal);
+  if (!normalized) return "unknown";
+  const g = normalized.toLowerCase();
   if (/redukc|odchudz|fat.?loss|spalani|chudni|deficyt/.test(g)) return "fat_loss";
   if (/siła|strength|wyciskan|bench|powerlifting|pl|1rm/.test(g))  return "strength";
   if (/mas[ay]|hipertrofi|hypertrophy|muskulat|objętoś|mięśni/.test(g)) return "hypertrophy";
@@ -242,9 +246,7 @@ export function recommendSplit(input: SplitRecommendationInput): SplitRecommenda
     // competitive athlete still needs the simpler structure.
     {
       const isSportGoal =
-        input.trainingGoal != null &&
-        (input.trainingGoal.includes("sportow") ||
-          input.trainingGoal.toLowerCase().includes("cel sport"));
+        normalizeTrainingGoal(input.trainingGoal) === "Cel sportowy";
       const isCompetitiveSport =
         isSportGoal &&
         (input.athleteStatus === "Tak — zawodowo" ||

@@ -1,0 +1,69 @@
+Implement a narrow fix: canonical goal normalization for all goal-dependent logic.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign UI
+- Do NOT touch wizard flow
+- Do NOT rewrite the selection engine
+- Do NOT run tests broadly
+- Keep changes local to:
+  - goalProfileService.ts
+  - any shared goal-normalization helper if needed
+  - the minimum necessary places that consume trainingGoal-dependent logic
+
+PRIMARY GOAL:
+Prevent silent failures when training goals are stored or entered as shorthand or variant strings.
+
+KNOWN BUG:
+Goal-dependent logic currently treats some free-text or shorthand goal values differently, for example:
+- "Siła" vs "Zwiększenie siły"
+This causes silent fallback to a generic/default goal profile and breaks downstream logic such as:
+- push-up deprioritization
+- athlete/sport structure override
+- any goal-keyed class bias or slot behavior
+
+REQUIRED FIX:
+Introduce a single canonical goal normalization layer and use it everywhere goal-based logic depends on trainingGoal.
+
+Support at least these canonical UI goals:
+- Budowa sylwetki
+- Zwiększenie siły
+- Redukcja tkanki tłuszczowej
+- Poprawa kondycji
+- Poprawa sprawności
+- Cel sportowy
+
+Handle common variants / shorthand robustly, for example:
+- "Siła" -> "Zwiększenie siły"
+- "Masa" / "Masa mięśniowa" -> "Budowa sylwetki"
+- "Redukcja" -> "Redukcja tkanki tłuszczowej"
+- "Kondycja" -> "Poprawa kondycji"
+- "Sprawność" -> "Poprawa sprawności"
+- "Sport" / sport-related shorthand -> "Cel sportowy"
+
+IMPORTANT:
+- Normalize case
+- Normalize surrounding whitespace
+- Handle common Polish shorthand variants safely
+- Do NOT create brittle one-off checks in many places
+- Use one canonical normalization source of truth
+
+IMPLEMENTATION INTENT:
+1. Add a small canonical goal normalization helper
+2. Make buildGoalProfile() use normalized values
+3. Make any athlete override / push-up gate / goal-profile-dependent logic consume normalized goal values, not raw strings
+4. Preserve existing behavior for already-correct canonical values
+
+SUCCESS CRITERIA:
+- "Siła" and "Zwiększenie siły" behave identically
+- common shorthand variants no longer silently fall through to generic/default logic
+- push-up deprioritization and other goal-dependent rules no longer break because of goal string mismatch
+- the fix is small, local, and deterministic
+
+OUTPUT FORMAT:
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause
