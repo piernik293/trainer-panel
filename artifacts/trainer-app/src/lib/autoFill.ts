@@ -249,12 +249,30 @@ export type RunAutoFillResult = RunAutoFillSuccess | RunAutoFillFailure;
 // ─── buildDayFetchUrl ─────────────────────────────────────────────────────────
 
 /**
+ * Returns true for Full Body session types (full_body, full_body_a, full_body_b).
+ *
+ * FBW days span both upper and lower muscle groups, so no single boundary filter
+ * applies.  We still recognize them explicitly (rather than letting them fall
+ * through the generic null path) so call sites can apply FBW-specific strategies
+ * such as a larger candidate pool.
+ */
+function isFbwDayType(dayType: string | null | undefined): boolean {
+  if (!dayType) return false;
+  const norm = dayType.trim().toLowerCase();
+  return norm === "full_body" || norm === "full_body_a" || norm === "full_body_b";
+}
+
+/**
  * Maps a session-type string (as stored in day.dayType) to the "upper"/"lower"
  * dayType query parameter accepted by the recommendations route.
  *
  * "upper" boundaries: push / pull / upper → upper-body exercises only
  * "lower" boundaries: lower / legs         → lower-body exercises only
- * null:               plyo / full_body* / custom / unknown → no filter applied
+ * null (FBW):         full_body / full_body_a / full_body_b → no boundary filter;
+ *                     both upper + lower muscle groups are valid targets, so no
+ *                     single axis can restrict the pool.  Callers compensate by
+ *                     using a larger pool size (see isFbwDayType).
+ * null (other):       plyo / custom / unknown → no filter applied
  *
  * This prevents a push-day gap-fill from surfacing squat variants, and prevents
  * a lower-day gap-fill from surfacing chest-press candidates.
@@ -264,7 +282,10 @@ function mapToDayTypeParam(dayType: string | null | undefined): "upper" | "lower
   const norm = dayType.trim().toLowerCase();
   if (norm === "push" || norm === "pull" || norm === "upper") return "upper";
   if (norm === "lower" || norm === "legs") return "lower";
-  return null; // plyo, full_body, full_body_a, full_body_b, custom → no boundary
+  // full_body / full_body_a / full_body_b: intentionally no boundary filter —
+  // both halves of the body are in scope.  isFbwDayType() handles pool sizing.
+  // plyo / custom / unknown: also no filter.
+  return null;
 }
 
 export function buildDayFetchUrl(
@@ -1353,7 +1374,10 @@ export async function runAutoFill(
       day.orderedTargets.map((t) => t.targetId),
       day.coreEligible,
       day.alreadyAddedExerciseIds,
-      day.poolSize ?? 20,
+      // FBW days get a larger pool: no boundary filter is applied (both upper +
+      // lower are valid), so we need more candidates to cover all muscle groups
+      // with adequate variety.  Split/isolation days keep the standard 20.
+      day.poolSize ?? (isFbwDayType(day.dayType) ? 30 : 20),
       day.dayType,
     ),
   );
