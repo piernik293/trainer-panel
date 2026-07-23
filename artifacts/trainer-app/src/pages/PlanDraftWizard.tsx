@@ -574,6 +574,31 @@ function Step1Summary({
   );
 }
 
+// ─── Split subtext descriptions (Part 3 — specialization vs custom) ──────────
+
+/**
+ * Short explanatory copy shown beneath the split option label for the two
+ * choices trainers most often confuse. Keeps the rest of the split list lean.
+ */
+const SPLIT_SUBTEXTS: Partial<Record<SplitType, string>> = {
+  specialization:
+    "Układ ukierunkowany na mocniejsze rozwinięcie partii priorytetowych. " +
+    "Struktura pozostaje systemowa — dobra, gdy trener chce bias priorytetowy bez ręcznego budowania dni.",
+  custom:
+    "Ręcznie dobierany układ dni dla większej swobody trenera. " +
+    "System nadal podpowiada, czy układ jest spójny i praktyczny dla wybranego celu i liczby dni.",
+};
+
+/** Performance needs that justify surfacing the plyo-oriented split suggestion. */
+const PLYO_JUSTIFYING_NEEDS_LOWER = new Set([
+  "dynamika",
+  "szybkość",
+  "stabilizacja",
+  "skoczność",
+  "zmiana kierunku",
+  "koordynacja",
+]);
+
 // ─── Step 2 — Plan assumptions ────────────────────────────────────────────────
 
 function Step2Preferences({
@@ -597,6 +622,27 @@ function Step2Preferences({
   // Derive the live recommendation from the API data.
   // The recommendation reflects the survey data (days × level × recovery × goal).
   const rec = (data as unknown as { splitRecommendation?: SplitRecommendationType | null }).splitRecommendation ?? null;
+
+  // ── Plyo-oriented split suggestion (Parts 1 & 2) ─────────────────────────
+  // Extract athlete data from the already-typed response field.
+  const athleteRec = data.athleteRecommendation ?? null;
+  const isSportGoal =
+    prefs.trainingGoal === "Cel sportowy" ||
+    data.input.trainingGoal === "Cel sportowy";
+  const hasPlyoNeeds =
+    (athleteRec?.performanceNeeds ?? []).some((n) =>
+      PLYO_JUSTIFYING_NEEDS_LOWER.has(n.toLowerCase()),
+    );
+  // Show the targeted Plyo banner when:
+  //   • the goal is "Cel sportowy"
+  //   • the athlete has plyo-justifying needs OR plyo is already recommended
+  //   • ≥ 3 days are available (minimum for upper_lower_full_body)
+  //   • upper_lower_full_body is a compatible option for the current day count
+  const showPlyoBanner =
+    isSportGoal &&
+    (hasPlyoNeeds || athleteRec?.plyoRecommended === true) &&
+    prefs.trainingDays >= 3 &&
+    compatibleSplits.includes("upper_lower_full_body");
 
   const splitOptions = SPLIT_TYPES.map((s) => ({
     value: s,
@@ -743,7 +789,18 @@ function Step2Preferences({
                     : "border-border/50 text-muted-foreground hover:bg-muted/50"
                   }`}
               >
-                <span>{label}</span>
+                <span className="flex flex-col gap-0.5 min-w-0">
+                  <span className="block">{label}</span>
+                  {SPLIT_SUBTEXTS[value as SplitType] && (
+                    <span className={`block text-[10px] font-normal leading-snug ${
+                      prefs.splitType === value
+                        ? "text-primary/70"
+                        : "text-muted-foreground"
+                    }`}>
+                      {SPLIT_SUBTEXTS[value as SplitType]}
+                    </span>
+                  )}
+                </span>
                 <span className="flex items-center gap-1.5 shrink-0 ml-2">
                   {recommended && prefs.splitType !== value && (
                     <span className="text-[10px] font-medium text-primary border border-primary/40 bg-primary/10 rounded px-1.5 py-0.5">
@@ -773,39 +830,39 @@ function Step2Preferences({
             </p>
           )}
 
-          {/* Part 3 — Athletic split suggestion for sport-goal profiles.
-              Shown when trainingGoal = "Cel sportowy" and ≥3 days are available.
-              Suggests upper_lower_full_body as the most natural athletic-day carrier. */}
-          {(prefs.trainingGoal === "Cel sportowy" ||
-            data.input.trainingGoal === "Cel sportowy") &&
-            prefs.trainingDays >= 3 && (
-              <div className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-3 flex items-start gap-2 mt-1">
-                <Zap size={13} className="text-indigo-600 mt-0.5 shrink-0" />
-                <div className="text-[11px] text-indigo-700 leading-snug space-y-1.5">
-                  <p className="font-semibold text-indigo-800">
-                    Sugestia dla profilu sportowego
-                  </p>
-                  <p>
-                    Dla klientów z celem sportowym (Dynamika / Szybkość / Stabilizacja) warto
-                    rozważyć plan z jedną sesją o wyraźnym akcentem atletycznym lub
-                    plyometrycznym zamiast powtarzającej się sesji siłowej.
-                  </p>
-                  {compatibleSplits.includes("upper_lower_full_body") && (
-                    <p>
-                      <span className="font-medium">
-                        Upper / Lower / Full Body
-                      </span>{" "}
-                      — ostatni dzień może pełnić funkcję sesji FBW z komponentem
-                      dynamicznym (skoki, zmiany kierunku, ćwiczenia reaktywne).
-                    </p>
-                  )}
-                  <p className="text-indigo-600">
-                    Rekomendacja wynika z celu sportowego i może lepiej odzwierciedlać
-                    wymagania motoryczne klienta niż klasyczny układ 1:1.
-                  </p>
-                </div>
+          {/* Plyo-oriented split suggestion — Parts 1 & 2.
+              Only shown for sport profiles with explicit plyo-justifying needs
+              (Dynamika / Szybkość / Stabilizacja / etc.) AND ≥ 3 training days.
+              General sport-goal profiles without those needs do NOT see this. */}
+          {showPlyoBanner && (
+            <div className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-3 flex items-start gap-2 mt-1">
+              <Zap size={13} className="text-indigo-600 mt-0.5 shrink-0" />
+              <div className="text-[11px] text-indigo-700 leading-snug space-y-1.5">
+                <p className="font-semibold text-indigo-800">
+                  Opcja: podział z dniem atletyczno-plyometrycznym
+                </p>
+                <p>
+                  Dla tego profilu warto rozważyć jedną sesję z dominującym akcentem
+                  dynamicznym lub plyometrycznym zamiast kolejnej powtarzającej się
+                  sesji siłowej — inaczej niż w klasycznym układzie 1:1.
+                </p>
+                <p>
+                  <span className="font-medium">Upper / Lower / Full Body</span>{" "}
+                  — ostatni dzień może pełnić rolę sesji FBW z komponentem plyometrycznym
+                  (skoki, ćwiczenia reaktywne, zmiany kierunku) zamiast drugiej sesji dolnych
+                  partii.
+                </p>
+                <p className="text-indigo-600">
+                  Rekomendacja wynika z celu sportowego
+                  {hasPlyoNeeds && athleteRec?.performanceNeeds?.length
+                    ? ` i priorytetów: ${athleteRec.performanceNeeds.join(" / ")}`
+                    : ""}
+                  . Opcja ta lepiej odzwierciedla wymagania motoryczne klienta niż
+                  standardowy układ siłowy.
+                </p>
               </div>
-            )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

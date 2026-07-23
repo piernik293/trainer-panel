@@ -1,0 +1,141 @@
+Implement a focused split-picker improvement: add a conditional Plyo-oriented split option and clearly differentiate "Plan specjalizacyjny" vs "Własny podział".
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign the whole application
+- Do NOT rewrite the generator broadly
+- Keep changes local to:
+  - split recommendation / split picker UI
+  - minimum necessary split-option logic
+  - small explanatory copy in the split section only
+
+PRIMARY GOAL:
+Improve split selection clarity and make sport-oriented profiles visibly eligible for a dedicated athletic / plyometric split option.
+
+====================================================
+PART 1 — ADD A CONDITIONAL PLYO-ORIENTED SPLIT OPTION
+====================================================
+
+Add a new conditional split option for suitable sport profiles.
+
+This should NOT appear for everyone.
+Show it only when the profile justifies it, especially for:
+- Goal = Cel sportowy
+- and one or more of:
+  - Dynamika
+  - Szybkość
+  - Stabilizacja
+- minimum sensible experience level
+- enough weekly training days
+- enough session duration if needed by the current logic
+
+The new option should be something coach-like and practical, for example:
+- Upper / Lower / Plyo
+- FBW + Plyo
+- Upper / Lower / FBW / Plyo
+- or another athletic/plyo-oriented variant already compatible with the app
+
+IMPORTANT:
+- Do NOT add a useless naked "Plyo" option with no weekly context
+- Do NOT show this split for non-sport profiles
+- Do NOT force this split as the only recommendation
+- It may appear as:
+  - recommended option
+  - alternative option
+  - or clearly labeled sport-specific option
+
+====================================================
+PART 2 — EXPLAIN THE PLYO OPTION
+====================================================
+
+When the Plyo-oriented split appears, add a short plain-language explanation.
+
+Intent example:
+- "Dla tego profilu warto rozważyć jedną sesję z dominującym akcentem dynamicznym / plyometrycznym zamiast kolejnej powtarzającej się sesji siłowej."
+- "Rekomendacja wynika z celu sportowego i priorytetów: Dynamika / Szybkość / Stabilizacja."
+
+The trainer should immediately understand:
+- why this option appears
+- why it is different from a standard gym split
+- why it may better fit the client
+
+====================================================
+PART 3 — CLEARLY DIFFERENTIATE "PLAN SPECJALIZACYJNY" VS "WŁASNY PODZIAŁ"
+====================================================
+
+Right now these two options are too unclear.
+
+Make their meaning explicit in the UI.
+
+Required distinction:
+
+A. Plan specjalizacyjny
+- should read as a system-guided split focused on stronger development of 1–2 priority muscle groups
+- still system-structured
+- suitable when the trainer wants a priority-biased plan without fully building the split manually
+
+B. Własny podział
+- should read as a trainer-controlled custom split
+- the trainer chooses the structure more freely
+- suitable when the trainer wants more manual control than predefined/system-guided splits
+- the system should still provide guidance on whether the chosen split is coherent, practical, and appropriate for the selected goal and weekly day count
+
+Add short helper text / subtext / label copy so the trainer can understand the difference immediately.
+
+Example intent:
+- Plan specjalizacyjny: "Układ ukierunkowany na mocniejsze rozwinięcie partii priorytetowych."
+- Własny podział: "Ręcznie dobierany układ dni dla większej swobody trenera. System nadal podpowiada, czy układ jest spójny i praktyczny."
+
+IMPORTANT:
+Do NOT leave both as ambiguous labels with no explanation.
+
+====================================================
+PART 4 — KEEP RULES COHERENT
+====================================================
+
+Do NOT break existing split/day-count rules.
+
+Keep coherent behavior for:
+- minimum days required per split
+- FBW limits
+- FBW A/B limits
+- sport-only conditional options
+
+The new Plyo-oriented split must respect the same basic validation logic as other splits.
+
+====================================================
+PART 5 — DO NOT OVERBUILD
+====================================================
+
+Important:
+- Do NOT create a giant new split engine
+- Do NOT redesign all wizard steps
+- Do NOT rewrite recommendation logic broadly
+- Do NOT touch save-plan flow
+- Do NOT broaden this into major generator changes
+
+This task is only:
+- conditional Plyo-oriented split option
+- explanation for that option
+- clear distinction between Plan specjalizacyjny and Własny podział
+
+====================================================
+SUCCESS CRITERIA
+====================================================
+
+After this change:
+- suitable sport profiles can see a clear athletic/plyo-oriented split option
+- the trainer understands why that option appears
+- "Plan specjalizacyjny" and "Własny podział" are clearly different in meaning
+- split picker becomes more intuitive and coach-like
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause
