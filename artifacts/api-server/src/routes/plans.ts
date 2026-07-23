@@ -505,6 +505,217 @@ router.post("/plans/analysis-preview", async (req, res): Promise<void> => {
   res.json(result);
 });
 
+// ─── POST /clients/:clientId/plans/draft ─────────────────────────────────────
+//
+// Atomically saves a full plan draft (plan header + all days + all exercises)
+// inside a single DB transaction.  If any step fails the whole write is rolled
+// back, so the trainer never ends up with a partial / orphaned plan row.
+//
+// This replaces the old multi-request sequential save used by the wizard.
+// The individual POST /plans/:id/days and POST /plans/:id/days/:dayId/exercises
+// endpoints still exist for the interactive plan editor.
+
+const SaveDraftExerciseBody = z.object({
+  exerciseId: z.number().int().positive(),
+  workingSets: z.number().int().min(1).default(3),
+  warmUpSets: z.number().int().min(0).optional().default(0),
+  repType: z.enum(["exact", "range", "time", "distance", "open"]).nullable().optional(),
+  repsExact: z.number().int().positive().nullable().optional(),
+  repRangeMin: z.number().int().positive().nullable().optional(),
+  repRangeMax: z.number().int().positive().nullable().optional(),
+  repTimeSeconds: z.number().int().positive().nullable().optional(),
+  repDistanceMeters: z.number().int().positive().nullable().optional(),
+  repOpenInstruction: z.string().nullable().optional(),
+  loadType: z.string().nullable().optional(),
+  loadValue: z.string().nullable().optional(),
+  loadInstruction: z.string().nullable().optional(),
+  rir: z.number().int().min(0).max(5).nullable().optional(),
+  rpe: z.string().nullable().optional(),
+  rirOrRpe: z.string().nullable().optional(),
+  tempo: z.string().nullable().optional(),
+  restSeconds: z.number().int().positive().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  clientInstructions: z.string().nullable().optional(),
+});
+
+const SaveDraftDayBody = z.object({
+  dayName: z.string().optional(),
+  subtitle: z.string().nullable().optional(),
+  estimatedDurationMinutes: z.number().int().positive().nullable().optional(),
+  exercises: z.array(SaveDraftExerciseBody),
+});
+
+const SaveDraftPlanBody = z.object({
+  title: z.string().min(1, "Tytuł planu jest wymagany"),
+  surveyId: z.number().int().positive(),
+  goal: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  splitType: z
+    .enum([
+      "full_body",
+      "full_body_ab",
+      "upper_lower",
+      "upper_lower_full_body",
+      "push_pull_legs",
+      "push_pull_lower_full_body",
+      "specialization",
+      "custom",
+    ])
+    .nullable()
+    .optional(),
+  blockDurationWeeks: z.number().int().min(4).max(12).nullable().optional(),
+  days: z.array(SaveDraftDayBody),
+});
+
+router.post("/clients/:clientId/plans/draft", async (req, res): Promise<void> => {
+  const clientId = Number(req.params.clientId);
+  if (!Number.isFinite(clientId)) {
+    res.status(400).json({ error: "Nieprawidłowe ID klienta" });
+    return;
+  }
+
+  const parsed = SaveDraftPlanBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { title, surveyId, goal, description, splitType, blockDurationWeeks, days } = parsed.data;
+
+  // ── Validate survey ownership ──────────────────────────────────────────────
+  const [survey] = await db
+    .select({ id: surveysTable.id, clientId: surveysTable.clientId, experienceLevel: surveysTable.experienceLevel })
+    .from(surveysTable)
+    .where(and(eq(surveysTable.id, surveyId), eq(surveysTable.clientId, clientId)));
+
+  if (!survey) {
+    res.status(404).json({ error: "Wywiad treningowy nie znaleziony dla tego klienta" });
+    return;
+  }
+
+  if (!survey.experienceLevel) {
+    res.status(400).json({
+      error: "Wywiad treningowy klienta nie zawiera poziomu doświadczenia. Uzupełnij wywiad treningowy przed utworzeniem planu.",
+    });
+    return;
+  }
+  if (!isValidExperienceLevel(survey.experienceLevel)) {
+    res.status(400).json({
+      error: `Nieznany poziom doświadczenia w wywiadzie treningowym: "${survey.experienceLevel}".`,
+    });
+    return;
+  }
+  const experienceLevelUsed = survey.experienceLevel;
+
+  // ── Get active guideline version ───────────────────────────────────────────
+  const [activeVersion] = await db
+    .select({ id: volumeGuidelineVersionsTable.id })
+    .from(volumeGuidelineVersionsTable)
+    .where(eq(volumeGuidelineVersionsTable.isActive, true))
+    .orderBy(volumeGuidelineVersionsTable.id)
+    .limit(1);
+
+  if (!activeVersion) {
+    res.status(500).json({ error: "Brak aktywnej wersji wytycznych objętości." });
+    return;
+  }
+
+  // ── Validate all exerciseIds exist before opening the transaction ──────────
+  const allExerciseIds = [...new Set(days.flatMap((d) => d.exercises.map((e) => e.exerciseId)))];
+  if (allExerciseIds.length > 0) {
+    const foundExercises = await db
+      .select({ id: exercisesTable.id })
+      .from(exercisesTable)
+      .where(inArray(exercisesTable.id, allExerciseIds));
+    const foundIds = new Set(foundExercises.map((e) => e.id));
+    const missing = allExerciseIds.find((id) => !foundIds.has(id));
+    if (missing !== undefined) {
+      res.status(404).json({ error: `Ćwiczenie o ID ${missing} nie zostało znalezione.` });
+      return;
+    }
+  }
+
+  // ── Atomic write — single transaction ─────────────────────────────────────
+  let planId: number;
+  try {
+    await db.transaction(async (tx) => {
+      // 1. Insert plan header.
+      const [plan] = await tx
+        .insert(workoutPlansTable)
+        .values({
+          clientId,
+          surveyId,
+          guidelineVersionId: activeVersion.id,
+          experienceLevelUsed,
+          title,
+          goal: goal ?? null,
+          description: description ?? null,
+          status: "draft",
+          splitType: splitType ?? null,
+          blockDurationWeeks: blockDurationWeeks ?? null,
+        })
+        .returning({ id: workoutPlansTable.id });
+
+      planId = plan.id;
+
+      // 2. Insert each day in order, then its exercises.
+      for (let dayIdx = 0; dayIdx < days.length; dayIdx++) {
+        const day = days[dayIdx];
+        const dayOrder = dayIdx + 1;
+        const defaultName = `Dzień ${dayOrder}`;
+
+        const [insertedDay] = await tx
+          .insert(workoutPlanDaysTable)
+          .values({
+            planId: planId,
+            dayOrder,
+            dayName: day.dayName ?? defaultName,
+            subtitle: day.subtitle ?? null,
+            estimatedDurationMinutes: day.estimatedDurationMinutes ?? null,
+          })
+          .returning({ id: workoutPlanDaysTable.id });
+
+        // 3. Insert exercises for this day.
+        for (let exIdx = 0; exIdx < day.exercises.length; exIdx++) {
+          const ex = day.exercises[exIdx];
+          await tx.insert(workoutPlanExercisesTable).values({
+            dayId: insertedDay.id,
+            exerciseId: ex.exerciseId,
+            orderInDay: exIdx + 1,
+            workingSets: ex.workingSets,
+            warmUpSets: ex.warmUpSets ?? 0,
+            repType: ex.repType ?? null,
+            repsExact: ex.repsExact ?? null,
+            repRangeMin: ex.repRangeMin ?? null,
+            repRangeMax: ex.repRangeMax ?? null,
+            repTimeSeconds: ex.repTimeSeconds ?? null,
+            repDistanceMeters: ex.repDistanceMeters ?? null,
+            repOpenInstruction: ex.repOpenInstruction ?? null,
+            loadType: ex.loadType ?? null,
+            loadValue: ex.loadValue ?? null,
+            loadInstruction: ex.loadInstruction ?? null,
+            rir: ex.rir ?? null,
+            rpe: ex.rpe ?? null,
+            rirOrRpe: ex.rirOrRpe ?? null,
+            tempo: ex.tempo ?? null,
+            restSeconds: ex.restSeconds ?? null,
+            notes: ex.notes ?? null,
+            clientInstructions: ex.clientInstructions ?? null,
+          });
+        }
+      }
+    });
+  } catch (err) {
+    // Transaction was rolled back automatically.  Surface a clean error to the caller.
+    const message = err instanceof Error ? err.message : "Nieznany błąd";
+    res.status(500).json({ error: `Nie udało się zapisać planu (transakcja wycofana): ${message}` });
+    return;
+  }
+
+  const full = await getPlanFull(planId!);
+  res.status(201).json(full);
+});
+
 // ─── GET /clients/:clientId/plans ─────────────────────────────────────────────
 
 router.get("/clients/:clientId/plans", async (req, res): Promise<void> => {

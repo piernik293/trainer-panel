@@ -14,6 +14,8 @@
  *   3. Dense day — a single day with many exercises (simulates max-exercise case).
  *   4. surveyId null guard — missing/invalid surveyId returns 404 and makes no
  *      partial write (no orphaned plan row in the DB).
+ *   5. Bulk draft endpoint (POST /clients/:id/plans/draft) — transactional save
+ *      happy path and rollback on invalid exerciseId leaves no orphaned plan row.
  *
  * Tests are self-contained: beforeAll creates all fixture rows; afterAll
  * deletes them via FK cascade so the DB is left clean.
@@ -21,7 +23,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import app from "../../app";
 import {
   db,
@@ -415,5 +417,176 @@ describe("Edge case — surveyId guard prevents partial writes", () => {
 
     // Clean up the second client.
     await db.delete(clientsTable).where(eq(clientsTable.email, otherEmail));
+  });
+});
+
+// ─── Suite 5: Bulk draft endpoint — transactional save & rollback ─────────────
+
+describe("POST /clients/:id/plans/draft — transactional bulk save", () => {
+  // ── Happy path ───────────────────────────────────────────────────────────
+
+  it("saves a 2-day plan with exercises atomically and returns 201", async () => {
+    const res = await request(app)
+      .post(`/api/clients/${testClientId}/plans/draft`)
+      .send({
+        title: "Bulk Draft — happy path",
+        surveyId: testSurveyId,
+        goal: "Hipertrofia",
+        days: [
+          {
+            dayName: "Klatka piersiowa",
+            estimatedDurationMinutes: 60,
+            exercises: [
+              { exerciseId: EXERCISE_IDS[0], workingSets: 4, repType: "range", repRangeMin: 8, repRangeMax: 12, restSeconds: 90, rir: 2 },
+              { exerciseId: EXERCISE_IDS[1], workingSets: 3, repType: "range", repRangeMin: 10, repRangeMax: 15, restSeconds: 60, rir: 1 },
+            ],
+          },
+          {
+            dayName: "Plecy",
+            estimatedDurationMinutes: 55,
+            exercises: [
+              { exerciseId: EXERCISE_IDS[2], workingSets: 4, repType: "range", repRangeMin: 6, repRangeMax: 10, restSeconds: 120, rir: 2 },
+            ],
+          },
+        ],
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.clientId).toBe(testClientId);
+    expect(res.body.surveyId).toBe(testSurveyId);
+    expect(res.body.status).toBe("draft");
+    expect(res.body.title).toBe("Bulk Draft — happy path");
+
+    // Days saved in correct order.
+    expect(res.body.days).toHaveLength(2);
+    expect(res.body.days[0].dayName).toBe("Klatka piersiowa");
+    expect(res.body.days[0].dayOrder).toBe(1);
+    expect(res.body.days[0].exercises).toHaveLength(2);
+    expect(res.body.days[1].dayName).toBe("Plecy");
+    expect(res.body.days[1].dayOrder).toBe(2);
+    expect(res.body.days[1].exercises).toHaveLength(1);
+
+    // Spot-check prescription fields.
+    const firstEx = res.body.days[0].exercises[0];
+    expect(firstEx.workingSets).toBe(4);
+    expect(firstEx.repType).toBe("range");
+    expect(firstEx.repRangeMin).toBe(8);
+    expect(firstEx.repRangeMax).toBe(12);
+    expect(firstEx.restSeconds).toBe(90);
+    expect(firstEx.rir).toBe(2);
+
+    // orderInDay values must be sequential per day.
+    const day1Orders = res.body.days[0].exercises.map((e: { orderInDay: number }) => e.orderInDay);
+    expect(day1Orders).toEqual([1, 2]);
+  });
+
+  it("DB verification — rows are present for the successful bulk save", async () => {
+    // Get the plan we just saved (most recent for this client).
+    const plans = await db
+      .select()
+      .from(workoutPlansTable)
+      .where(eq(workoutPlansTable.clientId, testClientId));
+
+    const bulkPlan = plans.find((p) => p.title === "Bulk Draft — happy path");
+    expect(bulkPlan).toBeDefined();
+
+    const days = await db
+      .select()
+      .from(workoutPlanDaysTable)
+      .where(eq(workoutPlanDaysTable.planId, bulkPlan!.id));
+    expect(days).toHaveLength(2);
+
+    const dayIds = days.map((d) => d.id);
+    const exercises = await db
+      .select()
+      .from(workoutPlanExercisesTable)
+      .where(inArray(workoutPlanExercisesTable.dayId, dayIds));
+    // 2 exercises on day 1 + 1 on day 2.
+    expect(exercises).toHaveLength(3);
+  });
+
+  // ── Rollback on invalid exerciseId ───────────────────────────────────────
+
+  it("returns 404 when a day contains an unknown exerciseId", async () => {
+    const res = await request(app)
+      .post(`/api/clients/${testClientId}/plans/draft`)
+      .send({
+        title: "Bulk Draft — bad exercise rollback",
+        surveyId: testSurveyId,
+        days: [
+          {
+            dayName: "Dzień 1 — dobry",
+            exercises: [
+              { exerciseId: EXERCISE_IDS[0], workingSets: 3, repType: "range", repRangeMin: 8, repRangeMax: 12 },
+            ],
+          },
+          {
+            dayName: "Dzień 2 — zły exerciseId",
+            exercises: [
+              // First exercise is valid; second is bogus — simulates mid-chain failure.
+              { exerciseId: EXERCISE_IDS[1], workingSets: 3 },
+              { exerciseId: 9_999_999, workingSets: 3 },
+            ],
+          },
+        ],
+      });
+
+    // The validation step catches the bad ID before the transaction even opens.
+    expect(res.status).toBe(404);
+    expect(res.body.error).toMatch(/9999999/);
+  });
+
+  it("no orphaned plan row after the rejected bulk save", async () => {
+    const plansBefore = await db
+      .select()
+      .from(workoutPlansTable)
+      .where(eq(workoutPlansTable.clientId, testClientId));
+
+    // Fire the same bad request again.
+    await request(app)
+      .post(`/api/clients/${testClientId}/plans/draft`)
+      .send({
+        title: "Bulk Draft — orphan guard",
+        surveyId: testSurveyId,
+        days: [
+          {
+            dayName: "Dzień 1",
+            exercises: [{ exerciseId: EXERCISE_IDS[0], workingSets: 3 }],
+          },
+          {
+            dayName: "Dzień 2",
+            exercises: [{ exerciseId: 9_999_999, workingSets: 3 }],
+          },
+        ],
+      });
+
+    const plansAfter = await db
+      .select()
+      .from(workoutPlansTable)
+      .where(eq(workoutPlansTable.clientId, testClientId));
+
+    // Plan count must be unchanged — no orphaned rows.
+    expect(plansAfter.length).toBe(plansBefore.length);
+  });
+
+  // ── Day with zero exercises ───────────────────────────────────────────────
+
+  it("saves a plan where one day has no exercises", async () => {
+    const res = await request(app)
+      .post(`/api/clients/${testClientId}/plans/draft`)
+      .send({
+        title: "Bulk Draft — empty day",
+        surveyId: testSurveyId,
+        days: [
+          {
+            dayName: "Aktywna regeneracja",
+            exercises: [],
+          },
+        ],
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.days).toHaveLength(1);
+    expect(res.body.days[0].exercises).toHaveLength(0);
   });
 });

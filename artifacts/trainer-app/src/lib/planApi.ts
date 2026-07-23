@@ -269,16 +269,19 @@ export interface SaveDraftPlanInput {
 }
 
 /**
- * Persists a fully-generated plan draft to the database in one shot:
- * creates the plan record, adds all days in order, then adds all exercises
- * per day with their full prescription.  Returns the saved WorkoutPlan.
+ * Persists a fully-generated plan draft to the database in one shot using the
+ * transactional bulk-save endpoint (POST /clients/:id/plans/draft).
+ *
+ * The entire write — plan header, all days, and all exercises — is wrapped in a
+ * single DB transaction on the server.  If any step fails the transaction is
+ * rolled back atomically, so the trainer never ends up with an orphaned partial
+ * plan.  Returns the saved WorkoutPlan on success.
  */
 export function useSaveDraftPlan(clientId: number) {
   const queryClient = useQueryClient();
   return useMutation<WorkoutPlan, Error, SaveDraftPlanInput>({
     mutationFn: async (input) => {
-      // 1. Create the plan record (splitType + blockDurationWeeks stored immediately)
-      let currentPlan = await apiFetch<WorkoutPlan>(`/clients/${clientId}/plans`, {
+      return apiFetch<WorkoutPlan>(`/clients/${clientId}/plans/draft`, {
         method: "POST",
         body: JSON.stringify({
           title: input.title,
@@ -287,46 +290,22 @@ export function useSaveDraftPlan(clientId: number) {
           description: input.description,
           splitType: input.splitType,
           blockDurationWeeks: input.blockDurationWeeks,
-        }),
-      });
-
-      // 2. Add each day in order, then add its exercises
-      for (const day of input.days) {
-        const planAfterDay = await apiFetch<WorkoutPlan>(`/plans/${currentPlan.id}/days`, {
-          method: "POST",
-          body: JSON.stringify({
+          days: input.days.map((day) => ({
             dayName: day.dayName,
             subtitle: day.dayType,
             estimatedDurationMinutes: input.sessionDurationMinutes ?? null,
-          }),
-        });
-
-        // The newly-added day has the highest dayOrder in the returned plan
-        const sortedDays = [...planAfterDay.days].sort((a, b) => a.dayOrder - b.dayOrder);
-        const createdDay = sortedDays[sortedDays.length - 1];
-        currentPlan = planAfterDay;
-
-        // 3. Add exercises for this day with full prescription
-        for (const ex of day.exercises) {
-          currentPlan = await apiFetch<WorkoutPlan>(
-            `/plans/${currentPlan.id}/days/${createdDay.id}/exercises`,
-            {
-              method: "POST",
-              body: JSON.stringify({
-                exerciseId: ex.exerciseId,
-                workingSets: ex.sets,
-                repType: "range",
-                repRangeMin: ex.repsMin,
-                repRangeMax: ex.repsMax,
-                restSeconds: ex.restSeconds,
-                rir: ex.rir,
-              }),
-            },
-          );
-        }
-      }
-
-      return currentPlan;
+            exercises: day.exercises.map((ex) => ({
+              exerciseId: ex.exerciseId,
+              workingSets: ex.sets,
+              repType: "range",
+              repRangeMin: ex.repsMin,
+              repRangeMax: ex.repsMax,
+              restSeconds: ex.restSeconds,
+              rir: ex.rir,
+            })),
+          })),
+        }),
+      });
     },
     onSuccess: (plan) => {
       queryClient.invalidateQueries({ queryKey: planKeys.list(clientId) });
