@@ -229,7 +229,20 @@ export default function Step4Exercises({
   const hasAnyExercise = Object.values(exerciseDraft).some((day) => day.length > 0);
 
   /** V0 session types accepted by POST .../generate-day */
-  const V0_SESSION_TYPES = new Set(["push", "pull", "legs", "upper", "lower", "plyo"]);
+  const V0_SESSION_TYPES = new Set([
+    "push", "pull", "legs", "upper", "lower", "plyo",
+    // Full Body variants — normalised to "full_body" before the backend call;
+    // A/B variation is driven by alternativeIndex (second call gets altIdx=1).
+    "full_body", "full_body_a", "full_body_b",
+  ]);
+
+  /**
+   * Normalise full_body_a / full_body_b → full_body.
+   * The engine has one full_body template; A/B variety comes from alternativeIndex.
+   */
+  function normSessionType(raw: string): string {
+    return raw === "full_body_a" || raw === "full_body_b" ? "full_body" : raw;
+  }
 
   /**
    * handleGenerateFromEmpty — true empty-session generator.
@@ -287,11 +300,14 @@ export default function Step4Exercises({
         .map((m) => m.muscleName) ?? [];
 
     for (const day of distributionResult.days) {
-      const sessionType = day.dayType?.toLowerCase() ?? "";
-      if (!V0_SESSION_TYPES.has(sessionType)) {
+      const rawSessionType = day.dayType?.toLowerCase() ?? "";
+      if (!V0_SESSION_TYPES.has(rawSessionType)) {
         console.log(`[GenerateDay] Skipping day ${day.dayIndex} — unsupported dayType: "${day.dayType}"`);
         continue;
       }
+      // Normalise full_body_a/full_body_b → full_body so the backend receives a
+      // known session type; A/B variation is produced by alternativeIndex below.
+      const sessionType = normSessionType(rawSessionType);
 
       const altIdx = sessionTypeCount[sessionType] ?? 0;
       sessionTypeCount[sessionType] = altIdx + 1;
@@ -300,6 +316,8 @@ export default function Step4Exercises({
       // occurrence of this session type.  The engine uses this to prefer implements
       // and angles NOT used in that session — e.g. Upper B avoids barbell when
       // Upper A already used barbell for the main compound slot.
+      // normSessionType is applied to both sides so full_body_a and full_body_b
+      // are treated as the same type for the purpose of this lookup.
       const sameTypePreviousExercises =
         altIdx > 0
           ? (() => {
@@ -307,7 +325,7 @@ export default function Step4Exercises({
                 const d = distributionResult.days.find(
                   (dd) => dd.dayIndex === r.dayIndex,
                 );
-                return d?.dayType?.toLowerCase() === sessionType;
+                return normSessionType(d?.dayType?.toLowerCase() ?? "") === sessionType;
               });
               return (prev?.exercises ?? []).map((ex) => ({
                 id: ex.id,

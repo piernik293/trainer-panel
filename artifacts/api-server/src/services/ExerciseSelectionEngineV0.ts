@@ -33,7 +33,7 @@ import type { GoalProfile } from "./goalProfileService";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
-export type V0SessionType = "push" | "pull" | "legs" | "upper" | "lower" | "plyo";
+export type V0SessionType = "push" | "pull" | "legs" | "upper" | "lower" | "plyo" | "full_body";
 
 export interface V0Result {
   exercises: DayRecommendationExercise[];
@@ -1907,6 +1907,90 @@ export function runExerciseSelectionEngineV0(
       if (s4Calves !== null) {
         pick("Core", false, (ex) => muscle(ex, "Brzuch"));
       }
+      break;
+    }
+
+    // ── FULL BODY ─────────────────────────────────────────────────────────────
+    //
+    // Whole-body session covering push, pull, lower, and core in one day.
+    // Used for: full_body splits, full_body_a (altIdx=0), full_body_b (altIdx=1).
+    //
+    // A/B variation is produced by the alternativeIndex mechanism — altIdx=1
+    // steers each slot's band toward pattern-diverse exercises relative to
+    // altIdx=0, so Full Body A and Full Body B differ without separate templates.
+    //
+    // Slot order:
+    //   1. (req) Chest push compound          — horizontal press anchor
+    //   2. (req) Back pull compound           — vertical or horizontal pull
+    //   3. (req) Knee-dominant lower compound — squat / lunge pattern
+    //   4. (req) Hip-dominant                 — hinge / posterior-chain complement
+    //   5. (opt) Arm or shoulder accessory    — biceps / triceps / barki
+    //   6. (opt) Core                         — always last
+    case "full_body": {
+      // Slot 1: Chest compound — horizontal press is the push anchor.
+      pick(
+        "Chest push compound",
+        true,
+        (ex) =>
+          muscle(ex, "Klatka piersiowa") &&
+          compound(ex) &&
+          pattern(ex, "Pchanie poziome"),
+        { protected: true },
+      );
+
+      // Slot 2: Back pull compound — prefer vertical pull (lat pulldown / pull-up);
+      // fall back to any back pull compound when the vertical pool is exhausted.
+      pick(
+        "Back pull compound (vertical)",
+        false,
+        (ex) =>
+          muscle(ex, "Plecy") &&
+          compound(ex) &&
+          pattern(ex, "Przyciąganie pionowe"),
+        { protected: true },
+      ) ??
+        pick(
+          "Back pull compound",
+          true,
+          (ex) =>
+            muscle(ex, "Plecy") &&
+            compound(ex) &&
+            pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome"),
+          { protected: true },
+        );
+
+      // Slot 3: Knee-dominant lower compound — squat or lunge family.
+      const fbS3 = pick(
+        "Knee-dominant lower compound",
+        true,
+        (ex) =>
+          muscle(ex, "Mięśnie czworogłowe uda", "Pośladki") &&
+          compound(ex) &&
+          pattern(ex, "Przysiad", "Wykrok"),
+        { protected: true },
+      );
+      const fbKneePattern = normP(fbS3?.movementPattern);
+
+      // Slot 4: Hip-dominant compound — hinge / posterior-chain complement.
+      // Excludes near-duplicate of the knee pattern picked in slot 3.
+      pick(
+        "Hip-dominant",
+        true,
+        (ex) =>
+          muscle(ex, "Mięśnie dwugłowe uda", "Pośladki", "Plecy") &&
+          pattern(ex, "Zawias biodrowy") &&
+          (fbKneePattern === null || normP(ex.movementPattern) !== fbKneePattern),
+      );
+
+      // Slot 5 (optional): Arm or shoulder accessory — biceps / triceps / barki.
+      pick(
+        "Arm or shoulder accessory",
+        false,
+        (ex) => muscle(ex, "Biceps", "Triceps", "Barki"),
+      );
+
+      // Slot 6 (optional): Core — always last.
+      pick("Core", false, (ex) => muscle(ex, "Brzuch"));
       break;
     }
 

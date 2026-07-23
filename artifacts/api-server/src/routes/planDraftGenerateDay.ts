@@ -67,7 +67,7 @@ const BodySchema = z.object({
    * V0 session type — determines which slot template to apply.
    * "push" | "pull" | "legs" | "upper" | "lower"
    */
-  v0SessionType: z.enum(["push", "pull", "legs", "upper", "lower", "plyo"]),
+  v0SessionType: z.enum(["push", "pull", "legs", "upper", "lower", "plyo", "full_body"]),
   /**
    * Controlled variety index (optional, default 0).
    *
@@ -147,7 +147,7 @@ router.post(
     if (!body.success) {
       res.status(400).json({
         error:
-          "v0SessionType is required: push | pull | legs | upper | lower | plyo",
+          "v0SessionType is required: push | pull | legs | upper | lower | plyo | full_body",
       });
       return;
     }
