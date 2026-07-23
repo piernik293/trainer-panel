@@ -179,6 +179,15 @@ export interface RunAutoFillDayInput {
    * muscle groups). When undefined defaults to 0 (no minimum enforced).
    */
   minDayExercises?: number;
+  /**
+   * Session type string from the distribution result (e.g. "push", "pull",
+   * "lower", "upper", "full_body").
+   * Forwarded to buildDayFetchUrl so the recommendation endpoint applies the
+   * correct muscle-group boundary filter (upper/lower) — preventing cross-day
+   * exercises from entering the gap-fill candidate pool.
+   * Full-body and unrecognised types receive no boundary filter (safe fallback).
+   */
+  dayType?: string | null;
 }
 
 export interface AutoFillWeeklyTarget {
@@ -239,6 +248,25 @@ export type RunAutoFillResult = RunAutoFillSuccess | RunAutoFillFailure;
 
 // ─── buildDayFetchUrl ─────────────────────────────────────────────────────────
 
+/**
+ * Maps a session-type string (as stored in day.dayType) to the "upper"/"lower"
+ * dayType query parameter accepted by the recommendations route.
+ *
+ * "upper" boundaries: push / pull / upper → upper-body exercises only
+ * "lower" boundaries: lower / legs         → lower-body exercises only
+ * null:               plyo / full_body* / custom / unknown → no filter applied
+ *
+ * This prevents a push-day gap-fill from surfacing squat variants, and prevents
+ * a lower-day gap-fill from surfacing chest-press candidates.
+ */
+function mapToDayTypeParam(dayType: string | null | undefined): "upper" | "lower" | null {
+  if (!dayType) return null;
+  const norm = dayType.trim().toLowerCase();
+  if (norm === "push" || norm === "pull" || norm === "upper") return "upper";
+  if (norm === "lower" || norm === "legs") return "lower";
+  return null; // plyo, full_body, full_body_a, full_body_b, custom → no boundary
+}
+
 export function buildDayFetchUrl(
   clientId: number,
   broadCategories: string[],
@@ -246,6 +274,8 @@ export function buildDayFetchUrl(
   coreEligible: boolean,
   alreadyAddedIds: number[],
   poolSize?: number,
+  /** Session-type string from the distribution result (e.g. "push", "lower"). */
+  dayType?: string | null,
 ): string {
   const params = new URLSearchParams();
   params.set("broadCategories", broadCategories.join(","));
@@ -260,6 +290,13 @@ export function buildDayFetchUrl(
   }
   if (poolSize !== undefined) {
     params.set("poolSize", String(poolSize));
+  }
+  // Enforce session-type muscle-group boundaries in the recommendation pool.
+  // Without this, the route uses dayType=null and selectExercise skips the
+  // boundary filter — allowing cross-day muscle groups into the candidate pool.
+  const dayTypeParam = mapToDayTypeParam(dayType);
+  if (dayTypeParam) {
+    params.set("dayType", dayTypeParam);
   }
   return `/api/clients/${clientId}/plan-draft/day-recommendations?${params}`;
 }
@@ -1297,6 +1334,18 @@ export async function runAutoFill(
   } = input;
 
   // 1. Parallel recommendation fetches
+  //
+  // Pool size: use the caller-supplied override when set (e.g. 20 for
+  // sedentary clients), otherwise default to 20 so the gap-fill always has
+  // a wide-enough candidate pool to produce meaningful variety.
+  // The old implicit server default (8) was too small: with 2–3 uncovered
+  // targets each receiving at most 3 candidates, the same top-scorers always
+  // won and the selection felt predetermined.
+  //
+  // dayType: forwarded to the endpoint so the muscle-group boundary filter
+  // (upper/lower) is applied during the recommendation fetch.  Without it
+  // the selectExercise gate used dayType=null and cross-session exercises
+  // (e.g. squats on a push day) entered the candidate pool.
   const dayUrls = daysToProcess.map((day) =>
     buildDayFetchUrl(
       clientId,
@@ -1304,7 +1353,8 @@ export async function runAutoFill(
       day.orderedTargets.map((t) => t.targetId),
       day.coreEligible,
       day.alreadyAddedExerciseIds,
-      day.poolSize,
+      day.poolSize ?? 20,
+      day.dayType,
     ),
   );
 

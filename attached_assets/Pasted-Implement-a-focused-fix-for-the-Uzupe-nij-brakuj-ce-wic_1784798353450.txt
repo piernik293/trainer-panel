@@ -1,0 +1,100 @@
+Implement a focused fix for the "Uzupełnij brakujące ćwiczenia" flow.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign UI broadly
+- Do NOT rewrite the full generator
+- Do NOT touch save-plan flow, auth, portal, notes, or progression
+- Keep changes local to:
+  - "Uzupełnij brakujące ćwiczenia" logic
+  - exercise gap-filling / coverage completion logic
+  - minimum necessary helper logic for candidate selection
+
+PRIMARY GOAL:
+Make "Uzupełnij brakujące ćwiczenia" choose exercises dynamically from a compatible pool, not from a rigid hardcoded fallback per muscle.
+
+KNOWN PROBLEM:
+The current gap-fill behavior appears too fixed/predetermined.
+When filling missing coverage, it should not always insert the same exercise for the same target.
+It should behave like a smart selector using related movement families / similar patterns / compatible exercise variants.
+
+REQUIRED BEHAVIOR:
+
+1. GAP-FILL MUST BE POOL-BASED, NOT FIXED-EXERCISE-BASED
+When the user clicks "Uzupełnij brakujące ćwiczenia":
+- do NOT use one rigid default exercise per missing muscle
+- instead, search a candidate pool of compatible exercises
+- choose the best fit based on context
+
+2. USE RELATED FAMILY / SIMILAR PATTERN LOGIC
+When filling a missing target, prefer exercises that:
+- match the missing muscle or movement need
+- fit the current session type
+- fit the current goal
+- fit the user’s experience level
+- fit available equipment
+- respect excluded exercises/families
+- complement already selected exercises in that day
+
+Examples of acceptable logic:
+- if a lower day needs posterior chain work, choose from compatible hinge/hamstring/glute-support families depending constraints
+- if deadlift family is blocked, choose another valid way to cover the missing need instead of forcing deadlift variants
+- if a push day needs more chest/triceps support, choose from compatible pressing/support families instead of always the same exact fallback exercise
+
+3. DO NOT MAKE IT RANDOM
+This is NOT random variety.
+The selection should still be:
+- deterministic
+- explainable
+- context-aware
+
+4. AVOID DUPLICATING THE SAME EXERCISE OR NEAR-CLONE WHEN POSSIBLE
+When filling a gap:
+- do not reinsert the exact same exercise already present in the day
+- avoid near-identical clones when a better complementary option exists
+- prefer a related variant/family if that gives better day quality
+
+5. PRESERVE DAY COHERENCE
+The filled exercise must make sense inside the existing session.
+Do NOT fix coverage by adding an exercise that breaks the character of the day.
+
+Examples:
+- do not add a weird bodybuilding isolation to a clearly athletic support slot unless it truly fits
+- do not add a redundant second/third nearly identical lift when a smarter complementary option exists
+- do not break the class/order hierarchy of the day
+
+6. RESPECT HARD CONSTRAINTS
+The gap-fill flow must still respect:
+- excluded exercises
+- blocked movement families
+- experience restrictions
+- equipment restrictions
+- push-up contextual rules
+- sport/athlete-specific logic
+- split/session-type compatibility
+
+7. SUPPORT FULL BODY SESSION TYPES TOO
+If the current gap-fill flow still behaves poorly for:
+- full_body
+- full_body_a
+- full_body_b
+make sure these session types also use the same smart pool-based completion logic.
+
+IMPORTANT:
+Do NOT hardcode a separate fixed fallback exercise list for every missing target if a candidate pool can solve it.
+Use the current library/selection rules as much as possible.
+
+SUCCESS CRITERIA:
+- clicking "Uzupełnij brakujące ćwiczenia" no longer feels like inserting the same predetermined exercise every time
+- missing coverage is filled with compatible related exercises from the right movement family/pattern pool
+- excluded families remain respected
+- the day remains coherent
+- the selection feels like a smart completion step, not a static patch
+
+OUTPUT FORMAT:
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause

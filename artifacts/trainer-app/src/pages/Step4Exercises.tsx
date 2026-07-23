@@ -477,6 +477,8 @@ export default function Step4Exercises({
         step3DailyAllocations: new Map(
           day.targetAllocations.map((a) => [a.targetId, a.allocatedVolume]),
         ),
+        // Pass session type so gap-fill respects push/pull/upper/lower muscle-group boundaries.
+        dayType: day.dayType,
         // Stage 7A / Stage 8A: per-level session constraint overrides (computed above).
         ...levelOverrides,
       });
