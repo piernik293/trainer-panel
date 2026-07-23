@@ -1,0 +1,171 @@
+Implement Save Plan MVP for the trainer app.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign the whole UI
+- Do NOT rewrite the generator
+- Do NOT implement client portal, authentication, trainer/client chat, notes, progression tracking, RIR/tempo/weight editing, RAMP, or cooldown in this task
+- Keep changes local to:
+  - final plan save flow
+  - saved-plan data model / API route(s)
+  - client plan list / basic retrieval
+  - minimum necessary UI wiring from the final generated plan view
+
+PRIMARY GOAL:
+Make the generated plan actually savable and retrievable later.
+
+====================================================
+PART 1 — SAVE PLAN ACTION MUST BECOME REAL
+====================================================
+
+KNOWN ISSUE:
+The app can generate a plan, but the "Zapisz plan" action is not yet a complete real product flow.
+
+REQUIRED BEHAVIOR:
+When the trainer clicks "Zapisz plan":
+- the current generated plan is persisted
+- the saved plan is linked to the current client
+- the saved plan stores the actual visible final plan data, not a stale placeholder
+
+At minimum save:
+- clientId
+- createdAt
+- split / weekly structure
+- trainingDays
+- sessionDurationMinutes
+- goal
+- priority muscles
+- generated explanation block if available
+- final visible exercises per day
+- prescription per exercise (sets / repsLabel / restSeconds if present)
+- exerciseClass if present
+- status field (for MVP: "saved" is enough; "draft" optional if already natural)
+
+IMPORTANT:
+Do NOT save a half-empty shell.
+Save the real final plan content that the trainer sees.
+
+====================================================
+PART 2 — RETRIEVE SAVED PLANS FOR A CLIENT
+====================================================
+
+Add a simple saved-plan retrieval flow.
+
+Required behavior:
+- for a given client, the app can fetch saved plans
+- trainer can see at least a basic list of saved plans
+- each entry should show enough context to recognize the plan, for example:
+  - date
+  - goal
+  - split
+  - training days
+  - session duration
+
+Do NOT build a giant dashboard.
+This is just MVP retrieval.
+
+====================================================
+PART 3 — BASIC SAVED PLAN VIEW
+====================================================
+
+A saved plan must be openable again.
+
+Required behavior:
+- trainer can open a saved plan
+- the saved plan view shows the same core information as the final generated plan view:
+  - summary
+  - weekly structure
+  - days and exercises
+  - explanation sections if available
+
+IMPORTANT:
+Do NOT create a completely separate inconsistent renderer if you can reuse the current final plan presentation.
+Prefer one coherent plan-view path.
+
+====================================================
+PART 4 — UI FLOW
+====================================================
+
+From the final generated plan screen:
+- "Zapisz plan" should save successfully
+- after save, the trainer should get a clear confirmation
+- the saved plan should be reachable again from the client context
+
+You may implement one of these simple MVP flows:
+A. After save, show success state + link/button to open saved plan
+B. Show success state + refresh a client "Plany" section/list
+C. Show success state + keep trainer in place but enable plan retrieval later
+
+Any of these is acceptable if it is coherent and works end-to-end.
+
+====================================================
+PART 5 — DATA MODEL / API DESIGN
+====================================================
+
+Use the smallest practical persistence model.
+
+Guidelines:
+- do NOT overengineer versioning/history in this task
+- do NOT build complex collaboration state
+- do NOT build progress tracking in this task
+- do NOT store huge redundant data if a smaller stable representation works
+- do NOT create a giant abstract plan system if a focused "saved generated plan" model is enough
+
+MVP is enough:
+- save generated plan snapshot
+- retrieve saved plan snapshot
+- open saved plan snapshot
+
+====================================================
+PART 6 — PRESERVE CURRENT PLAN QUALITY
+====================================================
+
+The save flow must preserve:
+- excluded exercise effects
+- preferred exercise visibility
+- explanation block
+- weekly structure override information
+- prescription/order currently visible in the final plan
+
+Do NOT save a downgraded or simplified version that loses the trust-building information we already added.
+
+====================================================
+PART 7 — DO NOT OVERBUILD
+====================================================
+
+Important:
+- Do NOT implement client login
+- Do NOT implement trainer notes
+- Do NOT implement client notes
+- Do NOT implement progression history
+- Do NOT implement editable weights/RIR/tempo
+- Do NOT implement PDF export in this task
+- Do NOT implement advanced permissions
+- Do NOT redesign all client pages
+
+This task is only:
+- save generated plan
+- list saved plans
+- reopen saved plan
+
+====================================================
+SUCCESS CRITERIA
+====================================================
+
+After this change:
+- clicking "Zapisz plan" actually persists the current plan
+- the saved plan is linked to the client
+- the trainer can later retrieve the saved plan
+- the saved plan shows the same meaningful content as the generated final view
+- the flow feels like a real product step, not just a generator demo
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause
