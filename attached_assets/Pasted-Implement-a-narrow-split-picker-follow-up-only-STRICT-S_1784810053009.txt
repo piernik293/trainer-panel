@@ -1,0 +1,93 @@
+Implement a narrow split-picker follow-up only.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign the whole wizard
+- Do NOT touch generator logic broadly
+- Keep changes local to the split picker UI and minimum necessary split-option logic only
+
+PRIMARY GOAL:
+Finish the split-picker work by adding:
+1. one real conditional sport / plyo-oriented split option
+2. two disabled roadmap options:
+   - Kalistenika (W trakcie)
+   - Bieganie (W trakcie)
+
+IMPORTANT:
+Do NOT redo the already completed work for:
+- "Plan specjalizacyjny" vs "Własny podział" descriptions
+- the existing sport coaching note / recommendation banner
+
+Only implement the missing split-picker options.
+
+====================================================
+PART 1 — ADD ONE REAL CONDITIONAL SPORT / PLYO SPLIT OPTION
+====================================================
+
+Add one real visible split option for suitable sport profiles.
+
+Show it only when the profile justifies it, especially for:
+- Goal = Cel sportowy
+- and one or more of:
+  - Dynamika
+  - Szybkość
+  - Stabilizacja
+- minimum sensible experience level
+- enough weekly training days
+- enough session duration if needed by current logic
+
+This must be a real visible selectable split option, for example:
+- Upper / Lower / Full Body (z akcentem Plyo)
+- Upper / Lower / Plyo
+- FBW + Plyo
+- or another athletic/plyo-oriented variant already compatible with the app
+
+IMPORTANT:
+- Do NOT add a useless naked "Plyo" option with no weekly context
+- Do NOT show it for non-sport profiles
+- Do NOT force it as the only recommendation
+- Keep existing split/day-count rules coherent
+
+====================================================
+PART 2 — ADD DISABLED FUTURE ROADMAP OPTIONS
+====================================================
+
+Add two visible future options in the split picker:
+- "Kalistenika (W trakcie)"
+- "Bieganie (W trakcie)"
+
+These options must:
+- be visible in the split picker
+- be clearly marked as "W trakcie"
+- be disabled / not selectable
+- have short helper text
+
+Example helper text:
+- "Kalistenika: plan oparty o ćwiczenia z masą ciała i progresje kalisteniczne. Funkcja w przygotowaniu."
+- "Bieganie: plan z ukierunkowaniem na bieganie / kondycję tlenową / pracę biegową. Funkcja w przygotowaniu."
+
+IMPORTANT:
+- Do NOT let the user actually select them
+- Do NOT wire them into the generator
+- Do NOT create broken flow
+
+====================================================
+SUCCESS CRITERIA
+====================================================
+
+After this change:
+- suitable sport profiles can see a real athletic/plyo-oriented split option
+- Kalistenika (W trakcie) is visible and disabled
+- Bieganie (W trakcie) is visible and disabled
+- the rest of the split picker keeps working normally
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause

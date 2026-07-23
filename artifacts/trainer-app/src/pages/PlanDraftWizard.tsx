@@ -790,8 +790,22 @@ function Step2Preferences({
                   }`}
               >
                 <span className="flex flex-col gap-0.5 min-w-0">
-                  <span className="block">{label}</span>
-                  {SPLIT_SUBTEXTS[value as SplitType] && (
+                  <span className="flex items-center gap-1.5 flex-wrap">
+                    <span className="block">{label}</span>
+                    {/* Part 1 — Sport / Plyo badge on upper_lower_full_body for eligible profiles */}
+                    {value === "upper_lower_full_body" && showPlyoBanner && (
+                      <span className="text-[9px] bg-indigo-100 text-indigo-700 border border-indigo-200 rounded px-1.5 py-0.5 font-semibold shrink-0">
+                        Athletic / Plyo
+                      </span>
+                    )}
+                  </span>
+                  {value === "upper_lower_full_body" && showPlyoBanner ? (
+                    <span className={`block text-[10px] font-normal leading-snug ${
+                      prefs.splitType === value ? "text-primary/70" : "text-indigo-600"
+                    }`}>
+                      Ostatni dzień jako sesja FBW z akcentem plyometrycznym — dla profilu sportowego z priorytetem dynamiki / szybkości.
+                    </span>
+                  ) : SPLIT_SUBTEXTS[value as SplitType] ? (
                     <span className={`block text-[10px] font-normal leading-snug ${
                       prefs.splitType === value
                         ? "text-primary/70"
@@ -799,7 +813,7 @@ function Step2Preferences({
                     }`}>
                       {SPLIT_SUBTEXTS[value as SplitType]}
                     </span>
-                  )}
+                  ) : null}
                 </span>
                 <span className="flex items-center gap-1.5 shrink-0 ml-2">
                   {recommended && prefs.splitType !== value && (
@@ -815,6 +829,40 @@ function Step2Preferences({
                   {prefs.splitType === value && <CheckCircle2 size={14} className="text-primary" />}
                 </span>
               </button>
+            ))}
+
+            {/* Part 2 — Disabled roadmap options: visible, not selectable, clearly marked */}
+            {[
+              {
+                key: "kalistenika",
+                label: "Kalistenika",
+                subtext:
+                  "Plan oparty o ćwiczenia z masą ciała i progresje kalisteniczne. Funkcja w przygotowaniu.",
+              },
+              {
+                key: "bieganie",
+                label: "Bieganie",
+                subtext:
+                  "Plan z ukierunkowaniem na bieganie / kondycję tlenową / pracę biegową. Funkcja w przygotowaniu.",
+              },
+            ].map(({ key, label, subtext }) => (
+              <div
+                key={key}
+                aria-disabled="true"
+                className="flex items-center justify-between px-4 py-3 rounded-lg border border-border/40 bg-muted/20 text-sm opacity-55 cursor-not-allowed select-none"
+              >
+                <span className="flex flex-col gap-0.5 min-w-0">
+                  <span className="flex items-center gap-1.5 flex-wrap">
+                    <span className="block text-muted-foreground font-medium">{label}</span>
+                    <span className="text-[9px] bg-muted text-muted-foreground border border-border/60 rounded px-1.5 py-0.5 font-semibold shrink-0">
+                      W trakcie
+                    </span>
+                  </span>
+                  <span className="block text-[10px] text-muted-foreground font-normal leading-snug">
+                    {subtext}
+                  </span>
+                </span>
+              </div>
             ))}
           </div>
           {rec?.alternatives && rec.alternatives.length > 0 && (

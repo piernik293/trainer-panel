@@ -1,0 +1,58 @@
+Implement a narrow runtime-fix task: Full Body support was added in code, but the live app still returns the old v0SessionType validation error.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign UI
+- Do NOT rewrite generator logic broadly
+- Keep changes local to:
+  - the exact generate-day request path used by "Ułóż wstępną propozycję całego planu"
+  - the exact backend route/schema actually hit at runtime
+  - any duplicate/stale validation gate if present
+
+PRIMARY GOAL:
+Fix the real runtime path so Full Body generation actually works in the live app.
+
+OBSERVED RUNTIME ERROR:
+The UI still returns:
+"v0SessionType is required: push | pull | legs | upper | lower | plyo"
+
+This proves the live request path is still using an old validation gate that does not include full_body.
+
+REQUIRED DEBUG TASK:
+Find the exact reason why the live app still returns the old enum message after the previous full_body code changes.
+
+Check specifically:
+1. Is "Ułóż wstępną propozycję całego planu" calling the same route that was edited?
+2. Is there another duplicate backend route/schema for generate-day still using the old enum?
+3. Is the frontend hitting a stale deployment / stale server process / wrong API target?
+4. Is there another request-building path for the whole-plan generation flow that still strips or rewrites full_body?
+5. Is the runtime error coming from a different endpoint than the one previously patched?
+
+REQUIRED FIX:
+- patch the exact live code path that is still rejecting full_body
+- ensure the runtime validator really accepts:
+  - full_body
+  - full_body_a
+  - full_body_b (or their normalized path)
+- ensure "Ułóż wstępną propozycję całego planu" actually generates exercises for FBW days
+- remove the old runtime validation failure for valid FBW splits
+
+IMPORTANT:
+- Do NOT stop at code inspection only
+- confirm the actual live path used by the UI
+- fix the real path the app is currently hitting
+
+SUCCESS CRITERIA:
+- the old runtime error disappears for Full Body days
+- "Ułóż wstępną propozycję całego planu" works for FBW
+- Full Body 1 / 2 / 3 get exercises
+- weekly coverage is populated
+- no regression for push/pull/legs/upper/lower/plyo
+
+OUTPUT FORMAT:
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause
