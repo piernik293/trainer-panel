@@ -26,6 +26,43 @@ export type ExerciseStepValidationCode =
  */
 export type ManualOverrideField = "tempo" | "rir" | "weight" | "exercise";
 
+// ─── Exercise class (from generator) ─────────────────────────────────────────
+
+/**
+ * The exercise class assigned by the server-side generator.
+ * Drives prescription (sets/reps/rest) and session ordering on the backend,
+ * and is used here for visual tier display in the plan preview.
+ */
+export type ExerciseClass =
+  | "plyometric_power"
+  | "main_compound"
+  | "secondary_compound"
+  | "isolation"
+  | "core"
+  | "regression_beginner";
+
+// ─── Generator explanation (from generate-day API) ───────────────────────────
+
+/**
+ * Explanation block returned by the generate-day API.
+ * Stored in wizard state so Step 5 can render coach-facing insights.
+ */
+export interface GeneratedDayExplanation {
+  rationale: string[];
+  preferredExercises: Array<{
+    keyword: string;
+    status: "used" | "not_used";
+    note: string;
+  }>;
+  excludedExercises: Array<{
+    name: string;
+    scope: "exact" | "family";
+    label?: string;
+    reason: string;
+  }>;
+  notes: string[];
+}
+
 /** A single exercise assigned to a workout day in the local generator draft. */
 export interface DraftExercise {
   /** Client-side stable ID — NOT a database ID. Unique within the session. */
@@ -39,6 +76,12 @@ export interface DraftExercise {
    * Core exercises are always placed at the bottom of their day.
    */
   isCore: boolean;
+  /**
+   * Exercise class assigned by the generator (plyometric_power, main_compound,
+   * secondary_compound, isolation, core, regression_beginner).
+   * Optional — absent when the exercise was added manually by the trainer.
+   */
+  exerciseClass?: ExerciseClass;
   /** Display order within the day (0-based). Assigned automatically. */
   order: number;
   /** Working sets. Integer 1–6. */

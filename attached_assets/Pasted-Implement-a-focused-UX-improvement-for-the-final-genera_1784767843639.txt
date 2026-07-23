@@ -1,0 +1,175 @@
+Implement a focused UX improvement for the final generated plan view.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT rewrite the generator
+- Do NOT redesign the whole application shell
+- Do NOT touch authentication, client portal, plan saving, notes, progression tracking, RAMP, or cooldown in this task
+- Keep changes local to:
+  - final generated plan summary view
+  - exercise display/order in the final visible plan
+  - explanation / summary UI
+  - minimum necessary helper mapping for readable display only
+
+PRIMARY GOAL:
+Make the final generated plan feel clearer, more coach-like, and more trustworthy.
+
+KNOWN CURRENT PROBLEMS:
+1. The final summary is still too thin and not informative enough
+2. Exercises inside a day are technically valid, but the visible order can feel awkward
+3. Exercises with the same local emphasis (for example chest pressing work, back work, shoulder work) are not always presented in the most intuitive sequence
+4. The screen does not yet explain the plan strongly enough for the trainer
+
+IMPORTANT:
+This is primarily a PRESENTATION / FINAL VIEW task.
+Do NOT broadly change generator decision logic unless a tiny display-order helper is required.
+
+====================================================
+PART 1 — STRONGER FINAL SUMMARY UI
+====================================================
+
+Improve the final plan view so it clearly communicates:
+- what kind of plan this is
+- why this structure was chosen
+- what influenced the generator
+- what was preferred
+- what was excluded
+- what the trainer should notice immediately
+
+Required sections in the final plan view:
+
+A. "Dlaczego taki plan?"
+Show short readable bullets such as:
+- poziom klienta
+- cel
+- priorytety
+- miejsce treningu / sprzęt
+- wybrana struktura tygodnia
+- dlaczego generator wybrał taki split
+
+B. "Preferowane ćwiczenia"
+Show:
+- which preferred exercises were used
+- on which day they appear
+- if not used, why not in short plain language
+Examples:
+- "Podciąganie — użyte w Dniu 2"
+- "Push press — nie użyto, bo plan nie zawierał zgodnego slotu athletic press"
+- "Brak wskazanych preferowanych ćwiczeń"
+
+C. "Ćwiczenia wykluczone"
+Show:
+- what was excluded
+- whether exact exercise or full family was blocked
+- short reason
+Examples:
+- "Martwy ciąg — wykluczono zgodnie z preferencjami klienta"
+- "Warianty martwego ciągu — zablokowano jako ta sama rodzina ruchu"
+
+D. "Uwagi generatora"
+Short useful notes only, for example:
+- większy nacisk na plecy i barki
+- elementy eksplozywne ustawiono na początku jednostek
+- ćwiczenia główne mają dłuższe przerwy
+- pompki zdepriorytetyzowano, bo dostępna była pełna siłownia
+
+IMPORTANT:
+Keep this readable and compact.
+Do NOT dump raw technical engine internals.
+
+====================================================
+PART 2 — BETTER EXERCISE ORDER IN THE FINAL DAY VIEW
+====================================================
+
+The visible order inside each day should feel more intuitive to a trainer.
+
+Keep the current main hierarchy:
+1. explosive / plyo if present
+2. main compounds
+3. secondary compounds
+4. accessory / isolation
+5. core
+
+But improve the within-day visible ordering so exercises with the same local emphasis stay closer together when that does NOT break the hierarchy.
+
+Examples of better visual ordering:
+- chest pressing work close together
+- back work close together
+- shoulder work close together
+- core at the end
+- avoid awkward jumps like chest → shoulders → chest again if both chest exercises belong to the same prescription tier
+
+IMPORTANT:
+Do NOT destroy the coach-like main ordering just to group muscles.
+Use grouping only inside compatible ordering tiers.
+
+====================================================
+PART 3 — DAY CARD READABILITY
+====================================================
+
+Improve the readability of each training day card.
+
+Required improvements:
+- clearer exercise rows/cards
+- easier scanning of exercise name + target + prescription
+- better visual separation between:
+  - main lifts
+  - accessory work
+  - core
+- preserve the current generated prescription values
+
+Do NOT create a huge redesign.
+Make it cleaner and more professional.
+
+====================================================
+PART 4 — SHOW TRAINER-USEFUL CONTEXT
+====================================================
+
+In the final visible plan, make sure the trainer can immediately see:
+- client level
+- client goal
+- priority muscles
+- session duration
+- split type
+- whether the structure was standard or overridden
+- what the generator intentionally respected or rejected
+
+This should reduce the feeling of:
+“generator spat out exercises”
+and improve:
+“generator made explainable coaching decisions”
+
+====================================================
+PART 5 — DO NOT OVERBUILD
+====================================================
+
+Important:
+- Do NOT implement plan saving in this task
+- Do NOT implement client login/portal in this task
+- Do NOT add editable weights/RIR/tempo in this task
+- Do NOT redesign every page in the app
+- Do NOT touch engine logic broadly
+- Do NOT replace valid ordering rules with purely cosmetic grouping
+
+====================================================
+SUCCESS CRITERIA
+====================================================
+
+After this change:
+- the final plan page is much more informative
+- preferred and excluded exercises are visible and understandable
+- the trainer can quickly understand why the plan looks this way
+- exercise order inside a day feels more natural and readable
+- similar local emphasis exercises are presented more logically without breaking session hierarchy
+- the page feels more like a real trainer product and less like a raw generator dump
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause

@@ -23,7 +23,7 @@ import {
   type PlanDraftGenerationPreferencesType,
   type WeeklyVolumeDistributionResponseType,
 } from "@workspace/api-zod";
-import type { ExerciseDraftByDay, DraftExercise } from "@/lib/exerciseDraftHelpers";
+import type { ExerciseDraftByDay, DraftExercise, ExerciseClass, GeneratedDayExplanation } from "@/lib/exerciseDraftHelpers";
 import { validatePrescription } from "@/lib/exerciseDraftHelpers";
 import type { DraftVolumePreviewResult } from "@/hooks/useVolumeCoverage";
 import { WeeklyVolumeCoverage } from "@/components/VolumeCoverageSection";
@@ -42,6 +42,152 @@ import {
   Lock,
   TrendingUp,
 } from "lucide-react";
+
+// ─── Exercise class display config ────────────────────────────────────────────
+
+const EXERCISE_CLASS_CONFIG: Record<ExerciseClass, {
+  label: string;
+  color: string;
+  tierRank: number;
+  sectionLabel: string;
+}> = {
+  plyometric_power:    { label: "Eksplozywne",  color: "text-amber-700 bg-amber-50 border-amber-200",    tierRank: 0, sectionLabel: "Eksplozywne" },
+  main_compound:       { label: "Główne",        color: "text-blue-700 bg-blue-50 border-blue-200",       tierRank: 1, sectionLabel: "Ćwiczenia główne" },
+  secondary_compound:  { label: "Wspomagające",  color: "text-teal-700 bg-teal-50 border-teal-200",       tierRank: 2, sectionLabel: "Wspomagające" },
+  isolation:           { label: "Akcesoria",     color: "text-slate-600 bg-slate-50 border-slate-200",    tierRank: 3, sectionLabel: "Akcesoria" },
+  regression_beginner: { label: "Regresja",      color: "text-violet-700 bg-violet-50 border-violet-200", tierRank: 3, sectionLabel: "Akcesoria / regresja" },
+  core:                { label: "Core",           color: "text-emerald-700 bg-emerald-50 border-emerald-200", tierRank: 5, sectionLabel: "Core" },
+};
+
+// ─── Display-order grouping ────────────────────────────────────────────────────
+
+/**
+ * Groups exercises by tier (plyometric → main → secondary → accessory → core)
+ * and within each tier by muscle group (first-appearance order).
+ * This is purely visual — it does NOT change the stored order in the draft.
+ */
+function buildDisplayGroups(
+  exercises: DraftExercise[],
+): Array<{ tierRank: number; sectionLabel: string; exercises: DraftExercise[] }> {
+  const getTierRank = (ex: DraftExercise): number => {
+    if (ex.exerciseClass && EXERCISE_CLASS_CONFIG[ex.exerciseClass]) {
+      return EXERCISE_CLASS_CONFIG[ex.exerciseClass].tierRank;
+    }
+    return ex.isCore ? 5 : 3;
+  };
+  const getSectionLabel = (ex: DraftExercise): string => {
+    if (ex.exerciseClass && EXERCISE_CLASS_CONFIG[ex.exerciseClass]) {
+      return EXERCISE_CLASS_CONFIG[ex.exerciseClass].sectionLabel;
+    }
+    return ex.isCore ? "Core" : "Akcesoria";
+  };
+
+  // Build per-tier muscle group order (stable: first appearance wins)
+  const tierMuscleOrder: Record<number, string[]> = {};
+  for (const ex of exercises) {
+    const rank = getTierRank(ex);
+    if (!tierMuscleOrder[rank]) tierMuscleOrder[rank] = [];
+    if (!tierMuscleOrder[rank].includes(ex.mainMuscleGroup)) {
+      tierMuscleOrder[rank].push(ex.mainMuscleGroup);
+    }
+  }
+
+  const sorted = [...exercises].sort((a, b) => {
+    const rankDiff = getTierRank(a) - getTierRank(b);
+    if (rankDiff !== 0) return rankDiff;
+    const rank = getTierRank(a);
+    const order = tierMuscleOrder[rank] ?? [];
+    return order.indexOf(a.mainMuscleGroup) - order.indexOf(b.mainMuscleGroup);
+  });
+
+  const groups: Array<{ tierRank: number; sectionLabel: string; exercises: DraftExercise[] }> = [];
+  for (const ex of sorted) {
+    const rank = getTierRank(ex);
+    const label = getSectionLabel(ex);
+    const last = groups[groups.length - 1];
+    if (!last || last.tierRank !== rank) {
+      groups.push({ tierRank: rank, sectionLabel: label, exercises: [ex] });
+    } else {
+      last.exercises.push(ex);
+    }
+  }
+  return groups;
+}
+
+// ─── Explanation aggregation ───────────────────────────────────────────────────
+
+interface AggregatedExplanation {
+  rationale: string[];
+  preferredExercises: Array<{
+    keyword: string;
+    status: "used" | "not_used";
+    usedInDays: number[];
+    note: string;
+  }>;
+  excludedExercises: Array<{
+    name: string;
+    scope: "exact" | "family";
+    label?: string;
+  }>;
+  notes: string[];
+}
+
+function aggregateExplanations(
+  generatedExplanations: Record<number, GeneratedDayExplanation>,
+): AggregatedExplanation | null {
+  const entries = Object.entries(generatedExplanations) as [string, GeneratedDayExplanation][];
+  if (entries.length === 0) return null;
+
+  // Rationale: unique lines, skip per-session "Typ sesji:" lines
+  const rationaleSet = new Set<string>();
+  for (const [, exp] of entries) {
+    exp.rationale
+      .filter((r) => !r.startsWith("Typ sesji:"))
+      .forEach((r) => rationaleSet.add(r));
+  }
+
+  // Preferred exercises: aggregate by keyword; track days where it was used
+  const prefMap = new Map<string, { keyword: string; usedInDays: number[]; note: string }>();
+  for (const [dayIdxStr, exp] of entries) {
+    const dayIdx = parseInt(dayIdxStr, 10);
+    for (const pe of exp.preferredExercises) {
+      if (!prefMap.has(pe.keyword)) {
+        prefMap.set(pe.keyword, { keyword: pe.keyword, usedInDays: [], note: pe.note });
+      }
+      const entry = prefMap.get(pe.keyword)!;
+      if (pe.status === "used") {
+        entry.usedInDays.push(dayIdx);
+        entry.note = pe.note;
+      }
+    }
+  }
+
+  // Excluded exercises: deduplicate by name
+  const exclMap = new Map<string, { name: string; scope: "exact" | "family"; label?: string }>();
+  for (const [, exp] of entries) {
+    for (const ee of exp.excludedExercises) {
+      if (!exclMap.has(ee.name)) {
+        exclMap.set(ee.name, { name: ee.name, scope: ee.scope, label: ee.label });
+      }
+    }
+  }
+
+  // Notes: unique across all days
+  const notesSet = new Set<string>();
+  for (const [, exp] of entries) exp.notes.forEach((n) => notesSet.add(n));
+
+  return {
+    rationale: [...rationaleSet],
+    preferredExercises: [...prefMap.values()].map((pe) => ({
+      keyword: pe.keyword,
+      status: pe.usedInDays.length > 0 ? "used" : "not_used",
+      usedInDays: pe.usedInDays,
+      note: pe.note,
+    })),
+    excludedExercises: [...exclMap.values()],
+    notes: [...notesSet],
+  };
+}
 
 // ─── Polish helpers ────────────────────────────────────────────────────────────
 
@@ -73,6 +219,183 @@ interface Step5PreviewProps {
   coverageLoading: boolean;
   clientId: number;
   onBack: () => void;
+  /** Per-day explanation blocks from the generator. Empty when exercises were added manually. */
+  generatedExplanations?: Record<number, GeneratedDayExplanation>;
+}
+
+// ─── Generator insights card ───────────────────────────────────────────────────
+
+function GeneratorInsightsCard({
+  aggregated,
+  effectivePrefs,
+  distributionResult,
+  typedData,
+}: {
+  aggregated: AggregatedExplanation | null;
+  effectivePrefs: PlanDraftGenerationPreferencesType;
+  distributionResult: WeeklyVolumeDistributionResponseType;
+  typedData: GetClientPlanDraftInputResponseType;
+}) {
+  const splitMatchesRec =
+    effectivePrefs.splitType === distributionResult.recommendedSplitType;
+  const selectedLabel =
+    SPLIT_TYPE_LABELS[effectivePrefs.splitType] ?? effectivePrefs.splitType;
+  const recLabel =
+    SPLIT_TYPE_LABELS[distributionResult.recommendedSplitType] ??
+    distributionResult.recommendedSplitType;
+
+  // "Dlaczego taki plan?" bullets — built from effectivePrefs + generator rationale
+  const whyBullets: string[] = [];
+  if (typedData.input.experienceLevel) {
+    whyBullets.push(`Poziom: ${typedData.input.experienceLevel}`);
+  }
+  if (effectivePrefs.trainingGoal) {
+    whyBullets.push(`Cel: ${effectivePrefs.trainingGoal}`);
+  }
+  whyBullets.push(
+    splitMatchesRec
+      ? `Struktura: ${selectedLabel} — zgodna z rekomendacją generatora`
+      : `Struktura: ${selectedLabel} — wybrana ręcznie (rekomendacja: ${recLabel})`,
+  );
+  if (effectivePrefs.priorityMuscleGroups.length > 0) {
+    whyBullets.push(
+      `Priorytety mięśniowe: ${effectivePrefs.priorityMuscleGroups.join(", ")}`,
+    );
+  }
+  const locDur: string[] = [];
+  if (typedData.input.trainingLocation) locDur.push(typedData.input.trainingLocation);
+  if (effectivePrefs.sessionDurationMinutes) {
+    locDur.push(`${effectivePrefs.sessionDurationMinutes} min/sesja`);
+  }
+  if (locDur.length > 0) whyBullets.push(locDur.join(" · "));
+  // Extra rationale from generator (skip level/goal — already shown above)
+  if (aggregated) {
+    aggregated.rationale
+      .filter(
+        (r) =>
+          !r.startsWith("Poziom zaawansowania:") &&
+          !r.startsWith("Cel treningowy:"),
+      )
+      .forEach((r) => whyBullets.push(r));
+  }
+
+  return (
+    <Card className="border-border/50 shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <span className="text-base">🔍</span> Dlaczego taki plan?
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* A — Plan context */}
+        <ul className="space-y-0.5">
+          {whyBullets.map((b, i) => (
+            <li key={i} className="text-[11px] text-foreground flex items-start gap-1.5">
+              <span className="text-muted-foreground shrink-0 mt-0.5">•</span>
+              <span>{b}</span>
+            </li>
+          ))}
+        </ul>
+
+        {/* B — Preferred exercises */}
+        {aggregated && (
+          <div>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+              Preferowane ćwiczenia
+            </p>
+            {aggregated.preferredExercises.length > 0 ? (
+              <ul className="space-y-0.5">
+                {aggregated.preferredExercises.map((pe, i) => (
+                  <li key={i} className="text-[11px] flex items-start gap-1.5">
+                    {pe.status === "used" ? (
+                      <>
+                        <span className="text-emerald-600 shrink-0 font-bold mt-0.5">✓</span>
+                        <span>
+                          <span className="font-medium text-foreground">{pe.keyword}</span>
+                          {" — "}
+                          <span className="text-emerald-700">
+                            użyte w {pe.usedInDays.map((d) => `Dniu ${d + 1}`).join(", ")}
+                          </span>
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-amber-500 shrink-0 font-bold mt-0.5">–</span>
+                        <span>
+                          <span className="font-medium text-foreground">{pe.keyword}</span>
+                          {" — "}
+                          <span className="text-muted-foreground">
+                            nie użyto w żadnej sesji
+                          </span>
+                        </span>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                Brak wskazanych preferowanych ćwiczeń.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* C — Excluded exercises */}
+        {aggregated && aggregated.excludedExercises.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+              Ćwiczenia wykluczone
+            </p>
+            <ul className="space-y-0.5">
+              {aggregated.excludedExercises.map((ee, i) => (
+                <li key={i} className="text-[11px] flex items-start gap-1.5">
+                  <span className="text-destructive/60 shrink-0 mt-0.5">⊘</span>
+                  <span>
+                    <span className="font-medium text-foreground line-through decoration-destructive/40">
+                      {ee.name}
+                    </span>
+                    {" — "}
+                    <span className="text-muted-foreground">
+                      {ee.scope === "family"
+                        ? `cała rodzina ruchowa${ee.label ? ` (${ee.label})` : ""}`
+                        : "dokładnie to ćwiczenie"}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* D — Generator notes */}
+        {aggregated && aggregated.notes.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+              Uwagi generatora
+            </p>
+            <ul className="space-y-0.5">
+              {aggregated.notes.map((note, i) => (
+                <li
+                  key={i}
+                  className="text-[11px] text-muted-foreground flex items-start gap-1.5"
+                >
+                  <span className="shrink-0 mt-0.5">·</span>
+                  <span>{note}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {!aggregated && (
+          <p className="text-[11px] text-muted-foreground italic">
+            Ćwiczenia zostały dobrane ręcznie — dane kontekstowe generatora niedostępne.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 // ─── Section header ───────────────────────────────────────────────────────────
@@ -305,6 +628,11 @@ function ExercisePreviewItem({
   isAvoided,
   previewWarning,
 }: ExercisePreviewItemProps) {
+  const classConfig =
+    ex.exerciseClass && EXERCISE_CLASS_CONFIG[ex.exerciseClass]
+      ? EXERCISE_CLASS_CONFIG[ex.exerciseClass]
+      : null;
+
   return (
     <div className="py-2 border-b border-border/20 last:border-0">
       <div className="flex items-start gap-2">
@@ -312,25 +640,39 @@ function ExercisePreviewItem({
           {order}.
         </span>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[12px] font-semibold text-foreground">{ex.exerciseName}</span>
+          {/* Name + tier badge + avoided flag */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[12px] font-semibold text-foreground leading-snug">
+              {ex.exerciseName}
+            </span>
+            {classConfig && (
+              <span
+                className={`inline-flex text-[10px] px-1.5 py-0 rounded-sm border font-normal ${classConfig.color}`}
+              >
+                {classConfig.label}
+              </span>
+            )}
             {isAvoided && (
               <span className="inline-flex items-center gap-1 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-sm">
                 <AlertTriangle size={9} />
-                Ćwiczenie wykluczone — zaakceptowane przez trenera
+                wykluczone — zaakceptowane
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 flex-wrap mt-0.5 text-[11px] text-muted-foreground">
+          {/* Prescription */}
+          <div className="flex items-center gap-3 flex-wrap mt-0.5 text-[11px]">
             <span className="text-foreground font-medium">
-              {ex.sets} {pluralizeSets(ex.sets)} × {ex.repsMin}–{ex.repsMax} powtórzeń
+              {ex.sets} serie × {ex.repsMin}–{ex.repsMax} pow.
             </span>
-            <span>RIR {ex.rir}</span>
-            <span>Przerwa: {ex.restSeconds} s</span>
+            <span className="text-muted-foreground">Przerwa {ex.restSeconds} s</span>
+            <span className="text-muted-foreground">RIR {ex.rir}</span>
           </div>
+          {/* Muscle group + equipment */}
           <div className="flex items-center gap-2 flex-wrap mt-0.5 text-[10px] text-muted-foreground">
             <span>{ex.mainMuscleGroup}</span>
-            {ex.equipment.length > 0 && <span>· {ex.equipment.join(", ")}</span>}
+            {ex.equipment.length > 0 && (
+              <span>· {ex.equipment.join(", ")}</span>
+            )}
           </div>
           {previewWarning && (
             <p className="text-[10px] text-amber-700 mt-1 flex items-center gap-1">
@@ -387,7 +729,7 @@ function DayPreviewCard({
           </div>
         </div>
 
-        {/* Read-only exercise list */}
+        {/* Read-only exercise list — grouped by tier, within-tier by muscle group */}
         {dayExercises.length === 0 ? (
           <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 flex items-center gap-2">
             <AlertTriangle size={12} className="text-amber-600 shrink-0" />
@@ -395,21 +737,42 @@ function DayPreviewCard({
           </div>
         ) : (
           <div className="border-t border-border/20 pt-2">
-            {dayExercises.map((ex, idx) => {
-              const contribs = exerciseContribMap.get(ex.exerciseId) ?? [];
-              const isAvoided = avoidedExerciseIds.has(ex.exerciseId);
-              const warning = previewWarningsByEntryId.get(ex.localId) ?? null;
-              return (
-                <ExercisePreviewItem
-                  key={ex.localId}
-                  order={idx + 1}
-                  exercise={ex}
-                  contribs={contribs}
-                  isAvoided={isAvoided}
-                  previewWarning={warning}
-                />
-              );
-            })}
+            {(() => {
+              const displayGroups = buildDisplayGroups(dayExercises);
+              const showTierHeaders = displayGroups.length > 1;
+              let globalIdx = 0;
+              return displayGroups.map((group, groupIdx) => (
+                <div key={group.tierRank}>
+                  {showTierHeaders && (
+                    <div
+                      className={`flex items-center gap-1.5 ${groupIdx > 0 ? "mt-2" : "mt-0"} mb-0.5`}
+                    >
+                      <div className="h-px flex-1 bg-border/25" />
+                      <span className="text-[9px] text-muted-foreground/60 uppercase tracking-wider px-1">
+                        {group.sectionLabel}
+                      </span>
+                      <div className="h-px flex-1 bg-border/25" />
+                    </div>
+                  )}
+                  {group.exercises.map((ex) => {
+                    const currentIdx = globalIdx++;
+                    const contribs = exerciseContribMap.get(ex.exerciseId) ?? [];
+                    const isAvoided = avoidedExerciseIds.has(ex.exerciseId);
+                    const warning = previewWarningsByEntryId.get(ex.localId) ?? null;
+                    return (
+                      <ExercisePreviewItem
+                        key={ex.localId}
+                        order={currentIdx + 1}
+                        exercise={ex}
+                        contribs={contribs}
+                        isAvoided={isAvoided}
+                        previewWarning={warning}
+                      />
+                    );
+                  })}
+                </div>
+              ));
+            })()}
           </div>
         )}
       </CardContent>
@@ -683,6 +1046,7 @@ export default function Step5Preview({
   coverageLoading,
   clientId,
   onBack,
+  generatedExplanations = {},
 }: Step5PreviewProps) {
   const { data: avoidedExercises = [] } = useGetClientAvoidedExercises(clientId);
 
@@ -747,6 +1111,12 @@ export default function Step5Preview({
     [exerciseDraft],
   );
 
+  // Aggregate per-day generator explanations for the insights card
+  const aggregated = useMemo(
+    () => aggregateExplanations(generatedExplanations),
+    [generatedExplanations],
+  );
+
   return (
     <div className="space-y-4">
       {/* Page heading */}
@@ -767,7 +1137,15 @@ export default function Step5Preview({
         distributionResult={distributionResult}
       />
 
-      {/* 3. Podsumowanie objętości tygodniowej — reused component, no recalculation */}
+      {/* 3. Kontekst generatora — dlaczego taki plan + preferred/excluded/notes */}
+      <GeneratorInsightsCard
+        aggregated={aggregated}
+        effectivePrefs={effectivePrefs}
+        distributionResult={distributionResult}
+        typedData={typedData}
+      />
+
+      {/* 4. Podsumowanie objętości tygodniowej — reused component, no recalculation */}
       <div>
         <div className="mb-2 flex items-center gap-2">
           <TrendingUp size={13} className="text-muted-foreground" />

@@ -41,6 +41,8 @@ import type { WeeklyVolumeDistributionResponseType } from "@workspace/api-zod";
 import {
   type DraftExercise,
   type ExerciseDraftByDay,
+  type ExerciseClass,
+  type GeneratedDayExplanation,
   DRAFT_EXERCISE_DEFAULTS,
   addExerciseToDay,
   removeExerciseFromDay,
@@ -112,6 +114,26 @@ interface Step4ExercisesProps {
    * Used by auto-fill to apply "Brak aktywności fizycznej" session limits.
    */
   experienceLevel: string | null;
+  /**
+   * Called after a successful generate-from-empty run with the per-day explanation
+   * blocks returned by the API.  Step 5 uses these to render coaching context.
+   */
+  onExplanationsUpdate?: (explanations: Record<number, GeneratedDayExplanation>) => void;
+}
+
+// ─── Prescription parser ──────────────────────────────────────────────────────
+
+/**
+ * Parse a repsLabel string (e.g. "4–6", "10–15", "10–20 / 30–45 sek") into
+ * integer min/max values for the DraftExercise model.
+ * Falls back to DRAFT_EXERCISE_DEFAULTS on any parse failure.
+ */
+function parseRepsFromLabel(repsLabel: string): { min: number; max: number } {
+  const match = repsLabel.match(/^(\d+)[–\-](\d+)/);
+  if (match) {
+    return { min: parseInt(match[1], 10), max: parseInt(match[2], 10) };
+  }
+  return { min: DRAFT_EXERCISE_DEFAULTS.repsMin, max: DRAFT_EXERCISE_DEFAULTS.repsMax };
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -124,6 +146,7 @@ export default function Step4Exercises({
   previewResult,
   coverageLoading,
   experienceLevel,
+  onExplanationsUpdate,
 }: Step4ExercisesProps) {
   const [selectorForDay, setSelectorForDay] = useState<number | null>(null);
   const [recOpenForDay, setRecOpenForDay] = useState<number | null>(null);
@@ -222,7 +245,15 @@ export default function Step4Exercises({
 
     const dayResults: Array<{
       dayIndex: number;
-      exercises: Array<{ id: number; name: string; mainMuscleGroup: string; equipment: string[] }>;
+      exercises: Array<{
+        id: number;
+        name: string;
+        mainMuscleGroup: string;
+        equipment: string[];
+        exerciseClass?: ExerciseClass;
+        prescription?: { sets: number; repsLabel: string; restSeconds: number };
+      }>;
+      explanation?: GeneratedDayExplanation;
     }> = [];
     const errors: string[] = [];
 
@@ -289,10 +320,18 @@ export default function Step4Exercises({
         }
 
         const data = await resp.json() as {
-          exercises: Array<{ id: number; name: string; mainMuscleGroup: string; equipment: string[] }>;
+          exercises: Array<{
+            id: number;
+            name: string;
+            mainMuscleGroup: string;
+            equipment: string[];
+            exerciseClass?: ExerciseClass;
+            prescription?: { sets: number; repsLabel: string; restSeconds: number };
+          }>;
+          explanation?: GeneratedDayExplanation;
         };
         console.log(`[GenerateDay] Day ${day.dayIndex}: ${data.exercises.length} exercises received`);
-        dayResults.push({ dayIndex: day.dayIndex, exercises: data.exercises });
+        dayResults.push({ dayIndex: day.dayIndex, exercises: data.exercises, explanation: data.explanation });
 
         // Add this day's exercise IDs to the cross-session exclusion list.
         for (const ex of data.exercises) {
@@ -315,22 +354,37 @@ export default function Step4Exercises({
       return;
     }
 
-    // Apply all generated exercises atomically
+    // Apply all generated exercises atomically, using generator prescription values
     let newDraft = { ...exerciseDraft };
     for (const { dayIndex, exercises } of dayResults) {
       for (const ex of exercises) {
+        const repsParsed = ex.prescription
+          ? parseRepsFromLabel(ex.prescription.repsLabel)
+          : { min: DRAFT_EXERCISE_DEFAULTS.repsMin, max: DRAFT_EXERCISE_DEFAULTS.repsMax };
         newDraft = addExerciseToDay(newDraft, dayIndex, {
           exerciseId: ex.id,
           exerciseName: ex.name,
           mainMuscleGroup: ex.mainMuscleGroup,
           equipment: ex.equipment,
           isCore: ex.mainMuscleGroup === "Brzuch",
-          sets: DRAFT_EXERCISE_DEFAULTS.sets,
-          repsMin: DRAFT_EXERCISE_DEFAULTS.repsMin,
-          repsMax: DRAFT_EXERCISE_DEFAULTS.repsMax,
+          exerciseClass: ex.exerciseClass,
+          sets: ex.prescription?.sets ?? DRAFT_EXERCISE_DEFAULTS.sets,
+          repsMin: repsParsed.min,
+          repsMax: repsParsed.max,
           rir: DRAFT_EXERCISE_DEFAULTS.rir,
-          restSeconds: DRAFT_EXERCISE_DEFAULTS.restSeconds,
+          restSeconds: ex.prescription?.restSeconds ?? DRAFT_EXERCISE_DEFAULTS.restSeconds,
         });
+      }
+    }
+
+    // Forward per-day explanation blocks to the wizard for Step 5 display
+    if (onExplanationsUpdate) {
+      const explanationsByDay: Record<number, GeneratedDayExplanation> = {};
+      for (const { dayIndex, explanation } of dayResults) {
+        if (explanation) explanationsByDay[dayIndex] = explanation;
+      }
+      if (Object.keys(explanationsByDay).length > 0) {
+        onExplanationsUpdate(explanationsByDay);
       }
     }
 

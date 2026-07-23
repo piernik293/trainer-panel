@@ -82,6 +82,7 @@ import {
   validatePrescription,
   getExerciseStepValidation,
   EXERCISE_SELECTION_VALID,
+  type GeneratedDayExplanation,
 } from "@/lib/exerciseDraftHelpers";
 import { useVolumeCoverage } from "@/hooks/useVolumeCoverage";
 
@@ -1403,6 +1404,7 @@ export default function PlanDraftWizard() {
   const [volumeOverrides, setVolumeOverrides] = useState<Record<number, number>>({});
   const [distributionResult, setDistributionResult] = useState<WeeklyVolumeDistributionResponseType | null>(null);
   const [exerciseDraft, setExerciseDraft] = useState<ExerciseDraftByDay>({});
+  const [generatedExplanations, setGeneratedExplanations] = useState<Record<number, GeneratedDayExplanation>>({});
 
   // Live volume coverage — lifted here so Step 5 reuses the same result without recalculation
   const { previewResult, isLoading: coverageLoading } = useVolumeCoverage(
@@ -1442,6 +1444,7 @@ export default function PlanDraftWizard() {
       setVolumeDecisions(null);
       setDistributionResult(null);
       setVolumeOverrides({});
+      setGeneratedExplanations({});
       lastVolumePrefsRef.current = null;
     }
     setPrefs(p);
@@ -1787,6 +1790,8 @@ export default function PlanDraftWizard() {
           onDraftChange={setExerciseDraft}
           previewResult={previewResult}
           coverageLoading={coverageLoading}
+          experienceLevel={typedData?.input?.experienceLevel ?? null}
+          onExplanationsUpdate={setGeneratedExplanations}
         />
       )}
       {step === 2 && !isExerciseStepUnlocked && (
@@ -1804,6 +1809,7 @@ export default function PlanDraftWizard() {
           coverageLoading={coverageLoading}
           clientId={clientId}
           onBack={() => setStep(2)}
+          generatedExplanations={generatedExplanations}
         />
       )}
       {step > 3 && <LockedStepPlaceholder step={step} />}
