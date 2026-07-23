@@ -1,0 +1,149 @@
+Implement one focused product-improvement package: final plan UX polish + sport-coaching note + optional Plyo/FBW split recommendation.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT rewrite the generator broadly
+- Do NOT touch auth, portal, chat, progression, RIR/tempo editing, RAMP, cooldown, or save-plan flow in this task
+- Keep changes local to:
+  - final plan / generated plan UX
+  - split recommendation / split picker messaging
+  - sport-specific trainer note / recommendation logic
+  - minimum necessary UI and helper wiring only
+
+PRIMARY GOAL:
+Improve the trainer-facing experience by:
+1. making the final plan view clearer on desktop and mobile
+2. adding a clear trainer note for sport profiles (Dynamika / Szybkość / Stabilizacja)
+3. allowing a more explicit recommended split option with a dedicated athletic/plyo day when the profile justifies it
+
+====================================================
+PART 1 — MOBILE / FINAL PLAN UX POLISH
+====================================================
+
+Improve the final plan view so it is easier to scan on phone and other devices.
+
+Focus on:
+- clearer spacing between sections
+- better readability of:
+  - "Dlaczego taki plan?"
+  - "Preferowane ćwiczenia"
+  - "Ćwiczenia wykluczone"
+  - "Uwagi generatora"
+- clearer day blocks
+- clearer separation of:
+  - main lifts
+  - accessories
+  - core
+  - explosive work
+- avoid cramped layout on smaller screens
+
+IMPORTANT:
+Do NOT redesign the entire app.
+Do NOT overbuild.
+This is a readability/usability polish task, especially for the final plan view on smaller screens.
+
+====================================================
+PART 2 — SPORT NOTE FOR TRAINER
+====================================================
+
+For profiles where the goal context is clearly athletic, add a trainer-facing note/recommendation.
+
+Trigger this note when appropriate, especially for:
+- Goal = Cel sportowy
+- and one or more of:
+  - Dynamika
+  - Szybkość
+  - Stabilizacja
+
+Required behavior:
+Show a clear coaching note in the UI such as:
+- this profile may benefit from one dedicated athletic / plyometric-focused day
+- instead of treating every session like a standard gym split
+
+Intent:
+The trainer should be informed that for this kind of client it may be better to assign one day with a stronger dynamic/plyometric bias.
+
+IMPORTANT:
+This is a recommendation note first, not a forced universal rule.
+
+====================================================
+PART 3 — OPTIONAL PLYO / FBW SPLIT RECOMMENDATION
+====================================================
+
+Add a conditional split recommendation / option for suitable sport profiles.
+
+When the profile justifies it (for example):
+- Cel sportowy
+- Dynamika and/or Szybkość and/or Stabilizacja
+- appropriate experience level
+- enough weekly days
+- enough session duration
+
+the system should be able to recommend or expose a more athletic weekly structure such as:
+- Upper / Lower / FBW / Plyo
+or
+- Upper / Lower / Plyo + FBW
+or equivalent athletic variant already compatible with the app
+
+IMPORTANT:
+- Do NOT force this for every sport profile
+- Do NOT replace all standard splits
+- Make it conditional and explainable
+- It may appear as:
+  - recommended split text
+  - alternative split option
+  - or a clearly labeled suggestion in the split section
+
+====================================================
+PART 4 — EXPLAIN THE SPORT SPLIT RECOMMENDATION
+====================================================
+
+If the system recommends the athletic/plyo-oriented split, explain it clearly in plain trainer language.
+
+Example intent:
+- "Dla tego profilu warto rozważyć dzień z dominującym akcentem dynamicznym / plyometrycznym zamiast klasycznego układu siłowni 1:1."
+- "Rekomendacja wynika z celu sportowego i priorytetów: Dynamika / Szybkość / Stabilizacja."
+
+The trainer should understand:
+- why the note appears
+- why the split recommendation changes
+- why a dedicated athletic day may be better than a generic repeated gym day
+
+====================================================
+PART 5 — DO NOT OVERBUILD
+====================================================
+
+Important:
+- Do NOT create a giant new split engine
+- Do NOT redesign all pages
+- Do NOT force a dedicated plyo day into every sport plan
+- Do NOT implement advanced periodization
+- Do NOT touch saving/reopening plans in this task
+- Do NOT broaden into unrelated generator rewrites
+
+Keep it practical:
+- clearer final UX
+- clear trainer note
+- optional athletic/plyo-oriented split recommendation when justified
+
+====================================================
+SUCCESS CRITERIA
+====================================================
+
+After this change:
+- the final plan is easier to read on phone and smaller screens
+- sport-related profiles get a useful trainer note
+- Dynamika / Szybkość / Stabilizacja profiles can receive a clearer athletic split recommendation
+- the trainer understands when a Plyo/FBW-style day is worth using
+- the app feels more like a coaching product, not just a raw generator
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause

@@ -44,6 +44,7 @@ import {
   Lock,
   Save,
   TrendingUp,
+  Zap,
 } from "lucide-react";
 
 // ─── Exercise class display config ────────────────────────────────────────────
@@ -232,6 +233,79 @@ interface Step5PreviewProps {
   savedPlanId?: number | null;
 }
 
+// ─── Sport coaching note ──────────────────────────────────────────────────────
+
+/**
+ * Trainer-facing coaching note for sport-goal ("Cel sportowy") profiles.
+ *
+ * Shown when the effective training goal is athletic. Highlights that clients
+ * with dynamic / speed / stability priorities may benefit from one dedicated
+ * athletic or plyometric session rather than a pure strength split.
+ *
+ * Parts 2 & 4 of the spec.
+ */
+function SportCoachingNote({
+  typedData,
+  effectivePrefs,
+}: {
+  typedData: GetClientPlanDraftInputResponseType;
+  effectivePrefs: PlanDraftGenerationPreferencesType;
+}) {
+  const effectiveGoal = effectivePrefs.trainingGoal ?? typedData.input.trainingGoal ?? "";
+  if (effectiveGoal !== "Cel sportowy") return null;
+
+  // Pull performanceNeeds from athleteRecommendation when available
+  const athleteRec = (typedData as unknown as {
+    athleteRecommendation?: {
+      isAthlete?: boolean;
+      performanceNeeds?: string[];
+    } | null;
+  }).athleteRecommendation;
+  const performanceNeeds: string[] = athleteRec?.performanceNeeds ?? [];
+
+  // Keywords that strongly justify a dedicated athletic session
+  const ATHLETIC_KEYWORDS = new Set([
+    "dynamika", "szybkość", "skoczność", "zmiana kierunku", "koordynacja", "stabilizacja",
+  ]);
+  const relevantNeeds = performanceNeeds.filter((n) =>
+    ATHLETIC_KEYWORDS.has(n.toLowerCase()),
+  );
+
+  return (
+    <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-4 space-y-2">
+      <div className="flex items-center gap-2">
+        <Zap size={14} className="text-indigo-600 shrink-0" />
+        <span className="font-semibold text-indigo-800 text-sm">
+          Wskazówka trenerska — profil sportowy
+        </span>
+      </div>
+      <p className="text-xs text-indigo-700 leading-relaxed">
+        Ten klient deklaruje <span className="font-medium">Cel sportowy</span>. Standardowy plan
+        siłowy może nie oddawać w pełni wymagań sportowych. Warto rozważyć, czy jedna z sesji
+        tygodniowych powinna mieć wyraźny akcent{" "}
+        <span className="font-medium">dynamiczny lub plyometryczny</span> — zamiast kolejnej
+        sesji siłowej w tym samym schemacie.
+      </p>
+      {relevantNeeds.length > 0 && (
+        <p className="text-xs text-indigo-700 leading-relaxed">
+          Priorytety wskazane w wywiadzie:{" "}
+          <span className="font-medium">
+            {relevantNeeds
+              .map((n) => n.charAt(0).toUpperCase() + n.slice(1))
+              .join(", ")}
+          </span>
+          {" "}— to cechy motoryczne typowe dla treningu atletycznego.
+        </p>
+      )}
+      <p className="text-xs text-indigo-600 leading-relaxed">
+        Rekomendacja: sesja z ćwiczeniami eksplozywno-reaktywnymi (skoki, zmiany kierunku,
+        rzuty) zastępuje powtarzającą się sesję siłową i lepiej odzwierciedla wymagania sportowe
+        profilu Dynamika / Szybkość / Stabilizacja.
+      </p>
+    </div>
+  );
+}
+
 // ─── Generator insights card ───────────────────────────────────────────────────
 
 function GeneratorInsightsCard({
@@ -295,31 +369,31 @@ function GeneratorInsightsCard({
           <span className="text-base">🔍</span> Dlaczego taki plan?
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         {/* A — Plan context */}
-        <ul className="space-y-0.5">
+        <ul className="space-y-1">
           {whyBullets.map((b, i) => (
-            <li key={i} className="text-[11px] text-foreground flex items-start gap-1.5">
+            <li key={i} className="text-xs text-foreground flex items-start gap-2">
               <span className="text-muted-foreground shrink-0 mt-0.5">•</span>
-              <span>{b}</span>
+              <span className="leading-snug">{b}</span>
             </li>
           ))}
         </ul>
 
         {/* B — Preferred exercises */}
         {aggregated && (
-          <div>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
               Preferowane ćwiczenia
             </p>
             {aggregated.preferredExercises.length > 0 ? (
-              <ul className="space-y-0.5">
+              <ul className="space-y-1.5">
                 {aggregated.preferredExercises.map((pe, i) => (
-                  <li key={i} className="text-[11px] flex items-start gap-1.5">
+                  <li key={i} className="text-xs flex items-start gap-2">
                     {pe.status === "used" ? (
                       <>
                         <span className="text-emerald-600 shrink-0 font-bold mt-0.5">✓</span>
-                        <span>
+                        <span className="leading-snug">
                           <span className="font-medium text-foreground">{pe.keyword}</span>
                           {" — "}
                           <span className="text-emerald-700">
@@ -330,7 +404,7 @@ function GeneratorInsightsCard({
                     ) : (
                       <>
                         <span className="text-amber-500 shrink-0 font-bold mt-0.5">–</span>
-                        <span>
+                        <span className="leading-snug">
                           <span className="font-medium text-foreground">{pe.keyword}</span>
                           {" — "}
                           <span className="text-muted-foreground">
@@ -343,7 +417,7 @@ function GeneratorInsightsCard({
                 ))}
               </ul>
             ) : (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Brak wskazanych preferowanych ćwiczeń.
               </p>
             )}
@@ -352,15 +426,15 @@ function GeneratorInsightsCard({
 
         {/* C — Excluded exercises */}
         {aggregated && aggregated.excludedExercises.length > 0 && (
-          <div>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
               Ćwiczenia wykluczone
             </p>
-            <ul className="space-y-0.5">
+            <ul className="space-y-1.5">
               {aggregated.excludedExercises.map((ee, i) => (
-                <li key={i} className="text-[11px] flex items-start gap-1.5">
+                <li key={i} className="text-xs flex items-start gap-2">
                   <span className="text-destructive/60 shrink-0 mt-0.5">⊘</span>
-                  <span>
+                  <span className="leading-snug">
                     <span className="font-medium text-foreground line-through decoration-destructive/40">
                       {ee.name}
                     </span>
@@ -379,18 +453,18 @@ function GeneratorInsightsCard({
 
         {/* D — Generator notes */}
         {aggregated && aggregated.notes.length > 0 && (
-          <div>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
               Uwagi generatora
             </p>
-            <ul className="space-y-0.5">
+            <ul className="space-y-1.5">
               {aggregated.notes.map((note, i) => (
                 <li
                   key={i}
-                  className="text-[11px] text-muted-foreground flex items-start gap-1.5"
+                  className="text-xs text-muted-foreground flex items-start gap-2"
                 >
                   <span className="shrink-0 mt-0.5">·</span>
-                  <span>{note}</span>
+                  <span className="leading-snug">{note}</span>
                 </li>
               ))}
             </ul>
@@ -398,7 +472,7 @@ function GeneratorInsightsCard({
         )}
 
         {!aggregated && (
-          <p className="text-[11px] text-muted-foreground italic">
+          <p className="text-xs text-muted-foreground italic">
             Ćwiczenia zostały dobrane ręcznie — dane kontekstowe generatora niedostępne.
           </p>
         )}
@@ -643,20 +717,20 @@ function ExercisePreviewItem({
       : null;
 
   return (
-    <div className="py-2 border-b border-border/20 last:border-0">
-      <div className="flex items-start gap-2">
-        <span className="text-[11px] font-medium text-muted-foreground shrink-0 mt-0.5 w-5 text-right">
+    <div className="py-3 border-b border-border/20 last:border-0">
+      <div className="flex items-start gap-2.5">
+        <span className="text-xs font-medium text-muted-foreground shrink-0 mt-0.5 w-5 text-right">
           {order}.
         </span>
         <div className="flex-1 min-w-0">
           {/* Name + tier badge + avoided flag */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[12px] font-semibold text-foreground leading-snug">
+            <span className="text-sm font-semibold text-foreground leading-snug">
               {ex.exerciseName}
             </span>
             {classConfig && (
               <span
-                className={`inline-flex text-[10px] px-1.5 py-0 rounded-sm border font-normal ${classConfig.color}`}
+                className={`inline-flex text-[10px] px-1.5 py-0.5 rounded border font-normal ${classConfig.color}`}
               >
                 {classConfig.label}
               </span>
@@ -669,7 +743,7 @@ function ExercisePreviewItem({
             )}
           </div>
           {/* Prescription */}
-          <div className="flex items-center gap-3 flex-wrap mt-0.5 text-[11px]">
+          <div className="flex items-center gap-3 flex-wrap mt-1 text-xs">
             <span className="text-foreground font-medium">
               {ex.sets} serie × {ex.repsMin}–{ex.repsMax} pow.
             </span>
@@ -677,14 +751,14 @@ function ExercisePreviewItem({
             <span className="text-muted-foreground">RIR {ex.rir}</span>
           </div>
           {/* Muscle group + equipment */}
-          <div className="flex items-center gap-2 flex-wrap mt-0.5 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-2 flex-wrap mt-0.5 text-[11px] text-muted-foreground">
             <span>{ex.mainMuscleGroup}</span>
             {ex.equipment.length > 0 && (
               <span>· {ex.equipment.join(", ")}</span>
             )}
           </div>
           {previewWarning && (
-            <p className="text-[10px] text-amber-700 mt-1 flex items-center gap-1">
+            <p className="text-[11px] text-amber-700 mt-1 flex items-center gap-1">
               <AlertTriangle size={9} />
               {previewWarning}
             </p>
@@ -740,12 +814,12 @@ function DayPreviewCard({
 
         {/* Read-only exercise list — grouped by tier, within-tier by muscle group */}
         {dayExercises.length === 0 ? (
-          <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 flex items-center gap-2">
+          <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2.5 flex items-center gap-2">
             <AlertTriangle size={12} className="text-amber-600 shrink-0" />
-            <p className="text-[11px] text-amber-800">Brak wybranych ćwiczeń w tym dniu.</p>
+            <p className="text-xs text-amber-800">Brak wybranych ćwiczeń w tym dniu.</p>
           </div>
         ) : (
-          <div className="border-t border-border/20 pt-2">
+          <div className="border-t border-border/20 pt-1">
             {(() => {
               const displayGroups = buildDisplayGroups(dayExercises);
               const showTierHeaders = displayGroups.length > 1;
@@ -754,13 +828,13 @@ function DayPreviewCard({
                 <div key={group.tierRank}>
                   {showTierHeaders && (
                     <div
-                      className={`flex items-center gap-1.5 ${groupIdx > 0 ? "mt-2" : "mt-0"} mb-0.5`}
+                      className={`flex items-center gap-2 ${groupIdx > 0 ? "mt-3" : "mt-2"} mb-1`}
                     >
-                      <div className="h-px flex-1 bg-border/25" />
-                      <span className="text-[9px] text-muted-foreground/60 uppercase tracking-wider px-1">
+                      <div className="h-px flex-1 bg-border/40" />
+                      <span className="text-[10px] text-muted-foreground/70 uppercase tracking-wider font-medium px-1">
                         {group.sectionLabel}
                       </span>
-                      <div className="h-px flex-1 bg-border/25" />
+                      <div className="h-px flex-1 bg-border/40" />
                     </div>
                   )}
                   {group.exercises.map((ex) => {
@@ -1130,7 +1204,7 @@ export default function Step5Preview({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Page heading */}
       <div className="space-y-1">
         <h2 className="text-xl font-display font-bold">Podgląd planu</h2>
@@ -1148,6 +1222,9 @@ export default function Step5Preview({
         effectivePrefs={effectivePrefs}
         distributionResult={distributionResult}
       />
+
+      {/* Sport coaching note — Parts 2 & 4: shown for Cel sportowy profiles */}
+      <SportCoachingNote typedData={typedData} effectivePrefs={effectivePrefs} />
 
       {/* 3. Kontekst generatora — dlaczego taki plan + preferred/excluded/notes */}
       <GeneratorInsightsCard

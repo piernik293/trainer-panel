@@ -73,6 +73,7 @@ import {
   HeartPulse,
   Activity,
   Trophy,
+  Zap,
 } from "lucide-react";
 import Step4Exercises from "./Step4Exercises";
 import Step5Preview from "./Step5Preview";
@@ -771,6 +772,40 @@ function Step2Preferences({
               Uzupełnij wywiad klienta, aby uzyskać rekomendację podziału.
             </p>
           )}
+
+          {/* Part 3 — Athletic split suggestion for sport-goal profiles.
+              Shown when trainingGoal = "Cel sportowy" and ≥3 days are available.
+              Suggests upper_lower_full_body as the most natural athletic-day carrier. */}
+          {(prefs.trainingGoal === "Cel sportowy" ||
+            data.input.trainingGoal === "Cel sportowy") &&
+            prefs.trainingDays >= 3 && (
+              <div className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-3 flex items-start gap-2 mt-1">
+                <Zap size={13} className="text-indigo-600 mt-0.5 shrink-0" />
+                <div className="text-[11px] text-indigo-700 leading-snug space-y-1.5">
+                  <p className="font-semibold text-indigo-800">
+                    Sugestia dla profilu sportowego
+                  </p>
+                  <p>
+                    Dla klientów z celem sportowym (Dynamika / Szybkość / Stabilizacja) warto
+                    rozważyć plan z jedną sesją o wyraźnym akcentem atletycznym lub
+                    plyometrycznym zamiast powtarzającej się sesji siłowej.
+                  </p>
+                  {compatibleSplits.includes("upper_lower_full_body") && (
+                    <p>
+                      <span className="font-medium">
+                        Upper / Lower / Full Body
+                      </span>{" "}
+                      — ostatni dzień może pełnić funkcję sesji FBW z komponentem
+                      dynamicznym (skoki, zmiany kierunku, ćwiczenia reaktywne).
+                    </p>
+                  )}
+                  <p className="text-indigo-600">
+                    Rekomendacja wynika z celu sportowego i może lepiej odzwierciedlać
+                    wymagania motoryczne klienta niż klasyczny układ 1:1.
+                  </p>
+                </div>
+              </div>
+            )}
         </CardContent>
       </Card>
 
