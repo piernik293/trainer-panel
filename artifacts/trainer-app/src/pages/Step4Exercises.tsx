@@ -265,6 +265,27 @@ export default function Step4Exercises({
     // from later days — prevents the same exercise appearing in two sessions.
     const weekUsedIds: number[] = [];
 
+    // Compute under-covered muscle groups from the current coverage snapshot.
+    // A muscle is "severely under-covered" when its effective weekly sets are
+    // below 50 % of the preferred ceiling — the same threshold the backend
+    // recovery-boost logic targets.
+    //
+    // Computed once before the day loop so every day request carries the same
+    // consistent list; the coverage hook is debounced and won't update mid-loop.
+    //
+    // When previewResult is null (no exercises in draft yet, or hook hasn't
+    // resolved) we pass an empty array — the boost is simply inactive, which
+    // preserves the existing behaviour with no regression.
+    const undercoveredMuscleGroups: string[] =
+      previewResult?.weekly
+        .filter(
+          (m) =>
+            m.hasGuideline &&
+            m.weeklyPreferredCeiling > 0 &&
+            m.effectiveSets < m.weeklyPreferredCeiling * 0.5,
+        )
+        .map((m) => m.muscleName) ?? [];
+
     for (const day of distributionResult.days) {
       const sessionType = day.dayType?.toLowerCase() ?? "";
       if (!V0_SESSION_TYPES.has(sessionType)) {
@@ -306,6 +327,7 @@ export default function Step4Exercises({
             alternativeIndex: altIdx,
             weekUsedExerciseIds: [...weekUsedIds],
             sameTypePreviousExercises,
+            undercoveredMuscleGroups,
           }),
         });
 
