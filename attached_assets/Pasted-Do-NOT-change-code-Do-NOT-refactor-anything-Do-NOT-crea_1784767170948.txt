@@ -1,0 +1,180 @@
+Do NOT change code.
+Do NOT refactor anything.
+Do NOT create files.
+Do NOT redesign UI.
+Do NOT run migrations.
+Do NOT implement new features.
+
+I want a pure final product validation pass in the actual app flow.
+
+TASK:
+Run 4 end-to-end generator validation scenarios through the real trainer app flow and summarize the visible result.
+
+This is NOT a coding task.
+This is NOT a fix task.
+This is validation only.
+
+For each scenario:
+1. set up or use a suitable test client/profile
+2. generate the full plan through the normal app flow
+3. summarize:
+   - weekly structure
+   - each training day type
+   - key exercises selected
+   - explanation block / summary visibility
+4. answer the scenario-specific validation questions
+5. give PASS or FAIL
+
+====================================================
+SCENARIO 1 — SPORTOWIEC ZAWODOWY
+====================================================
+
+Profile:
+- Goal: Cel sportowy
+- Athlete status: Tak — zawodowo
+- Sport priorities: Dynamika, Szybkość
+- Experience: Średniozaawansowany
+- Days: 4
+- Session time: 90 min
+- Location: Siłownia
+- Equipment: full gym
+- Priority muscles: nogi, barki, plecy
+- Preferred exercises: push press, podciąganie
+- Avoided exercises: none
+
+Validation questions:
+1. Did the weekly structure stay generic Upper/Lower x2, or was it overridden?
+2. If overridden, what structure was chosen?
+3. Does the summary explain why the structure was changed?
+4. Does the plan look clearly more athletic than a generic gym plan?
+5. Are explosive / athletic elements placed near the start of sessions where relevant?
+
+PASS if:
+- structure override fires appropriately OR clearly athletic structure is visible
+- explanation is visible
+- plan feels athletic, not just generic upper/lower with random jumps
+
+====================================================
+SCENARIO 2 — SIŁA + WYKLUCZONY MARTWY CIĄG
+====================================================
+
+Profile:
+- Goal: Zwiększenie siły
+- Experience: Średniozaawansowany
+- Days: 4
+- Session time: 90 min
+- Location: Siłownia
+- Equipment: full gym
+- Priority muscles: barki, triceps, plecy
+- Preferred exercises: OHP, podciąganie
+- Avoided exercises: martwy ciąg
+
+Validation questions:
+1. Did all deadlift-family variants disappear?
+   - conventional deadlift
+   - sumo deadlift
+   - Romanian deadlift
+   - kettlebell deadlift
+   - equivalent deadlift-family variants
+2. Did the generator choose sensible alternatives?
+3. Does the summary show:
+   - what was excluded
+   - whether the whole family was blocked
+   - why
+4. Are push-ups absent or deprioritized in this full-gym strength context?
+
+PASS if:
+- no deadlift-family movement leaks into the plan
+- summary explains exclusion clearly
+- strength plan still looks strong and sensible
+
+====================================================
+SCENARIO 3 — SPRAWNOŚĆ
+====================================================
+
+Profile:
+- Goal: Poprawa sprawności
+- Experience: Średniozaawansowany
+- Days: 3
+- Session time: 75 min
+- Location: Siłownia
+- Equipment: full gym
+- Priority muscles: nogi, barki, core
+- Preferred exercises: spacer farmera, wykroki, landmine press
+- Avoided exercises: none
+
+Validation questions:
+1. Does this plan look different from a generic fat-loss or hypertrophy plan?
+2. Are there more unilateral / carry / trunk-control / functional-support choices?
+3. Does the plan avoid default bodybuilding filler behavior?
+4. Do preferred exercises like farmer walk / lunges / landmine press have a real chance to appear?
+5. Does the plan explanation make sense?
+
+PASS if:
+- plan looks more functional/athletic than generic bodybuilding
+- carries/unilateral/control work are visible
+- not just “curl + machine + random accessory”
+
+====================================================
+SCENARIO 4 — DOM / PLENER / POMPKI
+====================================================
+
+Profile:
+- Goal: Poprawa kondycji or Poprawa sprawności
+- Experience: Początkujący
+- Days: 3
+- Session time: 45–60 min
+- Location: Dom or Plener
+- Equipment: limited
+- Preferred exercises: pompki
+- Avoided exercises: none
+
+Validation questions:
+1. Do push-ups enter naturally in this context?
+2. Are push-ups treated as appropriate, not incorrectly deprioritized?
+3. Does the plan look natural for home/outdoor training instead of pretending to be a full gym plan?
+4. Is the explanation block still useful?
+
+PASS if:
+- push-ups are allowed naturally here
+- plan fits home/outdoor context
+- bodyweight choices make sense
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+
+1. Scenario 1
+- weekly structure
+- key exercises
+- explanation visible: yes/no
+- verdict: PASS / FAIL
+- 3 short reasons
+
+2. Scenario 2
+- weekly structure
+- key exercises
+- explanation visible: yes/no
+- verdict: PASS / FAIL
+- 3 short reasons
+
+3. Scenario 3
+- weekly structure
+- key exercises
+- explanation visible: yes/no
+- verdict: PASS / FAIL
+- 3 short reasons
+
+4. Scenario 4
+- weekly structure
+- key exercises
+- explanation visible: yes/no
+- verdict: PASS / FAIL
+- 3 short reasons
+
+5. Final conclusion
+- what is clearly working now
+- what is still weak
+- whether the generator is ready to move focus from engine logic to product UX/save-plan work
