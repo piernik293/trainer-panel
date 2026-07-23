@@ -143,6 +143,19 @@ export interface V0PriorityContext {
    * When absent, all goal-driven effects are disabled (safe default).
    */
   goalProfile?: GoalProfile;
+  /**
+   * Muscle group names (norm()-compatible, lower-cased) that are severely
+   * under-covered — below 50 % of their proposed weekly volume.
+   *
+   * When provided, the sort boosts exercises whose mainMuscleGroup OR any
+   * secondaryMuscleGroup matches one of these names, preferring real
+   * coverage-producing exercises over unrelated filler in optional slots.
+   *
+   * Callers must pass mainMuscleGroup-level names (e.g. "plecy", "barki")
+   * so the comparison against exercise.mainMuscleGroup works correctly.
+   * An empty array (or absent field) disables the boost entirely.
+   */
+  undercoveredMuscleGroups?: string[];
 }
 
 /**
@@ -512,6 +525,28 @@ function isBeginnerDrillByName(name: string): boolean {
 }
 
 /**
+ * True when the exercise covers any of the severely under-covered muscle groups.
+ *
+ * Checks both mainMuscleGroup (primary target) and secondaryMuscleGroups (support
+ * volume) so that exercises like face pulls (Barki primary, upper back secondary)
+ * are boosted when "barki" is under-covered, and rowing variants are boosted
+ * when "plecy" is under-covered.
+ *
+ * Safe fallback: returns false when ucGroups is empty — boost is disabled.
+ */
+function coversUndercoveredMuscle(
+  ex: ScoredAndFilteredExercise,
+  ucGroups: string[],
+): boolean {
+  if (ucGroups.length === 0) return false;
+  return ucGroups.some(
+    (m) =>
+      norm(ex.mainMuscleGroup) === m ||
+      (ex.secondaryMuscleGroups ?? []).some((sg) => norm(sg) === m),
+  );
+}
+
+/**
  * BLOCKER 2 FIX — Pull slot 3 semantic guard.
  *
  * True when an exercise is appropriate for the "Rear delt / upper back" slot
@@ -636,6 +671,9 @@ function sortDeterministic(
   // not bodybuilding-style isolation; strength/conditioning goals need dominant
   // compound movements to be the primary session structure.
   const athleticBias = gp?.athleticCompoundBias === true;
+  // Under-covered muscle boost — when severely under-covered targets exist,
+  // boost exercises that fix those gaps over unrelated filler.
+  const ucGroups = (ctx?.undercoveredMuscleGroups ?? []).map(norm);
 
   return [...candidates].sort((a, b) => {
     // 0. Preferred exercise boost
@@ -721,6 +759,20 @@ function sortDeterministic(
       if (uniA !== uniB) return uniA - uniB;
     }
 
+    // 3.5. Under-covered muscle recovery boost
+    //
+    // When a target is severely under-covered (< 50 % of proposed volume),
+    // prefer exercises that actually fix the gap over unrelated filler.
+    // Runs before isolation penalties so a gap-fixing isolation (e.g. face pull
+    // for under-covered upper-back) beats a generic non-covering compound in
+    // optional accessory slots.
+    // Safe: ucGroups is empty when not provided → boost is disabled.
+    if (ucGroups.length > 0) {
+      const ucA = coversUndercoveredMuscle(a, ucGroups) ? 0 : 1;
+      const ucB = coversUndercoveredMuscle(b, ucGroups) ? 0 : 1;
+      if (ucA !== ucB) return ucA - ucB;
+    }
+
     // 4. Isolation deprioritisation (for strength/conditioning goal profiles)
     if (deIsolation) {
       const isoA = isIsolation(a) ? 1 : 0;
@@ -801,6 +853,8 @@ function sortWithPriority(
   const deIsolation = gp?.deprioritizeIsolationInMixedSlots === true;
   // Stage E: mirror of the athleticBias const in sortDeterministic (see there for rationale).
   const athleticBias = gp?.athleticCompoundBias === true;
+  // Under-covered muscle boost — mirrors the same const in sortDeterministic.
+  const ucGroups = (ctx?.undercoveredMuscleGroups ?? []).map(norm);
 
   return [...candidates].sort((a, b) => {
     // 0. Preferred exercise boost (before tier rank)
@@ -898,6 +952,19 @@ function sortWithPriority(
       const freshA = usedPats.has(patA) ? 1 : 0;
       const freshB = usedPats.has(patB) ? 1 : 0;
       if (freshA !== freshB) return freshA - freshB;
+    }
+
+    // 2.4. Under-covered muscle recovery boost (within same tier)
+    //
+    // When a target is severely under-covered (< 50 % of proposed volume),
+    // prefer exercises that target those muscles over generic filler.
+    // Applied within-tier so Tier A muscle priority is preserved — a Tier A
+    // compound still beats a Tier C gap-fixer, but within Tier C an exercise
+    // that covers the under-covered target wins over an unrelated accessory.
+    if (ucGroups.length > 0) {
+      const ucA = coversUndercoveredMuscle(a, ucGroups) ? 0 : 1;
+      const ucB = coversUndercoveredMuscle(b, ucGroups) ? 0 : 1;
+      if (ucA !== ucB) return ucA - ucB;
     }
 
     // 2.5. Bench-goal barbell preference (bench-goal clients only).
@@ -1175,6 +1242,20 @@ export function runExerciseSelectionEngineV0(
         ctx?.isPriorityEligible &&
         ctx.tierA.some((t) => norm(t) === norm("Klatka piersiowa"));
 
+      // Sport athletic primer — optional explosive element at session start.
+      // Only fires when plyometrics are allowed (sport / athlete context).
+      // If no plyometric exercises pass the pool filter the slot silently skips.
+      // The final output ordering (sessionOrderRank) always places plyometric_power
+      // class exercises first regardless of the slot execution order here.
+      if (ctx?.allowPlyometrics === true) {
+        pick(
+          "Athletic primer",
+          false,
+          (ex) => isPlyometric(ex.name),
+          { protected: true },
+        );
+      }
+
       pick(
         "Chest compound",
         true,
@@ -1242,6 +1323,18 @@ export function runExerciseSelectionEngineV0(
     //   5. (opt) Second biceps or rear delt  ← Biceps + rear-delt Barki only
     //   6. (opt) Core               ← always last
     case "pull": {
+      // Sport athletic primer — optional explosive / reactive element at session start.
+      // Upper-body plyo exercises (medicine-ball throws, "rzut" variants) fill this slot
+      // when available.  If the pool contains no plyometric exercises the slot skips.
+      if (ctx?.allowPlyometrics === true) {
+        pick(
+          "Athletic primer",
+          false,
+          (ex) => isPlyometric(ex.name),
+          { protected: true },
+        );
+      }
+
       // Slot 1: any pull compound
       const s1 = pick(
         "Pull compound",
@@ -1324,6 +1417,18 @@ export function runExerciseSelectionEngineV0(
     // knee-dominant slot, that exact pattern is excluded from all later
     // accessory slots to prevent the same squat or lunge variant appearing twice.
     case "legs": {
+      // Sport athletic primer — optional explosive lower-body element at session start.
+      // Jump squats, pogo jumps, box jumps, and other plyometric lower-body movements
+      // fill this slot for sport-goal clients.  Silently skips when unavailable.
+      if (ctx?.allowPlyometrics === true) {
+        pick(
+          "Athletic primer",
+          false,
+          (ex) => isPlyometric(ex.name),
+          { protected: true },
+        );
+      }
+
       const s1 = pick(
         "Knee-dominant compound",
         true,

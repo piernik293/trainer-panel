@@ -1,0 +1,114 @@
+Implement a focused planning-quality fix for sport templates and under-covered target recovery.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign UI
+- Do NOT touch save-plan flow, auth, portal, notes, or progression
+- Keep changes local to:
+  - exercise-selection / slot behavior
+  - target coverage recovery logic
+  - sport-goal template behavior
+  - minimum necessary helper logic only
+
+PRIMARY GOAL:
+Fix two planning-quality problems:
+1. sport-goal plans with limited weekly days still look too generic and do not include enough athletic / plyometric emphasis
+2. severely under-covered targets (for example czworoboczny grzbietu far below proposed volume) are detected but not recovered strongly enough in actual exercise selection
+
+====================================================
+PART 1 — SPORT GOAL MUST FEEL MORE SPORT-SPECIFIC
+====================================================
+
+KNOWN ISSUE:
+A 3-day Push/Pull/Legs sport-goal plan can still look like a normal gym split with only one small plyo element (for example just "Skoki pogo" on Legs).
+
+REQUIRED FIX:
+For goal = Cel sportowy, the generator must add stronger athletic emphasis even when weekly days are limited.
+
+Implementation intent:
+- do NOT require a fully separate dedicated plyo day in every case
+- but do require that sport-goal plans include meaningful explosive / athletic content
+- especially for 3-day splits, at least 2 sessions per week should show a real athletic element when appropriate
+- this athletic element may be:
+  - explosive primer
+  - dynamic pull
+  - athletic press
+  - jump / landing / reactive work
+  - upper-back explosive work
+- do NOT leave sport plans feeling like generic bodybuilding PPL + one jump exercise
+
+SUCCESS CONDITION:
+A 3-day sport-goal plan should feel clearly more athletic than a standard gym split, even if the split itself remains Push/Pull/Legs.
+
+====================================================
+PART 2 — UNDER-COVERED TARGET RECOVERY
+====================================================
+
+KNOWN ISSUE:
+The app correctly shows when a target is badly under-covered (for example czworoboczny grzbietu far below proposed volume), but the generator does not react strongly enough to fix it.
+
+REQUIRED FIX:
+When a target is severely under-covered, the generator must more aggressively prefer exercises that recover that missing coverage.
+
+At minimum:
+- if a target is below 50% of proposed volume, treat it as a strong recovery need
+- if the target is priority-related or structurally important for the day, treat it even more strongly
+- this recovery preference should influence final exercise selection, not just the sidebar warning
+
+Examples:
+- if czworoboczny grzbietu is badly under-covered, the system should prefer trap / upper-back-biased compatible exercises over lower-value filler
+- if a pull day still leaves upper-back/trap coverage too low, choose a more useful upper-back candidate instead of another redundant accessory
+
+IMPORTANT:
+- do NOT break day coherence
+- do NOT ignore goal/context
+- do NOT force random exercises
+- do NOT simply inflate volume numbers without selecting real coverage-producing exercises
+
+====================================================
+PART 3 — PREFER REAL RECOVERY OVER FILLER
+====================================================
+
+When a day still has unresolved major coverage gaps:
+- prefer exercises that actually fix those gaps
+- deprioritize filler accessories that do not meaningfully improve the weak target
+
+Examples of filler to avoid winning in those situations:
+- another generic curl
+- another low-value isolation unrelated to the uncovered target
+- accessory choices that look valid but do not solve the actual missing volume problem
+
+====================================================
+PART 4 — DO NOT OVERBUILD
+====================================================
+
+Important:
+- Do NOT redesign all split templates
+- Do NOT create a huge new periodization system
+- Do NOT rewrite the entire volume engine
+- Do NOT make sport plans into random plyo spam
+- Do NOT force one dedicated plyo day in every sport case
+- Keep it local and practical:
+  - stronger sport emphasis
+  - stronger severely-undercovered-target recovery
+
+====================================================
+SUCCESS CRITERIA
+====================================================
+
+After this fix:
+- sport-goal 3-day plans no longer look like generic PPL with only one tiny plyo element
+- at least two sessions can show meaningful athletic emphasis when appropriate
+- severely under-covered targets (like czworoboczny grzbietu) are more actively recovered in the actual exercise selection
+- the generator stops showing huge uncovered deficits without trying hard enough to correct them
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause

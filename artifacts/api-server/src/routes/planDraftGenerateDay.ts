@@ -120,6 +120,17 @@ const BodySchema = z.object({
       equipment: z.array(z.string()),
     }),
   ).optional().default([]),
+  /**
+   * Muscle group names (mainMuscleGroup level, e.g. "Plecy", "Barki") that are
+   * severely under-covered — below 50 % of their proposed weekly volume.
+   *
+   * When provided, the selection engine boosts exercises that target these muscles
+   * in optional accessory slots, preferring gap-fixing exercises over filler.
+   * Use norm()-comparable strings; the engine lowercases them internally.
+   *
+   * Omit or pass an empty array to disable the boost (default behaviour).
+   */
+  undercoveredMuscleGroups: z.array(z.string()).optional().default([]),
 });
 
 router.post(
@@ -400,6 +411,11 @@ router.post(
       preferredExerciseKeywords,
       deprioritizePushUps,
       goalProfile,
+      // Severely under-covered muscle groups — lower-cased for norm() comparison.
+      // When non-empty the engine boosts gap-fixing exercises in optional slots.
+      undercoveredMuscleGroups: (body.data.undercoveredMuscleGroups ?? []).map(
+        (s) => s.trim().toLowerCase(),
+      ),
     };
 
     // ── Session start — seed cross-session memory if provided ─────────────────
