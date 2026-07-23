@@ -1,0 +1,109 @@
+Do NOT change code.
+Do NOT refactor anything.
+Do NOT create files.
+Do NOT redesign UI.
+Do NOT run migrations.
+
+I want a pure post-Task-38 validation pass in the actual app flow.
+
+TASK:
+Validate that the latest hard-constraints + explainability + athlete-structure changes are working in the current generator output.
+
+Run 3 focused validation scenarios and summarize the real output.
+
+====================================================
+SCENARIO 1 — HARD CONSTRAINT FAMILY BLOCK
+====================================================
+
+Profile:
+- Goal: Zwiększenie siły
+- Experience: Średniozaawansowany
+- Days: 4
+- Session time: 90 min
+- Location: full gym
+- Priority muscles: plecy, barki, triceps
+- Preferred exercises: OHP, podciąganie
+- Avoided / excluded exercise: martwy ciąg
+
+Validation questions:
+1. Did all deadlift-family variants disappear?
+   - conventional deadlift
+   - sumo deadlift
+   - Romanian deadlift
+   - kettlebell deadlift
+   - equivalent deadlift-family variants
+2. Did the plan choose sensible alternatives instead of silently ignoring the exclusion?
+3. Does the summary clearly show:
+   - what was excluded
+   - whether the exact exercise or whole family was blocked
+   - why
+
+====================================================
+SCENARIO 2 — COMPETITIVE ATHLETE STRUCTURE OVERRIDE
+====================================================
+
+Profile:
+- Goal: Cel sportowy
+- Athlete status: Tak — zawodowo
+- Sport priorities: Dynamika, Szybkość
+- Experience: Średniozaawansowany
+- Days: 4
+- Session time: 90 min
+- Location: full gym
+- Priority muscles: nogi, barki, plecy
+- Preferred exercises: push press, podciąganie
+- Avoided exercises: none
+
+Validation questions:
+1. Did the weekly structure remain generic Upper/Lower x2, or was it overridden?
+2. If overridden, what structure was chosen?
+3. Does the summary explain why the structure was changed?
+4. Does the plan now look more athletic than a generic gym plan?
+
+====================================================
+SCENARIO 3 — CONTEXTUAL PUSH-UP RULE
+====================================================
+
+Run two subcases:
+
+A. Full gym sport/strength context
+- Goal: Cel sportowy or Zwiększenie siły
+- Experience: Średniozaawansowany
+- Location: full gym
+- Preferred exercises: none
+- Push-ups NOT preferred
+
+B. Home / outdoor / bodyweight-friendly context
+- Goal: Poprawa sprawności or Poprawa kondycji
+- Experience: Początkujący or Średniozaawansowany
+- Location: dom or plener
+- Push-ups preferred
+
+Validation questions:
+1. In case A, are push-ups deprioritized and replaced by stronger gym pressing options?
+2. In case B, can push-ups enter the plan naturally?
+3. Do push-ups behave contextually instead of being always good or always bad?
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+1. Scenario 1 result
+   - generated structure
+   - whether family blocking worked
+   - whether explanation was visible
+   - short verdict: PASS / FAIL
+2. Scenario 2 result
+   - generated structure
+   - whether athlete override fired
+   - whether explanation was visible
+   - short verdict: PASS / FAIL
+3. Scenario 3 result
+   - full-gym case result
+   - home/outdoor case result
+   - short verdict: PASS / FAIL
+4. Final summary:
+   - what is confirmed working now
+   - what is still broken
+   - the single highest-priority next fix
