@@ -118,6 +118,8 @@ export interface WorkoutPlan {
   endDate: string | null;
   trainerNotes: string | null;
   status: "draft" | "active" | "archived";
+  splitType: string | null;
+  blockDurationWeeks: number | null;
   createdAt: string;
   updatedAt: string;
   activatedAt: string | null;

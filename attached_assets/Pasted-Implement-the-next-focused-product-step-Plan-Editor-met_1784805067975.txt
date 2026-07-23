@@ -1,0 +1,129 @@
+Implement the next focused product step: Plan Editor metadata editing + polish.
+
+STRICT SCOPE:
+- Do NOT analyze the whole repository
+- Do NOT refactor the whole app
+- Do NOT redesign the whole product shell
+- Do NOT rewrite the generator
+- Do NOT touch authentication, client portal, chat, progression tracking, RIR/tempo/weight editing, RAMP, or cooldown in this task
+- Keep changes local to:
+  - saved plan editor view
+  - plan metadata editing
+  - minor UX polish of the existing saved-plan experience
+  - minimum necessary API wiring
+
+PRIMARY GOAL:
+After Save Plan MVP, make the saved plan feel like a real trainer tool by allowing the trainer to edit basic plan metadata and by improving the readability/usability of the Plan Editor.
+
+====================================================
+PART 1 — EDITABLE PLAN METADATA
+====================================================
+
+Required editable fields in the saved plan editor:
+- title
+- description / short trainer description
+- start date
+- end date
+- trainer notes
+
+IMPORTANT:
+- do NOT broaden this into editing every exercise yet
+- this task is only about top-level plan metadata
+- preserve existing saved plan content (days/exercises/prescription)
+
+Required behavior:
+- trainer can open a saved plan
+- trainer can edit the metadata fields above
+- trainer can save those changes
+- trainer gets clear success/error feedback
+
+====================================================
+PART 2 — PLAN EDITOR UX POLISH
+====================================================
+
+Improve the readability of the saved plan editor without redesigning everything.
+
+Focus on:
+- clearer top section / metadata section
+- cleaner visual grouping of:
+  - plan summary
+  - metadata
+  - days
+  - exercises
+- more professional spacing and hierarchy
+- easier scanning for trainer use
+
+IMPORTANT:
+Do NOT turn this into a massive UI rewrite.
+Use the current structure and improve it.
+
+====================================================
+PART 3 — CONSISTENCY WITH FINAL GENERATED PLAN VIEW
+====================================================
+
+The saved plan editor should feel consistent with the final generated plan view.
+
+Preserve / surface where practical:
+- split / structure
+- goal
+- training days
+- session duration
+- explanation context if already available
+- clean day/exercise layout
+
+Do NOT keep a jarring gap where the generated plan view looks good but the saved plan editor looks raw or stripped down.
+
+====================================================
+PART 4 — SAFE EDITING FLOW
+====================================================
+
+Required UX behavior:
+- edit mode is clear
+- saving state is clear
+- success state is clear
+- failed save is clear
+- trainer should not wonder whether the metadata saved or not
+
+Acceptable patterns:
+- inline editable fields with save button
+- or compact edit form section at the top
+
+Either is fine if it is coherent and simple.
+
+====================================================
+PART 5 — DO NOT OVERBUILD
+====================================================
+
+Important:
+- Do NOT implement exercise-level editing in this task
+- Do NOT implement drag-and-drop day editing
+- Do NOT implement notes per exercise
+- Do NOT implement progression logic
+- Do NOT implement client-facing access
+- Do NOT implement history/versioning
+- Do NOT redesign the full plan page architecture
+
+This is only:
+- edit metadata
+- save metadata
+- improve editor readability/polish
+
+====================================================
+SUCCESS CRITERIA
+====================================================
+
+After this change:
+- a saved plan can be reopened and its metadata edited
+- the trainer can save title / description / dates / notes
+- the plan editor feels cleaner and more professional
+- the saved-plan experience feels like a real trainer workflow, not just a raw saved snapshot
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return only:
+1. exact files changed
+2. exact lines before
+3. exact lines after
+4. one-sentence explanation of the real root cause

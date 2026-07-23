@@ -103,6 +103,7 @@ import {
   Save,
   Archive,
   LayoutList,
+  Layers,
   ListX,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -130,6 +131,17 @@ const STATUS_BADGE: Record<WorkoutPlan["status"], { label: string; className: st
   draft: { label: "Szkic", className: "bg-muted text-muted-foreground" },
   active: { label: "Aktywny", className: "bg-green-100 text-green-700 border-green-200" },
   archived: { label: "Zarchiwizowany", className: "bg-gray-100 text-gray-500" },
+};
+
+const SPLIT_TYPE_LABELS: Record<string, string> = {
+  full_body: "Full Body",
+  full_body_ab: "Full Body A/B",
+  upper_lower: "Góra / Dół",
+  upper_lower_full_body: "Góra / Dół / Full Body",
+  push_pull_legs: "Push / Pull / Nogi",
+  push_pull_lower_full_body: "Push / Pull / Dół / Full Body",
+  specialization: "Specjalizacja",
+  custom: "Niestandardowy",
 };
 
 const VOLUME_STATUS_COLOR: Record<string, string> = {
@@ -1441,6 +1453,7 @@ function PlanInfoForm({ plan, planId }: { plan: WorkoutPlan; planId: number }) {
   const { toast } = useToast();
 
   const makeFormFromPlan = (p: WorkoutPlan) => ({
+    title: p.title,
     goal: p.goal ?? "",
     description: p.description ?? "",
     startDate: p.startDate ?? "",
@@ -1448,9 +1461,7 @@ function PlanInfoForm({ plan, planId }: { plan: WorkoutPlan; planId: number }) {
     trainerNotes: p.trainerNotes ?? "",
   });
 
-  const [expanded, setExpanded] = useState(
-    !!(plan.goal || plan.description || plan.startDate || plan.endDate || plan.trainerNotes),
-  );
+  const [expanded, setExpanded] = useState(true);
   const [form, setForm] = useState(() => makeFormFromPlan(plan));
   const [savedForm, setSavedForm] = useState(() => makeFormFromPlan(plan));
   const isDirty = JSON.stringify(form) !== JSON.stringify(savedForm);
@@ -1476,6 +1487,7 @@ function PlanInfoForm({ plan, planId }: { plan: WorkoutPlan; planId: number }) {
   const handleSave = () => {
     updatePlan.mutate(
       {
+        title: form.title.trim() || plan.title,
         goal: form.goal || null,
         description: form.description || null,
         startDate: form.startDate || null,
@@ -1517,6 +1529,15 @@ function PlanInfoForm({ plan, planId }: { plan: WorkoutPlan; planId: number }) {
 
       {expanded && (
         <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="plan-title">Tytuł planu</Label>
+            <Input
+              id="plan-title"
+              value={form.title}
+              onChange={set("title")}
+              placeholder="Nazwa planu treningowego"
+            />
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="plan-goal">Cel planu</Label>
@@ -1583,8 +1604,6 @@ export default function PlanEditor() {
   const planId = Number(params.id);
   const { toast } = useToast();
 
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [titleValue, setTitleValue] = useState("");
   const [pickerDayId, setPickerDayId] = useState<number | null>(null);
 
   const { data: plan, isLoading, error } = useGetPlan(planId);
@@ -1631,16 +1650,6 @@ export default function PlanEditor() {
   const hasUnassignedExercises = plan.volume.exercisesWithoutAssignments.length > 0;
   const canActivate = plan.status === "draft" && !hasAbsoluteViolation && !hasUnassignedExercises;
   const canEdit = plan.status === "draft";
-
-  const handleSaveTitle = () => {
-    updatePlan.mutate(
-      { title: titleValue.trim() || plan.title },
-      {
-        onSuccess: () => setEditingTitle(false),
-        onError: (err) => toast({ title: err.message, variant: "destructive" }),
-      },
-    );
-  };
 
   const handleActivate = () => {
     if (!window.confirm("Aktywować plan? Po aktywacji nie będzie można zmieniać jego struktury.")) return;
@@ -1735,49 +1744,47 @@ export default function PlanEditor() {
 
         <div className="flex flex-col sm:flex-row sm:items-start gap-3">
           <div className="flex-1 min-w-0">
-            {editingTitle ? (
-              <div className="flex gap-2 items-center">
-                <Input
-                  value={titleValue}
-                  onChange={(e) => setTitleValue(e.target.value)}
-                  className="text-xl font-display font-bold h-10"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSaveTitle();
-                    if (e.key === "Escape") setEditingTitle(false);
-                  }}
-                />
-                <Button size="icon" variant="ghost" onClick={handleSaveTitle}>
-                  <Check size={16} />
-                </Button>
-                <Button size="icon" variant="ghost" onClick={() => setEditingTitle(false)}>
-                  <X size={16} />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 group">
-                <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">
-                  {plan.title}
-                </h1>
-                {canEdit && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => { setTitleValue(plan.title); setEditingTitle(true); }}
-                  >
-                    <Pencil size={14} />
-                  </Button>
-                )}
-                <Badge variant="outline" className={`ml-1 ${statusMeta.className}`}>
-                  {statusMeta.label}
-                </Badge>
-              </div>
-            )}
-            <p className="text-sm text-muted-foreground mt-1">
-              Poziom objętości:{" "}
-              <span className="font-medium text-foreground">{plan.experienceLevelUsed}</span>
-            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-3xl font-display font-bold tracking-tight text-foreground leading-tight">
+                {plan.title}
+              </h1>
+              <Badge variant="outline" className={statusMeta.className}>
+                {statusMeta.label}
+              </Badge>
+            </div>
+            {/* Plan summary strip */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-muted-foreground">
+              {plan.splitType && (
+                <span className="flex items-center gap-1.5">
+                  <Layers size={13} className="text-primary/70" />
+                  {SPLIT_TYPE_LABELS[plan.splitType] ?? plan.splitType}
+                </span>
+              )}
+              <span className="flex items-center gap-1.5">
+                <Dumbbell size={13} className="text-primary/70" />
+                {plan.days.length} {plan.days.length === 1 ? "dzień" : "dni"}/tydz.
+              </span>
+              {plan.blockDurationWeeks != null && (
+                <span className="flex items-center gap-1.5">
+                  <CalendarDays size={13} className="text-primary/70" />
+                  {plan.blockDurationWeeks} tyg.
+                </span>
+              )}
+              {(plan.startDate || plan.endDate) && (
+                <span className="flex items-center gap-1.5">
+                  <Clock size={13} className="text-primary/70" />
+                  {formatDate(plan.startDate)}{plan.startDate && plan.endDate ? " – " : ""}{formatDate(plan.endDate)}
+                </span>
+              )}
+              {plan.goal && (
+                <span className="font-medium text-foreground/70">
+                  {plan.goal}
+                </span>
+              )}
+              <span className="text-muted-foreground/60">
+                poziom: <span className="font-medium text-foreground/60">{plan.experienceLevelUsed}</span>
+              </span>
+            </div>
           </div>
 
           <div className="flex gap-2 shrink-0 flex-wrap justify-end">

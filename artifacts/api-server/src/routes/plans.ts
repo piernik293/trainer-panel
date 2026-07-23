@@ -868,6 +868,8 @@ router.patch("/plans/:id", async (req, res): Promise<void> => {
   if (parsed.data.startDate !== undefined) updates.startDate = parsed.data.startDate;
   if (parsed.data.endDate !== undefined) updates.endDate = parsed.data.endDate;
   if (parsed.data.trainerNotes !== undefined) updates.trainerNotes = parsed.data.trainerNotes;
+  if (parsed.data.splitType !== undefined) updates.splitType = parsed.data.splitType ?? null;
+  if (parsed.data.blockDurationWeeks !== undefined) updates.blockDurationWeeks = parsed.data.blockDurationWeeks ?? null;
 
   await db.update(workoutPlansTable).set(updates).where(eq(workoutPlansTable.id, planId));
 
