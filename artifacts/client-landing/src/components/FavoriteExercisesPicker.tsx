@@ -24,7 +24,10 @@ export function FavoriteExercisesPicker({ selectedExercises, onSelectedChange }:
     return () => clearTimeout(t);
   }, [query]);
 
-  const { data: results, isLoading } = useSearchExercises(debouncedQuery);
+  const { data: results, isLoading, isError } = useSearchExercises(debouncedQuery);
+
+  // True while the debounce timer is still running (query typed but not yet sent)
+  const isPending = query.trim() !== debouncedQuery.trim();
 
   const selectedIds = new Set(selectedExercises.map((e) => e.id));
   const filtered = (results ?? []).filter((r) => !selectedIds.has(r.id));
@@ -99,11 +102,15 @@ export function FavoriteExercisesPicker({ selectedExercises, onSelectedChange }:
 
         {showDropdown && query.trim().length >= 1 && (
           <div className="absolute z-50 w-full mt-px bg-background border border-white/10 max-h-52 overflow-y-auto shadow-xl">
-            {isLoading ? (
+            {isLoading || isPending ? (
               <div className="px-3 py-2 text-xs text-muted-foreground">Szukam...</div>
+            ) : isError ? (
+              <div className="px-3 py-2 text-xs text-destructive">
+                Nie udało się załadować ćwiczeń. Spróbuj ponownie.
+              </div>
             ) : filtered.length === 0 ? (
               <div className="px-3 py-2 text-xs text-muted-foreground">
-                Brak wyników dla „{query}"
+                Brak ćwiczeń pasujących do „{query}"
               </div>
             ) : (
               filtered.slice(0, 12).map((ex) => (

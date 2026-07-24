@@ -997,57 +997,61 @@ export default function SurveyForm() {
               <FormItem className="space-y-3">
                 <FormLabel className="text-muted-foreground">Jaka forma aktywności tlenowej najbardziej Ci odpowiada?</FormLabel>
 
-                <FormControl>
-                  <RadioGroup onValueChange={field.onChange} value={field.value}>
-                    {/* Always-visible: Marsz, Bieganie, Rower */}
-                    <div className="grid grid-cols-3 gap-2">
-                      {([
-                        { label: "Marsz",    value: "Marsz" },
-                        { label: "Bieganie", value: "Bieganie" },
-                        { label: "Rower",    value: "Rower" },
-                      ] as const).map(({ label, value }) => (
-                        <FormItem key={value} className="flex items-center space-x-0 space-y-0">
-                          <RadioGroupItem value={value} className="peer sr-only" />
-                          <FormLabel className="w-full min-h-[46px] flex items-center justify-center text-sm border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
+                <RadioGroup onValueChange={field.onChange} value={field.value}>
+                  {/* Always-visible: Marsz, Bieganie, Rower */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { label: "Marsz",    value: "Marsz" },
+                      { label: "Bieganie", value: "Bieganie" },
+                      { label: "Rower",    value: "Rower" },
+                    ] as const).map(({ label, value }) => {
+                      const id = `cardio-type-${value}`;
+                      return (
+                        <div key={value} className="flex items-center">
+                          <RadioGroupItem id={id} value={value} className="peer sr-only" />
+                          <label htmlFor={id} className="w-full min-h-[46px] flex items-center justify-center text-sm border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
                             {label}
-                          </FormLabel>
-                        </FormItem>
-                      ))}
-                    </div>
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
 
-                    {/* Expanded: 6 additional options */}
-                    <AnimatePresence>
-                      {cardioTypeExpanded && (
-                        <motion.div
-                          key="cardio-extra"
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2, ease: "easeOut" }}
-                          className="overflow-hidden"
-                        >
-                          <div className="grid grid-cols-3 gap-2 mt-2">
-                            {([
-                              { label: "Szybki marsz", value: "Szybki marsz" },
-                              { label: "Sport",        value: "Sport rekreacyjny" },
-                              { label: "Orbitrek",     value: "Orbitrek" },
-                              { label: "Pływanie",     value: "Pływanie" },
-                              { label: "Wioślarz",     value: "Wioślarz" },
-                              { label: "Schody",       value: "Stepper / schody" },
-                            ] as const).map(({ label, value }) => (
-                              <FormItem key={value} className="flex items-center space-x-0 space-y-0">
-                                <RadioGroupItem value={value} className="peer sr-only" />
-                                <FormLabel className="w-full min-h-[46px] flex items-center justify-center text-sm border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
+                  {/* Expanded: 6 additional options */}
+                  <AnimatePresence>
+                    {cardioTypeExpanded && (
+                      <motion.div
+                        key="cardio-extra"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="overflow-hidden"
+                      >
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                          {([
+                            { label: "Szybki marsz", value: "Szybki marsz" },
+                            { label: "Sport",        value: "Sport rekreacyjny" },
+                            { label: "Orbitrek",     value: "Orbitrek" },
+                            { label: "Pływanie",     value: "Pływanie" },
+                            { label: "Wioślarz",     value: "Wioślarz" },
+                            { label: "Schody",       value: "Stepper / schody" },
+                          ] as const).map(({ label, value }) => {
+                            const id = `cardio-type-${value.replace(/[\s/]+/g, "-")}`;
+                            return (
+                              <div key={value} className="flex items-center">
+                                <RadioGroupItem id={id} value={value} className="peer sr-only" />
+                                <label htmlFor={id} className="w-full min-h-[46px] flex items-center justify-center text-sm border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
                                   {label}
-                                </FormLabel>
-                              </FormItem>
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </RadioGroup>
-                </FormControl>
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </RadioGroup>
 
                 {/* Pokaż więcej / Pokaż mniej */}
                 <button

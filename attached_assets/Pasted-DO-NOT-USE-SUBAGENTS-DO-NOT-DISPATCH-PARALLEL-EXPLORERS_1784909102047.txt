@@ -1,0 +1,130 @@
+DO NOT USE SUBAGENTS.
+DO NOT DISPATCH PARALLEL EXPLORERS.
+Work sequentially in the current agent only.
+
+CRITICAL TASK — reliable delivery of new client interviews to the trainer dashboard.
+
+Current problem:
+
+A new client interview may appear only after the application changes offline/online state, is restarted, or the trainer dashboard is manually refreshed.
+
+This is incorrect.
+
+The normal expected flow is:
+
+1. The public client application is online.
+2. The client submits the interview.
+3. The existing API immediately saves the interview and client data.
+4. The trainer dashboard may remain continuously open.
+5. The new client appears automatically without:
+   - restarting either application,
+   - refreshing the whole page,
+   - going offline,
+   - reconnecting the internet.
+
+Offline support must remain only as a fallback:
+
+1. If the client submits while offline, preserve the existing local queue/storage behavior.
+2. When connectivity returns, synchronize the queued interview exactly once.
+3. After synchronization, the trainer dashboard must also display the new client automatically.
+
+First diagnose which part is failing:
+
+A. online submission does not call or complete the API request,
+B. the API saves the interview but the trainer dashboard query remains stale,
+C. the dashboard endpoint does not return the newest client,
+D. the recent-clients list is incorrectly cached or sorted,
+E. offline synchronization is the only action currently triggering a refetch.
+
+Do not assume the cause before checking.
+
+Required implementation:
+
+1. ONLINE SUBMISSION
+
+Verify that an online public interview submission:
+- immediately calls the existing submission endpoint,
+- receives a successful response,
+- does not unnecessarily enter the offline queue,
+- creates only one client/interview record,
+- shows the existing success state only after the server confirms the save.
+
+Do not create a new submission endpoint if the existing one works.
+
+2. TRAINER DASHBOARD REFRESH
+
+Use the existing query/data-fetching library.
+
+Make the open trainer dashboard update automatically by:
+- refetching the recent-clients/client-list query approximately every 10–15 seconds,
+- refetching when the browser tab regains focus,
+- refetching when network connectivity is restored,
+- preserving any existing manual refresh behavior.
+
+Do not reload the entire page.
+
+3. NEWEST CLIENT ORDER
+
+Verify that the API/list displays the newest clients first using the actual server-side creation/submission timestamp.
+
+A newly submitted client must not be hidden because of:
+- stale sorting,
+- a cached response,
+- an incorrect date field,
+- or the five-client list limit.
+
+4. OFFLINE FALLBACK
+
+Preserve offline submission support.
+
+When an offline item synchronizes:
+- send it once,
+- remove it from the local queue only after server success,
+- prevent duplicate clients/interviews,
+- refresh the trainer dashboard query after connectivity returns.
+
+5. SCOPE RESTRICTIONS
+
+Inspect only:
+- the public interview submit handler,
+- its offline queue/synchronization helper,
+- the relevant API submission route,
+- the trainer dashboard recent-clients component,
+- the directly used query/hook and list endpoint.
+
+Do not:
+- add WebSockets,
+- add Server-Sent Events,
+- redesign the dashboard,
+- modify interview questions,
+- modify generator logic,
+- change the database schema,
+- update dependencies,
+- perform unrelated refactors.
+
+TEST THESE EXACT CASES
+
+Test A — normal online submission:
+- Keep the trainer dashboard open.
+- Keep both applications online.
+- Submit a new public interview.
+- Confirm the API saves it immediately.
+- Confirm the new client appears on the trainer dashboard within 15 seconds without a page reload.
+
+Test B — offline fallback:
+- Submit an interview while the public app is offline.
+- Restore connectivity.
+- Confirm it synchronizes exactly once.
+- Confirm it appears on the open trainer dashboard within 15 seconds.
+
+Test C — duplicate prevention:
+- Confirm that reconnecting or refetching does not create or display duplicate client rows.
+
+At the end report:
+- exact root cause,
+- exact files changed,
+- whether online submission was already reaching the API,
+- final dashboard refresh behavior,
+- online test result,
+- offline synchronization test result,
+- duplicate-prevention test result.

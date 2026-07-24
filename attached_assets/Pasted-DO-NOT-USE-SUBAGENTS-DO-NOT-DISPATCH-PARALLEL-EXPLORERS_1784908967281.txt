@@ -1,0 +1,56 @@
+DO NOT USE SUBAGENTS.
+DO NOT DISPATCH PARALLEL EXPLORERS.
+Work sequentially in the current agent only.
+
+Scope: fix only two interaction problems in the public client training interview.
+
+Start in:
+artifacts/client-landing/src
+
+Inspect no more than 8 directly related files.
+
+ISSUE 1 — Preferred exercise search
+
+The preferred-exercise search input displays:
+“Brak wyników dla „wyc””
+
+even though the exercise catalogue should contain exercises whose names begin with “Wyciskanie”.
+
+Requirements:
+- Verify whether the component receives the production exercise catalogue from the existing API.
+- Do not create a fake local exercise list.
+- Search must be case-insensitive.
+- Search must match partial exercise names, not only exact names.
+- Typing “wyc” should return matching “Wyciskanie...” exercises when they exist in the loaded catalogue.
+- Preserve already selected exercises.
+- Keep loading, API error, and genuine empty-result states clearly separated.
+- If the production catalogue is actually empty, do not modify the database. Stop and report that data import is required.
+
+ISSUE 2 — Cardio options cannot be selected
+
+The cardio activity options are displayed, but clicking them does not select a value.
+
+Requirements:
+- Make each option selectable.
+- Ensure option buttons do not accidentally submit the whole form.
+- Clicking an option must update the existing form state.
+- Display a clear selected state.
+- Preserve the selection when moving forward and backward through the interview.
+- Submit the same existing backend values and mappings.
+- Previously saved answers must still load correctly.
+- Do not change cardio recommendation logic.
+
+Do not:
+- redesign other interview sections,
+- modify generator logic,
+- create database migrations,
+- update dependencies,
+- perform unrelated refactors.
+
+Run only the focused client-landing typecheck/build.
+
+Report:
+- root cause of each issue,
+- exact files changed,
+- confirmation that “wyc” returns catalogue matches,
+- confirmation that cardio selection persists and submits correctly.
