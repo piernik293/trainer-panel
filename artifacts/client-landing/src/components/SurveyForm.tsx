@@ -38,6 +38,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -822,7 +823,7 @@ export default function SurveyForm() {
 
         <Section
           step={7}
-          title="Aktywność tlenowa i cardio"
+          title="Cardio"
           description="Pomaga dobrać ilość aktywności wspierającej redukcję, kondycję i ogólną wydolność."
         >
           {isCardioRelevant && (
@@ -830,23 +831,24 @@ export default function SurveyForm() {
               {CARDIO_RECOMMENDATION_TEXT}
             </p>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Cardio preference — 2 compact options */}
             <FormField control={form.control} name="cardioPreference" render={({field}) => (
-              <FormItem className="space-y-4">
-                <FormLabel className="text-muted-foreground">Jak chcesz, aby w planie uwzględnić trening cardio?</FormLabel>
+              <FormItem className="space-y-3">
+                <FormLabel className="text-muted-foreground">Jak uwzględnić cardio?</FormLabel>
                 <FormControl>
-                  <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 gap-3">
-                    {[
-                      "Chętnie uwzględnię cardio w planie",
-                      "Cardio może być dodatkiem do planu",
-                      "Wolę ograniczyć cardio do niezbędnego minimum",
-                    ].map((pref) => (
-                      <FormItem key={pref} className="flex items-center space-x-0 space-y-0">
+                  <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 gap-2">
+                    {([
+                      { label: "Uwzględnij w planie", value: "Chętnie uwzględnię cardio w planie" },
+                      { label: "Tylko niezbędne minimum", value: "Wolę ograniczyć cardio do niezbędnego minimum" },
+                    ] as const).map(({ label, value }) => (
+                      <FormItem key={value} className="flex items-center space-x-0 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value={pref} className="peer sr-only" />
+                          <RadioGroupItem value={value} className="peer sr-only" />
                         </FormControl>
-                        <FormLabel className="w-full flex items-center px-6 py-4 min-h-[56px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-sm leading-snug">
-                          {pref}
+                        <FormLabel className="w-full flex items-center px-4 py-3 min-h-[46px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-sm leading-snug">
+                          {label}
                         </FormLabel>
                       </FormItem>
                     ))}
@@ -859,23 +861,25 @@ export default function SurveyForm() {
                 )}
               </FormItem>
             )} />
+
+            {/* Cardio frequency — compact segmented pills */}
             <FormField control={form.control} name="cardioFrequency" render={({field}) => (
-              <FormItem className="space-y-4">
+              <FormItem className="space-y-3">
                 <FormLabel className="text-muted-foreground">Jak wygląda Twoja aktywność tlenowa obecnie?</FormLabel>
                 <FormControl>
-                  <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 gap-3">
-                    {[
-                      "Nie wykonuję cardio",
-                      "1 raz w tygodniu",
-                      "2–3 razy w tygodniu",
-                      "4 lub więcej razy w tygodniu",
-                    ].map((opt) => (
-                      <FormItem key={opt} className="flex items-center space-x-0 space-y-0">
+                  <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-wrap gap-2">
+                    {([
+                      { label: "Brak",          value: "Nie wykonuję cardio" },
+                      { label: "1× / tydz.",    value: "1 raz w tygodniu" },
+                      { label: "2–3× / tydz.",  value: "2–3 razy w tygodniu" },
+                      { label: "4+× / tydz.",   value: "4 lub więcej razy w tygodniu" },
+                    ] as const).map(({ label, value }) => (
+                      <FormItem key={value} className="flex items-center space-x-0 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value={opt} className="peer sr-only" />
+                          <RadioGroupItem value={value} className="peer sr-only" />
                         </FormControl>
-                        <FormLabel className="w-full flex items-center px-6 py-4 min-h-[52px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-sm">
-                          {opt}
+                        <FormLabel className="px-3 py-1.5 text-sm border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium whitespace-nowrap">
+                          {label}
                         </FormLabel>
                       </FormItem>
                     ))}
@@ -884,34 +888,66 @@ export default function SurveyForm() {
               </FormItem>
             )} />
           </div>
-          <div className="mt-8">
+
+          {/* Preferred cardio activity */}
+          <div className="mt-6">
             <FormField control={form.control} name="preferredCardioType" render={({field}) => (
-              <FormItem className="space-y-4">
+              <FormItem className="space-y-3">
                 <FormLabel className="text-muted-foreground">Jaka forma aktywności tlenowej najbardziej Ci odpowiada?</FormLabel>
-                <FormControl>
-                  <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                    {[
-                      "Marsz",
-                      "Szybki marsz",
-                      "Sport rekreacyjny",
-                      "Bieganie",
-                      "Rower",
-                      "Orbitrek",
-                      "Pływanie",
-                      "Wioślarz",
-                      "Stepper / schody",
-                    ].map((opt) => (
-                      <FormItem key={opt} className="flex items-center space-x-0 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value={opt} className="peer sr-only" />
-                        </FormControl>
-                        <FormLabel className="w-full flex items-center px-6 py-4 min-h-[52px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-sm">
-                          {opt}
-                        </FormLabel>
-                      </FormItem>
-                    ))}
-                  </RadioGroup>
-                </FormControl>
+
+                {/* Mobile: compact select dropdown */}
+                <div className="md:hidden">
+                  <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                    <FormControl>
+                      <SelectTrigger className="bg-background/50 border-white/10 focus:border-primary rounded-none">
+                        <SelectValue placeholder="Wybierz formę aktywności..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {([
+                        { label: "Marsz",        value: "Marsz" },
+                        { label: "Szybki marsz", value: "Szybki marsz" },
+                        { label: "Sport",        value: "Sport rekreacyjny" },
+                        { label: "Bieganie",     value: "Bieganie" },
+                        { label: "Rower",        value: "Rower" },
+                        { label: "Orbitrek",     value: "Orbitrek" },
+                        { label: "Pływanie",     value: "Pływanie" },
+                        { label: "Wioślarz",     value: "Wioślarz" },
+                        { label: "Schody",       value: "Stepper / schody" },
+                      ] as const).map(({ label, value }) => (
+                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Desktop: compact chip grid */}
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  className="hidden md:grid md:grid-cols-3 lg:grid-cols-5 gap-2"
+                >
+                  {([
+                    { label: "Marsz",        value: "Marsz" },
+                    { label: "Szybki marsz", value: "Szybki marsz" },
+                    { label: "Sport",        value: "Sport rekreacyjny" },
+                    { label: "Bieganie",     value: "Bieganie" },
+                    { label: "Rower",        value: "Rower" },
+                    { label: "Orbitrek",     value: "Orbitrek" },
+                    { label: "Pływanie",     value: "Pływanie" },
+                    { label: "Wioślarz",     value: "Wioślarz" },
+                    { label: "Schody",       value: "Stepper / schody" },
+                  ] as const).map(({ label, value }) => (
+                    <FormItem key={value} className="flex items-center space-x-0 space-y-0">
+                      <RadioGroupItem value={value} className="peer sr-only" />
+                      <FormLabel className="w-full flex items-center justify-center px-3 py-2 text-sm border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
+                        {label}
+                      </FormLabel>
+                    </FormItem>
+                  ))}
+                </RadioGroup>
+
+                <FormMessage />
               </FormItem>
             )} />
           </div>
