@@ -1,11 +1,18 @@
-import { useGetStats } from "@workspace/api-client-react";
+import { useGetStats, getGetStatsQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, FileText, Activity, PauseCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
-  const { data: stats, isLoading } = useGetStats();
+  const { data: stats, isLoading } = useGetStats({
+    query: {
+      queryKey: getGetStatsQueryKey(),
+      refetchInterval: 12_000,      // poll every 12 s while tab is open
+      refetchOnWindowFocus: true,   // also refresh when trainer returns to tab
+      refetchOnReconnect: true,     // and when network comes back
+    },
+  });
 
   if (isLoading) {
     return (
