@@ -1,0 +1,86 @@
+DO NOT USE SUBAGENTS.
+DO NOT DISPATCH PARALLEL EXPLORERS.
+WORK SEQUENTIALLY.
+DO NOT STOP AFTER DIAGNOSIS — IMPLEMENT AND VERIFY THE FIX.
+
+P0 BUG — “Dlaczego chcesz trenować?” is entered in the deployed public interview, but the value is missing in the deployed trainer/admin panel.
+
+Test only the deployed production application:
+
+https://client-intake-form--andrzejwysocki7.replit.app/
+
+Do not test only in Replit Preview or the development database.
+
+Use this exact test value:
+
+MOTIVATION_PANEL_TEST_2407
+
+Required procedure:
+
+1. Submit a new public interview containing:
+   trainingMotivation = "MOTIVATION_PANEL_TEST_2407"
+
+2. Inspect the actual production POST request and verify whether the submission payload contains:
+   trainingMotivation: "MOTIVATION_PANEL_TEST_2407"
+
+3. Trace this exact value through:
+
+   public interview field
+   → form state
+   → POST payload
+   → production Zod/API schema
+   → production database column
+   → database insert
+   → client survey GET response
+   → trainer/admin client profile
+   → trainer/admin interview edit form
+
+4. Identify the first exact layer where MOTIVATION_PANEL_TEST_2407 disappears.
+
+5. Fix only that failing layer.
+
+Known intended field name:
+trainingMotivation
+
+Do not create another duplicate field under a different name.
+
+If the workspace already contains the fix but production is running an older build:
+- publish/deploy the latest API and trainer-app version,
+- ensure the production schema contains the training_motivation column,
+- verify the deployment completed successfully.
+
+Do not delete, recreate or truncate the production database.
+
+Required proof after the fix:
+
+1. Public POST payload contains MOTIVATION_PANEL_TEST_2407.
+2. Production database record contains:
+   training_motivation = MOTIVATION_PANEL_TEST_2407
+3. Production GET client-survey response returns:
+   trainingMotivation: "MOTIVATION_PANEL_TEST_2407"
+4. The deployed trainer/admin panel displays the value under:
+   “Dlaczego chcesz trenować?”
+5. The admin edit form is prefilled with the same value.
+6. After refreshing and reopening the client profile, the value still exists.
+
+Restrictions:
+
+- Do not modify other interview fields.
+- Do not redesign the form.
+- Do not modify generator logic.
+- Do not modify cardio logic.
+- Do not update dependencies.
+- Do not perform unrelated refactors.
+- Do not only report that the code appears correct.
+- The task is complete only after the value is visibly confirmed in the deployed production admin panel.
+
+At the end report:
+
+- exact root cause,
+- first layer where the value disappeared,
+- exact files changed,
+- whether production required a new deployment or schema update,
+- test client ID,
+- database value,
+- GET response value,
+- confirmation that the deployed admin panel displays MOTIVATION_PANEL_TEST_2407.
