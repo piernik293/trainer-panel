@@ -1,0 +1,69 @@
+TASK 2 — PRODUCTION VOLUME GUIDELINE DATA ONLY.
+
+Do not use subagents.
+Do not dispatch parallel explorers.
+Do not modify unrelated files.
+
+Current confirmed diagnosis:
+
+- The trainer-facing generator correctly receives the training goal and priority muscle groups.
+- Volume calculation is blocked because the production database has no active row in volume_guideline_versions and no corresponding volume_guidelines data.
+- The development database already contains the correct guideline version and rows.
+
+Goal:
+
+Make the existing production volume calculation work by safely seeding the same existing volume guideline data used in development.
+
+Requirements:
+
+1. Locate the existing development seed or source of truth for:
+   - volume_guideline_versions
+   - volume_guidelines
+
+2. Reuse the existing values.
+   Do not invent a new volume model or new guideline values.
+
+3. Implement the smallest production-safe and idempotent solution.
+
+4. The operation must:
+   - run inside a transaction,
+   - create the active guideline version only if none exists,
+   - insert only missing guideline rows,
+   - do nothing if all required data already exists,
+   - never delete production data,
+   - never truncate tables,
+   - never overwrite existing trainer, client, interview, or plan data.
+
+5. Do not change:
+   - generator exercise-selection logic,
+   - priority calculations,
+   - public interview,
+   - trainer UI,
+   - dependencies,
+   - unrelated typecheck errors.
+
+6. Do not perform a broad database migration.
+
+7. After the change verify only:
+   - an active guideline version exists,
+   - corresponding guideline rows exist,
+   - the volume decision endpoint no longer returns a blocked response,
+   - the generator no longer shows “Brak wersji wytycznych objętości w bazie danych”,
+   - calculated volume targets are greater than zero for a valid client.
+
+8. Test using the existing client case with:
+   - goal: Redukcja tkanki tłuszczowej
+   - priority muscles: Łydki, Biceps, Mięśnie dwugłowe uda
+
+Before modifying production data, report:
+- the exact existing seed/source being reused,
+- how many rows will be inserted,
+- whether any active version already exists.
+
+Afterwards report:
+- files changed,
+- rows inserted,
+- final volume calculation result,
+- confirmation that no existing production data was modified or deleted.
+
+Stop if the existing development guideline source cannot be reused safely.
