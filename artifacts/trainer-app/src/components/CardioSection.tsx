@@ -35,6 +35,7 @@ import {
   type CardioRecommendationData,
   type CardioSession,
 } from "@/lib/cardioGenerator";
+import { DevStatusBadge } from "@/components/DevStatusBadge";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -326,10 +327,13 @@ export function CardioSection({
       <Card className="border-blue-200 shadow-sm overflow-hidden">
         <div className="border-l-4 border-blue-400 rounded-l-sm">
           <CardHeader className="pb-3 bg-blue-50/60">
-            <span className="font-semibold text-sm text-blue-900 flex items-center gap-2">
-              <Activity size={15} className="text-blue-500" />
-              Edytuj: Cardio / aktywność dodatkowa
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-sm text-blue-900 flex items-center gap-2">
+                <Activity size={15} className="text-blue-500" />
+                Edytuj: Cardio / aktywność dodatkowa
+              </span>
+              <DevStatusBadge feature="cardio_section" />
+            </div>
           </CardHeader>
           <CardContent className="pt-3">
             <CardioEditForm
@@ -358,6 +362,7 @@ export function CardioSection({
                   <Activity size={15} className="text-blue-500 shrink-0" />
                   Cardio / aktywność dodatkowa
                 </span>
+                <DevStatusBadge feature="cardio_section" />
                 {isGenerated && (
                   <Badge
                     variant="outline"
