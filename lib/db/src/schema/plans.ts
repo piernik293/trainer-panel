@@ -116,6 +116,8 @@ export const workoutPlansTable = pgTable("workout_plans", {
   splitType: text("split_type"),
   /** Mesocycle length in weeks (4–12). Null treated as 6 in application code. */
   blockDurationWeeks: integer("block_duration_weeks").default(6),
+  /** JSON-serialized cardio recommendation — null until the trainer saves a recommendation */
+  cardioRecommendation: text("cardio_recommendation"),
 }, (table) => [
   index("workout_plans_client_id_idx").on(table.clientId),
 ]);

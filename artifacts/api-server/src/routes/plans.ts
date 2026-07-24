@@ -59,6 +59,7 @@ const UpdatePlanBody = z.object({
   // Generator fields
   splitType: z.enum(["full_body","full_body_ab","upper_lower","upper_lower_full_body","push_pull_legs","push_pull_lower_full_body","specialization","custom"]).nullable().optional(),
   blockDurationWeeks: z.number().int().min(4).max(12).nullable().optional(),
+  cardioRecommendation: z.string().nullable().optional(),
 });
 
 const CreatePlanDayBody = z.object({
@@ -162,6 +163,21 @@ async function getPlanFull(planId: number) {
     .where(eq(clientsTable.id, plan.clientId));
   const clientName = client ? `${client.firstName} ${client.lastName}` : null;
 
+  // Load survey cardio fields for recommendation generation in the trainer app.
+  const [surveyCardioRow] = await db
+    .select({
+      cardioPreference: surveysTable.cardioPreference,
+      cardioFrequency: surveysTable.cardioFrequency,
+      preferredCardioType: surveysTable.preferredCardioType,
+      activityLevel: surveysTable.activityLevel,
+      trainingGoal: surveysTable.trainingGoal,
+      healthLimitations: surveysTable.healthLimitations,
+      injuryStatus: surveysTable.injuryStatus,
+    })
+    .from(surveysTable)
+    .where(eq(surveysTable.id, plan.surveyId));
+  const surveyCardio = surveyCardioRow ?? null;
+
   const days = await db
     .select()
     .from(workoutPlanDaysTable)
@@ -226,6 +242,7 @@ async function getPlanFull(planId: number) {
   return {
     ...plan,
     clientName,
+    surveyCardio,
     days: days.map((d) => ({
       ...d,
       exercises: exercisesByDay.get(d.id) ?? [],
@@ -564,6 +581,7 @@ const SaveDraftPlanBody = z.object({
     .nullable()
     .optional(),
   blockDurationWeeks: z.number().int().min(4).max(12).nullable().optional(),
+  cardioRecommendation: z.string().nullable().optional(),
   days: z.array(SaveDraftDayBody),
 });
 
@@ -580,7 +598,7 @@ router.post("/clients/:clientId/plans/draft", async (req, res): Promise<void> =>
     return;
   }
 
-  const { title, surveyId, goal, description, splitType, blockDurationWeeks, days } = parsed.data;
+  const { title, surveyId, goal, description, splitType, blockDurationWeeks, cardioRecommendation, days } = parsed.data;
 
   // ── Validate survey ownership ──────────────────────────────────────────────
   const [survey] = await db
@@ -653,6 +671,7 @@ router.post("/clients/:clientId/plans/draft", async (req, res): Promise<void> =>
           status: "draft",
           splitType: splitType ?? null,
           blockDurationWeeks: blockDurationWeeks ?? null,
+          cardioRecommendation: cardioRecommendation ?? null,
         })
         .returning({ id: workoutPlansTable.id });
 
@@ -870,6 +889,7 @@ router.patch("/plans/:id", async (req, res): Promise<void> => {
   if (parsed.data.trainerNotes !== undefined) updates.trainerNotes = parsed.data.trainerNotes;
   if (parsed.data.splitType !== undefined) updates.splitType = parsed.data.splitType ?? null;
   if (parsed.data.blockDurationWeeks !== undefined) updates.blockDurationWeeks = parsed.data.blockDurationWeeks ?? null;
+  if (parsed.data.cardioRecommendation !== undefined) updates.cardioRecommendation = parsed.data.cardioRecommendation ?? null;
 
   await db.update(workoutPlansTable).set(updates).where(eq(workoutPlansTable.id, planId));
 

@@ -1,0 +1,443 @@
+DO NOT USE SUBAGENTS.
+DO NOT DISPATCH PARALLEL EXPLORERS.
+Work sequentially in the current agent only.
+
+TASK — add a compact, editable cardio recommendation section to the generated training plan.
+
+This is a focused MVP feature.
+
+Do not redesign the whole plan generator.
+Do not create a separate cardio application or tracking system.
+Do not modify unrelated interview or strength-training logic.
+
+GOAL
+
+Add a clearly separated cardio / additional activity section to the generated training plan.
+
+The section should:
+- use the existing client interview data,
+- generate practical recommendations,
+- explain them in simple Polish,
+- show the exact number of weekly cardio sessions,
+- provide simple progression,
+- be editable by the trainer,
+- look professional and compact on mobile.
+
+1. EXISTING INTERVIEW DATA
+
+Use the existing available fields where relevant:
+
+- training goal,
+- cardio attitude/preference,
+- current cardio frequency,
+- preferred cardio activity,
+- daily activity level,
+- number of strength-training days,
+- experience level,
+- health limitations,
+- recovery/sleep if already available in the plan-generation input.
+
+Do not create duplicate interview fields.
+
+Do not modify the public interview form in this task.
+
+First verify that these existing values are available in the trainer-facing plan generator input.
+
+If a field is not currently available:
+- do not invent data,
+- use a safe fallback only where appropriate,
+- report the missing mapping at the end.
+
+2. CARDIO RECOMMENDATION OUTPUT
+
+Generate a recommendation containing:
+
+- activity type,
+- number of cardio sessions per week,
+- duration of each session,
+- pace, speed or simple intensity description,
+- one short practical execution instruction,
+- one simple progression recommendation.
+
+Do not display ambiguous summaries such as:
+
+“3×25 min”
+
+Instead display:
+
+“3 sesje cardio w tygodniu, każda po 25 minut.”
+
+If the recommendation contains 2 weekly sessions, display exactly:
+
+- Sesja 1
+- Sesja 2
+
+If it contains 3 weekly sessions, display exactly:
+
+- Sesja 1
+- Sesja 2
+- Sesja 3
+
+3. ACTIVITY SELECTION
+
+Preferred simple default activities:
+
+- Marsz
+- Szybki marsz
+- Bieganie
+
+If the client selected another preferred activity in the interview, such as:
+
+- Rower
+- Pływanie
+- Orbitrek
+- Wioślarz
+- Schody
+- Sport rekreacyjny
+
+use that activity when it is appropriate.
+
+Do not ignore a valid saved client preference.
+
+Do not automatically recommend running to:
+- an inactive beginner,
+- a client with relevant health limitations,
+- or a client who selected minimum cardio,
+
+unless the trainer explicitly chooses it.
+
+4. SIMPLE MVP RECOMMENDATION RULES
+
+Keep the recommendation conservative and practical.
+
+Examples of intended behavior:
+
+A. “Tylko niezbędne minimum”
+- usually 1–2 cardio sessions per week,
+- approximately 20–35 minutes,
+- preferably walking, fast walking or another easy activity.
+
+B. “Uwzględnij w planie”
+- usually 2–3 cardio sessions per week,
+- approximately 20–40 minutes,
+- based on experience, current activity and recovery.
+
+C. Client already performs cardio 4+ times per week
+- do not automatically add many additional sessions,
+- prefer maintaining or organizing the existing activity.
+
+D. Very active client
+- avoid unnecessarily increasing total activity only because the goal is fat loss.
+
+E. Inactive or beginner client
+- prefer walking, fast walking or walk-run intervals,
+- use simple and achievable recommendations.
+
+F. Health limitations
+- use a conservative recommendation,
+- display a short note that the trainer should verify the recommendation,
+- do not make medical claims.
+
+The training goal may influence the recommendation, but fat loss must not automatically mean excessive cardio.
+
+5. SESSION PRESENTATION
+
+Display all recommendations inside one compact card.
+
+Example:
+
+Cardio / aktywność dodatkowa
+
+2 sesje w tygodniu
+
+Sesja 1 · Bieganie
+25 minut · tempo około 6:40 min/km
+
+Sesja 2 · Bieganie
+25 minut · tempo około 6:40 min/km
+
+Do not create a separate large card for each session.
+
+Use compact session rows inside one main cardio card.
+
+6. ACTIVITY-SPECIFIC METRICS
+
+Display only metrics appropriate for the selected activity.
+
+Running:
+- pace in min/km,
+- example: 6:40 min/km.
+
+Treadmill walking:
+- speed in km/h,
+- example: 5.5 km/h.
+
+Outdoor walking:
+- duration,
+- practical intensity instruction,
+- example: “Idź energicznym tempem, ale bez dużej zadyszki.”
+
+Cycling, swimming, rowing, elliptical or stairs:
+- duration,
+- simple intensity description,
+- for example: lekka or umiarkowana.
+
+Do not show empty or irrelevant fields.
+
+Do not require pace in min/km for activities where it is not useful.
+
+7. SIMPLE PROGRESSION
+
+Add one clearly visible section:
+
+“Progresja”
+
+Use simple Polish and explain exactly what should change.
+
+Progress only one variable at a time:
+
+- pace,
+- duration,
+- or weekly frequency.
+
+Never automatically increase all three simultaneously.
+
+Running example:
+
+“Wykonuj obie sesje przez 1–2 tygodnie. Jeśli kończysz je bez nadmiernego zmęczenia, zachowaj czas 25 minut i spróbuj poprawić tempo z około 6:40 do 6:30–6:35 min/km.”
+
+Walking example:
+
+“Po 1–2 tygodniach wydłuż każdą sesję z 30 do 35 minut. Nie zwiększaj jednocześnie czasu i tempa.”
+
+Treadmill walking example:
+
+“Jeśli obie sesje wykonujesz swobodnie, zwiększ prędkość z 5.5 do 5.8 km/h albo wydłuż sesję o 5 minut.”
+
+Walk-run example:
+
+“Wykonuj 3 minuty marszu i 1 minutę spokojnego biegu. Powtórz 6 razy.”
+
+Progression:
+
+“Gdy obie sesje są dobrze tolerowane, przejdź do 2 minut marszu i 2 minut biegu. Nie zwiększaj jednocześnie całkowitego czasu treningu.”
+
+Avoid unexplained abbreviations.
+
+8. PRACTICAL EXECUTION HELP
+
+Add a compact expandable section:
+
+“Jak wykonać tę sesję?”
+
+Keep it collapsed by default.
+
+Example text:
+
+“Utrzymuj równe, spokojne tempo. Podczas lekkiego lub umiarkowanego cardio powinieneś móc wypowiedzieć pełne zdanie bez dużej zadyszki.”
+
+Adjust the instruction to the activity when needed.
+
+9. PRE-SESSION NOTE
+
+Add another compact expandable section:
+
+“Przed sesją”
+
+Keep it collapsed by default.
+
+Default text:
+
+“Załóż wygodne obuwie sportowe, zabierz wodę i dopasuj strój do temperatury oraz warunków pogodowych.”
+
+For outdoor activity, optionally add:
+
+“W słabej widoczności wybierz jasny lub odblaskowy element stroju.”
+
+Do not:
+- add weather API integration,
+- add temperature detection,
+- add notifications,
+- create a separate preparation module,
+- create a large checklist.
+
+This is only practical microcopy inside the cardio card.
+
+10. VISUAL DESIGN
+
+Use one compact, visually distinct cardio card.
+
+Preferred visual style:
+
+- light blue accent,
+- light blue border, icon or side stripe,
+- strong text contrast,
+- no dark or heavily saturated full-card blue background,
+- compact spacing,
+- professional appearance,
+- optimized for mobile.
+
+The header should clearly show:
+
+- “Cardio / aktywność dodatkowa”
+- weekly frequency,
+- activity,
+- duration.
+
+Example compact badges:
+
+- 2 sesje / tydzień
+- Bieganie
+- 25 min
+- Spokojna intensywność
+
+Do not use wide tables.
+
+Do not allow horizontal scrolling on mobile.
+
+11. TRAINER EDITING
+
+The trainer must be able to edit:
+
+- activity type,
+- weekly session count,
+- duration,
+- pace, speed or intensity,
+- progression text,
+- practical instruction,
+- pre-session note.
+
+Use the existing plan editor patterns and components where possible.
+
+Do not create a separate complex cardio editor.
+
+A small edit action inside the cardio section is sufficient.
+
+When the trainer changes the number of weekly sessions:
+- update the displayed number of session rows,
+- preserve shared values where possible,
+- avoid creating duplicate sessions.
+
+12. PERSISTENCE
+
+The cardio recommendation must remain available after:
+
+- saving the plan,
+- reopening the saved plan,
+- editing the plan,
+- viewing the plan preview.
+
+Reuse the existing plan-draft or plan metadata structure where possible.
+
+Do not create a new database table only for cardio.
+
+Do not create a broad database migration.
+
+If the existing saved-plan structure cannot safely store this data:
+- stop,
+- report the smallest required schema change,
+- do not begin a broad migration without approval.
+
+13. KEEP DAILY ACTIVITY SEPARATE
+
+Keep the existing daily activity or step goal separate from cardio.
+
+Example:
+
+Cel aktywności dziennej
+8000–10000 kroków dziennie
+
+Cardio / aktywność dodatkowa
+2 sesje biegania w tygodniu
+
+Do not combine steps and cardio into one ambiguous recommendation.
+
+14. SCOPE RESTRICTIONS
+
+Do not:
+
+- modify the public interview form,
+- fix the cardio-selection bug in this task,
+- change exercise-selection logic,
+- change strength-training volume allocation,
+- redesign the full plan editor,
+- create cardio history,
+- create session completion tracking,
+- create a cardio calendar,
+- create reminders,
+- integrate GPS,
+- integrate heart-rate devices,
+- integrate weather services,
+- update dependencies,
+- perform unrelated refactors.
+
+Inspect only the directly related:
+
+- plan-generation input mapping,
+- saved plan/cardio recommendation model,
+- trainer plan editor,
+- plan preview,
+- directly related API schema or service.
+
+Do not inspect more than 12 files unless a concrete dependency requires it.
+
+If implementation requires a broad architectural rewrite, stop and report instead.
+
+15. REQUIRED TEST CASES
+
+Test A — beginner, minimum cardio:
+- inactive or beginner client,
+- minimum cardio preference,
+- expected conservative walking recommendation,
+- simple duration progression.
+
+Test B — intermediate runner:
+- preferred activity: running,
+- recommendation: 2 sessions,
+- exactly 2 session rows,
+- example pace: 6:40 min/km,
+- progression toward approximately 6:30–6:35 min/km.
+
+Test C — already active client:
+- current cardio: 4+ times per week,
+- generator must not unnecessarily add excessive extra cardio.
+
+Test D — saved plan:
+- generate recommendation,
+- edit it,
+- save the plan,
+- reopen the plan,
+- confirm the cardio recommendation remains unchanged.
+
+Test E — mobile:
+- one compact card,
+- no horizontal overflow,
+- expandable instructions collapsed by default,
+- clear readable layout.
+
+16. SUCCESS CRITERIA
+
+The task is complete only when:
+
+- the plan contains a separate cardio recommendation section,
+- the number of session rows matches the weekly recommendation,
+- recommendations use understandable Polish,
+- progression explains exactly what to improve,
+- only one progression variable changes at a time,
+- activity-specific metrics are used,
+- the section is editable by the trainer,
+- the recommendation survives saving and reopening,
+- the card is compact and mobile-friendly,
+- practical preparation advice is available without increasing the default card height,
+- existing strength-training and step-goal logic remain unchanged.
+
+At the end report:
+
+1. exact files changed,
+2. existing interview fields used,
+3. recommendation rules implemented,
+4. how cardio data is persisted,
+5. before/after UI description,
+6. trainer editing behavior,
+7. results of all focused test cases,
+8. any missing interview mapping that prevented full personalization.

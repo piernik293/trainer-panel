@@ -125,6 +125,18 @@ export interface WorkoutPlan {
   activatedAt: string | null;
   days: PlanDay[];
   volume: VolumeResult;
+  /** JSON-serialized CardioRecommendationData — null until trainer saves an override */
+  cardioRecommendation: string | null;
+  /** Cardio-related survey fields included by the API for recommendation generation */
+  surveyCardio: {
+    cardioPreference: string | null;
+    cardioFrequency: string | null;
+    preferredCardioType: string | null;
+    activityLevel: string | null;
+    trainingGoal: string | null;
+    healthLimitations: string | null;
+    injuryStatus: string | null;
+  } | null;
 }
 
 export interface WorkoutPlanSummary {
@@ -267,6 +279,7 @@ export interface SaveDraftPlanInput {
   splitType: string | null;
   blockDurationWeeks: number | null;
   sessionDurationMinutes: number | null;
+  cardioRecommendation?: string | null;
   days: SaveDraftPlanDay[];
 }
 
@@ -292,6 +305,7 @@ export function useSaveDraftPlan(clientId: number) {
           description: input.description,
           splitType: input.splitType,
           blockDurationWeeks: input.blockDurationWeeks,
+          cardioRecommendation: input.cardioRecommendation ?? null,
           days: input.days.map((day) => ({
             dayName: day.dayName,
             subtitle: day.dayType,
@@ -329,6 +343,7 @@ export function useUpdatePlan(planId: number, clientId?: number) {
       startDate?: string | null;
       endDate?: string | null;
       trainerNotes?: string | null;
+      cardioRecommendation?: string | null;
     }
   >({
     mutationFn: (body) =>

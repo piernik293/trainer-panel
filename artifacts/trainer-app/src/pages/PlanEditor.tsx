@@ -107,6 +107,7 @@ import {
   ListX,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { CardioSection } from "@/components/CardioSection";
 
 // ─── AvoidedExercisesContext ──────────────────────────────────────────────────
 // Holds a map of exerciseId → reason (null when no reason) for exercises that
@@ -1842,6 +1843,9 @@ export default function PlanEditor() {
 
       {/* Plan info form */}
       <PlanInfoForm plan={plan} planId={planId} />
+
+      {/* Cardio recommendation */}
+      <CardioSection plan={plan} planId={planId} />
 
       {/* Two-column layout */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
