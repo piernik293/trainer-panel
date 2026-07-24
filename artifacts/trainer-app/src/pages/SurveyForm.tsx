@@ -945,6 +945,11 @@ function SurveyFormBody({
                             nadgarstkami, ograniczona ruchomość, przebyte
                             operacje, inne przewlekłe dolegliwości.
                           </FormDescription>
+                          {isBeginner && (
+                            <p className="text-xs text-primary/80 bg-primary/5 border border-primary/20 px-3 py-2">
+                              Te informacje są zawsze uwzględniane przy doborze ćwiczeń i nie są traktowane jedynie jako preferencja.
+                            </p>
+                          )}
                           <FormControl>
                             <Textarea
                               placeholder="Opisz wszelkie przebyte kontuzje, bóle w stawach, nadciśnienie itp."
@@ -968,6 +973,77 @@ function SurveyFormBody({
               <CardTitle>Preferencje treningowe</CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
+              {/* Section notice for beginners */}
+              {isBeginner && (
+                <div className="text-sm text-muted-foreground bg-muted/30 border border-border/50 px-4 py-3 leading-relaxed">
+                  Na początku łatwo pochopnie ocenić, które partie lub ćwiczenia powinny być najważniejsze. Przy poziomie doświadczenia klienta potraktujemy te wybory jako wskazówkę, a plan będzie przede wszystkim rozwijał całe ciało i uczył podstawowych wzorców ruchowych.
+                </div>
+              )}
+
+              {/* Partie priorytetowe — shown for all levels */}
+              <div>
+                <p className="text-sm font-medium mb-1">
+                  Partie priorytetowe
+                </p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  {isBeginner
+                    ? "Na tym etapie nie musisz wybierać konkretnych priorytetów. Najpierw skupimy się na równomiernym rozwoju całego ciała."
+                    : "Do 3 partii, na których klientowi zależy najbardziej."}
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {(["priorityMuscle1", "priorityMuscle2", "priorityMuscle3"] as const).map(
+                    (name, i) => (
+                      <FormField
+                        key={name}
+                        control={form.control}
+                        name={name}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-muted-foreground/80">
+                              Priorytet {i + 1}
+                            </FormLabel>
+                            <FormControl>
+                              <MuscleGroupCombobox
+                                value={field.value ?? ""}
+                                onChange={field.onChange}
+                                placeholder={
+                                  ["np. Barki", "np. Pośladki", "np. Plecy"][i]
+                                }
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )
+                  )}
+                </div>
+              </div>
+
+              {/* Ulubione ćwiczenia — shown for all levels */}
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium leading-none">Ulubione ćwiczenia</p>
+                {isBeginner && (
+                  <p className="text-xs text-muted-foreground">
+                    Możesz wskazać ćwiczenia, które klient lubi, ale trener może wybrać prostsze lub lepiej dopasowane warianty do jego poziomu.
+                  </p>
+                )}
+                <FavoriteExercisesPicker
+                  selectedExercises={selectedFavoriteExercises}
+                  onSelectedChange={setSelectedFavoriteExercises}
+                />
+                {/* Legacy hint: show old string when picker is empty */}
+                {selectedFavoriteExercises.length === 0 &&
+                  !!form.getValues("favoriteExercises") && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Poprzedni zapis:{" "}
+                    <span className="italic">{form.getValues("favoriteExercises")}</span>
+                    {" "}— użyj wyszukiwarki, aby zastąpić.
+                  </p>
+                )}
+              </div>
+
+              {/* Ćwiczenia do unikania + metody intensyfikacji — isIntermAdv only */}
               <AnimatePresence>
                 {isIntermAdv && (
                   <motion.div
@@ -979,99 +1055,37 @@ function SurveyFormBody({
                     className="space-y-6"
                     style={{ overflow: "hidden" }}
                     onAnimationStart={() => {
-                      // Re-clip while collapsing/re-expanding so the height
-                      // animation correctly hides content below the fold.
                       if (prefsMotionRef.current) {
                         prefsMotionRef.current.style.overflow = "hidden";
                       }
                     }}
                     onAnimationComplete={() => {
                       // Once fully open, remove the clip so absolutely-positioned
-                      // exercise search dropdowns (FavoriteExercisesPicker,
-                      // AvoidedExercisesPicker) are not cut off by the container.
+                      // exercise search dropdowns are not cut off by the container.
                       if (prefsMotionRef.current) {
                         prefsMotionRef.current.style.overflow = "visible";
                       }
                     }}
                   >
-                    {/* Partie priorytetowe */}
-                    <div>
-                      <p className="text-sm font-medium mb-1">
-                        Partie priorytetowe
+                    {/* Ćwiczenia do unikania */}
+                    <div className="space-y-1.5">
+                      <p className="text-sm font-medium leading-none">Ćwiczenia do unikania</p>
+                      <p className="text-xs text-muted-foreground">
+                        Wyszukaj po nazwie i opcjonalnie dodaj powód.
                       </p>
-                      <p className="text-xs text-muted-foreground mb-3">
-                        Do 3 partii, na których klientowi zależy najbardziej.
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {(["priorityMuscle1", "priorityMuscle2", "priorityMuscle3"] as const).map(
-                          (name, i) => (
-                            <FormField
-                              key={name}
-                              control={form.control}
-                              name={name}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-xs text-muted-foreground/80">
-                                    Priorytet {i + 1}
-                                  </FormLabel>
-                                  <FormControl>
-                                    <MuscleGroupCombobox
-                                      value={field.value ?? ""}
-                                      onChange={field.onChange}
-                                      placeholder={
-                                        ["np. Barki", "np. Pośladki", "np. Plecy"][i]
-                                      }
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          )
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Ćwiczenia */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Ulubione ćwiczenia — exercise search picker */}
-                      <div className="space-y-1.5">
-                        <p className="text-sm font-medium leading-none">Ulubione ćwiczenia</p>
-                        <FavoriteExercisesPicker
-                          selectedExercises={selectedFavoriteExercises}
-                          onSelectedChange={setSelectedFavoriteExercises}
-                        />
-                        {/* Legacy hint: show old string when picker is empty */}
-                        {selectedFavoriteExercises.length === 0 &&
-                          !!form.getValues("favoriteExercises") && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Poprzedni zapis:{" "}
-                            <span className="italic">{form.getValues("favoriteExercises")}</span>
-                            {" "}— użyj wyszukiwarki, aby zastąpić.
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Ćwiczenia do unikania — exercise search picker */}
-                      <div className="space-y-1.5">
-                        <p className="text-sm font-medium leading-none">Ćwiczenia do unikania</p>
-                        <p className="text-xs text-muted-foreground">
-                          Wyszukaj po nazwie i opcjonalnie dodaj powód.
+                      <AvoidedExercisesPicker
+                        selectedExercises={selectedAvoidedExercises}
+                        onSelectedChange={setSelectedAvoidedExercises}
+                      />
+                      {/* Legacy hint: show old string when picker is empty */}
+                      {selectedAvoidedExercises.length === 0 &&
+                        !!form.getValues("avoidedExercises") && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Poprzedni zapis:{" "}
+                          <span className="italic">{form.getValues("avoidedExercises")}</span>
+                          {" "}— użyj wyszukiwarki, aby zastąpić.
                         </p>
-                        <AvoidedExercisesPicker
-                          selectedExercises={selectedAvoidedExercises}
-                          onSelectedChange={setSelectedAvoidedExercises}
-                        />
-                        {/* Legacy hint: show old string when picker is empty */}
-                        {selectedAvoidedExercises.length === 0 &&
-                          !!form.getValues("avoidedExercises") && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Poprzedni zapis:{" "}
-                            <span className="italic">{form.getValues("avoidedExercises")}</span>
-                            {" "}— użyj wyszukiwarki, aby zastąpić.
-                          </p>
-                        )}
-                      </div>
+                      )}
                     </div>
 
                     {/* Metody intensyfikacji */}

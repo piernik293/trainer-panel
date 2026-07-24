@@ -669,6 +669,11 @@ export default function SurveyForm() {
                 <FormDescription className="text-xs text-muted-foreground/70">
                   Przykłady: ból kolan, ból barków, ból odcinka lędźwiowego, strzelający łokieć, problemy z nadgarstkami, ograniczona ruchomość, przebyte operacje, inne przewlekłe dolegliwości.
                 </FormDescription>
+                {isBeginner && (
+                  <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
+                    Te informacje są zawsze uwzględniane przy doborze ćwiczeń i nie są traktowane jedynie jako preferencja.
+                  </p>
+                )}
                 <FormControl>
                   <Textarea
                     {...field}
@@ -1014,6 +1019,12 @@ export default function SurveyForm() {
             </FormItem>
           )} />
 
+          {isBeginner && (
+            <div className="mt-12 text-sm text-muted-foreground/90 bg-muted/20 border border-white/10 px-4 py-3 leading-relaxed">
+              Na początku łatwo pochopnie ocenić, które partie lub ćwiczenia powinny być najważniejsze. Przy Twoim poziomie doświadczenia potraktujemy te wybory jako wskazówkę, a plan będzie przede wszystkim rozwijał całe ciało i uczył podstawowych wzorców ruchowych.
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-8 mt-12">
             {/* ── Ćwiczenia do unikania — tylko dla Średniozaawansowany / Zaawansowany ─ */}
             {isIntermediateOrAdvanced && (
@@ -1033,24 +1044,28 @@ export default function SurveyForm() {
               </div>
             )}
 
-            {isIntermediateOrAdvanced && (
-              <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Jakie są Twoje ulubione ćwiczenia?</label>
-                  <p className="text-xs text-muted-foreground/70">Wyszukaj po nazwie — możesz dodać kilka ćwiczeń.</p>
-                  <FavoriteExercisesPicker
-                    selectedExercises={selectedFavoriteExercises}
-                    onSelectedChange={setSelectedFavoriteExercises}
-                  />
-                </div>
-              </>
-            )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">
+                {isBeginner ? "Ćwiczenia preferowane" : "Jakie są Twoje ulubione ćwiczenia?"}
+              </label>
+              <p className="text-xs text-muted-foreground/70">
+                {isBeginner
+                  ? "Możesz wskazać ćwiczenia, które lubisz, ale trener może wybrać prostsze lub lepiej dopasowane warianty do Twojego poziomu."
+                  : "Wyszukaj po nazwie — możesz dodać kilka ćwiczeń."}
+              </p>
+              <FavoriteExercisesPicker
+                selectedExercises={selectedFavoriteExercises}
+                onSelectedChange={setSelectedFavoriteExercises}
+              />
+            </div>
           </div>
 
-          {isIntermediateOrAdvanced && (
-            <div className="space-y-3 mt-12">
-              <p className="text-sm font-medium text-muted-foreground">Partie priorytetowe</p>
-              <p className="text-xs text-muted-foreground/70">Wybierz do 3 partii mięśniowych, na których zależy Ci najbardziej.</p>
+          <div className="space-y-3 mt-12">
+            <p className="text-sm font-medium text-muted-foreground">Partie priorytetowe</p>
+            <p className="text-xs text-muted-foreground/70">
+              {isBeginner
+                ? "Na tym etapie nie musisz wybierać konkretnych priorytetów. Najpierw skupimy się na równomiernym rozwoju całego ciała."
+                : "Wybierz do 3 partii mięśniowych, na których zależy Ci najbardziej."}</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField control={form.control} name="priorityMuscle1" render={({field}) => (
                   <FormItem>
@@ -1090,7 +1105,6 @@ export default function SurveyForm() {
                 )} />
               </div>
             </div>
-          )}
 
           <AnimatePresence>
             {isIntermediateOrAdvanced && (
