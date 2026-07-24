@@ -1,0 +1,70 @@
+Compare the complete internal/admin training interview with the public client training interview.
+
+The public interview is missing some fields, and some fields collected by the public form may not be displayed in the interview preview or passed to the plan generator.
+
+Do not redesign the form, rebuild the interview system, or refactor unrelated code.
+
+Audit the complete field flow:
+
+public form
+→ validation/schema
+→ API request
+→ database
+→ interview preview
+→ trainer plan generator
+
+Add or restore the following existing interview fields where they are missing:
+
+1. Priority muscle group #1
+2. Priority muscle group #2
+3. Priority muscle group #3
+
+These fields should follow the existing experience-level rules and should primarily be available for intermediate and advanced clients.
+
+4. Available equipment
+This should appear conditionally based on the selected training location and use the existing equipment options.
+
+5. Preferred exercises
+6. Exercises to avoid
+
+7. Intensification methods to avoid, including existing options such as:
+- supersets,
+- compound sets,
+- drop sets,
+- training to failure,
+- forced repetitions,
+- rest-pause.
+
+8. Detailed health limitations text when the client selects that they have injuries, pain, or movement limitations.
+
+Also verify the fields that already appear in the public form but are not visible in the interview preview:
+
+- “Dlaczego chcesz trenować?”
+- additional information entered under “Czy jest coś jeszcze, co powinienem wiedzieć?”
+
+Ensure every collected field:
+- is saved in the database,
+- is displayed in the trainer interview preview,
+- is available to the trainer-facing plan generator when relevant.
+
+Check the inconsistency between:
+- daily activity = “Bardzo aktywny”
+- calculated physical work = “Nie”
+
+Do not infer physical work unless there is a dedicated source field or an existing clearly defined mapping.
+
+Constraints:
+- Reuse existing admin interview fields, components, schemas, and options.
+- Do not create duplicate database fields if equivalent fields already exist.
+- No broad refactor.
+- No visual redesign.
+- No unrelated generator changes.
+- Preserve existing saved interviews.
+
+Before implementation, report:
+- fields present internally but missing publicly,
+- fields collected publicly but missing from preview,
+- fields not passed into the generator,
+- whether any database migration is actually required.
+
+After implementation, test one complete public interview and confirm every value across the full flow.

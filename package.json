@@ -17,5 +17,12 @@
   "devDependencies": {
     "prettier": "^3.9.4",
     "typescript": "~5.9.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "drizzle-kit>esbuild": ">=0.28.1",
+      "@esbuild-kit/core-utils>esbuild": ">=0.25.0",
+      "orval>js-yaml": ">=4.3.0"
+    }
   }
 }
