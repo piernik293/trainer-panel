@@ -77,6 +77,7 @@ overrides:
   drizzle-kit>esbuild: '>=0.28.1'
   '@esbuild-kit/core-utils>esbuild': '>=0.25.0'
   orval>js-yaml: '>=4.3.0'
+  fast-uri: '>=3.1.4'
 
 importers:
 
