@@ -62,7 +62,14 @@ export default function ClientList() {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [failedDeleteIds, setFailedDeleteIds] = useState<Set<number>>(new Set());
 
-  const { data: clients, isLoading } = useListClients();
+  const { data: clients, isLoading } = useListClients({
+    query: {
+      queryKey: getListClientsQueryKey(),
+      refetchInterval: 15_000,       // refresh every 15 s — new submissions appear promptly
+      refetchOnWindowFocus: true,    // also refresh when trainer returns to the tab
+      refetchOnReconnect: true,
+    },
+  });
   const queryClient = useQueryClient();
   const deleteClient = useDeleteClient();
 

@@ -1,0 +1,137 @@
+DO NOT USE SUBAGENTS.
+DO NOT DISPATCH PARALLEL EXPLORERS.
+Work sequentially in the current agent only.
+
+P0 CRITICAL TASK — ensure that the administrator/trainer panel displays every client and interview submitted through the deployed public client application.
+
+This is the highest-priority application blocker.
+
+CURRENT OBSERVATION
+
+The public client interview is submitted successfully, but the client is not visible in the trainer/admin panel opened in Replit Preview.
+
+The trainer panel currently displays only 2 clients, while additional submitted clients exist elsewhere.
+
+The likely cause is an environment mismatch:
+
+- the deployed public client application may write to the production API/database,
+- the trainer panel opened under replit.dev Preview may read from the development API/database.
+
+Polling has already been added and is not sufficient if both applications use different databases.
+
+GOAL
+
+The deployed public client application and the deployed administrator/trainer panel must use:
+
+- the same production API,
+- the same production database,
+- the same client records,
+- the same training-interview records.
+
+The Replit development Preview may continue using development data, but the deployed administrator panel must be the source of truth for real production clients.
+
+STEP 1 — ENVIRONMENT DIAGNOSIS
+
+Identify and report:
+
+1. The API base URL used by the deployed public client application.
+2. The API base URL used by the trainer/admin application in:
+   - Replit Preview,
+   - deployed production.
+3. The database environment used by each API.
+4. Whether the public client submission and the admin client list currently read/write the same database.
+
+Do not expose secret values.
+Report only safe environment names, hostnames, variable names or sanitized identifiers.
+
+STEP 2 — TRACE ONE EXACT CLIENT
+
+Use one unique test submission marker:
+
+ADMIN_VISIBILITY_TEST_2407
+
+Submit or trace a client interview containing this marker.
+
+Verify:
+
+1. POST /api/public/survey returns success.
+2. The client record is inserted.
+3. The interview record is inserted.
+4. Identify which database/environment contains the records.
+5. The deployed admin API can retrieve this client.
+6. The deployed admin client list displays this client.
+
+Do not stop after confirming that the POST succeeded.
+The task is complete only when the administrator can open the submitted client in the deployed panel.
+
+STEP 3 — FIX ENVIRONMENT ALIGNMENT
+
+If the deployed client app and deployed admin panel use different API or database environments:
+
+- align the deployed admin panel with the same production API/database used by the deployed public client application,
+- preserve separate development and production environments,
+- do not point development Preview to production unless explicitly required,
+- do not copy production records manually into development,
+- do not create duplicate databases,
+- do not delete or overwrite existing client records.
+
+STEP 4 — ADMIN CLIENT VISIBILITY
+
+Verify the existing “Klienci” page displays all production clients, not only the five recent dashboard entries.
+
+Requirements:
+
+- dashboard may continue showing the five newest clients,
+- “Klienci” must show the complete production client list,
+- newest clients should appear first,
+- administrator must be able to open the client profile,
+- client profile must show the current training interview,
+- searching by name or email should find the client,
+- polling/refetch must not create duplicate rows.
+
+Do not build multi-trainer ownership or role management in this task.
+
+For now, the existing trainer panel acts as the administrator panel and may display all production clients.
+
+STEP 5 — REQUIRED TEST
+
+1. Keep the deployed administrator panel open.
+2. Submit a new interview through the deployed public client application.
+3. Confirm server-side save.
+4. Confirm the client appears on the dashboard within 12–15 seconds.
+5. Confirm the client also appears on the full “Klienci” page.
+6. Open the profile.
+7. Confirm the submitted interview is visible.
+8. Refresh and reopen the application.
+9. Confirm the client and interview remain available.
+
+RESTRICTIONS
+
+Do not:
+- build roles or trainer accounts,
+- add trainerId ownership yet,
+- redesign the dashboard,
+- modify generator logic,
+- modify interview questions,
+- create WebSockets,
+- update dependencies,
+- perform broad refactors,
+- delete or migrate production client data unless absolutely necessary.
+
+Inspect only:
+- public survey submission configuration,
+- API environment configuration,
+- deployed trainer-app API configuration,
+- stats/recent-clients endpoint,
+- full clients-list endpoint,
+- client profile/interview endpoint.
+
+At the end report:
+
+1. exact root cause,
+2. which environment each application previously used,
+3. exact files/configuration changed,
+4. confirmation that both deployed applications now use the same production backend,
+5. result for ADMIN_VISIBILITY_TEST_2407,
+6. confirmation that the administrator can open the client and interview,
+7. confirmation that no production records were deleted or overwritten.
