@@ -45,6 +45,8 @@ export const surveysTable = pgTable("surveys", {
   cardioPreference: text("cardio_preference"),
   cardioFrequency: text("cardio_frequency"),
   preferredCardioType: text("preferred_cardio_type"),
+  // Motivation — "Dlaczego chcesz trenować?" free-text field
+  trainingMotivation: text("training_motivation"),
   // Czy klient ma przeciwwskazania do metod intensyfikacji (pytanie tak/nie, poprzedzające listę checkboxów)
   avoidsAdvancedMethods: boolean("avoids_advanced_methods"),
   // Uraz / ograniczenia zdrowotne — structured yes/no + free-text description

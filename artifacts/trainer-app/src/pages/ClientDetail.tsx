@@ -677,6 +677,7 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
       // scalar string fields
       trainingGoal: strOrUndef(s.trainingGoal),
       trainingGoalOther: strOrUndef(s.trainingGoalOther),
+      trainingMotivation: strOrUndef(s.trainingMotivation),
       experienceLevel: strOrUndef(s.experienceLevel),
       trainingDuration: strOrUndef(s.trainingDuration),
       healthLimitations: strOrUndef(s.healthLimitations),
@@ -768,6 +769,9 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <SurveyBlock label="Cel treningowy" value={survey.trainingGoal} />
+        {survey.trainingMotivation && (
+          <SurveyBlock label="Dlaczego chcesz trenować?" value={survey.trainingMotivation} />
+        )}
         <SurveyBlock label="Poziom doświadczenia" value={survey.experienceLevel} />
         {survey.experienceLevel === "Brak aktywności fizycznej" && (
           <p className="sm:col-span-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
