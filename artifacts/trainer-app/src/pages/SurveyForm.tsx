@@ -115,8 +115,8 @@ const surveySchema = z.object({
   gender: z.enum(["Mężczyzna", "Kobieta"]).optional().or(z.literal("")),
   heightCm: z.coerce
     .number()
-    .min(50)
-    .max(260)
+    .min(80, "Wzrost musi być między 80 a 260 cm")
+    .max(260, "Wzrost musi być między 80 a 260 cm")
     .optional()
     .or(z.literal("").transform(() => undefined)),
   weightKg: z.coerce
@@ -845,7 +845,8 @@ function SurveyFormBody({
                     <FormControl>
                       <Input
                         type="number"
-                        min="50"
+                        inputMode="numeric"
+                        min="80"
                         max="260"
                         placeholder="np. 178"
                         {...field}
@@ -865,12 +866,12 @@ function SurveyFormBody({
                     <FormLabel>Waga (kg)</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min="20"
-                        max="400"
-                        placeholder="np. 75"
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="np. 75,5"
                         {...field}
                         value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value || undefined)}
                       />
                     </FormControl>
                     {bmi !== undefined && (

@@ -231,7 +231,7 @@ export const UpsertClientSurveyParams = zod.object({
 export const upsertClientSurveyBodyAgeMin = 0;
 export const upsertClientSurveyBodyAgeMax = 120;
 
-export const upsertClientSurveyBodyHeightCmMin = 50;
+export const upsertClientSurveyBodyHeightCmMin = 80;
 export const upsertClientSurveyBodyHeightCmMax = 260;
 
 export const upsertClientSurveyBodyWeightKgMin = 20;
@@ -550,7 +550,7 @@ export const GetStatsResponse = zod.object({
 export const submitPublicSurveyBodyAgeMin = 0;
 export const submitPublicSurveyBodyAgeMax = 120;
 
-export const submitPublicSurveyBodyHeightCmMin = 50;
+export const submitPublicSurveyBodyHeightCmMin = 80;
 export const submitPublicSurveyBodyHeightCmMax = 260;
 
 export const submitPublicSurveyBodyWeightKgMin = 20;

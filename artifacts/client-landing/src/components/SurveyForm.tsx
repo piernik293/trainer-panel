@@ -64,8 +64,8 @@ const formSchema = z.object({
       return age !== undefined && age >= 0 && age <= 100;
     }, "❌ Wprowadzona data urodzenia jest nieprawidłowa. Sprawdź i popraw datę."),
   gender: z.enum(["Mężczyzna", "Kobieta"], { required_error: "Płeć jest wymagana" }),
-  heightCm: z.coerce.number().min(50, "Wzrost jest wymagany").max(260),
-  weightKg: z.coerce.number().min(20, "Waga jest wymagana").max(400),
+  heightCm: z.coerce.number().min(80, "Wzrost musi być między 80 a 260 cm").max(260, "Wzrost musi być między 80 a 260 cm"),
+  weightKg: z.coerce.number().min(20, "Waga musi być między 20 a 400 kg").max(400, "Waga musi być między 20 a 400 kg"),
   trainingGoal: z.string().min(1, "To pole jest wymagane"),
   experienceLevel: z.string().min(1, "Poziom doświadczenia jest wymagany"),
   trainingDuration: z.string().optional(),
@@ -195,7 +195,9 @@ export default function SurveyForm() {
     experienceLevel === "Początkujący" || experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
   const calculatedAge = calculateAge(dateOfBirth);
   const heightCm = form.watch("heightCm");
-  const weightKg = form.watch("weightKg");
+  const weightKgWatched = form.watch("weightKg");
+  // During typing the field holds a dot-normalized string; coerce to number for BMI display
+  const weightKg = parseFloat(String(weightKgWatched ?? "")) || undefined;
   const bmi = calculateBmi(heightCm, weightKg);
   const showBmiRecommendation = isBeginner && bmi !== undefined && bmi >= 25;
   const trainingFrequencyRecommendation = experienceLevel ? TRAINING_FREQUENCY_RECOMMENDATIONS[experienceLevel] : undefined;
@@ -411,7 +413,7 @@ export default function SurveyForm() {
               <FormItem>
                 <FormLabel className="text-muted-foreground">Wzrost (cm) *</FormLabel>
                 <FormControl>
-                  <Input type="number" min={50} max={260} {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
+                  <Input type="number" inputMode="numeric" min={80} max={260} {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -420,7 +422,7 @@ export default function SurveyForm() {
               <FormItem>
                 <FormLabel className="text-muted-foreground">Waga (kg) *</FormLabel>
                 <FormControl>
-                  <Input type="number" min={20} max={400} {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
+                  <Input type="text" inputMode="decimal" placeholder="np. 75,5" {...field} value={field.value ?? ''} onChange={(e) => { const normalized = e.target.value.replace(",", "."); field.onChange(normalized || undefined); }} className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
                 </FormControl>
                 {bmi !== undefined && (
                   <p className="text-xs text-muted-foreground/70">BMI: {bmi.toFixed(1)}</p>
