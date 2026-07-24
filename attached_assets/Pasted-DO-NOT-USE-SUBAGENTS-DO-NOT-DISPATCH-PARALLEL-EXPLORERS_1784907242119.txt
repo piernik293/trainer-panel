@@ -1,0 +1,215 @@
+DO NOT USE SUBAGENTS.
+DO NOT DISPATCH PARALLEL EXPLORERS.
+Work sequentially in the current agent only.
+
+Scope: apply a focused UX cleanup to the public client training interview and landing page.
+
+Do not:
+- redesign the whole application,
+- change generator logic,
+- change recommendation logic,
+- modify unrelated screens,
+- update dependencies,
+- create broad database migrations,
+- refactor unrelated components.
+
+1. DATE OF BIRTH INPUT
+
+Improve the date-of-birth field so users can enter the date manually using numbers.
+
+Required behavior:
+- Allow manual input in format DD.MM.YYYY.
+- On mobile, open the numeric keyboard.
+- Automatically add dots while typing when appropriate.
+- Accept pasted values such as:
+  11032000
+  11.03.2000
+- Keep the calendar icon and calendar picker as an alternative.
+- Internally preserve the existing date format expected by the API/database.
+- Validate real calendar dates.
+- Reject future dates.
+- Preserve the existing age calculation.
+- Preserve existing saved dates.
+
+2. HEIGHT AND WEIGHT INPUTS
+
+Allow users to enter values higher than the current predefined maximum.
+
+Required behavior:
+- Use editable numeric inputs.
+- Height is entered in centimeters.
+- Weight is entered in kilograms.
+- Open the numeric keyboard on mobile.
+- Weight must support decimal values using comma or dot:
+  127,5
+  127.5
+- Do not silently clamp values to the previous maximum.
+- Use broad validation limits:
+  - height: 80–260 cm
+  - weight: 20–400 kg
+- Show a clear validation warning for unusual or invalid values.
+- Preserve BMI calculation.
+- Ensure frontend and backend validation use compatible ranges.
+- Preserve existing saved values.
+
+3. SIMPLIFY THE CARDIO SECTION
+
+Use the section heading:
+
+“Cardio”
+
+Change the cardio preference question to:
+
+“Jak uwzględnić cardio?”
+
+Use only two options:
+- “Uwzględnij w planie”
+- “Tylko niezbędne minimum”
+
+Remove the redundant option:
+- “Cardio może być dodatkiem do planu”
+
+Preserve the existing stored values and backend mappings wherever possible.
+
+4. CARDIO FREQUENCY LAYOUT
+
+Change the question to:
+
+“Jak często wykonujesz cardio?”
+
+Use these compact display labels:
+- Brak
+- 1× / tydz.
+- 2–3× / tydz.
+- 4+× / tydz.
+
+Mobile layout:
+- use a balanced 2-column by 2-row grid,
+- all buttons must have equal width and height,
+- minimum touch height approximately 44–48 px,
+- avoid compressed text,
+- keep consistent spacing.
+
+Desktop layout:
+- show all four options in one row when enough space is available.
+
+Preserve existing submitted values and API/database mappings.
+
+5. PREFERRED CARDIO FORM
+
+Use compact labels:
+- Marsz
+- Szybki marsz
+- Sport
+- Bieganie
+- Rower
+- Orbitrek
+- Pływanie
+- Wioślarz
+- Schody
+
+On mobile:
+- use a compact select/dropdown instead of large option cards.
+
+On desktop:
+- use either a compact grid or select, whichever matches the existing design system better.
+
+Only shorten display labels.
+Preserve stored values and backend mappings.
+
+6. DAILY ACTIVITY WORDING
+
+Change the question to:
+
+“Jak dużo ruszasz się na co dzień poza treningami?”
+
+Use clearer user-facing labels and descriptions:
+
+Siedzący tryb dnia
+“Większość dnia siedzę i mało chodzę.”
+
+Umiarkowana aktywność
+“Regularnie chodzę i wykonuję lekkie codzienne aktywności.”
+
+Duża aktywność
+“Większość dnia jestem w ruchu lub pracuję fizycznie.”
+
+Bardzo duża aktywność
+“Wykonuję ciężką pracę fizyczną albo intensywnie ruszam się przez większość dnia.”
+
+Use compact full-width selectable cards with:
+- consistent height,
+- a clear title,
+- one short description,
+- no oversized empty areas.
+
+Preserve existing backend values and mappings.
+Change only user-facing labels and descriptions.
+
+7. BEGINNER PREFERENCES AND PRIORITIES DESCRIPTION
+
+For users with experience level:
+- Brak aktywności fizycznej
+- Początkujący
+
+Add this description to the “Preferencje i priorytety” section:
+
+“Na początku łatwo pochopnie ocenić, które partie lub ćwiczenia powinny być najważniejsze. Przy Twoim poziomie doświadczenia potraktujemy te wybory jako wskazówkę, a plan będzie przede wszystkim rozwijał całe ciało i uczył podstawowych wzorców ruchowych.”
+
+Add field descriptions:
+
+Priorytetowe partie:
+“Na tym etapie nie musisz wybierać konkretnych priorytetów. Najpierw skupimy się na równomiernym rozwoju całego ciała.”
+
+Ćwiczenia preferowane:
+“Możesz wskazać ćwiczenia, które lubisz, ale trener może wybrać prostsze lub lepiej dopasowane warianty do Twojego poziomu.”
+
+Ograniczenia zdrowotne:
+“Te informacje są zawsze uwzględniane przy doborze ćwiczeń i nie są traktowane jedynie jako preferencja.”
+
+Do not hide health limitations.
+Health limitations remain mandatory, while preferences remain advisory.
+
+8. REMOVE THE LANDING-PAGE SCROLL INDICATOR
+
+Remove the entire landing-page element containing:
+
+“DOWIEDZ SIĘ WIĘCEJ”
+
+Also remove:
+- the vertical decorative line below it,
+- the wrapper/container,
+- any margin, padding, or empty space left after removal.
+
+Do not replace it with another element.
+Do not modify the remaining hero content, navigation, buttons, background, or typography.
+
+9. RESPONSIVE CHECK
+
+Verify:
+- date input on mobile,
+- numeric keyboard behavior,
+- height and weight inputs,
+- cardio frequency 2×2 mobile layout,
+- preferred cardio dropdown,
+- daily activity cards,
+- removed landing-page indicator,
+- no horizontal overflow,
+- no excessive vertical spacing.
+
+10. SAFETY AND SCOPE
+
+- Preserve all existing saved interview data.
+- Preserve API and database field names wherever possible.
+- Do not change plan-generation logic.
+- Do not change cardio recommendation logic.
+- Do not change BMI logic except for supporting the expanded input range.
+- Do not update dependencies.
+- Do not perform unrelated cleanup.
+- Inspect only files directly related to the public interview and landing page.
+
+After implementation report:
+- exact files changed,
+- fields or components changed,
+- confirmation that existing mappings were preserved,
+- mobile and desktop verification results.

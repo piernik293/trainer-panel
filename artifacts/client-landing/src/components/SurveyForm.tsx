@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSubmitPublicSurvey } from "@workspace/api-client-react";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Calendar, CheckCircle2, Loader2 } from "lucide-react";
 import { AvoidedExercisesPicker, type SelectedExercise } from "./AvoidedExercisesPicker";
 import { FavoriteExercisesPicker, type FavoriteExercise } from "./FavoriteExercisesPicker";
 import { MuscleGroupCombobox } from "./MuscleGroupCombobox";
@@ -137,6 +137,105 @@ const Section = ({ title, description, children }: { step: number, title: string
     {children}
   </div>
 );
+
+// ── Date of birth: DD.MM.YYYY masked input with calendar fallback ────────────
+function DateOfBirthInput({
+  value,
+  onChange,
+  onBlur,
+  error,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onBlur?: () => void;
+  error?: boolean;
+}) {
+  function toDisplay(iso: string): string {
+    if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "";
+    const [y, m, d] = iso.split("-");
+    return `${d}.${m}.${y}`;
+  }
+
+  function formatDigits(digits: string): string {
+    const d8 = digits.slice(0, 8);
+    let out = d8.slice(0, 2);
+    if (d8.length > 2) out += "." + d8.slice(2, 4);
+    if (d8.length > 4) out += "." + d8.slice(4, 8);
+    return out;
+  }
+
+  function tryParseISO(formatted: string): string {
+    const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(formatted.trim());
+    if (!match) return "";
+    return `${match[3]}-${match[2]}-${match[1]}`;
+  }
+
+  const [display, setDisplay] = useState(() => toDisplay(value));
+  const calendarRef = useRef<HTMLInputElement>(null);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+    const formatted = formatDigits(digits);
+    setDisplay(formatted);
+    onChange(tryParseISO(formatted));
+  }
+
+  function handlePaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const raw = e.clipboardData.getData("text").trim();
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    const formatted = formatDigits(digits);
+    setDisplay(formatted);
+    onChange(tryParseISO(formatted));
+  }
+
+  function handleCalendarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const iso = e.target.value;
+    if (iso) {
+      setDisplay(toDisplay(iso));
+      onChange(iso);
+    }
+  }
+
+  return (
+    <div className="relative">
+      <Input
+        type="text"
+        inputMode="numeric"
+        placeholder="DD.MM.RRRR"
+        value={display}
+        onChange={handleChange}
+        onPaste={handlePaste}
+        onBlur={onBlur}
+        maxLength={10}
+        className={cn(
+          "bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none pr-12",
+          error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive"
+        )}
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Otwórz kalendarz"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+        onClick={() => calendarRef.current?.showPicker?.()}
+      >
+        <Calendar className="w-5 h-5" />
+      </button>
+      {/* Hidden native date picker — opened by the calendar icon button */}
+      <input
+        ref={calendarRef}
+        type="date"
+        max={getLocalDateString(new Date())}
+        value={value || ""}
+        onChange={handleCalendarChange}
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+    </div>
+  );
+}
 
 export default function SurveyForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -369,18 +468,14 @@ export default function SurveyForm() {
               <FormItem>
                 <FormLabel className="text-muted-foreground">Data urodzenia *</FormLabel>
                 <FormControl>
-                  <Input
-                    type="date"
-                    max={getLocalDateString(new Date())}
-                    {...field}
-                    onChange={(e) => {
-                      field.onChange(e);
+                  <DateOfBirthInput
+                    value={field.value}
+                    onChange={(v) => {
+                      field.onChange(v);
                       form.trigger("dateOfBirth");
                     }}
-                    className={cn(
-                      "bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none",
-                      fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive"
-                    )}
+                    onBlur={field.onBlur}
+                    error={!!fieldState.error}
                   />
                 </FormControl>
                 {calculatedAge !== undefined && !fieldState.error && (
@@ -864,12 +959,12 @@ export default function SurveyForm() {
               </FormItem>
             )} />
 
-            {/* Cardio frequency — compact segmented pills */}
+            {/* Cardio frequency — 2×2 on mobile, 4-in-a-row on desktop */}
             <FormField control={form.control} name="cardioFrequency" render={({field}) => (
               <FormItem className="space-y-3">
-                <FormLabel className="text-muted-foreground">Jak wygląda Twoja aktywność tlenowa obecnie?</FormLabel>
+                <FormLabel className="text-muted-foreground">Jak często wykonujesz cardio?</FormLabel>
                 <FormControl>
-                  <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-wrap gap-2">
+                  <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {([
                       { label: "Brak",          value: "Nie wykonuję cardio" },
                       { label: "1× / tydz.",    value: "1 raz w tygodniu" },
@@ -880,7 +975,7 @@ export default function SurveyForm() {
                         <FormControl>
                           <RadioGroupItem value={value} className="peer sr-only" />
                         </FormControl>
-                        <FormLabel className="px-3 py-1.5 text-sm border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium whitespace-nowrap">
+                        <FormLabel className="w-full min-h-[46px] flex items-center justify-center text-sm border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
                           {label}
                         </FormLabel>
                       </FormItem>
@@ -963,21 +1058,21 @@ export default function SurveyForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
             <FormField control={form.control} name="activityLevel" render={({field, fieldState}) => (
               <FormItem className="space-y-4">
-                <FormLabel className="text-muted-foreground">Jaki jest Twój poziom aktywności fizycznej w ciągu dnia? *</FormLabel>
+                <FormLabel className="text-muted-foreground">Jak dużo ruszasz się na co dzień poza treningami? *</FormLabel>
                 <FormControl>
-                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className={cn("grid grid-cols-1 gap-3", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}>
-                    {[
-                      { level: "Siedzący", desc: "Większość dnia spędzam siedząc (np. praca biurowa, nauka lub praca przy komputerze)." },
-                      { level: "Lekko aktywny", desc: "W ciągu dnia sporo chodzę lub wykonuję lekką aktywność, jednak nie jest to ciężka praca fizyczna." },
-                      { level: "Praca fizyczna", desc: "Moja praca wymaga regularnego wysiłku fizycznego, przenoszenia ciężarów lub długotrwałego ruchu." },
-                      { level: "Bardzo aktywny", desc: "Na co dzień wykonuję ciężką pracę fizyczną lub jestem aktywny przez większość dnia." },
-                    ].map(({ level, desc }) => (
-                      <FormItem key={level} className="flex items-center space-x-0 space-y-0">
+                  <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className={cn("grid grid-cols-1 gap-2", fieldState.error && "ring-1 ring-destructive ring-offset-2 ring-offset-background p-2 -m-2")}>
+                    {([
+                      { value: "Siedzący",       label: "Siedzący tryb dnia",    desc: "Większość dnia siedzę i mało chodzę." },
+                      { value: "Lekko aktywny",  label: "Umiarkowana aktywność", desc: "Regularnie chodzę i wykonuję lekkie codzienne aktywności." },
+                      { value: "Praca fizyczna", label: "Duża aktywność",        desc: "Większość dnia jestem w ruchu lub pracuję fizycznie." },
+                      { value: "Bardzo aktywny", label: "Bardzo duża aktywność", desc: "Wykonuję ciężką pracę fizyczną albo intensywnie ruszam się przez większość dnia." },
+                    ] as const).map(({ value, label, desc }) => (
+                      <FormItem key={value} className="flex items-center space-x-0 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value={level} className="peer sr-only" />
+                          <RadioGroupItem value={value} className="peer sr-only" />
                         </FormControl>
-                        <FormLabel className="w-full flex flex-col items-start gap-1 px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
-                          <span>{level}</span>
+                        <FormLabel className="w-full flex flex-col items-start gap-0.5 px-5 py-3 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                          <span className="text-sm">{label}</span>
                           <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
                         </FormLabel>
                       </FormItem>
