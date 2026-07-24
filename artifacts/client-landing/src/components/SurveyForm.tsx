@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSubmitPublicSurvey } from "@workspace/api-client-react";
-import { Calendar, CheckCircle2, Loader2 } from "lucide-react";
+import { Calendar, CheckCircle2, ChevronDown, Loader2 } from "lucide-react";
 import { AvoidedExercisesPicker, type SelectedExercise } from "./AvoidedExercisesPicker";
 import { FavoriteExercisesPicker, type FavoriteExercise } from "./FavoriteExercisesPicker";
 import { MuscleGroupCombobox } from "./MuscleGroupCombobox";
@@ -318,6 +318,11 @@ export default function SurveyForm() {
   const [avoidedExerciseOtherReason, setAvoidedExerciseOtherReason] = useState("");
   // ── Favorite exercises state (outside RHF — complex object, joins to string on submit) ─
   const [selectedFavoriteExercises, setSelectedFavoriteExercises] = useState<FavoriteExercise[]>([]);
+  // Auto-expand if the user previously selected a hidden cardio option
+  const [cardioTypeExpanded, setCardioTypeExpanded] = useState(() =>
+    ["Szybki marsz", "Sport rekreacyjny", "Orbitrek", "Pływanie", "Wioślarz", "Stepper / schody"]
+      .includes(form.getValues("preferredCardioType") ?? "")
+  );
 
   useEffect(() => {
     form.setValue("equipment", buildEquipmentString(equipmentItems, equipmentOther));
@@ -986,63 +991,73 @@ export default function SurveyForm() {
             )} />
           </div>
 
-          {/* Preferred cardio activity */}
+          {/* Preferred cardio activity — progressive disclosure */}
           <div className="mt-6">
             <FormField control={form.control} name="preferredCardioType" render={({field}) => (
               <FormItem className="space-y-3">
                 <FormLabel className="text-muted-foreground">Jaka forma aktywności tlenowej najbardziej Ci odpowiada?</FormLabel>
 
-                {/* Mobile: compact select dropdown */}
-                <div className="md:hidden">
-                  <Select onValueChange={field.onChange} value={field.value ?? ""}>
-                    <FormControl>
-                      <SelectTrigger className="bg-background/50 border-white/10 focus:border-primary rounded-none">
-                        <SelectValue placeholder="Wybierz formę aktywności..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
+                <FormControl>
+                  <RadioGroup onValueChange={field.onChange} value={field.value}>
+                    {/* Always-visible: Marsz, Bieganie, Rower */}
+                    <div className="grid grid-cols-3 gap-2">
                       {([
-                        { label: "Marsz",        value: "Marsz" },
-                        { label: "Szybki marsz", value: "Szybki marsz" },
-                        { label: "Sport",        value: "Sport rekreacyjny" },
-                        { label: "Bieganie",     value: "Bieganie" },
-                        { label: "Rower",        value: "Rower" },
-                        { label: "Orbitrek",     value: "Orbitrek" },
-                        { label: "Pływanie",     value: "Pływanie" },
-                        { label: "Wioślarz",     value: "Wioślarz" },
-                        { label: "Schody",       value: "Stepper / schody" },
+                        { label: "Marsz",    value: "Marsz" },
+                        { label: "Bieganie", value: "Bieganie" },
+                        { label: "Rower",    value: "Rower" },
                       ] as const).map(({ label, value }) => (
-                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                        <FormItem key={value} className="flex items-center space-x-0 space-y-0">
+                          <RadioGroupItem value={value} className="peer sr-only" />
+                          <FormLabel className="w-full min-h-[46px] flex items-center justify-center text-sm border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
+                            {label}
+                          </FormLabel>
+                        </FormItem>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    </div>
 
-                {/* Desktop: compact chip grid */}
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  className="hidden md:grid md:grid-cols-3 lg:grid-cols-5 gap-2"
+                    {/* Expanded: 6 additional options */}
+                    <AnimatePresence>
+                      {cardioTypeExpanded && (
+                        <motion.div
+                          key="cardio-extra"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                          className="overflow-hidden"
+                        >
+                          <div className="grid grid-cols-3 gap-2 mt-2">
+                            {([
+                              { label: "Szybki marsz", value: "Szybki marsz" },
+                              { label: "Sport",        value: "Sport rekreacyjny" },
+                              { label: "Orbitrek",     value: "Orbitrek" },
+                              { label: "Pływanie",     value: "Pływanie" },
+                              { label: "Wioślarz",     value: "Wioślarz" },
+                              { label: "Schody",       value: "Stepper / schody" },
+                            ] as const).map(({ label, value }) => (
+                              <FormItem key={value} className="flex items-center space-x-0 space-y-0">
+                                <RadioGroupItem value={value} className="peer sr-only" />
+                                <FormLabel className="w-full min-h-[46px] flex items-center justify-center text-sm border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
+                                  {label}
+                                </FormLabel>
+                              </FormItem>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </RadioGroup>
+                </FormControl>
+
+                {/* Pokaż więcej / Pokaż mniej */}
+                <button
+                  type="button"
+                  onClick={() => setCardioTypeExpanded(v => !v)}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
                 >
-                  {([
-                    { label: "Marsz",        value: "Marsz" },
-                    { label: "Szybki marsz", value: "Szybki marsz" },
-                    { label: "Sport",        value: "Sport rekreacyjny" },
-                    { label: "Bieganie",     value: "Bieganie" },
-                    { label: "Rower",        value: "Rower" },
-                    { label: "Orbitrek",     value: "Orbitrek" },
-                    { label: "Pływanie",     value: "Pływanie" },
-                    { label: "Wioślarz",     value: "Wioślarz" },
-                    { label: "Schody",       value: "Stepper / schody" },
-                  ] as const).map(({ label, value }) => (
-                    <FormItem key={value} className="flex items-center space-x-0 space-y-0">
-                      <RadioGroupItem value={value} className="peer sr-only" />
-                      <FormLabel className="w-full flex items-center justify-center px-3 py-2 text-sm border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
-                        {label}
-                      </FormLabel>
-                    </FormItem>
-                  ))}
-                </RadioGroup>
+                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", cardioTypeExpanded && "rotate-180")} />
+                  {cardioTypeExpanded ? "Pokaż mniej" : "Pokaż więcej"}
+                </button>
 
                 <FormMessage />
               </FormItem>
