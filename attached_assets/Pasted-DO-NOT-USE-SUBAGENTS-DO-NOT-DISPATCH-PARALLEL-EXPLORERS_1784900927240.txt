@@ -1,0 +1,53 @@
+DO NOT USE SUBAGENTS.
+DO NOT DISPATCH PARALLEL EXPLORERS.
+Work sequentially in the current agent only.
+
+Scope: fix the existing interview-data mappings only on the trainer-facing route:
+
+/clients/:clientId/plans/generate
+
+Known issues:
+
+1. Session duration exists in the saved interview, for example “90+ min”, but the editable session-duration field is empty.
+
+2. The training goal exists in the interview, for example “Redukcja tkanki tłuszczowej”, and is displayed as helper text, but it is not necessarily selected as the active generator form value.
+
+3. Detailed health limitations are displayed in the warning at the top, but the “Ograniczenia zdrowotne” section is empty or does not receive the same value.
+
+4. Priority muscle groups are visible in the interview profile, but the generator displays “0 celów obliczonych”.
+
+5. The page displays:
+“Brak wersji wytycznych objętości w bazie danych.”
+
+Goals:
+
+- Bind the saved interview duration to the existing editable duration field.
+- Bind the saved training goal to the actual form state.
+- Use the same health-limitations value in the profile display and plan-generation input.
+- Ensure saved priority muscle groups are passed into the existing volume-target calculation.
+- Determine whether the missing volume-guideline message is caused by frontend mapping or missing reference data.
+
+Constraints:
+
+- Start in artifacts/trainer-app/src.
+- Inspect only the route, its directly imported hooks/components, and the directly used API response.
+- Do not search the entire repository.
+- Inspect no more than 10 files.
+- Do not modify the public interview form yet.
+- Do not build admin editing yet.
+- Do not create database migrations.
+- Do not redesign the page.
+- Do not modify exercise-selection logic.
+- Do not update dependencies.
+- Do not run the full monorepo build.
+- Run only focused trainer-app checks.
+- If the volume-guideline problem requires database seeding or a broad architectural change, do not implement that part. Report the exact requirement and stop on that issue.
+
+Implement only small local mappings that are clearly supported by the existing saved interview data.
+
+At the end report:
+- files changed,
+- root cause of each issue,
+- fields and mappings corrected,
+- whether volume guidelines require separate production data work,
+- focused test/build results.

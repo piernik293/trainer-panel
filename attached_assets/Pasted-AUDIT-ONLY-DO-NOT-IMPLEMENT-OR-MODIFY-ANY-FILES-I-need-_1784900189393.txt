@@ -1,0 +1,130 @@
+AUDIT ONLY — DO NOT IMPLEMENT OR MODIFY ANY FILES.
+
+I need a focused comparison of three existing flows in this pnpm monorepo:
+
+1. The complete internal/main plan builder that I currently use in the Replit workspace.
+2. The trainer-facing plan generator route:
+   /clients/:clientId/plans/generate
+3. The public client training interview and its trainer interview preview.
+
+The trainer-facing/public versions are missing fields, autofill logic, or reference data that already exist elsewhere in the project.
+
+Your task is only to locate and document the differences.
+
+Do not:
+- edit code,
+- create files,
+- update dependencies,
+- run package upgrades,
+- modify the database,
+- create migrations,
+- refactor components,
+- redesign the UI,
+- deploy the application,
+- fix unrelated issues.
+
+Audit the complete data flow:
+
+public interview form
+→ validation/schema
+→ API request
+→ database
+→ trainer interview preview
+→ trainer-facing plan generator
+→ plan generation input
+
+Check these fields specifically:
+
+- date of birth
+- sex
+- height
+- weight
+- training goal
+- reason for training
+- experience level
+- health limitations yes/no
+- detailed health limitations text
+- training days per week
+- session duration
+- training location
+- available equipment
+- cardio attitude
+- current cardio frequency
+- preferred cardio type
+- daily activity
+- sleep
+- stress
+- preferred plan style
+- priority muscle group #1
+- priority muscle group #2
+- priority muscle group #3
+- preferred exercises
+- exercises to avoid
+- intensification methods to avoid
+- additional information
+
+Also investigate these known problems:
+
+1. Session duration exists in the interview, for example “90+ min”, but the trainer generator field may remain empty.
+
+2. Training goal is displayed as interview helper text but may not actually be selected in the generator form.
+
+3. Health limitation text is displayed in a warning, but the “Ograniczenia zdrowotne” section may appear empty.
+
+4. Priority muscle groups appear in the interview preview, but the generator displays:
+   “0 celów obliczonych”.
+
+5. The trainer generator displays:
+   “Brak wersji wytycznych objętości w bazie danych.”
+
+6. Daily activity can be “Bardzo aktywny”, while the generator displays calculated physical work as “Nie”.
+   Identify the exact mapping responsible for this. Do not change it yet.
+
+7. Determine whether the deployed trainer-facing application is:
+   - using an older component,
+   - missing API mappings,
+   - missing production reference data,
+   - using different environment configuration,
+   - or simply running an outdated deployment.
+
+8. Locate the component responsible for the public landing-page element:
+   “DOWIEDZ SIĘ WIĘCEJ”
+   and the decorative vertical line.
+   Only report the file/component. Do not remove it yet.
+
+For each field, provide a table with:
+
+- field name,
+- public form status,
+- database/schema status,
+- preview status,
+- generator status,
+- exact file/component/API involved,
+- problem found,
+- existing implementation that can be reused.
+
+At the end provide:
+
+1. Exact routes and components powering:
+   - the complete internal builder,
+   - the public interview,
+   - the interview preview,
+   - the trainer-facing generator.
+
+2. Exact list of missing fields or mappings.
+
+3. Which problems require:
+   - frontend-only changes,
+   - API/schema changes,
+   - database migration,
+   - production reference-data seeding,
+   - deployment refresh only.
+
+4. A minimal implementation plan divided into small tasks.
+
+5. Files that would need to be changed in each task.
+
+6. Risks to existing saved interviews.
+
+Do not begin implementation after the report.
+Stop and wait for approval.

@@ -972,13 +972,16 @@ function Step2Preferences({
           </div>
           <div className="space-y-2">
             <Label htmlFor="trainerRestrictions" className="text-sm">
-              Uwagi trenera (opcjonalnie)
+              Ograniczenia / uwagi trenera
+              {data.input.healthLimitations && (
+                <span className="text-muted-foreground ml-1 text-xs">(wywiad: zdrowotne — wstępnie wypełnione)</span>
+              )}
             </Label>
             <Textarea
               id="trainerRestrictions"
               value={prefs.trainerRestrictions ?? ""}
               onChange={(e) => set("trainerRestrictions", e.target.value || null)}
-              placeholder="Wyjątkowe wskazówki lub ograniczenia dla generatora..."
+              placeholder="Ograniczenia zdrowotne, wyjątkowe wskazówki lub inne uwagi dla generatora..."
               className="resize-none text-sm"
               rows={3}
             />
@@ -1861,7 +1864,7 @@ export default function PlanDraftWizard() {
             type: d.dayType,
             note: dayExercises.length > 0
               ? dayExercises.slice(0, 4).map((e) => e.exerciseName).join(", ")
-              : Object.keys(d.allocations ?? {}).slice(0, 3).join(", ") || "—",
+              : d.targetAllocations.slice(0, 3).map((a) => a.targetName).join(", ") || "—",
             exercises: dayExercises.map(
               (e) => `${e.exerciseName} — ${e.sets}×${e.repsMin}–${e.repsMax}`,
             ),
@@ -1902,8 +1905,8 @@ export default function PlanDraftWizard() {
             days: effectivePrefs.trainingDays,
             duration: effectivePrefs.sessionDurationMinutes,
             priorities: effectivePrefs.priorityMuscleGroups ?? [],
-            preferredExercises: typedData?.input?.favoriteExercises
-              ? [typedData.input.favoriteExercises as string].filter(Boolean)
+            preferredExercises: typedData?.input?.preferredExercises
+              ? [typedData.input.preferredExercises as string].filter(Boolean)
               : [],
             restrictions: effectivePrefs.trainerRestrictions
               ? [effectivePrefs.trainerRestrictions as string].filter(Boolean)

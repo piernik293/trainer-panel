@@ -64,12 +64,22 @@ function deriveRecoveryQuality(
 }
 
 // ─── Session duration parsing ─────────────────────────────────────────────────
+//
+// Handles range-style values stored by the public form, e.g.:
+//   "60–90 min"  → 90   (upper bound of the range; better planning estimate)
+//   "90+ min"    → 90
+//   "45 min"     → 45
+//   "45"         → 45
+// Strategy: extract ALL integers from the string and take the maximum.
+// If no valid number is found the field is left as null → defaults to 60.
 
 function parseSessionDuration(raw: string | null | undefined): number | null {
   if (!raw) return null;
-  const parsed = parseInt(raw, 10);
-  if (isNaN(parsed) || parsed <= 0 || parsed > 300) return null;
-  return parsed;
+  const matches = raw.match(/\d+/g);
+  if (!matches) return null;
+  const valid = matches.map(Number).filter((n) => n > 0 && n <= 300);
+  if (valid.length === 0) return null;
+  return Math.max(...valid);
 }
 
 // ─── Stress level clamping ────────────────────────────────────────────────────
@@ -414,7 +424,10 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     trainingGoal: trainingGoal ?? null,
     priorityMuscleGroups,
     preferredTrainingStyle: survey?.planStylePreference ?? null,
-    trainerRestrictions: null,
+    // Pre-populate restrictions from the client's health-limitations answer so
+    // the volume/exercise engine can account for them without the trainer having
+    // to retype the text manually.
+    trainerRestrictions: survey?.healthLimitations ?? null,
   };
 
   // allowedSplitTypes: day-count compatible splits, further restricted by experience level.
