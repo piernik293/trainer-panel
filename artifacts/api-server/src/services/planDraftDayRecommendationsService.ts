@@ -439,8 +439,13 @@ export function isEquipmentCompatible(
 ): boolean {
   if (exerciseEquipment.length === 0) return true;
 
-  if (exerciseEquipment.every((e) => BODYWEIGHT_EQUIPMENT.has(e.trim().toLowerCase()))) {
-    return true; // bodyweight exercise
+  // Equipment list is OR semantics: the exercise can be performed with any ONE
+  // of the listed items.  If "Masa własnego ciała" (bodyweight) is among the
+  // options the exercise is doable without any gear — include it for all clients.
+  // Previously used `every`, which wrongly excluded exercises like Glute bridge
+  // that list ["Masa własnego ciała", "Hantle"] because "Hantle" failed the test.
+  if (exerciseEquipment.some((e) => BODYWEIGHT_EQUIPMENT.has(e.trim().toLowerCase()))) {
+    return true; // exercise can be performed without equipment
   }
 
   const clientEquipment = parseList(surveyEquipment);

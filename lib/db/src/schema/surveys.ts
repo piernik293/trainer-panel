@@ -61,6 +61,8 @@ export const surveysTable = pgTable("surveys", {
   // Sport performance needs — multiselect values from survey
   // e.g. ["skoczność", "szybkość", "koordynacja", "zmiana kierunku", ...]
   sportPerformanceNeeds: text("sport_performance_needs").array().notNull().default([]),
+  // New isolated sport priorities field: values are lowercase ascii — dynamika | szybkosc | stabilizacja
+  sportsPriorities: text("sports_priorities").array().notNull().default([]),
   // Ćwiczenia, których klient chce unikać — powiązanie z Exercise Library
   avoidedExerciseIds: integer("avoided_exercise_ids").array().notNull().default([]),
   avoidedExerciseReasons: jsonb("avoided_exercise_reasons").$type<Record<string, string>>().notNull().default({}),

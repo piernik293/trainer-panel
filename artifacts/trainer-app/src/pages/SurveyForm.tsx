@@ -10,7 +10,7 @@ import {
   useUpsertClientSurvey,
   getListClientsQueryKey,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Pencil } from "lucide-react";
 import { MuscleGroupCombobox } from "@/components/MuscleGroupCombobox";
 import { FavoriteExercisesPicker, type FavoriteExercise } from "@/components/FavoriteExercisesPicker";
 import { AvoidedExercisesPicker, type AvoidedExercise } from "@/components/AvoidedExercisesPicker";
@@ -84,6 +84,7 @@ const surveySchema = z.object({
   trainingGoal: z.string().optional(),
   athleteStatus: z.enum(["Hobbystycznie", "Zawodowo"]).optional(),
   sportPerformanceNeeds: z.array(z.string()).optional().default([]),
+  sportsPriorities: z.array(z.string()).optional().default([]),
   trainingMotivation: z.string().optional(),
   experienceLevel: z.string().optional(),
   trainingDuration: z.string().optional(),
@@ -145,17 +146,52 @@ const surveySchema = z.object({
 
 type SurveyFormValues = z.infer<typeof surveySchema>;
 
+// ─── Custom PATCH mutation ─────────────────────────────────────────────────────
+// Updates an existing survey row in-place (does not insert a new row).
+
+function usePatchSurvey() {
+  return useMutation({
+    mutationFn: async ({
+      clientId,
+      surveyId,
+      data,
+    }: {
+      clientId: number;
+      surveyId: number;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: any;
+    }) => {
+      const res = await fetch(`/api/clients/${clientId}/surveys/${surveyId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const err = await res.json().catch(() => ({} as any));
+        throw new Error(err?.error ?? `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
+  });
+}
+
 // ─── Loader shell ─────────────────────────────────────────────────────────────
 
 export default function SurveyForm() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
+  const [isEditing, setIsEditing] = useState(false);
 
   const { data: client, isLoading: clientLoading } = useGetClient(id, {
     query: { enabled: !!id, queryKey: getGetClientQueryKey(id) },
   });
 
-  const { data: survey, isLoading: surveyLoading } = useGetClientSurvey(id, {
+  const {
+    data: survey,
+    isLoading: surveyLoading,
+    refetch: refetchSurvey,
+  } = useGetClientSurvey(id, {
     query: {
       enabled: !!client?.hasSurvey,
       queryKey: ["client-survey-edit", id] as unknown[],
@@ -165,7 +201,7 @@ export default function SurveyForm() {
   if (clientLoading || (client?.hasSurvey && surveyLoading)) {
     return (
       <div className="p-8 text-center text-muted-foreground">
-        Wczytywanie formularza...
+        Wczytywanie wywiadu...
       </div>
     );
   }
@@ -178,13 +214,359 @@ export default function SurveyForm() {
     );
   }
 
+  if (isEditing) {
+    return (
+      <SurveyFormBody
+        key={survey?.id ?? "new"}
+        id={id}
+        client={client}
+        survey={survey}
+        surveyId={survey?.id}
+        onSaved={() => {
+          refetchSurvey();
+          setIsEditing(false);
+        }}
+        onCancel={() => setIsEditing(false)}
+      />
+    );
+  }
+
+  if (!survey) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        Klient nie wypełnił jeszcze wywiadu treningowego.
+      </div>
+    );
+  }
+
   return (
-    <SurveyFormBody
-      key={survey?.id ?? "new"}
+    <SurveyReadonlyPreview
       id={id}
       client={client}
       survey={survey}
+      onEdit={() => setIsEditing(true)}
     />
+  );
+}
+
+// ─── Read-only preview ────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function SurveyReadonlyPreview({
+  id,
+  client,
+  survey,
+  onEdit,
+}: {
+  id: number;
+  client: { firstName: string; lastName: string };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  survey: any;
+  onEdit: () => void;
+}) {
+  function Field({
+    label,
+    value,
+  }: {
+    label: string;
+    value?: string | number | null | undefined;
+  }) {
+    if (value == null || value === "") return null;
+    return (
+      <div>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+          {label}
+        </p>
+        <p className="text-sm text-foreground">{value}</p>
+      </div>
+    );
+  }
+
+  const bmi = calculateBmi(survey.heightCm, survey.weightKg);
+  const isBeginner =
+    survey.experienceLevel === "Brak aktywności fizycznej" ||
+    survey.experienceLevel === "Początkujący";
+  const showBmiRec = isBeginner && bmi !== undefined && bmi >= 25;
+
+  // Format date of birth for display
+  const dobFormatted = survey.dateOfBirth
+    ? (() => {
+        try {
+          const d =
+            survey.dateOfBirth instanceof Date
+              ? survey.dateOfBirth
+              : new Date(survey.dateOfBirth);
+          return d.toLocaleDateString("pl-PL");
+        } catch {
+          return String(survey.dateOfBirth).split("T")[0];
+        }
+      })()
+    : null;
+
+  // Derive age
+  const dobStr = survey.dateOfBirth
+    ? survey.dateOfBirth instanceof Date
+      ? survey.dateOfBirth.toISOString().split("T")[0]
+      : String(survey.dateOfBirth).split("T")[0]
+    : null;
+  const ageVal = dobStr ? (calculateAge(dobStr) ?? survey.age) : survey.age;
+
+  const sportsPriorities: string[] = Array.isArray(survey.sportsPriorities)
+    ? survey.sportsPriorities
+    : [];
+  const SP_LABEL: Record<string, string> = {
+    dynamika: "Dynamika",
+    szybkosc: "Szybkość",
+    stabilizacja: "Stabilizacja",
+  };
+
+  const advancedMethods: string[] = Array.isArray(survey.advancedMethodsToAvoid)
+    ? survey.advancedMethodsToAvoid
+    : [];
+
+  const EditBtn = () => (
+    <Button onClick={onEdit} className="gap-2">
+      <Pencil size={16} />
+      Edytuj wywiad
+    </Button>
+  );
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6 pb-20 animate-in fade-in duration-300">
+      {/* Back link */}
+      <Link
+        href={`/clients/${id}`}
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
+      >
+        <ArrowLeft size={16} />
+        Powrót do profilu
+      </Link>
+
+      {/* Header row */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">
+            Wywiad Treningowy
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Dla klienta: {client.firstName} {client.lastName}
+          </p>
+        </div>
+        <EditBtn />
+      </div>
+
+      {/* ── 1. Cel treningowy ──────────────────────────────────────────── */}
+      <Card className="border-border/50 shadow-sm">
+        <CardHeader className="bg-muted/20 border-b border-border/50">
+          <CardTitle>Cel treningowy</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Cel treningowy" value={survey.trainingGoal} />
+          {survey.trainingMotivation ? (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+                Dlaczego chcesz trenować?
+              </p>
+              <p className="text-sm text-foreground whitespace-pre-wrap">
+                {survey.trainingMotivation}
+              </p>
+            </div>
+          ) : null}
+          {sportsPriorities.length > 0 && (
+            <div className="sm:col-span-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+                Priorytety sportowe
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {sportsPriorities.map((v) => (
+                  <span
+                    key={v}
+                    className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium"
+                  >
+                    {SP_LABEL[v] ?? v}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {showBmiRec && (
+        <Card className="border-primary/20 shadow-sm">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-sm text-primary/90">{BMI_RECOMMENDATION_TEXT}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── 2. Doświadczenie i organizacja ────────────────────────────── */}
+      <Card className="border-border/50 shadow-sm">
+        <CardHeader className="bg-muted/20 border-b border-border/50">
+          <CardTitle>Doświadczenie i organizacja treningów</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Poziom doświadczenia" value={survey.experienceLevel} />
+          <Field label="Staż treningowy" value={survey.trainingDuration} />
+          <Field
+            label="Liczba treningów tygodniowo"
+            value={survey.desiredWeeklyFrequency?.toString()}
+          />
+          <Field label="Czas trwania sesji" value={survey.sessionDuration} />
+        </CardContent>
+      </Card>
+
+      {/* ── 3. Dane klienta ───────────────────────────────────────────── */}
+      <Card className="border-border/50 shadow-sm">
+        <CardHeader className="bg-muted/20 border-b border-border/50">
+          <CardTitle>Dane klienta</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Data urodzenia" value={dobFormatted} />
+          <Field label="Wiek" value={ageVal?.toString()} />
+          <Field label="Płeć" value={survey.gender} />
+          <Field
+            label="Wzrost"
+            value={survey.heightCm ? `${survey.heightCm} cm` : null}
+          />
+          <Field
+            label="Waga"
+            value={survey.weightKg ? `${survey.weightKg} kg` : null}
+          />
+          <Field label="BMI" value={bmi !== undefined ? bmi.toFixed(1) : null} />
+        </CardContent>
+      </Card>
+
+      {/* ── 4. Zdrowie i ograniczenia ─────────────────────────────────── */}
+      <Card className="border-border/50 shadow-sm border-destructive/20">
+        <CardHeader className="bg-destructive/5 border-b border-destructive/10">
+          <CardTitle className="text-destructive">
+            Zdrowie i ograniczenia
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          {survey.healthLimitations ? (
+            <p className="text-sm text-foreground whitespace-pre-wrap">
+              {survey.healthLimitations}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">
+              Brak zgłoszonych przeciwskazań
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── 5. Preferencje treningowe ─────────────────────────────────── */}
+      <Card className="border-border/50 shadow-sm">
+        <CardHeader className="bg-muted/20 border-b border-border/50">
+          <CardTitle>Preferencje treningowe</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Priorytet 1" value={survey.priorityMuscle1} />
+          <Field label="Priorytet 2" value={survey.priorityMuscle2} />
+          <Field label="Priorytet 3" value={survey.priorityMuscle3} />
+          <Field label="Ulubione ćwiczenia" value={survey.favoriteExercises} />
+          {survey.avoidsAdvancedMethods != null && (
+            <Field
+              label="Metody intensyfikacji w planie"
+              value={survey.avoidsAdvancedMethods ? "Tak" : "Nie"}
+            />
+          )}
+          {advancedMethods.length > 0 && (
+            <div className="sm:col-span-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+                Metody do unikania
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {advancedMethods.map((m) => (
+                  <span
+                    key={m}
+                    className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium"
+                  >
+                    {m}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── 6. Aktywność, regeneracja i stres ────────────────────────── */}
+      <Card className="border-border/50 shadow-sm">
+        <CardHeader className="bg-muted/20 border-b border-border/50">
+          <CardTitle>Aktywność, regeneracja i stres</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Aktywność w ciągu dnia" value={survey.activityLevel} />
+          <Field label="Sen (śr. godz./dobę)" value={survey.sleepHours} />
+          <Field
+            label="Poziom stresu (1–10)"
+            value={survey.stressLevel?.toString()}
+          />
+          <Field
+            label="Preferowany styl planu"
+            value={survey.planStylePreference}
+          />
+        </CardContent>
+      </Card>
+
+      {/* ── 7. Miejsce treningu i sprzęt ──────────────────────────────── */}
+      <Card className="border-border/50 shadow-sm">
+        <CardHeader className="bg-muted/20 border-b border-border/50">
+          <CardTitle>Miejsce treningu i sprzęt</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Miejsce treningów" value={survey.trainingLocation} />
+          <Field label="Sprzęt" value={survey.equipment} />
+        </CardContent>
+      </Card>
+
+      {/* ── 8. Cardio ─────────────────────────────────────────────────── */}
+      {(survey.cardioPreference ||
+        survey.cardioFrequency ||
+        survey.preferredCardioType) && (
+        <Card className="border-border/50 shadow-sm">
+          <CardHeader className="bg-muted/20 border-b border-border/50">
+            <CardTitle>Aktywność tlenowa i cardio</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Field
+              label="Preferencja cardio"
+              value={survey.cardioPreference}
+            />
+            <Field
+              label="Aktywność tlenowa obecnie"
+              value={survey.cardioFrequency}
+            />
+            <Field
+              label="Preferowana forma cardio"
+              value={survey.preferredCardioType}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── 9. Dodatkowe informacje ───────────────────────────────────── */}
+      {survey.additionalInfo && (
+        <Card className="border-border/50 shadow-sm">
+          <CardHeader className="bg-muted/20 border-b border-border/50">
+            <CardTitle>Dodatkowe informacje</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <p className="text-sm text-foreground whitespace-pre-wrap">
+              {survey.additionalInfo}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Footer edit button */}
+      <div className="flex justify-end">
+        <EditBtn />
+      </div>
+    </div>
   );
 }
 
@@ -195,14 +577,21 @@ function SurveyFormBody({
   id,
   client,
   survey,
+  surveyId,
+  onSaved,
+  onCancel,
 }: {
   id: number;
   client: { firstName: string; lastName: string; hasSurvey?: boolean };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   survey: any;
+  surveyId?: number;
+  onSaved?: () => void;
+  onCancel?: () => void;
 }) {
-  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const upsertSurvey = useUpsertClientSurvey();
+  const patchSurvey = usePatchSurvey();
   const { toast } = useToast();
 
   // Derive injuryStatus from stored data for backward-compat with old surveys
@@ -227,6 +616,7 @@ function SurveyFormBody({
       trainingGoal: (survey?.trainingGoal as string) ?? "",
       athleteStatus: derivedAthleteStatus,
       sportPerformanceNeeds: (survey?.sportPerformanceNeeds as string[]) ?? [],
+      sportsPriorities: (survey?.sportsPriorities as string[]) ?? [],
       trainingMotivation: (survey?.trainingMotivation as string) ?? "",
       experienceLevel: (survey?.experienceLevel as string) ?? "",
       trainingDuration: (survey?.trainingDuration as string) ?? "",
@@ -318,24 +708,41 @@ function SurveyFormBody({
   }, [equipmentItems, equipmentOther]);
 
   // ── Exercise picker state ──
-  // Mirrors the client-side pattern: structured arrays managed outside RHF.
-  // Saved as both the legacy string fields (for older code) and the structured
-  // avoidedExerciseIds / avoidedExerciseReasons fields in the upsert payload.
   const [selectedFavoriteExercises, setSelectedFavoriteExercises] = useState<FavoriteExercise[]>([]);
   const [selectedAvoidedExercises, setSelectedAvoidedExercises] = useState<AvoidedExercise[]>([]);
-  // Guard so we only run the initialization once per survey load.
   const exercisePickerInitialized = useRef(false);
   useEffect(() => {
     if (exercisePickerInitialized.current) return;
     exercisePickerInitialized.current = true;
-    // Favorites: kept as string "Name A, Name B" in legacy storage.
-    // We can't reliably recover IDs from names, so the picker starts empty
-    // and the legacy string is shown as a hint below the picker.
     setSelectedFavoriteExercises([]);
-    // Avoided: same — picker starts empty; old string shown as hint.
     setSelectedAvoidedExercises([]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Shared success/error handlers ──
+  const handleSuccess = () => {
+    toast({
+      title: "Zapisano pomyślnie",
+      description: "Wywiad treningowy klienta został zaktualizowany.",
+    });
+    queryClient.invalidateQueries({ queryKey: getGetClientQueryKey(id) });
+    queryClient.invalidateQueries({
+      queryKey: ["client-survey", id] as unknown[],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["client-survey-edit", id] as unknown[],
+    });
+    queryClient.invalidateQueries({ queryKey: getListClientsQueryKey() });
+    onSaved?.();
+  };
+
+  const handleError = () => {
+    toast({
+      title: "Błąd zapisu",
+      description: "Nie udało się zapisać wywiadu treningowego.",
+      variant: "destructive",
+    });
+  };
 
   // ── Submit ──
   const onSubmit = (data: SurveyFormValues) => {
@@ -347,9 +754,6 @@ function SurveyFormBody({
         : undefined;
     const isSportGoalSubmit = data.trainingGoal === "Cel sportowy";
 
-    // Serialize exercise picker state → string + structured ID fields.
-    // If the picker is empty (trainer didn't update it), preserve the old
-    // string value so previous entries aren't wiped on save.
     const favoritesString =
       selectedFavoriteExercises.length > 0
         ? selectedFavoriteExercises.map((e) => e.name).join(", ")
@@ -379,7 +783,6 @@ function SurveyFormBody({
       planStylePreference: data.planStylePreference || undefined,
       dateOfBirth: data.dateOfBirth || undefined,
       age: calculateAge(data.dateOfBirth) ?? data.age,
-      // Map UI athlete status → API format
       athleteStatus:
         isSportGoalSubmit && data.athleteStatus
           ? (ATHLETE_STATUS_TO_API[data.athleteStatus] ?? "Nie")
@@ -387,7 +790,9 @@ function SurveyFormBody({
       sportPerformanceNeeds: isSportGoalSubmit
         ? (data.sportPerformanceNeeds ?? [])
         : [],
-      // Clear dependent fields when gate is "Nie"
+      sportsPriorities: isSportGoalSubmit
+        ? (data.sportsPriorities ?? [])
+        : [],
       healthLimitations:
         data.injuryStatus === "Nie" ? "" : data.healthLimitations,
       additionalInfo:
@@ -395,42 +800,31 @@ function SurveyFormBody({
       avoidsAdvancedMethods: avoidsAdvancedMethodsBool,
       advancedMethodsToAvoid:
         avoidsAdvancedMethodsBool === true ? data.advancedMethodsToAvoid : [],
-      // Exercise picker output
       favoriteExercises: favoritesString,
       avoidedExercises: avoidedString,
       avoidedExerciseIds: avoidedIds,
       avoidedExerciseReasons: avoidedReasons,
     };
-    upsertSurvey.mutate(
-      {
-        clientId: id,
-        data: payload as Parameters<typeof upsertSurvey.mutate>[0]["data"],
-      },
-      {
-        onSuccess: () => {
-          toast({
-            title: "Zapisano pomyślnie",
-            description: "Wywiad treningowy klienta został zaktualizowany.",
-          });
-          queryClient.invalidateQueries({
-            queryKey: getGetClientQueryKey(id),
-          });
-          queryClient.invalidateQueries({
-            queryKey: ["client-survey", id] as unknown[],
-          });
-          queryClient.invalidateQueries({ queryKey: getListClientsQueryKey() });
-          setLocation(`/clients/${id}`);
+
+    // When editing an existing survey: PATCH (update in-place, no new row).
+    // When creating a new survey: PUT (upsert / append history).
+    if (surveyId) {
+      patchSurvey.mutate(
+        { clientId: id, surveyId, data: payload },
+        { onSuccess: handleSuccess, onError: handleError },
+      );
+    } else {
+      upsertSurvey.mutate(
+        {
+          clientId: id,
+          data: payload as Parameters<typeof upsertSurvey.mutate>[0]["data"],
         },
-        onError: () => {
-          toast({
-            title: "Błąd zapisu",
-            description: "Nie udało się zapisać wywiadu treningowego.",
-            variant: "destructive",
-          });
-        },
-      }
-    );
+        { onSuccess: handleSuccess, onError: handleError },
+      );
+    }
   };
+
+  const isPending = upsertSurvey.isPending || patchSurvey.isPending;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20 animate-in fade-in duration-300">
@@ -444,7 +838,7 @@ function SurveyFormBody({
 
       <div>
         <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">
-          Wywiad Treningowy
+          Wywiad Treningowy — Edycja
         </h1>
         <p className="text-muted-foreground mt-1">
           Dla klienta: {client?.firstName} {client?.lastName}
@@ -475,7 +869,6 @@ function SurveyFormBody({
                       <Select
                         onValueChange={(value) => {
                           field.onChange(value);
-                          // Cel sportowy + Brak aktywności are contradictory
                           if (
                             value === "Cel sportowy" &&
                             form.getValues("experienceLevel") ===
@@ -483,10 +876,10 @@ function SurveyFormBody({
                           ) {
                             form.setValue("experienceLevel", "");
                           }
-                          // Clear sport fields when switching away
                           if (value !== "Cel sportowy") {
                             form.setValue("athleteStatus", undefined);
                             form.setValue("sportPerformanceNeeds", []);
+                            form.setValue("sportsPriorities", []);
                           }
                         }}
                         value={field.value ?? ""}
@@ -579,7 +972,7 @@ function SurveyFormBody({
                       {/* Sport performance priorities */}
                       <FormField
                         control={form.control}
-                        name="sportPerformanceNeeds"
+                        name="sportsPriorities"
                         render={() => (
                           <FormItem>
                             <FormLabel>
@@ -590,46 +983,55 @@ function SurveyFormBody({
                             </FormDescription>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
                               {SPORT_PERFORMANCE_NEEDS.map(
-                                ({ value: need, desc }) => (
-                                  <FormField
-                                    key={need}
-                                    control={form.control}
-                                    name="sportPerformanceNeeds"
-                                    render={({ field }) => (
-                                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 hover:bg-muted/20 transition-colors">
-                                        <FormControl>
-                                          <Checkbox
-                                            checked={field.value?.includes(
-                                              need
-                                            )}
-                                            onCheckedChange={(checked) =>
-                                              checked
-                                                ? field.onChange([
-                                                    ...(field.value || []),
-                                                    need,
-                                                  ])
-                                                : field.onChange(
-                                                    (
-                                                      field.value || []
-                                                    ).filter(
-                                                      (v: string) => v !== need
-                                                    )
-                                                  )
-                                            }
-                                          />
-                                        </FormControl>
-                                        <div className="flex flex-col gap-0.5 flex-1">
-                                          <FormLabel className="font-medium cursor-pointer text-sm leading-snug">
-                                            {need}
-                                          </FormLabel>
-                                          <span className="text-xs text-muted-foreground/70 leading-snug">
-                                            {desc}
-                                          </span>
-                                        </div>
-                                      </FormItem>
-                                    )}
-                                  />
-                                )
+                                ({ value: need, desc }) => {
+                                  const spVal = need === "Dynamika" ? "dynamika" : need === "Szybkość" ? "szybkosc" : "stabilizacja";
+                                  return (
+                                    <FormField
+                                      key={need}
+                                      control={form.control}
+                                      name="sportsPriorities"
+                                      render={({ field }) => (
+                                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 hover:bg-muted/20 transition-colors">
+                                          <FormControl>
+                                            <Checkbox
+                                              checked={field.value?.includes(spVal)}
+                                              onCheckedChange={(checked) => {
+                                                checked
+                                                  ? field.onChange([
+                                                      ...(field.value || []),
+                                                      spVal,
+                                                    ])
+                                                  : field.onChange(
+                                                      (field.value || []).filter(
+                                                        (v: string) => v !== spVal
+                                                      )
+                                                    );
+                                                const currentNeeds =
+                                                  form.getValues("sportPerformanceNeeds") ?? [];
+                                                form.setValue(
+                                                  "sportPerformanceNeeds",
+                                                  checked
+                                                    ? [...currentNeeds, need]
+                                                    : currentNeeds.filter(
+                                                        (v: string) => v !== need
+                                                      ),
+                                                );
+                                              }}
+                                            />
+                                          </FormControl>
+                                          <div className="flex flex-col gap-0.5 flex-1">
+                                            <FormLabel className="font-medium cursor-pointer text-sm leading-snug">
+                                              {need}
+                                            </FormLabel>
+                                            <span className="text-xs text-muted-foreground/70 leading-snug">
+                                              {desc}
+                                            </span>
+                                          </div>
+                                        </FormItem>
+                                      )}
+                                    />
+                                  );
+                                }
                               )}
                             </div>
                           </FormItem>
@@ -669,7 +1071,6 @@ function SurveyFormBody({
                       </FormControl>
                       <SelectContent>
                         {EXPERIENCE_LEVEL_OPTIONS
-                          // "Brak aktywności" is incompatible with sport goal
                           .filter(
                             ({ level }) =>
                               !(
@@ -974,14 +1375,12 @@ function SurveyFormBody({
               <CardTitle>Preferencje treningowe</CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
-              {/* Section notice for beginners */}
               {isBeginner && (
                 <div className="text-sm text-muted-foreground bg-muted/30 border border-border/50 px-4 py-3 leading-relaxed">
                   Na początku łatwo pochopnie ocenić, które partie lub ćwiczenia powinny być najważniejsze. Przy poziomie doświadczenia klienta potraktujemy te wybory jako wskazówkę, a plan będzie przede wszystkim rozwijał całe ciało i uczył podstawowych wzorców ruchowych.
                 </div>
               )}
 
-              {/* Partie priorytetowe — shown for all levels */}
               <div>
                 <p className="text-sm font-medium mb-1">
                   Partie priorytetowe
@@ -1021,7 +1420,6 @@ function SurveyFormBody({
                 </div>
               </div>
 
-              {/* Ulubione ćwiczenia — shown for all levels */}
               <div className="space-y-1.5">
                 <p className="text-sm font-medium leading-none">Ulubione ćwiczenia</p>
                 {isBeginner && (
@@ -1033,7 +1431,6 @@ function SurveyFormBody({
                   selectedExercises={selectedFavoriteExercises}
                   onSelectedChange={setSelectedFavoriteExercises}
                 />
-                {/* Legacy hint: show old string when picker is empty */}
                 {selectedFavoriteExercises.length === 0 &&
                   !!form.getValues("favoriteExercises") && (
                   <p className="text-xs text-muted-foreground mt-1">
@@ -1044,7 +1441,6 @@ function SurveyFormBody({
                 )}
               </div>
 
-              {/* Ćwiczenia do unikania + metody intensyfikacji — isIntermAdv only */}
               <AnimatePresence>
                 {isIntermAdv && (
                   <motion.div
@@ -1061,14 +1457,11 @@ function SurveyFormBody({
                       }
                     }}
                     onAnimationComplete={() => {
-                      // Once fully open, remove the clip so absolutely-positioned
-                      // exercise search dropdowns are not cut off by the container.
                       if (prefsMotionRef.current) {
                         prefsMotionRef.current.style.overflow = "visible";
                       }
                     }}
                   >
-                    {/* Ćwiczenia do unikania */}
                     <div className="space-y-1.5">
                       <p className="text-sm font-medium leading-none">Ćwiczenia do unikania</p>
                       <p className="text-xs text-muted-foreground">
@@ -1078,7 +1471,6 @@ function SurveyFormBody({
                         selectedExercises={selectedAvoidedExercises}
                         onSelectedChange={setSelectedAvoidedExercises}
                       />
-                      {/* Legacy hint: show old string when picker is empty */}
                       {selectedAvoidedExercises.length === 0 &&
                         !!form.getValues("avoidedExercises") && (
                         <p className="text-xs text-muted-foreground mt-1">
@@ -1089,7 +1481,6 @@ function SurveyFormBody({
                       )}
                     </div>
 
-                    {/* Metody intensyfikacji */}
                     <FormField
                       control={form.control}
                       name="avoidsAdvancedMethods"
@@ -1212,7 +1603,7 @@ function SurveyFormBody({
                       </FormControl>
                       <SelectContent>
                         {ACTIVITY_LEVEL_OPTIONS.map(
-                          ({ level, trainerDesc }) => (
+                          ({ level }) => (
                             <SelectItem key={level} value={level}>
                               {level}
                             </SelectItem>
@@ -1342,7 +1733,6 @@ function SurveyFormBody({
                       <Select
                         onValueChange={(v) => {
                           field.onChange(v);
-                          // Clear equipment when switching to gym
                           if (v === "Siłownia") {
                             setEquipmentItems([]);
                             setEquipmentOther("");
@@ -1597,19 +1987,17 @@ function SurveyFormBody({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setLocation(`/clients/${id}`)}
+              onClick={() => onCancel?.()}
             >
               Anuluj
             </Button>
             <Button
               type="submit"
-              disabled={upsertSurvey.isPending}
+              disabled={isPending}
               className="gap-2"
             >
               <Save size={16} />
-              {upsertSurvey.isPending
-                ? "Zapisywanie..."
-                : "Zapisz Wywiad Treningowy"}
+              {isPending ? "Zapisywanie..." : "Zapisz zmiany"}
             </Button>
           </div>
         </form>

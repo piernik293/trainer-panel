@@ -1,0 +1,271 @@
+DO NOT USE SUBAGENTS.
+DO NOT DISPATCH PARALLEL EXPLORERS.
+WORK SEQUENTIALLY IN THE CURRENT AGENT ONLY.
+
+P0 PRODUCTION TASK — automatically migrate the complete current exercise catalogue from the development/admin environment into the deployed production product, then perform a strict reconciliation audit.
+
+This task must be fully automated.
+
+Do not ask the user to:
+- download files,
+- upload files,
+- manually import JSON,
+- run SQL,
+- run shell commands,
+- manually compare databases.
+
+PRODUCTION TARGET
+
+Use the production database and deployed application behind:
+
+https://client-intake-form--andrzejwysocki7.replit.app/
+
+Do not migrate the catalogue only into Replit Preview or the development database.
+
+SOURCE OF TRUTH
+
+Use the complete current catalogue from the development/admin database.
+
+The existing file:
+
+exports/exercises-dev-export.json
+
+was reported to contain 156 exercises and match the current development database.
+
+Before writing production data, verify that this export still matches the current development/admin database.
+
+If it is outdated:
+- generate a fresh export automatically,
+- preserve the existing export structure,
+- do not ask the user to download or upload anything.
+
+EXPECTED SOURCE COUNTS FROM THE CURRENT AUDIT
+
+Re-verify these before migration:
+
+- exercises: 156
+- specific_muscles: 28
+- exercise-muscle assignments / EMA: 441
+- substitutions: 205
+- volume_guideline_versions: 1
+- volume_targets: 12
+- volume_target_members: 21
+- volume_guidelines: 48
+
+Do not blindly trust these numbers. Compare them with the current source database first.
+
+PHASE 1 — PRE-MIGRATION SAFETY REPORT
+
+Before modifying production, report:
+
+1. Development/admin counts for every catalogue-related table.
+2. Current production counts.
+3. Whether exports/exercises-dev-export.json is current.
+4. The exact automated seed/import mechanism that will be used.
+5. Expected inserts and updates by table.
+6. Stable identifiers used to match records between environments.
+7. Confirmation that clients, surveys and saved plans are outside the migration scope.
+
+Do not stop after the report if the migration is safe.
+
+PHASE 2 — AUTOMATED PRODUCTION MIGRATION
+
+Automatically execute the smallest safe migration using the existing seed/import services or a focused server-side migration script.
+
+The migration must include all catalogue data required by the application and generator, including:
+
+- exercises,
+- equipment,
+- body parts / targets,
+- specific muscles,
+- movement patterns,
+- difficulty / experience levels,
+- active/inactive status,
+- exercise-to-equipment relationships,
+- exercise-to-target relationships,
+- primary muscle relationships,
+- secondary and synergistic muscle relationships,
+- substitutions,
+- all existing generator-related exercise attributes.
+
+Do not import only exercise names.
+
+MIGRATION SAFETY REQUIREMENTS
+
+The migration must:
+
+- be transaction-safe,
+- be idempotent,
+- use stable keys such as existing slugs, canonical names or established unique keys,
+- insert missing catalogue records,
+- preserve all required relationships,
+- prevent duplicate exercises,
+- prevent duplicate relationship rows,
+- avoid copying conflicting numeric database IDs blindly.
+
+Never:
+
+- truncate tables,
+- delete production clients,
+- delete surveys,
+- delete saved plans,
+- overwrite unrelated production data,
+- copy development clients into production,
+- point Replit Preview at the production database,
+- create a fake frontend-only exercise list.
+
+If Replit requires approval to publish or modify the production database, request that approval and continue automatically after approval.
+
+PHASE 3 — VOLUME GUIDELINE DATA
+
+After the production catalogue and specific_muscles are populated:
+
+1. Run or trigger the existing volume-guideline seed.
+2. Reuse the existing development guideline values.
+3. Do not invent or redesign volume guidelines.
+4. Confirm production contains:
+   - at least one active volume_guideline_versions row,
+   - 12 expected volume targets,
+   - 21 expected target-member relationships,
+   - 48 expected volume-guideline rows.
+5. Confirm all target-member relationships resolve to existing specific muscles.
+
+PHASE 4 — STRICT SOURCE VS PRODUCTION AUDIT
+
+The migration is not complete merely because production contains 156 exercise names.
+
+Compare the complete source catalogue with production.
+
+For every catalogue-related table and relationship report:
+
+- source count,
+- production count,
+- missing in production,
+- additional in production,
+- duplicates,
+- mismatched records.
+
+For every exercise compare all relevant fields:
+
+- name,
+- slug or stable key,
+- status,
+- equipment,
+- body part / target,
+- movement pattern,
+- difficulty,
+- primary muscles,
+- secondary muscles,
+- synergistic muscles,
+- substitutions,
+- generator-related attributes.
+
+Explicitly report:
+
+- source exercises missing from production,
+- production exercises not found in the source,
+- field mismatches,
+- missing relationships,
+- duplicate exercises,
+- duplicate relationships,
+- orphaned records,
+- broken foreign-key relationships.
+
+Ignore only environment-specific database IDs when stable keys prove that the records are equivalent.
+
+If any required mismatch remains:
+- fix only the migration gap,
+- rerun the reconciliation audit,
+- do not report success.
+
+PHASE 5 — IDEMPOTENCY TEST
+
+Run the same migration a second time.
+
+The second run must produce:
+
+- 0 new exercises,
+- 0 duplicate relationships,
+- 0 unintended updates,
+- 0 changes to clients,
+- 0 changes to surveys,
+- 0 changes to saved plans.
+
+Report the exact second-run result.
+
+PHASE 6 — PRODUCTION FUNCTIONAL TESTS
+
+Test only against the deployed production product:
+
+https://client-intake-form--andrzejwysocki7.replit.app/
+
+Verify:
+
+1. The production exercise library is no longer empty.
+2. It contains the complete expected catalogue.
+3. Searching “wyc” in /exercises returns exercises containing “Wyciskanie”.
+4. The public “Ćwiczenia preferowane” search returns production results.
+5. The public “Ćwiczenia do unikania” search returns production results.
+6. Selecting an exercise works.
+7. The selection remains after leaving and returning to the section.
+8. The selected exercise is included in the submitted public interview.
+9. The selected exercise appears in the deployed trainer/admin interview view.
+10. specific_muscles is populated.
+11. The trainer generator no longer displays:
+    “Brak wersji wytycznych objętości w bazie danych.”
+12. Calculated volume targets are greater than zero for a valid client.
+13. The generator can select exercises from the production catalogue.
+14. A generated plan can be saved and reopened.
+
+DO NOT MODIFY
+
+Do not:
+
+- redesign the exercise library,
+- modify exercise-selection logic,
+- modify volume-guideline values,
+- modify interview wording,
+- modify cardio,
+- update dependencies,
+- perform unrelated refactors,
+- delete production-only records without explicit approval.
+
+COMPLETION RULE
+
+Do not report success until all of the following are true:
+
+- all required source exercises exist in production,
+- all required catalogue records exist,
+- all required relationships exist,
+- missing required records = 0,
+- unexplained mismatches = 0,
+- duplicate exercises = 0,
+- duplicate relationships = 0,
+- orphaned relationships = 0,
+- second migration run creates 0 records,
+- production exercise searches work,
+- volume guidelines work,
+- the production generator uses the catalogue successfully,
+- no client, survey or saved-plan data was deleted or overwritten.
+
+FINAL REPORT
+
+Report:
+
+1. Exact source used.
+2. Whether the existing JSON export was current.
+3. Migration mechanism used.
+4. Exact files or scripts changed.
+5. Rows inserted by table.
+6. Rows updated by table.
+7. Source and production counts after migration.
+8. Missing records and relationships.
+9. Extra production records.
+10. Duplicate records.
+11. Orphaned relationships.
+12. Second-run idempotency result.
+13. Volume-guideline seed result.
+14. Production search test results.
+15. Public interview selection and submission test.
+16. Generator test and saved-plan test.
+17. Confirmation that no client, survey or saved-plan data was deleted or overwritten.

@@ -1,0 +1,107 @@
+DO NOT USE SUBAGENTS.
+DO NOT DISPATCH PARALLEL EXPLORERS.
+WORK SEQUENTIALLY.
+
+P0 DATA TASK — copy the complete current exercise catalogue from the development/admin environment into the production product.
+
+Do not create new exercises.
+Do not invent catalogue data.
+Do not redesign the exercise library.
+Do not modify generator logic.
+
+SOURCE OF TRUTH
+
+Use the current complete exercise catalogue from the development/admin database.
+
+First compare it with:
+
+exports/exercises-dev-export.json
+
+Determine whether the JSON export contains the complete current catalogue.
+
+If the export is outdated, create a fresh export from the current development/admin catalogue using the existing export structure.
+
+TARGET
+
+Import the complete catalogue into the production database used by:
+
+https://client-intake-form--andrzejwysocki7.replit.app/
+
+The production exercise library is currently empty.
+
+REQUIRED DATA
+
+Preserve and import all existing related catalogue data required by the application, including:
+
+- exercises,
+- exercise names,
+- equipment,
+- body-part and target assignments,
+- specific muscles,
+- movement patterns,
+- experience/difficulty information,
+- existing exercise attributes,
+- relationships used by the plan generator.
+
+Do not import only exercise names.
+
+IMPORT SAFETY
+
+The import must be:
+
+- idempotent,
+- transaction-safe,
+- safe to run again,
+- based on stable existing identifiers or natural unique keys,
+- free from duplicate exercises and duplicate relationships.
+
+Do not:
+
+- delete production clients,
+- delete surveys,
+- delete plans,
+- truncate any table,
+- overwrite unrelated production records,
+- modify development data,
+- point the development application at production.
+
+Before writing production data, report:
+
+1. source catalogue exercise count,
+2. source specific-muscle count,
+3. source related-table counts,
+4. current production exercise count,
+5. exact rows expected to be inserted or updated,
+6. whether the existing JSON export is current.
+
+Then perform the smallest safe import.
+
+AFTER IMPORT
+
+Verify in production:
+
+1. Exercise library contains the complete catalogue.
+2. Search for “wyc” returns exercises containing “Wyciskanie”.
+3. Public preferred-exercise search works.
+4. Public avoided-exercise search works.
+5. A selected exercise survives form navigation and submission.
+6. specific_muscles contains the required catalogue.
+7. Restart the existing production API so the existing volume-guideline seed can run.
+8. Confirm an active volume guideline version exists.
+9. Confirm volume guideline rows exist.
+10. Confirm the trainer generator no longer returns:
+   “Brak wersji wytycznych objętości w bazie danych.”
+11. Confirm calculated volume targets are greater than zero.
+
+Do not add new features.
+
+At the end report:
+
+- exact source used,
+- rows inserted by table,
+- rows updated by table,
+- duplicates prevented,
+- production exercise count,
+- search test result,
+- volume-guideline seed result,
+- confirmation that no client, survey or plan data was deleted.

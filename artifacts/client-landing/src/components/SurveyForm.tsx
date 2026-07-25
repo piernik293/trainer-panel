@@ -241,6 +241,7 @@ export default function SurveyForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [showValidationBanner, setShowValidationBanner] = useState(false);
+  const [sportsPriorities, setSportsPriorities] = useState<string[]>([]);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -367,7 +368,9 @@ export default function SurveyForm() {
     const payload = {
       ...rest,
       age: calculateAge(rest.dateOfBirth) ?? undefined,
-      injuryStatus: injuryStatusVal,
+      // Form shows "Tak"/"Nie" but SubmitPublicSurveyBody expects "Tak"/"Brak".
+      // Map "Nie" → "Brak" so the API schema enum validation passes.
+      injuryStatus: injuryStatusVal === "Nie" ? "Brak" : injuryStatusVal,
       // When "Nie" is selected, clear any leftover text so it's not stored
       healthLimitations: injuryStatusVal === "Nie" ? "" : rest.healthLimitations,
       favoriteExercises: selectedFavoriteExercises.length > 0
@@ -376,6 +379,7 @@ export default function SurveyForm() {
       athleteStatus: mappedAthleteStatus,
       sportDiscipline: undefined,
       sportPerformanceNeeds: isSportGoalSubmit ? (sportNeedsVal ?? []) : [],
+      sportsPriorities: isSportGoalSubmit ? sportsPriorities : [],
       avoidsAdvancedMethods: avoidsAdvancedMethodsBool,
       advancedMethodsToAvoid: avoidsAdvancedMethodsBool === true ? advancedMethodsToAvoid : [],
       avoidedExerciseIds: selectedExercises.map((e) => e.id),
@@ -631,16 +635,28 @@ export default function SurveyForm() {
                         Zaznacz obszary, które są dla Ciebie najważniejsze. Pomogą dobrać odpowiednie elementy treningowe.
                       </FormDescription>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-                        {SPORT_PERFORMANCE_NEEDS.map(({ value: need, desc }) => (
-                          <FormField key={need} control={form.control} name="sportPerformanceNeeds" render={({field}) => (
-                            <FormItem className="flex flex-row items-start space-x-4 space-y-0 p-4 border border-white/5 bg-card/50 rounded-none hover:bg-card/80 transition-colors">
+                        {SPORT_PERFORMANCE_NEEDS.map(({ value: need, desc }) => {
+                          const spVal = need === "Dynamika" ? "dynamika" : need === "Szybkość" ? "szybkosc" : "stabilizacja";
+                          return (
+                            <FormItem key={need} className="flex flex-row items-start space-x-4 space-y-0 p-4 border border-white/5 bg-card/50 rounded-none hover:bg-card/80 transition-colors">
                               <FormControl>
                                 <Checkbox
-                                  checked={field.value?.includes(need)}
+                                  checked={sportsPriorities.includes(spVal)}
                                   onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...(field.value || []), need])
-                                      : field.onChange((field.value || []).filter((v: string) => v !== need));
+                                    setSportsPriorities(prev =>
+                                      checked ? [...prev, spVal] : prev.filter(v => v !== spVal)
+                                    );
+                                    // Keep sportPerformanceNeeds in sync so workout generation
+                                    // (planDraftInputService / goalProfileService) still receives
+                                    // these values. The display label e.g. "Szybkość" lowercases
+                                    // to "szybkość" — the exact string goalProfileService checks.
+                                    const currentNeeds = form.getValues("sportPerformanceNeeds") ?? [];
+                                    form.setValue(
+                                      "sportPerformanceNeeds",
+                                      checked
+                                        ? [...currentNeeds, need]
+                                        : currentNeeds.filter((v: string) => v !== need),
+                                    );
                                   }}
                                   className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-white/20 h-5 w-5 rounded-none mt-0.5"
                                 />
@@ -650,8 +666,8 @@ export default function SurveyForm() {
                                 <span className="text-xs text-muted-foreground/70 leading-snug">{desc}</span>
                               </div>
                             </FormItem>
-                          )} />
-                        ))}
+                          );
+                        })}
                       </div>
                     </FormItem>
                   )} />

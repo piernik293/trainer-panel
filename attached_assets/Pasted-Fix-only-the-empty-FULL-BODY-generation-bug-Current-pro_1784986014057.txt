@@ -1,0 +1,56 @@
+Fix only the empty FULL_BODY generation bug.
+
+Current production behavior:
+
+- A 2-day FULL_BODY draft is created.
+- Validation reports:
+  "Dzień 1 (full_body): V0 FULL_BODY: minimum 4 exercises required, got 3"
+  "Dzień 2 (full_body): V0 FULL_BODY: minimum 4 exercises required, got 3"
+- The final plan view then shows both days with zero exercises.
+- All weekly volume coverage values show 0 and "Brak dobranego ćwiczenia".
+
+Do not modify the interview.
+Do not modify sportsPriorities or sportPerformanceNeeds.
+Do not redesign the generator.
+Do not change volume guideline values.
+Do not refactor unrelated planning services.
+
+Diagnose the exact flow:
+
+1. Identify which service generates the 3 exercises per FULL_BODY day.
+2. Identify why only 3 are selected when V0 requires at least 4.
+3. Identify why the final UI shows 0 exercises instead of the 3 that existed before validation.
+4. Check whether validation failure:
+   - clears the generated exercises,
+   - prevents them from being saved,
+   - or causes the frontend to initialize empty days.
+
+Implement the smallest coherent fix:
+
+- Every generated FULL_BODY day must contain at least 4 valid exercises before validation.
+- Prefer adding one valid missing movement pattern or accessory rather than weakening the minimum.
+- Do not lower the V0 minimum below 4.
+- Do not save or display an empty plan after failed validation.
+- If generation cannot produce 4 valid exercises, return a clear blocking error and do not create an empty draft.
+- Preserve existing exercise selection, volume logic, priorities and restrictions.
+
+Test with the same 2-day FULL_BODY profile that currently fails.
+
+Verify:
+
+1. Day 1 contains at least 4 exercises.
+2. Day 2 contains at least 4 exercises.
+3. No "minimum 4 exercises required, got 3" error appears.
+4. The final plan view displays the generated exercises.
+5. Weekly muscle coverage is calculated from those exercises and is greater than zero where applicable.
+6. The plan can be saved and reopened without losing exercises.
+7. No existing clients, surveys, plans, catalogue data or volume guidelines are deleted or overwritten.
+
+Report:
+- exact root cause,
+- files changed,
+- number of exercises generated per day before and after,
+- why the final UI previously showed 0,
+- final generation/save/reopen test result.
+
+Do not make unrelated changes.

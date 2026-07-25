@@ -1,0 +1,83 @@
+Fix only the missing data flow for the public interview field:
+
+"Główne priorytety sportowe"
+Options:
+- Dynamika
+- Szybkość
+- Stabilizacja
+
+Current bug:
+The checkboxes can be selected correctly in the public interview UI, but the selected values do not reach the trainer panel or admin interview view.
+
+Do not redesign the form.
+Do not modify the workout generator.
+Do not refactor unrelated interview fields.
+Do not add new features.
+Keep this fix small and inexpensive.
+
+Trace the field end-to-end:
+
+1. Public interview checkbox state
+2. Form submission payload
+3. Frontend request type/schema
+4. API request validation
+5. Database survey/client schema
+6. Database insert/update
+7. Survey/client API response
+8. Trainer panel interview view
+9. Admin interview view
+
+Requirements:
+
+- The field must support multiple selected values.
+- Selecting one or more options must submit all selected values.
+- Values must be stored persistently in the database.
+- Reopening or refreshing the interview must not lose the saved values.
+- The trainer panel must display the selected priorities.
+- The admin interview view must display the same selected priorities.
+- Do not convert the array into a single comma-separated string unless the existing database architecture requires it.
+- Use one consistent field name across frontend, API and database.
+- Preserve backward compatibility for existing surveys where this field is empty or missing.
+- Existing clients, surveys and plans must not be deleted or overwritten.
+
+First inspect the existing implementation and identify the exact point where the values are lost.
+
+Possible causes to check:
+- checkbox state exists only locally and is missing from the submit payload,
+- frontend and backend use different field names,
+- API validation strips the field,
+- the database column is missing,
+- insert/update mapping does not include the field,
+- API response does not return the field,
+- trainer/admin UI does not render the returned value.
+
+Preferred canonical field name:
+sportsPriorities in the API/frontend
+sports_priorities in the database
+
+Only use these names if they do not conflict with an already existing field. If an existing field for the same data already exists, reuse it instead of creating a duplicate.
+
+If a database column is required, add an idempotent migration appropriate for multiple values, for example JSONB or TEXT[], consistent with the existing project architecture.
+
+Testing:
+
+1. Submit an interview with only "Dynamika".
+2. Confirm the database stores "Dynamika".
+3. Confirm the trainer panel displays "Dynamika".
+4. Submit an interview with "Dynamika" and "Stabilizacja".
+5. Confirm both values are stored and displayed.
+6. Submit without selecting any priority.
+7. Confirm submission still works and displays an empty state instead of an error.
+8. Refresh and reopen the saved interview.
+9. Confirm selected values remain visible.
+10. Confirm no existing client, survey or workout plan data was changed.
+
+At the end report only:
+- exact root cause,
+- field name used in frontend/API/database,
+- files changed,
+- whether a migration was required,
+- results of the three submission tests,
+- confirmation that the values appear in both trainer and admin views.
+
+Do not make additional changes without approval.

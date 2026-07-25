@@ -126,6 +126,7 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     avoidedExerciseOtherText,
     avoidedExerciseOtherReason,
     trainingMotivation,
+    sportsPriorities,
   } = parsed.data;
 
   // `dateOfBirth` is a plain "YYYY-MM-DD" string (see @workspace/api-zod's
@@ -181,6 +182,7 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     cardioFrequency,
     preferredCardioType,
     trainingMotivation,
+    sportsPriorities: sportsPriorities ?? [],
     avoidsAdvancedMethods,
     avoidedExerciseIds: avoidedExerciseIds ?? [],
     avoidedExerciseReasons: avoidedExerciseReasons ?? {},

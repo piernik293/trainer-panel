@@ -1,0 +1,114 @@
+Fix only the trainer-side interview opening, preview and editing flow.
+
+Current incorrect behavior:
+
+When the trainer clicks the document icon next to a client in the client list, the application opens a form that behaves like creating a new interview.
+
+This is wrong.
+
+Required behavior:
+
+1. Clicking the document icon in the client list must open the client's existing current/latest submitted interview.
+
+2. It must NOT open a blank new interview form.
+
+3. The default state must be a read-only preview:
+   - all submitted client answers are visible,
+   - no input fields are editable,
+   - the trainer cannot accidentally change data.
+
+4. Add an explicit button:
+   "Edytuj wywiad"
+
+5. Only after clicking "Edytuj wywiad":
+   - the existing answers become editable,
+   - all fields remain prefilled with the values submitted by the client,
+   - no field is cleared or reset.
+
+6. Add:
+   - "Zapisz zmiany"
+   - "Anuluj"
+
+7. "Zapisz zmiany" must update the existing survey/interview record.
+   It must not create a new survey, new client or duplicate interview.
+
+8. "Anuluj" must discard unsaved changes and return to the read-only preview.
+
+9. A new interview must not be created from the document icon.
+   A new interview is submitted separately by the client through the public client page.
+
+Missing field:
+
+The public interview contains:
+
+Label:
+"Dlaczego chcesz trenować?"
+
+Helper text:
+"Krótko — co klient chce osiągnąć i co chce poprawić."
+
+The client can enter text in this field, but the value is currently missing from the trainer interview preview.
+
+Trace this exact field through:
+- public interview state,
+- submission payload,
+- API validation,
+- surveys database record,
+- survey API response,
+- trainer ClientDetail interview preview.
+
+Display it in the trainer preview as:
+
+"Dlaczego chcesz trenować?"
+[exact text submitted by the client]
+
+When editing is enabled, the same saved value must appear prefilled in the textarea.
+
+Important:
+
+- Reuse the existing current survey record.
+- Do not create a second interview system.
+- Do not redesign the client page.
+- Do not modify the workout generator.
+- Do not modify exercise catalogue or volume guidelines.
+- Do not delete or overwrite other client answers.
+- Preserve interview history.
+- Do not make all fields permanently editable.
+- Read-only preview must remain the default.
+
+Verify this exact flow:
+
+Test 1:
+- Client already has a completed interview.
+- Click the document icon in the client list.
+- Existing interview opens.
+- No blank new form is shown.
+- All existing answers are visible.
+
+Test 2:
+- Confirm "Dlaczego chcesz trenować?" displays the exact client answer.
+
+Test 3:
+- Click "Edytuj wywiad".
+- Existing answers remain prefilled.
+- Change one answer.
+- Save.
+- Confirm the same survey record was updated.
+- Confirm no duplicate survey was created.
+
+Test 4:
+- Click "Edytuj wywiad".
+- Change a value.
+- Click "Anuluj".
+- Confirm the saved value remains unchanged.
+
+At the end report only:
+- exact root cause of the document icon opening the wrong view,
+- route/component opened before and after,
+- field name used for "Dlaczego chcesz trenować?",
+- files changed,
+- whether an API or database change was required,
+- before/after survey count,
+- results of all four tests.
+
+Do not make unrelated changes.

@@ -1147,13 +1147,34 @@ export function runExerciseSelectionEngineV0(
       : BAND_ACCESSORY;
     const band = candidates.slice(0, bandSize);
 
+    // Safety fix (Fix 2): For inactive clients with altIdx > 0, the diversity
+    // search must not reach intermediate / advanced exercises when a safe beginner
+    // option (suitableForNoActivity === true) already exists in the band.
+    // The sorted candidates list always places suitableForNoActivity exercises
+    // first, so band[0] (the altIdx=0 default) is safe.  Without this guard,
+    // the diversity search over band.slice(1) can land on an intermediate exercise
+    // (e.g. Pompki z gumą oporową, Wykroki chodzone) when altIdx > 0.
+    //
+    // Rule: when isNoActivityClient && altIdx > 0, restrict the effective band to
+    // suitableForNoActivity === true candidates only.  If no such candidate exists
+    // (catalogue gap), fall back to the full band so the slot is never starved.
+    const activeBand: typeof band =
+      ctx?.isNoActivityClient && altIdx > 0
+        ? (() => {
+            const safe = band.filter((ex) => ex.suitableForNoActivity === true);
+            return safe.length > 0 ? safe : band;
+          })()
+        : band;
+
     let selected: ScoredAndFilteredExercise;
-    if (altIdx === 0 || band.length <= 1) {
+    if (altIdx === 0 || activeBand.length <= 1) {
       // Stable default path — unchanged from original behaviour.
-      selected = band[0];
+      // altIdx=0: activeBand === band, so band[0] is returned as before.
+      // activeBand.length <= 1: only one safe candidate; no diversity possible.
+      selected = activeBand[0];
     } else {
-      const defaultPattern = normP(band[0].movementPattern);
-      const defaultEquip = primaryEquipmentClass(band[0].equipment);
+      const defaultPattern = normP(activeBand[0].movementPattern);
+      const defaultEquip = primaryEquipmentClass(activeBand[0].equipment);
 
       // Diverse candidates: different movementPattern OR different equipment class.
       //
@@ -1164,7 +1185,7 @@ export function runExerciseSelectionEngineV0(
       //
       // Adding equipment class as a second axis means barbell vs dumbbell vs machine
       // are now recognised as distinct even within the same pattern family.
-      const diverse = band
+      const diverse = activeBand
         .slice(1)
         .filter(
           (ex) =>
@@ -1180,8 +1201,8 @@ export function runExerciseSelectionEngineV0(
       //
       // Selection order:
       //   1. diverse candidates with equipment class NOT in previous same-type session
-      //   2. any diverse candidate (pattern or equip differs from local band[0])
-      //   3. fallback: band[min(altIdx, band.length-1)]
+      //   2. any diverse candidate (pattern or equip differs from local activeBand[0])
+      //   3. fallback: activeBand[min(altIdx, activeBand.length-1)]
       const prevExercises = options?.sameTypePreviousExercises ?? [];
       if (prevExercises.length > 0 && diverse.length > 0) {
         const prevEquipClasses = new Set(
@@ -1195,7 +1216,7 @@ export function runExerciseSelectionEngineV0(
       } else {
         // No same-type context: use pattern/equip diverse candidates directly.
         selected =
-          diverse[altIdx - 1] ?? band[Math.min(altIdx, band.length - 1)];
+          diverse[altIdx - 1] ?? activeBand[Math.min(altIdx, activeBand.length - 1)];
       }
     }
 
@@ -1973,7 +1994,7 @@ export function runExerciseSelectionEngineV0(
 
       // Slot 4: Hip-dominant compound — hinge / posterior-chain complement.
       // Excludes near-duplicate of the knee pattern picked in slot 3.
-      pick(
+      const fbHip = pick(
         "Hip-dominant",
         true,
         (ex) =>
@@ -1981,6 +2002,38 @@ export function runExerciseSelectionEngineV0(
           pattern(ex, "Zawias biodrowy") &&
           (fbKneePattern === null || normP(ex.movementPattern) !== fbKneePattern),
       );
+
+      // Slot 4b: Lower body supplement — fires only when Hip-dominant found no
+      // candidates (e.g. all hinge exercises are week-excluded or unavailable for
+      // a thin-catalogue equipment profile such as bodyweight-only at home).
+      // Picks any remaining lower-body compound not already selected so the
+      // session can still reach MIN_EXERCISES. Mirrors the PLYO calves fallback
+      // pattern. Optional — if also empty the count guard still blocks the session.
+      //
+      // Safety fix (Fix 1): For inactive clients, only exercises that are either
+      // explicitly flagged suitableForNoActivity === true OR have a beginner
+      // learning difficulty (learningDifficulty ≤ 2) are admitted to this slot.
+      //
+      // Rationale: a strict suitableForNoActivity-only filter exhausts all safe
+      // lower-body candidates in a 2-day plan (slots 3 & 4 consume all three tagged
+      // exercises: 90, 95, 105) and leaves Day 2 with only 3 exercises.  The ld ≤ 2
+      // fallback allows Przysiad do skrzyni (89, ld=2) and Wykrok w tył (96, ld=2)
+      // as beginner-appropriate alternatives while still blocking:
+      //   • Wykroki chodzone (97, ld=3)   — intermediate, listed in blocked set
+      //   • Przysiad bułgarski (94, ld=4)  — advanced,    listed in blocked set
+      // The sort still places suitableForNoActivity exercises first, so safe exercises
+      // win the slot whenever they are available.
+      if (!fbHip) {
+        pick(
+          "Lower body supplement",
+          false,
+          (ex) =>
+            muscle(ex, "Mięśnie czworogłowe uda", "Mięśnie dwugłowe uda", "Pośladki") &&
+            (!ctx?.isNoActivityClient ||
+              ex.suitableForNoActivity === true ||
+              (ex.learningDifficulty != null && ex.learningDifficulty <= 2)),
+        );
+      }
 
       // Slot 5 (optional): Arm or shoulder accessory — biceps / triceps / barki.
       pick(

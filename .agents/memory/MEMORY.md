@@ -16,3 +16,4 @@
 - [Safety & cardio rules placement](safety-cardio-rules.md) — pain detection + cardio/conditioning rules centralized in safetyAndCardioRules.ts; called from planDraftInputService; results returned as top-level API response fields alongside splitRecommendation.
 - [Athlete and Plyo planning rules](athlete-plyo-rules.md) — eligibility logic, scope boundaries, esbuild Polish-quote bug, Plyo slot structure, new DB columns.
 - [Cardio section persistence pattern](cardio-section-persistence.md) — cardio_recommendation is a nullable TEXT/JSON column on workout_plans; getPlanFull includes surveyCardio; CardioSection generates on-the-fly when no stored override.
+- [Equipment filter OR semantics bug](equipment-filter-or-semantics.md) — isEquipmentCompatible used `every` for the bodyweight check, wrongly excluding exercises tagged ["Masa własnego ciała","Hantle"]; fix is `some`. Add slot fallbacks when catalogue is thin for a given profile.

@@ -1,0 +1,79 @@
+Stop trying to repair the existing data path for the field:
+
+"Główne priorytety sportowe"
+- Dynamika
+- Szybkość
+- Stabilizacja
+
+Previous repair attempts have failed. Build a new, isolated and minimal data path only for this field.
+
+Do not rebuild the interview.
+Do not refactor unrelated fields.
+Do not modify the generator.
+Do not change Cel treningowy, training_motivation, muscle priorities or preferred exercises.
+
+New canonical contract:
+
+Frontend and API field:
+sportsPriorities
+
+Database field:
+sports_priorities
+
+Allowed values:
+- dynamika
+- szybkosc
+- stabilizacja
+
+Required implementation:
+
+1. Disconnect the three existing checkboxes from the old broken field/state mapping.
+2. Connect them to one local array state:
+   sportsPriorities: string[]
+3. Include sportsPriorities explicitly in the public interview submission payload.
+4. Add an idempotent database migration for surveys.sports_priorities.
+5. Use the simplest multi-value type consistent with the current project:
+   preferably TEXT[] or JSONB.
+6. Add explicit insert and update mappings.
+7. Return sportsPriorities explicitly in the survey API response.
+8. Display the values in:
+   - trainer panel interview details
+   - admin interview details
+9. Preserve existing surveys where the value is null or missing.
+10. Do not remove or overwrite any existing survey data.
+
+Do not reuse the old broken field name or old mapping unless strictly required for backward compatibility.
+
+Test the complete new path with a real production-like submission:
+
+Test A:
+- Dynamika selected
+- Stabilizacja selected
+- Szybkość not selected
+
+Verify:
+- request payload contains ["dynamika", "stabilizacja"]
+- database stores both values
+- API returns both values
+- trainer panel displays Dynamika and Stabilizacja
+- admin view displays Dynamika and Stabilizacja
+
+Test B:
+- only Szybkość selected
+
+Test C:
+- no priority selected
+
+After refresh and reopening the interview, values must remain visible.
+
+Do not make broad changes.
+Do not investigate unrelated fields.
+Do not create duplicate UI sections.
+Do not report success unless the values persist from form to database to both panels.
+
+At the end report:
+- exact files changed
+- migration added
+- final field names
+- test results for A, B and C
+- confirmation that no existing clients, surveys or plans were modified

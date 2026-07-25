@@ -769,6 +769,20 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <SurveyBlock label="Cel treningowy" value={survey.trainingGoal} />
+        {Array.isArray(survey.sportsPriorities) && (survey.sportsPriorities as string[]).length > 0 && (
+          <SurveyBlock
+            label="Priorytety sportowe"
+            value={
+              <div className="flex flex-wrap gap-2 mt-1">
+                {(survey.sportsPriorities as string[]).map((v: string) => (
+                  <Badge key={v} variant="secondary" className="font-normal">
+                    {({"dynamika": "Dynamika", "szybkosc": "Szybkość", "stabilizacja": "Stabilizacja"} as Record<string, string>)[v] ?? v}
+                  </Badge>
+                ))}
+              </div>
+            }
+          />
+        )}
         {survey.trainingMotivation && (
           <SurveyBlock label="Dlaczego chcesz trenować?" value={survey.trainingMotivation} />
         )}

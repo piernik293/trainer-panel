@@ -1,0 +1,84 @@
+We need to finish the pending production migration and verify the production app. Do not redesign, refactor, or add new features. Keep this task as small and cheap as possible.
+
+Current verified state:
+
+Production currently has:
+- exercises: 156
+- specific_muscles: 28
+- exercise_muscle_assignments: 441
+- exercise_substitutions: 205
+- clients: 6
+- surveys: 8
+- workout_plans: 0
+
+Production is still missing:
+- volume_guideline_versions: expected 1, actual 0
+- volume_targets: expected 12, actual 0
+- volume_target_members: expected 21, actual 0
+- volume_guidelines: expected 48, actual 0
+- surveys.training_motivation column
+
+The new code is published, but the production instance appears to still be running the old warm process. The startup migrations and seeds have therefore not executed in production.
+
+Your task:
+
+1. Inspect the current production deployment and confirm whether it is still using the old warm instance.
+2. Trigger a safe production restart or cold start so the newest published code runs.
+3. Let the existing startup logic execute:
+   - Drizzle schema migration
+   - catalogueSeed
+   - maybeRunSeed
+   - applyVolumeTargetPatch
+4. Do not delete, overwrite, recreate, or modify existing:
+   - clients
+   - surveys
+   - workout plans
+   - exercise catalogue records
+5. Do not create duplicate catalogue or volume records.
+6. Do not add an unauthenticated public admin endpoint.
+7. Do not perform a broad refactor.
+
+After the production restart, verify directly against the production database/API that:
+
+- exercises = 156
+- specific_muscles = 28
+- exercise_muscle_assignments = 441
+- exercise_substitutions = 205
+- clients = 6
+- surveys = 8
+- workout_plans = 0
+- volume_guideline_versions = 1
+- volume_targets = 12
+- volume_target_members = 21
+- volume_guidelines = 48
+- surveys.training_motivation column exists
+
+Then verify:
+
+1. Search query "wyc" still returns Wyciskanie exercises.
+2. The generator no longer returns:
+   "Brak wersji wytycznych objętości w bazie danych."
+3. Calculated volume targets are greater than zero.
+4. A plan can be generated.
+5. The generated plan can be saved.
+6. The saved plan can be reopened.
+7. training_motivation is returned by the interview/admin API and displayed in the trainer panel.
+
+Important cost-control rules:
+
+- First attempt a restart/redeploy using the existing code.
+- Do not rewrite migrations or seed logic unless the restart produces an actual error.
+- If an error occurs, fix only the exact failing migration or seed.
+- Do not add unrelated tests, features, UI changes, dependencies, or architecture changes.
+- Before making any larger code change, stop and report the exact blocker.
+- Do not spend time investigating unrelated warnings.
+
+At the end, provide a short report containing:
+
+- whether production restarted,
+- migrations that ran,
+- seeds that ran,
+- final database counts,
+- generator/save/reopen test result,
+- confirmation that no existing user data was deleted,
+- exact files changed, if any.

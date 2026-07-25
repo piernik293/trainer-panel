@@ -217,6 +217,7 @@ export const GetClientSurveyResponse = zod.object({
   "avoidedExerciseReasons": zod.record(zod.string(), zod.string()).nullish(),
   "avoidedExerciseOtherText": zod.string().nullish(),
   "avoidedExerciseOtherReason": zod.string().nullish(),
+  "sportsPriorities": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -279,7 +280,8 @@ export const UpsertClientSurveyBody = zod.object({
   "avoidedExerciseIds": zod.array(zod.number().int().positive()).optional(),
   "avoidedExerciseReasons": zod.record(zod.string(), zod.string().max(500)).optional(),
   "avoidedExerciseOtherText": zod.string().max(1000).nullish(),
-  "avoidedExerciseOtherReason": zod.string().max(500).nullish()
+  "avoidedExerciseOtherReason": zod.string().max(500).nullish(),
+  "sportsPriorities": zod.array(zod.string()).optional()
 })
 
 export const UpsertClientSurveyResponse = zod.object({
@@ -322,6 +324,7 @@ export const UpsertClientSurveyResponse = zod.object({
   "avoidedExerciseReasons": zod.record(zod.string(), zod.string()).nullish(),
   "avoidedExerciseOtherText": zod.string().nullish(),
   "avoidedExerciseOtherReason": zod.string().nullish(),
+  "sportsPriorities": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -374,6 +377,7 @@ export const ListClientSurveysResponseItem = zod.object({
   "avoidedExerciseReasons": zod.record(zod.string(), zod.string()).nullish(),
   "avoidedExerciseOtherText": zod.string().nullish(),
   "avoidedExerciseOtherReason": zod.string().nullish(),
+  "sportsPriorities": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -387,6 +391,17 @@ export const GetClientSurveyByIdParams = zod.object({
   "clientId": zod.coerce.number(),
   "surveyId": zod.coerce.number()
 })
+
+/**
+ * @summary Patch (update in-place) an existing client survey
+ */
+export const PatchClientSurveyParams = zod.object({
+  "clientId": zod.coerce.number(),
+  "surveyId": zod.coerce.number(),
+})
+
+export const PatchClientSurveyBody = UpsertClientSurveyBody;
+export const PatchClientSurveyResponse = UpsertClientSurveyResponse;
 
 export const GetClientSurveyByIdResponse = zod.object({
   "id": zod.number(),
@@ -428,6 +443,7 @@ export const GetClientSurveyByIdResponse = zod.object({
   "avoidedExerciseReasons": zod.record(zod.string(), zod.string()).nullish(),
   "avoidedExerciseOtherText": zod.string().nullish(),
   "avoidedExerciseOtherReason": zod.string().nullish(),
+  "sportsPriorities": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -613,7 +629,8 @@ export const SubmitPublicSurveyBody = zod.object({
   "avoidedExerciseIds": zod.array(zod.number().int().positive()).optional(),
   "avoidedExerciseReasons": zod.record(zod.string(), zod.string().max(500)).optional(),
   "avoidedExerciseOtherText": zod.string().max(1000).nullish(),
-  "avoidedExerciseOtherReason": zod.string().max(500).nullish()
+  "avoidedExerciseOtherReason": zod.string().max(500).nullish(),
+  "sportsPriorities": zod.array(zod.string()).optional()
 })
 
 export const SubmitPublicSurveyResponse = zod.object({

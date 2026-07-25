@@ -1,0 +1,61 @@
+Publish the current implementation and verify it in production.
+
+Do not redesign or refactor anything.
+Do not create another data path.
+Do not modify the database structure unless the existing migration fails.
+Do not create unnecessary test clients or workout plans.
+
+After production cold start, verify:
+
+1. The surveys.sports_priorities column exists and has type TEXT[].
+2. Existing clients and surveys remain unchanged.
+3. Submit one production test interview with:
+   - Dynamika selected
+   - Stabilizacja selected
+   - Szybkość not selected
+
+4. Verify the exact values at every stage:
+   - public form state
+   - submission payload
+   - production database
+   - survey API response
+   - trainer panel UI after refresh
+   - admin UI after refresh
+
+5. Provide screenshots or direct UI verification showing that:
+   - Dynamika is displayed
+   - Stabilizacja is displayed
+   - Szybkość is not displayed
+
+6. Confirm whether the trainer panel and admin are:
+   - the same ClientDetail view,
+   - or separate applications/views.
+
+If they are separate, identify and verify both exact components. Do not claim the admin view works unless it was actually rendered and tested.
+
+7. Regression check:
+Search the codebase for every use of sportPerformanceNeeds.
+
+Report whether disconnecting these checkboxes from sportPerformanceNeeds affects:
+- workout generation,
+- survey recommendations,
+- trainer panel display,
+- any other logic.
+
+Do not change anything during this regression check unless an actual broken dependency is found. If one is found, report it before modifying code.
+
+8. Confirm that sportsPriorities remains saved after:
+   - refreshing the page,
+   - reopening the client,
+   - reopening the survey.
+
+9. Confirm no clients, surveys, exercises, or workout plans were deleted or overwritten.
+
+Report:
+- production migration result,
+- production test result,
+- exact trainer view tested,
+- exact admin view tested,
+- all sportPerformanceNeeds usages,
+- whether any regression was found,
+- final files changed.

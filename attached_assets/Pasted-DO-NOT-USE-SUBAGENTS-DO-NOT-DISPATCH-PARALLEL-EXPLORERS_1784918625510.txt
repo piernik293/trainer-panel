@@ -1,0 +1,108 @@
+DO NOT USE SUBAGENTS.
+DO NOT DISPATCH PARALLEL EXPLORERS.
+WORK SEQUENTIALLY.
+DO NOT MODIFY THE TRAINER/ADMIN FORM UNLESS THE PRODUCTION API RESPONSE IS ALREADY CORRECT.
+
+P0 BUG — the field “Dlaczego chcesz trenować?” from the deployed PUBLIC CLIENT PAGE is not reaching the trainer/admin interview.
+
+IMPORTANT:
+
+The problem is specifically on the public “Strona dla Klientów”.
+
+Do not start from the trainer/admin SurveyForm.
+Do not treat the admin edit field as the source.
+
+Start only from the public client application:
+
+artifacts/client-landing/src
+
+Find the exact public input with the visible label:
+
+“Dlaczego chcesz trenować?”
+
+Use this exact test value:
+
+PUBLIC_CLIENT_REASON_2407
+
+REQUIRED PROCEDURE
+
+1. Open the deployed public client form.
+
+2. Enter:
+   PUBLIC_CLIENT_REASON_2407
+
+   into:
+   “Dlaczego chcesz trenować?”
+
+3. Before changing code, inspect the actual browser Network request for:
+
+   POST /api/public/survey
+
+4. Inspect the real request payload.
+
+The payload must contain exactly:
+
+trainingMotivation: "PUBLIC_CLIENT_REASON_2407"
+
+5. If the payload does not contain the value:
+
+   Find and fix the first failing public-form layer only:
+
+   - input registration,
+   - form-state field name,
+   - validation schema,
+   - step navigation state,
+   - final submit serializer,
+   - payload mapping.
+
+6. Confirm that the public input uses the same field name everywhere:
+
+trainingMotivation
+
+Do not create:
+- motivation,
+- trainingReason,
+- reasonForTraining,
+- goalDescription,
+- or any duplicate field.
+
+7. Verify that moving to another interview section and returning does not erase the entered value.
+
+8. Verify that submitting the public form sends:
+
+trainingMotivation: "PUBLIC_CLIENT_REASON_2407"
+
+9. After the POST succeeds, verify the production API/database and trainer panel:
+
+- production survey stores PUBLIC_CLIENT_REASON_2407,
+- client survey GET response returns it,
+- deployed trainer/admin profile displays it.
+
+CRITICAL RESTRICTIONS
+
+- Inspect no more than 6 files.
+- Start in artifacts/client-landing/src.
+- Do not redesign the field.
+- Do not change its helper text or placeholder.
+- Do not modify cardio.
+- Do not modify generator logic.
+- Do not update dependencies.
+- Do not perform unrelated refactors.
+- Do not stop after saying the backend is correct.
+- Do not use the trainer/admin form as the submission test.
+- The task is complete only when the value entered on the deployed PUBLIC CLIENT PAGE appears in the deployed trainer/admin panel.
+
+REQUIRED PROOF
+
+At the end report:
+
+1. Exact public component containing the input.
+2. Exact public form-state field name.
+3. POST /api/public/survey payload before the fix.
+4. First layer where PUBLIC_CLIENT_REASON_2407 disappeared.
+5. Exact files changed.
+6. POST payload after the fix.
+7. Production saved value.
+8. Trainer/admin panel display confirmation.
+
+If the public POST payload already contains trainingMotivation correctly, stop changing the public form and report the next exact failing layer.

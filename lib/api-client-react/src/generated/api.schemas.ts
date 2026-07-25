@@ -599,6 +599,7 @@ export interface PublicSurveySubmission {
   cardioFrequency?: string;
   preferredCardioType?: string;
   avoidsAdvancedMethods?: boolean;
+  trainingMotivation?: string;
 }
 
 export interface PublicSurveyResponse {

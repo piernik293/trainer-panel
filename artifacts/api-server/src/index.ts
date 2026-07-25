@@ -5,6 +5,8 @@ import { applyVolumeTargetPatch } from "./seeds/volumeTargetPatch";
 import { normalizeExerciseLocations } from "./seeds/normalizeLocations";
 import { seedExerciseAdaptationFields } from "./seeds/exerciseAdaptation";
 import { seedSubTargetBiases } from "./seeds/subTargetBiasSeed";
+import { seedCatalogue } from "./seeds/catalogueSeed";
+import { runSchemaMigrations } from "./seeds/schemaMigrations";
 
 const rawPort = process.env["PORT"];
 
@@ -21,6 +23,19 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 async function startServer() {
+  try {
+    await runSchemaMigrations();
+  } catch (err) {
+    logger.warn({ err }, "Schema migrations failed (non-fatal, will retry next restart)");
+  }
+
+  try {
+    await seedCatalogue();
+    logger.info("Catalogue seed complete");
+  } catch (err) {
+    logger.warn({ err }, "Catalogue seed failed (non-fatal, will retry next restart)");
+  }
+
   try {
     await maybeRunSeed();
     logger.info("Volume guidelines seed check complete");

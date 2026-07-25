@@ -1,0 +1,78 @@
+STOP. Do not modify any code yet.
+
+We have already attempted this fix several times and it is still not working. First perform a precise diagnostic only.
+
+The exact field is visible in the public client interview under:
+
+"Główne priorytety sportowe (opcjonalne)"
+
+Checkbox options:
+- Dynamika
+- Szybkość
+- Stabilizacja
+
+Exact bug:
+
+1. A client opens the PUBLIC interview page.
+2. The client selects one or more of these three checkboxes.
+3. The client submits the interview.
+4. The selected values are not visible later in the trainer panel.
+5. They are also not visible in the admin interview/details view.
+
+Do not confuse this field with:
+- Cel treningowy
+- Dlaczego chcesz trenować
+- Jak uprawia sport
+- training_motivation
+- muscle priorities
+- preferred exercises
+
+This task concerns ONLY:
+Dynamika / Szybkość / Stabilizacja.
+
+Do not fix anything yet.
+
+Trace and report the exact implementation end-to-end:
+
+1. The React component/file rendering these three checkboxes.
+2. The state variable holding selected values.
+3. The exact JSON payload sent after submitting the public interview.
+4. Whether the selected values are present in that payload.
+5. The backend validation/schema receiving the payload.
+6. The database table and column intended to store these values.
+7. The insert/update code responsible for saving them.
+8. The API response used by the trainer panel.
+9. The trainer panel component that should render them.
+10. The admin component that should render them.
+
+For every step provide:
+- exact file path,
+- exact field/property name,
+- whether the data is present or missing.
+
+Also perform one controlled diagnostic submission with:
+- Dynamika = selected
+- Stabilizacja = selected
+- Szybkość = not selected
+
+Then report:
+
+A. Values visible in frontend state:
+B. Values included in request payload:
+C. Values accepted by backend:
+D. Values stored in database:
+E. Values returned by API:
+F. Values rendered in trainer panel:
+G. Values rendered in admin view:
+
+Identify the FIRST exact step where the values disappear.
+
+Do not modify code.
+Do not create migrations.
+Do not refactor.
+Do not add fields.
+Do not guess.
+Do not report a fix.
+
+Return only the diagnostic report and the proposed smallest fix.
+Wait for approval before changing anything.
