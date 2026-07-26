@@ -218,6 +218,9 @@ export const GetClientSurveyResponse = zod.object({
   "avoidedExerciseOtherText": zod.string().nullish(),
   "avoidedExerciseOtherReason": zod.string().nullish(),
   "sportsPriorities": zod.array(zod.string()).optional(),
+  "athleteStatus": zod.string().nullish(),
+  "injuryStatus": zod.string().nullish(),
+  "sportPerformanceNeeds": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -281,7 +284,10 @@ export const UpsertClientSurveyBody = zod.object({
   "avoidedExerciseReasons": zod.record(zod.string(), zod.string().max(500)).optional(),
   "avoidedExerciseOtherText": zod.string().max(1000).nullish(),
   "avoidedExerciseOtherReason": zod.string().max(500).nullish(),
-  "sportsPriorities": zod.array(zod.string()).optional()
+  "sportsPriorities": zod.array(zod.string()).optional(),
+  "athleteStatus": zod.string().optional(),
+  "injuryStatus": zod.string().optional(),
+  "sportPerformanceNeeds": zod.array(zod.string()).optional()
 })
 
 export const UpsertClientSurveyResponse = zod.object({
@@ -325,6 +331,9 @@ export const UpsertClientSurveyResponse = zod.object({
   "avoidedExerciseOtherText": zod.string().nullish(),
   "avoidedExerciseOtherReason": zod.string().nullish(),
   "sportsPriorities": zod.array(zod.string()).optional(),
+  "athleteStatus": zod.string().nullish(),
+  "injuryStatus": zod.string().nullish(),
+  "sportPerformanceNeeds": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -378,6 +387,9 @@ export const ListClientSurveysResponseItem = zod.object({
   "avoidedExerciseOtherText": zod.string().nullish(),
   "avoidedExerciseOtherReason": zod.string().nullish(),
   "sportsPriorities": zod.array(zod.string()).optional(),
+  "athleteStatus": zod.string().nullish(),
+  "injuryStatus": zod.string().nullish(),
+  "sportPerformanceNeeds": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -444,6 +456,9 @@ export const GetClientSurveyByIdResponse = zod.object({
   "avoidedExerciseOtherText": zod.string().nullish(),
   "avoidedExerciseOtherReason": zod.string().nullish(),
   "sportsPriorities": zod.array(zod.string()).optional(),
+  "athleteStatus": zod.string().nullish(),
+  "injuryStatus": zod.string().nullish(),
+  "sportPerformanceNeeds": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

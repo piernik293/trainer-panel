@@ -1,0 +1,116 @@
+This is the final priority task.
+
+Fix and verify only the complete CLIENT INTERVIEW → DATABASE → ADMIN PREVIEW flow.
+
+Do not modify:
+- workout generator,
+- exercise selection,
+- mobile layout,
+- sidebar,
+- client cleanup,
+- exercise catalogue,
+- volume guidelines.
+
+The current public client interview must be the single source of truth for the trainer/admin preview.
+
+First perform one controlled end-to-end submission in development using unique recognizable values.
+
+Use these exact test values:
+
+- Dlaczego chcesz trenować?
+  "TEST E2E — chcę zwiększyć siłę i poprawić kondycję"
+
+- Jak uprawiasz sport?
+  "Hobbystycznie"
+
+- Kontuzje i ograniczenia zdrowotne:
+  "TEST E2E — astma"
+
+- Ćwiczenia do unikania:
+  select exactly two existing exercises
+
+- Priorytety sportowe:
+  Dynamika and Stabilizacja
+
+Also fill several other visible fields and leave at least three optional public fields empty.
+
+Trace every required value through:
+
+1. Public form state
+2. Submission payload
+3. API validation
+4. Database survey row
+5. Survey API response
+6. Trainer/admin read-only preview
+7. Trainer/admin edit form prefill
+
+Required preview behavior:
+
+1. "Dlaczego chcesz trenować?"
+   - display the exact client text
+   - show "Brak odpowiedzi" only when genuinely empty
+
+2. "Jak uprawiasz sport?"
+   - use athleteStatus
+   - display Hobbystycznie or Zawodowo
+   - do not label it "Status sportowca"
+
+3. "Kontuzje i ograniczenia zdrowotne"
+   - display only the saved healthLimitations description
+   - do not display a separate contradictory injuryStatus row
+
+4. "Ćwiczenia do unikania"
+   - display all saved exercise names
+   - do not display raw IDs
+   - do not display "Brak odpowiedzi" when selections exist
+
+5. "Priorytety sportowe"
+   - display Dynamika, Szybkość and/or Stabilizacja according to saved values
+
+6. Hide internal or obsolete fields that are not visible questions in the current public interview.
+
+7. Every real public question must appear in the preview.
+   If its actual saved value is empty, display:
+   "Brak odpowiedzi"
+
+Document icon behavior:
+
+- clicking the document icon opens the latest existing interview
+- default view is read-only
+- it must not open a blank new interview
+
+Edit behavior:
+
+- "Edytuj wywiad" prefills the existing values
+- "Zapisz zmiany" updates the same survey row
+- "Anuluj" discards unsaved changes
+- survey count must not increase after editing
+
+Implementation rules:
+
+- Inspect the actual data before changing code.
+- Fix only the first confirmed broken mappings.
+- Reuse existing fields and columns.
+- Do not create duplicate survey columns.
+- Do not redesign the preview.
+- If more than 3 application files plus generated schemas are required, stop and report the blocker before continuing.
+- Do not report success based only on API 200 or database storage.
+- Success requires the exact test values to be visibly correct in the admin preview after refresh.
+
+After verification:
+- delete the temporary E2E test client, survey and any plan created for it
+- confirm no orphaned records remain
+- do not delete clients 239, 243 or 276
+
+Final report must include:
+
+- complete mapping for the five required fields
+- exact root causes
+- files changed
+- database values
+- API values
+- admin preview values
+- edit prefill result
+- survey count before and after editing
+- confirmation that the temporary test data was removed
+- confirmation that clients 239, 243 and 276 remain

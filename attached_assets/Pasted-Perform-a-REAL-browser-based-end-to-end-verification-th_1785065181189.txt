@@ -1,0 +1,337 @@
+Perform a REAL browser-based end-to-end verification through the application's share/deployment links.
+
+
+
+Do not claim success based only on:
+
+- source code inspection,
+
+- database values,
+
+- API responses,
+
+- unit tests.
+
+
+
+Success requires visually confirming the complete flow in the actual application UI.
+
+
+
+Use the current CLIENT application share/deployment URL and the current TRAINER/ADMIN panel URL.
+
+
+
+If the URLs are not known, locate them from the Replit project/deployment configuration. If you cannot open them, stop and report the exact blocker instead of guessing.
+
+
+
+PHASE 1 — CLIENT-SIDE BROWSER TEST
+
+
+
+Open the client application through its actual share/deployment link in a fresh browser session.
+
+
+
+Complete and submit one interview using unique recognizable values:
+
+
+
+- First/last name:
+
+  TEST E2E UI
+
+
+
+- Email:
+
+  a unique temporary test email
+
+
+
+- "Dlaczego chcesz trenować?":
+
+  "TEST UI — chcę zwiększyć siłę i poprawić kondycję"
+
+
+
+- "Jak uprawiasz sport?":
+
+  "Hobbystycznie"
+
+
+
+- "Kontuzje i ograniczenia zdrowotne":
+
+  "TEST UI — posiadam astmę"
+
+
+
+- "Ćwiczenia do unikania":
+
+  select exactly two existing exercises and record their names
+
+
+
+- "Priorytety sportowe":
+
+  Dynamika and Stabilizacja
+
+
+
+Fill the remaining required fields normally.
+
+
+
+Leave at least three optional questions empty so the ADMIN preview can be checked for "Brak odpowiedzi".
+
+
+
+After submission:
+
+- confirm the browser displays a successful submission state,
+
+- record the created client ID and survey ID,
+
+- capture a screenshot of the successful client submission.
+
+
+
+PHASE 2 — ADMIN/TRAINER BROWSER TEST
+
+
+
+Open the trainer/admin panel through its actual share/deployment link.
+
+
+
+Do not inspect only the API.
+
+
+
+In the visible UI:
+
+
+
+1. Find the newly submitted TEST E2E UI client.
+
+2. Click the document/interview icon.
+
+3. Confirm it opens the existing submitted interview in read-only mode.
+
+4. Confirm it does not open a blank new interview form.
+
+
+
+Visually verify the following exact fields:
+
+
+
+- "Dlaczego chcesz trenować?"
+
+  must show:
+
+  "TEST UI — chcę zwiększyć siłę i poprawić kondycję"
+
+
+
+- "Jak uprawiasz sport?"
+
+  must show:
+
+  "Hobbystycznie"
+
+
+
+- "Kontuzje i ograniczenia zdrowotne"
+
+  must show:
+
+  "TEST UI — posiadam astmę"
+
+
+
+- "Ćwiczenia do unikania"
+
+  must display both selected exercise names
+
+
+
+- "Priorytety sportowe"
+
+  must display:
+
+  Dynamika
+
+  Stabilizacja
+
+
+
+- optional public questions left empty
+
+  must remain visible and show:
+
+  "Brak odpowiedzi"
+
+
+
+Confirm that:
+
+- "Potrzeby sportowe" is not displayed as a separate internal question if it does not exist in the public form,
+
+- no contradictory health row shows "Brak odpowiedzi",
+
+- no raw IDs or internal enum names are displayed.
+
+
+
+Capture screenshots of:
+
+1. the top of the interview preview,
+
+2. the health and exercise-preference sections,
+
+3. the sports-priority section.
+
+
+
+PHASE 3 — EDIT TEST
+
+
+
+In the visible admin UI:
+
+
+
+1. Click "Edytuj wywiad".
+
+2. Confirm all previously submitted values are prefilled.
+
+3. Change only the training motivation text by adding:
+
+   " — EDYCJA"
+
+4. Click "Anuluj".
+
+5. Confirm the original saved value remains unchanged.
+
+
+
+Then repeat:
+
+1. Click "Edytuj wywiad".
+
+2. Add " — EDYCJA".
+
+3. Click "Zapisz zmiany".
+
+4. Refresh the page.
+
+5. Confirm the edited value remains visible.
+
+6. Confirm the same survey ID was updated.
+
+7. Confirm the survey count did not increase.
+
+
+
+PHASE 4 — SUPPORTING TECHNICAL CHECK
+
+
+
+Only after the browser UI test, confirm the same values in:
+
+- request payload,
+
+- database row,
+
+- survey API response.
+
+
+
+These checks support the UI test but do not replace it.
+
+
+
+IF THE UI TEST FAILS:
+
+
+
+- identify the first exact step where the value disappears,
+
+- fix only that confirmed blocker,
+
+- do not redesign the application,
+
+- do not modify the workout generator,
+
+- rerun the complete browser test through the share/deployment links,
+
+- do not report success until the values are visibly correct after refresh.
+
+
+
+CLEANUP:
+
+
+
+After successful verification:
+
+- delete only the temporary TEST E2E UI client, survey and any plan created for it,
+
+- confirm no orphan records remain,
+
+- do not delete clients 239, 243 or 276.
+
+
+
+FINAL REPORT:
+
+
+
+Provide:
+
+- exact client URL tested,
+
+- exact admin URL tested,
+
+- whether this was DEV or PRODUCTION,
+
+- screenshots from the real UI,
+
+- values seen in the client payload,
+
+- values seen in the admin preview,
+
+- edit/cancel/save results,
+
+- survey count before and after editing,
+
+- any code files changed,
+
+- confirmation that temporary test data was removed.
+
+
+
+Do not report success without actual browser-based visual confirmation.
+
+If you cannot visually open either the CLIENT link or the ADMIN/TRAINER link:
+
+
+
+- do not claim that the UI works,
+
+- do not replace the browser test with API or database checks,
+
+- report the exact URL you attempted,
+
+- report the exact error or access blocker,
+
+- state which verification steps remain unconfirmed,
+
+- stop before changing code.
+
+
+
+Do not guess what the user can see.

@@ -1,0 +1,90 @@
+Complete only the final cleanup and minimum mobile usability work.
+
+Do not modify:
+- public interview fields,
+- client-to-admin survey data flow,
+- workout generator,
+- database schema,
+- exercise catalogue,
+- volume guidelines.
+
+1. SELECT REGRESSION CHECK
+
+The shared SelectContent default was changed from:
+position="popper"
+to:
+position="item-aligned".
+
+Verify on desktop and mobile:
+- client list filters,
+- client status selector,
+- survey edit selectors,
+- any dropdown inside dialogs or cards.
+
+Confirm:
+- dropdown opens,
+- option can be selected,
+- dropdown is not clipped,
+- dropdown stays inside the viewport,
+- no removeChild runtime error appears.
+
+Do not make another Select change unless an actual regression is reproduced.
+
+2. DELETE ONLY CONFIRMED DEV TEST RECORDS
+
+Delete only these development client IDs:
+
+238, 240, 241, 242, 244, 245, 246, 250, 251, 253, 254,
+256, 257, 258, 259, 260, 261, 262, 267, 268, 270, 271
+
+Before deleting:
+- confirm this is the development database,
+- list their survey and workout plan counts,
+- delete dependent test surveys/plans safely.
+
+Do not delete:
+- client 239,
+- client 243,
+- client 276,
+- any production record,
+- any other client not explicitly listed.
+
+After deletion report:
+- client count before and after,
+- survey count before and after,
+- plan count before and after,
+- dashboard counts after refresh.
+
+3. MINIMUM MOBILE FIX
+
+Implement only:
+
+A. Sidebar
+- hide the fixed desktop sidebar below md,
+- add a simple mobile top bar with a menu button,
+- menu must contain the existing navigation links,
+- do not redesign navigation.
+
+B. App layout
+Change:
+p-8
+to:
+p-4 md:p-8
+
+C. Verify at a 390px viewport:
+- dashboard content uses the available screen width,
+- client list is readable,
+- client details can be opened,
+- survey preview can be opened,
+- no horizontal page-level overflow,
+- no runtime overlay appears.
+
+Do not redesign filters or dashboard cards unless they remain unusable after the sidebar and padding fixes.
+
+Report only:
+- Select regression results,
+- deleted test record IDs,
+- database counts before/after,
+- exact mobile files changed,
+- screenshots or viewport verification,
+- remaining mobile issues.

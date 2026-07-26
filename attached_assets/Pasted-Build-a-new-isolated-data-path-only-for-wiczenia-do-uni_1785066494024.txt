@@ -1,0 +1,178 @@
+Build a new isolated data path only for:
+
+"Ćwiczenia do unikania"
+
+Do not continue repairing the old broken avoided-exercises mapping.
+Do not audit or rebuild the entire interview.
+Do not modify unrelated survey fields.
+Do not redesign the preview.
+Keep this task small and cost-controlled.
+
+Use the existing WORKING "Ulubione ćwiczenia" implementation as the reference pattern.
+
+Current state:
+- "Ulubione ćwiczenia" correctly pass from the client form to the trainer preview.
+- The client selected exercises to avoid, but the trainer preview does not display them.
+- In the "Preferencje treningowe" section there is currently no working "Ćwiczenia do unikania" output.
+
+Create one new canonical path:
+
+Frontend/API field:
+avoidedExerciseIds: number[]
+
+Database field:
+avoided_exercise_ids
+
+Preferred database type:
+INTEGER[] NOT NULL DEFAULT '{}'
+
+Requirements:
+
+1. CLIENT PUBLIC FORM
+
+Connect the existing "Ćwiczenia do unikania" search/selection UI to:
+
+avoidedExerciseIds: number[]
+
+Store only valid exercise catalogue IDs.
+
+The selected exercises must:
+- remain visible after selection,
+- be removable,
+- be included explicitly in the submission payload.
+
+Do not use exercise names as the source of truth.
+
+2. API AND DATABASE
+
+Add avoidedExerciseIds explicitly to:
+- public survey submission validation,
+- trainer survey update validation,
+- survey response schemas,
+- insert mapping,
+- PATCH/update mapping.
+
+Add an idempotent migration:
+
+ALTER TABLE surveys
+ADD COLUMN IF NOT EXISTS avoided_exercise_ids INTEGER[] NOT NULL DEFAULT '{}';
+
+Do not overwrite or delete the existing avoidedExercises field.
+Keep it only as legacy fallback if currently used.
+
+3. API RESPONSE
+
+The survey API must return:
+
+avoidedExerciseIds: number[]
+
+and a resolved human-readable list:
+
+avoidedExercisesResolved: [
+  { id: number, name: string }
+]
+
+Resolve the names from the existing exercise catalogue.
+
+Do not return raw IDs as the only display value.
+
+4. TRAINER READ-ONLY PREVIEW
+
+In the existing "Preferencje treningowe" section always display:
+
+"Ćwiczenia do unikania"
+
+When selections exist:
+- display every resolved exercise name,
+- use readable badges or text.
+
+When empty:
+- display "Brak odpowiedzi".
+
+Do not hide the entire field.
+
+5. TRAINER EDIT MODE
+
+When the trainer clicks "Edytuj wywiad":
+- prefill all existing avoidedExerciseIds,
+- show the selected exercise names,
+- allow adding/removing exercises,
+- save to the same survey row through PATCH,
+- do not create another survey.
+
+6. GENERATOR COMPATIBILITY
+
+Check how the generator currently excludes avoided exercises.
+
+Use avoidedExerciseIds as the primary source.
+
+If avoidedExerciseIds is empty, keep the old avoidedExercises value as a backward-compatible fallback.
+
+Do not refactor the generator.
+Change only the exact exclusion input mapping if required.
+
+7. REAL END-TO-END TEST
+
+Do not use the occupied testing subagent.
+
+Use Playwright directly from the shell or the available browser preview.
+
+Through the real client application link:
+
+- submit one temporary interview,
+- select exactly two existing exercises to avoid,
+- record their exact names.
+
+Then through the trainer application link:
+
+- find the temporary client,
+- open the interview preview,
+- visually confirm both exercise names appear under:
+  "Ćwiczenia do unikania".
+
+Then:
+- open edit mode,
+- confirm both exercises are prefilled,
+- remove one exercise,
+- save,
+- refresh,
+- confirm only the remaining exercise is displayed,
+- confirm the survey count did not increase.
+
+Also confirm the generator input receives the remaining avoided exercise ID and does not select it.
+
+8. COST CONTROL
+
+Do not modify:
+- sports priorities,
+- health limitations,
+- training motivation,
+- mobile layout,
+- client cleanup,
+- volume guidelines,
+- general generator selection logic.
+
+If this requires more than:
+- one migration,
+- survey schema updates,
+- public form mapping,
+- survey route mapping,
+- trainer preview/edit mapping,
+- one generator input mapping,
+
+stop and report the blocker before expanding the scope.
+
+Do not report success based only on database or API values.
+Success requires both selected exercise names to be visibly displayed in the trainer preview.
+
+Final report:
+- files changed,
+- migration added,
+- payload value,
+- database value,
+- API resolved values,
+- visible trainer preview result,
+- edit prefill result,
+- survey count before/after,
+- generator exclusion result,
+- confirmation that temporary test data was removed.

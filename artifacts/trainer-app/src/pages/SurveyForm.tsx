@@ -9,6 +9,7 @@ import {
   useGetClientSurvey,
   useUpsertClientSurvey,
   getListClientsQueryKey,
+  useGetClientAvoidedExercises,
 } from "@workspace/api-client-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -198,6 +199,11 @@ export default function SurveyForm() {
     },
   });
 
+  // Resolved avoided exercises (IDs → names) — used only in the read-only preview.
+  const { data: avoidedExercisesResolved = [] } = useGetClientAvoidedExercises(
+    client?.hasSurvey ? id : null,
+  );
+
   if (clientLoading || (client?.hasSurvey && surveyLoading)) {
     return (
       <div className="p-8 text-center text-muted-foreground">
@@ -222,6 +228,7 @@ export default function SurveyForm() {
         client={client}
         survey={survey}
         surveyId={survey?.id}
+        avoidedExercisesResolved={avoidedExercisesResolved}
         onSaved={() => {
           refetchSurvey();
           setIsEditing(false);
@@ -244,6 +251,7 @@ export default function SurveyForm() {
       id={id}
       client={client}
       survey={survey}
+      avoidedExercisesResolved={avoidedExercisesResolved}
       onEdit={() => setIsEditing(true)}
     />
   );
@@ -256,31 +264,79 @@ function SurveyReadonlyPreview({
   id,
   client,
   survey,
+  avoidedExercisesResolved,
   onEdit,
 }: {
   id: number;
   client: { firstName: string; lastName: string };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   survey: any;
+  avoidedExercisesResolved: Array<{ id: number; name: string }>;
   onEdit: () => void;
 }) {
+  // ── Field helpers ──────────────────────────────────────────────────────────
+  // Every field ALWAYS renders. Empty values show "Brak odpowiedzi".
+
   function Field({
     label,
     value,
+    multiline = false,
   }: {
     label: string;
     value?: string | number | null | undefined;
+    multiline?: boolean;
   }) {
-    if (value == null || value === "") return null;
+    const hasValue = value != null && value !== "";
     return (
       <div>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
           {label}
         </p>
-        <p className="text-sm text-foreground">{value}</p>
+        {hasValue ? (
+          <p className={`text-sm text-foreground${multiline ? " whitespace-pre-wrap" : ""}`}>
+            {value}
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">Brak odpowiedzi</p>
+        )}
       </div>
     );
   }
+
+  // Array fields: show badge list when non-empty, "Brak odpowiedzi" otherwise.
+  function ArrayField({
+    label,
+    values,
+    labelMap,
+  }: {
+    label: string;
+    values: string[];
+    labelMap?: Record<string, string>;
+  }) {
+    return (
+      <div className="sm:col-span-2">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+          {label}
+        </p>
+        {values.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {values.map((v) => (
+              <span
+                key={v}
+                className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium"
+              >
+                {labelMap?.[v] ?? v}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">Brak odpowiedzi</p>
+        )}
+      </div>
+    );
+  }
+
+  // ── Derived values ─────────────────────────────────────────────────────────
 
   const bmi = calculateBmi(survey.heightCm, survey.weightKg);
   const isBeginner =
@@ -288,7 +344,6 @@ function SurveyReadonlyPreview({
     survey.experienceLevel === "Początkujący";
   const showBmiRec = isBeginner && bmi !== undefined && bmi >= 25;
 
-  // Format date of birth for display
   const dobFormatted = survey.dateOfBirth
     ? (() => {
         try {
@@ -303,7 +358,6 @@ function SurveyReadonlyPreview({
       })()
     : null;
 
-  // Derive age
   const dobStr = survey.dateOfBirth
     ? survey.dateOfBirth instanceof Date
       ? survey.dateOfBirth.toISOString().split("T")[0]
@@ -311,18 +365,52 @@ function SurveyReadonlyPreview({
     : null;
   const ageVal = dobStr ? (calculateAge(dobStr) ?? survey.age) : survey.age;
 
-  const sportsPriorities: string[] = Array.isArray(survey.sportsPriorities)
-    ? survey.sportsPriorities
-    : [];
   const SP_LABEL: Record<string, string> = {
     dynamika: "Dynamika",
     szybkosc: "Szybkość",
     stabilizacja: "Stabilizacja",
   };
 
+  const sportsPriorities: string[] = Array.isArray(survey.sportsPriorities)
+    ? survey.sportsPriorities
+    : [];
   const advancedMethods: string[] = Array.isArray(survey.advancedMethodsToAvoid)
     ? survey.advancedMethodsToAvoid
     : [];
+
+  // Fix 1: Map stored API athleteStatus value to the public question answer.
+  // DB stores "Tak — amatorsko" / "Tak — zawodowo" / "Nie" (legacy) or
+  // "Hobbystycznie" / "Zawodowo" (trainer form saves).
+  // "Nie" means the person doesn't do sport — display as "Brak odpowiedzi".
+  const rawAthleteStatus = survey.athleteStatus as string | null | undefined;
+  const athleteStatusDisplay: string | null =
+    rawAthleteStatus
+      ? (API_TO_ATHLETE_STATUS[rawAthleteStatus] ??
+         // already in display format (saved by trainer form)
+         (rawAthleteStatus === "Hobbystycznie" || rawAthleteStatus === "Zawodowo"
+           ? rawAthleteStatus
+           : null))
+      : null;
+  // "Nie" maps to null above → Field shows "Brak odpowiedzi"
+
+  // Fix 4: Resolve avoided exercises to names.
+  // Prefer resolved IDs (avoidedExercisesResolved from /avoided-exercises endpoint);
+  // fall back to the legacy free-text field (avoidedExercises) for old records.
+  const avoidedExerciseNames: string =
+    avoidedExercisesResolved.filter((e) => e.id !== 0 && e.name).length > 0
+      ? avoidedExercisesResolved
+          .filter((e) => e.id !== 0 && e.name)
+          .map((e) => e.name)
+          .join(", ")
+      : (survey.avoidedExercises as string | null | undefined) ?? "";
+
+  // avoidsAdvancedMethods is stored as boolean in DB; map to human-readable label.
+  const avoidsAdvancedMethodsLabel =
+    survey.avoidsAdvancedMethods === true
+      ? "Tak"
+      : survey.avoidsAdvancedMethods === false
+      ? "Nie"
+      : null; // null → "Brak odpowiedzi" via Field
 
   const EditBtn = () => (
     <Button onClick={onEdit} className="gap-2">
@@ -362,33 +450,20 @@ function SurveyReadonlyPreview({
         </CardHeader>
         <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Cel treningowy" value={survey.trainingGoal} />
-          {survey.trainingMotivation ? (
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
-                Dlaczego chcesz trenować?
-              </p>
-              <p className="text-sm text-foreground whitespace-pre-wrap">
-                {survey.trainingMotivation}
-              </p>
-            </div>
-          ) : null}
-          {sportsPriorities.length > 0 && (
-            <div className="sm:col-span-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                Priorytety sportowe
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {sportsPriorities.map((v) => (
-                  <span
-                    key={v}
-                    className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium"
-                  >
-                    {SP_LABEL[v] ?? v}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* trainingMotivation — always shown; "Brak odpowiedzi" if client left it empty */}
+          <Field
+            label="Dlaczego chcesz trenować?"
+            value={survey.trainingMotivation}
+            multiline
+          />
+          {/* Fix 1: public label + mapped display value */}
+          <Field label="Jak uprawiasz sport?" value={athleteStatusDisplay} />
+          {/* Fix 2: "Potrzeby sportowe" removed — internal field, not a public question */}
+          <ArrayField
+            label="Priorytety sportowe"
+            values={sportsPriorities}
+            labelMap={SP_LABEL}
+          />
         </CardContent>
       </Card>
 
@@ -444,16 +519,13 @@ function SurveyReadonlyPreview({
             Zdrowie i ograniczenia
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-4">
-          {survey.healthLimitations ? (
-            <p className="text-sm text-foreground whitespace-pre-wrap">
-              {survey.healthLimitations}
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground italic">
-              Brak zgłoszonych przeciwskazań
-            </p>
-          )}
+        <CardContent className="pt-6">
+          {/* Fix 3: one field, no contradictory injuryStatus alongside description */}
+          <Field
+            label="Kontuzje i ograniczenia zdrowotne"
+            value={survey.healthLimitations}
+            multiline
+          />
         </CardContent>
       </Card>
 
@@ -463,33 +535,20 @@ function SurveyReadonlyPreview({
           <CardTitle>Preferencje treningowe</CardTitle>
         </CardHeader>
         <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Priorytet 1" value={survey.priorityMuscle1} />
-          <Field label="Priorytet 2" value={survey.priorityMuscle2} />
-          <Field label="Priorytet 3" value={survey.priorityMuscle3} />
+          <Field label="Priorytet mięśniowy 1" value={survey.priorityMuscle1} />
+          <Field label="Priorytet mięśniowy 2" value={survey.priorityMuscle2} />
+          <Field label="Priorytet mięśniowy 3" value={survey.priorityMuscle3} />
           <Field label="Ulubione ćwiczenia" value={survey.favoriteExercises} />
-          {survey.avoidsAdvancedMethods != null && (
-            <Field
-              label="Metody intensyfikacji w planie"
-              value={survey.avoidsAdvancedMethods ? "Tak" : "Nie"}
-            />
-          )}
-          {advancedMethods.length > 0 && (
-            <div className="sm:col-span-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                Metody do unikania
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {advancedMethods.map((m) => (
-                  <span
-                    key={m}
-                    className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium"
-                  >
-                    {m}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Fix 4: use resolved exercise names (ID-based picker) with text fallback */}
+          <Field label="Ćwiczenia do unikania" value={avoidedExerciseNames} />
+          <Field
+            label="Metody intensyfikacji w planie"
+            value={avoidsAdvancedMethodsLabel}
+          />
+          <ArrayField
+            label="Metody do unikania"
+            values={advancedMethods}
+          />
         </CardContent>
       </Card>
 
@@ -523,44 +582,40 @@ function SurveyReadonlyPreview({
         </CardContent>
       </Card>
 
-      {/* ── 8. Cardio ─────────────────────────────────────────────────── */}
-      {(survey.cardioPreference ||
-        survey.cardioFrequency ||
-        survey.preferredCardioType) && (
-        <Card className="border-border/50 shadow-sm">
-          <CardHeader className="bg-muted/20 border-b border-border/50">
-            <CardTitle>Aktywność tlenowa i cardio</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Field
-              label="Preferencja cardio"
-              value={survey.cardioPreference}
-            />
-            <Field
-              label="Aktywność tlenowa obecnie"
-              value={survey.cardioFrequency}
-            />
-            <Field
-              label="Preferowana forma cardio"
-              value={survey.preferredCardioType}
-            />
-          </CardContent>
-        </Card>
-      )}
+      {/* ── 8. Aktywność tlenowa i cardio — always shown ──────────────── */}
+      <Card className="border-border/50 shadow-sm">
+        <CardHeader className="bg-muted/20 border-b border-border/50">
+          <CardTitle>Aktywność tlenowa i cardio</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Field
+            label="Preferencja cardio"
+            value={survey.cardioPreference}
+          />
+          <Field
+            label="Aktywność tlenowa obecnie"
+            value={survey.cardioFrequency}
+          />
+          <Field
+            label="Preferowana forma cardio"
+            value={survey.preferredCardioType}
+          />
+        </CardContent>
+      </Card>
 
-      {/* ── 9. Dodatkowe informacje ───────────────────────────────────── */}
-      {survey.additionalInfo && (
-        <Card className="border-border/50 shadow-sm">
-          <CardHeader className="bg-muted/20 border-b border-border/50">
-            <CardTitle>Dodatkowe informacje</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <p className="text-sm text-foreground whitespace-pre-wrap">
-              {survey.additionalInfo}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {/* ── 9. Dodatkowe informacje — always shown ─────────────────────── */}
+      <Card className="border-border/50 shadow-sm">
+        <CardHeader className="bg-muted/20 border-b border-border/50">
+          <CardTitle>Dodatkowe informacje</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <Field
+            label="Treść"
+            value={survey.additionalInfo}
+            multiline
+          />
+        </CardContent>
+      </Card>
 
       {/* Footer edit button */}
       <div className="flex justify-end">
@@ -578,6 +633,7 @@ function SurveyFormBody({
   client,
   survey,
   surveyId,
+  avoidedExercisesResolved = [],
   onSaved,
   onCancel,
 }: {
@@ -586,6 +642,7 @@ function SurveyFormBody({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   survey: any;
   surveyId?: number;
+  avoidedExercisesResolved?: Array<{ id: number; name: string; reason: string | null }>;
   onSaved?: () => void;
   onCancel?: () => void;
 }) {
@@ -709,13 +766,21 @@ function SurveyFormBody({
 
   // ── Exercise picker state ──
   const [selectedFavoriteExercises, setSelectedFavoriteExercises] = useState<FavoriteExercise[]>([]);
-  const [selectedAvoidedExercises, setSelectedAvoidedExercises] = useState<AvoidedExercise[]>([]);
+  // Pre-fill from resolved avoided exercises (IDs → name/reason) passed by parent.
+  // Filtered to id > 0 to exclude the legacy "other text" sentinel entry.
+  const [selectedAvoidedExercises, setSelectedAvoidedExercises] = useState<AvoidedExercise[]>(
+    () =>
+      avoidedExercisesResolved
+        .filter((e) => e.id !== 0 && e.name)
+        .map((e) => ({ id: e.id, name: e.name, reason: e.reason ?? "" })),
+  );
   const exercisePickerInitialized = useRef(false);
   useEffect(() => {
     if (exercisePickerInitialized.current) return;
     exercisePickerInitialized.current = true;
     setSelectedFavoriteExercises([]);
-    setSelectedAvoidedExercises([]);
+    // selectedAvoidedExercises is intentionally NOT reset here —
+    // it is pre-filled from avoidedExercisesResolved in useState above.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

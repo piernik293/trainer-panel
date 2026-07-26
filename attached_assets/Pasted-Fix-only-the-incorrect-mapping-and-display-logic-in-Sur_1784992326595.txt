@@ -1,0 +1,155 @@
+Fix only the incorrect mapping and display logic in SurveyReadonlyPreview.
+
+Current problems in the trainer interview preview:
+
+1. The preview displays fields that are misleading or do not match the actual public interview questions.
+
+Example:
+- "Status sportowca" appears as an internal label, but the actual public question is:
+  "Jak uprawiasz sport?"
+  with answers:
+  - Hobbystycznie
+  - Zawodowo
+
+Use the existing athleteStatus value, but display it under the correct public label:
+"Jak uprawiasz sport?"
+
+If empty, show:
+"Brak odpowiedzi"
+
+2. The preview displays:
+"Potrzeby sportowe — Brak odpowiedzi"
+
+There is no separate public interview question with this label in the current form.
+
+Do not show internal or historical fields merely because they exist in the database or API.
+
+If sportPerformanceNeeds is only an internal field supporting generator logic and the actual visible public question is "Priorytety sportowe", then hide "Potrzeby sportowe" from the read-only preview.
+
+Keep:
+"Priorytety sportowe"
+with the saved values:
+- Dynamika
+- Szybkość
+- Stabilizacja
+
+3. The health section currently shows contradictory information:
+
+"Kontuzje / ograniczenia — Brak odpowiedzi"
+
+and at the same time:
+
+"Opis ograniczeń zdrowotnych — posiadam astmę"
+
+This is misleading.
+
+Display only one public-facing field:
+
+Label:
+"Kontuzje i ograniczenia zdrowotne"
+
+If healthLimitations contains text:
+display the exact submitted text.
+
+Example:
+"Kontuzje i ograniczenia zdrowotne — posiadam astmę"
+
+If empty:
+"Brak odpowiedzi"
+
+Do not display injuryStatus separately.
+Do not show a false or contradictory "Brak odpowiedzi" when a health description exists.
+
+4. "Ćwiczenia do unikania" is not displaying the submitted values.
+
+The client selected exercises in the public interview, but the trainer preview shows:
+"Ćwiczenia do unikania — Brak odpowiedzi"
+
+Do not assume the data is missing from the database.
+
+Trace the exact field end-to-end:
+
+- public form state
+- submit payload
+- API request schema
+- database column
+- API response
+- SurveyReadonlyPreview
+
+Check whether the mismatch is between fields such as:
+- avoidedExercises
+- avoidedExerciseIds
+- exercisesToAvoid
+- excludedExercises
+
+Check whether the value is stored as:
+- exercise IDs
+- exercise names
+- objects
+- an array
+
+The preview must display the saved exercise names.
+
+If IDs are stored, resolve them to exercise names.
+Do not display raw IDs.
+Do not show "Brak odpowiedzi" when saved exercise values exist.
+
+5. Preview rules
+
+The preview must be based on the actual questions visible in the current public interview.
+
+For every real public question:
+- show its public label,
+- show the exact saved answer,
+- show "Brak odpowiedzi" only when the answer is genuinely empty.
+
+Do not display:
+- internal fields,
+- obsolete fields,
+- duplicate representations of the same answer,
+- misleading empty statuses.
+
+6. Preserve editing behavior
+
+Edit mode must:
+- keep all existing values prefilled,
+- show the same avoided exercise selections,
+- update the same survey row,
+- not create a duplicate interview,
+- not clear fields that the trainer did not edit.
+
+Verification:
+
+1. Confirm athleteStatus="Hobbystycznie" displays:
+   "Jak uprawiasz sport? — Hobbystycznie"
+
+2. Confirm athleteStatus="Zawodowo" displays:
+   "Jak uprawiasz sport? — Zawodowo"
+
+3. Confirm "Potrzeby sportowe" is not displayed if it is not a real public interview question.
+
+4. Confirm healthLimitations="posiadam astmę" displays only:
+   "Kontuzje i ograniczenia zdrowotne — posiadam astmę"
+
+5. Confirm the saved avoided exercises appear by name in the preview.
+
+6. Confirm "Brak odpowiedzi" is shown only when the actual saved value is empty.
+
+7. Confirm edit mode remains prefilled.
+
+8. Confirm save updates the same survey row and does not increase the survey count.
+
+At the end report:
+- exact root cause for each problem,
+- actual public form field names,
+- API and database field names,
+- files changed,
+- fields removed from preview,
+- fields renamed,
+- before and after output,
+- survey count before and after.
+
+Do not modify the workout generator.
+Do not redesign the public form.
+Do not create duplicate fields or columns.
+Do not make unrelated changes.

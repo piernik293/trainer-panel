@@ -1,0 +1,88 @@
+Fix only the trainer/admin mobile runtime crash and audit the test client records.
+
+Do not modify:
+- the public interview data contract,
+- survey field mappings,
+- workout generator,
+- exercise catalogue,
+- volume guidelines.
+
+PROBLEM 1 — MOBILE RUNTIME CRASH
+
+On the trainer/admin application opened on mobile, the Vite runtime overlay shows:
+
+"Failed to execute 'removeChild' on 'Node':
+The node to be removed is not a child of this node."
+
+Reproduce the error using the mobile viewport and identify the exact stack trace, route and component responsible.
+
+Check especially:
+- React portals,
+- dialogs/modals,
+- dropdowns,
+- tooltips,
+- toast notifications,
+- components conditionally mounted/unmounted,
+- manual DOM removeChild calls,
+- duplicate cleanup in useEffect,
+- navigation from dashboard to clients and client details.
+
+Requirements:
+
+1. Find the exact first component causing the removeChild exception.
+2. Fix the real component lifecycle/cleanup bug.
+3. Do not hide or disable the Vite error overlay as a workaround.
+4. Do not wrap the error in try/catch merely to suppress it.
+5. Verify navigation on a mobile viewport:
+   - dashboard → clients,
+   - clients → client detail,
+   - client detail → survey preview,
+   - back navigation.
+6. Confirm no runtime exception appears after repeated navigation.
+
+PROBLEM 2 — TEST CLIENT AUDIT
+
+The client list contains many obvious automated test records, including names/emails containing patterns such as:
+- test
+- regression
+- example.com
+- test.invalid
+- __TEST
+
+Do not delete anything yet.
+
+First produce a list of all suspected test records with:
+- client ID,
+- name,
+- email,
+- survey count,
+- workout plan count,
+- whether the record is in development or production.
+
+Explicitly protect real records, including the client with email:
+maksymilian616@gmail.com
+
+Report which records are certainly automated test records and which are uncertain.
+
+Do not delete real clients.
+Do not modify production data without proving that each record is a test record.
+
+PROBLEM 3 — MOBILE RESPONSIVENESS AUDIT ONLY
+
+Do not redesign yet.
+
+Report the smallest changes needed so that on mobile:
+- the sidebar does not consume excessive width,
+- the client list is usable without important columns being cut off,
+- actions remain accessible,
+- the dashboard cards fit the viewport.
+
+At the end report:
+- exact root cause of removeChild,
+- file and component changed,
+- mobile navigation test result,
+- list of suspected test clients,
+- whether they are dev or production,
+- smallest mobile layout improvements.
+
+Do not make unrelated changes.
