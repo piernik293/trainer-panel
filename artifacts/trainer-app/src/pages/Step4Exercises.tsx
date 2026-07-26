@@ -60,6 +60,7 @@ import { filterNonZeroAllocations } from "@/lib/distributionHelpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TempoInput } from "@/components/TempoInput";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -1040,11 +1041,6 @@ function SortableDraftExerciseCard({
     if (!err) onRirManualChange(n);
   }
 
-  function handleTempoBlur(raw: string) {
-    const trimmed = raw.trim();
-    onTempoChange(trimmed === "" ? undefined : trimmed);
-  }
-
   function handleWeightBlur(raw: string) {
     const trimmed = raw.trim();
     if (trimmed === "") { onWeightChange(undefined); return; }
@@ -1184,12 +1180,10 @@ function SortableDraftExerciseCard({
         {/* Tempo */}
         <div className="space-y-0.5">
           <Label className="text-[10px] text-muted-foreground">Tempo</Label>
-          <Input
-            type="text"
-            placeholder="np. 3-0-1-0"
-            defaultValue={exercise.tempo ?? ""}
-            className="h-7 text-xs"
-            onBlur={(e) => handleTempoBlur(e.target.value)}
+          <TempoInput
+            size="sm"
+            value={exercise.tempo}
+            onChange={onTempoChange}
           />
         </div>
 

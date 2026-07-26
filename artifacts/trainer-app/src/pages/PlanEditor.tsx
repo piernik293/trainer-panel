@@ -50,6 +50,7 @@ import {
 } from "@/lib/planApi";
 import { VolumePanel } from "@/components/VolumePanel";
 import { AnalysisPanel } from "@/components/AnalysisPanel";
+import { TempoInput } from "@/components/TempoInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -585,7 +586,10 @@ function ExerciseEditForm({
           <Label className="text-xs">
             Tempo <span className="text-muted-foreground font-normal">(eks–pauza–kon–pauza)</span>
           </Label>
-          <Input value={form.tempo} onChange={set("tempo")} className="h-8 text-sm" placeholder="np. 3-1-1-0" />
+          <TempoInput
+            value={form.tempo || undefined}
+            onChange={(v) => setForm((f) => ({ ...f, tempo: v ?? "" }))}
+          />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Przerwa (sek.)</Label>
