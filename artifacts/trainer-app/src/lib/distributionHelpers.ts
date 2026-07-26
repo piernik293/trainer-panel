@@ -86,11 +86,18 @@ export function buildDistributionRequest(
         : d.selectedValue,
   }));
 
-  // Derive priority target IDs from Phase 2 decisions (sorted by priorityOrder asc)
-  const priorityTargetIds = volumeDecisions.decisions
-    .filter((d) => d.priorityOrder !== null)
-    .sort((a, b) => (a.priorityOrder ?? 0) - (b.priorityOrder ?? 0))
-    .map((d) => d.targetId);
+  // Derive priority target IDs from Phase 2 decisions (sorted by priorityOrder asc).
+  // Deduplicated — one user priority group can map to multiple internal volume targets
+  // (e.g. "Plecy" → Lats + Traps both receive priorityOrder=3).  The schema allows
+  // up to max(12) IDs (one per active target), so all mapped targets are included.
+  const priorityTargetIds = [
+    ...new Set(
+      volumeDecisions.decisions
+        .filter((d) => d.priorityOrder !== null)
+        .sort((a, b) => (a.priorityOrder ?? 0) - (b.priorityOrder ?? 0))
+        .map((d) => d.targetId),
+    ),
+  ];
 
   return {
     clientId,

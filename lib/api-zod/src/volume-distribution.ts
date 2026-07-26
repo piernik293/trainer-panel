@@ -96,7 +96,7 @@ export const DraftVolumeDistributionBody = z.object({
    * Priority target IDs in rank order (P1 = index 0, P2 = index 1, P3 = index 2).
    * Up to 3. Empty means no priorities for this session.
    */
-  priorityTargetIds: z.array(z.number().int().positive()).max(3).optional().default([]),
+  priorityTargetIds: z.array(z.number().int().positive()).max(12).optional().default([]),
   /**
    * Whether the trainer selected Core / brzuch as a priority (+2 sets, max 10).
    * Default false.

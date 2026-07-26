@@ -1,0 +1,145 @@
+Diagnose only the error in the DEPLOYED PRODUCT application.
+
+Important environment clarification:
+
+The failing page is the real PRODUCT used by users.
+It is NOT:
+- the Replit Canvas preview,
+- the trainer panel opened beside the Agent,
+- the local development server,
+- the dev database.
+
+Work only against the deployed production application and production API.
+
+Client:
+maksymilianjablonski@icloud.com
+
+Visible PRODUCT error:
+
+"Nie udało się obliczyć rozkładu. Sprawdź dane i spróbuj ponownie."
+
+Section:
+"Rozkład objętości na dni"
+
+Before doing anything, report:
+
+1. Exact PRODUCT browser URL.
+2. Exact production API base URL used by that page.
+3. Confirmation that the request is coming from the deployed PRODUCT, not Replit Preview.
+4. Production client ID and survey ID for this email.
+
+Do not use the dev preview as proof.
+Do not test only against localhost or a worf.replit.dev URL.
+Do not use the development database.
+Do not modify code yet.
+Do not re-import exercises.
+Do not re-seed volume guidelines.
+Do not copy DEV data into PROD.
+
+PHASE 1 — REPRODUCE IN THE PRODUCT
+
+Open the actual deployed PRODUCT URL and reproduce the error for this client.
+
+Capture the exact failed request from the PRODUCT browser:
+
+- request URL
+- HTTP method
+- request payload
+- response status
+- complete response body
+- frontend console error
+
+Match it with the production server log.
+
+Do not use a dev API response as a substitute.
+
+PHASE 2 — TRACE THE PRODUCTION INPUT
+
+Read the actual production payload and report:
+
+- client ID
+- survey ID
+- goal
+- experience level
+- training days
+- session duration
+- location
+- equipment
+- muscle priorities
+- selected split
+- any null, missing or invalid field
+
+PHASE 3 — VERIFY PRODUCTION DATA ONLY
+
+Check the production database counts:
+
+- exercises
+- specific_muscles
+- exercise_muscle_assignments
+- volume_guideline_versions
+- active volume guideline version
+- volume_targets
+- volume_target_members
+- volume_guidelines
+
+If these tables are populated correctly, do not seed or import them again.
+
+PHASE 4 — FIND THE FIRST REAL FAILURE
+
+Classify the production failure as:
+
+A. PRODUCT frontend sends invalid data.
+B. Production API validation rejects the request.
+C. No active volume guideline is found.
+D. Client data cannot be mapped to a guideline level.
+E. Muscle priorities cannot be mapped.
+F. Production API throws a server/database error.
+G. PRODUCT is running an outdated build or wrong API endpoint.
+
+Provide evidence:
+
+- exact status code
+- exact response body
+- exact failing function/file
+- exact invalid or missing value
+
+PHASE 5 — MINIMAL PRODUCTION FIX
+
+Only after confirming the root cause:
+
+- fix the first broken point only,
+- keep the change minimal,
+- deploy the fix to the PRODUCT,
+- do not modify the development-only panel unless the same shared code is required,
+- do not rebuild the volume system.
+
+PHASE 6 — VERIFY IN THE PRODUCT
+
+After deployment:
+
+1. Open the same client in the deployed PRODUCT.
+2. Recalculate "Rozkład objętości na dni".
+3. Confirm the error is gone.
+4. Confirm a valid distribution is displayed for 3 days.
+5. Continue to the next step.
+6. Refresh and repeat.
+7. Confirm no clients, surveys, exercises, guidelines or plans were deleted.
+
+Final report:
+
+- exact PRODUCT URL
+- exact production endpoint
+- request and response before fix
+- root cause
+- files changed
+- deployment result
+- PRODUCT UI result after fix
+- confirmation that rebuild the volume system.
+
+PHASE 6 — VERIFY IN THE PRODUCT
+
+After deployment:
+
+1. Open the same client in the deployed PRODUCT.
+2. Recalculate "Rozkład objętości na dni".
+3. Confirm the error DEV preview was not used as proof
