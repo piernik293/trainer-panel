@@ -1,0 +1,105 @@
+Fix only upper-body versus lower-body balance in generated FULL_BODY plans.
+
+Current production example:
+
+Client:
+maksymilianjablonski@icloud.com
+
+Generated 3-day FULL_BODY plan contains:
+
+Upper-body working sets:
+- Day 1: 12
+- Day 2: 11
+- Day 3: 10
+- Weekly total: 33
+
+Lower-body working sets:
+- Day 1: 8
+- Day 2: 8
+- Day 3: 7
+- Weekly total: 23
+
+Core:
+- 9 sets
+
+The plan is blocked because at least one muscle group exceeds the absolute weekly limit.
+
+Do not remove the client's priorities:
+- Chest
+- Biceps
+- Back
+
+Priorities must increase emphasis only within valid volume limits.
+
+Required FULL_BODY structure:
+
+Each session should normally contain:
+1. one knee-dominant lower-body exercise
+2. one hip-dominant lower-body exercise
+3. one upper-body push
+4. one upper-body pull
+5. one core exercise
+6. optionally one accessory
+
+The optional accessory must rotate between upper and lower body.
+Do not automatically use an upper-body accessory every day.
+
+Balancing requirements:
+
+1. Calculate upper-body and lower-body working sets after generating the complete week.
+
+2. For a normal beginner FULL_BODY plan:
+- upper-body direct sets should not exceed lower-body direct sets by more than 20%,
+- unless lower-body volume is already at its maximum guideline.
+
+3. Never solve the imbalance by adding lower-body sets above their own absolute maximum.
+If both sides are already high, reduce total volume.
+
+4. If an upper-body muscle exceeds its absolute maximum, reduce volume in this order:
+- non-priority isolation exercises,
+- non-priority accessory compounds,
+- priority isolation exercises,
+- priority compounds only as the last option.
+
+5. Count indirect/effective volume before adding accessories.
+Examples:
+- presses already contribute to triceps and anterior deltoids,
+- pulldowns and rows already contribute to biceps,
+- direct biceps work should not be added as though pulling exercises provided zero biceps volume.
+
+6. For this client:
+- reduce most upper-body compound exercises from 4 sets to 3 where needed,
+- allow direct biceps work at 2–3 sets,
+- use only one direct shoulder accessory during the week,
+- replace unnecessary upper accessory work with a suitable hamstring, glute, calf or lower-body accessory only if that lower target is below its guideline.
+
+7. Run the balancing pass before returning the generated draft.
+
+8. After balancing, recalculate volume.
+Do not return a draft that still exceeds an absolute weekly limit.
+
+Do not change:
+- exercise catalogue,
+- survey fields,
+- volume guideline database,
+- public client form,
+- unrelated generator profiles.
+
+Verification for the same production client:
+
+1. Generate the 3-day FULL_BODY plan.
+2. Report upper-body, lower-body and core direct sets.
+3. Report effective volume for every target.
+4. Confirm no target exceeds its absolute maximum.
+5. Confirm Chest, Back and Biceps still receive priority treatment.
+6. Confirm every day contains:
+- lower knee movement,
+- lower hip movement,
+- push,
+- pull,
+- core.
+7. Confirm the plan can be activated.
+8. Save, refresh and reopen it.
+9. Confirm no existing clients, surveys or plans were deleted.
+
+Before changing code, report which exact muscle target currently exceeds its absolute limit and by how many sets.
