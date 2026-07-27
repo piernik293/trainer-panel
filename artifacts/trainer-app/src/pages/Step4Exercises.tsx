@@ -410,13 +410,57 @@ export default function Step4Exercises({
       return;
     }
 
-    // Apply all generated exercises atomically, using generator prescription values
+    // ── Whole-week volume balance pass ────────────────────────────────────────
+    // After all days are generated, send the complete draft to balance-week
+    // which can reduce sets across ANY day (not just the current one) to
+    // bring every volume target within its absolute weekly ceiling.
+    // The Map key is "${dayResultIndex}-${exerciseIndex}" → balanced sets.
+    const weekBalancedSets = new Map<string, number>();
+    try {
+      const balResp = await fetch(`/api/clients/${clientId}/plan-draft/balance-week`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          days: dayResults.map((r) => ({
+            exercises: r.exercises.map((ex) => ({
+              id: ex.id,
+              sets: ex.prescription?.sets ?? 3,
+              exerciseClass: ex.exerciseClass ?? "isolation",
+              name: ex.name,
+            })),
+          })),
+        }),
+      });
+      if (balResp.ok) {
+        const balData = await balResp.json() as {
+          days: Array<{ exercises: Array<{ id: number; sets: number }> }>;
+        };
+        balData.days.forEach((bd, di) => {
+          bd.exercises.forEach((be, ei) => {
+            weekBalancedSets.set(`${di}-${ei}`, be.sets);
+          });
+        });
+        console.log(`[WeekBalance] Applied ${weekBalancedSets.size} set overrides across ${dayResults.length} days`);
+      } else {
+        console.warn(`[WeekBalance] Endpoint returned HTTP ${balResp.status} — using unbalanced sets`);
+      }
+    } catch (err) {
+      console.error("[WeekBalance] Error calling balance-week — proceeding with unbalanced sets:", err);
+    }
+
+    // Apply all generated exercises atomically, using balanced set counts where available.
     let newDraft = { ...exerciseDraft };
-    for (const { dayIndex, exercises } of dayResults) {
-      for (const ex of exercises) {
+    for (let _ri = 0; _ri < dayResults.length; _ri++) {
+      const { dayIndex, exercises } = dayResults[_ri];
+      for (let _ei = 0; _ei < exercises.length; _ei++) {
+        const ex = exercises[_ei];
         const repsParsed = ex.prescription
           ? parseRepsFromLabel(ex.prescription.repsLabel)
           : { min: DRAFT_EXERCISE_DEFAULTS.repsMin, max: DRAFT_EXERCISE_DEFAULTS.repsMax };
+        const finalSets =
+          weekBalancedSets.get(`${_ri}-${_ei}`) ??
+          ex.prescription?.sets ??
+          DRAFT_EXERCISE_DEFAULTS.sets;
         newDraft = addExerciseToDay(newDraft, dayIndex, {
           exerciseId: ex.id,
           exerciseName: ex.name,
@@ -424,7 +468,7 @@ export default function Step4Exercises({
           equipment: ex.equipment,
           isCore: ex.mainMuscleGroup === "Brzuch",
           exerciseClass: ex.exerciseClass,
-          sets: ex.prescription?.sets ?? DRAFT_EXERCISE_DEFAULTS.sets,
+          sets: finalSets,
           repsMin: repsParsed.min,
           repsMax: repsParsed.max,
           rir: DRAFT_EXERCISE_DEFAULTS.rir,

@@ -7,6 +7,7 @@ import { seedExerciseAdaptationFields } from "./seeds/exerciseAdaptation";
 import { seedSubTargetBiases } from "./seeds/subTargetBiasSeed";
 import { seedCatalogue } from "./seeds/catalogueSeed";
 import { runSchemaMigrations } from "./seeds/schemaMigrations";
+import { seedUnmappedMuscleVtm } from "./seeds/unmappedMuscleVtm";
 
 const rawPort = process.env["PORT"];
 
@@ -66,6 +67,13 @@ async function startServer() {
     await seedSubTargetBiases();
   } catch (err) {
     logger.warn({ err }, "Sub-target bias seed failed (non-fatal)");
+  }
+
+  try {
+    await seedUnmappedMuscleVtm();
+    logger.info("Unmapped muscle VTM seed complete");
+  } catch (err) {
+    logger.warn({ err }, "Unmapped muscle VTM seed failed (non-fatal)");
   }
 
   app.listen(port, (err) => {
