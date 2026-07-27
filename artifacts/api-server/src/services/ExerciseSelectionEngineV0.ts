@@ -2035,12 +2035,43 @@ export function runExerciseSelectionEngineV0(
         );
       }
 
-      // Slot 5 (optional): Arm or shoulder accessory — biceps / triceps / barki.
-      pick(
-        "Arm or shoulder accessory",
-        false,
-        (ex) => muscle(ex, "Biceps", "Triceps", "Barki"),
-      );
+      // Slot 5 (optional): Rotate between upper and lower body accessories.
+      //
+      // Even-indexed days (altIdx = 0, 2, …): upper-body accessory
+      //   — Biceps / Triceps / Barki.
+      // Odd-indexed days  (altIdx = 1, 3, …): lower-body accessory
+      //   — Hamstrings / Calves / Adductors isolation, with a fallback to the
+      //   upper-body accessory when no suitable lower-body isolation is in the pool.
+      //
+      // Rationale: always picking an upper-body accessory drives biceps and triceps
+      // weekly effective sets well beyond their absolute ceilings for beginners (each
+      // session adds indirect volume from back/chest compounds on top of direct work),
+      // and creates a systematic upper/lower set imbalance (often > 40 %) that exceeds
+      // the 20 % guard.  Rotating slot 5 to the lower body on alternate days trims
+      // the upper surplus, adds lower-body isolation volume that is otherwise absent
+      // from the template, and keeps the structural minimum intact via the fallback.
+      if ((options?.alternativeIndex ?? 0) % 2 === 0) {
+        // Even sessions (Day 1, Day 3, …): upper-body accessory.
+        pick(
+          "Arm or shoulder accessory",
+          false,
+          (ex) => muscle(ex, "Biceps", "Triceps", "Barki"),
+        );
+      } else {
+        // Odd sessions (Day 2, Day 4, …): lower-body isolation first, upper fallback.
+        pick(
+          "Lower body accessory",
+          false,
+          (ex) =>
+            muscle(ex, "Mięśnie dwugłowe uda", "Łydki", "Przywodziciele") &&
+            !muscle(ex, "Pośladki", "Mięśnie czworogłowe uda"),
+        ) ??
+          pick(
+            "Arm or shoulder accessory (lower day fallback)",
+            false,
+            (ex) => muscle(ex, "Biceps", "Triceps", "Barki"),
+          );
+      }
 
       // Slot 6 (optional): Core — always last.
       pick("Core", false, (ex) => muscle(ex, "Brzuch"));

@@ -26,7 +26,7 @@
  */
 
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   db,
@@ -131,6 +131,33 @@ const BodySchema = z.object({
    * Omit or pass an empty array to disable the boost (default behaviour).
    */
   undercoveredMuscleGroups: z.array(z.string()).optional().default([]),
+  /**
+   * BALANCE PASS — Cross-session weekly volume context (FULL_BODY only).
+   *
+   * Raw exercises from all previously generated days in the same week.
+   * Each entry carries the exercise DB id and the number of working sets
+   * that were prescribed for that exercise in the earlier session.
+   *
+   * The generate-day route uses this list to compute accumulated effective
+   * sets per volume target (by loading exercise-muscle coefficients from the
+   * DB) and then runs a post-prescription balance pass that reduces sets for
+   * exercises whose target would otherwise exceed the weekly absolute ceiling.
+   *
+   * Reduction priority (cheapest first):
+   *   0 — non-priority isolation / core
+   *   1 — non-priority compound
+   *   2 — priority isolation
+   *   3 — priority compound   (last resort)
+   *
+   * Omit or pass an empty array to skip the weekly context (Day 1 or
+   * non-full_body sessions).  Balance pass is a no-op when omitted.
+   */
+  weekExercisesRaw: z.array(
+    z.object({
+      exerciseId: z.number().int().positive(),
+      sets: z.number().int().min(1),
+    }),
+  ).optional().default([]),
 });
 
 router.post(
@@ -571,7 +598,7 @@ router.post(
     //   5  core                — trunk-control finisher
     const goalBias = goalProfile.exerciseClassBias;
 
-    const enrichedExercises = v0Result.exercises
+    let enrichedExercises = v0Result.exercises
       .map((ex) => {
         const exerciseClass = deriveExerciseClassForOutput(ex);
         // Part 6: Pompki that survive into a full-gym plan receive secondary_compound
@@ -583,6 +610,206 @@ router.post(
       })
       .sort((a, b) => a._rank - b._rank)
       .map(({ _rank, ...ex }) => ex);
+
+    // ── Post-prescription balance pass (FULL_BODY only) ───────────────────────
+    //
+    // For FULL_BODY plans generated across multiple days, indirect volume from
+    // compound exercises accumulates week-over-week. This pass ensures no volume
+    // target exceeds its weekly absolute ceiling by reducing exercise set counts
+    // in priority order:
+    //
+    //   0 — non-priority isolation / core          (reduce first)
+    //   1 — non-priority compound
+    //   2 — priority isolation
+    //   3 — priority compound                      (last resort)
+    //
+    // Minimum allowed sets: 2 for main_compound; 1 for all other classes.
+    // The pass loops until all targets are within ceiling or structural minimums
+    // are hit throughout (residual overages from compound indirect volume are
+    // logged but do not block the response).
+    //
+    // Caller (Step4Exercises.tsx) supplies weekExercisesRaw with the prescribed
+    // {exerciseId, sets} for all exercises from prior days so the route can
+    // compute the accumulated contribution before adding this day's work.
+
+    if (v0SessionType === "full_body") {
+      const weekRaw = body.data.weekExercisesRaw ?? [];
+
+      try {
+        // 1. Load weekly absolute ceilings for the client's experience level.
+        const expLevel = survey.experienceLevel ?? "Początkujący";
+        const guidelinesResult = await db.execute(sql`
+          SELECT vg.volume_target_id::int   AS target_id,
+                 vg.weekly_absolute_ceiling::numeric AS ceiling
+          FROM volume_guidelines vg
+          JOIN volume_targets vt ON vt.id = vg.volume_target_id
+          WHERE vg.experience_level = ${expLevel}
+            AND vt.is_active = true
+        `);
+
+        const ceilingMap = new Map<number, number>();
+        for (const row of guidelinesResult.rows as Array<Record<string, unknown>>) {
+          ceilingMap.set(Number(row.target_id), Number(row.ceiling));
+        }
+
+        if (ceilingMap.size > 0) {
+          // 2. Collect all exercise IDs needed (current session + prior days).
+          const currentExIds = enrichedExercises.map((e) => e.id);
+          const prevExIds = weekRaw.map((w) => w.exerciseId);
+          const allExIds = [...new Set([...currentExIds, ...prevExIds])];
+
+          // 3. Load max coefficient per exercise-target pair.
+          const coeffResult = await db.execute(sql`
+            SELECT ema.exercise_id::int         AS exercise_id,
+                   vtm.volume_target_id::int    AS target_id,
+                   MAX(ema.coefficient)::numeric AS max_coeff
+            FROM exercise_muscle_assignments ema
+            JOIN volume_target_members vtm
+              ON vtm.specific_muscle_id = ema.specific_muscle_id
+            JOIN volume_targets vt ON vt.id = vtm.volume_target_id
+            WHERE vt.is_active = true
+              AND ema.exercise_id = ANY(
+                    ARRAY[${sql.raw(allExIds.join(","))}]::int[]
+                  )
+            GROUP BY ema.exercise_id, vtm.volume_target_id
+          `);
+
+          // Build: exerciseId → Map<targetId, maxCoeff>
+          const exCoeffMap = new Map<number, Map<number, number>>();
+          for (const row of coeffResult.rows as Array<Record<string, unknown>>) {
+            const exId = Number(row.exercise_id);
+            const tId  = Number(row.target_id);
+            const coef = Number(row.max_coeff);
+            if (!exCoeffMap.has(exId)) exCoeffMap.set(exId, new Map());
+            exCoeffMap.get(exId)!.set(tId, coef);
+          }
+
+          // 4. Compute accumulated effective sets from prior-day exercises.
+          const accumulated = new Map<number, number>();
+          for (const { exerciseId, sets } of weekRaw) {
+            const coeffs = exCoeffMap.get(exerciseId);
+            if (!coeffs) continue;
+            for (const [tId, coef] of coeffs) {
+              accumulated.set(tId, (accumulated.get(tId) ?? 0) + sets * coef);
+            }
+          }
+
+          // 5. Mutable set-count array for the current session.
+          const sessionSets = enrichedExercises.map(
+            (e) => e.prescription?.sets ?? 3,
+          );
+
+          // Helper: compute this session's contribution to each target.
+          const computeSessionTotals = (): Map<number, number> => {
+            const totals = new Map<number, number>();
+            for (let i = 0; i < enrichedExercises.length; i++) {
+              const coeffs = exCoeffMap.get(enrichedExercises[i].id);
+              if (!coeffs) continue;
+              for (const [tId, coef] of coeffs) {
+                totals.set(tId, (totals.get(tId) ?? 0) + sessionSets[i] * coef);
+              }
+            }
+            return totals;
+          };
+
+          // Priority muscles for this client (lowercased for comparison).
+          const priorityMuscles = new Set([
+            ...(priorityContext.tierA ?? []).map((s) => s.toLowerCase()),
+            ...(priorityContext.tierB ?? []).map((s) => s.toLowerCase()),
+          ]);
+
+          // Reduction tier: 0 = reduce first, 3 = reduce last.
+          const getReductionTier = (ex: (typeof enrichedExercises)[0]): number => {
+            const mm = (ex.mainMuscleGroup ?? "").toLowerCase();
+            const isPriority =
+              priorityMuscles.size > 0 &&
+              [...priorityMuscles].some(
+                (pm) => mm.includes(pm) || pm.includes(mm),
+              );
+            const isCompound =
+              ex.exerciseClass === "main_compound" ||
+              ex.exerciseClass === "secondary_compound";
+            if (ex.exerciseClass === "core") return 0;      // core — reduce early
+            if (!isPriority && !isCompound)   return 0;     // non-priority isolation
+            if (!isPriority &&  isCompound)   return 1;     // non-priority compound
+            if ( isPriority && !isCompound)   return 2;     // priority isolation
+            return 3;                                         // priority compound — last
+          };
+
+          // Minimum allowed sets per class.
+          const minSets = (ex: (typeof enrichedExercises)[0]): number =>
+            ex.exerciseClass === "main_compound" ? 2 : 1;
+
+          // Sort indices by reduction tier (ascending).
+          const sortedIndices = enrichedExercises
+            .map((ex, i) => ({ i, tier: getReductionTier(ex) }))
+            .sort((a, b) => a.tier - b.tier)
+            .map(({ i }) => i);
+
+          // 6. Balance loop — reduce one set at a time until all targets within ceiling.
+          const MAX_ITER = 80;
+          for (let iter = 0; iter < MAX_ITER; iter++) {
+            const sessionTotals = computeSessionTotals();
+
+            // Find the target with the largest overage.
+            let worstTargetId = -1;
+            let worstDeficit  = 0;
+            for (const [tId, ceiling] of ceilingMap) {
+              const total   = (accumulated.get(tId) ?? 0) + (sessionTotals.get(tId) ?? 0);
+              const deficit = total - ceiling;
+              if (deficit > worstDeficit) {
+                worstDeficit  = deficit;
+                worstTargetId = tId;
+              }
+            }
+
+            if (worstDeficit <= 0) break; // All targets within ceiling.
+
+            // Reduce the first exercise (lowest tier) that contributes to the worst target.
+            let reduced = false;
+            for (const idx of sortedIndices) {
+              if (sessionSets[idx] <= minSets(enrichedExercises[idx])) continue;
+              const contrib = exCoeffMap.get(enrichedExercises[idx].id)?.get(worstTargetId) ?? 0;
+              if (contrib > 0) {
+                sessionSets[idx]--;
+                reduced = true;
+                console.log(
+                  `[BalancePass] "${enrichedExercises[idx].name}" ` +
+                  `${sessionSets[idx] + 1}→${sessionSets[idx]} sets ` +
+                  `(target=${worstTargetId} deficit=${worstDeficit.toFixed(2)})`,
+                );
+                break;
+              }
+            }
+
+            if (!reduced) break; // Structural minimum reached — accept residual overage.
+          }
+
+          // 7. Apply balanced set counts to the prescription.
+          enrichedExercises = enrichedExercises.map((ex, i) =>
+            ex.prescription
+              ? { ...ex, prescription: { ...ex.prescription, sets: sessionSets[i] } }
+              : ex,
+          );
+
+          // Log any targets that remain above ceiling after the pass.
+          const finalTotals = computeSessionTotals();
+          for (const [tId, ceiling] of ceilingMap) {
+            const total = (accumulated.get(tId) ?? 0) + (finalTotals.get(tId) ?? 0);
+            if (total > ceiling) {
+              console.log(
+                `[BalancePass] Residual overage target ${tId}: ` +
+                `${total.toFixed(1)} vs ceiling ${ceiling} ` +
+                `(structural minimum — adjust guidelines or session count)`,
+              );
+            }
+          }
+        }
+      } catch (err) {
+        // Balance pass is best-effort — never block the response.
+        console.error("[BalancePass] Non-fatal error:", err);
+      }
+    }
 
     // ── Ordering / prescription explanation notes ──────────────────────────────
     const hasPlyo      = enrichedExercises.some((e) => e.exerciseClass === "plyometric_power");

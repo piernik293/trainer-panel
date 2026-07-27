@@ -17,3 +17,4 @@
 - [Athlete and Plyo planning rules](athlete-plyo-rules.md) — eligibility logic, scope boundaries, esbuild Polish-quote bug, Plyo slot structure, new DB columns.
 - [Cardio section persistence pattern](cardio-section-persistence.md) — cardio_recommendation is a nullable TEXT/JSON column on workout_plans; getPlanFull includes surveyCardio; CardioSection generates on-the-fly when no stored override.
 - [Equipment filter OR semantics bug](equipment-filter-or-semantics.md) — isEquipmentCompatible used `every` for the bodyweight check, wrongly excluding exercises tagged ["Masa własnego ciała","Hantle"]; fix is `some`. Add slot fallbacks when catalogue is thin for a given profile.
+- [FULL_BODY balance pass](full-body-balance-pass.md) — slot 5 rotates upper/lower by altIdx%2; balance pass in generate-day reduces sets per priority; beginner 3-day plans have structural residual overages for biceps/triceps (ceiling 4 < 3 sessions × indirect).

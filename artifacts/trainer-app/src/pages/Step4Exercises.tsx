@@ -278,6 +278,10 @@ export default function Step4Exercises({
     // Accumulate exercise IDs selected in earlier days so V0 excludes them
     // from later days — prevents the same exercise appearing in two sessions.
     const weekUsedIds: number[] = [];
+    // Accumulate prescribed exercises from earlier days for the FULL_BODY
+    // balance pass.  The backend uses these to compute the running weekly
+    // effective-set total before adding the current day's work.
+    const weekExercisesRaw: Array<{ exerciseId: number; sets: number }> = [];
 
     // Compute under-covered muscle groups from the current coverage snapshot.
     // A muscle is "severely under-covered" when its effective weekly sets are
@@ -347,6 +351,9 @@ export default function Step4Exercises({
             weekUsedExerciseIds: [...weekUsedIds],
             sameTypePreviousExercises,
             undercoveredMuscleGroups,
+            // Balance pass: supply all prescribed exercises from prior days so
+            // the route can compute accumulated weekly volume before adding today.
+            weekExercisesRaw: sessionType === "full_body" ? [...weekExercisesRaw] : [],
           }),
         });
 
@@ -375,8 +382,16 @@ export default function Step4Exercises({
         dayResults.push({ dayIndex: day.dayIndex, exercises: data.exercises, explanation: data.explanation });
 
         // Add this day's exercise IDs to the cross-session exclusion list.
+        // For full_body sessions also accumulate the prescribed {exerciseId, sets}
+        // pairs so subsequent days can run the weekly balance pass.
         for (const ex of data.exercises) {
           weekUsedIds.push(ex.id);
+          if (sessionType === "full_body") {
+            weekExercisesRaw.push({
+              exerciseId: ex.id,
+              sets: ex.prescription?.sets ?? 3,
+            });
+          }
         }
       } catch (err) {
         const msg = `Dzień ${day.dayIndex + 1} (${sessionType}): ${err instanceof Error ? err.message : "Nieznany błąd"}`;
