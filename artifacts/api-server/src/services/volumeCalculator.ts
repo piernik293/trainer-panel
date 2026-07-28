@@ -197,7 +197,19 @@ export function validateAssignments(rows: RawAssignmentRow[]): ValidatedAssignme
 
 // ─── Approved target order (for consistent display) ──────────────────────────
 
-const TARGET_ORDER: string[] = [
+/**
+ * Canonical display order for volume targets.
+ *
+ * IMPORTANT: every active row in the volume_targets table MUST appear here.
+ * Targets absent from this list are silently pushed to the end of the display
+ * (index 999) but, more critically, they will never be shown to the trainer
+ * if the UI filters by position — causing a silent under-count.
+ *
+ * An integration test enforces this contract. When you add a new volume target
+ * to the database, add its name here too:
+ *   artifacts/api-server/src/services/__tests__/targetOrderCoverage.integration.test.ts
+ */
+export const TARGET_ORDER: string[] = [
   "Mięsień czworogłowy uda",
   "Mięśnie pośladkowe",
   "Mięsień trójgłowy łydki",
@@ -209,6 +221,7 @@ const TARGET_ORDER: string[] = [
   "Mięsień najszerszy grzbietu",
   "Mięsień czworoboczny grzbietu",
   "Mięsień dwugłowy ramienia",
+  "Brzuch",
 ];
 
 // ─── Shared-core types ────────────────────────────────────────────────────────
