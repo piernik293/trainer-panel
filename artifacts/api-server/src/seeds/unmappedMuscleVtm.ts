@@ -33,6 +33,69 @@
  *      catastrophic.  Leave unmapped until a dedicated Forearm target exists.
  */
 
+// ─── Intentional exclusion allowlist ─────────────────────────────────────────
+//
+// Specific muscles that appear in exercise_muscle_assignments with a high
+// coefficient but are deliberately NOT mapped to any volume_target_members row.
+// Any muscle that is both high-coefficient AND absent from volume_target_members
+// AND absent from this list will cause the unmapped-muscle guard test to fail.
+//
+// Before adding a muscle here, document why no existing target is appropriate
+// and what future target would eventually receive it.
+
+export interface IntentionalExclusion {
+  /** Primary key from the specific_muscles table (stable across environments). */
+  muscleId: number;
+  /** Human-readable name for diagnostics. */
+  muscleName: string;
+  /** Why no current volume target is suitable. */
+  reason: string;
+  /** Which target should eventually receive this muscle once created. */
+  futureTarget: string;
+}
+
+export const INTENTIONALLY_EXCLUDED_MUSCLES: IntentionalExclusion[] = [
+  {
+    muscleId: 7,
+    muscleName: "Prostowniki grzbietu (Erector spinae)",
+    reason:
+      "Mapping to the trapezius target would incorrectly inflate the upper-back " +
+      "ceiling (deadlifts, Bird dog, etc. carry sm7 at high coefficients).",
+    futureTarget: "Dedicated 'Dolna część pleców' (Lower Back) target",
+  },
+  {
+    muscleId: 15,
+    muscleName: "Zginacze nadgarstka i palców (Wrist / finger flexors)",
+    reason:
+      "Mapping to the biceps target would cause shrugs (sm15 coeff 0.3) to " +
+      "consume the biceps ceiling, and wrist curls (coeff 1.0) would be catastrophic.",
+    futureTarget: "Dedicated 'Przedramiona' (Forearm) target",
+  },
+  {
+    muscleId: 16,
+    muscleName: "Prostowniki nadgarstka i palców (Wrist / finger extensors)",
+    reason:
+      "Extensor counterpart to sm15 (flexors). No existing target can absorb wrist-extension " +
+      "volume without distorting the biceps or triceps ceilings. Exercises like wrist " +
+      "extensions and reverse curls carry sm16 at high coefficients.",
+    futureTarget: "Dedicated 'Przedramiona' (Forearm) target (same as sm15)",
+  },
+];
+
+/** Set of intentionally excluded muscle IDs — for O(1) membership checks. */
+export const INTENTIONALLY_EXCLUDED_MUSCLE_ID_SET: ReadonlySet<number> = new Set(
+  INTENTIONALLY_EXCLUDED_MUSCLES.map((e) => e.muscleId),
+);
+
+// ─── Coefficient threshold ────────────────────────────────────────────────────
+//
+// A muscle must appear in exercise_muscle_assignments with at least this
+// coefficient to be considered "significant" for the unmapped-muscle guard.
+// Muscles used only as minor synergists (coeff ≤ threshold) do not need to be
+// tracked in volume_target_members.
+
+export const UNMAPPED_MUSCLE_GUARD_THRESHOLD = 0.5;
+
 import { and, eq } from "drizzle-orm";
 import {
   db,
