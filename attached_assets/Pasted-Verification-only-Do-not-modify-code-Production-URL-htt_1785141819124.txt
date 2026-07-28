@@ -1,0 +1,104 @@
+Verification only. Do not modify code.
+
+Production URL:
+https://client-intake-form--andrzejwysocki7.replit.app
+
+Client:
+maksymilianjablonski@icloud.com
+
+The balancing changes were committed as:
+4f900d7
+
+PHASE 1 — CONFIRM THE NEW BUILD
+
+Before testing the generator, confirm that production is no longer serving the previous build.
+
+Provide at least one of:
+- deployment/build identifier,
+- startup timestamp and new process ID,
+- confirmed presence of the new weekExercisesRaw handling and slot rotation in the deployed bundle,
+- observable generator behavior that only exists in commit 4f900d7.
+
+Do not continue if production is still serving the old build.
+
+PHASE 2 — GENERATE THE REAL PRODUCTION PLAN
+
+Regenerate the complete 3-day Full Body plan for the production client.
+
+Report for every day:
+- exact exercise name,
+- working sets,
+- repetitions,
+- exercise role/slot.
+
+Report:
+- direct upper-body sets,
+- direct lower-body sets,
+- core sets,
+- upper/lower ratio.
+
+PHASE 3 — VOLUME CHECK
+
+Report for every mapped volume target:
+- effective weekly sets,
+- recommended range,
+- absolute ceiling,
+- amount over the ceiling, if any.
+
+Important limitation:
+
+The PRODUCT currently reports that specific muscle IDs 7, 13 and 15 are not mapped to any volume target.
+
+Therefore:
+- include all unmapped-muscle warnings in the report,
+- clearly state that the volume result is provisional and may be underestimated,
+- do not claim the complete volume system is correct,
+- do not fix these mappings in this task.
+
+PHASE 4 — ACTIVATION AND PERSISTENCE
+
+Confirm:
+1. Whether the PRODUCT displays:
+   "Aktywacja zablokowana — przekroczono absolutny limit tygodniowy dla co najmniej jednej grupy mięśniowej."
+2. Whether the plan can actually be activated.
+3. Whether the draft can be saved.
+4. Whether all exercises and reduced set counts persist after refresh and reopening.
+
+Do not overwrite the existing saved plan unless the user explicitly confirms.
+Use a temporary draft or clearly identified verification plan if a new row is required.
+
+PHASE 5 — STATE TESTS
+
+Only through the real PRODUCT UI, test:
+- regenerate Day 2,
+- go back one wizard step and return,
+- refresh during Step 4.
+
+Verify that weekExercisesRaw is not:
+- stale,
+- duplicated,
+- missing previous days,
+- carrying exercises from the old version of a regenerated day.
+
+If browser automation is unavailable:
+- report this as a blocker,
+- do not replace these UI tests with API calls and call them passed.
+
+Do not:
+- modify code,
+- raise ceilings,
+- delete exercises,
+- re-import catalogue data,
+- re-seed volume data,
+- test only in DEV or Replit Preview.
+
+Final report:
+- deployed build confirmation,
+- all exercises and sets,
+- upper/lower ratio,
+- mapped target volumes versus ceilings,
+- activation result,
+- save/reopen result,
+- UI state-test result or exact blocker,
+- all unmapped-muscle warnings,
+- confirmation that this is provisional until IDs 7, 13 and 15 are mapped.

@@ -1,0 +1,111 @@
+Do not implement another local current-day-only fix.
+
+The production verification confirmed that the current balance pass is insufficient.
+
+Confirmed new-draft overages:
+- Glutes: 11.5 / 10
+- Hamstrings: 7.5 / 6
+- Triceps: 6 / 4
+- Lats: 14 / 8
+- Biceps: 5.2 / 4
+- Abs: 12.75 / 10
+
+The new draft would still fail activation with HTTP 422.
+
+Root architectural issue to verify:
+
+The generator creates days sequentially.
+weekExercisesRaw contains previous days, but the balance pass can only reduce sets in the currently generated day.
+It cannot go back and reduce Day 1 or Day 2 after the complete week is known.
+
+This means early 4-set compounds lock in excessive weekly volume.
+
+PHASE 1 — CONFIRM THE EXACT LIMITATION
+
+Do not modify code yet.
+
+Report:
+1. Whether the balance pass can modify exercises from previous days.
+2. Whether weekExercisesRaw is read-only context.
+3. Which Day 1 and Day 2 exercises would need set reductions to resolve:
+   - Lats
+   - Triceps
+   - Biceps
+   - Glutes
+   - Hamstrings
+   - Abs
+4. Whether all ceilings can be met with minimum:
+   - 2 sets for compounds
+   - 1 set for isolations
+5. Do not call the overages structurally unavoidable until testing a whole-week rebalance.
+
+PHASE 2 — FIX UNMAPPED MUSCLES FIRST
+
+Production currently has unmapped specific muscles:
+- ID 5
+- ID 7
+- ID 11
+and previously reported:
+- ID 13
+- ID 15
+
+Resolve them by exact production muscle name.
+
+Add only missing volume_target_members mappings.
+Do not use DEV IDs.
+Do not suppress warnings.
+Do not change ceilings.
+
+Recalculate the plan after mapping and report the corrected totals.
+
+PHASE 3 — WHOLE-WEEK BALANCE
+
+Implement one final whole-week balancing pass after all 3 days are generated.
+
+Required behavior:
+
+1. Receive the complete 3-day draft.
+2. Calculate effective volume for every target.
+3. While any target exceeds its absolute ceiling:
+   - reduce non-priority isolation first,
+   - reduce non-priority compounds next,
+   - reduce priority isolation next,
+   - reduce priority compounds last.
+4. Allow reductions in Day 1, Day 2 and Day 3.
+5. Recalculate after every reduction.
+6. Minimum sets:
+   - compounds: 2
+   - isolations/core: 1
+7. If ceilings still cannot be met:
+   - replace an exercise with a lower-coefficient substitute,
+   - or remove an optional accessory/core slot.
+8. Do not return a draft above an absolute ceiling.
+
+Specific expected adjustments for this client:
+- reduce lat-pulldown volume across all 3 days,
+- reduce chest compounds enough to control indirect triceps,
+- use no direct biceps work if pulling already reaches the biceps ceiling,
+- reduce core frequency or sets,
+- reduce overlapping glute/hamstring hinge volume,
+- keep upper/lower ratio at or below 1.20.
+
+PHASE 4 — PRODUCT VERIFICATION
+
+For:
+maksymilianjablonski@icloud.com
+
+Generate a fresh 3-day Full Body plan in production.
+
+Report:
+- all exercises and sets,
+- every target versus absolute ceiling,
+- upper/lower ratio,
+- activation result,
+- save/reopen result.
+
+Do not report success unless:
+- no target exceeds its absolute ceiling,
+- activation returns success,
+- the plan persists after refresh.
+
+Do not modify unrelated survey, catalogue or editor code.
