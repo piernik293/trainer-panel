@@ -7,14 +7,14 @@
  *   - Plan 1 exists (clientId=20, Zaawansowany, exerciseId=1 bench press).
  *   - Exercise IDs 1 (bench press) and 2 (Podciąganie) exist.
  *   - Client 4 has no survey.  Client 19's most recent survey has an empty level.
- *   - Guideline version 1 is active and has 11 targets for all four levels.
+ *   - Guideline version 1 is active and has guideline targets for all four levels.
  *
  * State restoration: any DB mutation (isActive=false) is reverted in afterEach.
  */
 
 import { describe, it, expect, afterEach, afterAll } from "vitest";
 import request from "supertest";
-import { eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import app from "../../app";
 import {
   calculateVolumePreview,
@@ -25,6 +25,7 @@ import {
   db,
   pool,
   exercisesTable,
+  volumeGuidelinesTable,
   workoutPlanDaysTable,
   workoutPlanExercisesTable,
 } from "@workspace/db";
@@ -192,7 +193,7 @@ describe("calculateVolumePreview — DB integration", () => {
     }
   });
 
-  describe("all four experience levels — each returns 11 guideline targets", () => {
+  describe("all four experience levels — each returns the correct number of guideline targets", () => {
     const LEVELS = [
       "Zaawansowany",
       "Średniozaawansowany",
@@ -201,7 +202,18 @@ describe("calculateVolumePreview — DB integration", () => {
     ] as const;
 
     for (const level of LEVELS) {
-      it(`${level} → 11 weekly targets, no MISSING_GUIDELINES`, async () => {
+      it(`${level} → all DB guideline targets returned, no MISSING_GUIDELINES`, async () => {
+        // Count how many guideline rows exist for this version + level in the DB.
+        const [{ value: expectedCount }] = await db
+          .select({ value: count() })
+          .from(volumeGuidelinesTable)
+          .where(
+            and(
+              eq(volumeGuidelinesTable.versionId, 1),
+              eq(volumeGuidelinesTable.experienceLevel, level),
+            ),
+          );
+
         const result = await calculateVolumePreview({
           clientId:            3,   // any client — level is authoritative here
           guidelineVersionId:  1,
@@ -210,7 +222,7 @@ describe("calculateVolumePreview — DB integration", () => {
         });
 
         expect(result.guidelineLevel).toBe(level);
-        expect(result.weekly).toHaveLength(11);
+        expect(result.weekly).toHaveLength(expectedCount);
         expect(result.warnings.some(w => w.code === "MISSING_GUIDELINES")).toBe(false);
       });
     }
