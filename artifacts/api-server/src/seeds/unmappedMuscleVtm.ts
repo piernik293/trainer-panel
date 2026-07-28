@@ -1,7 +1,7 @@
 /**
  * Idempotent seed: map previously unmapped specific muscles to volume targets.
  *
- * Runs on every server startup via ON CONFLICT DO NOTHING — safe to repeat.
+ * Runs on every server startup — safe to repeat (checks for existing rows).
  *
  * Mappings added:
  *
@@ -9,11 +9,6 @@
  *      → 23 Mięsień czworoboczny grzbietu (Traps / upper back)
  *      Rhomboids and trapezius both perform scapular retraction; grouped in
  *      the upper-back volume target.
- *
- *   7  Prostowniki grzbietu (Erector spinae)
- *      → 23 Mięsień czworoboczny grzbietu (Traps / upper back)
- *      No erector-specific volume target exists in the schema.  Erectors are
- *      "back" muscles; the upper-back target is the least-wrong existing slot.
  *
  *   11 Mięśnie stożka rotatorów (Rotator cuff)
  *      → 19 Mięśnie naramienne (Deltoids)
@@ -25,11 +20,17 @@
  *      Brachialis is an elbow-flexion synergist consistently trained with
  *      biceps; counted in the bicep volume target.
  *
+ * Intentionally NOT mapped (no correct existing target):
+ *
+ *   7  Prostowniki grzbietu (Erector spinae)
+ *      Mapping to the trapezius target would incorrectly inflate the upper-back
+ *      ceiling (deadlifts, Bird dog, etc. carry sm7 at high coefficients).
+ *      Leave unmapped until a dedicated Lower Back target exists.
+ *
  *   15 Zginacze nadgarstka i palców (Wrist / finger flexors)
- *      → 24 Mięsień dwugłowy ramienia (Biceps)
- *      Most exercises assigning this muscle are curl variations.  NOTE: a few
- *      shrug exercises also carry this muscle (coeff ≈ 0.3); their bicep
- *      contribution is small, but this mapping is a known approximation.
+ *      Mapping to the biceps target would cause shrugs (sm15 coeff 0.3) to
+ *      consume the biceps ceiling, and wrist curls (coeff 1.0) would be
+ *      catastrophic.  Leave unmapped until a dedicated Forearm target exists.
  */
 
 import { and, eq } from "drizzle-orm";
@@ -46,11 +47,9 @@ interface Mapping {
 }
 
 const MAPPINGS: Mapping[] = [
-  { muscleName: "Mięśnie równoległoboczne", targetName: "Mięsień czworoboczny grzbietu" },
-  { muscleName: "Prostowniki grzbietu",      targetName: "Mięsień czworoboczny grzbietu" },
+  { muscleName: "Mięśnie równoległoboczne",  targetName: "Mięsień czworoboczny grzbietu" },
   { muscleName: "Mięśnie stożka rotatorów",  targetName: "Mięśnie naramienne" },
   { muscleName: "Mięsień ramienny",           targetName: "Mięsień dwugłowy ramienia" },
-  { muscleName: "Zginacze nadgarstka i palców", targetName: "Mięsień dwugłowy ramienia" },
 ];
 
 export async function seedUnmappedMuscleVtm(): Promise<void> {
