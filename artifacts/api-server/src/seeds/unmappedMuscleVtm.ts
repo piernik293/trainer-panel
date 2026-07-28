@@ -96,10 +96,11 @@ export const INTENTIONALLY_EXCLUDED_MUSCLE_ID_SET: ReadonlySet<number> = new Set
 
 export const UNMAPPED_MUSCLE_GUARD_THRESHOLD = 0.5;
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import {
   db,
   specificMusclesTable,
+  exerciseMuscleAssignmentsTable,
   volumeTargetsTable,
   volumeTargetMembersTable,
 } from "@workspace/db";
@@ -158,5 +159,61 @@ export async function seedUnmappedMuscleVtm(): Promise<void> {
     console.log(
       `[VtmSeed] Mapped "${muscleName}" (id=${muscle.id}) → "${targetName}" (id=${target.id})`,
     );
+  }
+}
+
+// ─── Startup guard ────────────────────────────────────────────────────────────
+//
+// Queries the same two tables as the integration test and emits a console.warn
+// for every high-coefficient muscle that is neither mapped nor intentionally
+// excluded.  Never throws — a missing mapping is a data quality problem, not a
+// reason to crash the server.
+
+export async function checkUnmappedMuscles(): Promise<void> {
+  try {
+    // 1. Distinct muscle IDs with coefficient > threshold.
+    const highCoeffRows = await db
+      .selectDistinct({ specificMuscleId: exerciseMuscleAssignmentsTable.specificMuscleId })
+      .from(exerciseMuscleAssignmentsTable)
+      .where(gt(exerciseMuscleAssignmentsTable.coefficient, UNMAPPED_MUSCLE_GUARD_THRESHOLD));
+
+    const highCoeffMuscleIds = new Set(highCoeffRows.map((r) => r.specificMuscleId));
+
+    // 2. Distinct muscle IDs that have at least one volume_target_members row.
+    const mappedRows = await db
+      .selectDistinct({ specificMuscleId: volumeTargetMembersTable.specificMuscleId })
+      .from(volumeTargetMembersTable);
+
+    const mappedMuscleIds = new Set(mappedRows.map((r) => r.specificMuscleId));
+
+    // 3. Find muscles that are neither mapped nor intentionally excluded.
+    const unmapped: number[] = [];
+    for (const muscleId of highCoeffMuscleIds) {
+      if (!mappedMuscleIds.has(muscleId) && !INTENTIONALLY_EXCLUDED_MUSCLE_ID_SET.has(muscleId)) {
+        unmapped.push(muscleId);
+      }
+    }
+
+    if (unmapped.length === 0) return;
+
+    // 4. Fetch names for a human-readable warning.
+    const nameRows = await db
+      .select({ id: specificMusclesTable.id, name: specificMusclesTable.name })
+      .from(specificMusclesTable);
+
+    const nameById = new Map(nameRows.map((r) => [r.id, r.name]));
+
+    for (const muscleId of unmapped) {
+      const name = nameById.get(muscleId) ?? "unknown";
+      console.warn(
+        `[MuscleGuard] WARNING: muscle id=${muscleId} "${name}" appears in ` +
+        `exercise_muscle_assignments with coefficient > ${UNMAPPED_MUSCLE_GUARD_THRESHOLD} ` +
+        `but has no entry in volume_target_members and is not intentionally excluded. ` +
+        `Volume calculations may silently under-count. ` +
+        `Fix: add a volume_target_members row or add to INTENTIONALLY_EXCLUDED_MUSCLES.`,
+      );
+    }
+  } catch (err) {
+    console.warn("[MuscleGuard] Guard check failed (non-fatal):", err);
   }
 }
