@@ -1,0 +1,137 @@
+Stop all implementation work immediately.
+
+Do not modify any more files.
+Do not run migrations.
+Do not restart services.
+Do not fix type errors.
+Do not continue code review fixes.
+Do not revert anything yet.
+
+This is a recovery and state-report task only.
+
+Task #80 expanded beyond its intended scope and had multiple validation failures. Establish the exact current state before any further edits.
+
+Return:
+
+# Current task status
+
+- Is Task #80 functionally complete?
+- Is any validation or code review still failing?
+- What was the final unresolved action when work stopped?
+
+# Git state
+
+Run and report:
+
+- git status
+- git diff --stat
+- list of every modified, added, or deleted file
+- separate files directly required by Task #80 from unrelated or incidental changes
+
+Do not paste entire files.
+
+# Out-of-scope changes
+
+List every modification outside:
+
+- authentication
+- trainers schema
+- clients.trainerId ownership
+- client CRUD protection
+- exercise catalogue authorization
+- frontend login/session handling
+- targeted auth tests
+- required migrations
+
+Pay special attention to:
+
+- planApi.ts
+- PlanEditor.tsx
+- Step4Exercises.tsx
+- volume status literals
+- workout generation files
+
+For each, state why it was changed and whether it should be reverted.
+
+# Database state
+
+Report without changing the database:
+
+- whether each Task #80 migration ran
+- trainers table exists: yes/no
+- clients.trainer_id exists: yes/no
+- exercises.created_by_trainer_id exists: yes/no
+- number of trainer rows
+- number of client rows
+- number of clients with trainer_id NULL
+- whether any rows were deleted or recreated
+- whether NOT NULL was applied
+- whether the migration can safely be rerun
+
+Do not expose full Clerk user IDs or secrets.
+
+# Authentication state
+
+Report:
+
+- Clerk frontend configured: yes/no
+- Clerk backend verification configured: yes/no
+- missing credentials fail closed: yes/no
+- unauthenticated client CRUD returns 401: yes/no
+- cross-trainer client access returns 404: yes/no
+- client list filters by trainerId in the database: yes/no
+- request body trainerId is ignored: yes/no
+- catalogue mutation fails with 403 when admin allowlist is empty: yes/no
+
+# Protected routes
+
+Provide two tables:
+
+Protected and verified routes
+Route | Auth | Ownership | Test result
+
+Still open or unverified routes
+Route | Current risk | Planned task
+
+# Tests
+
+List only tests actually run:
+
+- test file or suite
+- passed
+- failed
+- whether failure was introduced by Task #80 or pre-existing
+- current total number of failing tests
+
+Do not describe a test as passing unless it was executed after the latest code change.
+
+# Validation failures
+
+For every `Validation failed` event, explain:
+
+- exact reason
+- file or behavior involved
+- whether it was fixed
+- evidence that the fix was retested
+
+# Recommended recovery
+
+Recommend exactly one:
+
+A. Keep current changes and perform a small cleanup
+B. Revert specific out-of-scope files only
+C. Revert all of Task #80 to the previous checkpoint
+
+Give concrete reasons.
+
+# Final decision
+
+Return exactly one:
+
+`SAFE TO CONTINUE — current changes are coherent and only targeted cleanup remains`
+
+or
+
+`STOP — current Task #80 state is not reliable enough to continue`
+
+Do not implement the recommendation.

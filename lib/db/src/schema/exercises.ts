@@ -1,4 +1,5 @@
 import { pgTable, serial, text, timestamp, boolean, uniqueIndex, integer, jsonb } from "drizzle-orm/pg-core";
+import { trainersTable } from "./trainers";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -64,6 +65,12 @@ export const exercisesTable = pgTable("exercises", {
   subTargetBiases: jsonb("sub_target_biases"),
 
   isActive: boolean("is_active").notNull().default(true),
+  /**
+   * FK to trainers.id — set when a trainer creates a custom exercise.
+   * NULL = public catalogue exercise (visible to all authenticated trainers).
+   * Non-NULL = private exercise; only visible to the trainer who created it.
+   */
+  createdByTrainerId: integer("created_by_trainer_id").references(() => trainersTable.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

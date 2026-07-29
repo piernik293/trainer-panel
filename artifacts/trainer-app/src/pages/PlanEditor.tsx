@@ -1651,7 +1651,7 @@ export default function PlanEditor() {
   }
 
   const statusMeta = STATUS_BADGE[plan.status];
-  const hasAbsoluteViolation = plan.volume.targets.some((t) => t.status === "above_absolute");
+  const hasAbsoluteViolation = plan.volume.targets.some((t) => t.status === "overtraining_warning");
   const hasUnassignedExercises = plan.volume.exercisesWithoutAssignments.length > 0;
   const canActivate = plan.status === "draft" && !hasAbsoluteViolation && !hasUnassignedExercises;
   const canEdit = plan.status === "draft";

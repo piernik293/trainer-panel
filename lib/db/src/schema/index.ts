@@ -6,3 +6,4 @@ export * from "./exercise-relations";
 export * from "./muscles";
 export * from "./plans";
 export * from "./exercise-usage";
+export * from "./trainers";

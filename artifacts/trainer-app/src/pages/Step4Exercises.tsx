@@ -681,7 +681,7 @@ export default function Step4Exercises({
         hasGuideline: w.hasGuideline,
         isManuallyOvershot:
           w.hasGuideline &&
-          (w.status === "above_preferred" || w.status === "above_absolute"),
+          (w.status === "above_max_recommended" || w.status === "overtraining_warning"),
       })),
       days: previewResult.days.map((d) => ({
         dayId: d.dayId,
@@ -737,7 +737,7 @@ export default function Step4Exercises({
             hasGuideline: w.hasGuideline,
             isManuallyOvershot:
               w.hasGuideline &&
-              (w.status === "above_preferred" || w.status === "above_absolute"),
+              (w.status === "above_max_recommended" || w.status === "overtraining_warning"),
           })),
           days: raw.days.map((d) => ({
             dayId: d.dayId,

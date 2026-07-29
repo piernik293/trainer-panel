@@ -1,8 +1,21 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import { clerkMiddleware } from "@clerk/express";
+import { publishableKeyFromHost } from "@clerk/shared/keys";
+import {
+  CLERK_PROXY_PATH,
+  clerkProxyMiddleware,
+  getClerkProxyHost,
+} from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
 import { logger } from "./lib/logger";
+
+// In production, Clerk publishable key must be present. Fail at startup
+// rather than silently serving unprotected routes.
+if (process.env.NODE_ENV === "production" && !process.env.CLERK_PUBLISHABLE_KEY) {
+  throw new Error("CLERK_PUBLISHABLE_KEY is required in production");
+}
 
 const app: Express = express();
 
@@ -25,9 +38,24 @@ app.use(
     },
   }),
 );
-app.use(cors());
+
+// Clerk proxy — must be before body parsers (streams raw bytes).
+app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
+
+app.use(cors({ credentials: true, origin: true }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Resolves the publishable key from the incoming request host so the same
+// server can serve multiple Clerk custom domains.
+app.use(
+  clerkMiddleware((req) => ({
+    publishableKey: publishableKeyFromHost(
+      getClerkProxyHost(req) ?? "",
+      process.env.CLERK_PUBLISHABLE_KEY,
+    ),
+  })),
+);
 
 app.use("/api", router);
 

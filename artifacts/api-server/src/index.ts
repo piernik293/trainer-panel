@@ -8,6 +8,7 @@ import { seedSubTargetBiases } from "./seeds/subTargetBiasSeed";
 import { seedCatalogue } from "./seeds/catalogueSeed";
 import { runSchemaMigrations } from "./seeds/schemaMigrations";
 import { seedUnmappedMuscleVtm, checkUnmappedMuscles } from "./seeds/unmappedMuscleVtm";
+import { runStartupMigration } from "./lib/migration";
 
 const rawPort = process.env["PORT"];
 
@@ -24,6 +25,10 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 async function startServer() {
+  // Clerk auth schema migration — MUST succeed before the server accepts requests.
+  // If this throws, the server exits (see catch below).
+  await runStartupMigration();
+
   try {
     await runSchemaMigrations();
   } catch (err) {

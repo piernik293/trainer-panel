@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -10,6 +10,8 @@ export const clientsTable = pgTable("clients", {
   phone: text("phone"),
   notes: text("notes"),
   status: text("status").notNull().default("active"),
+  /** FK to trainers.id — assigned server-side; nullable until migration Step C completes */
+  trainerId: integer("trainer_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

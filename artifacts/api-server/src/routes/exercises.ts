@@ -1,5 +1,7 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ilike, inArray, count, sql } from "drizzle-orm";
+import type { Request } from "express";
+import { eq, and, ilike, inArray, count, sql, isNull, or } from "drizzle-orm";
+import { getAuth } from "@clerk/express";
 import {
   db,
   exercisesTable,
@@ -7,6 +9,7 @@ import {
   exerciseProgressionsTable,
   specificMusclesTable,
   exerciseMuscleAssignmentsTable,
+  trainersTable,
 } from "@workspace/db";
 import { computeCompleteness, fetchMuscleStats } from "../lib/exercise-completeness";
 import {
@@ -36,6 +39,65 @@ import {
   ImportExercisesBody,
   ImportExercisesResponse,
 } from "@workspace/api-zod";
+import { requireAuth, requireCatalogueAdmin } from "../middlewares/requireAuth";
+
+/**
+ * Returns the caller's trainerId from their Clerk session, or null if
+ * unauthenticated or the trainer row has not yet been provisioned.
+ *
+ * This is a read-only helper — it does NOT provision a new trainer row.
+ */
+async function getCallerTrainerId(req: Request): Promise<number | null> {
+  const auth = getAuth(req);
+  if (!auth?.userId) return null;
+
+  const [trainer] = await db
+    .select({ id: trainersTable.id })
+    .from(trainersTable)
+    .where(eq(trainersTable.clerkUserId, auth.userId));
+
+  return trainer?.id ?? null;
+}
+
+/**
+ * Returns true when the request caller may see a private exercise.
+ *
+ * Rule:
+ *   - Public exercises (createdByTrainerId === null) → always visible.
+ *   - Private exercises (createdByTrainerId !== null):
+ *     - Unauthenticated → NOT visible (treat as 404).
+ *     - Authenticated trainer who is the owner → visible.
+ *     - Authenticated trainer who is NOT the owner → NOT visible (treat as 404).
+ *
+ * Using 404 instead of 403 prevents ID enumeration of private exercises.
+ */
+async function canViewExercise(req: Request, createdByTrainerId: number | null): Promise<boolean> {
+  if (createdByTrainerId === null) return true; // public
+
+  const callerId = await getCallerTrainerId(req);
+  if (callerId === null) return false; // unauthenticated → deny
+  return callerId === createdByTrainerId; // owner check
+}
+
+/**
+ * Builds a Drizzle WHERE condition that restricts the exercises table to
+ * records visible to the caller:
+ *   - Public records (createdByTrainerId IS NULL) always pass.
+ *   - Private records pass only when the caller owns them.
+ *
+ * Pass `callerTrainerId = null` for unauthenticated callers (public-only).
+ */
+function exerciseVisibilityCondition(callerTrainerId: number | null) {
+  if (callerTrainerId === null) {
+    // Unauthenticated: public exercises only.
+    return isNull(exercisesTable.createdByTrainerId);
+  }
+  // Authenticated: public OR owned-by-caller.
+  return or(
+    isNull(exercisesTable.createdByTrainerId),
+    eq(exercisesTable.createdByTrainerId, callerTrainerId),
+  );
+}
 
 const router: IRouter = Router();
 
@@ -196,7 +258,7 @@ router.get("/exercises/search", async (req, res): Promise<void> => {
       isActive: exercisesTable.isActive,
     })
     .from(exercisesTable)
-    .where(eq(exercisesTable.isActive, true))
+    .where(and(eq(exercisesTable.isActive, true), isNull(exercisesTable.createdByTrainerId)))
     .orderBy(exercisesTable.name);
 
   const results = q
@@ -207,6 +269,9 @@ router.get("/exercises/search", async (req, res): Promise<void> => {
 });
 
 // ─── List ─────────────────────────────────────────────────────────────────────
+// GET /exercises — optionally authenticated.
+// - Unauthenticated: returns only public (catalogue) exercises (createdByTrainerId IS NULL).
+// - Authenticated: returns public exercises + exercises created by this trainer.
 
 router.get("/exercises", async (req, res): Promise<void> => {
   const query = ListExercisesQueryParams.safeParse(req.query);
@@ -223,6 +288,21 @@ router.get("/exercises", async (req, res): Promise<void> => {
   const isCompleteFilter = parseIsActiveFilter(req.query.isComplete);
   const suitableForNoActivityFilter = parseIsActiveFilter(req.query.suitableForNoActivity);
 
+  // Determine visibility filter based on auth state.
+  const auth = getAuth(req);
+  const clerkUserId = auth?.userId;
+
+  // Resolve trainer id for authenticated requests.
+  let authenticatedTrainerId: number | null = null;
+  if (clerkUserId) {
+    const { trainersTable } = await import("@workspace/db");
+    const [trainer] = await db
+      .select({ id: trainersTable.id })
+      .from(trainersTable)
+      .where(eq(trainersTable.clerkUserId, clerkUserId));
+    authenticatedTrainerId = trainer?.id ?? null;
+  }
+
   const conditions = [
     search ? ilike(exercisesTable.name, `%${search}%`) : undefined,
     mainMuscleGroup ? eq(exercisesTable.mainMuscleGroup, mainMuscleGroup) : undefined,
@@ -234,6 +314,13 @@ router.get("/exercises", async (req, res): Promise<void> => {
     typeof suitableForNoActivityFilter === "boolean"
       ? eq(exercisesTable.suitableForNoActivity, suitableForNoActivityFilter)
       : undefined,
+    // Privacy filter: unauthenticated sees only public; authenticated sees public + own.
+    authenticatedTrainerId !== null
+      ? or(
+          isNull(exercisesTable.createdByTrainerId),
+          eq(exercisesTable.createdByTrainerId, authenticatedTrainerId),
+        )
+      : isNull(exercisesTable.createdByTrainerId),
   ].filter((c): c is NonNullable<typeof c> => c !== undefined);
 
   let exercises = await db
@@ -268,7 +355,8 @@ router.get("/exercises", async (req, res): Promise<void> => {
   res.json(ListExercisesResponse.parse(result));
 });
 
-router.post("/exercises", async (req, res): Promise<void> => {
+// POST /exercises — requires auth + catalogue admin.
+router.post("/exercises", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
   const parsed = CreateExerciseBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -276,11 +364,12 @@ router.post("/exercises", async (req, res): Promise<void> => {
   }
 
   const slugSource = parsed.data.slug?.trim() ? parsed.data.slug : parsed.data.name;
+  const trainerId = req.trainer!.id;
 
   const [exercise] = await withUniqueSlugRetry(slugSource, (slug) =>
     db
       .insert(exercisesTable)
-      .values({ ...parsed.data, slug })
+      .values({ ...parsed.data, slug, createdByTrainerId: trainerId })
       .returning(),
   );
 
@@ -470,7 +559,7 @@ async function withUniqueSlugRetryTx<T>(
 
 // ─── Preview ──────────────────────────────────────────────────────────────────
 
-router.post("/exercises/import/preview", async (req, res): Promise<void> => {
+router.post("/exercises/import/preview", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
   const parsed = PreviewExerciseImportBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -538,7 +627,7 @@ router.post("/exercises/import/preview", async (req, res): Promise<void> => {
 
 // ─── Atomic import ────────────────────────────────────────────────────────────
 
-router.post("/exercises/import", async (req, res): Promise<void> => {
+router.post("/exercises/import", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
   const parsed = ImportExercisesBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -792,12 +881,19 @@ router.get("/exercises/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  // Privacy gate: private exercises (createdByTrainerId !== null) are only
+  // visible to their owner. Return 404 (not 403) to prevent ID enumeration.
+  if (!(await canViewExercise(req, exercise.createdByTrainerId ?? null))) {
+    res.status(404).json({ error: "Ćwiczenie nie znalezione" });
+    return;
+  }
+
   const statsMap = await fetchMuscleStats([exercise.id]);
   const completeness = computeCompleteness(exercise, statsMap.get(exercise.id));
   res.json(GetExerciseResponse.parse({ ...exercise, ...completeness }));
 });
 
-router.patch("/exercises/:id", async (req, res): Promise<void> => {
+router.patch("/exercises/:id", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
   const params = UpdateExerciseParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -848,8 +944,17 @@ router.get("/exercises/:id/substitutions", async (req, res): Promise<void> => {
   const params = GetExerciseSubstitutionsParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
-  const [exercise] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(eq(exercisesTable.id, params.data.id));
+  const [exercise] = await db.select({ id: exercisesTable.id, createdByTrainerId: exercisesTable.createdByTrainerId }).from(exercisesTable).where(eq(exercisesTable.id, params.data.id));
   if (!exercise) { res.status(404).json({ error: "Ćwiczenie nie znalezione" }); return; }
+
+  // Privacy gate: same rule as GET /exercises/:id
+  if (!(await canViewExercise(req, exercise.createdByTrainerId ?? null))) {
+    res.status(404).json({ error: "Ćwiczenie nie znalezione" });
+    return;
+  }
+
+  // Resolve caller identity once for visibility filtering of linked exercises.
+  const callerTrainerId = await getCallerTrainerId(req);
 
   const rows = await db
     .select({
@@ -862,13 +967,19 @@ router.get("/exercises/:id/substitutions", async (req, res): Promise<void> => {
     })
     .from(exerciseSubstitutionsTable)
     .innerJoin(exercisesTable, eq(exercisesTable.id, exerciseSubstitutionsTable.substituteExerciseId))
-    .where(eq(exerciseSubstitutionsTable.exerciseId, params.data.id))
+    .where(
+      and(
+        eq(exerciseSubstitutionsTable.exerciseId, params.data.id),
+        // Filter out linked (substitute) exercises the caller cannot see.
+        exerciseVisibilityCondition(callerTrainerId),
+      ),
+    )
     .orderBy(exerciseSubstitutionsTable.sortOrder, exercisesTable.name);
 
   res.json(GetExerciseSubstitutionsResponse.parse(rows));
 });
 
-router.post("/exercises/:id/substitutions", async (req, res): Promise<void> => {
+router.post("/exercises/:id/substitutions", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
   const params = AddExerciseSubstitutionParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
@@ -907,18 +1018,18 @@ router.post("/exercises/:id/substitutions", async (req, res): Promise<void> => {
     res.status(201).json(AddExerciseSubstitutionResponse.parse(row));
   } catch (error) {
     if (isUniqueViolation(error)) {
-      res.status(409).json({ error: "Ten zamiennik jest już przypisany" });
+      res.status(409).json({ error: "Ten zamiennik jest już przypisany do ćwiczenia" });
       return;
     }
     throw error;
   }
 });
 
-router.delete("/exercises/:id/substitutions/:substituteId", async (req, res): Promise<void> => {
+router.delete("/exercises/:id/substitutions/:substituteId", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
   const params = RemoveExerciseSubstitutionParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
-  const result = await db
+  const [deleted] = await db
     .delete(exerciseSubstitutionsTable)
     .where(
       and(
@@ -926,11 +1037,10 @@ router.delete("/exercises/:id/substitutions/:substituteId", async (req, res): Pr
         eq(exerciseSubstitutionsTable.substituteExerciseId, params.data.substituteId),
       ),
     )
-    .returning({ id: exerciseSubstitutionsTable.id });
+    .returning();
 
-  if (result.length === 0) { res.status(404).json({ error: "Zamiennik nie znaleziony" }); return; }
-
-  res.status(204).send();
+  if (!deleted) { res.status(404).json({ error: "Zamiennik nie znaleziony" }); return; }
+  res.sendStatus(204);
 });
 
 // ─── Progressions ─────────────────────────────────────────────────────────────
@@ -939,8 +1049,17 @@ router.get("/exercises/:id/progressions", async (req, res): Promise<void> => {
   const params = GetExerciseProgressionsParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
-  const [exercise] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(eq(exercisesTable.id, params.data.id));
+  const [exercise] = await db.select({ id: exercisesTable.id, createdByTrainerId: exercisesTable.createdByTrainerId }).from(exercisesTable).where(eq(exercisesTable.id, params.data.id));
   if (!exercise) { res.status(404).json({ error: "Ćwiczenie nie znalezione" }); return; }
+
+  // Privacy gate: same rule as GET /exercises/:id
+  if (!(await canViewExercise(req, exercise.createdByTrainerId ?? null))) {
+    res.status(404).json({ error: "Ćwiczenie nie znalezione" });
+    return;
+  }
+
+  // Resolve caller identity once for visibility filtering of linked exercises.
+  const callerTrainerId = await getCallerTrainerId(req);
 
   const rows = await db
     .select({
@@ -954,23 +1073,24 @@ router.get("/exercises/:id/progressions", async (req, res): Promise<void> => {
     })
     .from(exerciseProgressionsTable)
     .innerJoin(exercisesTable, eq(exercisesTable.id, exerciseProgressionsTable.linkedExerciseId))
-    .where(eq(exerciseProgressionsTable.exerciseId, params.data.id))
+    .where(
+      and(
+        eq(exerciseProgressionsTable.exerciseId, params.data.id),
+        // Filter out linked exercises the caller cannot see.
+        exerciseVisibilityCondition(callerTrainerId),
+      ),
+    )
     .orderBy(exerciseProgressionsTable.direction, exerciseProgressionsTable.sortOrder, exercisesTable.name);
 
   res.json(GetExerciseProgressionsResponse.parse(rows));
 });
 
-router.post("/exercises/:id/progressions", async (req, res): Promise<void> => {
+router.post("/exercises/:id/progressions", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
   const params = AddExerciseProgressionParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
   const parsed = AddExerciseProgressionBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-
-  if (parsed.data.direction !== "progression" && parsed.data.direction !== "regression") {
-    res.status(400).json({ error: "direction musi być 'progression' lub 'regression'" });
-    return;
-  }
 
   const [exercise] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(eq(exercisesTable.id, params.data.id));
   if (!exercise) { res.status(404).json({ error: "Ćwiczenie nie znalezione" }); return; }
@@ -1006,18 +1126,18 @@ router.post("/exercises/:id/progressions", async (req, res): Promise<void> => {
     res.status(201).json(AddExerciseProgressionResponse.parse(row));
   } catch (error) {
     if (isUniqueViolation(error)) {
-      res.status(409).json({ error: "To powiązanie już istnieje" });
+      res.status(409).json({ error: "Ta relacja już istnieje" });
       return;
     }
     throw error;
   }
 });
 
-router.delete("/exercises/:id/progressions/:progressionId", async (req, res): Promise<void> => {
+router.delete("/exercises/:id/progressions/:progressionId", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
   const params = RemoveExerciseProgressionParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
-  const result = await db
+  const [deleted] = await db
     .delete(exerciseProgressionsTable)
     .where(
       and(
@@ -1025,11 +1145,10 @@ router.delete("/exercises/:id/progressions/:progressionId", async (req, res): Pr
         eq(exerciseProgressionsTable.id, params.data.progressionId),
       ),
     )
-    .returning({ id: exerciseProgressionsTable.id });
+    .returning();
 
-  if (result.length === 0) { res.status(404).json({ error: "Powiązanie nie znalezione" }); return; }
-
-  res.status(204).send();
+  if (!deleted) { res.status(404).json({ error: "Relacja nie znaleziona" }); return; }
+  res.sendStatus(204);
 });
 
 export default router;
