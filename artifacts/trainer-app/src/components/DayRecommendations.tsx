@@ -42,6 +42,11 @@ export interface DayRecExercise {
   matchReasons: string[];
   warnReasons: string[];
   isAvoided: boolean;
+  // Classification metadata — used to assign default tempo on add
+  exerciseType?: string | null;
+  exercisePriority?: string | null;
+  movementCategory?: string | null;
+  suitableForNoActivity?: boolean | null;
 }
 
 interface DayRecResponse {
@@ -55,6 +60,11 @@ export interface AddFromRecommendationPayload {
   name: string;
   mainMuscleGroup: string;
   equipment: string[];
+  // Classification metadata — used to assign exerciseClass and default tempo
+  exerciseType?: string | null;
+  exercisePriority?: string | null;
+  movementCategory?: string | null;
+  suitableForNoActivity?: boolean | null;
 }
 
 // ─── Score label ──────────────────────────────────────────────────────────────
@@ -174,6 +184,10 @@ export default function DayRecommendations({
       name: exercise.name,
       mainMuscleGroup: exercise.mainMuscleGroup,
       equipment: exercise.equipment,
+      exerciseType: exercise.exerciseType ?? null,
+      exercisePriority: exercise.exercisePriority ?? null,
+      movementCategory: exercise.movementCategory ?? null,
+      suitableForNoActivity: exercise.suitableForNoActivity ?? null,
     });
     setPendingAvoided(null);
   }

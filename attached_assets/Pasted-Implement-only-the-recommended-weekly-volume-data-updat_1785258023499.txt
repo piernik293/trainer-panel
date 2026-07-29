@@ -1,0 +1,369 @@
+Implement only the recommended weekly volume data update.
+
+
+
+This is a numeric data update only.
+
+
+
+Do not modify generator logic.
+
+Do not modify proposal calculation.
+
+Do not modify weekly distribution.
+
+Do not modify exercise selection.
+
+Do not modify set-count logic.
+
+Do not modify duration calculation.
+
+Do not modify priority logic.
+
+Do not modify split logic.
+
+Do not modify health or equipment restrictions.
+
+Do not modify plyometric logic.
+
+Do not run a broad audit.
+
+Do not use subagents.
+
+Do not create schema migrations.
+
+Do not create duplicate guideline rows.
+
+Do not add any new per-session volume field or per-session volume limit.
+
+
+
+Update only the existing field:
+
+
+
+weeklyAbsoluteCeiling
+
+
+
+Meaning:
+
+
+
+weeklyAbsoluteCeiling is the recommended weekly effective-volume boundary used
+
+by the existing generator.
+
+
+
+It is not a new hard cap.
+
+
+
+The existing generator may exceed this recommended weekly boundary when its
+
+current logic allows it.
+
+
+
+When the existing generator exceeds the value, retain the existing explanation
+
+or reporting that describes why the weekly recommendation was exceeded.
+
+
+
+Do not change:
+
+
+
+- when the generator may exceed the weekly recommendation,
+
+- how much it may exceed it,
+
+- existing warnings,
+
+- existing explanations,
+
+- existing validation,
+
+- existing blocking or activation behaviour.
+
+
+
+This task only updates the numeric weeklyAbsoluteCeiling values.
+
+
+
+Update:
+
+
+
+- the active production guideline seed/source,
+
+- the existing idempotent patch mechanism,
+
+- the active runtime database rows used by the application.
+
+
+
+Use exactly the values below.
+
+
+
+==================================================
+
+BRAK AKTYWNOŚCI FIZYCZNEJ
+
+==================================================
+
+
+
+Target | weeklyAbsoluteCeiling
+
+
+
+Mięsień czworogłowy uda | 8
+
+Mięśnie pośladkowe | 8
+
+Mięsień trójgłowy łydki | 3
+
+Przywodziciele | 4
+
+Grupa kulszowo-goleniowa | 5
+
+Mięśnie naramienne | 8
+
+Mięsień trójgłowy ramienia | 3
+
+Mięsień piersiowy większy | 8
+
+Mięsień najszerszy grzbietu | 6
+
+Mięsień czworoboczny grzbietu | 8
+
+Mięsień dwugłowy ramienia | 3
+
+Brzuch | 6
+
+
+
+==================================================
+
+POCZĄTKUJĄCY
+
+==================================================
+
+
+
+Target | weeklyAbsoluteCeiling
+
+
+
+Mięsień czworogłowy uda | 10
+
+Mięśnie pośladkowe | 10
+
+Mięsień trójgłowy łydki | 4
+
+Przywodziciele | 6
+
+Grupa kulszowo-goleniowa | 6
+
+Mięśnie naramienne | 12
+
+Mięsień trójgłowy ramienia | 4
+
+Mięsień piersiowy większy | 10
+
+Mięsień najszerszy grzbietu | 8
+
+Mięsień czworoboczny grzbietu | 12
+
+Mięsień dwugłowy ramienia | 4
+
+Brzuch | 9
+
+
+
+==================================================
+
+ŚREDNIOZAAWANSOWANY
+
+==================================================
+
+
+
+Target | weeklyAbsoluteCeiling
+
+
+
+Mięsień czworogłowy uda | 20
+
+Mięśnie pośladkowe | 20
+
+Mięsień trójgłowy łydki | 8
+
+Przywodziciele | 8
+
+Grupa kulszowo-goleniowa | 16
+
+Mięśnie naramienne | 20
+
+Mięsień trójgłowy ramienia | 8
+
+Mięsień piersiowy większy | 16
+
+Mięsień najszerszy grzbietu | 12
+
+Mięsień czworoboczny grzbietu | 16
+
+Mięsień dwugłowy ramienia | 8
+
+Brzuch | 12
+
+==================================================
+
+ZAAWANSOWANY
+
+==================================================
+
+
+
+Target | weeklyAbsoluteCeiling
+
+
+
+Mięsień czworogłowy uda | 30
+
+Mięśnie pośladkowe | 30
+
+Mięsień trójgłowy łydki | 12
+
+Przywodziciele | 12
+
+Grupa kulszowo-goleniowa | 24
+
+Mięśnie naramienne | 24
+
+Mięsień trójgłowy ramienia | 16
+
+Mięsień piersiowy większy | 20
+
+Mięsień najszerszy grzbietu | 20
+
+Mięsień czworoboczny grzbietu | 24
+
+Mięsień dwugłowy ramienia | 16
+
+Brzuch | 16
+
+
+
+==================================================
+
+IMPORTANT SAFEGUARDS
+
+==================================================
+
+
+
+- Do not infer any values.
+
+- Do not preserve old weeklyAbsoluteCeiling values when they differ.
+
+- Do not modify recommended minimum values.
+
+- Do not modify recommended ranges.
+
+- Do not add a per-session volume limit.
+
+- Do not add a new volume field.
+
+- Do not rename database fields.
+
+- Do not create duplicate guideline rows.
+
+- Do not create a new patch system.
+
+- Use the existing idempotent patch mechanism.
+
+- Execute the patch against the active runtime database.
+
+- Do not automatically regenerate existing client plans.
+
+- Do not modify already generated workout plans.
+
+- Do not change generator behaviour when weeklyAbsoluteCeiling is exceeded.
+
+- Do not modify any plyometric values or plyometric behaviour.
+
+
+
+==================================================
+
+VERIFICATION
+
+==================================================
+
+
+
+After execution, verify the actual active runtime database.
+
+
+
+Do not verify only seed constants, source code or test mocks.
+
+
+
+Report all 48 target-level combinations with:
+
+
+
+- experience level,
+
+- target,
+
+- expected weeklyAbsoluteCeiling,
+
+- actual weeklyAbsoluteCeiling,
+
+- MATCH or MISMATCH.
+
+
+
+Also report:
+
+
+
+- files changed,
+
+- whether the existing database patch was executed,
+
+- confirmation that all 48 runtime values match,
+
+- confirmation that no per-session volume field or limit was added,
+
+- confirmation that generator logic was not modified,
+
+- confirmation that proposal logic was not modified,
+
+- confirmation that priority logic was not modified,
+
+- confirmation that plyometric logic was not modified,
+
+- focused guideline-data test results.
+
+
+
+Run only focused tests for the weeklyAbsoluteCeiling data update.
+
+
+
+Maximum 8 additional actions.
+
+
+
+If the active runtime database cannot be accessed, stop and report that clearly
+
+instead of claiming that the values were applied.

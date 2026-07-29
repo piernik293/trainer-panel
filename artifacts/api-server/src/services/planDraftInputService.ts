@@ -416,11 +416,14 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
   // `effectiveTrainingDays` — the value all planning defaults must use
   const effectiveTrainingDays = splitRecommendation?.cappedTrainingDays ?? trainingDays;
 
+  // No-activity clients use a fixed 4-week adaptive block; all other levels default to 6.
+  const defaultBlockDurationWeeks = experienceLevel === "Brak aktywności fizycznej" ? 4 : 6;
+
   const defaultPreferences: PlanDraftGenerationPreferencesType = {
     trainingDays: effectiveTrainingDays,
     sessionDurationMinutes: sessionDurationMinutes ?? 60,
     splitType,
-    blockDurationWeeks: 6,
+    blockDurationWeeks: defaultBlockDurationWeeks,
     trainingGoal: trainingGoal ?? null,
     priorityMuscleGroups,
     preferredTrainingStyle: survey?.planStylePreference ?? null,
@@ -463,7 +466,10 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     warnings,
     defaultPreferences,
     allowedSplitTypes,
-    blockDurationRange: { min: 4, max: 12, default: 6 },
+    blockDurationRange:
+      experienceLevel === "Brak aktywności fizycznej"
+        ? { min: 4, max: 4, default: 4 }
+        : { min: 4, max: 12, default: 6 },
     splitRecommendation,
     safetyAlerts,
     cardioRecommendation,

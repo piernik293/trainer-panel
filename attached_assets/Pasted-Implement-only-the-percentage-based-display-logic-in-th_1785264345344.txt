@@ -1,0 +1,177 @@
+Implement only the percentage-based display logic in the weekly volume proposal
+cards shown before plan generation.
+
+Do not modify generator logic.
+Do not modify proposal values.
+Do not modify proposal calculation.
+Do not modify recovery adjustments.
+Do not modify priority calculation.
+Do not modify weeklyAbsoluteCeiling values.
+Do not modify database data.
+Do not modify session duration behaviour.
+Do not modify training-day or split behaviour.
+Do not modify exercise selection, duration estimation, plyometrics or volume
+coefficients.
+Do not modify the post-generation VolumePanel.
+Do not run a broad audit.
+Do not use subagents.
+
+Read only the active component that renders:
+
+- “Zakres zalecany”
+- “Maks. rekomendowana obj. tyg.”
+- “powyżej zalecanego”
+
+and its directly related focused tests.
+
+==================================================
+1. DISPLAYED RANGE
+==================================================
+
+For every target derive the proposal-card recommended range from that target's:
+
+weeklyAbsoluteCeiling
+
+Use:
+
+recommendedLowerBound =
+Math.floor(weeklyAbsoluteCeiling * 0.75) + 1
+
+recommendedUpperBound =
+weeklyAbsoluteCeiling
+
+Examples:
+
+- ceiling 20 → 16–20
+- ceiling 16 → 13–16
+- ceiling 12 → 10–12
+- ceiling 8 → 7–8
+
+Replace only the old displayed preferred range in these proposal cards.
+
+Display:
+
+Zakres rekomendowany:
+{recommendedLowerBound}–{recommendedUpperBound} serii/tydz.
+
+Maks. rekomendowana obj. tyg.:
+{weeklyAbsoluteCeiling} serii/tydz.
+
+Always show the maximum weekly line when weeklyAbsoluteCeiling exists.
+
+Do not hide it when it equals the old preferred maximum.
+
+Therefore, targets with ceiling 8 must display:
+
+Zakres rekomendowany: 7–8 serii/tydz.
+Maks. rekomendowana obj. tyg.: 8 serii/tydz.
+
+==================================================
+2. CARD STATUS
+==================================================
+
+Calculate:
+
+volumeRatio =
+currentSelectedVolume / weeklyAbsoluteCeiling
+
+Use exactly:
+
+- ratio < 0.50
+  → red
+  → “Poniżej totalnego minimum”
+
+- ratio >= 0.50 and ratio <= 0.75
+  → orange
+  → “Średnie minimum do spełnienia”
+
+- ratio > 0.75 and ratio <= 1.00
+  → green
+  → “Rekomendowana objętość spełniona”
+
+- ratio > 1.00 and ratio < 1.25
+  → orange
+  → “Powyżej maks. rekomendowanej objętości”
+
+- ratio >= 1.25
+  → red
+  → “Ryzyko przetrenowania”
+
+Do not use the old preferredMax value for the card color or warning.
+
+Priority does not change these thresholds.
+
+Manual values and system proposals use the same percentage status calculation.
+
+==================================================
+3. EXPLANATION RANGE
+==================================================
+
+Change only the final displayed range in the explanation.
+
+Examples:
+
+- 18 with ceiling 20:
+  “propozycja: 18 pkt. (zakres 16–20)”
+
+- 15 with ceiling 16:
+  “propozycja: 15 pkt. (zakres 13–16)”
+
+- 11 with ceiling 12:
+  “propozycja: 11 pkt. (zakres 10–12)”
+
+- 7 with ceiling 8:
+  “propozycja: 7 pkt. (zakres 7–8)”
+
+Keep all existing explanations for:
+
+- experience,
+- recovery,
+- availability,
+- priority.
+
+Do not change any numeric proposal.
+
+==================================================
+4. REQUIRED RESULTS
+==================================================
+
+For the current Intermediate profile:
+
+- 18 / 20 → green
+- 15 / 16 → green
+- 11 / 12 → green
+- 7 / 8 → green
+- manual 8 / 8 → green
+
+None of these cards may remain orange with “powyżej zalecanego”.
+
+==================================================
+5. TESTS
+==================================================
+
+Run focused tests proving:
+
+- ceiling 20 displays 16–20,
+- ceiling 16 displays 13–16,
+- ceiling 12 displays 10–12,
+- ceiling 8 displays 7–8,
+- maximum weekly line is always shown,
+- 18/20 is green,
+- 15/16 is green,
+- 11/12 is green,
+- 7/8 is green,
+- manual 8/8 is green,
+- exactly 75% remains orange,
+- above 100% is orange,
+- 125% is red,
+- proposal values remain unchanged.
+
+Report only:
+
+- files changed,
+- old card condition,
+- new percentage condition,
+- focused test results.
+
+Maximum 7 additional actions.

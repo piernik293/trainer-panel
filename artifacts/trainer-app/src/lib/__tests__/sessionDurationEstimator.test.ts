@@ -12,6 +12,9 @@
  *            + (N − 1) × 60                           (transitions)
  *
  * where N = total exercises.
+ *
+ * Warm-up is now 10 min (600 s) — aligned with workoutDurationEstimator.ts.
+ * Session cap is 3600 s (60 min = 10-min warm-up + 50-min max main workout).
  */
 
 import { describe, expect, it } from "vitest";
@@ -38,9 +41,9 @@ describe("spec example — 3 working sets, 90-second rest", () => {
     expect(exerciseDuration(3, 90)).toBe(360);
   });
 
-  it("returns 660 seconds for the full session (including warm-up fallback of 300 s)", () => {
-    // 300 + 360 = 660 s
-    expect(estimateSessionDurationSeconds(1, 3)).toBe(660);
+  it("returns 960 seconds for the full session (including warm-up fallback of 600 s)", () => {
+    // 600 + 360 = 960 s
+    expect(estimateSessionDurationSeconds(1, 3)).toBe(960);
   });
 });
 
@@ -54,8 +57,8 @@ describe("2 sets with 60-second rest", () => {
     expect(exerciseDuration(2, 60)).toBe(180);
   });
 
-  it("full session: 300 + 120 + 60 + 0 = 480 s (warm-up + execution + rest, no transition)", () => {
-    expect(estimateSessionDurationSeconds(1, 2, 60)).toBe(480);
+  it("full session: 600 + 120 + 60 + 0 = 780 s (warm-up + execution + rest, no transition)", () => {
+    expect(estimateSessionDurationSeconds(1, 2, 60)).toBe(780);
   });
 });
 
@@ -66,8 +69,8 @@ describe("3 sets with 90-second rest", () => {
     expect(exerciseDuration(3, 90)).toBe(360);
   });
 
-  it("full session: 300 + 180 + 180 + 0 = 660 s", () => {
-    expect(estimateSessionDurationSeconds(1, 3, 90)).toBe(660);
+  it("full session: 600 + 180 + 180 + 0 = 960 s", () => {
+    expect(estimateSessionDurationSeconds(1, 3, 90)).toBe(960);
   });
 });
 
@@ -133,21 +136,21 @@ describe("transition time between exercises (60 s per gap)", () => {
 // ── Warm-up duration ──────────────────────────────────────────────────────────
 
 describe("warm-up duration", () => {
-  it("default warm-up fallback is 300 s (5 min)", () => {
-    expect(WARMUP_FALLBACK_SECONDS).toBe(300);
+  it("default warm-up fallback is 600 s (10 min) — aligned with workoutDurationEstimator", () => {
+    expect(WARMUP_FALLBACK_SECONDS).toBe(600);
   });
 
-  it("includes warm-up in total when using the default (300 s)", () => {
-    const withWarmup = estimateSessionDurationSeconds(1, 3, 90); // warmup = 300
+  it("includes warm-up in total when using the default (600 s)", () => {
+    const withWarmup = estimateSessionDurationSeconds(1, 3, 90); // warmup = 600
     const withoutWarmup = estimateSessionDurationSeconds(1, 3, 90, 0); // warmup = 0
-    expect(withWarmup - withoutWarmup).toBe(300);
+    expect(withWarmup - withoutWarmup).toBe(600);
   });
 
   it("uses an explicit warm-up when provided (replaces the fallback)", () => {
-    const customWarmup = 600; // 10 min
+    const customWarmup = 300; // 5 min
     const duration = estimateSessionDurationSeconds(1, 3, 90, customWarmup);
     const withoutWarmup = estimateSessionDurationSeconds(1, 3, 90, 0);
-    expect(duration - withoutWarmup).toBe(600);
+    expect(duration - withoutWarmup).toBe(300);
   });
 
   it("zero warm-up is respected (passed warmUpSeconds=0 → no warmup added)", () => {
@@ -157,69 +160,69 @@ describe("warm-up duration", () => {
   });
 });
 
-// ── Boundary: exactly 2700 seconds ───────────────────────────────────────────
+// ── Boundary: exactly 3600 seconds ───────────────────────────────────────────
 
-describe("exactly 2700 seconds — accepted (not exceeds cap)", () => {
-  // Construction: N=3, totalSets=17, restSeconds=90, warmUpSeconds=300
-  // 300 + 17×60 + (17−3)×90 + (3−1)×60
-  // = 300 + 1020 + 1260 + 120 = 2700 s  ✓
+describe("exactly 3600 seconds — accepted (not exceeds cap)", () => {
+  // Construction: N=3, totalSets=21, restSeconds=90, warmUpSeconds=600
+  // 600 + 21×60 + (21−3)×90 + (3−1)×60
+  // = 600 + 1260 + 1620 + 120 = 3600 s  ✓
   const exercises = 3;
-  const sets = 17;
+  const sets = 21;
 
-  it("estimateSessionDurationSeconds returns exactly 2700 s", () => {
-    expect(estimateSessionDurationSeconds(exercises, sets, REST_SECONDS_FALLBACK, WARMUP_FALLBACK_SECONDS)).toBe(2700);
+  it("estimateSessionDurationSeconds returns exactly 3600 s", () => {
+    expect(estimateSessionDurationSeconds(exercises, sets, REST_SECONDS_FALLBACK, WARMUP_FALLBACK_SECONDS)).toBe(3600);
   });
 
-  it("exceedsSessionCap returns false at exactly 2700 s (accepted — strict > comparison)", () => {
+  it("exceedsSessionCap returns false at exactly 3600 s (accepted — strict > comparison)", () => {
     expect(exceedsSessionCap(exercises, sets, REST_SECONDS_FALLBACK, WARMUP_FALLBACK_SECONDS)).toBe(false);
   });
 
-  it("MAX_SESSION_SECONDS constant is 2700", () => {
-    expect(MAX_SESSION_SECONDS).toBe(2700);
+  it("MAX_SESSION_SECONDS constant is 3600", () => {
+    expect(MAX_SESSION_SECONDS).toBe(3600);
   });
 });
 
-// ── Boundary: more than 2700 seconds ─────────────────────────────────────────
+// ── Boundary: more than 3600 seconds ─────────────────────────────────────────
 
-describe("more than 2700 seconds — rejected", () => {
-  it("2701 s is rejected: exceedsSessionCap returns true", () => {
-    // Use N=3, S=17 but bump warm-up by 1 s to reach 2701 s
-    expect(exceedsSessionCap(3, 17, REST_SECONDS_FALLBACK, WARMUP_FALLBACK_SECONDS + 1)).toBe(true);
+describe("more than 3600 seconds — rejected", () => {
+  it("3601 s is rejected: exceedsSessionCap returns true", () => {
+    // Use N=3, S=21 but bump warm-up by 1 s to reach 3601 s
+    expect(exceedsSessionCap(3, 21, REST_SECONDS_FALLBACK, WARMUP_FALLBACK_SECONDS + 1)).toBe(true);
   });
 
-  it("estimateSessionDurationSeconds > 2700 for inputs that clearly overshoot", () => {
-    // N=3, S=18: 300 + 18×60 + 15×90 + 2×60 = 300 + 1080 + 1350 + 120 = 2850 s
-    const duration = estimateSessionDurationSeconds(3, 18, REST_SECONDS_FALLBACK, WARMUP_FALLBACK_SECONDS);
-    expect(duration).toBe(2850);
+  it("estimateSessionDurationSeconds > 3600 for inputs that clearly overshoot", () => {
+    // N=3, S=22: 600 + 22×60 + (22−3)×90 + 2×60 = 600 + 1320 + 1710 + 120 = 3750 s
+    const duration = estimateSessionDurationSeconds(3, 22, REST_SECONDS_FALLBACK, WARMUP_FALLBACK_SECONDS);
+    expect(duration).toBe(3750);
     expect(duration).toBeGreaterThan(MAX_SESSION_SECONDS);
   });
 
   it("exceedsSessionCap returns true for clearly overshooting inputs", () => {
-    expect(exceedsSessionCap(3, 18)).toBe(true);
+    expect(exceedsSessionCap(3, 22)).toBe(true);
   });
 });
 
 // ── Exercise addition rejected when it exceeds the cap ───────────────────────
 
 describe("exercise addition rejected when it exceeds the cap", () => {
-  it("adding an exercise that pushes the session above 2700 s is detected", () => {
-    // Before: N=2, S=16 → 300 + 16×60 + (16−2)×90 + 1×60
-    //       = 300 + 960 + 1260 + 60 = 2580 s  (within cap)
-    // After adding exercise with 2 sets: N=3, S=18
-    //       = 300 + 18×60 + 15×90 + 2×60 = 2850 s  (over cap)
-    const before = estimateSessionDurationSeconds(2, 16);
-    const after = estimateSessionDurationSeconds(3, 18);
-    expect(before).toBe(2580);
+  it("adding an exercise that pushes the session above 3600 s is detected", () => {
+    // Before: N=2, S=20 → 600 + 20×60 + (20−2)×90 + 1×60
+    //       = 600 + 1200 + 1620 + 60 = 3480 s  (within cap)
+    // After adding exercise with 2 sets: N=3, S=22
+    //       = 600 + 22×60 + 19×90 + 2×60 = 3750 s  (over cap)
+    const before = estimateSessionDurationSeconds(2, 20);
+    const after = estimateSessionDurationSeconds(3, 22);
+    expect(before).toBe(3480);
     expect(before).toBeLessThanOrEqual(MAX_SESSION_SECONDS);  // within cap before
-    expect(after).toBe(2850);
-    expect(exceedsSessionCap(3, 18)).toBe(true); // rejected after adding exercise
+    expect(after).toBe(3750);
+    expect(exceedsSessionCap(3, 22)).toBe(true); // rejected after adding exercise
   });
 
-  it("adding an exercise that keeps the session at or below 2700 s is not rejected", () => {
-    // N=2, S=15 → 300 + 15×60 + 13×90 + 60 = 300+900+1170+60 = 2430 s
-    // Add exercise with 2 sets: N=3, S=17 → 2700 s exactly
-    expect(estimateSessionDurationSeconds(2, 15)).toBe(2430);
-    expect(exceedsSessionCap(3, 17)).toBe(false); // exactly 2700 — accepted
+  it("adding an exercise that keeps the session at or below 3600 s is not rejected", () => {
+    // N=2, S=19 → 600 + 19×60 + (19−2)×90 + 1×60 = 600+1140+1530+60 = 3330 s
+    // Add exercise with 2 sets: N=3, S=21 → 3600 s exactly
+    expect(estimateSessionDurationSeconds(2, 19)).toBe(3330);
+    expect(exceedsSessionCap(3, 21)).toBe(false); // exactly 3600 — accepted
   });
 });
 
@@ -231,20 +234,20 @@ describe("set consolidation rejected when it exceeds the cap", () => {
   // This test verifies that the estimator correctly reflects the cap breach
   // when only set count increases (no new exercise, no new transition).
 
-  it("consolidation that raises total sets above the 2700-s cap is detected", () => {
-    // N=1, S=16: 300 + 16×60 + 15×90 + 0 = 300 + 960 + 1350 + 0 = 2610 s  (within cap)
-    // delta=1 → N=1, S=17: 300 + 17×60 + 16×90 + 0 = 300+1020+1440 = 2760 s  (over cap)
-    const beforeConsolidation = estimateSessionDurationSeconds(1, 16);
-    const afterConsolidation = estimateSessionDurationSeconds(1, 17);
-    expect(beforeConsolidation).toBe(2610);
+  it("consolidation that raises total sets above the 3600-s cap is detected", () => {
+    // N=1, S=20: 600 + 20×60 + (20−1)×90 + 0 = 600 + 1200 + 1710 + 0 = 3510 s  (within cap)
+    // delta=1 → N=1, S=21: 600 + 21×60 + (21−1)×90 + 0 = 600+1260+1800 = 3660 s  (over cap)
+    const beforeConsolidation = estimateSessionDurationSeconds(1, 20);
+    const afterConsolidation = estimateSessionDurationSeconds(1, 21);
+    expect(beforeConsolidation).toBe(3510);
     expect(beforeConsolidation).toBeLessThanOrEqual(MAX_SESSION_SECONDS);  // allowed before
-    expect(afterConsolidation).toBe(2760);
-    expect(exceedsSessionCap(1, 17)).toBe(true); // consolidation delta=1 rejected
+    expect(afterConsolidation).toBe(3660);
+    expect(exceedsSessionCap(1, 21)).toBe(true); // consolidation delta=1 rejected
   });
 
-  it("consolidation that keeps the session at or below 2700 s is not rejected", () => {
-    // N=1, S=16 → 2610 s; consolidation still within cap
-    expect(exceedsSessionCap(1, 16)).toBe(false);
+  it("consolidation that keeps the session at or below 3600 s is not rejected", () => {
+    // N=1, S=20 → 3510 s; consolidation still within cap
+    expect(exceedsSessionCap(1, 20)).toBe(false);
   });
 
   it("consolidation with delta=2 is 30 s more expensive than expansion (same total sets)", () => {
@@ -252,17 +255,17 @@ describe("set consolidation rejected when it exceeds the cap", () => {
     // canAddMore expansion projects: N+1=2 exercises, S+minSets=12 sets.
     // Consolidation delta=2 projects: N=1 exercise,   S+delta=12 sets.
     //
-    // Expansion  (N=2, S=12): 300 + 12×60 + (12−2)×90 + 1×60 = 300+720+900+60 = 1980 s
-    // Consolidation (N=1, S=12): 300 + 12×60 + (12−1)×90 + 0×60 = 300+720+990+0  = 2010 s
+    // Expansion  (N=2, S=12): 600 + 12×60 + (12−2)×90 + 1×60 = 600+720+900+60 = 2280 s
+    // Consolidation (N=1, S=12): 600 + 12×60 + (12−1)×90 + 0×60 = 600+720+990+0  = 2310 s
     //
     // Consolidation is 30 s MORE expensive because it has one extra rest interval
     // (N=1 → 11 rest periods vs N=2 → 10 rest periods) while avoiding 1 transition.
     // Net: +90 s rest − 60 s transition = +30 s.
     // This means delta=2 consolidation CAN exceed the cap even when canAddMore passes.
-    const consolidation = estimateSessionDurationSeconds(1, 12); // 2010 s
-    const expansion = estimateSessionDurationSeconds(2, 12);     // 1980 s
-    expect(consolidation).toBe(2010);
-    expect(expansion).toBe(1980);
+    const consolidation = estimateSessionDurationSeconds(1, 12); // 2310 s
+    const expansion = estimateSessionDurationSeconds(2, 12);     // 2280 s
+    expect(consolidation).toBe(2310);
+    expect(expansion).toBe(2280);
     expect(consolidation - expansion).toBe(30); // consolidation is 30 s more expensive
   });
 });
@@ -282,10 +285,10 @@ describe("edge cases", () => {
     expect(REST_SECONDS_FALLBACK).toBe(90);
   });
 
-  it("estimateSessionDurationSeconds(N, S) === estimateSessionDurationSeconds(N, S, 90, 300)", () => {
+  it("estimateSessionDurationSeconds(N, S) === estimateSessionDurationSeconds(N, S, 90, 600)", () => {
     for (const [n, s] of [[1, 3], [2, 6], [5, 15]] as const) {
       expect(estimateSessionDurationSeconds(n, s)).toBe(
-        estimateSessionDurationSeconds(n, s, 90, 300),
+        estimateSessionDurationSeconds(n, s, 90, 600),
       );
     }
   });

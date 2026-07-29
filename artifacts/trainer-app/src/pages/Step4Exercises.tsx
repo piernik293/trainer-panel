@@ -61,6 +61,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TempoInput } from "@/components/TempoInput";
+import { WorkoutDayDuration } from "@/components/WorkoutDayDuration";
+import { getDefaultTempo, deriveExerciseClass } from "@/lib/workoutDurationEstimator";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -120,6 +122,11 @@ interface Step4ExercisesProps {
    * blocks returned by the API.  Step 5 uses these to render coaching context.
    */
   onExplanationsUpdate?: (explanations: Record<number, GeneratedDayExplanation>) => void;
+  /**
+   * Available session duration (minutes) from the client interview.
+   * Used to render the per-day time estimate and colour status.
+   */
+  sessionDurationMinutes: number | null;
 }
 
 // ─── Prescription parser ──────────────────────────────────────────────────────
@@ -148,6 +155,7 @@ export default function Step4Exercises({
   coverageLoading,
   experienceLevel,
   onExplanationsUpdate,
+  sessionDurationMinutes,
 }: Step4ExercisesProps) {
   const [selectorForDay, setSelectorForDay] = useState<number | null>(null);
   const [recOpenForDay, setRecOpenForDay] = useState<number | null>(null);
@@ -162,35 +170,53 @@ export default function Step4Exercises({
   /** Add an exercise chosen from the recommendation panel (no full Exercise type needed). */
   const handleAddFromRecommendation = useCallback(
     (dayIndex: number, payload: AddFromRecommendationPayload) => {
+      const exerciseClass = deriveExerciseClass({
+        exerciseType: payload.exerciseType,
+        exercisePriority: payload.exercisePriority,
+        mainMuscleGroup: payload.mainMuscleGroup,
+        movementCategory: payload.movementCategory,
+        suitableForNoActivity: payload.suitableForNoActivity,
+      });
       const next = addExerciseToDay(exerciseDraft, dayIndex, {
         exerciseId: payload.id,
         exerciseName: payload.name,
         mainMuscleGroup: payload.mainMuscleGroup,
         equipment: payload.equipment,
         isCore: false,
+        exerciseClass,
         sets: DRAFT_EXERCISE_DEFAULTS.sets,
         repsMin: DRAFT_EXERCISE_DEFAULTS.repsMin,
         repsMax: DRAFT_EXERCISE_DEFAULTS.repsMax,
         rir: DRAFT_EXERCISE_DEFAULTS.rir,
         restSeconds: DRAFT_EXERCISE_DEFAULTS.restSeconds,
+        tempo: getDefaultTempo(exerciseClass, experienceLevel),
       });
       onDraftChange(next);
     },
-    [exerciseDraft, onDraftChange],
+    [exerciseDraft, onDraftChange, experienceLevel],
   );
 
   function handleAdd(dayIndex: number, exercise: Exercise) {
+    const exerciseClass = deriveExerciseClass({
+      exerciseType: exercise.exerciseType,
+      exercisePriority: exercise.exercisePriority,
+      mainMuscleGroup: exercise.mainMuscleGroup,
+      movementCategory: exercise.movementCategory,
+      suitableForNoActivity: exercise.suitableForNoActivity,
+    });
     const next = addExerciseToDay(exerciseDraft, dayIndex, {
       exerciseId: exercise.id,
       exerciseName: exercise.name,
       mainMuscleGroup: exercise.mainMuscleGroup,
       equipment: exercise.equipment,
       isCore: false,
+      exerciseClass,
       sets: DRAFT_EXERCISE_DEFAULTS.sets,
       repsMin: DRAFT_EXERCISE_DEFAULTS.repsMin,
       repsMax: DRAFT_EXERCISE_DEFAULTS.repsMax,
       rir: DRAFT_EXERCISE_DEFAULTS.rir,
       restSeconds: DRAFT_EXERCISE_DEFAULTS.restSeconds,
+      tempo: getDefaultTempo(exerciseClass, experienceLevel),
     });
     onDraftChange(next);
     setSelectorForDay(null);
@@ -257,6 +283,11 @@ export default function Step4Exercises({
     setAutoFillSummary(null);
     setAutoFillError(null);
 
+    // Unique identifier for this generation run.  Created once here so that
+    // the commit call (after full success) can use the same ID on retry.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const generationId: string = (crypto as any).randomUUID?.() ?? self.crypto.randomUUID();
+
     const dayResults: Array<{
       dayIndex: number;
       exercises: Array<{
@@ -303,6 +334,11 @@ export default function Step4Exercises({
             m.effectiveSets < m.weeklyPreferredCeiling * 0.5,
         )
         .map((m) => m.muscleName) ?? [];
+
+    // Pre-count eligible days so we know the full generation succeeded later.
+    const eligibleDayCount = distributionResult.days.filter(
+      (d) => V0_SESSION_TYPES.has(d.dayType?.toLowerCase() ?? ""),
+    ).length;
 
     for (const day of distributionResult.days) {
       const rawSessionType = day.dayType?.toLowerCase() ?? "";
@@ -415,6 +451,9 @@ export default function Step4Exercises({
     // which can reduce sets across ANY day (not just the current one) to
     // bring every volume target within its absolute weekly ceiling.
     // The Map key is "${dayResultIndex}-${exerciseIndex}" → balanced sets.
+    // Tracks whether the balance-week pass completed successfully.
+    // Required for the complete-success commit condition (§10).
+    let balanceWeekSucceeded = false;
     const weekBalancedSets = new Map<string, number>();
     try {
       const balResp = await fetch(`/api/clients/${clientId}/plan-draft/balance-week`, {
@@ -432,6 +471,7 @@ export default function Step4Exercises({
         }),
       });
       if (balResp.ok) {
+        balanceWeekSucceeded = true;
         const balData = await balResp.json() as {
           days: Array<{ exercises: Array<{ id: number; sets: number }> }>;
         };
@@ -473,6 +513,7 @@ export default function Step4Exercises({
           repsMax: repsParsed.max,
           rir: DRAFT_EXERCISE_DEFAULTS.rir,
           restSeconds: ex.prescription?.restSeconds ?? DRAFT_EXERCISE_DEFAULTS.restSeconds,
+          tempo: getDefaultTempo(ex.exerciseClass, experienceLevel),
         });
       }
     }
@@ -489,6 +530,29 @@ export default function Step4Exercises({
     }
 
     onDraftChange(newDraft);
+
+    // ── Commit variety history when the generation is fully complete ────────────
+    //
+    // "Fully complete" = all eligible days generated + balance-week succeeded.
+    // Fire-and-forget: a history failure must never block or remove the draft.
+    const generationIsComplete =
+      errors.length === 0 &&
+      dayResults.length === eligibleDayCount &&
+      balanceWeekSucceeded;
+
+    if (generationIsComplete) {
+      const autoSelectedIds = [
+        ...new Set(dayResults.flatMap((r) => r.exercises.map((e) => e.id))),
+      ];
+      fetch(`/api/clients/${clientId}/plan-draft/record-generation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ generationId, exerciseIds: autoSelectedIds }),
+      }).catch((err) => {
+        console.error("[GenerateHistory] Failed to commit generation history:", err);
+      });
+    }
+
     setAutoFillState("success");
     setAutoFillSummary({
       totalAdded: dayResults.reduce((sum, r) => sum + r.exercises.length, 0),
@@ -530,7 +594,8 @@ export default function Step4Exercises({
       experienceLevel === "Średniozaawansowany" || experienceLevel === "Zaawansowany";
 
     // Compute overrides once; spread into each day below.
-    // Brak aktywności fizycznej: poolSize=20, max=5, min=4, sets=[2,3], cap=45 min
+    // Brak aktywności fizycznej: poolSize=20, max=5, min=4, sets=[2,3], cap=60 min
+    // 60 min = 10-min mandatory warm-up + 50-min maximum main workout.
     // Początkujący:              max=5, min=4
     // Średniozaawansowany/Zaawansowany: min=5 (max stays at default 8)
     const levelOverrides = {
@@ -539,7 +604,7 @@ export default function Step4Exercises({
         maxDayExercises: 5,
         minDayExercises: 4,
         allowedSetCounts: [2, 3] as const,
-        maxSessionMinutes: 45,
+        maxSessionMinutes: 60,
       }),
       ...(isPoczatkujacy && {
         maxDayExercises: 5,
@@ -547,6 +612,13 @@ export default function Step4Exercises({
       }),
       ...(isSrednioOrZaawansowany && {
         minDayExercises: 5,
+      }),
+      // For non-Brak levels, cap the session by the interview value.
+      // Falls back to 60 min when the interview answer is missing.
+      // Placed after the isBrakAktywnosci block so the Brak 60-min cap
+      // is never overridden by a longer interview value.
+      ...(!isBrakAktywnosci && {
+        maxSessionMinutes: sessionDurationMinutes ?? 60,
       }),
     };
 
@@ -697,11 +769,13 @@ export default function Step4Exercises({
           mainMuscleGroup: toAdd.mainMuscleGroup,
           equipment: toAdd.equipment,
           isCore: toAdd.isCore,
+          exerciseClass: toAdd.exerciseClass,
           sets: toAdd.sets,
           repsMin: DRAFT_EXERCISE_DEFAULTS.repsMin,
           repsMax: DRAFT_EXERCISE_DEFAULTS.repsMax,
           rir: DRAFT_EXERCISE_DEFAULTS.rir,
           restSeconds: DRAFT_EXERCISE_DEFAULTS.restSeconds,
+          tempo: getDefaultTempo(toAdd.exerciseClass, experienceLevel),
         });
       }
     }
@@ -866,6 +940,15 @@ export default function Step4Exercises({
                 onRirManualChange={handleRirManualChange}
                 onWeightChange={handleWeightChange}
               />
+
+              {/* Workout day duration estimate — shown once exercises are present */}
+              {dayExercises.length > 0 && (
+                <WorkoutDayDuration
+                  exercises={dayExercises}
+                  sessionDurationMinutes={sessionDurationMinutes}
+                  experienceLevel={experienceLevel}
+                />
+              )}
 
               {/* Action buttons row */}
               <div className="grid grid-cols-2 gap-2">
@@ -1051,6 +1134,13 @@ function SortableDraftExerciseCard({
     setSetsDisplayValue(String(exercise.sets));
   }, [exercise.sets]);
 
+  const [repsMinDisplay, setRepsMinDisplay] = useState(String(exercise.repsMin));
+  const [repsMaxDisplay, setRepsMaxDisplay] = useState(String(exercise.repsMax));
+  const [restDisplay, setRestDisplay] = useState(String(exercise.restSeconds));
+  useEffect(() => { setRepsMinDisplay(String(exercise.repsMin)); }, [exercise.repsMin]);
+  useEffect(() => { setRepsMaxDisplay(String(exercise.repsMax)); }, [exercise.repsMax]);
+  useEffect(() => { setRestDisplay(String(exercise.restSeconds)); }, [exercise.restSeconds]);
+
   // Immediately commit valid set counts to the draft so Core coverage and the
   // normal-target coverage key both update without requiring a blur.
   function handleSetsChange(raw: string) {
@@ -1076,20 +1166,48 @@ function SortableDraftExerciseCard({
     }
   }
 
+  function handleRepsMinChange(raw: string) {
+    setRepsMinDisplay(raw);
+    const n = parseInt(raw, 10);
+    if (!isNaN(n) && n >= 1) onFieldChange("repsMin", n);
+  }
+
+  function handleRepsMaxChange(raw: string) {
+    setRepsMaxDisplay(raw);
+    const n = parseInt(raw, 10);
+    if (!isNaN(n) && n >= 1) onFieldChange("repsMax", n);
+  }
+
+  function handleRestChange(raw: string) {
+    setRestDisplay(raw);
+    const n = parseInt(raw, 10);
+    if (!isNaN(n) && n > 0) onFieldChange("restSeconds", n);
+  }
+
   function handleRepsMinBlur(raw: string) {
     const n = parseInt(raw, 10);
-    if (isNaN(n)) { setRepsError("Wpisz liczbę całkowitą."); return; }
+    if (isNaN(n)) {
+      setRepsError("Wpisz liczbę całkowitą.");
+      setRepsMinDisplay(String(exercise.repsMin));
+      return;
+    }
     const err = validateReps(n, exercise.repsMax);
     setRepsError(err);
     if (!err) onFieldChange("repsMin", n);
+    else setRepsMinDisplay(String(exercise.repsMin));
   }
 
   function handleRepsMaxBlur(raw: string) {
     const n = parseInt(raw, 10);
-    if (isNaN(n)) { setRepsError("Wpisz liczbę całkowitą."); return; }
+    if (isNaN(n)) {
+      setRepsError("Wpisz liczbę całkowitą.");
+      setRepsMaxDisplay(String(exercise.repsMax));
+      return;
+    }
     const err = validateReps(exercise.repsMin, n);
     setRepsError(err);
     if (!err) onFieldChange("repsMax", n);
+    else setRepsMaxDisplay(String(exercise.repsMax));
   }
 
   function handleRirBlur(raw: string) {
@@ -1109,7 +1227,11 @@ function SortableDraftExerciseCard({
 
   function handleRestBlur(raw: string) {
     const n = parseInt(raw, 10);
-    if (!isNaN(n) && n > 0) onFieldChange("restSeconds", n);
+    if (!isNaN(n) && n > 0) {
+      onFieldChange("restSeconds", n);
+    } else {
+      setRestDisplay(String(exercise.restSeconds));
+    }
   }
 
   return (
@@ -1187,8 +1309,9 @@ function SortableDraftExerciseCard({
             type="number"
             min={1}
             step={1}
-            defaultValue={exercise.repsMin}
+            value={repsMinDisplay}
             className="h-7 text-xs"
+            onChange={(e) => handleRepsMinChange(e.target.value)}
             onBlur={(e) => handleRepsMinBlur(e.target.value)}
           />
         </div>
@@ -1200,8 +1323,9 @@ function SortableDraftExerciseCard({
             type="number"
             min={1}
             step={1}
-            defaultValue={exercise.repsMax}
+            value={repsMaxDisplay}
             className="h-7 text-xs"
+            onChange={(e) => handleRepsMaxChange(e.target.value)}
             onBlur={(e) => handleRepsMaxBlur(e.target.value)}
           />
         </div>
@@ -1227,8 +1351,9 @@ function SortableDraftExerciseCard({
             type="number"
             min={1}
             step={1}
-            defaultValue={exercise.restSeconds}
+            value={restDisplay}
             className="h-7 text-xs"
+            onChange={(e) => handleRestChange(e.target.value)}
             onBlur={(e) => handleRestBlur(e.target.value)}
           />
         </div>

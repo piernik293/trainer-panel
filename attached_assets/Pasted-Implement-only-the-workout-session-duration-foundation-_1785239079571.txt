@@ -1,0 +1,282 @@
+Implement only the workout-session duration foundation and default exercise tempo.
+
+Do not use subagents or parallel explorers.
+Do not perform a broad audit.
+Do not modify exercise selection, weekly balancing, volume targets,
+volume ceilings, arm-training rules or intensification methods.
+Do not publish automatically.
+Do not create follow-up tasks.
+
+Before adding code, locate and reuse the existing:
+- interview session-duration field,
+- workout-plan creation/editor screen,
+- workout-day cards,
+- exercise cards,
+- sets, reps, RIR, tempo and rest fields.
+
+Do not create duplicate fields or a separate duration page.
+
+IMPORTANT UI LOCATION
+
+The duration estimate and tempo editor must appear in the existing panel where
+the trainer generates and edits the workout plan.
+
+Do not add it only to:
+- the saved-plan details page,
+- a debug view,
+- an API response,
+- a separate analysis page.
+
+For every workout day in the plan creation/editor screen, show the time summary
+inside that day card.
+
+For every exercise card, show tempo next to:
+- sets,
+- repetitions,
+- RIR,
+- rest period.
+
+1. Mandatory warm-up
+
+Every workout session includes:
+- mandatory warm-up: 10 minutes.
+
+The warm-up duration cannot be set to zero or removed.
+Do not add a new interview question about warm-up duration.
+
+Display it in the workout-day time summary as:
+“Rozgrzewka: 10 min”.
+
+2. Tempo fields
+
+Every resistance exercise must have a structured four-phase tempo:
+
+eccentric - bottom pause - concentric - top pause
+
+Display it as four compact one-character inputs, for example:
+
+3 - 1 - 1 - 0
+
+Labels or tooltips:
+- faza ekscentryczna,
+- zatrzymanie na dole,
+- faza koncentryczna,
+- zatrzymanie na górze.
+
+Do not store tempo only as an unvalidated note.
+
+Do not overwrite an existing tempo selected by the trainer.
+
+When tempo is missing, assign the following defaults:
+
+- general resistance / hypertrophy:
+  3-1-1-0
+
+- technique-focused exercises for “Brak aktywności fizycznej”:
+  3-1-2-0
+
+- strength-focused compound exercises:
+  2-0-1-0
+
+- power or plyometric exercises:
+  2-0-X-0
+
+For duration estimation, interpret X as 1 second, but preserve X in the UI
+because it means an intentionally explosive concentric phase.
+
+Do not apply slow resistance tempo to:
+- jumps,
+- throws,
+- sprints,
+- cardio.
+
+When the exercise is cardio and does not use repetitions, tempo is not required.
+
+3. Working-time calculation
+
+For resistance exercises:
+
+secondsPerRep =
+eccentric
++ bottom pause
++ concentric
++ top pause
+
+For X use 1 second only for the time estimate.
+
+Use the midpoint of the repetition range.
+
+workingTimeSeconds =
+sets × midpointRepetitions × secondsPerRep
+
+Example:
+
+3×12, tempo 3-1-1-0:
+- 5 seconds per repetition,
+- 60 seconds per set,
+- 180 seconds total working time.
+
+If an old exercise has no tempo and no default can be assigned, use a clearly
+named fallback of 4 seconds per repetition and report that fallback.
+
+4. Rest time
+
+Use the existing rest value stored on the exercise.
+
+interSetRestCount = sets - 1
+
+restTimeSeconds =
+(sets - 1) × plannedRestSeconds
+
+Do not add a full rest period after the final set.
+
+Do not change rest-period rules in this task.
+
+5. Setup and transition time
+
+Use deterministic defaults:
+
+- isolation or simple machine: 30 seconds,
+- accessory or dumbbell exercise: 45 seconds,
+- compound or barbell exercise: 60 seconds,
+- power or plyometric exercise: 60 seconds,
+- unknown type: 45 seconds.
+
+Do not redesign the exercise library.
+
+6. Total workout-day duration
+
+Return and display for every workout day:
+
+- warmupMinutes,
+- workingMinutes,
+- restingMinutes,
+- setupTransitionMinutes,
+- estimatedTotalMinutes,
+- availableMinutes,
+- exceededByMinutes.
+
+Formula:
+
+estimatedTotal =
+10-minute mandatory warm-up
++ working time
++ inter-set rest time
++ setup and transition time
+
+Do not add an additional percentage buffer in this version.
+
+7. Comparison with interview duration
+
+Use the existing duration selected in the client interview.
+
+Colour status:
+
+- green:
+  estimated duration is within available duration,
+
+- orange:
+  estimated duration is 1–10 minutes above available duration,
+
+- red:
+  estimated duration is more than 10 minutes above available duration.
+
+Do not silently:
+- remove exercises,
+- reduce sets,
+- change repetitions,
+- shorten rest,
+- change tempo
+
+to make the workout fit.
+
+Only show the estimate and warning.
+
+8. “Brak aktywności fizycznej”
+
+For this level additionally display:
+
+- recommended main-workout duration: 35–45 minutes,
+- recommended maximum main-workout duration: 50 minutes,
+- mandatory warm-up: 10 minutes.
+
+The main-workout duration excludes the mandatory warm-up.
+
+Do not automatically remove exercises when this recommendation is exceeded.
+Show the warning to the trainer.
+
+9. Live updates in the plan editor
+
+The workout-day estimate must update immediately when the trainer edits:
+
+- number of sets,
+- repetition range,
+- tempo,
+- rest period,
+- adds an exercise,
+- removes an exercise.
+
+Tempo must remain manually editable.
+
+10. UI example
+
+Inside every workout-day card show:
+
+Szacowany czas treningu
+
+Rozgrzewka: 10 min
+Praca: 18 min
+Przerwy: 27 min
+Przygotowanie i przejścia: 5 min
+Łącznie: 60 min
+Czas dostępny: 60 min
+
+When exceeded:
+
+Przekroczenie: około 8 min
+
+Use the correct green, orange or red status.
+
+11. Tests
+
+Add focused tests for:
+
+A.
+3×12, tempo 3-1-1-0, rest 90 seconds.
+
+B.
+4×5, tempo 2-0-1-0, rest 180 seconds.
+
+C.
+Power exercise with tempo 2-0-X-0 and X interpreted as 1 second for duration.
+
+D.
+Workout containing:
+- 4×12
+- 3×12
+- 3×12
+- 3×12
+- 3×12
+
+E.
+Colour states:
+- within duration,
+- 1–10 minutes over,
+- more than 10 minutes over.
+
+F.
+Changing tempo or rest in the plan editor recalculates the workout-day time.
+
+FINAL REPORT
+
+Report only:
+- files changed,
+- exact UI component where the summary was added,
+- exact UI component where tempo inputs were added,
+- duration formula,
+- default tempo rules,
+- test results,
+- textual example of the displayed summary.
+
+Do not modify unrelated files.
+Do not publish automatically.

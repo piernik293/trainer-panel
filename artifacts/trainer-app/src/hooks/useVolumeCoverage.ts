@@ -51,7 +51,7 @@ export interface WeeklyMusclePreview {
   sessionMax: number;
   remainingToPreferred: number;
   remainingToAbsolute: number;
-  status: "below_preferred" | "within_preferred" | "above_preferred" | "above_absolute";
+  status: "below_total_minimum" | "medium_minimum" | "recommended_volume" | "above_max_recommended" | "overtraining_warning";
   hasGuideline: boolean;
   contributions: Array<{
     exerciseEntryId: number;

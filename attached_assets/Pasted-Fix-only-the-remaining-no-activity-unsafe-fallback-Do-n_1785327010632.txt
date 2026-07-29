@@ -1,0 +1,179 @@
+Fix only the remaining no-activity unsafe fallback.
+
+Do not run a broad audit.
+Do not use subagents.
+Do not modify exercise catalogue records.
+Do not modify equipment filtering, volume, split, duration, exercise history,
+tempo, rest, RIR or plyometric logic.
+
+Maximum 6 actions.
+
+CURRENT PROBLEM
+
+For “Brak aktywności fizycznej”, suitableForNoActivity exercises are currently:
+
+- promoted to the front of the candidate list,
+- hard-filtered only for some alternative-index paths.
+
+When the safe candidate band is empty, the engine falls back to the full
+candidate band.
+
+This allowed exercises such as:
+
+id=214
+“Francuskie prostowanie ramion gumą oporową zza głowy”
+
+to appear in automatic no-activity generation.
+
+The previous test was relaxed to accept this behaviour.
+Do not relax the product requirement.
+
+==================================================
+1. HARD SAFETY FILTER
+==================================================
+
+For automatic generation when:
+
+ctx.isNoActivityClient === true
+
+every automatically selected exercise must satisfy:
+
+exercise.suitableForNoActivity === true
+
+Apply:
+
+exercise.suitableForNoActivity === true
+
+Apply this to:
+
+- altIdx = 0,
+- altIdx > 0,
+- normal slot selection,
+- accessory fallbacks,
+- lower-body supplement,
+- beginner balancing replacements.
+
+Do not rely only on learningDifficulty <= 2.
+
+Low learning difficulty does not automatically mean that the exercise is
+appropriate for a previously inactive client.
+
+Manual or locked trainer-selected exercises are outside this automatic filter
+and remain unchanged.
+
+==================================================
+2. SAFE POOL EXHAUSTION
+==================================================
+
+When no unused safe candidate exists for a required slot:
+
+1. keep safety, equipment, contraindication and movement-pattern filters,
+
+2. allow reuse of a suitableForNoActivity=true exercise already selected earlier
+   in the current week,
+
+3. prefer the safe exercise used least recently in the current week,
+
+4. do not fall back to suitableForNoActivity=false or null exercises.
+
+Safety has higher priority than exercise novelty.
+
+Example:
+
+If Glute bridge is the only safe legal hip-dominant exercise:
+
+- Day 1 may use Glute bridge,
+- Day 2 may repeat Glute bridge,
+- do not replace it with an unsafe, technical or unrelated lower-body exercise.
+
+==================================================
+3. OPTIONAL SLOT FAILURE
+==================================================
+
+If no safe exercise exists even after allowing safe reuse:
+
+- skip the optional slot,
+- do not insert an isolation or unrelated exercise only to reach an exercise
+  count,
+- return a non-blocking structural warning.
+
+Warning:
+
+“Brak kolejnego bezpiecznego ćwiczenia dla poziomu Brak aktywności fizycznej —
+zachowano prostszy układ planu.”
+
+Do not turn a valid safe plan into a blocking failure solely because an optional
+slot is empty.
+
+==================================================
+4. GENERAL-DEVELOPMENT PRIORITY
+==================================================
+
+For no-activity Full Body generation, preserve this priority:
+
+1. knee-dominant,
+2. hip-dominant,
+3. push,
+4. pull when legal equipment allows it,
+5. core,
+6. optional carry or simple accessory.
+
+Do not add direct arm isolation before the major movement patterns are covered.
+
+Exercises such as direct biceps or triceps isolation must not be used as a
+substitute for a missing compound movement.
+
+==================================================
+5. FOCUSED VERIFICATION
+==================================================
+
+Generate 10 repeated two-day Full Body plans for each:
+
+A. Dom + Brak sprzętu
+
+B. Dom + Gumy oporowe + Masa własnego ciała
+
+C. Dom + TRX + Masa własnego ciała
+
+D. Dom + Hantle + Masa własnego ciała
+
+E. Siłownia + Maszyna + Wyciąg
+
+Verify:
+
+1. Every automatically selected exercise has suitableForNoActivity=true.
+
+2. id=214 never appears.
+
+3. No suitableForNoActivity=false or null exercise appears.
+
+4. Safe exercise repetition is allowed when the legal safe pool is exhausted.
+
+5. Glute bridge may repeat instead of using an unsafe hip-dominant substitute.
+
+6. Pull appears for profiles B, C and E.
+
+7. Bodyweight-only profile retains the missing-pull warning.
+
+8. No direct arm isolation replaces a missing major movement pattern.
+
+9. Equipment and required_equipment_all remain respected.
+
+10. Manual and locked exercises remain unchanged.
+
+Do not weaken tests to match current behaviour.
+
+==================================================
+REPORT
+==================================================
+
+Report only:
+
+- files changed,
+- previous full-band fallback,
+- new safe-reuse fallback,
+- any remaining slot with no safe candidate,
+- 10-generation results for profiles A–E,
+- focused test results.
+
+Stop after this correction.

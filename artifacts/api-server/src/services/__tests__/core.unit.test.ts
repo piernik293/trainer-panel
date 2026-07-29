@@ -129,29 +129,31 @@ describe("computeVolumeCore", () => {
     expect(chest.contributions).toHaveLength(1);        // one contribution entry per exercise × target
   });
 
-  it("status: below_preferred when 0 effective sets", () => {
+  // Chest absolute=20; all status expectations use percentage of 20.
+  it("status: below_total_minimum when 0 effective sets (ratio 0%)", () => {
     const results = computeVolumeCore([], assignments, targetMap, guidelineMap, ORDERED);
-    expect(results.find(r => r.targetId === 1)!.status).toBe("below_preferred");
+    expect(results.find(r => r.targetId === 1)!.status).toBe("below_total_minimum");
   });
 
-  it("status: within_preferred for 6 sets (threshold > 0, ≤ preferred 15)", () => {
+  it("status: below_total_minimum for 6 sets (ratio 30% < 50%)", () => {
     const results = computeVolumeCore([e(1, 1, 1, 6)], assignments, targetMap, guidelineMap, ORDERED);
-    expect(results.find(r => r.targetId === 1)!.status).toBe("within_preferred");
+    expect(results.find(r => r.targetId === 1)!.status).toBe("below_total_minimum");
   });
 
-  it("status: within_preferred at exactly preferred ceiling (15 sets, preferred=15)", () => {
+  it("status: medium_minimum at exactly 15 sets (ratio 75% = 0.75, orange)", () => {
+    // 15/20 = 0.75 → medium_minimum (boundary: ≥ 0.50 and ≤ 0.75)
     const results = computeVolumeCore([e(1, 1, 1, 15)], assignments, targetMap, guidelineMap, ORDERED);
-    expect(results.find(r => r.targetId === 1)!.status).toBe("within_preferred");
+    expect(results.find(r => r.targetId === 1)!.status).toBe("medium_minimum");
   });
 
-  it("status: above_preferred for 16 sets (preferred=15, absolute=20)", () => {
+  it("status: recommended_volume for 16 sets (ratio 80%, 0.75 < ratio ≤ 1.00)", () => {
     const results = computeVolumeCore([e(1, 1, 1, 16)], assignments, targetMap, guidelineMap, ORDERED);
-    expect(results.find(r => r.targetId === 1)!.status).toBe("above_preferred");
+    expect(results.find(r => r.targetId === 1)!.status).toBe("recommended_volume");
   });
 
-  it("status: above_absolute for 21 sets (absolute=20)", () => {
+  it("status: above_max_recommended for 21 sets (ratio 105%, 1.00 < ratio < 1.25)", () => {
     const results = computeVolumeCore([e(1, 1, 1, 21)], assignments, targetMap, guidelineMap, ORDERED);
-    expect(results.find(r => r.targetId === 1)!.status).toBe("above_absolute");
+    expect(results.find(r => r.targetId === 1)!.status).toBe("above_max_recommended");
   });
 
   it("remainingToPreferred and remainingToAbsolute are clamped at 0 when over ceiling", () => {

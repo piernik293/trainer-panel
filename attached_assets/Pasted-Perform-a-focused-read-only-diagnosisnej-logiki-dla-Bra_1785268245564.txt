@@ -1,0 +1,85 @@
+Perform a focused read-only diagnosisnej logiki dla „Brak aktywności”,
+- albo UI pokazuje inną wartość niż backend.
+
+Ale tego nie zgadujemy. W only.
+
+Do not modify code.
+Do not write tests.
+Do not run a broad audit.
+Do not use subagents.
+Do not inspect unrelated files.
+
+Goal:
+
+Find the exact active calculation path that changes the weekly proposal for:
+
+Experience level:
+Brak aktywności fizycznej
+
+Target:
+Mięsień czworogłowy uda
+
+weeklyAbsoluteCeiling:
+8
+
+Final displayed proposal:
+2
+
+Trace the value step by step from database guideline to the value displayed in:
+
+Generuj szkic planu
+→ Założenia planu
+→ weekly muscle-volume proposal card.
+
+Report the exact value after every active stage, including where applicable:
+
+1. weeklyAbsoluteCeiling
+2. preferredMin
+3. preferredMax
+4. experience-level base position
+5. base proposal
+6. priority adjustment
+7. recovery adjustment
+8. availability adjustment
+9. clamp/min/max operation
+10. final backend proposal
+11. final frontend selected value
+
+For every stage report:
+
+- file,
+- function,
+- exact condition,
+- input value,
+- output value,
+- whether it actually runs for Brak aktywności fizycznej.
+
+Also identify which active rule produces these visible explanation lines:
+
+- “wybrano dolną granicę zakresu zalecanego”
+- “ograniczona dostępność treningowa — obniżenie dla nie-priorytetowych partii”
+- “Ograniczona liczba dni lub krótkie sesje: objętość została obniżona”
+
+Then verify one second case:
+
+Experience:
+Początkujący
+
+Choose one target whose weeklyAbsoluteCeiling is known and trace whether the
+same reduction path applies.
+
+Do not propose or implement a fix.
+
+Final report must answer only:
+
+1. Exact formula/path producing 8 → 2.
+2. Whether the reduction is intentional current logic or an accidental double
+   reduction.
+3. Whether the value 2 comes from backend calculation or frontend state.
+4. Which smallest single condition would need to change if we later decide to
+   disable this reduction only for Brak aktywności and Początkujący.
+5. Files that would need modification later.
+
+Maximum 6 actions.
+
+Stop after the diagnosis.

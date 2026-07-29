@@ -1,0 +1,204 @@
+Implement only the smallest high-impact equipment-metadata corrections.
+
+Do not create a database migration.
+Do not add equipment_requires_all yet.
+Do not redesign equipment filtering.
+Do not modify generator ranking, volume logic, split logic, duration logic,
+exercise history, contraindications, safety rules, tempo, rest, RIR or
+plyometric logic.
+
+Do not run a broad audit.
+Do not use subagents.
+Do not modify unrelated exercises.
+Maximum 6 actions.
+
+Goal:
+
+Prevent bodyweight-only clients from receiving exercises that actually require
+a bench, resistance band, handles or gymnastic rings.
+
+Apply every correction both to:
+
+- the active development database,
+- the idempotent exercise catalogue seed/source,
+
+so the values remain correct after restart or deployment.
+
+==================================================
+1. CORRECT THESE EQUIPMENT RECORDS
+==================================================
+
+Exercise id=164
+“Odwrotne spięcia brzucha”
+
+Current equipment:
+- Masa własnego ciała
+- Ławka
+
+Required equipment:
+- Ławka
+
+Reason:
+The exercise version represented by this catalogue record is performed on a
+bench. “Masa własnego ciała” currently triggers the bodyweight bypass and makes
+it available without a bench.
+
+--------------------------------------------------
+
+Exercise id=221
+“Pompki z nogami na podwyższeniu”
+
+Current equipment:
+- Masa własnego ciała
+- Ławka
+
+Required equipment:
+- Ławka
+
+Reason:
+The elevated-feet variation requires a stable raised surface. Do not allow it
+for a true no-equipment profile.
+
+--------------------------------------------------
+
+Exercise id=218
+“Pompki z gumą oporową”
+
+Current equipment:
+- Gumy oporowe
+- Masa własnego ciała
+
+Required equipment:
+- Gumy oporowe
+
+Reason:
+The resistance band is structurally required for this named variation.
+
+--------------------------------------------------
+
+Exercise id=219
+“Pompki na uchwytach”
+
+Current equipment:
+- Masa własnego ciała
+- Inny
+
+Required equipment:
+- Inny
+
+Reason:
+Push-up handles are required for this named variation.
+
+--------------------------------------------------
+
+Exercise id=220
+“Pompki na kółkach gimnastycznych”
+
+Current equipment:
+- Masa własnego ciała
+- Inny
+
+Required equipment:
+- Inny
+
+Reason:
+Gymnastic rings are required for this named variation.
+
+--------------------------------------------------
+
+Exercise id=94
+“Przysiad bułgarski”
+
+Current equipment:
+- Hantle
+- Sztanga
+- Masa własnego ciała
+- Ławka
+
+Temporary corrected equipment:
+- Ławka
+
+Reason:
+The rear-foot support is structurally required.
+External load is optional, so under the current OR-only equipment model,
+“Ławka” is the smallest honest requirement.
+
+Do not use:
+- Hantle + Ławka
+- Sztanga + Ławka
+
+because the current schema cannot express AND semantics yet.
+
+==================================================
+2. DO NOT CHANGE THESE RECORDS IN THIS TASK
+==================================================
+
+Do not modify:
+
+- id=98 “Wejście na podest”
+- id=174 “Pompki z obciążeniem”
+- exercises requiring Hantle + Ławka
+- exercises requiring Sztanga + Ławka
+- exercises requiring Maszyna + Ławka
+- any exercise not explicitly listed above.
+
+Those require either a separate decision or the future
+equipment_requires_all change.
+
+==================================================
+3. PRESERVE CURRENT FILTERING
+==================================================
+
+Do not modify isEquipmentCompatible in this task.
+
+The purpose of this change is only to remove incorrect
+“Masa własnego ciała” bypasses from records with mandatory props.
+
+Existing bodyweight exercises such as:
+
+- Pompki na kolanach
+- Pompki klasyczne
+- Glute bridge
+- Plank
+- Bird dog
+
+must remain available for bodyweight-only clients.
+
+==================================================
+4. FOCUSED VERIFICATION
+==================================================
+
+Verify:
+
+1. A client with only “Masa własnego ciała” cannot receive ids:
+   164, 218, 219, 220, 221 or 94.
+
+2. A client with “Ławka” can receive:
+   - id=164,
+   - id=221,
+   - id=94,
+   when all other eligibility rules permit them.
+
+3. A client with “Gumy oporowe” can receive id=218.
+
+4. A client with “Inny” can receive ids 219 and 220.
+
+5. Normal pure-bodyweight exercises remain eligible.
+
+6. The catalogue seed and active DB contain identical corrected equipment
+   values.
+
+Run focused equipment tests only.
+
+==================================================
+5. REPORT
+==================================================
+
+Report only:
+
+- records changed,
+- exact before/after equipment values,
+- confirmation that active DB and seed match,
+- focused test results.
+
+Stop after this package.

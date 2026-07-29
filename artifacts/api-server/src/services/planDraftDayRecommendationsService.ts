@@ -19,6 +19,8 @@ export interface ScoredAndFilteredExercise {
   mainMuscleGroup: string;
   secondaryMuscleGroups: string[];
   equipment: string[];
+  /** equipmentAllOf: every listed item must be available (AND semantics). Empty = no AND constraint. */
+  requiredEquipmentAll?: string[];
   trainingLocation: string[];
   score: number;
   matchReasons: string[];
@@ -355,7 +357,7 @@ export function selectExercise({
 
     // 3. Equipment safety-net (route already filters, but selectExercise is also
     //    called standalone so the check must be self-contained)
-    if (!isEquipmentCompatible(ex.equipment, clientEquipment)) return false;
+    if (!isEquipmentCompatible(ex.equipment, ex.requiredEquipmentAll ?? [], clientEquipment)) return false;
 
     // 4. Hard name blocklist — never select these as main-slot exercises
     if (isHardFiltered(ex.name)) return false;
@@ -425,31 +427,59 @@ export function isLocationCompatible(
 }
 
 /**
+ * Normalizes missing or empty client equipment to bodyweight-only.
+ *
+ * An absent equipment list must not mean "unrestricted" — it means
+ * the client has not specified any gear, so only true bodyweight
+ * exercises are safe to admit.  Callers that detect this fallback
+ * should surface a trainer warning (see planDraftGenerateDay.ts).
+ */
+function normalizeClientEquipment(raw: string | null | undefined): string[] {
+  const parsed = parseList(raw);
+  return parsed.length > 0 ? parsed : ["masa własnego ciała"];
+}
+
+/**
  * Returns true if the exercise is compatible with the client's available equipment.
  *
- * Rules:
- * - No required equipment → always compatible.
- * - Bodyweight-only exercise → always compatible.
- * - No client equipment data → compatible (cannot filter; caller should warn).
- * - Otherwise: compatible only when at least one required (non-bodyweight) item matches.
+ * Two-part check:
+ *
+ * 1. requiredEquipmentAll (AND): every listed item must be in the client's
+ *    equipment. Bodyweight in `exerciseEquipment` does NOT bypass this check.
+ *    Empty array → no AND constraint.
+ *
+ * 2. exerciseEquipment (OR / AnyOf): at least one listed item must be
+ *    available, OR the exercise has a bodyweight option (after the AND check
+ *    has already passed).
+ *
+ * Empty / null / undefined survey equipment is treated as bodyweight-only
+ * (never as "unrestricted"). Training location must not grant equipment.
  */
 export function isEquipmentCompatible(
-  exerciseEquipment: string[],
+  exerciseEquipment: string[],    // equipmentAnyOf — at least one must be available
+  requiredEquipmentAll: string[], // equipmentAllOf — every item must be available
   surveyEquipment: string | null | undefined,
 ): boolean {
-  if (exerciseEquipment.length === 0) return true;
+  // Normalize: missing/empty → bodyweight-only.  This is the only source of
+  // clientEquipment — no early-return "no data → pass" paths exist.
+  const clientEquipment = normalizeClientEquipment(surveyEquipment);
 
-  // Equipment list is OR semantics: the exercise can be performed with any ONE
-  // of the listed items.  If "Masa własnego ciała" (bodyweight) is among the
-  // options the exercise is doable without any gear — include it for all clients.
-  // Previously used `every`, which wrongly excluded exercises like Glute bridge
-  // that list ["Masa własnego ciała", "Hantle"] because "Hantle" failed the test.
-  if (exerciseEquipment.some((e) => BODYWEIGHT_EQUIPMENT.has(e.trim().toLowerCase()))) {
-    return true; // exercise can be performed without equipment
+  // Step 1: AND check — every required item must be present.
+  // Bodyweight elements in exerciseEquipment do NOT bypass this.
+  if (requiredEquipmentAll.length > 0) {
+    const allPresent = requiredEquipmentAll.every((req) =>
+      clientEquipment.some((ce) => equipmentMatchLocal(req, ce)),
+    );
+    if (!allPresent) return false;
   }
 
-  const clientEquipment = parseList(surveyEquipment);
-  if (clientEquipment.length === 0) return true; // no client equipment data → do not filter
+  // Step 2: OR check — at least one AnyOf item must be available.
+  if (exerciseEquipment.length === 0) return true;
+
+  // Bodyweight satisfies the AnyOf condition (but only after the AND check passes).
+  if (exerciseEquipment.some((e) => BODYWEIGHT_EQUIPMENT.has(e.trim().toLowerCase()))) {
+    return true;
+  }
 
   const nonBodyweight = exerciseEquipment.filter(
     (e) => !BODYWEIGHT_EQUIPMENT.has(e.trim().toLowerCase()),
@@ -473,11 +503,11 @@ export function buildCompatibilityFilter(
   surveyLocation: string | null | undefined,
   surveyEquipment: string | null | undefined,
   alreadyAddedIds: ReadonlySet<number>,
-): (ex: { id: number; trainingLocation: string[]; equipment: string[] }) => boolean {
+): (ex: { id: number; trainingLocation: string[]; equipment: string[]; requiredEquipmentAll?: string[] }) => boolean {
   return (ex) => {
     if (alreadyAddedIds.has(ex.id)) return false;
     if (!isLocationCompatible(ex.trainingLocation, surveyLocation)) return false;
-    if (!isEquipmentCompatible(ex.equipment, surveyEquipment)) return false;
+    if (!isEquipmentCompatible(ex.equipment, ex.requiredEquipmentAll ?? [], surveyEquipment)) return false;
     return true;
   };
 }

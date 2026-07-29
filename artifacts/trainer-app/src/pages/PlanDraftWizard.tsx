@@ -658,6 +658,14 @@ function Step2Preferences({
     onPrefsChange({ ...prefs, [key]: value });
   }
 
+  // Auto-reset block duration to 4 when level is "Brak aktywności fizycznej"
+  const isNoActivity = data.input.experienceLevel === "Brak aktywności fizycznej";
+  useEffect(() => {
+    if (isNoActivity && prefs.blockDurationWeeks !== 4) {
+      onPrefsChange({ ...prefs, blockDurationWeeks: 4 });
+    }
+  }, [isNoActivity]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function handleDaysChange(days: number) {
     const newCompatible = getCompatibleSplits(days);
     const currentOk = newCompatible.includes(prefs.splitType);
@@ -922,28 +930,43 @@ function Step2Preferences({
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 py-4 space-y-3">
-          <div className="space-y-2">
-            <Label className="text-sm">Liczba tygodni (4–12)</Label>
-            <div className="flex items-center gap-3 flex-wrap">
-              {[4, 5, 6, 7, 8, 9, 10, 11, 12].map((w) => (
-                <button
-                  key={w}
-                  type="button"
-                  onClick={() => set("blockDurationWeeks", w)}
-                  className={`w-9 h-9 rounded-full border text-sm font-medium transition-colors
-                    ${prefs.blockDurationWeeks === w
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border hover:bg-muted"
-                    }`}
-                >
-                  {w}
-                </button>
-              ))}
+          {isNoActivity ? (
+            /* Fixed 4-week adaptive block for "Brak aktywności fizycznej" */
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-full border border-primary bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center">
+                  4
+                </div>
+                <span className="text-sm font-medium text-foreground">Blok adaptacyjny: 4 tygodnie</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Dla poziomu „Brak aktywności fizycznej" długość bloku adaptacyjnego wynosi zawsze 4 tygodnie.
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Standardowy mezocykl: 6 tygodni. Dla zaawansowanych można stosować 8–12 tygodni.
-            </p>
-          </div>
+          ) : (
+            <div className="space-y-2">
+              <Label className="text-sm">Liczba tygodni (4–12)</Label>
+              <div className="flex items-center gap-3 flex-wrap">
+                {[4, 5, 6, 7, 8, 9, 10, 11, 12].map((w) => (
+                  <button
+                    key={w}
+                    type="button"
+                    onClick={() => set("blockDurationWeeks", w)}
+                    className={`w-9 h-9 rounded-full border text-sm font-medium transition-colors
+                      ${prefs.blockDurationWeeks === w
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border hover:bg-muted"
+                      }`}
+                  >
+                    {w}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Standardowy mezocykl: 6 tygodni. Dla zaawansowanych można stosować 8–12 tygodni.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1161,6 +1184,31 @@ function DistributionSection({
 
 // ─── Step 3 — Volume decisions ────────────────────────────────────────────────
 
+// ─── Proposal card — percentage-based volume status (spec §2) ─────────────────
+
+type VolumeProposalStatus =
+  | "below_total_minimum"
+  | "medium_minimum"
+  | "recommended_volume"
+  | "above_max_recommended"
+  | "overtraining_warning";
+
+export function getVolumeProposalStatus(ratio: number): VolumeProposalStatus {
+  if (ratio < 0.50)  return "below_total_minimum";
+  if (ratio <= 0.75) return "medium_minimum";
+  if (ratio <= 1.00) return "recommended_volume";
+  if (ratio < 1.25)  return "above_max_recommended";
+  return "overtraining_warning";
+}
+
+const VOLUME_PROPOSAL_LABEL: Record<VolumeProposalStatus, string | null> = {
+  below_total_minimum:   "Poniżej totalnego minimum",
+  medium_minimum:        "Średnie minimum do spełnienia",
+  recommended_volume:    null,
+  above_max_recommended: "Powyżej maks. rekomendowanej objętości",
+  overtraining_warning:  "Ryzyko przetrenowania",
+};
+
 const RECOVERY_LABEL: Record<string, string> = {
   good: "Dobra",
   neutral: "Standardowa",
@@ -1188,11 +1236,13 @@ function TargetDecisionCard({
   const isOverridden = overrideValue !== undefined;
   const step = 1;
 
-  // Zone detection for visual states
-  // Zone B: preferredMin ≤ v ≤ preferredMax   → normal
-  // Zone C: preferredMax < v ≤ absoluteMax    → amber (accepted, non-blocking warning)
-  const isAbovePreferred =
-    selectedValue > decision.preferredMax && selectedValue <= decision.absoluteMax;
+  // Percentage-based status (spec §2)
+  const volumeRatio = decision.absoluteMax > 0 ? selectedValue / decision.absoluteMax : 0;
+  const volumeStatus = getVolumeProposalStatus(volumeRatio);
+  const isAmberStatus = volumeStatus === "medium_minimum" || volumeStatus === "above_max_recommended";
+  const isRedStatus   = volumeStatus === "below_total_minimum" || volumeStatus === "overtraining_warning";
+  // Recommended range: [floor(absoluteMax × 0.75) + 1, absoluteMax]
+  const recommendedLowerBound = Math.floor(decision.absoluteMax * 0.75) + 1;
 
   // Local state for text input: tracks raw input string and validation error.
   // We do NOT silently clamp — invalid values show an error and are not applied.
@@ -1204,9 +1254,9 @@ function TargetDecisionCard({
 
   function adjust(delta: number) {
     // Stepper buttons: whole integer steps.
-    // − stops at preferredMin; + goes up to absoluteMax (Zone C allowed).
+    // − stops at preferredMin; + is uncapped (trainer may go above absoluteMax).
     const next = Math.round(selectedValue + delta);
-    const bounded = Math.max(decision.preferredMin, Math.min(decision.absoluteMax, next));
+    const bounded = Math.max(decision.preferredMin, next);
     setRawInput(null);
     setInputError(null);
     onOverride(decision.targetId, bounded);
@@ -1222,11 +1272,6 @@ function TargetDecisionCard({
     // Zone A: below preferredMin → reject
     if (v < decision.preferredMin) {
       setInputError(`Minimum: ${decision.preferredMin} serii`);
-      return;
-    }
-    // Zone D: above absoluteMax → reject
-    if (v > decision.absoluteMax) {
-      setInputError(`Limit absolutny: ${decision.absoluteMax} serii`);
       return;
     }
     // Non-integer — reject; do not silently round
@@ -1252,7 +1297,7 @@ function TargetDecisionCard({
       className={[
         "border-border/50 shadow-sm transition-colors",
         decision.isExcluded ? "opacity-60" : "",
-        isAbovePreferred ? "border-amber-300 bg-amber-50/30" : "",
+        isAmberStatus ? "border-amber-300 bg-amber-50/30" : isRedStatus ? "border-red-300 bg-red-50/30" : "",
       ].join(" ")}
     >
       <CardContent className="p-4">
@@ -1283,26 +1328,24 @@ function TargetDecisionCard({
               {isOverridden && (
                 <Badge
                   variant="outline"
-                  className={`text-[10px] px-1.5 py-0 ${isAbovePreferred ? "text-amber-700 border-amber-300 bg-amber-50" : "text-blue-600 border-blue-200 bg-blue-50"}`}
+                  className={`text-[10px] px-1.5 py-0 ${isAmberStatus ? "text-amber-700 border-amber-300 bg-amber-50" : isRedStatus ? "text-red-700 border-red-200 bg-red-50" : "text-blue-600 border-blue-200 bg-blue-50"}`}
                 >
                   ustawione ręcznie
                 </Badge>
               )}
             </div>
-            {/* Three-threshold display */}
+            {/* Recommended range and ceiling — percentage-based (spec §1) */}
             <p className="text-xs text-muted-foreground mt-0.5">
-              Zakres zalecany:{" "}
+              Zakres rekomendowany:{" "}
               <span className="font-medium text-foreground">
-                {decision.preferredMin}–{decision.preferredMax}
+                {recommendedLowerBound}–{decision.absoluteMax}
               </span>{" "}
               serii/tydz.
             </p>
-            {decision.absoluteMax > decision.preferredMax && (
-              <p className="text-xs text-muted-foreground">
-                Limit absolutny:{" "}
-                <span className="font-medium">{decision.absoluteMax}</span> serii/tydz.
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              Maks. rekomendowana obj. tyg.:{" "}
+              <span className="font-medium">{decision.absoluteMax}</span> serii/tydz.
+            </p>
           </div>
 
           {/* Stepper control */}
@@ -1326,17 +1369,18 @@ function TargetDecisionCard({
                   className={`h-7 text-center text-sm font-medium px-1 ${
                     inputError
                       ? "border-red-400 focus-visible:ring-red-400"
-                      : isAbovePreferred
+                      : isAmberStatus
                         ? "border-amber-400 focus-visible:ring-amber-400"
-                        : ""
+                        : isRedStatus
+                          ? "border-red-400 focus-visible:ring-red-400"
+                          : ""
                   }`}
                 />
               </div>
               <button
                 type="button"
                 onClick={() => adjust(step)}
-                disabled={selectedValue >= decision.absoluteMax}
-                className="w-7 h-7 rounded border border-border flex items-center justify-center disabled:opacity-40 hover:bg-muted transition-colors"
+                className="w-7 h-7 rounded border border-border flex items-center justify-center hover:bg-muted transition-colors"
               >
                 <Plus size={12} />
               </button>
@@ -1344,37 +1388,28 @@ function TargetDecisionCard({
             {inputError && (
               <span className="text-[10px] text-red-500 leading-none">{inputError}</span>
             )}
-            {!inputError && isAbovePreferred && (
-              <span className="text-[10px] text-amber-600 leading-none">powyżej zalecanego</span>
+            {!inputError && volumeStatus !== "recommended_volume" && VOLUME_PROPOSAL_LABEL[volumeStatus] !== null && (
+              <span className={`text-[10px] leading-none ${isAmberStatus ? "text-amber-600" : "text-red-600"}`}>
+                {VOLUME_PROPOSAL_LABEL[volumeStatus]}
+              </span>
             )}
           </div>
         </div>
 
-        {/* Proposal vs. override indicator */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-xs text-muted-foreground">
-            Propozycja systemu:{" "}
-            <span className="font-medium text-foreground">{decision.recommendedValue} {pluralizeSets(decision.recommendedValue)}</span>
-            {isOverridden && (
-              <>
-                {" → "}
-                <span className={`font-medium ${isAbovePreferred ? "text-amber-700" : "text-blue-600"}`}>
-                  {selectedValue} {pluralizeSets(selectedValue)} (ręcznie)
-                </span>
-              </>
-            )}
-          </div>
-          {isOverridden && (
+        {/* Manual override indicator */}
+        {isOverridden && (
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs text-muted-foreground">Wartość zmieniona ręcznie</span>
             <button
               type="button"
               onClick={() => onReset(decision.targetId)}
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <RotateCcw size={10} />
-              Przywróć propozycję
+              Przywróć rekomendowaną
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Reasoning — separate list items, not concatenated */}
         {decision.reasons.length > 0 && (
@@ -2022,6 +2057,7 @@ export default function PlanDraftWizard() {
           coverageLoading={coverageLoading}
           experienceLevel={typedData?.input?.experienceLevel ?? null}
           onExplanationsUpdate={setGeneratedExplanations}
+          sessionDurationMinutes={effectivePrefs?.sessionDurationMinutes ?? null}
         />
       )}
       {step === 2 && !isExerciseStepUnlocked && (

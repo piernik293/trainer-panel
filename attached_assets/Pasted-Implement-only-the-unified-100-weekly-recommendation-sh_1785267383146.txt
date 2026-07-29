@@ -1,0 +1,345 @@
+Implement only the unified 100% weekly recommendation shown on:
+
+Generuj szkic planu
+→ Założenia planu
+→ weekly muscle-volume proposal cards
+
+Do not run a broad audit.
+Do not use subagents.
+
+Read only the active files responsible for:
+
+- the backend weekly volume proposal calculation,
+- PlanDraftWizard proposal cards,
+- manual proposal overrides,
+- directly weekly volume proposal calculation,
+- PlanDraftWizard proposal cards,
+- manual proposal related focused tests.
+
+Likely active files include:
+
+- artifacts/api-server/src/services/planDraftVolumeDecisionService.ts
+- artifacts/trainer-app/src/pages/PlanDraftWizard.tsx
+
+Do not modify unrelated files.
+
+==================================================
+1. EXACT REQUIRED RULE
+==================================================
+
+For every experience level without exception:
+
+- Brak aktywności fizycznej
+- Początkujący
+- Średniozaawansowany
+- Zaawansowany
+
+and for every weekly volume target:
+
+systemProposal = weeklyAbsoluteCeiling
+
+This means the proposal always starts from 100% of the target's maximum
+recommended weekly effective volume.
+
+The upper value of the displayed recommended range and the initial proposal
+must be the same value.
+
+Examples:
+
+weeklyAbsoluteCeiling = 20
+→ initial proposal = 20
+
+weeklyAbsoluteCeiling = 16
+→ initial proposal = 16
+
+weeklyAbsoluteCeiling = 12
+→ initial proposal = 12
+
+weeklyAbsoluteCeiling = 8
+→ initial proposal = 8
+
+==================================================
+2. EXACT UI LOCATION
+==================================================
+
+Apply this rule in the proposal cards displayed on:
+
+Generuj szkic planu
+→ Założenia planu
+
+These cards appear below:
+
+- Harmonogram treningu,
+- Liczba dni treningowych / tydzień,
+- Czas sesji,
+- Podział treningowy,
+- Długość bloku treningowego.
+
+The numeric control on every muscle card:
+
+−  value  +
+
+must initialize from the real backend system proposal.
+
+When there is no manual override:
+
+selectedVolume = systemProposal = weeklyAbsoluteCeiling
+
+Do not implement a frontend-only replacement.
+The backend proposal and the value shown in the control must both equal
+weeklyAbsoluteCeiling.
+
+==================================================
+3. REMOVE ALL INITIAL NUMERIC REDUCTIONS
+==================================================
+
+Do not reduce the initial proposal because of:
+
+- recovery,
+- stress,
+- sleep,
+- physical work,
+- training availability,
+- old preferred range,
+- preferredMin,
+- preferredMax,
+- experience-level range position,
+- number of training days,
+- session duration,
+- selected split.
+
+Do not apply a numeric recovery adjustment after setting the proposal to
+weeklyAbsoluteCeiling.
+
+Do not apply a numeric availability adjustment.
+
+Do not apply a numeric priority increase above weeklyAbsoluteCeiling.
+
+Priority badges and priority explanations may remain informational.
+
+Time-, day- and split-based feasibility will be implemented separately later.
+
+==================================================
+4. CURRENT INCORRECT BEHAVIOUR TO REMOVE
+==================================================
+
+The current active path does this:
+
+weeklyAbsoluteCeiling = 20
+→ recovery reduction
+→ proposal = 18
+
+or:
+
+weeklyAbsoluteCeiling = 8
+→ recovery reduction
+→ proposal = 7
+
+This must stop.
+
+Required result:
+
+20 → 20
+16 → 16
+12 → 12
+8 → 8
+
+==================================================
+5. EXPLANATIONS MUST MATCH THE REAL VALUE
+==================================================
+
+Remove explanations that claim a numerical reduction occurred.
+
+Do not display:
+
+“obniżenie z powodu regeneracji (...)”
+
+when the proposal remains at weeklyAbsoluteCeiling.
+
+Recovery may remain as neutral information, for example:
+
+“regeneracja wymaga monitorowania podczas realizacji planu”
+
+The final explanation must use the new displayed recommended range and the real
+proposal value.
+
+Examples:
+
+For ceiling 20:
+
+“propozycja startuje od maksymalnej rekomendowanej objętości tygodniowej
+(20 pkt.)”
+
+“propozycja: 20 pkt. (zakres 16–20)”
+
+For ceiling 16:
+
+“propozycja: 16 pkt. (zakres 13–16)”
+
+For ceiling 12:
+
+“propozycja: 12 pkt. (zakres 10–12)”
+
+For ceiling 8:
+
+“propozycja: 8 pkt. (zakres 7–8)”
+
+Do not leave old ranges such as:
+
+- 8–20,
+- 6–16,
+- 5–12,
+- 4–8
+
+inside the final proposal explanation.
+
+==================================================
+6. REQUIRED CURRENT PROFILE RESULT
+==================================================
+
+For the current Intermediate profile, the controls must show:
+
+Mięsień czworogłowy uda:
+20 instead of 18
+
+Mięśnie pośladkowe:
+20 instead of 18
+
+Mięsień trójgłowy łydki:
+8 instead of 7
+
+Przywodziciele:
+8 instead of 7
+
+Grupa kulszowo-goleniowa:
+16 instead of 15
+
+Mięśnie naramienne:
+20 instead of 18
+
+Mięsień trójgłowy ramienia:
+8 instead of 7
+
+Mięsień piersiowy większy:
+16 instead of 15
+
+Mięsień najszerszy grzbietu:
+12 instead of 11
+
+Mięsień czworoboczny grzbietu:
+16 instead of 15
+
+Mięsień dwugłowy ramienia:
+8 instead of 7
+
+Brzuch:
+use its current weeklyAbsoluteCeiling as the proposal.
+
+Do not change Brzuch guideline data in this task.
+If the active database ceiling is 12, show 12.
+This task changes proposal behaviour, not guideline values.
+
+==================================================
+7. MANUAL OVERRIDES
+==================================================
+
+The trainer must still be able to manually change the value above or below the
+recommendation.
+
+When a real manual override exists:
+
+- preserve the manual value,
+- keep the “ustawione ręcznie” badge,
+- keep the existing percentage status,
+- “Przywróć rekomendowaną” must restore weeklyAbsoluteCeiling.
+
+Do not treat an old automatically reduced value such as 18 or 7 as a manual
+override.
+
+When the new backend proposal is loaded and no real manual override exists, the
+control must refresh to weeklyAbsoluteCeiling.
+
+==================================================
+8. DO NOT MODIFY
+==================================================
+
+Do not modify:
+
+- weeklyAbsoluteCeiling database values,
+- displayed percentage status thresholds,
+- generator exercise selection,
+- weekly distribution,
+- split recommendation,
+- split selection,
+- session-duration calculation,
+- workout-duration estimator,
+- number of training days,
+- training block duration,
+- tempo,
+- rest,
+- RIR,
+- plyometric logic,
+- generated plans.
+
+==================================================
+9. FOCUSED TESTS
+==================================================
+
+Add or update focused tests proving:
+
+1. Every experience level starts from weeklyAbsoluteCeiling.
+
+2. Brak aktywności also starts from weeklyAbsoluteCeiling.
+
+3. Ceiling 20 returns proposal 20.
+
+4. Ceiling 16 returns proposal 16.
+
+5. Ceiling 12 returns proposal 12.
+
+6. Ceiling 8 returns proposal 8.
+
+7. Recovery does not change the numerical proposal.
+
+8. Availability does not change the numerical proposal.
+
+9. Priority does not increase the initial proposal above the ceiling.
+
+10. The numeric control receives the updated backend proposal.
+
+11. Old automatic values such as 18 and 7 are not preserved without a real
+manual override.
+
+12. Manual overrides remain preserved.
+
+13. Restoring the recommendation returns weeklyAbsoluteCeiling.
+
+14. Final explanation ranges use:
+- 16–20,
+- 13–16,
+- 10–12,
+- 7–8.
+
+15. Generator, split, duration and plyometric logic remain unchanged.
+
+Run focused proposal tests only.
+
+==================================================
+10. REPORT
+==================================================
+
+Report only:
+
+- files changed,
+- exact previous reduction path,
+- exact new formula:
+  systemProposal = weeklyAbsoluteCeiling,
+- confirmation that it applies on
+  Generuj szkic planu → Założenia planu,
+- current Intermediate values before and after,
+- focused test results.
+
+Maximum 8 additional actions.
+
+If implementation requires changing generation, split, duration or plyometric
+logic, stop and report the exact limitation instead of modifying them.

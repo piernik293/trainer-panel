@@ -51,16 +51,18 @@ export interface PerDaySummary {
 }
 
 export type VolumeStatus =
-  | "below_preferred"
-  | "within_preferred"
-  | "above_preferred"
-  | "above_absolute";
+  | "below_total_minimum"
+  | "medium_minimum"
+  | "recommended_volume"
+  | "above_max_recommended"
+  | "overtraining_warning";
 
 export const VOLUME_STATUS_LABEL: Record<VolumeStatus, string> = {
-  below_preferred: "Poniżej preferowanego poziomu",
-  within_preferred: "W preferowanym zakresie",
-  above_preferred: "Powyżej preferowanego limitu",
-  above_absolute: "Przekroczony limit absolutny",
+  below_total_minimum: "Poniżej totalnego minimum",
+  medium_minimum: "Średnie minimum do spełnienia",
+  recommended_volume: "Rekomendowana objętość spełniona",
+  above_max_recommended: "Powyżej maks. rekomendowanej objętości",
+  overtraining_warning: "Ryzyko przetrenowania",
 };
 
 export interface VolumeTargetResult {
@@ -335,16 +337,19 @@ export function computeVolumeCore(
     const preferred = guideline?.weeklyPreferredCeiling ?? 0;
     const absolute = guideline?.weeklyAbsoluteCeiling ?? 0;
 
-    // Status boundaries follow the same precedence as the legacy code.
+    // Status boundaries: percentage of weeklyAbsoluteCeiling (raw, unrounded).
     let status: VolumeStatus;
-    if (weeklyEffectiveSets > absolute && absolute > 0) {
-      status = "above_absolute";
-    } else if (weeklyEffectiveSets > preferred && preferred > 0) {
-      status = "above_preferred";
-    } else if (weeklyEffectiveSets > 0) {
-      status = "within_preferred";
+    const volumeRatio = absolute > 0 ? weeklyEffectiveSets / absolute : 0;
+    if (volumeRatio >= 1.25) {
+      status = "overtraining_warning";
+    } else if (volumeRatio > 1.00) {
+      status = "above_max_recommended";
+    } else if (volumeRatio > 0.75) {
+      status = "recommended_volume";
+    } else if (volumeRatio >= 0.50) {
+      status = "medium_minimum";
     } else {
-      status = "below_preferred";
+      status = "below_total_minimum";
     }
 
     return {

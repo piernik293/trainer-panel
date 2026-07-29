@@ -1,0 +1,119 @@
+Perform one focused diagnosis and fix for exercise id=185 only.
+
+Do not run a broad audit.
+Do not use subagents.
+Do not modify other exercise records.
+Do not modify generator ranking, movement balance, volume, split, duration,
+exercise history, contraindications or safety rules.
+
+Maximum 5 actions.
+
+Current live failure:
+
+Exercise id=185:
+“Wiosłowanie leżąc przodem z hantlami”
+
+appeared for a Home + Hantle client without Ławka.
+
+The live generation trace showed:
+
+equipment = {Hantle}
+required_equipment_all = {}
+
+Required value:
+
+equipment = {Hantle}
+required_equipment_all = {Ławka}
+
+==================================================
+1. TRACE THE ACTIVE VALUE
+==================================================
+
+Check and report the exact value for id=185 in:
+
+1. active development database,
+2. Drizzle schema mapping,
+3. catalogue seed / idempotent patch,
+4. planDraftGenerateDay exercise query,
+5. route-to-engine mapping,
+6. ScoredAndFilteredExercise passed into ExerciseSelectionEngineV0,
+7. running compiled server response.
+
+Do not assume the database is the problem.
+
+Identify the first layer where:
+
+{Ławka}
+
+becomes:
+
+{}
+
+==================================================
+2. APPLY THE SMALLEST FIX
+==================================================
+
+If the active DB is wrong:
+
+- update only id=185,
+- correct the catalogue seed to match.
+
+If the DB is correct but the route or engine mapping drops the field:
+
+- fix only that mapping.
+
+If source code is correct but the running server is stale:
+
+- rebuild/restart only the affected API service.
+
+Do not modify unrelated exercises.
+
+==================================================
+3. REQUIRED FINAL STATE
+==================================================
+
+For id=185:
+
+equipment = {Hantle}
+required_equipment_all = {Ławka}
+
+Expected compatibility:
+
+- Hantle only → rejected
+- Ławka only → rejected
+- Hantle + Ławka → allowed
+- Masa własnego ciała → rejected
+
+==================================================
+4. LIVE VERIFICATION
+==================================================
+
+Use the same Home + Hantle client from the previous test.
+
+Regenerate the affected day and prove:
+
+- id=185 cannot enter without Ławka,
+- another legal pull may be selected,
+- no machine, cable or bench-dependent exercise enters.
+
+Then verify with a temporary compatibility call or existing fixture:
+
+- Hantle + Ławka makes id=185 eligible.
+
+Do not create a new permanent client or saved plan.
+
+==================================================
+5. REPORT
+==================================================
+
+Report only:
+
+- first layer where the value was lost,
+- file or DB record changed,
+- final DB value,
+- final engine value,
+- Home + Hantle result,
+- Hantle + Ławka result,
+- focused test result.
+
+Stop after this fix.

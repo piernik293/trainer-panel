@@ -1,0 +1,142 @@
+Fix only the actual initial proposal value shown in the weekly-volume numeric
+controls.
+
+Do not modify the percentage card statuses.
+Do not modify the displayed recommended ranges.
+Do not modify generator logic.
+Do not modify exercise selection.
+Do not modify split, duration, distribution or plyometric logic.
+Do not modify weeklyAbsoluteCeiling database values.
+Do not run a broad audit.
+Do not use subagents.
+
+Current bug:
+
+A target with:
+
+weeklyAbsoluteCeiling = 20
+
+still displays:
+
+18
+
+in the numeric control because the backend proposal continues applying a
+recovery reduction.
+
+The displayed range was already corrected, but the actual proposal value was
+not.
+
+==================================================
+REQUIRED RULE
+==================================================
+
+For every experience level:
+
+- Brak aktywności fizycznej
+- Początkujący
+- Średniozaawansowany
+- Zaawansowany
+
+and every volume target:
+
+initialWeeklyProposal = weeklyAbsoluteCeiling
+
+The numeric control must use this real backend proposal value.
+
+Examples:
+
+- ceiling 20 → control displays 20
+- ceiling 16 → control displays 16
+- ceiling 12 → control displays 12
+- ceiling 8 → control displays 8
+
+Do not apply numerical reductions for:
+
+- recovery,
+- stress,
+- sleep,
+- physical work,
+- availability,
+- old preferred range,
+- experience-level position.
+
+Do not apply another numerical priority bonus above weeklyAbsoluteCeiling.
+
+==================================================
+EXPLANATIONS
+==================================================
+
+Remove any reason claiming that the proposal was numerically reduced when it
+was not.
+
+For the current profile, remove:
+
+“obniżenie z powodu regeneracji (...)”
+
+The explanation may remain neutral:
+
+“regeneracja wymaga monitorowania podczas realizacji planu”
+
+The final reason must match the actual value.
+
+Example for ceiling 20:
+
+“propozycja startuje od maksymalnej rekomendowanej objętości tygodniowej
+(20 pkt.)”
+
+“propozycja: 20 pkt. (zakres 16–20)”
+
+It must not say:
+
+“propozycja: 18 pkt.”
+
+==================================================
+CONTROL SYNCHRONIZATION
+==================================================
+
+When there is no manual override:
+
+selectedVolume = initialWeeklyProposal
+
+Ensure the proposal-card numeric control initializes and refreshes from the
+updated backend proposal.
+
+Do not preserve the previous automatically calculated value of 18 as though it
+were a manual override.
+
+When a real manual override exists:
+
+- preserve it,
+- do not overwrite it,
+- “Przywróć rekomendowaną” restores weeklyAbsoluteCeiling.
+
+==================================================
+FOCUSED TESTS
+==================================================
+
+Prove:
+
+- ceiling 20 displays 20 in the control,
+- ceiling 16 displays 16,
+- ceiling 12 displays 12,
+- ceiling 8 displays 8,
+- recovery does not reduce the value,
+- all four experience levels use the same rule,
+- manual overrides remain preserved,
+- restoring returns to weeklyAbsoluteCeiling,
+- percentage statuses remain unchanged.
+
+For the current Intermediate profile verify:
+
+- quadriceps 20 instead of 18,
+- glutes 20 instead of 18,
+- calves 8 instead of 7.
+
+Report only:
+
+- files changed,
+- exact old reduction path,
+- exact new proposal value,
+- focused test results.
+
+Maximum 6 additional actions.

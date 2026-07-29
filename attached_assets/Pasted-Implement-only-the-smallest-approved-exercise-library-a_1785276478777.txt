@@ -1,0 +1,198 @@
+Implement only the smallest approved exercise-library and missing-pull fixes for:
+
+“Brak aktywności fizycznej”
+
+Do not run a broad audit.
+Do not use subagents.
+Do not redesign the generator.
+Do not modify volume calculations, volume statuses, split rules, duration
+estimation, exercise-history ranking, tempo, rest, RIR or plyometric logic.
+
+Maximum 8 actions.
+
+==================================================
+1. FIX CALF-RAISE METADATA
+==================================================
+
+For exercise id=195:
+
+“Wspięcia na palce jednostronne stojąc”
+
+correct the movement pattern.
+
+Current incorrect value:
+
+“Wyprost kolana”
+
+Replace it with the existing catalogue pattern used by the calf slot, or the
+smallest consistent plantar-flexion/calf-isolation pattern already supported by
+the engine.
+
+Do not mark the unilateral version as a primary automatic choice for
+“Brak aktywności fizycznej”.
+
+==================================================
+2. ADD BILATERAL CALF RAISE
+==================================================
+
+Add:
+
+“Wspięcia na palce obunóż stojąc”
+
+Required metadata:
+
+- suitable_for_no_activity = true
+- suitable experience includes “Brak aktywności fizycznej”
+- learning difficulty = 1
+- bodyweight equipment
+- bilateral
+- isolation
+- primary target: calves
+- correct calf movement pattern
+- stable automatic primary choice for inactive clients
+
+Do not replace the unilateral exercise.
+The unilateral version remains an alternative for later progression.
+
+==================================================
+3. ADD SUPPORTED LOW STEP-UP
+==================================================
+
+Add:
+
+“Wejście na niskie podwyższenie z podparciem”
+
+Required metadata:
+
+- suitable_for_no_activity = true
+- suitable experience includes “Brak aktywności fizycznej”
+- learning difficulty = 1 or 2
+- bodyweight / low box
+- support allowed
+- knee-dominant
+- compound
+- primary target: quadriceps
+- secondary target: glutes
+- automatic primary choice for inactive clients
+
+Use an existing knee-dominant movement pattern compatible with the current slot
+filter. Do not introduce a new movement-pattern enum unless required.
+
+==================================================
+4. REVERSE-LUNGE ELIGIBILITY
+==================================================
+
+Exercise id=96:
+
+“Wykrok w tył”
+
+currently enters inactive-client selection through a learning-difficulty
+fallback even though its experience eligibility excludes:
+
+“Brak aktywności fizycznej”.
+
+For inactive clients, prevent this exercise from becoming a primary automatic
+choice through that fallback.
+
+Keep:
+
+“Przysiad wykroczny z podparciem”
+
+as the safer supported alternative.
+
+Do not remove reverse lunges from Beginner, Intermediate or Advanced pools.
+
+==================================================
+5. CHEST-SUPPORTED ROW
+==================================================
+
+Review exercise id=185:
+
+“Wiosłowanie leżąc przodem z hantlami”
+
+If its existing metadata confirms a supported chest position, stable execution
+and learning difficulty <= 2, set:
+
+suitable_for_no_activity = true
+
+It still requires bench and dumbbells, so normal equipment filtering remains
+active.
+
+Do not change its equipment requirements.
+
+==================================================
+6. MISSING PULL WARNING
+==================================================
+
+Current bodyweight-only inactive clients have no legal compound pull exercise.
+
+Do not silently generate a Full Body session without pull when the pull slot has
+zero legal candidates.
+
+When:
+
+- experience level is “Brak aktywności fizycznej” or “Początkujący”,
+- the session requires pull coverage,
+- the legal pull pool is empty after equipment and safety filtering,
+
+return a structured non-blocking warning:
+
+“Brak dostępnego ćwiczenia przyciągającego dla wybranego sprzętu. Dodaj gumę
+oporową, TRX lub dostęp do wyciągu, aby zachować równowagę push–pull.”
+
+The generated draft may remain visible, but the warning must be clearly shown to
+the trainer.
+
+Do not bypass equipment restrictions.
+Do not add unsafe improvised bodyweight pulling exercises.
+
+==================================================
+7. SELECTION PRIORITY
+==================================================
+
+For inactive clients, prefer:
+
+- bilateral calf raise before unilateral calf raise,
+- supported split squat or supported step-up before reverse lunge,
+- stable machine/cable/band/chest-supported rows before more coordination-heavy
+  pulling variations.
+
+Existing safety, equipment and contraindication filters remain stronger than
+these preferences.
+
+==================================================
+8. FOCUSED TESTS
+==================================================
+
+Verify:
+
+1. id=195 no longer has the knee-extension pattern.
+
+2. Bilateral calf raise is eligible and preferred for inactive clients.
+
+3. Supported low step-up is eligible for inactive clients.
+
+4. Reverse lunge is not selected for inactive clients through the generic
+   learning-difficulty fallback.
+
+5. Reverse lunge remains available for its currently supported higher levels.
+
+6. Chest-supported row is eligible only when its equipment is available.
+
+7. A bodyweight-only inactive Full Body generation reports the missing-pull
+   warning.
+
+8. The warning does not cause equipment restrictions to be bypassed.
+
+9. With resistance bands available, band row fills the pull slot and the warning
+   is absent.
+
+Run focused tests only.
+
+REPORT ONLY:
+
+- catalogue records changed,
+- new exercises added,
+- exact reverse-lunge eligibility change,
+- exact missing-pull warning path,
+- focused test results.

@@ -30,6 +30,39 @@ const SQL_ESUBS = `INSERT INTO exercise_substitutions (id,exercise_id,substitute
 
 const SQL_ESUBS_SETVAL = `SELECT setval('exercise_substitutions_id_seq',(SELECT MAX(id) FROM exercise_substitutions))`;
 
+// Patch batch: fixes for existing exercises and new exercises added after initial seed.
+// Uses ON CONFLICT (id) DO UPDATE so this is safe to run on both fresh and existing DBs.
+const SQL_EXERCISES_PATCH = `
+INSERT INTO exercises (id,name,slug,main_muscle_group,secondary_muscle_groups,equipment,equipment_other,training_location,difficulty_level,movement_pattern,description,execution_instructions,common_mistakes,coaching_tips,breathing_tips,safety_notes,exercise_type,suitable_experience_levels,training_goals,movement_category,plane_of_motion,execution,resistance_type,requires_spotter,can_be_performed_to_failure,joint_stress,learning_difficulty,neurological_fatigue,doms_potential,exercise_priority,is_active,suitable_for_no_activity,movement_complexity,sub_target_biases) VALUES
+(259,'Wspięcia na palce obunóż stojąc','wspiecia-na-palce-obunoj-stojac','Łydki',ARRAY[]::text[],ARRAY['Masa własnego ciała'],NULL,ARRAY['Siłownia','Dom','Plener'],'Brak aktywności fizycznej','Wspięcie na palce','Obustronne wspięcia na palce to najprostsze ćwiczenie na łydki z masą ciała — stabilna, bezpieczna wersja idealna dla osób rozpoczynających przygodę z treningiem.','Stań stabilnie na podłodze lub krawędzi stopnia. Wznieś się na palce obu nóg jak najwyżej, napinając łydki. Powoli opuść pięty do pozycji wyjściowej lub poniżej krawędzi podwyższenia dla większego zakresu ruchu.','Wykonywanie małego zakresu ruchu bez pełnego wspięcia. Zbyt szybkie tempo bez kontroli ekscentrycznej.','Trzymaj się lekkiego podparcia dla równowagi na początku. Dąż do maksymalnego zakresu ruchu w obu kierunkach.','Wdech przy opuszczaniu, wydech przy wspięciu.','Bezpieczne ćwiczenie dla wszystkich poziomów zaawansowania.','Izolowane',ARRAY['Brak aktywności fizycznej','Początkujący','Średniozaawansowany','Zaawansowany'],ARRAY['Masa mięśniowa','Zdrowie ogólne'],'Pchanie','Strzałkowa','Obustronne','Masa własnego ciała',false,'Z ostrożnością','Niskie',1,1,2,'Wysoki',true,true,'Prosta',NULL),
+(260,'Wejście na niskie podwyższenie z podparciem','wejscie-na-niskie-podwyzszenie-z-podparciem','Mięśnie czworogłowe uda',ARRAY['Pośladki'],ARRAY['Masa własnego ciała'],NULL,ARRAY['Siłownia','Dom','Plener'],'Brak aktywności fizycznej','Wykrok','Wejście na niskie podwyższenie z podparciem to bezpieczna jednostronna alternatywa dla przysiadu — idealna dla osób z ograniczoną mobilnością lub siłą nóg. Podparcie ręką pozwala skupić się na wzorcu ruchu.','Stań przed niskim podwyższeniem (pudłem, schodkiem) trzymając się ściany lub poręczy z boku. Postaw jedną nogę na podwyższeniu, wypychaj przez piętę, przenosząc ciężar ciała ku górze. Powoli wróć do pozycji wyjściowej.','Zbyt wysokie podwyższenie — kolano musi pozostać nad stopą. Szarpanie zamiast kontrolowanego kroku.','Zacznij od bardzo niskiego podwyższenia (10–15 cm). Skupiaj się na pracy pośladka i uda, a nie na odepchnięciu się stopą z podłogi.','Wdech przed wejściem, wydech podczas wypychania.','Używaj stabilnego podparcia dla bezpieczeństwa. Wybierz podwyższenie, przy którym kolano nie przekracza 90°.','Złożone',ARRAY['Brak aktywności fizycznej','Początkujący','Średniozaawansowany'],ARRAY['Masa mięśniowa','Zdrowie ogólne','Kondycja'],'Pchanie','Strzałkowa','Jednostronne','Masa własnego ciała',false,'Z ostrożnością','Niskie',2,2,2,'Wysoki',true,true,'Prosta',NULL)
+ON CONFLICT (id) DO NOTHING;
+UPDATE exercises SET movement_pattern = 'Wspięcie na palce' WHERE id = 195 AND movement_pattern != 'Wspięcie na palce';
+UPDATE exercises SET suitable_for_no_activity = true  WHERE id = 185 AND (suitable_for_no_activity IS NULL OR suitable_for_no_activity = false);
+UPDATE exercises
+  SET suitable_for_no_activity = true,
+      suitable_experience_levels = CASE
+        WHEN NOT ('Brak aktywności fizycznej' = ANY(suitable_experience_levels))
+        THEN ARRAY_PREPEND('Brak aktywności fizycznej'::text, suitable_experience_levels)
+        ELSE suitable_experience_levels
+      END
+  WHERE id = 88
+    AND (suitable_for_no_activity IS NULL OR suitable_for_no_activity = false);
+UPDATE exercises SET suitable_for_no_activity = false WHERE id IN (98, 256) AND (suitable_for_no_activity IS NULL OR suitable_for_no_activity = true);
+UPDATE exercises SET equipment = ARRAY['Ławka']        WHERE id = 164 AND equipment @> ARRAY['Masa własnego ciała'];
+UPDATE exercises SET equipment = ARRAY['Ławka']        WHERE id = 221 AND equipment @> ARRAY['Masa własnego ciała'];
+UPDATE exercises SET equipment = ARRAY['Gumy oporowe'] WHERE id = 218 AND equipment @> ARRAY['Masa własnego ciała'];
+UPDATE exercises SET equipment = ARRAY['Inny']         WHERE id = 219 AND equipment @> ARRAY['Masa własnego ciała'];
+UPDATE exercises SET equipment = ARRAY['Inny']         WHERE id = 220 AND equipment @> ARRAY['Masa własnego ciała'];
+UPDATE exercises SET equipment = ARRAY['Ławka']        WHERE id = 94  AND equipment @> ARRAY['Masa własnego ciała'];
+ALTER TABLE exercises ADD COLUMN IF NOT EXISTS required_equipment_all TEXT[] NOT NULL DEFAULT '{}';
+UPDATE exercises SET equipment = ARRAY['Sztanga'],         required_equipment_all = ARRAY['Ławka'] WHERE id IN (1,114,157,158,171,213) AND required_equipment_all = '{}';
+UPDATE exercises SET equipment = ARRAY['Hantle'],          required_equipment_all = ARRAY['Ławka'] WHERE id IN (113,129,131,139,151,170,172,178,179,185,216) AND required_equipment_all = '{}';
+UPDATE exercises SET equipment = ARRAY['Maszyna'],         required_equipment_all = ARRAY['Ławka'] WHERE id = 173 AND required_equipment_all = '{}';
+UPDATE exercises SET equipment = ARRAY['Sztanga','Hantle'], required_equipment_all = ARRAY['Ławka'] WHERE id = 104 AND required_equipment_all = '{}';
+UPDATE exercises SET equipment = ARRAY['Hantle','Sztanga'], required_equipment_all = ARRAY['Ławka'] WHERE id = 206 AND required_equipment_all = '{}';
+`;
+
 const EX_BATCH_SQLS = [SQL_EXERCISES_0,SQL_EXERCISES_1,SQL_EXERCISES_2,SQL_EXERCISES_3];
 
 
@@ -60,6 +93,17 @@ export async function seedCatalogue(): Promise<void> {
   // 4. exercise_substitutions
   await db.execute(sql.raw(SQL_ESUBS));
   await db.execute(sql.raw(SQL_ESUBS_SETVAL));
+
+  // 5. Exercise patches: new exercises + metadata corrections (idempotent).
+  //    Split into separate statements because drizzle sql.raw() handles one statement at a time.
+  const patchStatements = SQL_EXERCISES_PATCH
+    .split(';')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  for (const stmt of patchStatements) {
+    await db.execute(sql.raw(stmt));
+  }
+  await db.execute(sql.raw(SQL_EX_SETVAL));
 
   const afterRes = await db.execute(sql`SELECT COUNT(*)::int AS c FROM exercises`);
   const after = Number((afterRes.rows[0] as { c: number }).c);

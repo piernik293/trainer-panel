@@ -1,0 +1,321 @@
+Implement the approved per-client exercise-variety history.
+
+This is a focused implementation.
+Do not run another broad audit.
+Do not use subagents.
+Do not redesign the generator.
+Do not modify volume calculations, volume statuses, split rules, duration
+estimation, safety filters, contraindications, equipment rules, tempo, rest,
+RIR or plyometric logic.
+
+Do not exceed 10 tool actions.
+If implementation cannot be completed within that scope, stop and report the
+remaining blocker.
+
+==================================================
+1. DATABASE SCHEMA
+==================================================
+
+Add the minimum history table:
+
+client_exercise_usage_log
+
+Fields:
+
+- id: serial primary key
+- client_id: integer, not null, FK clients(id), ON DELETE CASCADE
+- generation_id: PostgreSQL UUID, not null
+- exercise_id: integer, not null, FK exercises(id), ON DELETE CASCADE
+- generated_at: timestamptz, not null, default now()
+
+Add:
+
+UNIQUE (client_id, generation_id, exercise_id)
+
+Indexes:
+
+- client_id, generated_at DESC
+- client_id, exercise_id
+
+Do not add is_manual.
+
+Only automatically generated exercises from handleGenerateFromEmpty are stored.
+
+Files:
+
+- lib/db/src/schema/exercise-usage.ts
+- lib/db/src/schema/index.ts
+- artifacts/api-server/src/seeds/schemaMigrations.ts
+
+Use CREATE TABLE IF NOT EXISTS and CREATE INDEX IF NOT EXISTS.
+
+==================================================
+2. GENERATION ID
+==================================================
+
+In:
+
+artifacts/trainer-app/src/pages/Step4Exercises.tsx
+handleGenerateFromEmpty
+
+create exactly one UUID at the beginning of each Generate invocation:
+
+const generationId = crypto.randomUUID();
+
+A new Generate click creates a new UUID.
+
+The same UUID must be reused when retrying the final history commit for that
+same generated draft.
+
+Do not generate the UUID separately for each day.
+
+==================================================
+3. COMPLETE SUCCESS CONDITION
+==================================================
+
+Before the day loop calculate:
+
+eligibleDayCount
+
+using the existing supported V0 session-type filter.
+
+Track:
+
+balanceWeekSucceeded = false
+
+Set it to true only when the balance-week request returns HTTP success.
+
+History may be committed only when:
+
+errors.length === 0
+&& dayResults.length === eligibleDayCount
+&& balanceWeekSucceeded === true
+
+The generated draft may still be shown to the trainer when balance-week fails,
+but failed or partial generations must not enter exercise history.
+
+Do not change existing draft-application behaviour.
+
+==================================================
+4. SAME-WEEK DIVERSITY
+==================================================
+
+Do not rebuild this mechanism.
+
+The existing:
+
+weekUsedExerciseIds
+
+already passes exercises selected in earlier days to later generate-day calls.
+
+Keep it active.
+
+Confirm that it continues to use only IDs returned by the automatic
+generate-day engine.
+
+==================================================
+5. RECORD-GENERATION ENDPOINT
+==================================================
+
+Add:
+
+POST /api/clients/:clientId/plan-draft/record-generation
+
+Request:
+
+{
+  "generationId": "uuid",
+  "exerciseIds": [1, 2, 3]
+}
+
+Validation:
+
+- generationId must be a valid UUID
+- exerciseIds must be positive integer IDs
+- exerciseIds must contain at least one value
+
+Deduplicate incoming exercise IDs:
+
+const uniqueExerciseIds = [...new Set(exerciseIds)];
+
+The operation must run in one transaction.
+
+==================================================
+6. STRICT IDEMPOTENCY
+==================================================
+
+Do not rely only on:
+
+ON CONFLICT DO NOTHING
+
+Required behaviour:
+
+A. No rows currently exist for:
+
+client_id + generation_id
+
+→ insert the complete deduplicated exercise set.
+
+B. Rows already exist and the stored exercise-ID set exactly equals the
+incoming deduplicated set
+
+→ return success without inserting duplicates.
+
+C. Rows already exist but the stored exercise-ID set differs from the incoming
+set
+
+→ return HTTP 409 Conflict.
+
+Do not merge two different payloads into one generation.
+
+This guarantees that a network retry is safe, while accidental reuse of a
+generationId for another plan is rejected.
+
+The unique constraint remains the final database integrity guard.
+
+==================================================
+7. HISTORY READ FOR GENERATION
+==================================================
+
+Before calling ExerciseSelectionEngineV0 in generate-day, load per-client
+automatic usage history.
+
+Last four complete generations:
+
+SELECT generation_id
+FROM client_exercise_usage_log
+WHERE client_id = :clientId
+GROUP BY generation_id
+ORDER BY MAX(generated_at) DESC
+LIMIT 4;
+
+Exercise usage aggregation:
+
+SELECT
+  exercise_id,
+  COUNT(DISTINCT generation_id) AS total_generations,
+  MAX(generated_at) AS last_used_at
+FROM client_exercise_usage_log
+WHERE client_id = :clientId
+GROUP BY exercise_id;
+
+Pass into the engine:
+
+- total generation count per exercise
+- last-used timestamp per exercise
+- exercise IDs used in the previous four generations
+
+History must always be scoped by client_id.
+
+==================================================
+8. NOVELTY RANKING
+==================================================
+
+After all mandatory eligibility filtering, rank legal candidates in this order:
+
+1. not used in the previous four generations,
+2. never previously used by this client,
+3. fewest successful generations containing the exercise,
+4. least recently used,
+5. existing exercise-quality and priority score,
+6. existing deterministic tie-breaker.
+
+Use stable exercise IDs.
+
+Do not use pure randomness as the primary mechanism.
+
+Do not relax:
+
+- safety,
+- contraindications,
+- equipment,
+- trainer restrictions,
+- required movement pattern,
+- required session coverage.
+
+==================================================
+9. FALLBACK
+==================================================
+
+When every legal exercise for the required slot is inside the recent cooldown:
+
+1. keep all mandatory filters,
+2. choose the least recently used legal exercise,
+3. when recency is equal, choose the least frequently used,
+4. use the existing quality score as the next tie-breaker.
+
+Record the internal reason:
+
+“powtórzenie wymagane z powodu ograniczonej puli legalnych ćwiczeń”
+
+Do not fail generation solely because the legal pool is smaller than the
+four-generation cooldown.
+
+==================================================
+10. FRONTEND COMMIT
+==================================================
+
+After the complete draft is applied and only when the complete-success condition
+is true, send one commit request containing:
+
+- the single generationId,
+- deduplicated exercise IDs from all successful dayResults.
+
+These IDs are considered automatic because handleGenerateFromEmpty only runs
+for an empty draft and dayResults contains only exercises returned by the
+automatic engine.
+
+Do not extend this history mechanism to handleAutoFill or partially manual
+drafts in this task.
+
+History-commit failure must not remove the generated draft from the editor.
+
+==================================================
+11. FOCUSED TESTS
+==================================================
+
+Add focused tests proving:
+
+1. Six legal alternatives are all used before repetition.
+
+2. A recently used exercise is avoided for four complete generations when an
+   alternative exists.
+
+3. The seventh generation selects by usage count and recency.
+
+4. History is isolated per client.
+
+5. Partial day generation is not committed.
+
+6. Failed balance-week is not committed.
+
+7. A complete successful generation is committed exactly once.
+
+8. Retrying the same generationId with the same exercise set is successful and
+   creates no duplicates.
+
+9. Retrying the same generationId with a different exercise set returns 409.
+
+10. Duplicate exercise IDs in one payload create one history row per exercise.
+
+11. Same-week weekUsedExerciseIds behaviour remains active.
+
+12. Safety, equipment and contraindication filters remain stronger than novelty.
+
+Run focused tests only.
+
+==================================================
+12. REPORT
+==================================================
+
+Report only:
+
+- files changed,
+- migration/schema result,
+- exact commit-success condition,
+- exact idempotency behaviour,
+- exact novelty ranking,
+- sequence from seven consecutive deterministic generations,
+- focused test results.
+
+Do not rebuild unrelated applications.

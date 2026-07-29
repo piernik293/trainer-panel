@@ -1,0 +1,359 @@
+Implement only the percentage-based weekly volume status display.
+
+Do not modify generator logic.
+Do not modify proposal calculation.
+Do not modify priority calculation.
+Do not modify weeklyAbsoluteCeiling values.
+Do not modify database data.
+Do not modify exercise selection.
+Do not modify split logic.
+Do not modify duration calculation.
+Do not modify plyometric logic.
+Do not modify any generated or selected volume value.
+Do not run a broad audit.
+Do not use subagents.
+
+This task changes only:
+
+- UI labels,
+- UI colors,
+- displayed recommended ranges,
+- percentage-based warning thresholds,
+- display rounding.
+
+==================================================
+1. SOURCE VALUE
+==================================================
+
+Each target must use its own:
+
+weeklyAbsoluteCeiling
+
+Do not use fixed numeric thresholds shared between muscle targets.
+
+Examples:
+
+- a target with weeklyAbsoluteCeiling = 20 uses thresholds calculated from 20,
+- a target with weeklyAbsoluteCeiling = 8 uses thresholds calculated from 8,
+- a target with weeklyAbsoluteCeiling = 30 uses thresholds calculated from 30.
+
+==================================================
+2. RAW PERCENTAGE CALCULATION
+==================================================
+
+Use the raw, unrounded effective-volume value for all status decisions.
+
+Calculate:
+
+volumeRatio =
+rawSelectedVolume / weeklyAbsoluteCeiling
+
+Do not round rawSelectedVolume before calculating volumeRatio.
+
+Effective volume may contain decimals such as:
+
+- 6.5,
+- 2.2,
+- 0.25,
+- 15.1,
+- 24.9.
+
+==================================================
+3. STATUS RULES
+==================================================
+
+Use exactly these mutually exclusive conditions.
+
+1. BELOW TOTAL MINIMUM
+
+When:
+
+volumeRatio < 0.50
+
+Use a red warning state.
+
+Display:
+
+“Poniżej totalnego minimum”
+
+2. MEDIUM MINIMUM
+
+When:
+
+volumeRatio >= 0.50
+and
+volumeRatio <= 0.75
+
+Use an orange warning state.
+
+Display:
+
+“Średnie minimum do spełnienia”
+
+3. RECOMMENDED VOLUME
+
+When:
+
+volumeRatio > 0.75
+and
+volumeRatio <= 1.00
+
+Use a green success state.
+
+Display:
+
+“Rekomendowana objętość spełniona”
+
+4. ABOVE MAXIMUM RECOMMENDED VOLUME
+
+When:
+
+volumeRatio > 1.00
+and
+volumeRatio < 1.25
+
+Use an orange overage warning state.
+
+Display:
+
+“Powyżej maks. rekomendowanej objętości”
+
+Retain the existing explanation describing why the volume was exceeded.
+
+5. OVERTRAINING WARNING
+
+When:
+
+volumeRatio >= 1.25
+
+Use a red high-risk warning state.
+
+Display:
+
+“Ryzyko przetrenowania”
+
+Retain the existing explanation describing why the value was exceeded.
+
+Do not block the value automatically.
+Do not change whether the generator may exceed the recommendation.
+
+==================================================
+4. EXACT BOUNDARIES
+==================================================
+
+Boundary behaviour must be:
+
+- below 50% → red,
+- exactly 50% → orange,
+- exactly 75% → orange,
+- above 75% → green,
+- exactly 100% → green,
+- above 100% → orange overage,
+- exactly 125% → red overtraining warning,
+- above 125% → red overtraining warning.
+
+==================================================
+5. DISPLAY ROUNDING
+==================================================
+
+Use raw values for status calculations.
+
+Round only numbers displayed in the UI.
+
+Use this custom display rounding:
+
+- decimal part from 0.0 through 0.5 → round down,
+- decimal part greater than 0.5 → round up.
+
+Example implementation:
+
+function roundVolumeForDisplay(value: number): number {
+  const lower = Math.floor(value);
+  const decimalPart = value - lower;
+
+  return decimalPart <= 0.5
+    ? lower
+    : Math.ceil(value);
+}
+
+Examples:
+
+- 9.1 → 9
+- 9.5 → 9
+- 9.6 → 10
+- 15.1 → 15
+- 15.5 → 15
+- 15.6 → 16
+- 24.9 → 25
+
+Important:
+
+The displayed rounded number must never be used to determine the status.
+
+Example:
+
+weeklyAbsoluteCeiling = 20
+
+rawSelectedVolume = 24.9
+
+Displayed value = 25
+
+volumeRatio = 24.9 / 20 = 1.245
+
+Status remains:
+
+“Powyżej maks. rekomendowanej objętości”
+
+It must not become “Ryzyko przetrenowania” only because the displayed number
+was rounded to 25.
+
+==================================================
+6. DISPLAYED THRESHOLDS
+==================================================
+
+Calculate the raw thresholds separately for every target:
+
+rawTotalMinimum =
+weeklyAbsoluteCeiling * 0.50
+
+rawRecommendedThreshold =
+weeklyAbsoluteCeiling * 0.75
+
+rawOvertrainingThreshold =
+weeklyAbsoluteCeiling * 1.25
+
+Display the threshold numbers using the custom display rounding.
+
+Display:
+
+Totalne minimum:
+{rounded rawTotalMinimum} serii/tydz.
+
+Średnie minimum:
+{rounded rawRecommendedThreshold} serii/tydz.
+
+Zakres rekomendowany:
+powyżej {rounded rawRecommendedThreshold}
+do {rounded weeklyAbsoluteCeiling} serii/tydz.
+
+Maks. rekomendowana obj. tyg.:
+{rounded weeklyAbsoluteCeiling} serii/tydz.
+
+Próg ryzyka przetrenowania:
+{rounded rawOvertrainingThreshold} serii/tydz.
+
+Do not use the old database recommended range for these UI status thresholds.
+
+==================================================
+7. EXAMPLE FOR MAXIMUM 20
+==================================================
+
+weeklyAbsoluteCeiling = 20
+
+- raw 9.9 → displayed 10 → red:
+  “Poniżej totalnego minimum”
+
+- raw 10 → displayed 10 → orange:
+  “Średnie minimum do spełnienia”
+
+- raw 15 → displayed 15 → orange:
+  “Średnie minimum do spełnienia”
+
+- raw 15.1 → displayed 15 → green:
+  “Rekomendowana objętość spełniona”
+
+- raw 20 → displayed 20 → green:
+  “Rekomendowana objętość spełniona”
+
+- raw 20.1 → displayed 20 → orange:
+  “Powyżej maks. rekomendowanej objętości”
+
+- raw 24.9 → displayed 25 → orange:
+  “Powyżej maks. rekomendowanej objętości”
+
+- raw 25 → displayed 25 → red:
+  “Ryzyko przetrenowania”
+
+Do not move the overtraining threshold from 25 to 26.
+
+Exactly 25 equals 125% of 20.
+
+==================================================
+8. PRIORITY
+==================================================
+
+Priority must not change the percentage thresholds.
+
+An active priority may remain visible as an explanation for the proposal, but:
+
+- below 50% remains red,
+- 50% through 75% remains orange,
+- above 75% through 100% remains green,
+- above 100% but below 125% remains orange,
+- 125% or more remains red.
+
+Do not calculate another priority bonus.
+Do not modify existing priority explanations.
+
+==================================================
+9. SAFEGUARDS
+==================================================
+
+Do not change:
+
+- proposal numbers,
+- effective-volume calculations,
+- generator behaviour,
+- overage permissions,
+- database values,
+- warnings returned by the backend,
+- activation behaviour,
+- sessionMax logic,
+- weekly distribution,
+- existing exercise coefficients.
+
+Reuse the existing UI components and warning styles.
+
+==================================================
+10. FOCUSED TESTS
+==================================================
+
+Add focused tests proving:
+
+- each target uses its own weeklyAbsoluteCeiling,
+- raw values are used for status calculation,
+- displayed values use the custom rounding,
+- 49.9% → red,
+- exactly 50% → orange,
+- exactly 75% → orange,
+- 75.1% → green,
+- exactly 100% → green,
+- 100.1% → orange overage,
+- 124.9% → orange overage,
+- exactly 125% → red overtraining warning,
+- priority does not change thresholds,
+- generator and proposal values remain unchanged.
+
+For weeklyAbsoluteCeiling = 20 specifically test:
+
+- 9.9 → displayed 10, red,
+- 10 → orange,
+- 15 → orange,
+- 15.1 → displayed 15, green,
+- 20 → green,
+- 20.1 → displayed 20, orange,
+- 24.9 → displayed 25, orange,
+- 25 → red overtraining warning.
+
+Report only:
+
+- files changed,
+- previous UI status conditions,
+- new percentage conditions,
+- display-rounding implementation,
+- focused test results.
+
+Maximum 8 additional actions.
+
+If more work is required, stop and report what remains instead of inspecting
+unrelated files.

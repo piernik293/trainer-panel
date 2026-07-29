@@ -41,6 +41,8 @@ export interface V0Result {
   valid: boolean;
   /** Blocking failure message when valid = false. */
   error?: string;
+  /** Non-blocking structural warnings (e.g. missing pull slot for bodyweight-only inactive clients). */
+  warnings?: string[];
 }
 
 /**
@@ -156,6 +158,24 @@ export interface V0PriorityContext {
    * An empty array (or absent field) disables the boost entirely.
    */
   undercoveredMuscleGroups?: string[];
+  /**
+   * Per-client exercise usage history for novelty ranking (§8).
+   * Key = exercise DB id. Absent when the client has no generation history.
+   *
+   * Novelty sort order (§8):
+   *   N1. not in the recent-4-generation cooldown
+   *   N2. never previously used (no entry in this map)
+   *   N3. fewest successful generations containing this exercise
+   *   N4. least recently used (null → treated as epoch 0 = oldest = best)
+   */
+  usageHistory?: Map<number, { totalGenerations: number; lastUsedAt: Date }>;
+  /**
+   * Exercise IDs that appeared in any of the most recent four complete
+   * generations for this client.  These sort to the BACK of every candidate
+   * band but remain eligible — §9 fallback selects the least-recently-used
+   * when the entire legal pool is in cooldown.
+   */
+  cooldownIds?: Set<number>;
 }
 
 /**
@@ -583,6 +603,235 @@ function isPullRearDeltUpperBackSafe(ex: ScoredAndFilteredExercise): boolean {
   return false;
 }
 
+// ─── Beginner/no-activity movement-pattern balancing ─────────────────────────
+
+/**
+ * Five major movement patterns required for structural balance in beginner plans.
+ *   push          — horizontal/vertical pressing
+ *   pull          — vertical/horizontal pulling (back compounds)
+ *   knee_dominant — squat / lunge family
+ *   hip_dominant  — hinge / posterior chain
+ *   core          — trunk stability
+ */
+export type MajorPattern =
+  | "push"
+  | "pull"
+  | "knee_dominant"
+  | "hip_dominant"
+  | "core";
+
+/**
+ * True when at least one exercise in `results` covers the requested pattern.
+ */
+export function hasMajorPattern(
+  results: ReadonlyArray<{ ex: ScoredAndFilteredExercise }>,
+  mp: MajorPattern,
+): boolean {
+  return results.some(({ ex }) => {
+    switch (mp) {
+      case "push":
+        return (
+          pattern(ex, "Pchanie poziome", "Pchanie pionowe") ||
+          (muscle(ex, "Klatka piersiowa") && compound(ex))
+        );
+      case "pull":
+        return (
+          muscle(ex, "Plecy") &&
+          (compound(ex) || pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome")) &&
+          !pattern(ex, "Zawias biodrowy")
+        );
+      case "knee_dominant":
+        return pattern(ex, "Przysiad", "Wykrok");
+      case "hip_dominant":
+        return pattern(ex, "Zawias biodrowy");
+      case "core":
+        return muscle(ex, "Brzuch");
+    }
+  });
+}
+
+/**
+ * Required major patterns for each session type.
+ * Core is excluded — it is optional and its absence does not constitute a
+ * structural imbalance worth a swap.
+ */
+export function requiredPatternsForSession(sessionType: V0SessionType): MajorPattern[] {
+  switch (sessionType) {
+    case "full_body": return ["push", "pull", "knee_dominant", "hip_dominant"];
+    case "upper":     return ["push", "pull"];
+    case "lower":     return ["knee_dominant", "hip_dominant"];
+    case "push":      return ["push"];
+    case "pull":      return ["pull"];
+    default:          return [];
+  }
+}
+
+/**
+ * True when the exercise is a small-muscle isolation candidate for swapping.
+ *
+ * Only Biceps / Triceps / Łydki / Przywodziciele isolation exercises can be
+ * replaced during the balancing pass — these are the accessories that can be
+ * safely sacrificed when a major structural pattern is missing.
+ *
+ * Compound exercises, core, and the primary structural muscles are never
+ * candidates for removal.
+ */
+export function isSwappableAccessory(ex: ScoredAndFilteredExercise): boolean {
+  return (
+    isIsolation(ex) &&
+    muscle(ex, "Biceps", "Triceps", "Łydki", "Przywodziciele")
+  );
+}
+
+/**
+ * Hard eligibility rule for beginner (Początkujący) automatic exercise selection.
+ *
+ * Returns true only when `learningDifficulty` is a finite number ≤ 2.
+ * Missing, null, undefined, or any value > 2 returns false.
+ *
+ * This is the single shared predicate used by every selection path that
+ * gates exercises for beginner clients — pick(), findReplacementForPattern(),
+ * the safe-reuse fallback, and the beginner balancing pass all reference this
+ * function rather than duplicating the condition.
+ */
+export function isBeginnerEligible(
+  ex: { learningDifficulty?: number | null },
+): boolean {
+  const v = ex.learningDifficulty;
+  return Number.isFinite(v) && Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 2;
+}
+
+/**
+ * Return the best available replacement exercise for a missing major pattern.
+ * Searches `eligible` (already hard-filtered pool) for an exercise that:
+ *   - is not already in usedExerciseIds,
+ *   - satisfies the structural predicate for `mp`,
+ *   - is valid for the client level (sortDeterministic already respects ctx).
+ *
+ * Returns null when no candidate exists (equipment/catalogue gap).
+ */
+export function findReplacementForPattern(
+  mp: MajorPattern,
+  eligible: ScoredAndFilteredExercise[],
+  usedExerciseIds: ReadonlySet<string>,
+  ctx: V0PriorityContext | undefined,
+): ScoredAndFilteredExercise | null {
+  const candidates = eligible.filter((ex) => {
+    if (usedExerciseIds.has(String(ex.id))) return false;
+    // Hard safety filter: balancing replacements for no-activity clients must
+    // also satisfy suitableForNoActivity === true.
+    if (ctx?.isNoActivityClient && ex.suitableForNoActivity !== true) return false;
+    // Hard difficulty filter: replacements for beginner OR inactive clients must
+    // satisfy isBeginnerEligible (learningDifficulty integer 1–2).
+    // Inactive clients carry the same ld gate as beginners so that a future
+    // catalogue edit cannot introduce a high-difficulty safe exercise that
+    // bypasses this path while passing only the suitableForNoActivity check.
+    if ((ctx?.isBeginnerClient || ctx?.isNoActivityClient) && !isBeginnerEligible(ex)) return false;
+    switch (mp) {
+      case "push":
+        return (
+          muscle(ex, "Klatka piersiowa", "Barki") &&
+          compound(ex) &&
+          pattern(ex, "Pchanie poziome", "Pchanie pionowe")
+        );
+      case "pull":
+        return (
+          muscle(ex, "Plecy") &&
+          compound(ex) &&
+          pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome")
+        );
+      case "knee_dominant":
+        return (
+          muscle(ex, "Mięśnie czworogłowe uda", "Pośladki") &&
+          compound(ex) &&
+          pattern(ex, "Przysiad", "Wykrok")
+        );
+      case "hip_dominant":
+        return (
+          muscle(ex, "Mięśnie dwugłowe uda", "Pośladki", "Plecy") &&
+          pattern(ex, "Zawias biodrowy")
+        );
+      case "core":
+        return muscle(ex, "Brzuch");
+    }
+  });
+
+  if (candidates.length === 0) return null;
+  const sorted = sortDeterministic(candidates, ctx?.preferredExerciseKeywords, ctx);
+  return sorted[0];
+}
+
+/**
+ * Post-selection balancing pass for Brak aktywności fizycznej and Początkujący.
+ *
+ * After the slot-based selection completes, verify that all required major
+ * movement patterns for the session type are present in `results`. For each
+ * missing pattern:
+ *   1. Find the lowest-priority swappable accessory in results
+ *      (Biceps / Triceps / Łydki / Przywodziciele isolation).
+ *   2. Find a legal replacement for the missing pattern in `eligible`.
+ *   3. If both are found, swap: remove the accessory, add the replacement.
+ *      Mutates `results` and `usedExerciseIds` in place.
+ *
+ * Rules:
+ *   - Maximum one swap per missing pattern.
+ *   - No swap when no swappable accessory exists (all exercises are structural).
+ *   - No swap when no legal replacement exists (equipment / catalogue gap).
+ *   - Manually selected or locked exercises are not replaced (there are none
+ *     in the V0 engine — all exercises are engine-selected).
+ *
+ * Exported for unit testing.
+ */
+export function applyBeginnerBalancingPass(
+  results: Array<{ ex: ScoredAndFilteredExercise; slotName: string }>,
+  eligible: ScoredAndFilteredExercise[],
+  usedExerciseIds: Set<string>,
+  sessionType: V0SessionType,
+  ctx: V0PriorityContext | undefined,
+): void {
+  const required = requiredPatternsForSession(sessionType);
+
+  for (const mp of required) {
+    if (hasMajorPattern(results, mp)) continue;
+
+    // Find a legal replacement first — if none exists, no swap is possible.
+    const replacement = findReplacementForPattern(mp, eligible, usedExerciseIds, ctx);
+    if (!replacement) {
+      console.log(`BEGINNER_BALANCE: no pool candidate for missing pattern "${mp}" — skipping`);
+      continue;
+    }
+
+    // Find the lowest-priority swappable accessory in the current results.
+    // Higher priorityRank value = lower quality (Niski/unknown first).
+    let worstIdx = -1;
+    let worstRank = -1;
+    for (let i = 0; i < results.length; i++) {
+      const ex = results[i].ex;
+      if (!isSwappableAccessory(ex)) continue;
+      const rank = priorityRank(ex);
+      if (rank > worstRank) {
+        worstRank = rank;
+        worstIdx = i;
+      }
+    }
+
+    if (worstIdx === -1) {
+      console.log(`BEGINNER_BALANCE: no swappable accessory for pattern "${mp}" — skipping`);
+      continue;
+    }
+
+    const removed = results[worstIdx];
+    results.splice(worstIdx, 1, { ex: replacement, slotName: `Balance:${mp}` });
+    usedExerciseIds.delete(String(removed.ex.id));
+    usedExerciseIds.add(String(replacement.id));
+
+    console.log(
+      `BEGINNER_BALANCE: swapped "${removed.ex.name}" (${removed.slotName}) → ` +
+      `"${replacement.name}" to cover missing pattern "${mp}"`,
+    );
+  }
+}
+
 // ─── Exercise class derivation ────────────────────────────────────────────────
 
 /**
@@ -675,7 +924,7 @@ function sortDeterministic(
   // boost exercises that fix those gaps over unrelated filler.
   const ucGroups = (ctx?.undercoveredMuscleGroups ?? []).map(norm);
 
-  return [...candidates].sort((a, b) => {
+  const sorted = [...candidates].sort((a, b) => {
     // 0. Preferred exercise boost
     if (preferredKeywords && preferredKeywords.length > 0) {
       const prefA = isPreferredExercise(a, preferredKeywords) ? 0 : 1;
@@ -791,6 +1040,40 @@ function sortDeterministic(
       if (isoA !== isoB) return isoA - isoB;
     }
 
+    // 4c. Novelty ranking (§8) — prefer exercises not recently or not yet used.
+    //
+    // Sort order (each check only fires when the two values differ):
+    //   N1. not in the recent-4-generation cooldown  (cooldown → back)
+    //   N2. never used by this client  (no history entry = best)
+    //   N3. fewest successful generations containing this exercise
+    //   N4. least recently used  (null / absent → epoch 0 = oldest = best)
+    //
+    // §9 fallback: when ALL candidates are in cooldown N1 is a draw, and
+    // N2–N4 select the least-used/least-recent — generation never fails.
+    if (ctx?.usageHistory !== undefined || ctx?.cooldownIds !== undefined) {
+      const inCooldownA = ctx.cooldownIds?.has(a.id) ? 1 : 0;
+      const inCooldownB = ctx.cooldownIds?.has(b.id) ? 1 : 0;
+      if (inCooldownA !== inCooldownB) return inCooldownA - inCooldownB;
+
+      const histA = ctx.usageHistory?.get(a.id);
+      const histB = ctx.usageHistory?.get(b.id);
+
+      // N2: never used comes first
+      const neverA = histA ? 1 : 0;
+      const neverB = histB ? 1 : 0;
+      if (neverA !== neverB) return neverA - neverB;
+
+      // N3: fewest successful generations
+      const genA = histA?.totalGenerations ?? 0;
+      const genB = histB?.totalGenerations ?? 0;
+      if (genA !== genB) return genA - genB;
+
+      // N4: least recently used
+      const tsA = histA?.lastUsedAt?.getTime() ?? 0;
+      const tsB = histB?.lastUsedAt?.getTime() ?? 0;
+      if (tsA !== tsB) return tsA - tsB;
+    }
+
     // 5. exercisePriority
     const pa = priorityRank(a),
       pb = priorityRank(b);
@@ -801,9 +1084,20 @@ function sortDeterministic(
       lb = b.learningDifficulty ?? 99;
     if (la !== lb) return la - lb;
 
-    // 5. id
+    // 6. id
     return a.id - b.id;
   });
+
+  // §9: log when the entire legal candidate pool for a slot is in the recent
+  // cooldown — the fallback (least-recently-used via N2–N4 above) is applied
+  // automatically; this message helps diagnose thin exercise catalogues.
+  if (ctx?.cooldownIds?.size && sorted.length > 0 && ctx.cooldownIds.has(sorted[0].id)) {
+    console.log(
+      "NOVELTY_COOLDOWN_FALLBACK: powtórzenie wymagane z powodu ograniczonej puli legalnych ćwiczeń",
+    );
+  }
+
+  return sorted;
 }
 
 // ─── Priority-aware candidate ordering ───────────────────────────────────────
@@ -1067,6 +1361,7 @@ export function runExerciseSelectionEngineV0(
   // ── Step 2: Selection state ───────────────────────────────────────────────
   const results: Array<{ ex: ScoredAndFilteredExercise; slotName: string }> =
     [];
+  const engineWarnings: string[] = [];
 
   // Movement-pattern variety tracker for Tier A muscles.
   // After each Tier A exercise is chosen, its movement pattern is recorded here.
@@ -1104,8 +1399,35 @@ export function runExerciseSelectionEngineV0(
     filter: (ex: ScoredAndFilteredExercise) => boolean,
     pickOpts?: { protected?: boolean },
   ): ScoredAndFilteredExercise | null {
+    // ── Hard safety / difficulty filters ─────────────────────────────────────
+    // Two complementary hard filters applied before any candidate reaches the
+    // band or the sort.  Both must be satisfied simultaneously when both flags
+    // are set.
+    //
+    // 1. Inactive-client safety ("Brak aktywności fizycznej"):
+    //    • suitableForNoActivity === true  (data-layer guarantee)
+    //    • isBeginnerEligible()            (ld integer 1–2; guards against high-
+    //      difficulty exercises slipping in via future catalogue edits)
+    //
+    // 2. Beginner difficulty ("Początkujący"):
+    //    • isBeginnerEligible()            (ld integer 1–2)
+    //
+    // isBeginnerEligible is the single shared predicate for both.
+    // Missing, null, non-integer, zero, negative, or fractional difficulty
+    // values are ALL treated as ineligible.
+    //
+    // Manual / trainer-locked exercises bypass this function entirely.
+    const safetyFilter = (ex: ScoredAndFilteredExercise): boolean => {
+      if (ctx?.isNoActivityClient) {
+        if (ex.suitableForNoActivity !== true) return false;
+        if (!isBeginnerEligible(ex)) return false;
+      }
+      if (ctx?.isBeginnerClient && !isBeginnerEligible(ex)) return false;
+      return true;
+    };
+
     const filtered = eligible.filter(
-      (ex) => !usedExerciseIds.has(String(ex.id)) && filter(ex),
+      (ex) => !usedExerciseIds.has(String(ex.id)) && safetyFilter(ex) && filter(ex),
     );
     const candidates =
       ctx?.isPriorityEligible
@@ -1117,6 +1439,52 @@ export function runExerciseSelectionEngineV0(
     );
 
     if (candidates.length === 0) {
+      // ── Safe-reuse fallback (restricted-level clients) ────────────────────
+      // When the unused eligible pool is empty, allow repeating an exercise that
+      // was already selected in this session rather than falling back to one that
+      // violates the level's hard filter.  Prefer the least-recently-used eligible
+      // exercise (earliest last-occurrence in results) to maximise variety.
+      //
+      // Safety > novelty for both "Brak aktywności fizycznej" and "Początkujący":
+      //   • inactive: a Glute bridge twice > an unsafe exercise once
+      //   • beginner:  a Plank twice > a High Pull once
+      //
+      // The reuse pool is built from the full eligible slice (no usedExerciseIds
+      // restriction) but safetyFilter still applies, so every hard constraint
+      // (suitableForNoActivity, learningDifficulty) is enforced during reuse.
+      if (ctx?.isNoActivityClient || ctx?.isBeginnerClient) {
+        const reusePool = eligible.filter((ex) => safetyFilter(ex) && filter(ex));
+        if (reusePool.length > 0) {
+          const sorted = sortDeterministic(reusePool, ctx?.preferredExerciseKeywords, ctx);
+          const lastUsedIndex = (ex: ScoredAndFilteredExercise): number => {
+            let last = -1;
+            for (let i = 0; i < results.length; i++) {
+              if (results[i].ex.id === ex.id) last = i;
+            }
+            return last;
+          };
+          // Least-recently-used first: lower lastUsedIndex wins (−1 = never used = most preferred).
+          const reuseSorted = [...sorted].sort(
+            (a, b) => lastUsedIndex(a) - lastUsedIndex(b),
+          );
+          const selected = reuseSorted[0];
+          usedExerciseIds.add(String(selected.id));
+          results.push({ ex: selected, slotName });
+          console.log(`SAFE_REUSE: ${slotName} — repeated ${selected.id} "${selected.name}"`);
+          return selected;
+        }
+        // No eligible candidate exists even allowing reuse.  Skip the optional
+        // slot and emit a non-blocking structural warning.
+        const levelLabel = ctx?.isNoActivityClient
+          ? "Brak aktywności fizycznej"
+          : "Początkujący";
+        engineWarnings.push(
+          `Brak kolejnego bezpiecznego ćwiczenia dla poziomu ${levelLabel} — zachowano prostszy układ planu.`,
+        );
+        console.log(`NO_SAFE_CANDIDATE: ${slotName} — slot skipped, warning emitted`);
+        if (required) console.log(`V0_REQUIRED_SLOT_FAILED: ${slotName}`);
+        return null;
+      }
       console.log(`NO_VALID_EXERCISE_FOR_SLOT: ${slotName}`);
       if (required) {
         console.log(`V0_REQUIRED_SLOT_FAILED: ${slotName}`);
@@ -1147,24 +1515,12 @@ export function runExerciseSelectionEngineV0(
       : BAND_ACCESSORY;
     const band = candidates.slice(0, bandSize);
 
-    // Safety fix (Fix 2): For inactive clients with altIdx > 0, the diversity
-    // search must not reach intermediate / advanced exercises when a safe beginner
-    // option (suitableForNoActivity === true) already exists in the band.
-    // The sorted candidates list always places suitableForNoActivity exercises
-    // first, so band[0] (the altIdx=0 default) is safe.  Without this guard,
-    // the diversity search over band.slice(1) can land on an intermediate exercise
-    // (e.g. Pompki z gumą oporową, Wykroki chodzone) when altIdx > 0.
-    //
-    // Rule: when isNoActivityClient && altIdx > 0, restrict the effective band to
-    // suitableForNoActivity === true candidates only.  If no such candidate exists
-    // (catalogue gap), fall back to the full band so the slot is never starved.
-    const activeBand: typeof band =
-      ctx?.isNoActivityClient && altIdx > 0
-        ? (() => {
-            const safe = band.filter((ex) => ex.suitableForNoActivity === true);
-            return safe.length > 0 ? safe : band;
-          })()
-        : band;
+    // Safety note: for isNoActivityClient, every exercise in `candidates` (and
+    // therefore `band`) has already passed the hard safetyFilter above — only
+    // suitableForNoActivity === true exercises reach this point.  The old band-
+    // level restriction (altIdx > 0 → filter band to safe subset with full-band
+    // fallback) is therefore superseded and removed.
+    const activeBand = band;
 
     let selected: ScoredAndFilteredExercise;
     if (altIdx === 0 || activeBand.length <= 1) {
@@ -1961,6 +2317,7 @@ export function runExerciseSelectionEngineV0(
 
       // Slot 2: Back pull compound — prefer vertical pull (lat pulldown / pull-up);
       // fall back to any back pull compound when the vertical pool is exhausted.
+      const pullSlotBefore = results.length;
       pick(
         "Back pull compound (vertical)",
         false,
@@ -1979,6 +2336,14 @@ export function runExerciseSelectionEngineV0(
             pattern(ex, "Przyciąganie pionowe", "Przyciąganie poziome"),
           { protected: true },
         );
+      // §6: Emit a non-blocking warning when no pull compound is available for
+      // inactive or beginner clients so the trainer knows push–pull balance is broken.
+      if (results.length === pullSlotBefore && (ctx?.isNoActivityClient || ctx?.isBeginnerClient)) {
+        engineWarnings.push(
+          "Brak dostępnego ćwiczenia przyciągającego dla wybranego sprzętu. " +
+          "Dodaj gumę oporową, TRX lub dostęp do wyciągu, aby zachować równowagę push–pull.",
+        );
+      }
 
       // Slot 3: Knee-dominant lower compound — squat or lunge family.
       const fbS3 = pick(
@@ -2010,29 +2375,33 @@ export function runExerciseSelectionEngineV0(
       // session can still reach MIN_EXERCISES. Mirrors the PLYO calves fallback
       // pattern. Optional — if also empty the count guard still blocks the session.
       //
-      // Safety fix (Fix 1): For inactive clients, only exercises that are either
-      // explicitly flagged suitableForNoActivity === true OR have a beginner
-      // learning difficulty (learningDifficulty ≤ 2) are admitted to this slot.
+      // §4 Safety fix: For inactive clients, only exercises explicitly flagged
+      // suitableForNoActivity === true are admitted to this slot.
       //
-      // Rationale: a strict suitableForNoActivity-only filter exhausts all safe
-      // lower-body candidates in a 2-day plan (slots 3 & 4 consume all three tagged
-      // exercises: 90, 95, 105) and leaves Day 2 with only 3 exercises.  The ld ≤ 2
-      // fallback allows Przysiad do skrzyni (89, ld=2) and Wykrok w tył (96, ld=2)
-      // as beginner-appropriate alternatives while still blocking:
-      //   • Wykroki chodzone (97, ld=3)   — intermediate, listed in blocked set
-      //   • Przysiad bułgarski (94, ld=4)  — advanced,    listed in blocked set
-      // The sort still places suitableForNoActivity exercises first, so safe exercises
-      // win the slot whenever they are available.
+      // The original ld ≤ 2 fallback was needed when only three suitableForNoActivity
+      // lower-body exercises existed (ids 90, 95, 105) — two consecutive FULL_BODY
+      // days could exhaust all three and leave Day 2 with only 3 exercises.
+      //
+      // With the addition of "Wejście na niskie podwyższenie z podparciem" (id=260,
+      // suitableForNoActivity=true) the pool now has four safe lower-body options.
+      // The ld ≤ 2 fallback is removed to prevent Wykrok w tył (id=96, ld=2,
+      // suitableForNoActivity=null) from reaching inactive clients as a primary
+      // automatic choice through this slot.
       if (!fbHip) {
-        pick(
+        const fbSupp = pick(
           "Lower body supplement",
           false,
           (ex) =>
             muscle(ex, "Mięśnie czworogłowe uda", "Mięśnie dwugłowe uda", "Pośladki") &&
+            !isBeginnerDrillByName(ex.name) &&
             (!ctx?.isNoActivityClient ||
-              ex.suitableForNoActivity === true ||
-              (ex.learningDifficulty != null && ex.learningDifficulty <= 2)),
+              ex.suitableForNoActivity === true),
         );
+        if (!fbSupp && ctx?.isNoActivityClient) {
+          engineWarnings.push(
+            "Brak dodatkowego bezpiecznego ćwiczenia dolnej części ciała dla wybranego poziomu i sprzętu.",
+          );
+        }
       }
 
       // Slot 5 (optional): Rotate between upper and lower body accessories.
@@ -2156,6 +2525,19 @@ export function runExerciseSelectionEngineV0(
     }
   }
 
+  // ── Step 3.5: Beginner/no-activity balancing pass ────────────────────────
+  //
+  // For "Brak aktywności fizycznej" and "Początkujący" clients, run a single
+  // repair pass after the slot selection to ensure all required major movement
+  // patterns are present.  The pass swaps a low-priority small-muscle isolation
+  // for a structural compound when a pattern is missing.
+  //
+  // This is the safety net for equipment-constrained pools where a required
+  // structural slot (e.g. back pull) found no candidates and fell through.
+  if (ctx?.isNoActivityClient || ctx?.isBeginnerClient) {
+    applyBeginnerBalancingPass(results, eligible, usedExerciseIds, sessionType, ctx);
+  }
+
   // ── Step 4: Minimum session guard ─────────────────────────────────────────
   if (results.length < MIN_EXERCISES) {
     const error = `V0 ${sessionType.toUpperCase()}: minimum ${MIN_EXERCISES} exercises required, got ${results.length}`;
@@ -2187,5 +2569,13 @@ export function runExerciseSelectionEngineV0(
     }),
   );
 
-  return { exercises, valid: true };
+  return {
+    exercises,
+    valid: true,
+    ...(engineWarnings.length > 0 ? { warnings: engineWarnings } : {}),
+  };
 }
+
+// ─── Test-only exports ────────────────────────────────────────────────────────
+/** @internal Exported for focused unit tests only. Do not import in production code. */
+export { sortDeterministic as _sortDeterministicForTest };

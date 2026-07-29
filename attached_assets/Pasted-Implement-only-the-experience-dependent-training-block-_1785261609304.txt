@@ -1,0 +1,174 @@
+Implement only the experience-dependent training-block duration rule.
+
+Do not run a broad audit.
+Do not use subagents.
+Do not redesign the form.
+Do not create a new planning horizon field.
+Do not add support for 52-week training blocks.
+Do not modify workout generation logic.
+Do not modify progression logic.
+Do not modify volume logic.
+Do not modify exercise selection.
+Do not modify split logic.
+Do not modify priority logic.
+Do not modify duration estimation.
+Do not modify plyometric logic.
+Do not create database migrations.
+
+The existing field represents the duration of one training block / mesocycle,
+not the duration of the entire cooperation or yearly macrocycle.
+
+==================================================
+RULES
+==================================================
+
+1. Brak aktywności fizycznej
+
+For experience level:
+
+“Brak aktywności fizycznej”
+
+the training-block duration must always equal:
+
+4 weeks
+
+Behaviour:
+
+- automatically set the existing block-duration field to 4,
+- make the control fixed or read-only,
+- do not allow the user to select another duration,
+- when the experience level changes to Brak aktywności fizycznej, reset the
+  existing value to 4,
+- display:
+
+“Blok adaptacyjny: 4 tygodnie”
+
+Do not change the existing adaptation-training generator behaviour.
+
+2. Początkujący
+
+Keep the existing available range:
+
+4–12 weeks
+
+3. Średniozaawansowany
+
+Keep the existing available range:
+
+4–12 weeks
+
+4. Zaawansowany
+
+Keep the existing available range:
+
+4–12 weeks
+
+For these three levels:
+
+- retain the existing selectable options,
+- retain the existing default value,
+- preserve the currently selected value when it is between 4 and 12,
+- do not automatically change a valid existing selection.
+
+==================================================
+UI
+==================================================
+
+For Brak aktywności fizycznej:
+
+- hide or disable the 4–12 week selection buttons,
+- show the fixed value of 4 weeks,
+- use the existing visual style,
+- show:
+
+“Blok adaptacyjny: 4 tygodnie”
+
+For Początkujący, Średniozaawansowany and Zaawansowany:
+
+- keep the existing 4–12 week selector unchanged,
+- keep the existing buttons and layout,
+- keep the current helper text describing the standard mesocycle.
+
+Do not add:
+
+- 16, 20, 24, 32, 40 or 52-week options,
+- a yearly-plan selector,
+- a macrocycle field,
+- a cooperation-duration field.
+
+==================================================
+VALIDATION
+==================================================
+
+Update only the existing validation required for this rule.
+
+Frontend and backend behaviour must agree:
+
+- Brak aktywności fizycznej accepts only 4,
+- Początkujący accepts whole numbers from 4 through 12,
+- Średniozaawansowany accepts whole numbers from 4 through 12,
+- Zaawansowany accepts whole numbers from 4 through 12.
+
+If a request for Brak aktywności contains another value, normalize it to 4
+using the existing form/update flow rather than introducing a new error system.
+
+Do not rename the existing field.
+Do not create a duplicate field.
+
+==================================================
+EXISTING DATA
+==================================================
+
+Do not automatically modify already saved plans or active training blocks.
+
+Apply the automatic reset to 4 only when:
+
+- creating or editing the current interview/draft,
+- the user selects Brak aktywności fizycznej,
+- the block duration is currently invalid for that level.
+
+Do not regenerate existing workout plans.
+
+==================================================
+FOCUSED TESTS
+==================================================
+
+Run focused tests proving:
+
+1. Brak aktywności always uses 4 weeks.
+
+2. Changing the experience level to Brak aktywności resets a previously selected
+6, 8, 10 or 12-week value to 4.
+
+3. The Brak aktywności control is fixed or read-only.
+
+4. Początkujący still accepts 4–12.
+
+5. Średniozaawansowany still accepts 4–12.
+
+6. Zaawansowany still accepts 4–12.
+
+7. Values below 4 or above 12 remain invalid for active training levels.
+
+8. Existing generator, volume, priority, split and plyometric behaviour remain
+unchanged.
+
+Run only focused tests for the affected form and validation modules.
+
+==================================================
+REPORT
+==================================================
+
+Report only:
+
+- files changed,
+- previous behaviour,
+- new Brak aktywności behaviour,
+- confirmation that the other three levels remain 4–12,
+- focused test results,
+- confirmation that no 52-week block or new planning-horizon field was added.
+
+Maximum 8 additional actions.
+
+If the task requires broader architectural changes, stop and report the reason
+instead of modifying unrelated files.

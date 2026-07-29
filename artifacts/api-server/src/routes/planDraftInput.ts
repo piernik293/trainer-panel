@@ -110,8 +110,20 @@ router.post("/plans/draft-input/validate", async (req, res): Promise<void> => {
     }
   }
 
-  // Validate block duration
-  if (preferences.blockDurationWeeks < 4 || preferences.blockDurationWeeks > 12) {
+  // Validate block duration (experience-level dependent)
+  const blockLevel = draftInput.input.experienceLevel;
+  if (blockLevel === "Brak aktywności fizycznej") {
+    // No-activity level: block is always 4 weeks. Non-4 values are normalized to 4 on the
+    // frontend; log a non-blocking warning if a stale/invalid value reaches the backend.
+    if (preferences.blockDurationWeeks !== 4) {
+      warnings.push({
+        code: "BLOCK_DURATION_NORMALIZED",
+        severity: "warning",
+        message: `Dla poziomu "Brak aktywności fizycznej" długość bloku wynosi zawsze 4 tygodnie. Wartość zostanie ustawiona na 4.`,
+        blocking: false,
+      });
+    }
+  } else if (preferences.blockDurationWeeks < 4 || preferences.blockDurationWeeks > 12) {
     warnings.push({
       code: "INVALID_BLOCK_DURATION",
       severity: "warning",

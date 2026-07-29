@@ -1,0 +1,88 @@
+Stop broad exploration now.
+
+This is a narrow volume-data and proposal-calculation task only.
+
+Do not use subagents.
+Do not inspect or modify unrelated files.
+Do not redesign architecture.
+Do not create a new volume engine.
+Do not create a new endpoint.
+Do not publish automatically.
+Do not create follow-up tasks.
+
+Do not modify:
+
+- exercise selection,
+- plan completion,
+- whole-week balancing algorithm,
+- activation validation,
+- controlled priority overage,
+- tempo,
+- rest,
+- RIR,
+- exercise coefficients,
+- duration estimator,
+- interview,
+- authentication,
+- trainer or client panels,
+- health and equipment restrictions.
+
+Implement only these three items:
+
+1. Update the existing active guideline max/week and max/session values supplied
+   in the previous prompt.
+
+2. Replace only the user-facing label:
+
+   “Limit absolutny”
+
+   with:
+
+   “Maksymalna rekomendowana objętość tygodniowa”
+
+   Keep the existing internal database/property name.
+   Do not create a duplicate field or database migration.
+
+3. Update the existing volume proposal calculator so that for:
+
+   - Początkujący,
+   - Średniozaawansowany,
+   - Zaawansowany
+
+   the proposal starts from the existing max/week value instead of:
+   - 25% of the range,
+   - or the midpoint of the range.
+
+   Keep the existing recovery, stress, sleep, physical-work and availability
+   adjustments unchanged.
+
+For Brak aktywności fizycznej:
+- update only the supplied max/week guideline values,
+- keep all existing proposal, adaptation and generator behaviour unchanged.
+
+Important safeguards:
+
+- use the existing active production guideline source,
+- do not create duplicate rows,
+- do not rename database columns,
+- do not add a new max/session field if one does not already exist,
+- if max/session is not currently supported by the existing schema, report that
+  and stop instead of creating a migration,
+- do not modify whole-week balancing or plan generation in this run.
+
+Run only focused tests for:
+- guideline values,
+- proposal starting value,
+- unchanged Brak aktywności behaviour,
+- unchanged recovery adjustments,
+- UI label.
+
+Report only:
+- files changed,
+- guideline values changed,
+- exact proposal formula before and after,
+- confirmation that recovery logic remains unchanged,
+- focused test results,
+- anything requested that could not be implemented without schema changes.
+
+Maximum 12 additional actions.

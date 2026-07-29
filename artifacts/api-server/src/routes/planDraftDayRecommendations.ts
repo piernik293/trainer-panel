@@ -198,7 +198,7 @@ router.get(
     for (const ex of completeExercises) {
       if (alreadyAddedIds.has(ex.id)) continue;
       if (!isLocationCompatible(ex.trainingLocation ?? [], survey.trainingLocation)) continue;
-      if (!isEquipmentCompatible(ex.equipment ?? [], survey.equipment)) continue;
+      if (!isEquipmentCompatible(ex.equipment ?? [], ex.requiredEquipmentAll ?? [], survey.equipment)) continue;
 
       const { score, matchReasons, warnReasons } = scoreExercise(ex, survey);
 
@@ -208,6 +208,7 @@ router.get(
         mainMuscleGroup: ex.mainMuscleGroup ?? "",
         secondaryMuscleGroups: ex.secondaryMuscleGroups ?? [],
         equipment: ex.equipment ?? [],
+        requiredEquipmentAll: ex.requiredEquipmentAll ?? [],
         trainingLocation: ex.trainingLocation ?? [],
         score,
         matchReasons,

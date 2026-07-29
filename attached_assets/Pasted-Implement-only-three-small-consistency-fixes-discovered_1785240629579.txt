@@ -1,0 +1,71 @@
+Implement only three small consistency fixes discovered by the verification.
+
+Do not use subagents.
+Do not perform another audit.
+Do not modify volume logic, exercise selection rules, arm rules,
+experience-level rules or intensification methods.
+Do not publish automatically.
+Maximum 30 actions.
+
+1. Generator duration limit
+
+Inspect the existing sessionDurationEstimator.ts hard 45-minute cap.
+
+Report first whether 45 minutes means:
+- the complete session including warm-up, or
+- only the main workout.
+
+Align it with the agreed “Brak aktywności fizycznej” rule:
+- mandatory warm-up: 10 minutes,
+- target main workout: 35–45 minutes,
+- recommended maximum main workout: 50 minutes.
+
+Do not silently remove existing trainer-selected exercises.
+For automatic exercise selection, use the duration limit only to decide whether
+another optional exercise can be added.
+
+Do not allow the approximate generator estimator and the precise editor
+estimator to use contradictory warm-up assumptions.
+
+2. Exercise class on every add path
+
+Ensure these Step4 paths receive the real exerciseClass:
+- continuation autofill,
+- manual exercise add,
+- recommendation add.
+
+Resolve exerciseClass from the existing exercise catalogue by exerciseId.
+Do not guess from the exercise name.
+
+Then apply the existing default-tempo rules:
+- plyometric_power → 2-0-X-0
+- Brak aktywności / regression_beginner → 3-1-2-0
+- main_compound → 2-0-1-0
+- other resistance exercise → 3-1-1-0
+
+Do not overwrite trainer-edited tempo.
+
+3. Reloaded plan exercise class
+
+When a saved plan is loaded, return exerciseClass by joining or resolving it
+from the exercise catalogue.
+
+Do not duplicate exerciseClass into the plan table unless absolutely required.
+Prefer the exercise catalogue as the source of truth.
+
+Verify that after save and reopen:
+- tempo remains unchanged,
+- setup time uses the correct exerciseClass,
+- plyometric and compound exercises do not fall back to the generic class.
+
+Run only focused tests.
+
+Report:
+- exact old 45-minute-cap meaning,
+- final duration behaviour,
+- files changed,
+- results for all four exercise-add paths,
+- save/reopen result.
+
+Do not implement draft autosave in this task.
+Do not create follow-up tasks.

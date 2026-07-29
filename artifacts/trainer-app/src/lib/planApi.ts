@@ -38,6 +38,12 @@ export interface PlanExercise {
   // Notes
   notes: string | null;
   clientInstructions: string | null;
+  /**
+   * Exercise class derived from the catalogue (exerciseType, exercisePriority,
+   * mainMuscleGroup, suitableForNoActivity) — never stored on the plan itself.
+   * Available when the plan is loaded; null for plans saved before this feature.
+   */
+  exerciseClass?: string | null;
 }
 
 export interface PlanDay {
@@ -72,16 +78,18 @@ export interface PerDaySummary {
 }
 
 export type VolumeStatus =
-  | "below_preferred"
-  | "within_preferred"
-  | "above_preferred"
-  | "above_absolute";
+  | "below_total_minimum"
+  | "medium_minimum"
+  | "recommended_volume"
+  | "above_max_recommended"
+  | "overtraining_warning";
 
 export const VOLUME_STATUS_LABEL: Record<VolumeStatus, string> = {
-  below_preferred: "Poniżej preferowanego poziomu",
-  within_preferred: "W preferowanym zakresie",
-  above_preferred: "Powyżej preferowanego limitu",
-  above_absolute: "Przekroczony limit absolutny",
+  below_total_minimum: "Poniżej totalnego minimum",
+  medium_minimum: "Średnie minimum do spełnienia",
+  recommended_volume: "Rekomendowana objętość spełniona",
+  above_max_recommended: "Powyżej maks. rekomendowanej objętości",
+  overtraining_warning: "Ryzyko przetrenowania",
 };
 
 export interface VolumeTargetResult {

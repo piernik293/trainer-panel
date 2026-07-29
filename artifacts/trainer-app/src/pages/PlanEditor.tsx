@@ -1909,6 +1909,7 @@ export default function PlanEditor() {
               plan={plan}
               preview={preview}
               isLoadingPreview={isLoadingPreview}
+              experienceLevel={plan.experienceLevelUsed}
             />
 
             {/* Live movement analysis panel */}

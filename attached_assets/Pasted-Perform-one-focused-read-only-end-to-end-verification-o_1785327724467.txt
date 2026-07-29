@@ -1,0 +1,79 @@
+Perform one focused read-only end-to-end verification of the completed
+no-activity hard safety filter.
+
+Do not modify code.
+Do not modify database records.
+Do not create permanent test clients.
+Do not add tests.
+Do not use subagents.
+Maximum 5 actions.
+
+Use the actual active generate-day API flow and plan draft flow, not only a
+direct ExerciseSelectionEngineV0 invocation.
+
+Test these profiles:
+
+A. Dom + Brak sprzętu
+B. Dom + Gumy oporowe + Masa własnego ciała
+C. Dom + TRX + Masa własnego ciała
+D. Dom + Hantle + Masa własnego ciała
+E. Siłownia + Maszyna + Wyciąg
+
+For every profile:
+
+1. Generate a complete two-day Full Body draft.
+
+2. Report every selected exercise with:
+   - id,
+   - name,
+   - suitableForNoActivity,
+   - equipment,
+   - requiredEquipmentAll,
+   - movement pattern,
+   - day number.
+
+3. Verify that every automatically selected exercise has:
+   suitableForNoActivity === true.
+
+4. Verify that no full-band unsafe fallback occurs.
+
+5. Verify that safe exercise reuse is allowed when the weekly safe pool is
+   exhausted.
+
+6. Verify that the reused exercise is present in the actual API response, not
+   only inside the engine result.
+
+7. Verify warnings:
+
+   Profile A:
+   - missing-pull warning appears,
+   - no unsafe pull is inserted.
+
+   Any profile with an exhausted safe optional slot:
+   - warning appears:
+
+   “Brak kolejnego bezpiecznego ćwiczenia dla poziomu Brak aktywności fizycznej
+   — zachowano prostszy układ planu.”
+
+8. Save one temporary two-day draft using Profile A or an existing compatible
+   test client.
+
+9. Reopen the saved draft and confirm:
+   - exercise counts match,
+   - repeated safe exercises remain saved,
+   - structural warnings remain available if they are persisted by the current
+     data model.
+
+10. Delete the temporary saved draft after verification if the current test
+    flow permits safe deletion.
+
+Report only:
+
+- selected exercises for A–E,
+- any unsafe exercise found,
+- safe reuse result,
+- warnings returned by the real API,
+- save/reopen result,
+- whether the production route correctly passes the no-activity context.
+
+Stop without implementation.

@@ -1,0 +1,202 @@
+Implement only the first safe version of priority-aware whole-week balancing.
+
+Do not use subagents.
+Do not run a broad audit.
+Do not redesign the generator.
+Do not modify interview fields, duration calculation, tempo, rest rules,
+exercise catalogue, volume coefficients, volume ceilings or training methods.
+Do not publish automatically.
+Do not create follow-up tasks.
+
+CURRENT ARCHITECTURE PROBLEM
+
+Workout days are generated sequentially.
+The existing current-day balance logic cannot revisit and modify exercises
+from previously generated days.
+
+Do not add another current-day-only fix.
+
+GOAL
+
+After every workout day has been generated, run one final server-side balancing
+pass over the complete draft week.
+
+The goal is not equal volume across every muscle group.
+
+The goal is:
+
+1. Use the correct active volume guidelines for the client’s exact experience level.
+2. Never exceed an absolute weekly ceiling.
+3. Preserve required movement-pattern coverage.
+4. Protect priority 1 more than priority 2.
+5. Protect priority 2 more than priority 3.
+6. Reduce non-priority volume before priority volume.
+7. Never overwrite trainer-manual changes.
+
+INTEGRATION
+
+Create or reuse one server-side pure function for complete-week balancing.
+
+Prefer one finalization endpoint or existing server finalization hook that:
+- receives all generated workout days,
+- receives the client experience level,
+- receives the existing ranked priority groups,
+- returns the complete balanced week and a balance report.
+
+Do not implement the balancing algorithm in React.
+
+Do not write directly to the database during balancing.
+Operate on the draft and return the proposed result.
+
+Reuse:
+- the existing volume calculator,
+- the active guideline version,
+- the existing activation validator.
+
+Do not create a second independent volume-calculation implementation.
+
+GUIDELINE VERIFICATION
+
+Before balancing, verify that volume ceilings are resolved from:
+- the active guideline version,
+- the client’s exact experience level.
+
+Add a focused test proving that:
+- Zaawansowany uses the Zaawansowany guideline rows,
+- Początkujący does not accidentally share those rows.
+
+If the exact guideline cannot be resolved, return an explicit error.
+Do not fall back silently to another level.
+
+PRIORITY RANKS
+
+Use the existing user priority ranks.
+
+Important:
+one user-selected priority may resolve to more than one internal volume target.
+
+Targets originating from the same selected priority must keep the same rank.
+
+Do not interpret a flattened array of four target IDs as four separate
+priority positions when the user selected only three ranked priorities.
+
+BALANCING ALGORITHM
+
+1. Calculate effective weekly volume for every active target.
+
+2. Find all targets above their absolute ceiling.
+
+3. Build candidates from every generated exercise across every workout day.
+
+A candidate means:
+- reduce exactly one working set from one exercise.
+
+Do not modify exercises or sets marked as manually edited by the trainer.
+
+4. Reject a candidate when it would:
+- reduce a compound below 2 working sets,
+- reduce an isolation or core exercise below 1 working set,
+- remove the only remaining exercise covering a required movement pattern,
+- modify a trainer-manual override,
+- produce no reduction in any currently exceeded target.
+
+5. Rank valid candidates lexicographically:
+
+First:
+- non-priority,
+- priority 3,
+- priority 2,
+- priority 1.
+
+Within the same priority rank prefer:
+- optional or duplicated work before structurally required work,
+- the candidate reducing the greatest total amount of current overage,
+- a stable day-index and exercise-index tie-breaker.
+
+The result must be deterministic.
+
+6. Apply only one set reduction.
+
+7. Recalculate the complete week after every reduction.
+
+8. Continue until:
+- all targets are at or below their absolute ceilings, or
+- no legal candidate remains.
+
+9. Add an iteration guard based on the initial total number of working sets,
+so the algorithm cannot loop indefinitely.
+
+FIRST VERSION LIMITS
+
+In this task do not:
+- remove whole exercises,
+- substitute exercises,
+- move exercises between days,
+- change reps,
+- change tempo,
+- change RIR,
+- change rest periods,
+- create maintenance or light-development thresholds,
+- balance session duration.
+
+The existing duration system remains separate.
+This pass may reduce duration by reducing sets, but duration is not its objective.
+
+IMPOSSIBLE RESULT
+
+If an absolute overage remains and no legal one-set reduction exists:
+
+return:
+
+needsTrainerDecision: true
+
+with:
+- exceeded target name,
+- current volume,
+- absolute ceiling,
+- remaining overage,
+- constraints preventing further reduction.
+
+Do not return such a plan as activation-eligible.
+Do not silently reduce protected priority 1 below structural minimums.
+
+OUTPUT
+
+Return:
+- balanced workout days,
+- before-volume totals,
+- after-volume totals,
+- every set reduction,
+- reason for every reduction,
+- remaining overages,
+- needsTrainerDecision,
+- activationEligibility from the existing activation validator.
+
+TESTS
+
+Add focused tests for:
+
+1. Non-priority volume is reduced before priority volume.
+2. Priority 3 is reduced before priority 2 and priority 1.
+3. A priority target above its absolute ceiling is still reduced when required.
+4. Manual trainer overrides are never modified.
+5. Required movement coverage is preserved.
+6. An impossible case returns needsTrainerDecision.
+7. Exact experience-level guidelines are used.
+8. Priority groups that map to multiple target IDs retain the same rank.
+
+Use a read-only fixture based on the current Maksymilian draft if available.
+Do not modify production data.
+
+FINAL REPORT
+
+Report only:
+- files changed,
+- where the complete-week pass runs,
+- exact priority-rank handling,
+- exact candidate ranking,
+- tests passed,
+- Maksymilian fixture before/after,
+- remaining overages and activation eligibility.
+
+Do not modify unrelated files.

@@ -1,0 +1,181 @@
+Perform a focused read-only end-to-end verification of the new equipment model
+inside real plan generation.
+
+Do not modify code.
+Do not modify database records.
+Do not add tests.
+Do not run a broad audit.
+Do not use subagents.
+Do not start suggested next tasks.
+
+Maximum 6 actions.
+
+GOAL
+
+Verify that the active generator now respects:
+
+- training location,
+- selected equipment,
+- equipmentAnyOf,
+- required_equipment_all,
+- bodyweight fallback,
+- movement-pattern balance.
+
+Use the actual active plan-generation flow, not isolated helper tests.
+
+==================================================
+1. PROFILE A — HOME, NO EQUIPMENT DATA
+==================================================
+
+Profile:
+
+- location: Dom
+- equipment: empty / missing
+- experience: Brak aktywności fizycznej
+- 2 training days
+- Full Body
+- 45–60 minutes
+
+Generate a complete draft.
+
+Verify:
+
+- only true bodyweight exercises are selected,
+- no dumbbell, barbell, machine, cable, bench, TRX or band exercise appears,
+- the warning appears:
+
+“Brak informacji o dostępnym sprzęcie — generator użył wyłącznie ćwiczeń z
+masą własnego ciała.”
+
+- if no legal pull exists, the missing-pull warning appears,
+- equipment restrictions are not bypassed to fill pull.
+
+==================================================
+2. PROFILE B — HOME + DUMBBELLS
+==================================================
+
+Profile:
+
+- location: Dom
+- equipment:
+  - Hantle
+  - Masa własnego ciała
+- experience: Brak aktywności fizycznej
+- 2 training days
+- Full Body
+- 60 minutes
+
+Verify:
+
+- dumbbell-only exercises are allowed,
+- bodyweight exercises are allowed,
+- exercises requiring Hantle AND Ławka are rejected,
+- id=185 chest-supported dumbbell row is rejected,
+- dumbbell bench presses are rejected,
+- machine and cable exercises are rejected.
+
+==================================================
+3. PROFILE C — HOME + DUMBBELLS + BENCH
+==================================================
+
+Profile:
+
+- location: Dom
+- equipment:
+  - Hantle
+  - Ławka
+  - Masa własnego ciała
+- experience: Brak aktywności fizycznej
+- 2 training days
+- Full Body
+- 60 minutes
+
+Verify:
+
+- dumbbell-and-bench exercises are now eligible,
+- id=185 may be selected when its slot and eligibility fit,
+- dumbbell bench exercises may be selected,
+- machine, cable, barbell and TRX exercises remain rejected.
+
+==================================================
+4. PROFILE D — HOME + KETTLEBELL
+==================================================
+
+Profile:
+
+- location: Dom
+- equipment:
+  - Kettlebell
+  - Masa własnego ciała
+- experience: Początkujący
+- 2 training days
+- Full Body
+- 60 minutes
+
+Verify:
+
+- kettlebell exercises are allowed,
+- bodyweight exercises are allowed,
+- dumbbell-only exercises are rejected,
+- machine and cable exercises are rejected,
+- exercises requiring a bench remain rejected unless Ławka is selected.
+
+==================================================
+5. MOVEMENT BALANCE
+==================================================
+
+For every generated weekly plan report whether it contains:
+
+- knee-dominant movement,
+- hip-dominant movement,
+- upper-body push,
+- upper-body pull,
+- core / trunk stability.
+
+For Full Body sessions verify whether every day contains:
+
+- lower-body work,
+- push,
+- pull,
+
+when a legal pull exercise exists for the selected equipment.
+
+Do not consider the plan correct merely because equipment filtering passed.
+
+Identify:
+
+- repeated movement patterns,
+- missing pull,
+- excessive knee-dominant work,
+- redundant exercises,
+- exercises inappropriate for the selected experience level.
+
+==================================================
+6. REPORT ONLY
+==================================================
+
+Return a compact table for Profiles A–D containing:
+
+- selected exercises by day,
+- equipment assigned to every selected exercise,
+- required_equipment_all for every selected exercise,
+- equipment compatibility result,
+- movement-pattern coverage,
+- structural warnings,
+- estimated session duration.
+
+Then answer:
+
+1. Did any incompatible exercise enter a generated plan?
+
+2. Did any bench exercise enter without Ławka?
+
+3. Did Home + Hantle correctly produce dumbbell training?
+
+4. Did Home + Hantle + Ławka unlock bench exercises?
+
+5. Did the generator preserve push/pull and knee/hip balance?
+
+6. What is the smallest remaining real generator issue, if any?
+
+Stop without implementation.

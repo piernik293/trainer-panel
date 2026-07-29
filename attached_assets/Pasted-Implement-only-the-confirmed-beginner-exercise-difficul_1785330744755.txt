@@ -1,0 +1,114 @@
+Implement only the confirmed beginner exercise-difficulty safety fix.
+
+Do not work on injuries, authentication, warning persistence, UI redesign, or any unrelated feature.
+
+Confirmed problem:
+A client with experience level `Początkujący` received exercise id=224, `High Pull`, with `learningDifficulty=4`.
+
+Goal:
+For beginner clients, no automatically selected exercise may have `learningDifficulty > 2`.
+
+Treat missing, null, undefined, or invalid `learningDifficulty` as unsafe for beginner auto-selection.
+
+Required scope:
+
+1. Add one shared beginner eligibility rule instead of duplicating slightly different conditions.
+
+The rule must return true for a beginner only when:
+
+`Number.isFinite(exercise.learningDifficulty) &&
+ exercise.learningDifficulty <= 2`
+
+2. Apply this hard rule in every automatic exercise-selection path, including:
+
+- initial selection,
+- alternative selection,
+- fallback selection,
+- replacement lookup,
+- beginner balancing pass,
+- cross-day reuse,
+- safe-reuse after pool exhaustion,
+- manual regeneration of an automatically selected slot, if it uses a separate path.
+
+3. Do not rely only on sorting or ranking.
+An exercise with `learningDifficulty > 2`, null, or undefined must never remain in the candidate pool for a beginner.
+
+4. When no eligible beginner exercise exists:
+
+- reuse only an exercise that still passes all hard filters,
+- do not fall back to an advanced exercise,
+- skip an optional slot,
+- return a clear warning explaining that no suitable beginner exercise was available.
+
+5. Combine this rule with all existing filters.
+
+An exercise must simultaneously satisfy:
+
+- beginner difficulty,
+- inactive-client safety where applicable,
+- available equipment,
+- training location,
+- avoided exercises,
+- existing selection restrictions.
+
+The beginner fix must not bypass any existing safety rule.
+
+6. Do not change behavior for intermediate or advanced clients.
+
+7. Do not modify exercise catalogue metadata during this task.
+Do not solve the issue by changing `High Pull` or other exercise values.
+
+Required tests:
+
+A. Beginner:
+- `learningDifficulty=1` can be selected.
+- `learningDifficulty=2` can be selected.
+- `learningDifficulty=3` is excluded.
+- `learningDifficulty=4` is excluded.
+- null and undefined are excluded.
+
+B. Beginner + inactive:
+- selected exercises must satisfy both:
+  `learningDifficulty <= 2`
+  and
+  `suitableForNoActivity === true`.
+
+C. Pool exhaustion:
+- advanced exercises are never used as fallback,
+- only eligible exercises may be reused,
+- otherwise the optional slot is skipped with a warning.
+
+D. Regression:
+- an advanced client may still receive an exercise with
+  `learningDifficulty=4`,
+- existing inactive-client safety tests still pass.
+
+Run only targeted tests related to the selection engine and one minimal live smoke test.
+
+Live smoke test:
+
+- Generate two days for the existing beginner test client.
+- Inspect every selected exercise.
+- Confirm zero exercises with `learningDifficulty > 2`.
+- Confirm zero exercises with null or undefined difficulty.
+- Run one advanced-client generation and confirm the beginner hard filter does not affect it.
+- Do not save permanent test plans unless necessary.
+- Delete any temporary records created during verification.
+
+Return this report:
+
+## Files changed
+## Selection paths protected
+## Unit test results
+## Live smoke test results
+## Number of invalid beginner exercises selected
+## Regression result
+## Remaining limitations
+
+Final decision:
+
+`READY — beginner hard filter works in every automatic selection path`
+
+or
+
+`NEEDS FIXING — at least one selection path can still return an ineligible exercise`

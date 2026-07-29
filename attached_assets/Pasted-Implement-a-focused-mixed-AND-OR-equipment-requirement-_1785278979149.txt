@@ -1,0 +1,390 @@
+Implement a focused mixed AND/OR equipment requirement model.
+
+Do not run a broad audit.
+Do not use subagents.
+Do not modify volume logic, exercise novelty history, movement-balance rules,
+split selection, duration estimation, safety, contraindications, tempo, rest,
+RIR or plyometric logic.
+
+Do not change the previously corrected bodyweight equipment records.
+
+Maximum 10 actions.
+
+==================================================
+1. REQUIRED PRODUCT BEHAVIOUR
+==================================================
+
+Training location and available equipment are separate concepts.
+
+“Dom” must not mean “Brak sprzętu”.
+
+Examples:
+
+Home + bodyweight only:
+- allow true bodyweight exercises,
+- exclude dumbbells, barbells, machines, cables and benches.
+
+Home + dumbbells:
+- allow true bodyweight exercises,
+- allow exercises requiring only dumbbells,
+- exclude exercises requiring dumbbells AND a bench,
+- exclude machines, cables bodyweight exercises,
+- allow exercises requiring only dumbbells,
+- exclude exercises requiring dumb, barbells and kettlebells.
+
+Home + dumbbells + bench:
+- allow dumbbell-only exercises,
+- allow dumbbell-and-bench exercises,
+- preserve bodyweight exercises.
+
+Home + kettlebell:
+- allow kettlebell exercises and bodyweight exercises.
+
+The place “Dom” must not block exercises when the client owns the required
+equipment.
+
+The place “Siłownia” must not automatically bypass the selected-equipment
+filter unless an existing explicit product rule already means that all gym
+equipment is available.
+
+==================================================
+2. MINIMUM SCHEMA CHANGE
+==================================================
+
+Keep the existing exercise column:
+
+equipment TEXT[]
+
+Interpret it as:
+
+equipmentAnyOf
+
+At least one listed item must be available.
+
+Add:
+
+required_equipment_all TEXT[] NOT NULL DEFAULT '{}'
+
+Interpret it as:
+
+equipmentAllOf
+
+Every listed item must be available.
+
+Compatibility formula:
+
+all required_equipment_all items are available
+
+AND
+
+(
+  equipment is empty
+  OR at least one equipment item is available
+  OR a true bodyweight option exists
+)
+
+A bodyweight option may satisfy the equipmentAnyOf part, but it must never
+bypass required_equipment_all.
+
+Example:
+
+equipment = {Masa własnego ciała}
+required_equipment_all = {Ławka}
+
+A bodyweight-only client must be rejected because the bench is still required.
+
+==================================================
+3. MIXED REQUIREMENT EXAMPLES
+==================================================
+
+Goblet squat:
+
+equipment = {Hantle, Kettlebell}
+required_equipment_all = {}
+
+Meaning:
+
+Hantle OR Kettlebell
+
+Bench press:
+
+equipment = {Sztanga}
+required_equipment_all = {Ławka}
+
+Meaning:
+
+Sztanga AND Ławka
+
+Dumbbell incline press:
+
+equipment = {Hantle}
+required_equipment_all = {Ławka}
+
+Meaning:
+
+Hantle AND Ławka
+
+Hip thrust:
+
+equipment = {Sztanga, Hantle}
+required_equipment_all = {Ławka}
+
+Meaning:
+
+(Sztanga OR Hantle) AND Ławka
+
+Smith-machine bench exercise:
+
+equipment = {Maszyna}
+required_equipment_all = {Ławka}
+
+Meaning:
+
+Maszyna AND Ławka
+
+==================================================
+4. DATABASE AND API TYPES
+==================================================
+
+Add required_equipment_all consistently to:
+
+- PostgreSQL exercises table,
+- Drizzle exercise schema,
+- exercise catalogue seed,
+- exercise database mapping,
+- internal exercise type consumed by equipment filtering.
+
+Use an idempotent migration:
+
+ALTER TABLE exercises
+ADD COLUMN IF NOT EXISTS required_equipment_all TEXT[] NOT NULL DEFAULT '{}';
+
+Do not replace or remove the existing equipment column.
+
+Do not change public API responses unless the field is required by an existing
+exercise editor or debugging response.
+
+==================================================
+5. EQUIPMENT FILTER
+==================================================
+
+Update only the active central equipment compatibility function.
+
+Required logic:
+
+1. Normalize available equipment using existing normalization.
+
+2. Verify that every required_equipment_all item is available.
+
+3. Then verify the current equipmentAnyOf condition.
+
+4. “Brak sprzętu” remains an alias for “Masa własnego ciała”.
+
+5. Bodyweight must not bypass required_equipment_all.
+
+6. Every engine and fallback path must continue receiving the same already
+   equipment-filtered eligible pool.
+
+Do not add separate inconsistent filtering inside individual engine slots.
+
+==================================================
+6. UPDATE ONLY THE KNOWN AND-REQUIREMENT RECORDS
+==================================================
+
+Update these known catalogue records and the active database.
+
+For barbell bench exercises:
+
+equipment = {Sztanga}
+required_equipment_all = {Ławka}
+
+Apply where appropriate to:
+
+- id=1
+- id=114
+- id=157
+- id=158
+- id=171
+- id=213
+
+For dumbbell bench exercises:
+
+equipment = {Hantle}
+required_equipment_all = {Ławka}
+
+Apply where appropriate to:
+
+- id=113
+- id=129
+- id=131
+- id=139
+- id=151
+- id=170
+- id=172
+- id=178
+- id=179
+- id=185
+- id=216
+
+For machine plus bench:
+
+equipment = {Maszyna}
+required_equipment_all = {Ławka}
+
+Apply to:
+
+- id=173
+
+For mixed load plus bench:
+
+id=104 Hip thrust:
+
+equipment = {Sztanga, Hantle}
+required_equipment_all = {Ławka}
+
+id=206 Spider Curl:
+
+equipment = {Hantle, Sztanga}
+required_equipment_all = {Ławka}
+
+Before updating each ID, verify its current exercise name to avoid changing a
+record if catalogue IDs differ.
+
+If an ID/name mismatch exists, stop for that record and report it instead of
+modifying the wrong exercise.
+
+==================================================
+7. PRESERVE TRUE OR SEMANTICS
+==================================================
+
+These types must continue working as OR:
+
+Goblet squat:
+
+Hantle OR Kettlebell
+
+Farmer carry:
+
+Hantle OR Kettlebell
+
+Pallof press:
+
+Wyciąg OR Gumy oporowe
+
+Box squat variants that genuinely allow:
+
+Sztanga OR Hantle OR Kettlebell OR bodyweight
+
+Do not mark these records required-all.
+
+==================================================
+8. HOME TRAINING TEST CASES
+==================================================
+
+Test profile A:
+
+place = Dom
+equipment = {Masa własnego ciała}
+
+Expected:
+
+- true bodyweight exercises allowed,
+- bench, dumbbell, cable and machine exercises rejected.
+
+Test profile B:
+
+place = Dom
+equipment = {Hantle, Masa własnego ciała}
+
+Expected:
+
+- dumbbell-only exercises allowed,
+- bodyweight exercises allowed,
+- id=185 chest-supported dumbbell row rejected without Ławka,
+- dumbbell bench press exercises rejected without Ławka.
+
+Test profile C:
+
+place = Dom
+equipment = {Hantle, Ławka, Masa własnego ciała}
+
+Expected:
+
+- id=185 allowed when other eligibility rules permit,
+- dumbbell bench exercises allowed,
+- machine and cable exercises still rejected.
+
+Test profile D:
+
+place = Dom
+equipment = {Kettlebell, Masa własnego ciała}
+
+Expected:
+
+- kettlebell deadlift allowed,
+- goblet squat allowed,
+- dumbbell-only exercises rejected.
+
+Test profile E:
+
+place = Dom
+equipment = {Ławka, Masa własnego ciała}
+
+Expected:
+
+- barbell and dumbbell bench exercises rejected,
+- exercises requiring only a bench may remain available,
+- no external-load exercise is admitted solely because Ławka is selected.
+
+==================================================
+9. FOCUSED TESTS
+==================================================
+
+Verify:
+
+1. Existing OR behaviour remains correct.
+
+2. Hantle alone does not satisfy Hantle AND Ławka.
+
+3. Hantle + Ławka satisfies Hantle AND Ławka.
+
+4. Sztanga alone does not satisfy Sztanga AND Ławka.
+
+5. Sztanga + Ławka satisfies the requirement.
+
+6. Hip thrust accepts:
+   - Hantle + Ławka,
+   - Sztanga + Ławka.
+
+7. Hip thrust rejects:
+   - Hantle only,
+   - Sztanga only,
+   - Ławka only.
+
+8. Bodyweight does not bypass required_equipment_all.
+
+9. Training place “Dom” does not block owned dumbbells or kettlebells.
+
+10. Training place “Dom” does not grant unselected machines or cables.
+
+11. Existing fallbacks cannot reintroduce equipment-incompatible exercises.
+
+12. Active DB and catalogue seed contain identical values.
+
+Run focused equipment tests only.
+
+==================================================
+10. REPORT
+==================================================
+
+Report only:
+
+- files changed,
+- migration result,
+- exact new compatibility formula,
+- records updated,
+- home + dumbbells test result,
+- home + dumbbells + bench test result,
+- focused test results.
+
+Stop after this implementation.

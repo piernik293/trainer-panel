@@ -148,6 +148,29 @@ const VolumePreviewBody = z.object({
 
 // ─── Helper: build the full plan response ────────────────────────────────────
 
+/**
+ * Derive the ExerciseClass for a saved plan exercise using its catalogue metadata.
+ * Mirrors the server-side logic in recommendation-engine.ts — exerciseClass is
+ * never stored on the plan itself; it is always resolved from the exercise catalogue.
+ */
+function resolveExerciseClass(
+  exerciseType: string | null,
+  exercisePriority: string | null,
+  mainMuscleGroup: string | null,
+  suitableForNoActivity: boolean | null,
+): string {
+  if (suitableForNoActivity === true) return "regression_beginner";
+  const mg = (mainMuscleGroup ?? "").trim().toLowerCase();
+  if (mg === "brzuch") return "core";
+  const et = (exerciseType ?? "").toLowerCase();
+  if (et === "izolowane") return "isolation";
+  if (et === "złożone") {
+    if (exercisePriority === "Bardzo wysoki" || exercisePriority === "Wysoki") return "main_compound";
+    return "secondary_compound";
+  }
+  return "secondary_compound";
+}
+
 async function getPlanFull(planId: number) {
   const [plan] = await db
     .select()
@@ -219,6 +242,11 @@ async function getPlanFull(planId: number) {
             // Notes
             notes: workoutPlanExercisesTable.notes,
             clientInstructions: workoutPlanExercisesTable.clientInstructions,
+            // Exercise catalogue fields — used to derive exerciseClass without storing it
+            _exerciseType: exercisesTable.exerciseType,
+            _exercisePriority: exercisesTable.exercisePriority,
+            _suitableForNoActivity: exercisesTable.suitableForNoActivity,
+            _mainMuscleGroup: exercisesTable.mainMuscleGroup,
           })
           .from(workoutPlanExercisesTable)
           .innerJoin(exercisesTable, eq(workoutPlanExercisesTable.exerciseId, exercisesTable.id))
@@ -245,7 +273,17 @@ async function getPlanFull(planId: number) {
     surveyCardio,
     days: days.map((d) => ({
       ...d,
-      exercises: exercisesByDay.get(d.id) ?? [],
+      exercises: (exercisesByDay.get(d.id) ?? []).map(
+        ({ _exerciseType, _exercisePriority, _suitableForNoActivity, _mainMuscleGroup, ...rest }) => ({
+          ...rest,
+          exerciseClass: resolveExerciseClass(
+            _exerciseType,
+            _exercisePriority,
+            _mainMuscleGroup,
+            _suitableForNoActivity,
+          ),
+        }),
+      ),
     })),
     volume,
   };
@@ -1736,7 +1774,9 @@ router.post("/plans/:id/activate", async (req, res): Promise<void> => {
   }
 
   // ── Volume ceiling check ──────────────────────────────────────────────────
-  const violations = fullPlan.volume.targets.filter((t) => t.status === "above_absolute");
+  const violations = fullPlan.volume.targets.filter(
+    (t) => t.status === "above_max_recommended" || t.status === "overtraining_warning",
+  );
   if (violations.length > 0) {
     res.status(422).json({
       error: "Aktywacja zablokowana: przekroczono absolutny limit tygodniowy",

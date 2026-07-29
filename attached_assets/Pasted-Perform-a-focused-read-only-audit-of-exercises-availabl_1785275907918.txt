@@ -1,0 +1,194 @@
+Perform a focused read-only audit of exercises available to:
+
+“Brak aktywności fizycznej”
+
+Do not modify code.
+Do not add exercises.
+Do not change generator logic.
+Do not write or update tests.
+Do not run subagents.
+Do not start any suggested next task.
+Maximum 6 actions.
+
+GOAL
+
+Determine whether the active exercise library contains a sufficiently large,
+safe and balanced exercise pool for clients with no previous physical activity.
+
+Inspect only:
+
+- active exercise-library records,
+- metadata consumed by ExerciseSelectionEngineV0,
+- experience eligibility,
+- movement patterns,
+- exercise class,
+- primary and secondary muscle targets,
+- equipment requirements,
+- contraindication and safety metadata.
+
+==================================================
+1. LIST THE ACTIVE ELIGIBLE POOL
+==================================================
+
+List every exercise currently eligible for:
+
+“Brak aktywności fizycznej”
+
+Group them by:
+
+1. knee-dominant,
+2. hip-dominant / posterior chain,
+3. horizontal push,
+4. vertical push,
+5. horizontal pull,
+6. vertical pull,
+7. core / trunk stability,
+8. carry / general conditioning if supported,
+9. smaller-muscle accessory.
+
+For every exercise report:
+
+- exercise ID,
+- Polish name,
+- movement pattern,
+- exercise class,
+- primary targets,
+- secondary targets,
+- equipment,
+- current experience eligibility.
+
+==================================================
+2. CLASSIFY SUITABILITY
+==================================================
+
+Classify each exercise:
+
+A — primary automatic choice
+
+Appropriate for a previously inactive client:
+- stable,
+- simple to explain,
+- easy to scale,
+- low technical complexity,
+- easy load control.
+
+B — acceptable alternative
+
+Can be used, but requires more:
+- balance,
+- coordination,
+- mobility,
+- supervision,
+- technique.
+
+C — should not be an automatic first choice
+
+Potentially:
+- too technical,
+- unstable,
+- high impact,
+- difficult to scale,
+- unnecessarily complex for this level.
+
+Do not delete or modify Group C.
+Only identify it.
+
+==================================================
+3. VERIFY CURRENT GENERATED EXERCISES
+==================================================
+
+Assess these currently generated exercises:
+
+- Pompki na kolanach
+- Pompki na podwyższeniu
+- Przysiad do skrzyni z masą własnego ciała
+- Wykrok w tył
+- Przysiad wykroczny z podparciem
+- Glute bridge
+- Wspięcia na palce jednostronne stojąc
+- Plank
+- Bird dog
+
+For each one state:
+
+- whether it is appropriate for Brak aktywności,
+- whether it should be a primary or alternative choice,
+- whether a simpler library variation exists.
+
+Pay special attention to:
+
+- two pushing exercises but no pulling exercise,
+- multiple knee-dominant exercises,
+- low posterior-chain coverage,
+- unilateral calf raise for an inactive client.
+
+==================================================
+4. PULLING AND POSTERIOR-CHAIN POOL
+==================================================
+
+Identify all currently eligible exercises that could provide:
+
+- horizontal pulling,
+- vertical pulling,
+- hip hinge,
+- hamstring-focused work.
+
+Determine why none of the pulling exercises appeared in the generated example.
+
+Identify the exact cause:
+
+- no eligible exercises,
+- equipment filtering,
+- incorrect experience eligibility,
+- missing movement-pattern metadata,
+- incorrect slot definitions,
+- candidate ranking,
+- balancing-pass limitation.
+
+Do not guess.
+
+==================================================
+5. LIBRARY GAPS
+==================================================
+
+For every movement category report:
+
+- number of Group A exercises,
+- number of Group B exercises,
+- whether there are at least two suitable alternatives,
+- whether the pool can support repeated draft variety.
+
+Only suggest additions when the suitable exercise or regression does not already
+exist under another name.
+
+Potential additions to verify:
+
+- seated machine row,
+- cable row with stable support,
+- resistance-band row,
+- neutral-grip lat pulldown,
+- chest-supported row,
+- supported hip hinge,
+- low box step-up with support,
+- machine chest press,
+- wall push-up,
+- dead bug,
+- Pallof press,
+- simple farmer carry.
+
+==================================================
+6. REPORT
+==================================================
+
+Return only:
+
+1. eligible pool grouped by movement pattern,
+2. A/B/C classification,
+3. metadata problems,
+4. exact cause of missing pull,
+5. categories with too few suitable exercises,
+6. existing exercises that need only metadata corrections,
+7. smallest list of genuinely missing exercises,
+8. files that would later require modification.
+
+Stop without implementation.

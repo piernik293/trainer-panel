@@ -1,0 +1,213 @@
+Perform a focused read-only audit of exercise-to-equipment assignments.
+
+Do not modify code.
+Do not modify catalogue records.
+Do not add exercises.
+Do not write tests.
+Do not run a broad audit.
+Do not use subagents.
+Do not start suggested next tasks.
+
+Maximum 6 actions.
+
+GOAL
+
+Verify that exercise equipment metadata, client equipment selections and
+ExerciseSelectionEngineV0 equipment filtering use the same values and semantics.
+
+Inspect only:
+
+- active exercise catalogue records,
+- equipment values available in the client/trainer interview,
+- equipment normalization or alias logic,
+- active equipment filter in ExerciseSelectionEngineV0,
+- fallback paths that can add exercises after normal filtering.
+
+==================================================
+1. EQUIPMENT VALUE MAPPING
+==================================================
+
+List every equipment value used in:
+
+A. exercise catalogue records,
+
+B. client/trainer equipment-selection UI,
+
+C. generator filtering logic.
+
+Identify:
+
+- spelling differences,
+- singular/plural differences,
+- Polish/English differences,
+- capitalization differences,
+- obsolete values,
+- catalogue equipment values that cannot be selected in the UI,
+- UI equipment values that match no exercise.
+
+Examples to check:
+
+- Gumy oporowe / Guma oporowa / Gumy
+- Wyciąg / Wyciąg górny / Brama
+- Maszyna / Maszyny
+- Hantle / DB
+- Kettlebell / KB
+- Masa ciała / BW
+- Ławka
+- TRX
+
+==================================================
+2. AND / OR SEMANTICS
+==================================================
+
+For every exercise with multiple equipment values determine whether they mean:
+
+AND:
+all listed equipment is required
+
+or
+
+OR:
+any listed equipment option is sufficient.
+
+Examples:
+
+- hantle + ławka should normally require both,
+- masa ciała / hantle may represent alternative variants,
+- wyciąg / guma may represent alternative implementations.
+
+Report whether the current schema and filter can distinguish AND from OR.
+
+Identify exercises that may currently be:
+
+- incorrectly allowed with incomplete equipment,
+- incorrectly rejected despite having a valid equipment alternative.
+
+Do not redesign the schema yet.
+
+==================================================
+3. EQUIPMENT-METADATA ERRORS
+==================================================
+
+Identify exercises whose equipment metadata is:
+
+- missing,
+- too broad,
+- incorrect,
+- incomplete,
+- inconsistent with the exercise name or execution.
+
+Pay special attention to:
+
+- machine exercises without “Maszyna”,
+- cable exercises without “Wyciąg”,
+- bench-supported exercises without “Ławka”,
+- resistance-band exercises without “Gumy oporowe”,
+- bodyweight exercises requiring hidden equipment such as a box, wall, bench,
+  step or stable support.
+
+For every issue report:
+
+- exercise ID,
+- name,
+- current equipment,
+- expected equipment,
+- consequence in generation.
+
+==================================================
+4. BODYWEIGHT-ONLY PROFILE
+==================================================
+
+Run a read-only eligibility trace for a client with only:
+
+“Masa ciała”
+
+For every required general-development category report the legal pool:
+
+- knee-dominant,
+- hip-dominant,
+- horizontal push,
+- vertical push,
+- horizontal pull,
+- vertical pull,
+- core.
+
+Confirm whether every returned exercise can genuinely be performed with no
+additional equipment.
+
+Do not count:
+
+- bench,
+- box,
+- step,
+- wall anchor,
+- TRX anchor,
+- resistance band,
+- table,
+- door frame
+
+as pure bodyweight unless the client equipment model explicitly includes the
+required object or support.
+
+==================================================
+5. FALLBACK SAFETY
+==================================================
+
+Inspect every active fallback path in ExerciseSelectionEngineV0.
+
+Confirm whether fallback candidates are still filtered by:
+
+- equipment,
+- contraindications,
+- trainer restrictions,
+- experience eligibility.
+
+Identify any fallback that can reintroduce an exercise previously rejected for
+missing equipment.
+
+Pay special attention to the learningDifficulty fallback used for inactive
+clients.
+
+==================================================
+6. CURRENT LIBRARY CASES
+==================================================
+
+Verify at least these records:
+
+- id=123 neutral-grip lat pulldown,
+- id=128 seated cable row,
+- id=130 machine row,
+- id=133 TRX row,
+- id=134 resistance-band row,
+- id=185 chest-supported dumbbell row,
+- id=103 kettlebell deadlift,
+- id=90 bodyweight box squat,
+- id=95 supported split squat,
+- id=116 incline push-up.
+
+For supported exercises determine whether the required support object is
+represented in equipment metadata.
+
+==================================================
+REPORT ONLY
+==================================================
+
+Return:
+
+1. equipment values from catalogue, UI and engine,
+
+2. mismatched aliases,
+
+3. incorrect or incomplete exercise assignments,
+
+4. AND/OR equipment-semantics problems,
+
+5. bodyweight-only exercises that require hidden equipment,
+
+6. fallbacks that can bypass equipment restrictions,
+
+7. smallest catalogue corrections required later,
+
+8. whether an equipment-schema change is necessary.
+
+Stop without implementation.

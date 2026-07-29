@@ -1,0 +1,89 @@
+Perform a quick, low-cost audit of the current application state.
+
+Goal: verify that the latest changes for clients with the activity level `Brak aktywności fizycznej` are implemented correctly and have not broken the workout plan generator.
+
+Rules:
+
+* Do not analyze the entire repository.
+* Start by checking `git diff` and inspect only the files changed in the latest task.
+* Do not modify code unless you confirm a specific bug.
+* Do not create new features or refactor existing code.
+* Do not run the full project test suite.
+* Perform no more than 5–8 essential checks.
+* Reuse the existing server and existing test data.
+* Do not repeat tests that have already passed unless the relevant code has changed since the last verification.
+
+Check the following:
+
+1. For every client with activity level `Brak aktywności fizycznej`, verify that every automatically selected exercise has:
+
+`suitableForNoActivity === true`
+
+Treat `false`, `null`, and `undefined` as unsafe.
+
+2. Verify that the safety filter is enforced in every exercise-selection path, including:
+
+* initial exercise selection,
+* alternative exercise selection,
+* plan balancing,
+* replacement exercise lookup,
+* safe exercise reuse.
+
+3. When the safe exercise pool is exhausted, verify that the generator:
+
+* reuses an exercise only when `suitableForNoActivity === true`,
+* never falls back to an exercise with `false`, `null`, or `undefined`,
+* skips an optional slot when no safe exercise exists,
+* returns a warning when a slot is skipped, if that warning behavior is implemented.
+
+4. Verify that active clients are not incorrectly restricted by the `suitableForNoActivity` filter.
+
+5. Run only a minimal smoke test:
+
+* generate two workout days for one inactive client,
+* verify every selected exercise’s `suitableForNoActivity` value,
+* save the generated plan,
+* reopen the saved plan,
+* verify that the number of exercises matches,
+* delete the test plan,
+* confirm that the deleted plan can no longer be retrieved.
+
+Do not restart the server unless the currently running process is using outdated code. First verify this with one short control test or by checking the process state.
+
+At the end, return a concise report using this exact structure:
+
+## What is implemented correctly
+
+* Maximum 5 points.
+* Mention specific files, functions, or selection paths.
+
+## Confirmed issues
+
+* Include only issues confirmed through code inspection or testing.
+* Classify each issue as:
+
+  * Critical
+  * Medium
+  * Cosmetic
+
+## Smoke test results
+
+* Number of safe exercises selected
+* Number of unsafe exercises selected
+* Save result
+* Reopen result
+* Exercise count comparison
+* Delete result
+* Confirmation that the plan is gone
+
+## Final decision
+
+Return exactly one of these:
+
+`READY — the change works correctly`
+
+or
+
+`NEEDS FIXING — a specific issue was confirmed`
+
+If everything works correctly, do not modify any files.

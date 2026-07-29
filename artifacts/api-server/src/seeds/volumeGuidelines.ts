@@ -160,17 +160,17 @@ const ADVANCED: GuidelineTable = {
 };
 
 const NO_ACTIVITY: GuidelineTable = {
-  "Mięsień czworogłowy uda":       { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 5 },
-  "Mięśnie pośladkowe":            { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 5 },
-  "Mięsień trójgłowy łydki":       { sessionMin: 1, sessionMax: 1, weeklyPreferredCeiling: 2, weeklyAbsoluteCeiling: 2 },
-  "Przywodziciele":                { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 3, weeklyAbsoluteCeiling: 3 },
-  "Grupa kulszowo-goleniowa":      { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 3, weeklyAbsoluteCeiling: 3 },
-  "Mięśnie naramienne":            { sessionMin: 1, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 6 },
-  "Mięsień trójgłowy ramienia":    { sessionMin: 1, sessionMax: 1, weeklyPreferredCeiling: 2, weeklyAbsoluteCeiling: 2 },
-  "Mięsień piersiowy większy":     { sessionMin: 1, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 5 },
-  "Mięsień najszerszy grzbietu":   { sessionMin: 1, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 4 },
-  "Mięsień czworoboczny grzbietu": { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 6 },
-  "Mięsień dwugłowy ramienia":     { sessionMin: 1, sessionMax: 1, weeklyPreferredCeiling: 2, weeklyAbsoluteCeiling: 2 },
+  "Mięsień czworogłowy uda":       { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 8 },
+  "Mięśnie pośladkowe":            { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 8 },
+  "Mięsień trójgłowy łydki":       { sessionMin: 1, sessionMax: 1, weeklyPreferredCeiling: 2, weeklyAbsoluteCeiling: 3 },
+  "Przywodziciele":                { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 3, weeklyAbsoluteCeiling: 4 },
+  "Grupa kulszowo-goleniowa":      { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 3, weeklyAbsoluteCeiling: 5 },
+  "Mięśnie naramienne":            { sessionMin: 1, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 8 },
+  "Mięsień trójgłowy ramienia":    { sessionMin: 1, sessionMax: 1, weeklyPreferredCeiling: 2, weeklyAbsoluteCeiling: 3 },
+  "Mięsień piersiowy większy":     { sessionMin: 1, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 8 },
+  "Mięsień najszerszy grzbietu":   { sessionMin: 1, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 6 },
+  "Mięsień czworoboczny grzbietu": { sessionMin: 2, sessionMax: 2, weeklyPreferredCeiling: 4, weeklyAbsoluteCeiling: 8 },
+  "Mięsień dwugłowy ramienia":     { sessionMin: 1, sessionMax: 1, weeklyPreferredCeiling: 2, weeklyAbsoluteCeiling: 3 },
 };
 
 const LEVELS: { level: string; table: GuidelineTable }[] = [

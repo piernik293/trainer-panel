@@ -197,11 +197,18 @@ export type DraftVolumePreviewBodyType = z.infer<typeof DraftVolumePreviewBody>;
 
 // ─── Experience-level base positions ─────────────────────────────────────────
 
+/**
+ * Starting position within the preferred range for the volume proposal.
+ *
+ * "Brak aktywności fizycznej": starts at 0.00 (= preferredMin) — conservative base.
+ * All other levels: 1.00 — proposal starts at absoluteMax (max/week) and is
+ * reduced only when recovery, availability, or other constraints require it.
+ */
 export const EXPERIENCE_LEVEL_RANGE_POSITIONS: Record<string, number> = {
   "Brak aktywności fizycznej": 0.00,
-  "Początkujący": 0.25,
-  "Średniozaawansowany": 0.50,
-  "Zaawansowany": 0.50,
+  "Początkujący":              1.00,
+  "Średniozaawansowany":       1.00,
+  "Zaawansowany":              1.00,
 };
 
 // ─── Priority-eligibility gate ────────────────────────────────────────────────

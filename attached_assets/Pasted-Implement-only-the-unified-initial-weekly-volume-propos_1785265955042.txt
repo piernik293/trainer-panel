@@ -1,0 +1,277 @@
+Implement only the unified initial weekly-volume proposal rule and the small
+proposal-card text cleanup.
+
+Do not run a broad audit.
+Do not use subagents.
+Do not redesign the generator.
+
+Do not modify:
+
+- exercise generation,
+- exercise selection,
+- weekly distribution,
+- split selection or split rules,
+- session-duration behaviour,
+- workout-duration estimation,
+- effective-volume coefficients,
+- tempo,
+- rest,
+- RIR,
+- plyometric logic,
+- database guideline values,
+- weeklyAbsoluteCeiling values,
+- percentage-based card status thresholds.
+
+This task concerns only the initial weekly proposal value returned by the active
+proposal flow and its display in the proposal cards.
+
+==================================================
+1. ONE INITIAL RULE FOR EVERY EXPERIENCE LEVEL
+==================================================
+
+For every experience level without exception:
+
+- Brak aktywności fizycznej
+- Początkujący
+- Średniozaawansowany
+- Zaawansowany
+
+set the initial weekly proposal for every volume target to:
+
+initialWeeklyProposal = weeklyAbsoluteCeiling
+
+The value shown in the numeric card control must initially equal the target's
+maximum recommended weekly volume.
+
+Examples:
+
+- weeklyAbsoluteCeiling = 8
+  → initial control value = 8
+
+- weeklyAbsoluteCeiling = 16
+  → initial control value = 16
+
+- weeklyAbsoluteCeiling = 20
+  → initial control value = 20
+
+Use exactly the same rule for all four experience levels.
+
+Do not create a conservative exception for Brak aktywności fizycznej.
+
+This must be the real value returned by the backend proposal calculation.
+Do not implement it as a frontend-only visual replacement.
+
+==================================================
+2. DO NOT REDUCE THE INITIAL VALUE IN THIS TASK
+==================================================
+
+The following factors must not numerically reduce the initial weekly proposal:
+
+- recovery,
+- stress,
+- sleep,
+- physical work,
+- general availability,
+- experience-level range position,
+- old preferred range,
+- training-day count,
+- session duration,
+- selected split.
+
+These factors may remain available for later feasibility logic, but in this task
+the initial proposal must stay equal to weeklyAbsoluteCeiling.
+
+Do not yet implement time-, day- or split-based volume reduction.
+
+==================================================
+3. PRIORITY
+==================================================
+
+Keep the existing priority badges and explanations.
+
+Do not add a second priority bonus.
+
+Because every target starts from weeklyAbsoluteCeiling, priority must not
+automatically increase the initial proposal above weeklyAbsoluteCeiling in this
+task.
+
+Priority may remain informational.
+
+==================================================
+4. RECOVERY EXPLANATIONS
+==================================================
+
+Remove explanations that falsely claim a numerical reduction occurred.
+
+Do not display:
+
+“obniżenie z powodu regeneracji”
+
+when the value remains equal to weeklyAbsoluteCeiling.
+
+Recovery information may remain as a neutral explanation, for example:
+
+“regeneracja wymaga monitorowania podczas realizacji planu”
+
+Do not create a new recovery algorithm.
+
+==================================================
+5. PROPOSAL-CARD DISPLAY
+==================================================
+
+Keep displaying:
+
+“Zakres rekomendowany: X–Y serii/tydz.”
+
+and:
+
+“Maks. rekomendowana obj. tyg.: Z serii/tydz.”
+
+The numeric control must initially show Z.
+
+Example:
+
+Mięsień dwugłowy ramienia
+
+Zakres rekomendowany: 7–8 serii/tydz.
+Maks. rekomendowana obj. tyg.: 8 serii/tydz.
+
+Initial control:
+
+−  8  +
+
+Status:
+
+“Rekomendowana objętość spełniona”
+
+==================================================
+6. REMOVE THE DUPLICATE ROW
+==================================================
+
+Remove the normal visible row:
+
+“Propozycja systemu: X serii”
+
+from the proposal card.
+
+The selected value is already visible in the numeric control, so this line is
+redundant.
+
+Do not remove the detailed explanation list below the card.
+
+The final explanation must reflect the real initial value.
+
+Example for ceiling 8:
+
+“propozycja startuje od maksymalnej rekomendowanej objętości tygodniowej
+(8 pkt.)”
+
+“propozycja: 8 pkt. (zakres 7–8)”
+
+==================================================
+7. MANUAL OVERRIDE
+==================================================
+
+The trainer must still be able to manually go above or below the recommendation.
+
+Do not make weeklyAbsoluteCeiling a hard input maximum.
+
+After a manual change:
+
+- keep the “ustawione ręcznie” badge,
+- keep the existing percentage-based status and warning,
+- rename “Przywróć propozycję” to:
+  “Przywróć rekomendowaną”,
+- restoring must set the value back to weeklyAbsoluteCeiling.
+
+Do not display:
+
+“Propozycja systemu: X → Y serii (ręcznie)”
+
+The numeric control already shows the manual value.
+
+A small neutral text may say:
+
+“Wartość zmieniona ręcznie”
+
+==================================================
+8. REQUIRED EXAMPLES
+==================================================
+
+Brak aktywności, chest ceiling 8:
+
+- initial value = 8
+- not a reduced lower value
+
+Beginner, chest ceiling 10:
+
+- initial value = 10
+
+Intermediate, chest ceiling 16:
+
+- initial value = 16
+
+Intermediate, biceps ceiling 8:
+
+- initial value = 8
+
+Advanced, quadriceps ceiling 30:
+
+- initial value = 30
+
+None of these may be lowered by recovery or the old preferred range.
+
+==================================================
+9. FOCUSED TESTS
+==================================================
+
+Add or update focused tests proving:
+
+1. Brak aktywności initial proposal equals weeklyAbsoluteCeiling.
+
+2. Beginner initial proposal equals weeklyAbsoluteCeiling.
+
+3. Intermediate initial proposal equals weeklyAbsoluteCeiling.
+
+4. Advanced initial proposal equals weeklyAbsoluteCeiling.
+
+5. Intermediate chest with ceiling 16 returns 16.
+
+6. Intermediate biceps with ceiling 8 returns 8.
+
+7. Recovery does not numerically reduce the initial proposal for any level.
+
+8. The old preferred range does not reduce the proposal.
+
+9. Priority does not increase the initial value above weeklyAbsoluteCeiling.
+
+10. The normal “Propozycja systemu” row is removed.
+
+11. Manual values above and below the recommendation remain allowed.
+
+12. “Przywróć rekomendowaną” restores weeklyAbsoluteCeiling.
+
+13. Existing percentage statuses remain unchanged.
+
+14. Generator, split, duration and plyometric logic remain unchanged.
+
+Run focused proposal tests only.
+
+==================================================
+10. REPORT
+==================================================
+
+Report only:
+
+- files changed,
+- previous initial proposal formula,
+- new unified formula,
+- confirmation that all four levels use weeklyAbsoluteCeiling,
+- removed UI text,
+- focused test results.
+
+Maximum 8 additional actions.
+
+If the change requires modifications to generation, split, duration or
+plyometric logic, stop and report the exact limitation instead of changing those
+systems.

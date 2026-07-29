@@ -26,13 +26,14 @@
  */
 
 import { Router, type IRouter } from "express";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   db,
   clientsTable,
   surveysTable,
   exercisesTable,
+  clientExerciseUsageLogTable,
 } from "@workspace/db";
 import { desc } from "drizzle-orm";
 import { scoreExercise } from "../lib/recommendation-engine";
@@ -208,6 +209,7 @@ router.post(
 
     const hasLocationData =
       !!(survey.trainingLocation?.trim()) && !!(survey.equipment?.trim());
+    const hasEquipmentData = !!(survey.equipment?.trim());
 
     const avoidedExerciseIds = new Set<number>(survey.avoidedExerciseIds ?? []);
 
@@ -283,7 +285,7 @@ router.post(
     const pool = [];
     for (const ex of completeExercises) {
       if (!isLocationCompatible(ex.trainingLocation ?? [], survey.trainingLocation)) continue;
-      if (!isEquipmentCompatible(ex.equipment ?? [], survey.equipment)) continue;
+      if (!isEquipmentCompatible(ex.equipment ?? [], ex.requiredEquipmentAll ?? [], survey.equipment)) continue;
 
       const { score, matchReasons, warnReasons } = scoreExercise(ex, survey);
 
@@ -293,6 +295,7 @@ router.post(
         mainMuscleGroup: ex.mainMuscleGroup ?? "",
         secondaryMuscleGroups: ex.secondaryMuscleGroups ?? [],
         equipment: ex.equipment ?? [],
+        requiredEquipmentAll: ex.requiredEquipmentAll ?? [],
         trainingLocation: ex.trainingLocation ?? [],
         score,
         matchReasons,
@@ -425,6 +428,84 @@ router.post(
     const deprioritizePushUps =
       isFullGym && isPriorityEligible && isDeprioritizableBias && !prefersPushUps;
 
+    // ── Load per-client exercise novelty history (§7) ──────────────────────────
+    //
+    // Two queries, both non-fatal — a failure silently disables novelty ranking
+    // for this request without affecting the rest of generation.
+    //
+    //  1. Most recent 4 generation IDs → cooldown set (exercises to deprioritise)
+    //  2. Per-exercise use count + last timestamp → N2-N4 sort keys
+    let usageHistory:
+      | Map<number, { totalGenerations: number; lastUsedAt: Date }>
+      | undefined;
+    let cooldownIds: Set<number> | undefined;
+
+    try {
+      // Query 1: last 4 complete generations for this client.
+      const recentGensResult = await db.execute(sql`
+        SELECT generation_id
+        FROM client_exercise_usage_log
+        WHERE client_id = ${clientId}
+        GROUP BY generation_id
+        ORDER BY MAX(generated_at) DESC
+        LIMIT 4
+      `);
+      const recentGenIds = (
+        recentGensResult.rows as Array<{ generation_id: string }>
+      ).map((r) => r.generation_id);
+
+      if (recentGenIds.length > 0) {
+        // Query 1b: all exercise IDs that appeared in any of those 4 generations.
+        const cooldownRows = await db
+          .selectDistinct({ exerciseId: clientExerciseUsageLogTable.exerciseId })
+          .from(clientExerciseUsageLogTable)
+          .where(
+            and(
+              eq(clientExerciseUsageLogTable.clientId, clientId),
+              inArray(clientExerciseUsageLogTable.generationId, recentGenIds),
+            ),
+          );
+        cooldownIds = new Set(cooldownRows.map((r) => r.exerciseId));
+      }
+
+      // Query 2: total distinct-generation count and last-used timestamp per exercise.
+      const usageResult = await db.execute(sql`
+        SELECT
+          exercise_id,
+          COUNT(DISTINCT generation_id)::int AS total_generations,
+          MAX(generated_at)                  AS last_used_at
+        FROM client_exercise_usage_log
+        WHERE client_id = ${clientId}
+        GROUP BY exercise_id
+      `);
+      if (usageResult.rows.length > 0) {
+        usageHistory = new Map(
+          (
+            usageResult.rows as Array<{
+              exercise_id: number;
+              total_generations: number;
+              last_used_at: string | Date;
+            }>
+          ).map((r) => [
+            r.exercise_id,
+            {
+              totalGenerations: r.total_generations,
+              lastUsedAt:
+                r.last_used_at instanceof Date
+                  ? r.last_used_at
+                  : new Date(r.last_used_at),
+            },
+          ]),
+        );
+      }
+    } catch (err) {
+      console.error(
+        "NOVELTY_HISTORY_LOAD_ERROR: failed to load usage history —",
+        err,
+      );
+      // Non-fatal: generation continues without novelty ranking.
+    }
+
     const priorityContext: V0PriorityContext = {
       isPriorityEligible,
       isNoActivityClient,
@@ -443,6 +524,8 @@ router.post(
       undercoveredMuscleGroups: (body.data.undercoveredMuscleGroups ?? []).map(
         (s) => s.trim().toLowerCase(),
       ),
+      usageHistory,
+      cooldownIds,
     };
 
     // ── Session start — seed cross-session memory if provided ─────────────────
@@ -833,11 +916,30 @@ router.post(
       generatorNotes.push("Core ustawiono na końcu jako wsparcie kontroli tułowia.");
     }
 
+    // §6: Structural warnings (e.g. missing pull for bodyweight-only inactive clients).
+    // Appended to generatorNotes so they appear in the explanation panel, and also
+    // returned as a dedicated top-level field for the frontend to surface prominently.
+    for (const w of v0Result.warnings ?? []) {
+      generatorNotes.push(`⚠️ ${w}`);
+    }
+
+    // Equipment-data warning: if the client profile has no equipment list the
+    // generator silently fell back to bodyweight-only.  Surface this so the
+    // trainer knows the session may be incomplete.
+    const equipmentWarnings: string[] = [];
+    if (!hasEquipmentData) {
+      const msg =
+        "Brak informacji o dostępnym sprzęcie — generator użył wyłącznie ćwiczeń z masą własnego ciała.";
+      equipmentWarnings.push(msg);
+      generatorNotes.push(`⚠️ ${msg}`);
+    }
+
     res.json({
       hasProfile: true,
       hasLocationData,
       sessionType: v0SessionType,
       exercises: enrichedExercises,
+      structuralWarnings: [...(v0Result.warnings ?? []), ...equipmentWarnings],
       explanation: {
         rationale: explanationRationale,
         preferredExercises: preferredOutcomes,

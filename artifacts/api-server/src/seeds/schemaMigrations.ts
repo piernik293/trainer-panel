@@ -17,5 +17,29 @@ export async function runSchemaMigrations(): Promise<void> {
   await db.execute(
     sql`ALTER TABLE surveys ADD COLUMN IF NOT EXISTS sports_priorities TEXT[] NOT NULL DEFAULT '{}'`,
   );
+  // client_exercise_usage_log — per-client exercise usage history for
+  // draft-generation variety.  Only automatically selected exercises from
+  // handleGenerateFromEmpty are inserted here.
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS client_exercise_usage_log (
+      id            SERIAL       PRIMARY KEY,
+      client_id     INTEGER      NOT NULL REFERENCES clients(id)   ON DELETE CASCADE,
+      generation_id UUID         NOT NULL,
+      exercise_id   INTEGER      NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+      generated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    )
+  `);
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS ceu_unique_client_gen_ex
+      ON client_exercise_usage_log (client_id, generation_id, exercise_id)
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS ceu_client_gen_idx
+      ON client_exercise_usage_log (client_id, generated_at DESC)
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS ceu_client_exer_idx
+      ON client_exercise_usage_log (client_id, exercise_id)
+  `);
   logger.info("Schema migrations complete");
 }

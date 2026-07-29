@@ -1,0 +1,189 @@
+Implement the first secure authentication and ownership vertical slice using Clerk Auth.
+
+This is a focused security task.
+
+Do not implement public survey tokens yet.
+Do not modify workout generation.
+Do not modify plan generation rules.
+Do not redesign the application.
+Do not add payments, subscriptions, organizations, client accounts, chat, or unrelated roles.
+Do not use Replit Auth.
+Use Clerk Auth provisioned through Replit.
+
+Keep Agent usage below $9 if possible.
+If the implementation cannot be completed safely within this scope, stop and report before making broad changes.
+
+## Goal
+
+After this task:
+
+- a trainer can sign in using an account belonging to this application,
+- an authenticated trainer identity exists in the database,
+- every existing client belongs to that trainer,
+- a trainer can list, create, read, update, and delete only their own clients,
+- unauthenticated access to private client routes returns 401,
+- authenticated access to another trainer’s client returns 404,
+- all existing client data remains intact.
+
+## 1. Authentication foundation
+
+Add Clerk Auth using the official Replit-supported integration.
+
+Requirements:
+
+- server-side authentication middleware,
+- frontend sign-in and sign-out,
+- a current-user endpoint,
+- unauthenticated trainer-app visits redirect to sign-in,
+- sign-out clears frontend query/cache state,
+- secrets remain in Replit Secrets and never enter source control.
+
+Do not create a custom password system.
+Do not use express-session if Clerk middleware and verified tokens already provide the authenticated identity.
+
+## 2. Trainer identity
+
+Create a `trainers` table containing only the minimum required fields:
+
+- id
+- clerkUserId, unique and not null
+- displayName, nullable if Clerk does not provide it
+- email, nullable
+- createdAt
+
+On the first authenticated API request, provision exactly one trainer row for the authenticated Clerk user.
+
+Provisioning must be idempotent:
+
+- repeated requests must not create duplicates,
+- concurrent requests must not create duplicates,
+- rely on a unique database constraint.
+
+## 3. Client ownership
+
+Add `trainerId` to the `clients` table.
+
+Use a safe migration:
+
+1. add the column as nullable,
+2. identify the first authenticated trainer,
+3. backfill all existing clients to that trainer,
+4. verify that no client has a null trainerId,
+5. only then apply the non-null constraint.
+
+Do not delete, recreate, or reset the database.
+Do not delete existing clients, surveys, plans, notes, or sessions.
+
+New clients must always receive trainerId from the authenticated server identity.
+
+Never accept trainerId from the frontend request body.
+
+## 4. Protect the client route group
+
+Protect only the trainer-facing client CRUD routes in this task:
+
+- list clients
+- create client
+- read client
+- update client
+- delete client
+
+Rules:
+
+- no authentication → 401,
+- authenticated trainer sees only clients where
+  `clients.trainerId === authenticatedTrainer.id`,
+- requesting another trainer’s client returns 404,
+- client list queries must filter by trainerId at database level,
+- update and delete statements must include ownership in their database condition,
+- do not load a foreign client and then rely only on a frontend check.
+
+Existing nested survey, plan, note, session, and generation routes are not part of this implementation task yet.
+
+Clearly report that they remain unprotected after this task.
+
+## 5. Exercise catalogue protection
+
+Do not redesign catalogue ownership.
+
+For this task:
+
+- authenticated trainers may read exercises,
+- identify all exercise create, update, delete, and import routes,
+- temporarily restrict global catalogue mutation to the initial application owner or leave them disabled for ordinary trainer accounts,
+- do not allow every newly registered trainer to modify the shared global catalogue.
+
+Use the simplest maintainable restriction available in the current architecture.
+
+## 6. Tests
+
+Add targeted tests covering:
+
+1. unauthenticated client list → 401,
+2. authenticated trainer sees only their clients,
+3. new client receives trainerId from the server,
+4. request body trainerId cannot override ownership,
+5. Trainer A cannot read Trainer B’s client → 404,
+6. Trainer A cannot update Trainer B’s client → 404,
+7. Trainer A cannot delete Trainer B’s client → 404,
+8. repeated login/provisioning does not create duplicate trainer rows,
+9. all pre-existing clients remain present after migration,
+10. unauthenticated catalogue mutation is rejected,
+11. ordinary trainer cannot mutate the shared global catalogue.
+
+Do not run unrelated generator test suites unless compilation changes require it.
+
+## 7. Manual smoke test
+
+Perform a minimal smoke test:
+
+- sign in as the initial trainer,
+- confirm existing clients remain visible,
+- create one temporary client,
+- confirm its trainerId is server-assigned,
+- sign out,
+- confirm the private trainer app is no longer accessible,
+- delete the temporary client after the test.
+
+Do not create permanent test records.
+
+## Required report
+
+# Authentication approach implemented
+
+# Files changed
+
+# Database migration
+
+Report:
+
+- number of clients before migration,
+- number after migration,
+- number with null trainerId,
+- trainer receiving the backfill.
+
+Do not expose secrets or complete external user identifiers.
+
+# Protected routes
+
+# Routes still unprotected
+
+# Test results
+
+# Existing-data verification
+
+# Agent usage
+
+# Remaining security risks
+
+## Final decision
+
+Return exactly one:
+
+`READY — authentication and client ownership foundation is working`
+
+or
+
+`NEEDS FIXING — authentication or client ownership is incomplete`
+
+Do not start public-token work or protect unrelated nested routes after completing this task.

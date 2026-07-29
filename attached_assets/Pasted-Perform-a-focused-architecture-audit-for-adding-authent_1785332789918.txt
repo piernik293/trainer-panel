@@ -1,0 +1,173 @@
+Perform a focused architecture audit for adding authentication and strict trainer data ownership.
+
+This is planning only.
+
+Do not modify any files.
+Do not install packages.
+Do not create database migrations.
+Do not implement authentication yet.
+Do not inspect workout-generation internals.
+Keep Agent usage below $1.50 if possible.
+Stop after the report.
+
+Goal:
+Determine the smallest safe implementation that allows multiple trainers to use the application without reading, modifying, or deleting each other’s clients, surveys, plans, notes, sessions, or exercise logs.
+
+Inspect only:
+
+- current frontend entry points
+- API route registration and middleware
+- database schema and relations
+- client routes
+- survey routes
+- plan routes
+- trainer notes routes
+- workout session and client portal routes
+- public survey URL flow
+- public client plan URL flow
+- deployment environment and any authentication capability already configured
+
+Answer the following:
+
+## 1. Current identity model
+
+Confirm:
+
+- whether any user or trainer table exists
+- whether any record currently stores trainerId, ownerId, userId, organizationId, or similar ownership
+- whether routes trust IDs supplied in URLs
+- whether public client URLs use predictable IDs or secure random tokens
+- whether API endpoints can currently be called without authentication
+
+## 2. Data requiring ownership
+
+List every table that must be directly or indirectly owned by a trainer.
+
+For each table report:
+
+Table | Recommended ownership relationship | Required migration
+
+Prefer ownership through relations where safe.
+Do not add trainerId redundantly to every table unless necessary.
+
+## 3. Existing-data migration risk
+
+Determine how current records could be assigned to the first trainer account without data loss.
+
+Report:
+
+- number of affected tables
+- whether nullable ownership is temporarily required
+- whether a one-time backfill is needed
+- rollback risk
+- records that could become orphaned
+
+## 4. Public links
+
+Design the minimum safe approach for:
+
+- public training interview link
+- client plan portal link
+
+Requirements:
+
+- do not expose sequential client IDs as authorization
+- use long random unguessable tokens
+- allow token revocation or regeneration
+- public routes must expose only the minimum required data
+- public tokens must not allow access to trainer-only notes or other clients
+
+State whether the current schema already supports this.
+
+## 5. Route protection
+
+List the exact route groups that require:
+
+- authenticated trainer access
+- authenticated access plus ownership verification
+- public token access
+- temporary compatibility handling during migration
+
+Identify any route where checking only that the user is logged in would still allow cross-trainer access.
+
+## 6. Authentication options
+
+Check which authentication solution is already available or easiest in the current project and deployment environment.
+
+Compare no more than three realistic options.
+
+For each report:
+
+Option | New dependencies | Estimated implementation complexity | Ongoing cost | Main risk
+
+Recommend exactly one option.
+
+Do not recommend a custom password system unless no maintained provider or platform authentication is available.
+
+## 7. Minimal implementation sequence
+
+Produce a step-by-step plan divided into small tasks.
+
+Each task must:
+
+- be independently testable
+- avoid breaking the current generator
+- include a rollback point
+- contain a concise definition of done
+
+The plan must include:
+
+1. authentication setup
+2. trainer identity storage
+3. ownership migration
+4. route authorization
+5. frontend session handling
+6. secure public tokens
+7. two-trainer isolation tests
+
+## 8. Cost and risk estimate
+
+Estimate Replit Agent usage in three ranges:
+
+- optimistic
+- realistic
+- worst reasonable case
+
+Explain what could cause the task to exceed the realistic estimate.
+
+## Required final report
+
+# Current security state
+
+# Recommended authentication approach
+
+# Required schema changes
+
+# Routes requiring protection
+
+# Existing-data migration plan
+
+# Public-link security plan
+
+# Implementation tasks
+
+# Test matrix
+
+Include at minimum:
+
+- trainer A cannot read trainer B’s client
+- trainer A cannot update trainer B’s survey
+- trainer A cannot delete trainer B’s plan
+- trainer A cannot access trainer B’s notes
+- a public token exposes only its assigned survey or plan
+- an invalid or revoked token is rejected
+- unauthenticated private API calls return 401
+- authenticated cross-owner calls return 403 or 404
+
+# Estimated Agent cost
+
+# Single first implementation task
+
+Recommend exactly one first task, but do not implement it.
+
+Do not propose unrelated features.

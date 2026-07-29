@@ -1,0 +1,213 @@
+Refine the exercise-variety requirement for repeated plan-draft generation.
+
+Do not implement a simple random rotation.
+Do not modify volume calculations, split rules, duration estimation, safety
+filters, contraindications, equipment filtering or movement-balance rules.
+Do not run a broad audit.
+Do not use subagents.
+
+GOAL
+
+For the same client, repeated draft generation should explore as many legal
+exercise alternatives as possible before reusing previously selected exercises.
+
+This applies to automatically generated draft alternatives.
+It must not automatically change exercises inside an already accepted training
+plan.
+
+==================================================
+1. SELECTION PRIORITY
+==================================================
+
+After applying all existing mandatory filters:
+
+- client level,
+- equipment,
+- contraindications,
+- trainer restrictions,
+- movement pattern,
+- required muscle coverage,
+- session duration,
+- safety rules,
+
+rank legal candidates using this novelty order:
+
+1. exercises never previously used for this client,
+2. exercises used the fewest total times,
+3. exercises used least recently,
+4. existing exercise-quality score as the final tie-breaker.
+
+Do not use pure randomness as the main selection rule.
+
+Use stable exercise IDs.
+
+==================================================
+2. EXHAUST THE LEGAL POOL BEFORE REPEATING
+==================================================
+
+For a required movement pattern, do not reuse an exercise while another legal,
+suitable and not-yet-used exercise exists.
+
+Example legal pull pool:
+
+A, B, C, D, E, F
+
+Sequential generations should prefer:
+
+Generation 1 → A
+Generation 2 → B
+Generation 3 → C
+Generation 4 → D
+Generation 5 → E
+Generation 6 → F
+
+Only after the suitable pool is exhausted may the generator return to A or
+another previously used exercise.
+
+Do not require the exact alphabetical order. The existing exercise-quality score
+may determine the order among equally novel candidates.
+
+==================================================
+3. RECENT-GENERATION COOLDOWN
+==================================================
+
+An automatically selected exercise used in generation N should normally be
+excluded from:
+
+- N+1
+- N+2
+- N+3
+- N+4
+
+However, the main rule is stronger:
+
+Even after the four-generation cooldown expires, prefer unused or less-used
+legal exercises four-generation cooldown expires, prefer unused or less-used
+legal exercises before returning to it.
+
+Therefore, generation N+5 may reuse the exercise, but only when there is no
+better unused or less-used suitable alternative.
+
+==================================================
+4. FREQUENCY AND RECENCY
+==================================================
+
+Persist per-client exercise usage containing at least:
+
+- exerciseId,
+- successful generation identifier,
+- generation timestamp or sequence,
+- total automatic-use count,
+- most recent successful generation in which it appeared.
+
+History must be isolated per client.
+
+Only successful completed generations count.
+
+Do not record failed, cancelled or invalid generation attempts.
+
+==================================================
+5. SAME-WEEK DIVERSITY
+==================================================
+
+Within one generated weekly plan, prefer different exercise variations across
+days when legal alternatives exist.
+
+Example for two Full Body sessions:
+
+Day 1 push:
+- knee push-up
+
+Day 2 push:
+- incline push-up
+
+Prefer this over selecting the exact same exercise twice.
+
+Do not introduce unnecessary variation when the split intentionally repeats a
+main lift or when the trainer locked the exercise.
+
+==================================================
+6. MOVEMENT BALANCE HAS HIGHER PRIORITY
+==================================================
+
+Novelty must never override:
+
+- required push/pull balance,
+- knee-dominant and hip-dominant coverage,
+- core/trunk coverage,
+- contraindications,
+- available equipment,
+- trainer restrictions,
+- session duration,
+- safety.
+
+A recently used legal pull is better than selecting no pull at all.
+
+A safe repeated exercise is better than an unsafe new exercise.
+
+For Brak aktywności fizycznej and Początkujący, preserve the current
+general-development movement requirements.
+
+==================================================
+7. LOCKED AND MANUAL EXERCISES
+==================================================
+
+Manual or locked trainer selections:
+
+- may repeat,
+- must not be automatically replaced for novelty,
+- should not be treated as generator selection failures.
+
+Track automatic usage separately where possible.
+
+==================================================
+8. SMALL LEGAL POOL FALLBACK
+==================================================
+
+When all legal candidates for a required slot are inside the cooldown:
+
+1. do not relax safety or restrictions,
+2. choose the legal exercise used least recently,
+3. when recency is equal, choose the exercise used the fewest times,
+4. preserve movement balance,
+5. record an internal reason:
+   “powtórzenie wymagane z powodu ograniczonej puli legalnych ćwiczeń”.
+
+==================================================
+9. REQUIRED VERIFICATION
+==================================================
+
+Create a deterministic fixture with six legal exercises for one movement
+pattern.
+
+Verify:
+
+- the first six successful generations use all six alternatives before repeating,
+- the seventh generation selects according to least-used and least-recently-used
+  ranking,
+- no exercise repeats inside the previous four generations while an alternative
+  exists,
+- history is isolated between clients,
+- failed generations do not update usage history,
+- manual/locked exercises remain preserved,
+- a small exercise pool falls back to the oldest legal exercise,
+- contraindicated and unavailable-equipment exercises never become eligible,
+- movement balance remains more important than novelty,
+- the same exercise is not selected twice in one week when a suitable alternative
+  exists.
+
+REPORT
+
+Report only:
+
+- existing history source,
+- files changed,
+- exact novelty ranking formula,
+- fallback rule,
+- sequence from at least seven consecutive generations,
+- focused test results.
+
+Maximum 8 additional actions.
+
+If persistent per-client history requires a database migration, stop before
+creating it and report the smallest required schema change.

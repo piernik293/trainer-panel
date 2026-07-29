@@ -1,0 +1,72 @@
+Implement only the volume proposal warning-display logic.
+
+Do not modify proposal values.
+Do not modify generator logic.
+Do not modify priority calculation.
+Do not modify volume guidelines.
+Do not modify weeklyAbsoluteCeiling.
+Do not modify exercise selection, duration, split, plyometrics or database data.
+
+Update only the UI state and label that currently displays:
+
+“powyżej zalecanego”
+
+Use these rules:
+
+1. When selectedVolume is within the recommended range:
+
+selectedVolume <= recommendedMax
+
+- use the normal card/input appearance,
+- do not show “powyżej zalecanego”.
+
+2. When selectedVolume is above recommendedMax but not above
+weeklyAbsoluteCeiling:
+
+recommendedMax < selectedVolume <= weeklyAbsoluteCeiling
+
+If the target is NOT an active selected priority:
+- use the existing orange warning appearance,
+- show “powyżej zalecanego”.
+
+If the target IS an active selected priority:
+- do not use the orange warning appearance,
+- do not show “powyżej zalecanego”,
+- retain the existing priority badge,
+- show or retain an explanation that the increased proposal results from the
+  selected muscle priority.
+
+3. When selectedVolume exceeds weeklyAbsoluteCeiling:
+
+selectedVolume > weeklyAbsoluteCeiling
+
+- always show the existing over-limit warning regardless of priority,
+- do not hide the warning for priority targets,
+- retain the existing explanation describing why the value was exceeded.
+
+Important:
+
+- Priority means an actually active priority used by the proposal calculation,
+  not merely a stored but inactive preference.
+- For “Brak aktywności fizycznej”, stored priorities that are not applied must
+  not suppress the orange warning.
+- Do not change any numeric value or calculation.
+- Do not introduce a new volume status system.
+- Reuse the existing card, input and warning styles.
+
+Add focused UI tests for:
+
+- non-priority above recommendedMax → orange warning,
+- active priority above recommendedMax but within weeklyAbsoluteCeiling →
+  no orange warning,
+- active priority above weeklyAbsoluteCeiling → warning remains,
+- inactive priority preference for Brak aktywności → warning remains,
+- value inside recommended range → no warning.
+
+Report only:
+- files changed,
+- exact previous display condition,
+- exact new display condition,
+- focused test results.
+
+Maximum 8 additional actions.

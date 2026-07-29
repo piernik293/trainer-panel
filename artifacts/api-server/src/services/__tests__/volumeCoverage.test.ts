@@ -283,41 +283,39 @@ describe("weekly totals", () => {
 
 // ─── Statuses ─────────────────────────────────────────────────────────────────
 
-describe("coverage statuses", () => {
+describe("coverage statuses (percentage-based)", () => {
   const targetMap = makeTargetMap([{ id: 1, name: "Target", memberIds: [10] }]);
 
-  it("actual=0 with planned > 0 → below_preferred ('Brak dobranego ćwiczenia')", () => {
+  it("0 sets, absolute=10 → ratio 0% → below_total_minimum", () => {
     const guidelineMap = makeGuidelineMap([{ targetId: 1, preferred: 4, absolute: 10 }]);
-    const entries: NormalizedEntry[] = []; // no exercises
+    const entries: NormalizedEntry[] = [];
     const assignments = new Map<number, Map<number, number>>();
 
     const [result] = computeVolumeCore(entries, assignments, targetMap, guidelineMap, [1]);
     expect(result.weeklyEffectiveSets).toBe(0);
-    expect(result.status).toBe("below_preferred");
+    expect(result.status).toBe("below_total_minimum");
   });
 
-  it("exact match → within_preferred ('Pokryto zaplanowaną objętość')", () => {
+  it("3 sets, absolute=10 → ratio 30% → below_total_minimum (non-blocking)", () => {
     const guidelineMap = makeGuidelineMap([{ targetId: 1, preferred: 3, absolute: 10 }]);
     const entries = [makeEntry({ exerciseId: 1, workingSets: 3 })];
     const assignments = new Map([[1, new Map([[10, 1.0]])]]);
 
     const [result] = computeVolumeCore(entries, assignments, targetMap, guidelineMap, [1]);
     expect(result.weeklyEffectiveSets).toBe(3);
-    expect(result.status).toBe("within_preferred");
+    expect(result.status).toBe("below_total_minimum");
+    expect(result).toBeDefined(); // non-blocking
   });
 
-  it("actual above preferred → above_preferred ('Przekroczono propozycję') — non-blocking", () => {
-    // Non-blocking: status is above_preferred but the function returns a result,
-    // not an error. The caller must NOT block further editing based on this.
+  it("5 sets, absolute=15 → ratio 33% → below_total_minimum (non-blocking)", () => {
     const guidelineMap = makeGuidelineMap([{ targetId: 1, preferred: 3, absolute: 15 }]);
     const entries = [makeEntry({ exerciseId: 1, workingSets: 5 })];
     const assignments = new Map([[1, new Map([[10, 1.0]])]]);
 
     const [result] = computeVolumeCore(entries, assignments, targetMap, guidelineMap, [1]);
     expect(result.weeklyEffectiveSets).toBe(5);
-    expect(result.status).toBe("above_preferred");
-    // Non-blocking: result object is returned (no exception thrown)
-    expect(result).toBeDefined();
+    expect(result.status).toBe("below_total_minimum");
+    expect(result).toBeDefined(); // non-blocking
   });
 });
 

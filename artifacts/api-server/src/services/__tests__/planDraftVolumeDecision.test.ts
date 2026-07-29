@@ -129,8 +129,8 @@ describe("computePreferredFloor", () => {
     expect(d.recommendedValue).toBeGreaterThanOrEqual(g.preferredMin);
   });
 
-  it("absoluteMax does not raise automatic recommendations", () => {
-    // absoluteMax is much larger; recommendation must still be ≤ preferredMax
+  it("for Beg/Int/Adv, absoluteMax IS the automatic recommendation base", () => {
+    // Proposal starts at absoluteMax; with no recovery/availability reduction it stays there.
     const g: GuidelineRecord = { targetId: 6, preferredMin: 4, preferredMax: 8, absoluteMax: 100 };
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: g,
@@ -138,7 +138,8 @@ describe("computePreferredFloor", () => {
       priorityOrder: null, isExcluded: false,
       recoveryResult: NEUTRAL_RECOVERY, availability: "high", trainerOverride: null,
     });
-    expect(d.recommendedValue).toBeLessThanOrEqual(8);
+    expect(d.recommendedValue).toBe(100);
+    expect(d.rangePosition).toBe(1.0);
   });
 });
 
@@ -230,9 +231,9 @@ describe("computeRecoveryProfile", () => {
 
 describe("computeBaseRangePosition", () => {
   it("Brak aktywności fizycznej → 0.00", () => expect(computeBaseRangePosition("Brak aktywności fizycznej")).toBe(0.00));
-  it("Początkujący → 0.25",              () => expect(computeBaseRangePosition("Początkujący")).toBe(0.25));
-  it("Średniozaawansowany → 0.50",        () => expect(computeBaseRangePosition("Średniozaawansowany")).toBe(0.50));
-  it("Zaawansowany → 0.50",              () => expect(computeBaseRangePosition("Zaawansowany")).toBe(0.50));
+  it("Początkujący → 1.00 (starts at absoluteMax)", () => expect(computeBaseRangePosition("Początkujący")).toBe(1.00));
+  it("Średniozaawansowany → 1.00 (starts at absoluteMax)", () => expect(computeBaseRangePosition("Średniozaawansowany")).toBe(1.00));
+  it("Zaawansowany → 1.00 (starts at absoluteMax)", () => expect(computeBaseRangePosition("Zaawansowany")).toBe(1.00));
   it("unknown level → null",             () => expect(computeBaseRangePosition("Ekspert")).toBeNull());
 });
 
@@ -368,18 +369,19 @@ describe("classifyAvailability", () => {
 describe("computeTargetDecision", () => {
   // G_BARKI: preferredMin=4, preferredMax=8, absoluteMax=12, preferredWidth=4
 
-  it("recommendedValue is within [preferredMin, preferredMax]", () => {
+  it("recommendedValue is within [preferredMin, absoluteMax] for Początkujący", () => {
+    // Proposal starts at absoluteMax; clamp upper bound is absoluteMax.
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Początkujący",
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: null,
     });
     expect(d.recommendedValue).toBeGreaterThanOrEqual(G_BARKI.preferredMin);
-    expect(d.recommendedValue).toBeLessThanOrEqual(G_BARKI.preferredMax);
+    expect(d.recommendedValue).toBeLessThanOrEqual(G_BARKI.absoluteMax);
   });
 
   it("Brak aktywności fizycznej → base at 0% of preferred range (= preferredMin)", () => {
-    // base = 4 + 4*0.00 = 4
+    // base = 4 + 4*0.00 = 4; clamp upper = preferredMax=8
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Brak aktywności fizycznej",
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
@@ -389,71 +391,70 @@ describe("computeTargetDecision", () => {
     expect(d.recommendedValue).toBe(4.0);
   });
 
-  it("Początkujący, no priority → base at 25% of preferred range", () => {
-    // base = 4 + 4*0.25 = 5.0
+  it("Początkujący, no priority → base starts at absoluteMax", () => {
+    // base = absoluteMax = 12; no adjustments → rec = 12
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Początkujący",
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: null,
     });
-    expect(d.baseValue).toBe(5.0);
-    expect(d.recommendedValue).toBe(5.0);
+    expect(d.baseValue).toBe(12);
+    expect(d.recommendedValue).toBe(12);
+    expect(d.rangePosition).toBe(1.0);
   });
 
-  it("Średniozaawansowany, no priority → base at 50% of preferred range", () => {
-    // base = 4 + 4*0.50 = 6.0
+  it("Średniozaawansowany, no priority → base starts at absoluteMax", () => {
+    // base = absoluteMax = 12; rec = 12
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Średniozaawansowany",
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: null,
     });
-    expect(d.baseValue).toBe(6.0);
-    expect(d.recommendedValue).toBe(6.0);
+    expect(d.baseValue).toBe(12);
+    expect(d.recommendedValue).toBe(12);
   });
 
-  it("Zaawansowany, no priority → same position as Średniozaawansowany (0.50)", () => {
+  it("Zaawansowany, no priority → base starts at absoluteMax (same as other levels)", () => {
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Zaawansowany",
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: null,
     });
-    expect(d.baseValue).toBe(6.0);
-    expect(d.recommendedValue).toBe(6.0);
+    expect(d.baseValue).toBe(12);
+    expect(d.recommendedValue).toBe(12);
   });
 
-  it("first priority → +20% of preferredWidth", () => {
-    // base=5, adj=4*0.20=0.8 → raw total=5.8 → round05=6.0; stored adj=round05(0.8)=1.0
+  it("Początkujący is not priority-eligible → priorityAdjustment=0, rec stays at absoluteMax", () => {
+    // Beg is not in PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS; tier label still recorded
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Początkujący",
       priorityOrder: 1, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: null,
     });
-    expect(d.priorityAdjustment).toBe(1.0);
-    expect(d.recommendedValue).toBe(6.0);
+    expect(d.priorityAdjustment).toBe(0);
+    expect(d.recommendedValue).toBe(12);
     expect(d.priorityOrder).toBe(1);
     expect(d.source).toBe("calculated");
   });
 
-  it("second priority → +10% of preferredWidth", () => {
-    // base=5, adj=4*0.10=0.4 → roundInt=0; total=5+0=5 → roundInt=5
+  it("second priority, Początkujący → not eligible, rec stays at absoluteMax", () => {
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Początkujący",
       priorityOrder: 2, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: null,
     });
     expect(d.priorityAdjustment).toBe(0);
-    expect(d.recommendedValue).toBe(5);
+    expect(d.recommendedValue).toBe(12);
   });
 
-  it("third priority → +5% of preferredWidth (small enough to round to 0)", () => {
-    // base=5, adj=4*0.05=0.2 → total=5.2 → round05=5.0; stored adj=round05(0.2)=0.0
+  it("third priority, Początkujący → not eligible, rec stays at absoluteMax", () => {
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Początkujący",
       priorityOrder: 3, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: null,
     });
-    expect(d.priorityAdjustment).toBe(0.0);
-    expect(d.recommendedValue).toBe(5.0);
+    expect(d.priorityAdjustment).toBe(0);
+    expect(d.recommendedValue).toBe(12);
   });
 
   it("excluded target → set to preferredMin regardless of priority", () => {
@@ -490,9 +491,9 @@ describe("computeTargetDecision", () => {
     absoluteMax: 22,
   };
 
-  it("broad Back priority (groupSize=1): single-target gets full +20% bonus", () => {
-    // full bonus = 10 × 0.20 = 2.0; roundInt(2.0) = 2
-    // base (Średniozaawansowany, 50%) = 6 + 10×0.50 = 11; 11 + 2 = 13
+  it("eligible-level priority (groupSize=1): tier label recorded, adj=0, rec=absoluteMax", () => {
+    // Środkozaaw already starts at absoluteMax=22; no additional volume bonus is added here.
+    // Controlled priority extension above absoluteMax is deferred to the completion pass.
     const d = computeTargetDecision({
       target: TARGETS[8]!,          // latissimus (id=9, Plecy)
       guideline: { ...G_WIDE, targetId: 9 },
@@ -501,80 +502,68 @@ describe("computeTargetDecision", () => {
       isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: null,
     });
-    expect(d.priorityAdjustment).toBe(2);
-    expect(d.recommendedValue).toBe(13);
+    expect(d.priorityAdjustment).toBe(0);
+    expect(d.recommendedValue).toBe(22); // absoluteMax
+    expect(d.priorityOrder).toBe(1);
   });
 
-  it("broad Back priority (groupSize=2): each target gets half the bonus, not the full bonus", () => {
-    // half bonus = 10 × 0.20 / 2 = 1.0; roundInt(1.0) = 1
-    // base = 11; 11 + 1 = 12
-    const dLat = computeTargetDecision({
-      target: TARGETS[8]!,          // latissimus (id=9)
-      guideline: { ...G_WIDE, targetId: 9 },
-      experienceLevel: "Średniozaawansowany",
-      priorityOrder: 1, priorityGroupSize: 2,
+  it("eligible-level priority (groupSize=2): both targets at absoluteMax, adj=0", () => {
+    const opts = {
+      experienceLevel: "Średniozaawansowany" as const,
+      priorityOrder: 1 as const, priorityGroupSize: 2,
       isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
-      availability: "standard", trainerOverride: null,
+      availability: "standard" as const, trainerOverride: null,
+    };
+    const dLat = computeTargetDecision({
+      target: TARGETS[8]!, guideline: { ...G_WIDE, targetId: 9 }, ...opts,
     });
     const dTrap = computeTargetDecision({
-      target: TARGETS[9]!,          // trapezius (id=10)
-      guideline: { ...G_WIDE, targetId: 10 },
-      experienceLevel: "Średniozaawansowany",
-      priorityOrder: 1, priorityGroupSize: 2,
-      isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
-      availability: "standard", trainerOverride: null,
+      target: TARGETS[9]!, guideline: { ...G_WIDE, targetId: 10 }, ...opts,
     });
-    // Each individual bonus is halved
-    expect(dLat.priorityAdjustment).toBe(1);
-    expect(dTrap.priorityAdjustment).toBe(1);
-    // Combined bonus equals one full bonus (2), not two full bonuses (4)
-    expect(dLat.priorityAdjustment + dTrap.priorityAdjustment).toBe(2);
-    // Each target's recommended value is lower than with groupSize=1
-    expect(dLat.recommendedValue).toBe(12);
-    expect(dTrap.recommendedValue).toBe(12);
+    expect(dLat.priorityAdjustment).toBe(0);
+    expect(dTrap.priorityAdjustment).toBe(0);
+    expect(dLat.recommendedValue).toBe(22);
+    expect(dTrap.recommendedValue).toBe(22);
   });
 
-  it("broad Back priority: combined uplift with groupSize=2 equals single-target uplift with groupSize=1", () => {
-    // This is the core invariant: one "Plecy" priority ≡ one bonus, regardless of how many
-    // internal targets "Plecy" maps to.
+  it("groupSize does not change total adjustment when base is at absoluteMax", () => {
+    const opts = {
+      experienceLevel: "Średniozaawansowany" as const,
+      priorityOrder: 1 as const,
+      isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
+      availability: "standard" as const, trainerOverride: null,
+    };
     const withGroupSize1 = computeTargetDecision({
       target: TARGETS[8]!, guideline: { ...G_WIDE, targetId: 9 },
-      experienceLevel: "Średniozaawansowany",
-      priorityOrder: 1, priorityGroupSize: 1,
-      isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
-      availability: "standard", trainerOverride: null,
+      priorityGroupSize: 1, ...opts,
     });
     const withGroupSize2a = computeTargetDecision({
       target: TARGETS[8]!, guideline: { ...G_WIDE, targetId: 9 },
-      experienceLevel: "Średniozaawansowany",
-      priorityOrder: 1, priorityGroupSize: 2,
-      isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
-      availability: "standard", trainerOverride: null,
+      priorityGroupSize: 2, ...opts,
     });
     const withGroupSize2b = computeTargetDecision({
       target: TARGETS[9]!, guideline: { ...G_WIDE, targetId: 10 },
-      experienceLevel: "Średniozaawansowany",
-      priorityOrder: 1, priorityGroupSize: 2,
-      isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
-      availability: "standard", trainerOverride: null,
+      priorityGroupSize: 2, ...opts,
     });
-    const singleBonus = withGroupSize1.priorityAdjustment;
-    const combinedBonus = withGroupSize2a.priorityAdjustment + withGroupSize2b.priorityAdjustment;
-    expect(combinedBonus).toBe(singleBonus);
+    // All adj=0; recommendedValue=absoluteMax regardless of groupSize
+    expect(withGroupSize1.priorityAdjustment + withGroupSize2a.priorityAdjustment + withGroupSize2b.priorityAdjustment).toBe(0);
+    expect(withGroupSize1.recommendedValue).toBe(22);
+    expect(withGroupSize2a.recommendedValue).toBe(22);
   });
 
-  it("reduced recovery → lowers value by 20% of preferredWidth", () => {
+  it("reduced recovery → lowers value by 20% of preferredWidth from absoluteMax base", () => {
     const reducedRecovery: RecoveryProfileResult = { profile: "reduced", hasData: true, factors: ["słaba jakość regeneracji"] };
-    // base=5, recovery=-4*0.20=-0.8 (raw). stored adj=round05(-0.8)=-1.0
-    // preClamp=5-0.8=4.2 → clamp(4,8,4.2)=4.2 → round05=4.0
+    // Początkujący base=12 (absoluteMax); recovery raw=-4*0.20=-0.8; stored roundInt(-0.8)=-1
+    // preClamp=12-0.8=11.2 → clamp[4,12]=11.2 → roundInt=11
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Początkujący",
       priorityOrder: null, isExcluded: false, recoveryResult: reducedRecovery,
       availability: "standard", trainerOverride: null,
     });
-    expect(d.recoveryAdjustment).toBe(-1.0);
+    expect(d.recoveryAdjustment).toBe(-1);
+    expect(d.recommendedValue).toBe(11);
     expect(d.recommendedValue).toBeGreaterThanOrEqual(G_BARKI.preferredMin);
-    expect(d.recommendedValue).toBeLessThanOrEqual(G_BARKI.preferredMax);
+    expect(d.recommendedValue).toBeLessThanOrEqual(G_BARKI.absoluteMax);
   });
 
   it("reduced recovery never drops below preferredMin", () => {
@@ -588,30 +577,32 @@ describe("computeTargetDecision", () => {
     expect(d.recommendedValue).toBeGreaterThanOrEqual(G_BARKI.preferredMin);
   });
 
-  it("short availability reduces non-priority targets", () => {
-    // base=5, avail=-4*0.25=-1.0, total=4.0 → round=4.0 (exactly at preferredMin)
+  it("short availability reduces non-priority targets (from absoluteMax base)", () => {
+    // Początkujący base=12; avail=-4*0.25=-1.0 raw; stored=-1; preClamp=11 → clamp[4,12]=11 → round=11
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Początkujący",
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "short", trainerOverride: null,
     });
     expect(d.availabilityAdjustment).toBeCloseTo(-1.0, 1);
-    expect(d.recommendedValue).toBe(4.0);
+    expect(d.recommendedValue).toBe(11);
   });
 
   it("short availability does NOT reduce priority targets", () => {
+    // availabilityAdjustment=0 because priorityOrder≠null; Beg is not priority-eligible → adj=0
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Początkujący",
       priorityOrder: 1, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "short", trainerOverride: null,
     });
     expect(d.availabilityAdjustment).toBe(0);
-    expect(d.priorityAdjustment).toBeGreaterThan(0);
+    expect(d.priorityAdjustment).toBe(0); // Beg is not priority-eligible
+    expect(d.recommendedValue).toBe(12);  // stays at absoluteMax
   });
 
   // ── Four override zones ────────────────────────────────────────────────────
   // G_BARKI: preferredMin=4, preferredMax=8, absoluteMax=12
-  // Początkujący recommendedValue = 5
+  // Początkujący recommendedValue = 12 (absoluteMax, no adjustments)
 
   it("Zone A — override below preferredMin: REJECTED", () => {
     const d = computeTargetDecision({
@@ -619,7 +610,7 @@ describe("computeTargetDecision", () => {
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: 2, // 2 < preferredMin=4
     });
-    expect(d.selectedValue).toBe(5);       // stays at recommendedValue
+    expect(d.selectedValue).toBe(12);      // stays at recommendedValue (=absoluteMax)
     expect(d.isOverridden).toBe(false);
     expect(d.source).toBe("calculated");
     expect(d.trainerOverride).toBe(2);     // raw input recorded
@@ -684,7 +675,7 @@ describe("computeTargetDecision", () => {
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: 15, // 15 > absoluteMax=12
     });
-    expect(d.selectedValue).toBe(5);       // stays at recommendedValue
+    expect(d.selectedValue).toBe(12);      // stays at recommendedValue (=absoluteMax)
     expect(d.isOverridden).toBe(false);
     expect(d.source).toBe("calculated");
     expect(d.trainerOverride).toBe(15);
@@ -692,47 +683,48 @@ describe("computeTargetDecision", () => {
   });
 
   it("no silent clamping — rejected value does not silently become guidelineMin", () => {
-    // Zone A: override=2 (below preferredMin=4); selectedValue must be recommendedValue (5), not 4
+    // Zone A: override=2 (below preferredMin=4); selectedValue must be recommendedValue (12), not 4
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Początkujący",
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: 2,
     });
-    expect(d.selectedValue).toBe(5); // recommendedValue, not clamped to 4
+    expect(d.selectedValue).toBe(12); // recommendedValue=absoluteMax, not clamped to 4
     expect(d.isOverridden).toBe(false);
   });
 
-  it("recommendation stays within preferred range with large preferredWidth (G_KLATKA)", () => {
+  it("recommendation for Środkozaaw reaches absoluteMax with large preferredWidth (G_KLATKA)", () => {
     // G_KLATKA: preferredMin=8, preferredMax=15, absoluteMax=20, width=7
-    // Średniozaawansowany (0.50): base=8+7*0.50=11.5 → roundInt=12
+    // Środkozaaw starts at absoluteMax=20; rec=20
     const d = computeTargetDecision({
       target: TARGETS[7]!, guideline: G_KLATKA, experienceLevel: "Średniozaawansowany",
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: null,
     });
     expect(d.recommendedValue).toBeGreaterThanOrEqual(G_KLATKA.preferredMin);
-    expect(d.recommendedValue).toBeLessThanOrEqual(G_KLATKA.preferredMax);
-    expect(d.recommendedValue).toBe(12);
+    expect(d.recommendedValue).toBeLessThanOrEqual(G_KLATKA.absoluteMax);
+    expect(d.recommendedValue).toBe(20);
   });
 });
 
 // ─── Integration tests (require DB) ──────────────────────────────────────────
 
 describe("calculateVolumeDecisions (integration)", () => {
-  it("returns 11 decisions for a valid Początkujący input", async () => {
+  it("returns 12 decisions for a valid Początkujący input", async () => {
     const result = await calculateVolumeDecisions({
       clientId: 1, experienceLevel: "Początkujący",
       priorityMuscleGroups: [], excludedMuscleGroups: [],
       sleep: null, stress: null, physicalWork: false, dailyActivity: null, recoveryQuality: null,
       trainingDays: 4, sessionDuration: 60, trainerOverrides: {},
     });
-    expect(result.decisions).toHaveLength(11);
-    expect(result.summary.totalTargets).toBe(11);
+    expect(result.decisions).toHaveLength(12);
+    expect(result.summary.totalTargets).toBe(12);
     expect(result.summary.blockingIssues).toBe(false);
     expect(result.metadata.guidelineVersionId).toBeGreaterThan(0);
   }, 10000);
 
-  it("all automatic decisions have recommendedValue within [preferredMin, preferredMax]", async () => {
+  it("all automatic decisions have recommendedValue within [preferredMin, absoluteMax]", async () => {
+    // For Beg/Int/Adv, clamp upper bound is absoluteMax, not preferredMax.
     const result = await calculateVolumeDecisions({
       clientId: 1, experienceLevel: "Zaawansowany",
       priorityMuscleGroups: ["Klatka piersiowa", "Plecy"], excludedMuscleGroups: [],
@@ -741,7 +733,7 @@ describe("calculateVolumeDecisions (integration)", () => {
     });
     for (const d of result.decisions) {
       expect(d.recommendedValue).toBeGreaterThanOrEqual(d.preferredMin);
-      expect(d.recommendedValue).toBeLessThanOrEqual(d.preferredMax);
+      expect(d.recommendedValue).toBeLessThanOrEqual(d.absoluteMax);
     }
   }, 10000);
 
@@ -897,19 +889,16 @@ describe("calculateVolumeDecisions (integration)", () => {
   //   preferredWidth = 8
   //
   // Experience level: Średniozaawansowany → rangePosition = 0.50
-  //   baseValue = 8 + 8*0.50 = 12
-  //
-  // Priority adjustments (raw, applied before rounding):
-  //   P1: +8*0.20 = +1.6 → preClamp=13.6 → round05=13.5
-  //   P2: +8*0.10 = +0.8 → preClamp=12.8 → round05=13.0
-  //   P3: +8*0.05 = +0.4 → preClamp=12.4 → round05=12.5
-  //   no priority:        preClamp=12.0 → round05=12.0
+  //   baseValue = absoluteMax (Środkozaaw starts at max/week)
+  //   Barki (targetId=6): preferredMin=8, preferredMax=16, absoluteMax=20
+  //   baseValue = 20 (absoluteMax); no volume bonus at this stage for any priority.
+  //   Tier label is recorded; controlled extension is deferred to the completion pass.
   //
   // This tests the FULL end-to-end path through calculateVolumeDecisions.
   // The route must pass preferences.priorityMuscleGroups (trainer's wizard input),
   // NOT draftInput.input.priorityMuscleGroups (client's stored survey data).
 
-  it("Barki P1 Średniozaawansowany → recommendedValue 13.5", async () => {
+  it("Barki P1 Średniozaawansowany → rec = absoluteMax (no in-engine bonus)", async () => {
     const result = await calculateVolumeDecisions({
       clientId: 1, experienceLevel: "Średniozaawansowany",
       priorityMuscleGroups: ["Barki"], excludedMuscleGroups: [],
@@ -918,16 +907,16 @@ describe("calculateVolumeDecisions (integration)", () => {
     });
     const d = result.decisions.find((d) => d.targetId === 6)!;
     expect(d.priorityOrder).toBe(1);
-    expect(d.baseValue).toBe(12);
+    expect(d.baseValue).toBe(20);   // absoluteMax
     expect(d.preferredMin).toBe(8);
     expect(d.preferredMax).toBe(16);
-    // P1 adj = roundInt(8*0.20) = roundInt(1.6) = 2 → 12+2=14
-    expect(d.recommendedValue).toBe(14);
-    expect(d.selectedValue).toBe(14);
+    expect(d.priorityAdjustment).toBe(0); // bonus deferred to completion pass
+    expect(d.recommendedValue).toBe(20);
+    expect(d.selectedValue).toBe(20);
     expect(d.isOverridden).toBe(false);
   }, 10000);
 
-  it("Barki P2 Średniozaawansowany → recommendedValue 13.0", async () => {
+  it("Barki P2 Średniozaawansowany → rec = absoluteMax", async () => {
     const result = await calculateVolumeDecisions({
       clientId: 1, experienceLevel: "Średniozaawansowany",
       priorityMuscleGroups: ["Klatka piersiowa", "Barki"], excludedMuscleGroups: [],
@@ -936,10 +925,10 @@ describe("calculateVolumeDecisions (integration)", () => {
     });
     const d = result.decisions.find((d) => d.targetId === 6)!;
     expect(d.priorityOrder).toBe(2);
-    expect(d.recommendedValue).toBe(13.0);
+    expect(d.recommendedValue).toBe(20);
   }, 10000);
 
-  it("Barki P3 Średniozaawansowany → recommendedValue 12", async () => {
+  it("Barki P3 Średniozaawansowany → rec = absoluteMax", async () => {
     const result = await calculateVolumeDecisions({
       clientId: 1, experienceLevel: "Średniozaawansowany",
       priorityMuscleGroups: ["Klatka piersiowa", "Plecy", "Barki"], excludedMuscleGroups: [],
@@ -948,11 +937,10 @@ describe("calculateVolumeDecisions (integration)", () => {
     });
     const d = result.decisions.find((d) => d.targetId === 6)!;
     expect(d.priorityOrder).toBe(3);
-    // P3 adj = roundInt(8*0.05) = roundInt(0.4) = 0 → 12+0=12
-    expect(d.recommendedValue).toBe(12);
+    expect(d.recommendedValue).toBe(20);
   }, 10000);
 
-  it("Barki no priority Średniozaawansowany → recommendedValue 12.0", async () => {
+  it("Barki no priority Średniozaawansowany → rec = absoluteMax", async () => {
     const result = await calculateVolumeDecisions({
       clientId: 1, experienceLevel: "Średniozaawansowany",
       priorityMuscleGroups: [], excludedMuscleGroups: [],
@@ -961,11 +949,11 @@ describe("calculateVolumeDecisions (integration)", () => {
     });
     const d = result.decisions.find((d) => d.targetId === 6)!;
     expect(d.priorityOrder).toBeNull();
-    expect(d.baseValue).toBe(12);
-    expect(d.recommendedValue).toBe(12.0);
+    expect(d.baseValue).toBe(20);   // absoluteMax
+    expect(d.recommendedValue).toBe(20);
   }, 10000);
 
-  it("decisions are returned in canonical TARGET_ORDER", async () => {
+  it("decisions are returned in canonical TARGET_ORDER (12 targets incl. Brzuch)", async () => {
     const result = await calculateVolumeDecisions({
       clientId: 1, experienceLevel: "Początkujący",
       priorityMuscleGroups: [], excludedMuscleGroups: [],
@@ -976,7 +964,7 @@ describe("calculateVolumeDecisions (integration)", () => {
       "Mięsień czworogłowy uda", "Mięśnie pośladkowe", "Mięsień trójgłowy łydki",
       "Przywodziciele", "Grupa kulszowo-goleniowa", "Mięśnie naramienne",
       "Mięsień trójgłowy ramienia", "Mięsień piersiowy większy", "Mięsień najszerszy grzbietu",
-      "Mięsień czworoboczny grzbietu", "Mięsień dwugłowy ramienia",
+      "Mięsień czworoboczny grzbietu", "Mięsień dwugłowy ramienia", "Brzuch",
     ];
     expect(result.decisions.map((d) => d.targetName)).toEqual(expected);
   }, 10000);

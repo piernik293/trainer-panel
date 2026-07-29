@@ -1,0 +1,80 @@
+Revise Task #80 before implementation.
+
+The overall direction is approved, but make the following security and migration requirements explicit:
+
+1. Treat this as a security-sensitive migration.
+   - Create a database backup or documented rollback point before schema migration.
+   - Run schema migration and ownership backfill separately from application deployment where possible.
+   - Do not claim “zero data loss” unless it is verified after migration.
+
+2. Existing client backfill:
+   - First verify how many trainer accounts and client records currently exist.
+   - If there is no trainer row yet, provision the current owner explicitly rather than blindly assigning clients to “the first trainer”.
+   - Abort the migration if more than one possible owner exists and ownership cannot be determined safely.
+   - After backfill, verify that every client has exactly one valid trainerId before applying NOT NULL and the foreign key.
+
+3. Authorization must fail closed:
+   - Missing or invalid Clerk configuration must never make protected routes public.
+   - Authentication middleware must distinguish development/test mocks from production.
+   - Do not trust clerkUserId, trainerId, email, role, or ownership values from request bodies, query parameters, or headers.
+
+4. Trainer provisioning:
+   - Provision trainers idempotently using Clerk’s authenticated userId as the unique identity.
+   - Do not create duplicate trainer records during concurrent first requests.
+   - Use a database uniqueness constraint and transaction/upsert.
+   - Define what happens when the Clerk email or display name later changes.
+
+5. Client ownership:
+   - Every client read/update/delete query must include both client ID and authenticated trainer ID in the database query.
+   - Return 404 for records owned by another trainer.
+   - Strip trainerId from create and update payloads.
+   - Prevent mass-assignment of protected fields.
+   - Verify ownership before returning nested or related data.
+
+6. Related route security:
+   Task #80 may avoid fully refactoring survey, plan, note, session, and generation routes, but it must audit them now.
+   - List every route that accepts clientId or returns client-related data.
+   - Mark any route that would bypass the new ownership protection.
+   - Either add a minimal shared requireOwnedClient guard in this task or explicitly block public deployment until Task #81 secures all related routes.
+   - Client CRUD protection alone must not be presented as complete tenant isolation.
+
+7. Exercise catalogue:
+   - Clearly separate global catalogue exercises from trainer-created custom exercises.
+   - Public GET is allowed only for genuinely public global exercises.
+   - Trainer-created exercises must never be returned publicly.
+   - Catalogue mutations must fail closed when no admin ID or admin role is configured.
+   - Do not make CATALOGUE_ADMIN_CLERK_ID an optional check that silently allows every authenticated trainer to edit the global catalogue.
+   - Prefer a server-side role/allowlist design that can later support more than one admin.
+
+8. Frontend:
+   - Preserve the intended URL after sign-in.
+   - Clear all trainer-specific query/cache state on sign-out and account change.
+   - Ensure one trainer’s cached client data cannot flash briefly after another trainer signs in.
+   - Add loading and authentication error states.
+   - Do not expose Clerk secret keys to the frontend.
+
+9. Tests:
+   Expand the test plan to include:
+   - unauthenticated access to every client CRUD endpoint;
+   - trainer A cannot access trainer B’s client;
+   - trainer A cannot change ownership through request body;
+   - unknown client and foreign-owned client both return 404;
+   - concurrent trainer provisioning does not create duplicates;
+   - missing admin configuration blocks catalogue mutations;
+   - public catalogue GET excludes trainer-private exercises;
+   - migration aborts safely when ownership is ambiguous;
+   - cache is cleared on sign-out/account switch;
+   - at least one test checking a related client route cannot bypass ownership.
+
+10. Completion report:
+   After implementation, report:
+   - exact files changed;
+   - database migration performed;
+   - records backfilled;
+   - verification queries/results;
+   - tests run and their results;
+   - remaining unsecured routes;
+   - rollback instructions;
+   - whether the app is safe for public multi-trainer use.
+
+Do not start implementation until the revised plan shows the exact migration order, shared authorization approach, affected routes, and rollback procedure.

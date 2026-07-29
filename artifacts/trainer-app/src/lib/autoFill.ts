@@ -22,7 +22,8 @@
  */
 
 import { CORE_MUSCLE_GROUP } from "./coreCoverageHelpers";
-import type { ExerciseDraftByDay } from "./exerciseDraftHelpers";
+import type { ExerciseClass, ExerciseDraftByDay } from "./exerciseDraftHelpers";
+import { deriveExerciseClass } from "./workoutDurationEstimator";
 import { trainerPriorityRank } from "./trainerPriority";
 import { movementPatternPenalty } from "./movementBalance";
 import { computeFatiguePenalty } from "./fatigueManagement";
@@ -111,6 +112,12 @@ export interface AutoFillExerciseToAdd {
   exercisePriority?: string | null;
   /** Stage 6: secondary muscle groups for session fatigue tie-breaking. */
   secondaryMuscleGroups?: string[] | null;
+  /**
+   * Exercise class resolved from catalogue metadata at selection time.
+   * Used to assign default tempo and correct setup-time estimate when the
+   * exercise is committed to the draft.
+   */
+  exerciseClass?: ExerciseClass;
 }
 
 export interface AutoFillDayResult {
@@ -815,6 +822,13 @@ export function selectExercisesForDay(
       exercisePriority: rec.exercisePriority ?? null,
       // Stage 6: carry secondary muscles for within-session fatigue tie-breaking
       secondaryMuscleGroups: rec.secondaryMuscleGroups ?? null,
+      // Resolved from catalogue; used for default-tempo and setup-time estimation.
+      exerciseClass: deriveExerciseClass({
+        exerciseType: rec.exerciseType,
+        exercisePriority: rec.exercisePriority,
+        mainMuscleGroup: rec.mainMuscleGroup,
+        movementCategoryKey: rec.movementCategoryKey,
+      }),
     });
     addedIds.add(rec.id);
     currentCount++;

@@ -1,0 +1,196 @@
+Implement only two focused corrections for:
+
+Brak aktywności fizycznej
+→ Full Body
+→ normal strength-plan generation.
+
+Do not run a broad audit.
+Do not use subagents.
+Do not redesign the generator.
+Do not modify equipment AND/OR logic.
+Do not modify volume, split, duration, exercise history, tempo, rest, RIR or
+priority-volume logic.
+
+Maximum 6 actions.
+
+==================================================
+1. NAUKA LĄDOWANIA — ID 256
+==================================================
+
+Exercise:
+
+id=256
+“Nauka lądowania”
+
+This is a movement-learning / plyometric-preparation drill.
+
+It must not be selected as:
+
+- a normal strength exercise,
+- a lower-body supplement,
+- a replacement for a missing hip-dominant movement,
+- a filler used only to reach MIN_EXERCISES.
+
+For “Brak aktywności fizycznej”, set:
+
+suitable_for_no_activity = false
+
+Apply this consistently to:
+
+- active development database,
+- catalogue seed / idempotent patch.
+
+Additionally, in the normal FULL_BODY / LOWER / LEGS strength supplement path,
+exclude this exercise.
+
+Prefer an existing metadata-based exclusion if the catalogue already identifies
+it as a drill, technical preparation or plyometric preparation.
+
+If no reliable metadata field exists, add the smallest targeted exclusion for
+id=256 only in the lower-body strength supplement selector.
+
+Do not remove it from the library.
+
+It may remain available only in an existing plyometric or movement-preparation
+path when:
+
+allowPlyometrics = true
+
+Do not create a new warm-up system in this task.
+
+==================================================
+2. WEJŚCIE NA PODEST — ID 98
+==================================================
+
+Exercise:
+
+id=98
+“Wejście na podest”
+
+This exercise requires a physical step, box or platform.
+
+For the profile:
+
+- location = Dom
+- equipment = Brak sprzętu / Masa własnego ciała
+- experience = Brak aktywności fizycznej
+
+it must not be automatically selected.
+
+Set:
+
+suitable_for_no_activity = false
+
+Apply this consistently to:
+
+- active development database,
+- catalogue seed / idempotent patch.
+
+Do not change the exercise to “Siłownia only” globally.
+
+Do not yet add a new “Podest” equipment option or schema migration.
+
+This task only prevents the exercise from entering the no-activity fallback
+without a verified platform.
+
+==================================================
+3. KEEP SAFER EXISTING OPTIONS
+==================================================
+
+Do not change:
+
+id=90
+“Przysiad do skrzyni z masą własnego ciała”
+
+id=95
+“Przysiad wykroczny z podparciem”
+
+These remain the safer knee-dominant choices for inactive clients.
+
+Do not set suitable_for_no_activity = true for:
+
+id=89
+“Przysiad do skrzyni”
+
+id=96
+“Wykrok w tył”
+
+in this task.
+
+They must not be promoted merely to increase variety.
+
+==================================================
+4. FALLBACK BEHAVIOUR
+==================================================
+
+For “Brak aktywności fizycznej”, the lower-body supplement fallback must only
+select exercises that:
+
+- pass equipment filtering,
+- pass location filtering,
+- have suitable_for_no_activity = true,
+- are normal training exercises rather than drills,
+- satisfy existing safety and contraindication rules.
+
+If no suitable lower-body supplement remains:
+
+- do not select an advanced, hidden-equipment or technical-drill exercise,
+- allow the session to remain with the valid safe exercises,
+- return a non-blocking structural warning instead of inserting an
+  inappropriate filler.
+
+Warning:
+
+“Brak dodatkowego bezpiecznego ćwiczenia dolnej części ciała dla wybranego
+poziomu i sprzętu.”
+
+Do not turn this into a blocking 422 failure when the session already contains
+the required safe minimum according to the current generator rules.
+
+==================================================
+5. FOCUSED VERIFICATION
+==================================================
+
+Verify:
+
+1. id=256 is never selected as a normal lower-body supplement for
+   Brak aktywności.
+
+2. id=256 may only remain in the existing plyometric/preparation path when
+   allowPlyometrics = true.
+
+3. id=98 is not selected for:
+   Dom + Brak sprzętu + Brak aktywności.
+
+4. id=90 and id=95 remain selectable.
+
+5. id=89 and id=96 are not promoted to suitableForNoActivity.
+
+6. No advanced or intermediate-only exercise is used as a fallback.
+
+7. Generate 10 two-day Full Body plans for:
+   Brak aktywności / Dom / Brak sprzętu.
+
+8. None of the 10 plans contains:
+   - Nauka lądowania,
+   - Wejście na podest,
+   - Przysiad bułgarski,
+   - Hollow body hold,
+   - Wykroki chodzone,
+   - equipment-incompatible exercises.
+
+Run focused tests only.
+
+==================================================
+REPORT
+==================================================
+
+Report only:
+
+- files changed,
+- DB and seed values for ids 98 and 256,
+- exact supplement exclusion rule,
+- 10-generation verification result,
+- focused test results.
+
+Stop after this correction.

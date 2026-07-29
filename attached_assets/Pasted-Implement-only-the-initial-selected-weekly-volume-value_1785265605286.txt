@@ -1,0 +1,197 @@
+Implement only the initial selected weekly-volume value and proposal-card text
+cleanup.
+
+Do not modify exercise generation.
+Do not modify exercise selection.
+Do not modify weekly distribution.
+Do not modify split logic.
+Do not modify session-duration logic.
+Do not modify percentage status thresholds.
+Do not modify weeklyAbsoluteCeiling database values.
+Do not modify plyometric logic.
+Do not run a broad audit.
+Do not use subagents.
+
+==================================================
+1. INITIAL SELECTED VALUE — ALL EXPERIENCE LEVELS
+==================================================
+
+For every experience level:
+
+- Brak aktywności fizycznej
+- Początkujący
+- Średniozaawansowany
+- Zaawansowany
+
+the initial selected weekly volume in every proposal-card control must equal:
+
+weeklyAbsoluteCeiling
+
+Use one consistent rule for all four experience levels.
+
+Do not create a special conservative exception for
+Brak aktywności fizycznej.
+
+Examples:
+
+- weeklyAbsoluteCeiling = 20
+  → initial control value = 20
+
+- weeklyAbsoluteCeiling = 16
+  → initial control value = 16
+
+- weeklyAbsoluteCeiling = 8
+  → initial control value = 8
+
+This must be the real selected/proposed value returned by the active proposal
+flow, not only a visual UI replacement.
+
+Do not initialize below weeklyAbsoluteCeiling because of:
+
+- recovery,
+- stress,
+- sleep,
+- physical work,
+- old preferred range,
+- experience-level range position,
+- availability.
+
+These factors may remain informational, but they must not numerically reduce
+the initial selected weekly volume in this task.
+
+==================================================
+2. RECOMMENDED MAXIMUM IS NOT A HARD INPUT CAP
+==================================================
+
+weeklyAbsoluteCeiling is the highest recommended weekly volume, but it is not
+the maximum value the trainer may enter manually.
+
+The plus button must continue allowing values above weeklyAbsoluteCeiling.
+
+Keep the existing percentage statuses:
+
+- above 100% and below 125%
+  → “Powyżej maks. rekomendowanej objętości”
+
+- 125% or more
+  → “Ryzyko przetrenowania”
+
+Do not block manual overage.
+
+==================================================
+3. REMOVE THE DUPLICATE SYSTEM-PROPOSAL ROW
+==================================================
+
+Remove the normal visible row:
+
+“Propozycja systemu: X serii”
+
+from every proposal card.
+
+The selected value is already visible inside the numeric control, so this text
+duplicates the same information.
+
+Do not remove the detailed explanation list.
+
+Update the explanation so it reflects the actual initial value.
+
+Example for weeklyAbsoluteCeiling = 8:
+
+“propozycja startuje od maksymalnej rekomendowanej objętości tygodniowej
+(8 pkt.)”
+
+“propozycja: 8 pkt. (zakres 7–8)”
+
+Do not show:
+
+“obniżenie z powodu regeneracji”
+
+when the selected value was not reduced.
+
+Recovery information may remain as:
+
+“regeneracja wymaga monitorowania podczas realizacji planu”
+
+but it must not claim a numeric reduction occurred.
+
+==================================================
+4. MANUAL OVERRIDE
+==================================================
+
+When the trainer changes the value manually:
+
+- keep the “ustawione ręcznie” badge,
+- rename “Przywróć propozycję” to:
+  “Przywróć rekomendowaną”,
+- restoring must set the value back to weeklyAbsoluteCeiling,
+- apply this to all four experience levels.
+
+Do not display:
+
+“Propozycja systemu: X → Y serii (ręcznie)”
+
+The numeric control already displays the manually selected value.
+
+A small text may display:
+
+“Wartość zmieniona ręcznie”
+
+without duplicating both numbers.
+
+==================================================
+5. REQUIRED EXAMPLES
+==================================================
+
+Brak aktywności, chest ceiling 8:
+
+Zakres rekomendowany: 7–8 serii/tydz.
+Maks. rekomendowana obj. tyg.: 8 serii/tydz.
+Initial control: − 8 +
+Status: “Rekomendowana objętość spełniona”
+
+Intermediate, biceps ceiling 8:
+
+Zakres rekomendowany: 7–8 serii/tydz.
+Maks. rekomendowana obj. tyg.: 8 serii/tydz.
+Initial control: − 8 +
+Status: “Rekomendowana objętość spełniona”
+
+Neither card may show:
+
+“Propozycja systemu: 7 serii”
+
+After manually changing 8 to 9:
+
+- control displays 9,
+- manual badge is visible,
+- over-recommendation warning is visible,
+- “Przywróć rekomendowaną” restores 8.
+
+==================================================
+6. FOCUSED TESTS
+==================================================
+
+Add focused tests proving:
+
+- Brak aktywności initial value equals weeklyAbsoluteCeiling,
+- Beginner initial value equals weeklyAbsoluteCeiling,
+- Intermediate initial value equals weeklyAbsoluteCeiling,
+- Advanced initial value equals weeklyAbsoluteCeiling,
+- recovery does not reduce the initial value for any level,
+- old preferred range does not reduce the initial value,
+- the normal “Propozycja systemu” row is removed,
+- manual values above recommendation remain allowed,
+- manual badge remains visible,
+- “Przywróć rekomendowaną” restores weeklyAbsoluteCeiling,
+- percentage statuses remain unchanged,
+- generator, split, duration and plyometric logic remain unchanged.
+
+Report only:
+
+- files changed,
+- previous initial-value rule,
+- new unified rule for all four levels,
+- removed UI text,
+- focused test results.
+
+Maximum 8 additional actions.

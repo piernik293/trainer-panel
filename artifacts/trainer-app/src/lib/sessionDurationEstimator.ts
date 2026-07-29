@@ -42,10 +42,10 @@ export const SESSION_DURATION_SPEC = {
 
   /**
    * Session warm-up duration fallback in seconds.
-   * Used when no explicit warm-up is recorded for the current plan day.
-   * Source: Stage 7A clarification — "5 minutes" fallback.
+   * Aligned with workoutDurationEstimator.ts — both estimators use 10 minutes.
+   * Source: agreed rule — mandatory 10-minute warm-up applies to all sessions.
    */
-  WARMUP_FALLBACK_SECONDS: 300,
+  WARMUP_FALLBACK_SECONDS: 600,
 
   /**
    * Rest duration per inter-set interval fallback in seconds.
@@ -62,10 +62,10 @@ export const SESSION_DURATION_SPEC = {
    * Hard session-duration cap in seconds.
    * Exactly MAX_SESSION_SECONDS is ACCEPTED (strict greater-than comparison).
    * Any value strictly above is REJECTED.
-   * Source: Stage 7A clarification — "exactly 45 minutes is allowed;
-   * any projected duration above 2700 seconds must be rejected".
+   * 3600 s = 10-min mandatory warm-up + 50-min maximum main workout.
+   * Source: agreed Brak aktywności fizycznej rule.
    */
-  MAX_SESSION_SECONDS: 2700,
+  MAX_SESSION_SECONDS: 3600,
 } as const;
 
 /**

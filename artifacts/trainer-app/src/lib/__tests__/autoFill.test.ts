@@ -2421,9 +2421,10 @@ describe("Stage 7A-3 — allowedSetCounts=[2,3] restricts set assignments", () =
 // ── Stage 7A-4: maxSessionMinutes (duration cap) ─────────────────────────────
 
 describe("Stage 7A-4 — maxSessionMinutes duration cap", () => {
-  it("stops at 1 exercise when adding a 2nd would exceed maxSessionMinutes=9", () => {
-    // 1 ex × 2 sets → 510s = 8.5 min (allowed, < 9-min cap)
-    // 2 ex × 4 sets → 780s = 13.0 min (rejected, > 9)
+  it("stops at 1 exercise when adding a 2nd would exceed maxSessionMinutes=14", () => {
+    // WARMUP = 600 s (10 min).
+    // 1 ex × 2 sets → 600+120+90+0   = 810s = 13.5 min (allowed, < 14-min cap = 840s)
+    // 2 ex × 4 sets → 600+240+180+60 = 1080s = 18.0 min (rejected, > 14-min cap)
     const T1 = makeT(1);
     const T2 = makeT(2);
     const weeklyTargets = new Map([
@@ -2443,10 +2444,10 @@ describe("Stage 7A-4 — maxSessionMinutes duration cap", () => {
       0, [T1, T2], false, recs,
       0, 0, NO_AVOIDED,
       weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
-      undefined, [2, 3], 9, // maxSessionMinutes=9
+      undefined, [2, 3], 14, // maxSessionMinutes=14 (840 s)
     );
 
-    // canAddMore() for 2nd exercise: 2 ex × (2+2) sets = 780s = 13 min > 9 → false
+    // canAddMore() for 2nd exercise: 2 ex × 4 sets = 1080s = 18 min > 14 → false
     expect(result.toAdd).toHaveLength(1);
   });
 
@@ -2475,9 +2476,9 @@ describe("Stage 7A-4 — maxSessionMinutes duration cap", () => {
   });
 
   it("3-set expansion is rejected by duration cap when it would push session over limit", () => {
-    // With maxSessionMinutes=9 and allowedSetCounts=[2,3]:
-    //   sets=2 → 510s = 8.5 min (< 9-min cap → allowed)
-    //   sets=3 → 660s = 11.0 min > 9 → rejected
+    // WARMUP = 600 s (10 min). With maxSessionMinutes=14 (840 s) and allowedSetCounts=[2,3]:
+    //   sets=2 → 600+120+90+0  = 810s = 13.5 min (≤ 840 s cap → allowed)
+    //   sets=3 → 600+180+180+0 = 960s = 16.0 min (> 840 s cap → rejected)
     // So the exercise is committed at 2 sets, not 3.
     const target = makeT(1);
     const weeklyTargets = new Map([[target.targetId, makeWeekly(target.targetId, 0, 12)]]);
@@ -2492,11 +2493,11 @@ describe("Stage 7A-4 — maxSessionMinutes duration cap", () => {
       0, [target], false, [rec],
       0, 0, NO_AVOIDED,
       weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
-      undefined, [2, 3], 9, // maxSessionMinutes=9
+      undefined, [2, 3], 14, // maxSessionMinutes=14 (840 s)
     );
 
     expect(result.toAdd).toHaveLength(1);
-    // 3 sets would exceed 9 min; 2 sets is exactly 9 min → allowed
+    // 3 sets would exceed 14 min; 2 sets (810 s = 13.5 min) is below the cap → allowed
     expect(result.toAdd[0]!.sets).toBe(2);
   });
 
@@ -2512,6 +2513,71 @@ describe("Stage 7A-4 — maxSessionMinutes duration cap", () => {
     );
 
     expect(result.toAdd).toHaveLength(3);
+  });
+});
+
+// ── Session-cap level-sensitivity tests ──────────────────────────────────────
+// These three tests prove that 60 minutes is NOT a global cap:
+// the same projected duration (3870 s = 64.5 min) is rejected at 60 min but
+// accepted at 75 min and 90 min.
+//
+// Setup anchor (WARMUP = 600 s):
+//   existing N=3 ex, S=21 sets → estimateSessionDurationSeconds(3, 21) = 3600 s (60 min exactly)
+//   adding 1 exercise with 2 sets → projectedN=4, projectedS=23
+//   estimateSessionDurationSeconds(4, 23) = 600+1380+(23-4)×90+(4-1)×60 = 3870 s = 64.5 min
+//
+// 3870 s > 3600 s (60 min) → blocked
+// 3870 s < 4500 s (75 min) → allowed
+// 3870 s < 5400 s (90 min) → allowed
+
+describe("Session cap is level-sensitive — 60 min only for Brak aktywności", () => {
+  const target = latTarget;
+  const weeklyTargets = new Map([[target.targetId, makeWeekly(target.targetId, 0, 12)]]);
+  const coefficients = new Map<number, ReadonlyMap<number, number>>([
+    [1, new Map([[target.targetId, 1.0]])],
+  ]);
+  const rec = makeRec(1, [target], {
+    mainMuscleGroup: "Plecy",
+    neurologicalFatigue: 3,
+    secondaryMuscleGroups: [],
+    movementCategoryKey: null,
+  });
+  // Existing session is at exactly 3600 s (= 60 min cap for Brak aktywności).
+  // Adding 1 more exercise projects 3870 s.
+  const EXISTING_N = 3;
+  const EXISTING_S = 21;
+
+  it("Brak aktywności (60 min cap) — addition blocked when projection is 3870 s", () => {
+    const result = selectExercisesForDay(
+      0, [target], false, [rec],
+      EXISTING_N, EXISTING_S, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      undefined, undefined, 60, // maxSessionMinutes = 60
+    );
+    // 3870 s > 3600 s → canAddMore returns false immediately
+    expect(result.toAdd).toHaveLength(0);
+  });
+
+  it("Intermediate (75 min cap) — same projection (3870 s) is NOT blocked", () => {
+    const result = selectExercisesForDay(
+      0, [target], false, [rec],
+      EXISTING_N, EXISTING_S, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      undefined, undefined, 75, // maxSessionMinutes = 75 — 3870 s < 4500 s → allowed
+    );
+    // 60-minute cap does NOT apply; exercise is added
+    expect(result.toAdd).toHaveLength(1);
+  });
+
+  it("Advanced (90 min cap) — same projection (3870 s) is also NOT blocked", () => {
+    const result = selectExercisesForDay(
+      0, [target], false, [rec],
+      EXISTING_N, EXISTING_S, NO_AVOIDED,
+      weeklyTargets, EMPTY_DAILY, coefficients, EMPTY_PREV_DAYS, EMPTY_USED, EMPTY_STEP3,
+      undefined, undefined, 90, // maxSessionMinutes = 90 — 3870 s < 5400 s → allowed
+    );
+    // 60-minute cap does NOT apply; exercise is added
+    expect(result.toAdd).toHaveLength(1);
   });
 });
 

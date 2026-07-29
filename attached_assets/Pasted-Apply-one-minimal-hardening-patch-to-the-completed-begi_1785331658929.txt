@@ -1,0 +1,77 @@
+Apply one minimal hardening patch to the completed beginner safety fix.
+
+Do not modify any unrelated feature.
+Do not refactor the selection engine.
+Do not add new files unless a targeted test must be extended.
+Keep usage below $1.50.
+
+Confirmed issues:
+
+1. The current predicate accepts learningDifficulty=0 and negative values because it only checks:
+Number.isFinite(value) && value <= 2
+
+2. Inactive clients currently rely only on suitableForNoActivity=true.
+They are not mechanically protected from exercises with learningDifficulty > 2.
+The current catalogue happens to contain only low-difficulty exercises in that safe pool, but this is a data convention, not a hard guarantee.
+
+Required change:
+
+Update the shared eligibility predicate so a low-experience exercise is eligible only when:
+
+- learningDifficulty is an integer,
+- learningDifficulty >= 1,
+- learningDifficulty <= 2.
+
+Use one shared predicate.
+
+Apply this difficulty gate to automatically selected exercises when:
+
+- ctx.isBeginnerClient === true
+OR
+- ctx.isNoActivityClient === true
+
+For inactive clients, the exercise must satisfy both:
+
+- suitableForNoActivity === true
+- learningDifficulty is an integer from 1 to 2
+
+Do not weaken or bypass any existing filters.
+
+Required targeted tests:
+
+- difficulty -1 is excluded
+- difficulty 0 is excluded
+- difficulty 1 is allowed
+- difficulty 2 is allowed
+- difficulty 3 is excluded
+- difficulty 4 is excluded
+- difficulty 1.5 is excluded
+- NaN is excluded
+- null is excluded
+- undefined is excluded
+
+Also test:
+
+- inactive client + suitableForNoActivity=true + difficulty=4 is excluded
+- inactive client + suitableForNoActivity=true + difficulty=2 is allowed
+- advanced active client can still receive difficulty=4
+
+Run only targeted selection-engine tests.
+
+Return:
+
+## Predicate before
+## Predicate after
+## Test results
+## Files changed
+## Regression result
+
+Final decision:
+
+`PASS — beginner and inactive difficulty eligibility is fully hardened`
+
+or
+
+`FAIL — invalid difficulty data can still enter an automatically generated plan`
+
+Do not propose or start another task.

@@ -10,21 +10,23 @@
  *   preferredMax  = weeklyPreferredCeiling   (upper bound of the preferred zone)
  *   absoluteMax   = weeklyAbsoluteCeiling    (hard safety ceiling)
  *
- * Automatic recommendations stay in [preferredMin, preferredMax].
- * Trainer overrides can reach up to absoluteMax (Zone C, accepted with non-blocking warning).
- * Overrides outside [preferredMin, absoluteMax] are rejected without silent clamping.
+ * Unified initial proposal rule: recommendedValue = weeklyAbsoluteCeiling
+ * for all four experience levels. Recovery, availability, priority and
+ * old preferred-range position are informational only; none reduce the value.
+ * Trainer overrides in Zone D (above absoluteMax) are accepted with a
+ * non-blocking warning. Zone A (below preferredMin) is the only rejection.
  *
  * Calculation order per target:
  *  1. Derive preferredMin / preferredMax / absoluteMax
- *  2. Select experience-based range position
- *  3. Apply priority adjustment (fraction of preferredWidth)
- *  4. Apply excluded-group rule (set to preferredMin)
- *  5. Apply recovery adjustment (fraction of preferredWidth)
- *  6. Apply availability adjustment (fraction of preferredWidth)
- *  7. Clamp to [preferredMin, preferredMax]
- *  8. Round to 0.5-set precision → recommendedValue
+ *  2. Base value = absoluteMax (unified rule, all levels)
+ *  3. Priority — informational only
+ *  4. Excluded-group rule — set to preferredMin
+ *  5. Recovery — informational only (no numerical reduction)
+ *  6. Availability — informational only (no numerical reduction)
+ *  7. Clamp to [preferredMin, absoluteMax]
+ *  8. Round to whole integer → recommendedValue
  *  9. Apply trainer override per four-zone policy
- * 10. Generate explanations and warnings
+ * 10. Final assembly
  *
  * INVARIANTS:
  *  - No database rows are written.
@@ -43,11 +45,7 @@ import {
   volumeGuidelineVersionsTable,
 } from "@workspace/db";
 import {
-  EXPERIENCE_LEVEL_RANGE_POSITIONS,
   PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS,
-  PRIORITY_ADJUSTMENTS,
-  REDUCED_RECOVERY_ADJUSTMENT,
-  SHORT_AVAILABILITY_ADJUSTMENT,
   type WeeklyVolumeTargetDecisionType,
   type WeeklyVolumeDecisionResponseType,
   type RecoveryProfile,
@@ -334,65 +332,41 @@ export function computeTargetDecision(
   const preferredMin = inp.guideline?.preferredMin ?? 0;
   const preferredMax = inp.guideline?.preferredMax ?? 0;
   const absoluteMax = inp.guideline?.absoluteMax ?? 0;
-  const preferredWidth = preferredMax - preferredMin;
 
-  // ── 2. Base position ──────────────────────────────────────────────────────
-  let rangePosition = 0;
-  if (inp.experienceLevel) {
-    rangePosition = (EXPERIENCE_LEVEL_RANGE_POSITIONS[inp.experienceLevel] ?? 0);
-  }
-  // Base value is within [preferredMin, preferredMax]
-  const baseValue = preferredMin + preferredWidth * rangePosition;
-
+  // ── 2. Base position — unified rule ──────────────────────────────────────
+  //
+  // All experience levels (including "Brak aktywności fizycznej") start from
+  // weeklyAbsoluteCeiling. Recovery and availability are informational only;
+  // they do not numerically reduce the initial proposal in this pass.
   reasons.push(`poziom doświadczenia: ${inp.experienceLevel ?? "brak"}`);
+  reasons.push(
+    `propozycja startuje od maksymalnej rekomendowanej objętości tygodniowej (${absoluteMax} pkt.)`,
+  );
+  const baseValue = absoluteMax;
 
-  const levelLabel: Record<string, string> = {
-    "Brak aktywności fizycznej": "wybrano dolną granicę zakresu zalecanego",
-    "Początkujący": "wybrano 25% zakresu zalecanego",
-    "Średniozaawansowany": "wybrano środek zakresu zalecanego",
-    "Zaawansowany": "wybrano środek zakresu zalecanego",
-  };
-  if (inp.experienceLevel && levelLabel[inp.experienceLevel]) {
-    reasons.push(levelLabel[inp.experienceLevel]!);
-  }
-
-  // ── 3. Priority adjustment ────────────────────────────────────────────────
-  // Experience-aware gate: only intermediate / advanced trainees receive true
-  // priority-muscle volume bias (Tier A / B / C allocation).
-  // For "Brak aktywności fizycznej" and "Początkujący" the survey priority fields
-  // are stored but SOFTENED to zero — all targets are treated as Tier C and
-  // receive balanced general-development volume.
+  // ── 3. Priority — informational only ─────────────────────────────────────
+  // The proposal already starts at absoluteMax; no upward bonus is added.
+  // Priority badges and tier labels remain visible for trainer reference.
   const isPriorityEligible =
     inp.experienceLevel !== null &&
     inp.experienceLevel !== undefined &&
     PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS.has(inp.experienceLevel);
 
-  let priorityAdjustment = 0;
   if (isPriorityEligible && inp.priorityOrder !== null && !inp.isExcluded) {
-    const pct = PRIORITY_ADJUSTMENTS[inp.priorityOrder];
-    // When a broad category (e.g. "Plecy") maps to N internal targets, divide the
-    // bonus evenly so the total priority uplift per category equals one full bonus,
-    // not N independent bonuses.
-    const groupSize = Math.max(1, inp.priorityGroupSize ?? 1);
-    priorityAdjustment = (preferredWidth * pct) / groupSize;
-    // Assign Tier label: priority 1 → Tier A, priority 2–3 → Tier B
     const tierLabel = inp.priorityOrder === 1 ? "A" : "B";
     const priorityOrdinal =
       inp.priorityOrder === 1 ? "pierwszy" : inp.priorityOrder === 2 ? "drugi" : "trzeci";
     reasons.push(`Tier ${tierLabel}: ${priorityOrdinal} priorytet klienta`);
   } else if (!isPriorityEligible && inp.priorityOrder !== null && !inp.isExcluded) {
-    // Priority preference stored but not applied — beginner / no-activity rule.
-    // The muscle is treated as Tier C (balanced general development).
     reasons.push(
       `preferencja mięśniowa zapisana, lecz niezastosowana — poziom "${inp.experienceLevel ?? "brak"}" → ogólny rozwój (Tier C)`,
     );
   }
 
   // ── 4. Excluded adjustment ────────────────────────────────────────────────
-  let afterExcluded = baseValue + priorityAdjustment;
+  let afterExcluded = baseValue;
   if (inp.isExcluded) {
     afterExcluded = preferredMin;
-    priorityAdjustment = 0;
     reasons.push("partia zdepriorytetowana przez trenera");
     warnings.push({
       code: "TARGET_DEPRIORITIZED_BY_TRAINER",
@@ -402,53 +376,53 @@ export function computeTargetDecision(
     });
   }
 
-  // ── 5. Recovery adjustment ────────────────────────────────────────────────
-  let recoveryAdjustment = 0;
+  // ── 5. Recovery — informational only ─────────────────────────────────────
+  // Recovery profile is recorded for trainer reference but does not reduce
+  // the initial proposal numerically.
   if (inp.recoveryResult.profile === "reduced") {
-    recoveryAdjustment = -(preferredWidth * REDUCED_RECOVERY_ADJUSTMENT);
-    reasons.push(`obniżenie z powodu regeneracji (${inp.recoveryResult.factors.slice(0, 2).join(", ")})`);
+    reasons.push(
+      `regeneracja wymaga monitorowania podczas realizacji planu (${inp.recoveryResult.factors.slice(0, 2).join(", ")})`,
+    );
   } else if (inp.recoveryResult.profile === "good") {
-    reasons.push("dobra regeneracja — wartość pozostaje w zakresie");
+    reasons.push("dobra regeneracja");
   } else if (!inp.recoveryResult.hasData) {
-    reasons.push("brak danych regeneracji — bez korekty");
+    reasons.push("brak danych regeneracji");
   }
 
-  // ── 6. Availability adjustment ────────────────────────────────────────────
-  let availabilityAdjustment = 0;
+  // ── 6. Availability — informational only ─────────────────────────────────
+  // Availability is recorded for trainer reference but does not reduce the
+  // initial proposal numerically.
   if (inp.availability === "short" && inp.priorityOrder === null && !inp.isExcluded) {
-    availabilityAdjustment = -(preferredWidth * SHORT_AVAILABILITY_ADJUSTMENT);
-    reasons.push("ograniczona dostępność treningowa — obniżenie dla nie-priorytetowych partii");
-    warnings.push({
-      code: "LIMITED_TRAINING_AVAILABILITY",
-      severity: "notice",
-      message: `Ograniczona liczba dni lub krótkie sesje: objętość dla "${inp.target.name}" obniżona.`,
-      blocking: false,
-    });
+    reasons.push("ograniczona dostępność treningowa — do uwzględnienia w harmonogramie");
   } else if (inp.availability === "high") {
     reasons.push("dobra dostępność treningowa");
   } else if (inp.availability === "standard") {
     reasons.push("standardowa dostępność treningowa");
   }
 
-  // ── 7. Clamp to [preferredMin, preferredMax] ──────────────────────────────
-  const preClamp = afterExcluded + recoveryAdjustment + availabilityAdjustment;
-  let clamped = Math.max(preferredMin, Math.min(preferredMax, preClamp));
+  // ── 7. Clamp ──────────────────────────────────────────────────────────────
+  // All levels: clamp to [preferredMin, absoluteMax].
+  // With no reductions applied, non-excluded targets clamp to absoluteMax.
+  const clampMax = absoluteMax;
+  const preClamp = afterExcluded;
+  let clamped = Math.max(preferredMin, Math.min(clampMax, preClamp));
   if (clamped !== preClamp && !inp.isExcluded) {
     warnings.push({
       code: "VOLUME_TARGET_CLAMPED",
       severity: "info",
-      message: `Wartość dla "${inp.target.name}" przycięta do zakresu zalecanego [${preferredMin}–${preferredMax}].`,
+      message: `Wartość dla "${inp.target.name}" przycięta do zakresu [${preferredMin}–${clampMax}].`,
       blocking: false,
     });
   }
 
   // ── 8. Round to whole integer ─────────────────────────────────────────────
   let recommendedValue = roundInt(clamped);
-  // Edge case: rounding pushed outside preferred range — re-clamp
+  // Edge case: rounding pushed outside range — re-clamp
   if (recommendedValue < preferredMin) recommendedValue = preferredMin;
-  if (recommendedValue > preferredMax) recommendedValue = preferredMax;
+  if (recommendedValue > clampMax)      recommendedValue = clampMax;
 
-  reasons.push(`propozycja w zakresie zalecanym (${preferredMin}–${preferredMax})`);
+  const reasonLower = Math.floor(absoluteMax * 0.75) + 1;
+  reasons.push(`propozycja: ${recommendedValue} pkt. (zakres ${reasonLower}–${absoluteMax})`);
 
   // ── 9. Trainer override — four-zone policy ────────────────────────────────
   //
@@ -507,15 +481,19 @@ export function computeTargetDecision(
       });
 
     } else {
-      // Zone D — rejected
+      // Zone D — accepted with non-blocking overtraining warning.
+      // weeklyAbsoluteCeiling is not a hard input maximum; percentage-based
+      // status (overtraining_warning) informs the trainer visually.
+      selectedValue = ov;
+      trainerOverrideClean = ov;
+      isOverridden = true;
       warnings.push({
         code: "VOLUME_OVERRIDE_ABOVE_ABSOLUTE_MAX",
         severity: "warning",
-        message: `Ustawienie trenera (${ov}) przekracza limit absolutny (${absoluteMax}). Wartość nie została zastosowana.`,
+        message: `Ustawienie trenera (${ov}) przekracza limit absolutny (${absoluteMax}). Wartość została zastosowana — ryzyko przetrenowania.`,
         blocking: false,
-        suggestedAction: `Maksymalna dopuszczalna wartość to ${absoluteMax} serii/tydz.`,
+        suggestedAction: `Maks. rekomendowana objętość tygodniowa to ${absoluteMax} serii/tydz.`,
       });
-      trainerOverrideClean = ov;
     }
   }
 
@@ -527,11 +505,11 @@ export function computeTargetDecision(
     preferredMin,
     preferredMax,
     absoluteMax,
-    rangePosition,
+    rangePosition: 1.0,
     baseValue: roundInt(baseValue),
-    priorityAdjustment: roundInt(priorityAdjustment),
-    recoveryAdjustment: roundInt(recoveryAdjustment),
-    availabilityAdjustment: roundInt(availabilityAdjustment),
+    priorityAdjustment: 0,
+    recoveryAdjustment: 0,
+    availabilityAdjustment: 0,
     recommendedValue,
     selectedValue,
     trainerOverride: trainerOverrideClean,

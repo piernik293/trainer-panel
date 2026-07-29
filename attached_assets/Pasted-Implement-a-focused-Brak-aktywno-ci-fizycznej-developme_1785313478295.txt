@@ -1,0 +1,386 @@
+Implement a focused “Brak aktywności fizycznej” developmental exercise pool.
+
+Do not run a broad audit.
+Do not use subagents.
+Do not redesign the generator.
+Do not modify volume, split, duration, exercise history, equipment AND/OR,
+contraindications, tempo, rest, RIR or plyometric logic.
+
+Do not add a new schema field.
+Use the existing:
+
+- suitable_for_no_activity,
+- suitable_experience_levels,
+- learning_difficulty,
+- exercise_priority,
+- movement_pattern,
+- exercise_type,
+- equipment requirements.
+
+Maximum 8 actions.
+
+==================================================
+1. PRODUCT RULE
+==================================================
+
+For “Brak aktywności fizycznej”, the automatic generator should primarily use
+simple developmental exercises that:
+
+- train major movement patterns,
+- are easy to explain,
+- are easy to scale,
+- have stable execution,
+- allow controlled loading,
+- support general full-body development,
+- are appropriate for learning basic movement patterns.
+
+The main weekly patterns remain:
+
+1. knee-dominant,
+2. hip-dominant,
+3. upper-body push,
+4. upper-body pull,
+5. core / trunk stability,
+6. optional carry or simple accessory.
+
+Do not try to make every small muscle target green.
+
+==================================================
+2. VERIFY AND ASSIGN THE PRIMARY SAFE POOL
+==================================================
+
+Before changing each record, verify its current ID and exact name.
+
+These exercises should be eligible for automatic selection for
+“Brak aktywności fizycznej”:
+
+KNEE-DOMINANT
+
+- id=90
+  “Przysiad do skrzyni z masą własnego ciała”
+
+- id=95
+  “Przysiad wykroczny z podparciem”
+
+- id=88
+  “Przysiad goblet”
+  Only when Hantle or Kettlebell is available.
+
+Do not change its equipment OR semantics.
+
+HIP-DOMINANT / POSTERIOR CHAIN
+
+- id=105
+  “Glute bridge”
+
+- id=103
+  “Martwy ciąg z kettlebell”
+  Keep normal Kettlebell equipment filtering.
+  This is an alternative requiring trainer instruction, not a bodyweight
+  fallback.
+
+HORIZONTAL PUSH
+
+- id=115
+  “Wyciskanie na maszynie siedząc”
+
+- id=116
+  “Pompki na podwyższeniu”
+
+- id=118
+  “Pompki na kolanach”
+
+PULL
+
+- id=123
+  “Ściąganie drążka wyciągu górnego chwytem neutralnym”
+
+- id=128
+  “Wiosłowanie siedząc na wyciągu chwytem neutralnym”
+
+- id=130
+  “Wiosłowanie na maszynie”
+
+- id=134
+  “Wiosłowanie gumą oporową”
+
+- id=133
+  “Wiosłowanie na TRX”
+
+- id=185
+  “Wiosłowanie leżąc przodem z hantlami”
+  Keep:
+  equipment = {Hantle}
+  required_equipment_all = {Ławka}
+
+VERTICAL PUSH
+
+- id=137
+  “Wyciskanie na maszynie nad głowę”
+
+CORE / TRUNK
+
+- id=5
+  “Plank”
+
+- id=159
+  “Dead bug”
+
+- id=160
+  “Bird dog”
+
+- id=161
+  “Plank boczny”
+
+- id=162
+  “Pallof press”
+
+CARRY / GENERAL DEVELOPMENT
+
+- id=167
+  “Spacer farmera”
+
+- id=168
+  “Spacer walizkowy”
+
+CALVES
+
+- id=259
+  “Wspięcia na palce obunóż stojąc”
+
+For every verified record:
+
+- suitable_for_no_activity must be true,
+- “Brak aktywności fizycznej” must be included in suitable_experience_levels,
+- learning_difficulty must not be greater than 2.
+
+Do not blindly lower learning_difficulty.
+
+If a listed record currently has learning_difficulty > 2, stop for that record
+and report it instead of changing the difficulty without review.
+
+==================================================
+3. EXERCISE PRIORITY
+==================================================
+
+Do not globally redesign exercise_priority.
+
+For no-activity clients, selection should prefer:
+
+1. stable bilateral or supported exercises,
+2. simple machine/cable exercises,
+3. supported bodyweight exercises,
+4. controlled free-weight exercises,
+5. exercises requiring more balance or coordination.
+
+For this level, safety and suitability must rank above novelty.
+
+Exercise-history novelty may rotate exercises only inside the safe eligible
+pool.
+
+An unused but more difficult exercise must not outrank a safer primary exercise
+solely because it is new.
+
+Apply the smallest no-activity-specific sorting adjustment only if the current
+sort allows this.
+
+Do not change ranking for Beginner, Intermediate or Advanced clients.
+
+==================================================
+4. TRX RULES
+==================================================
+
+TRX exercises are allowed only when TRX is selected as available equipment.
+
+For:
+
+“Wiosłowanie na TRX”
+
+keep it eligible for no-activity clients, but treat it as a controlled
+alternative rather than the only primary pulling option.
+
+The generator must not assume TRX is available because the location is:
+
+- Dom,
+- Siłownia.
+
+Equipment selection remains mandatory.
+
+Do not add unstable TRX pushing exercises to the primary pool in this task.
+
+==================================================
+5. LAT PULLDOWN RULES
+==================================================
+
+For inactive clients prefer:
+
+“Ściąganie drążka wyciągu górnego chwytem neutralnym”
+
+over wide-grip or technically harder pulldown variations.
+
+Keep normal cable-equipment filtering.
+
+Do not allow behind-the-neck pulldown variations.
+
+Do not change other experience levels.
+
+==================================================
+6. DO NOT PROMOTE THESE EXERCISES
+==================================================
+
+Do not set suitable_for_no_activity = true for:
+
+- id=89 “Przysiad do skrzyni”
+- id=94 “Przysiad bułgarski”
+- id=96 “Wykrok w tył”
+- id=97 “Wykroki chodzone”
+- id=98 “Wejście na podest”
+- id=174 “Pompki z obciążeniem”
+- id=197 “Hollow body hold”
+- id=218 “Pompki z gumą oporową”
+- id=219 “Pompki na uchwytach”
+- id=220 “Pompki na kółkach gimnastycznych”
+- id=256 “Nauka lądowania”
+
+Keep ids 98 and 256 explicitly false.
+
+Do not promote unilateral, unstable, loaded or technical exercises merely to
+increase generation variety.
+
+==================================================
+7. EQUIPMENT-SPECIFIC VERIFICATION
+==================================================
+
+Generate focused two-day Full Body cases for:
+
+A. Dom + Brak sprzętu
+
+Expected safe pool includes:
+
+- id=90,
+- id=95,
+- id=105,
+- ids 116 or 118,
+- core exercises,
+- id=259.
+
+No pull may exist.
+The existing missing-pull warning must remain.
+
+B. Dom + TRX + Masa własnego ciała
+
+Expected:
+
+- TRX row is eligible,
+- pull coverage exists,
+- no cable or machine exercise appears.
+
+C. Dom + Gumy oporowe + Masa własnego ciała
+
+Expected:
+
+- resistance-band row is eligible,
+- Pallof press is eligible,
+- no TRX, cable or machine exercise appears.
+
+D. Dom + Hantle + Masa własnego ciała
+
+Expected:
+
+- Goblet squat may be selected,
+- dumbbell-only exercises may be selected,
+- id=185 remains blocked without Ławka.
+
+E. Dom + Hantle + Ławka + Masa własnego ciała
+
+Expected:
+
+- id=185 becomes eligible,
+- dumbbell-and-bench filtering works.
+
+F. Dom + Kettlebell + Masa własnego ciała
+
+Expected:
+
+- Goblet squat may be selected,
+- kettlebell deadlift may be selected.
+
+G. Siłownia + Maszyna + Wyciąg
+
+Expected primary choices may include:
+
+- machine chest press,
+- machine row,
+- neutral-grip lat pulldown,
+- seated cable row,
+- machine overhead press.
+
+==================================================
+8. BALANCE REQUIREMENTS
+==================================================
+
+For every profile with legal equipment, the weekly plan should try to include:
+
+- knee-dominant,
+- hip-dominant,
+- push,
+- pull,
+- core.
+
+Pull must be present when TRX, bands, machine or cable provides a legal
+candidate.
+
+Do not replace missing pull with another push or another knee-dominant exercise.
+
+For bodyweight-only profiles, preserve the warning rather than inserting an
+unsafe improvised pull.
+
+==================================================
+9. FOCUSED TESTS
+==================================================
+
+Verify:
+
+1. Every listed safe record has correct no-activity eligibility.
+
+2. Every explicitly excluded record remains false or non-eligible.
+
+3. Goblet squat requires Hantle or Kettlebell.
+
+4. TRX row requires TRX.
+
+5. Band row requires Gumy oporowe.
+
+6. Neutral-grip pulldown requires Wyciąg.
+
+7. id=185 requires Hantle AND Ławka.
+
+8. No-activity sorting prefers safer eligible exercises before more difficult
+   alternatives.
+
+9. Novelty does not bypass safety or suitability.
+
+10. Every equipment profile A–G produces only compatible exercises.
+
+11. Profiles B, C and G contain legal pull coverage.
+
+12. No advanced or technical exercise appears in 10 repeated generations for
+    the no-activity profiles.
+
+Run focused tests only.
+
+==================================================
+10. REPORT
+==================================================
+
+Report only:
+
+- records reviewed,
+- records changed,
+- records already correct,
+- any ID/name or difficulty mismatch,
+- exact no-activity selection-order rule,
+- generated results for profiles A–G,
+- focused test results.
+
+Stop after this package.

@@ -92,37 +92,54 @@ describe("isLocationCompatible()", () => {
 
 describe("isEquipmentCompatible()", () => {
   it("returns true when exercise has no equipment requirement", () => {
-    expect(isEquipmentCompatible([], "Sztanga, Hantle")).toBe(true);
-    expect(isEquipmentCompatible([], null)).toBe(true);
+    expect(isEquipmentCompatible([], [], "Sztanga, Hantle")).toBe(true);
+    expect(isEquipmentCompatible([], [], null)).toBe(true);
   });
 
   it("returns true for bodyweight-only exercises regardless of client equipment", () => {
-    expect(isEquipmentCompatible(["Masa własnego ciała"], null)).toBe(true);
-    expect(isEquipmentCompatible(["Masa własnego ciała"], "")).toBe(true);
-    expect(isEquipmentCompatible(["Brak sprzętu"], "Kettlebell")).toBe(true);
+    expect(isEquipmentCompatible(["Masa własnego ciała"], [], null)).toBe(true);
+    expect(isEquipmentCompatible(["Masa własnego ciała"], [], "")).toBe(true);
+    expect(isEquipmentCompatible(["Brak sprzętu"], [], "Kettlebell")).toBe(true);
   });
 
-  it("returns true when client has no equipment data (no filter applied)", () => {
-    expect(isEquipmentCompatible(["Sztanga", "Ławka"], null)).toBe(true);
-    expect(isEquipmentCompatible(["Sztanga", "Ławka"], "")).toBe(true);
+  it("returns false for non-BW exercise when client has no equipment data (normalized to BW-only)", () => {
+    expect(isEquipmentCompatible(["Sztanga", "Ławka"], [], null)).toBe(false);
+    expect(isEquipmentCompatible(["Sztanga", "Ławka"], [], "")).toBe(false);
+  });
+
+  it("returns true for BW exercise when client has no equipment data", () => {
+    expect(isEquipmentCompatible(["Masa własnego ciała"], [], null)).toBe(true);
+    expect(isEquipmentCompatible(["Masa własnego ciała"], [], "")).toBe(true);
   });
 
   it("returns true when client has at least one matching equipment item", () => {
-    expect(isEquipmentCompatible(["Sztanga", "Ławka"], "Sztanga, Hantle")).toBe(true);
+    expect(isEquipmentCompatible(["Sztanga", "Ławka"], [], "Sztanga, Hantle")).toBe(true);
   });
 
   it("returns false when none of the required equipment is available", () => {
-    expect(isEquipmentCompatible(["Sztanga", "Ławka"], "Hantle, Kettlebell")).toBe(false);
+    expect(isEquipmentCompatible(["Sztanga", "Ławka"], [], "Hantle, Kettlebell")).toBe(false);
   });
 
   it("uses substring matching: 'Sztanga olimpijska' matches client 'Sztanga'", () => {
-    expect(isEquipmentCompatible(["Sztanga olimpijska"], "Sztanga")).toBe(true);
+    expect(isEquipmentCompatible(["Sztanga olimpijska"], [], "Sztanga")).toBe(true);
   });
 
   it("returns true for mixed bodyweight + equipment when client has nothing (bodyweight accessible)", () => {
     // Only non-bodyweight equipment is checked against client — if all non-BW are
     // unavailable then false; but if there are no non-BW items → true.
-    expect(isEquipmentCompatible(["Masa własnego ciała"], "")).toBe(true);
+    expect(isEquipmentCompatible(["Masa własnego ciała"], [], "")).toBe(true);
+  });
+
+  it("AND check: Hantle alone does not satisfy Hantle AND Ławka", () => {
+    expect(isEquipmentCompatible(["Hantle"], ["Ławka"], "Hantle")).toBe(false);
+  });
+
+  it("AND check: Hantle + Ławka satisfies Hantle AND Ławka", () => {
+    expect(isEquipmentCompatible(["Hantle"], ["Ławka"], "Hantle,Ławka")).toBe(true);
+  });
+
+  it("AND check: BW does not bypass required_equipment_all", () => {
+    expect(isEquipmentCompatible(["Masa własnego ciała"], ["Ławka"], "Masa własnego ciała")).toBe(false);
   });
 });
 

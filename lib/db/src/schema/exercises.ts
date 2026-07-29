@@ -12,6 +12,8 @@ export const exercisesTable = pgTable("exercises", {
   mainMuscleGroup: text("main_muscle_group").notNull(),
   secondaryMuscleGroups: text("secondary_muscle_groups").array().notNull().default([]),
   equipment: text("equipment").array().notNull().default([]),
+  /** equipmentAllOf: every listed item must be available (AND semantics). */
+  requiredEquipmentAll: text("required_equipment_all").array().notNull().default([]),
   equipmentOther: text("equipment_other"),
   trainingLocation: text("training_location").array().notNull().default([]),
   difficultyLevel: text("difficulty_level"),

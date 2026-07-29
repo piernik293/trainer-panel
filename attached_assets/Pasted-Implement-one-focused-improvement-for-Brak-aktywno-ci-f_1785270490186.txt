@@ -1,0 +1,311 @@
+Implement one focused improvement for:
+
+- Brak aktywności fizycznej
+- Początkujący
+
+The task has two parts:
+
+1. simplify the weekly volume presentation for the trainer,
+2. improve exercise-selection balance for general development.
+
+Do not run a broad audit.
+Do not use subagents.
+Do not redesign the whole generator.
+
+Do not modify:
+
+- weeklyAbsoluteCeiling values,
+- volume status percentage thresholds,
+- proposal-card calculations,
+- recovery adjustments,
+- split recommendation,
+- number of training days,
+- session-duration estimator,
+- tempo, rest or RIR,
+- Intermediate or Advanced volume presentation,
+- plyometric logic.
+
+Read only the active weekly volume panel, active exercise-selection flow and
+directly related focused tests.
+
+==================================================
+PART 1 — TRAINER INFORMATION BOX
+==================================================
+
+In the generated-plan weekly volume panel, when the client level is:
+
+- Brak aktywności fizycznej
+or
+- Początkujący
+
+display an information box above the muscle-volume list.
+
+Heading:
+
+“Kontrola objętości dla rozwoju ogólnego”
+
+Body:
+
+“Na tym etapie priorytetem jest rozwój ogólny całego ciała, nauka podstawowych
+wzorców ruchowych oraz stopniowe budowanie tolerancji na wysiłek. Dlatego system
+eksponuje głównie większe grupy mięśniowe. Mniejsze partie nadal są uwzględniane
+poprzez pracę bezpośrednią i pośrednią, ale ich niższa objętość nie zawsze
+oznacza błąd planu.”
+
+Keep this text visible without requiring expansion.
+
+==================================================
+PART 2 — SIMPLIFIED MUSCLE PRESENTATION
+==================================================
+
+For Brak aktywności fizycznej and Początkujący, divide the weekly volume panel
+into two sections.
+
+Main visible section:
+
+“Główne obszary”
+
+Show these targets normally:
+
+- Mięsień czworogłowy uda
+- Mięśnie pośladkowe
+- Grupa kulszowo-goleniowa
+- Mięśnie naramienne
+- Mięsień piersiowy większy
+- Mięsień najszerszy grzbietu
+- Mięsień czworoboczny grzbietu
+- Brzuch
+
+Collapsed section:
+
+“Szczegóły mniejszych partii”
+
+Place inside:
+
+- Mięsień trójgłowy łydki
+- Przywodziciele
+- Mięsień trójgłowy ramienia
+- Mięsień dwugłowy ramienia
+
+Below the collapsed-section heading display:
+
+“Mniejsze partie są nadal liczone. Ich niższy wynik na tym poziomie nie zawsze
+wymaga dodawania osobnego ćwiczenia izolowanego.”
+
+Do not show a red aggregate alarm on the collapsed-section heading.
+
+After expansion, preserve the real calculated values and existing statuses for
+the smaller targets.
+
+Do not remove these targets from calculation.
+This is presentation only.
+
+For:
+
+- Średniozaawansowany
+- Zaawansowany
+
+keep the current full list visible without this simplification.
+
+==================================================
+PART 3 — GENERAL-DEVELOPMENT SELECTION PRIORITY
+==================================================
+
+Improve only the active exercise-selection logic for:
+
+- Brak aktywności fizycznej
+- Początkujący
+
+Do not try to make every small muscle target green.
+
+For these levels, exercise selection must first create balanced coverage of
+major movement patterns.
+
+Required weekly movement-pattern coverage:
+
+1. knee-dominant lower-body movement,
+2. hip-dominant or hamstring movement,
+3. upper-body push,
+4. upper-body pull,
+5. simple core or trunk-stability movement.
+
+Use existing exercise metadata, equipment restrictions, contraindications,
+trainer restrictions and duration rules.
+
+Do not hardcode exercise names when suitable movement-pattern metadata already
+exists.
+
+==================================================
+PART 4 — SPLIT-AWARE COVERAGE
+==================================================
+
+For Full Body sessions:
+
+- every session should contain a lower-body movement,
+- every session should contain a push,
+- every session should contain a pull,
+- distribute knee-dominant and hip-dominant work across the week.
+
+For Upper / Lower:
+
+- every Upper session should contain at least one push and one pull,
+- across Lower sessions include both knee-dominant and hip-dominant work.
+
+For another split:
+
+- ensure all five required movement patterns are represented across the week.
+
+Do not add exercises beyond session-duration capacity just to satisfy a small
+muscle target.
+
+==================================================
+PART 5 — BALANCING BEFORE ACCESSORIES
+==================================================
+
+Before selecting or preserving an isolation exercise for:
+
+- calves,
+- adductors,
+- biceps,
+- triceps,
+
+check whether any major movement pattern is missing.
+
+If a major pattern is missing, prioritise a legal compound or simple
+multi-joint exercise for that pattern.
+
+Examples of required behaviour:
+
+- If lats and back pulling volume are zero, do not preserve a redundant arm
+  isolation instead of selecting a pull.
+
+- If quadriceps and glutes are already highly covered but hamstrings are very
+  low, prefer a legal hip hinge or hamstring movement over another redundant
+  knee-dominant exercise.
+
+- If chest and triceps are covered but back is missing, prefer a pull over
+  another push.
+
+- Do not add a direct biceps exercise solely because biceps is below its target
+  when pulling work is still missing.
+
+- Do not add a direct triceps exercise solely because triceps is below its
+  target when balanced pushing and pulling have not been established.
+
+Use the existing effective-volume calculator when comparing candidate exercises
+or swaps.
+
+==================================================
+PART 6 — MINIMAL REPAIR, NOT FULL REGENERATION
+==================================================
+
+Implement the smallest safe balancing step in the current selection flow.
+
+Preferred sequence:
+
+1. generate/select exercises using the existing flow,
+2. detect missing major movement patterns,
+3. identify the lowest-priority redundant exercise,
+4. replace it with one legal exercise covering the missing pattern,
+5. recalculate effective volume and duration,
+6. accept the swap only if restrictions and session-duration limits remain
+   satisfied.
+
+Do not repeatedly rebuild the whole plan.
+
+Maximum one balancing pass per missing major movement pattern.
+
+Do not remove manually selected or locked exercises.
+
+==================================================
+PART 7 — CURRENT FAILURE CASE
+==================================================
+
+Use the current Brak aktywności fizycznej result as a focused verification case.
+
+Current problematic balance includes approximately:
+
+- quadriceps: 8 / 8,
+- glutes: 7 / 8,
+- triceps: 3 / 3,
+- chest: 6 / 8,
+
+while:
+
+- hamstrings: 2 / 5,
+- delts: 1 / 8,
+- lats: 0 / 6,
+- traps: 1 / 8,
+- biceps: 0 / 3.
+
+The system must not try to solve this primarily by adding direct biceps or
+triceps isolation.
+
+It should first improve:
+
+- pulling coverage,
+- posterior-chain coverage,
+- overall push/pull balance.
+
+Do not require every displayed target to reach green.
+
+==================================================
+PART 8 — REQUIRED TESTS
+==================================================
+
+Add focused tests proving:
+
+1. Brak aktywności displays the trainer information box.
+
+2. Początkujący displays the trainer information box.
+
+3. Main muscle groups are visible by default for these levels.
+
+4. Smaller muscle groups are inside a collapsed details section.
+
+5. All targets remain present in calculations.
+
+6. Intermediate and Advanced presentation remains unchanged.
+
+7. A Full Body plan for Brak aktywności cannot contain pushing work without any
+   pulling movement when a legal pull is available.
+
+8. An Upper session contains both push and pull when legal exercises are
+   available.
+
+9. A plan with high quadriceps/glute coverage and low hamstring coverage
+   prioritises a legal hip-dominant or hamstring movement over a redundant
+   accessory.
+
+10. Missing back coverage is repaired before adding direct biceps isolation.
+
+11. Manual or locked exercises are not replaced.
+
+12. Equipment, contraindication and session-duration rules remain respected.
+
+13. Effective volume is recalculated after an accepted swap.
+
+Run focused tests only.
+
+==================================================
+REPORT
+==================================================
+
+Report only:
+
+- files changed,
+- exact UI behaviour by experience level,
+- exact selection imbalance found in the current case,
+- smallest balancing rule added,
+- current case before and after:
+  - selected exercises,
+  - movement-pattern coverage,
+  - major-group effective volume,
+  - estimated session duration,
+- focused test results.
+
+Maximum 10 additional actions.
+
+If the active exercise metadata cannot reliably identify movement patterns,
+stop and report which metadata is missing instead of introducing exercise-name
+guessing or a broad generator rewrite.

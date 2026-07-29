@@ -1,0 +1,267 @@
+Act as a strict senior product engineer auditing an existing fitness coaching application.
+
+Do not start implementing new features yet.
+
+Your goal is to establish the real current state of the project and identify the single most important next task.
+
+Keep this audit low-cost and focused.
+
+## Rules
+
+* Do not analyze unrelated files.
+* Start with `git status`, `git diff`, the main project structure, database schema, routes, and services related to:
+
+  * clients,
+  * training interviews,
+  * exercise library,
+  * workout plan generation,
+  * plan saving and reopening.
+* Do not refactor code.
+* Do not install packages.
+* Do not modify any files.
+* Do not run the entire test suite unless absolutely necessary.
+* Prefer code inspection and a small number of targeted tests.
+* Clearly separate confirmed facts from assumptions.
+* Do not call the entire application “ready” based on one narrow test.
+
+## 1. Current feature inventory
+
+Determine the real implementation status of:
+
+1. Training interview
+2. Trainer client list
+3. Client profile
+4. Exercise library
+5. Workout plan generator
+6. Workout editor
+7. Saving and reopening plans
+8. Client panel
+9. Trainer and client authentication
+10. Trainer-client chat
+11. Progress tracking
+12. Notifications or trainer attention inbox
+
+For every feature classify it as:
+
+* Complete
+* Partially implemented
+* Started but not usable
+* Not implemented
+* Cannot confirm
+
+Mention the main files, routes, database tables, and services supporting each conclusion.
+
+## 2. Generator architecture audit
+
+Inspect how the workout generator currently handles:
+
+* client goal,
+* training experience,
+* activity level,
+* available days,
+* session duration,
+* training location,
+* available equipment,
+* injuries,
+* movement restrictions,
+* exercise preferences,
+* disliked exercises,
+* muscle priorities,
+* movement patterns,
+* exercise order,
+* weekly volume,
+* exercise duplication,
+* beginner safety,
+* inactive-client safety.
+
+For every item report:
+
+* Implemented correctly
+* Partially implemented
+* Missing
+* Implemented but risky
+* Cannot confirm
+
+Do not assume a survey field affects generation just because the field exists. Confirm that it is actually read and enforced by the generator.
+
+## 3. Exercise data quality audit
+
+Check whether exercise records contain reliable metadata for:
+
+* equipment,
+* training location,
+* difficulty level,
+* movement pattern,
+* primary muscles,
+* secondary muscles,
+* suitable for beginners,
+* suitable for inactive clients,
+* contraindications,
+* exercises that should not be combined,
+* unilateral or bilateral classification.
+
+Report:
+
+* total number of exercises,
+* number and percentage missing critical metadata,
+* duplicate or inconsistent values,
+* values using `null` or `undefined` where a strict boolean or enum is expected,
+* whether incomplete metadata can allow unsafe exercises into generated plans.
+
+Treat unknown safety values as unsafe.
+
+## 4. Critical safety-path review
+
+Confirm whether every exercise-selection path applies all required hard filters:
+
+* initial selection,
+* alternative selection,
+* fallback selection,
+* replacement lookup,
+* balancing pass,
+* cross-day deduplication,
+* safe exercise reuse,
+* manual regeneration of a slot.
+
+Check these restrictions independently:
+
+1. `suitableForNoActivity === true`
+2. available equipment
+3. allowed training location
+4. injury or movement restriction
+5. appropriate experience level
+
+A filter working in one path does not prove it works in every path.
+
+## 5. Minimal targeted verification
+
+Use existing test clients and existing data where possible.
+
+Perform only a small targeted verification for:
+
+* inactive client with no equipment,
+* inactive client with some equipment,
+* active client as a regression control,
+* client with unavailable equipment,
+* client with an injury or prohibited movement pattern,
+* a case where no valid exercise exists for a slot.
+
+Verify that:
+
+* no unsafe exercise is selected,
+* no exercise requiring unavailable equipment is selected,
+* no prohibited movement is selected,
+* active clients are not incorrectly restricted,
+* an impossible optional slot is skipped,
+* skipping a slot creates a visible warning,
+* safe reuse never bypasses any hard filter.
+
+Do not create fake passing results if the current database does not contain a required test profile. Clearly say when a scenario could not be tested.
+
+## 6. Persistence review
+
+Check whether a generated plan preserves enough information after saving and reopening to understand:
+
+* generator warnings,
+* generation date,
+* generator version,
+* trainer edits,
+* whether the trainer approved the generated draft,
+* whether the reopened plan still passes the current safety rules.
+
+Do not modify the schema. Only report the current state and risks.
+
+## 7. Product and UX risks
+
+Briefly inspect the main trainer flow:
+
+training interview → generate draft → review warnings → edit → save → reopen
+
+Identify only confirmed problems that could cause:
+
+* trainer confusion,
+* silent plan defects,
+* lost work,
+* incorrect exercise selection,
+* excessive onboarding time,
+* difficulty editing the generated plan.
+
+Do not perform a full visual redesign audit.
+
+## Required final report
+
+Return the report using this exact structure:
+
+# Current project state
+
+A concise description of what the application can currently do from start to finish.
+
+# Feature inventory
+
+A table with:
+
+Feature | Status | Evidence | Main gap
+
+# Generator coverage
+
+A table with:
+
+Input or rule | Status | Enforced in code | Main risk
+
+# Exercise data quality
+
+Include exact counts and percentages where possible.
+
+# Critical test results
+
+A table with:
+
+Scenario | Result | Unsafe exercises | Invalid equipment | Invalid restrictions | Warning produced
+
+# Confirmed issues
+
+Group issues as:
+
+## Critical
+
+Could generate an unsafe or invalid plan, corrupt data, expose another user’s data, or block the main workflow.
+
+## High
+
+Could create a materially incomplete or misleading plan.
+
+## Medium
+
+Causes confusion, inefficiency, or missing audit information.
+
+## Cosmetic
+
+Does not affect correctness.
+
+For every issue include:
+
+* evidence,
+* affected file or function,
+* user impact,
+* recommended fix.
+
+# What is already implemented well
+
+Maximum 5 concrete points.
+
+# Scope decision
+
+State which features should be frozen and which existing area needs work first.
+
+# Single next task
+
+Recommend exactly one next development task.
+
+The task must:
+
+* address the most serious confirmed risk,
+* be small enough for one focused implementation,
+* include a clear definition of done,
+* avoid adding unrelated functionality.
+
+Do not modify any files during this audit.

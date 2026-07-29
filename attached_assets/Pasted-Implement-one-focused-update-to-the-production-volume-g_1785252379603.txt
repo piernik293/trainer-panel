@@ -1,0 +1,715 @@
+Implement one focused update to the production volume-guideline data,
+volume proposal calculation and plan-completion logic.
+
+Do not use subagents.
+Do not run a broad audit.
+Do not create a second volume engine.
+Do not create another whole-week balancing endpoint.
+Reuse the existing production guideline source, proposal calculator,
+duration estimator, effective-volume calculator, whole-week volume calculator,
+existing POST /api/clients/:clientId/plan-draft/balance-week endpoint
+and activation validator.
+
+Do not modify:
+- tempo rules,
+- rest rules,
+- RIR rules,
+- exercise volume coefficients,
+- health restrictions,
+- avoided-exercise rules,
+- equipment restrictions,
+- intensification methods.
+
+Do not publish automatically.
+Do not create follow-up tasks.
+Do not modify unrelated files.
+
+==================================================
+PRODUCT DEFINITION
+==================================================
+
+The experience-specific maximum values below are already adapted to each
+experience level.
+
+Do not apply another automatic reduction merely because the client is:
+- Beginner,
+- Intermediate,
+- Advanced.
+
+The maximum weekly value is:
+
+- the full recommended weekly volume that the generator should attempt to use,
+- the standard maximum that should not be exceeded, except for the controlled
+  priority extension described later.
+
+The generator must start by considering the full maximum weekly values.
+
+It may reduce them only when required by:
+
+- trainingDaysPerWeek,
+- sessionDurationMinutes,
+- existing recovery evaluation,
+- stress,
+- sleep,
+- physical work,
+- health restrictions,
+- exercise availability,
+- equipment,
+- required movement-pattern coverage,
+- actual plan feasibility.
+
+==================================================
+TERMINOLOGY
+==================================================
+
+Remove the user-facing term:
+
+“Limit absolutny”
+
+Replace it with:
+
+“Maksymalna rekomendowana objętość tygodniowa”
+
+The internal database column or property name may remain unchanged if renaming
+it would require a migration or affect existing integrations.
+
+Do not create a duplicate field.
+
+The value:
+
+- is the standard weekly target the generator should attempt to realise,
+- must normally generator should attempt to realise,
+- must normally not be exceeded,
+- may only be exceeded through the controlled priority extension described later.
+
+==================================================
+VOLUME VALUES
+==================================================
+
+Update the existing active production guideline version used by the generator.
+
+Do not create duplicate guideline rows.
+
+--------------------------------------------------
+BRAK AKTYWNOŚCI FIZYCZNEJ
+--------------------------------------------------
+
+Update only the existing max/week values.
+
+Keep all other current rules for this level unchanged.
+
+Do not invent new max/session values for Brak aktywności.
+
+Target                                      max/week
+
+Mięsień czworogłowy uda                         8
+Mięśnie pośladkowe                              8
+Mięsień trójgłowy łydki                         3
+Przywodziciele                                  4
+Grupa kulszowo-goleniowa                        5
+Mięśnie naramienne                              8
+Mięsień trójgłowy ramienia                      3
+Mięsień piersiowy większy                       8
+Mięsień najszerszy grzbietu                     6
+Mięsień czworoboczny grzbietu                   8
+Mięsień dwugłowy ramienia                       3
+Brzuch                                          6
+
+Important:
+
+These are active guideline max/week values.
+
+They are not necessarily the final proposal after the existing:
+- adaptation rules,
+- recovery rules,
+- availability rules,
+- Brak aktywności restrictions.
+
+Keep the current:
+- simple exercise selection,
+- movement-pattern focus,
+- adaptation logic,
+- priority handling,
+- duration rules,
+- warm-up rules
+
+for Brak aktywności unchanged.
+
+--------------------------------------------------
+POCZĄTKUJĄCY
+--------------------------------------------------
+
+Target                                      max/session   max/week
+
+Mięsień czworogłowy uda                         4            10
+Mięśnie pośladkowe                              4            10
+Mięsień trójgłowy łydki                         2             4
+Przywodziciele                                  3             6
+Grupa kulszowo-goleniowa                        3             6
+Mięśnie naramienne                              4            12
+Mięsień trójgłowy ramienia                      2             4
+Mięsień piersiowy większy                       4            10
+Mięsień najszerszy grzbietu                     4             8
+Mięsień czworoboczny grzbietu                   4            12
+Mięsień dwugłowy ramienia                       2             4
+
+--------------------------------------------------
+ŚREDNIOZAAWANSOWANY
+--------------------------------------------------
+
+Target                                      max/session   max/week
+
+Mięsień czworogłowy uda                         8            20
+Mięśnie pośladkowe                              8            20
+Mięsień trójgłowy łydki                         4             8
+Przywodziciele                                  4             8
+Grupa kulszowo-goleniowa                        6            16
+Mięśnie naramienne                              6            20
+Mięsień trójgłowy ramienia                      3             8
+Mięsień piersiowy większy                       6            16
+Mięsień najszerszy grzbietu                     4            12
+Mięsień czworoboczny grzbietu                   6            16
+Mięsień dwugłowy ramienia                       3             8
+
+--------------------------------------------------
+ZAAWANSOWANY
+--------------------------------------------------
+
+Target                                      max/session   max/week
+
+Mięsień czworogłowy uda                        10            30
+Mięśnie pośladkowe                             10            30
+Mięsień trójgłowy łydki                         6            12
+Przywodziciele                                  6            12
+Grupa kulszowo-goleniowa                        8            24
+Mięśnie naramienne                              8            24
+Mięsień trójgłowy ramienia                      4            16
+Mięsień piersiowy większy                       8            20
+Mięsień najszerszy grzbietu                     6            20
+Mięsień czworoboczny grzbietu                   8            24
+Mięsień dwugłowy ramienia                       4            16
+
+Keep the existing Brzuch values for:
+- Początkujący,
+- Średniozaawansowany,
+- Zaawansowany
+
+unchanged.
+
+Keep the existing Core / brzuch direct-series rule unchanged.
+
+Core / brzuch remains a structural direct-series requirement.
+It must not become an additional duplicate effective-volume target.
+
+==================================================
+MAX/SESSION INTERPRETATION
+==================================================
+
+max/session applies to the total effective-volume credit received by one target
+inside one workout day.
+
+Use the existing production volume coefficients and effective-volume calculator.
+
+max/session is not:
+
+- the total number of every raw exercise set in the workout,
+- a new direct-set counter,
+- a replacement for the existing effective-volume calculation,
+- a separate independent volume engine.
+
+Example:
+
+Pressing exercises may credit effective volume to:
+- chest,
+- delts,
+- triceps.
+
+Pulling exercises may credit effective volume to:
+- lats,
+- trapezius,
+- biceps.
+
+All direct and indirect effective-volume contributions inside the day must be
+included when checking max/session.
+
+Do not create a second implementation of these calculations.
+
+==================================================
+PROPOSAL CALCULATION
+==================================================
+
+Locate and reuse the existing volume-proposal calculator.
+
+For Beginner, Intermediate and Advanced remove these automatic starting rules:
+
+- Beginner automatically starting at 25% of the recommended range,
+- Intermediate automatically starting around the midpoint,
+- Advanced automatically starting around the midpoint.
+
+New calculation:
+
+1. Start every listed target at max/week.
+
+2. Keep and apply the existing recovery and restriction logic, including:
+- stress,
+- sleep,
+- recovery,
+- physical work,
+- health restrictions,
+- any other currently supported recovery inputs.
+
+Do not delete or rewrite these existing mechanisms.
+
+3. Evaluate whether the full max/week values can reasonably be realised using:
+- trainingDaysPerWeek,
+- sessionDurationMinutes,
+- max/session,
+- available equipment,
+- available exercises,
+- avoided exercises,
+- health restrictions,
+- required movement patterns,
+- current effective-volume coefficients,
+- current duration estimator.
+
+4. Keep the full max/week value when it can reasonably be realised.
+
+5. Reduce the proposal only when the complete volume cannot reasonably fit.
+
+6. Every reduction from max/week must return a visible reason.
+
+Example:
+
+“Maksymalna rekomendowana objętość: 20 pkt.
+Propozycję obniżono do 17 pkt. z powodu liczby dni,
+dostępnego czasu i regeneracji.”
+
+Do not silently reduce proposals.
+
+==================================================
+BALANCED PRIORITY REDUCTION
+==================================================
+
+Protect targets in this order:
+
+1. priority 1,
+2. priority 2,
+3. priority 3,
+4. non-priority targets.
+
+Therefore, when reductions are necessary, reduce in this order:
+
+1. non-priority targets,
+2. priority 3,
+3. priority 2,
+4. priority 1 last.
+
+Priority protection must be visible, but the remaining body must not become
+severely underdeveloped.
+
+Do not repeatedly reduce one muscle while comparable muscles remain at their
+maximum.
+
+Within the same priority group:
+
+1. Reduce exactly one effective-volume point or the smallest supported step.
+2. Calculate:
+   current proposed volume / maxWeeklyVolume.
+3. Select a target currently using the highest percentage of its maximum.
+4. Recalculate after every reduction.
+5. Rotate reductions across comparable targets.
+6. Preserve the existing recommended minimum whenever reasonably possible.
+
+Do not produce results such as:
+
+- priority target at 100%,
+- one non-priority muscle at 30%,
+- all other non-priority muscles at 100%
+
+unless a real health, equipment, exercise-availability or structural conflict
+makes this unavoidable.
+
+One selected user priority may resolve to multiple internal target IDs.
+
+All targets originating from the same selected priority must retain the same
+priority rank.
+
+Do not flatten one user priority into several different priority positions.
+
+==================================================
+BASE WEEK GENERATION
+==================================================
+
+Generate the complete base week using the current generator.
+
+Do not redesign the current per-day generation architecture.
+
+Keep the existing per-day BalancePass.
+
+After all days have been generated, reuse the existing whole-week balancing
+endpoint:
+
+POST /api/clients/:clientId/plan-draft/balance-week
+
+Do not create another whole-week endpoint.
+
+The whole-week pass may modify working-set counts in any generated day,
+including earlier days.
+
+==================================================
+PLAN COMPLETION
+==================================================
+
+After the complete base week has been generated and the existing whole-week
+balancing pass has run, execute one server-side completion pass.
+
+Do not implement the completion algorithm in React.
+
+The completion pass must:
+
+1. Calculate realised effective weekly volume for every target.
+2. Compare realised volume with the final proposal.
+3. Calculate the estimated duration of every workout day.
+4. Detect meaningful remaining deficits.
+5. Continue adding useful work when:
+   - meaningful deficits remain,
+   - session time remains,
+   - max/session allows it,
+   - recovery allows it,
+   - health and equipment restrictions allow it.
+
+Completion order:
+
+1. priority 1,
+2. priority 2,
+3. priority 3,
+4. non-priority target with the largest proportional deficit.
+
+For every completion step:
+
+1. First consider adding one working set to a suitable existing exercise.
+2. Recalculate effective volume and duration.
+3. Respect max/session.
+4. When another exercise is needed, select a compatible exercise that adds:
+   - a different movement direction,
+   - a different muscle function,
+   - a different resistance profile,
+   - or necessary direct work.
+5. Do not add a nearly identical exercise variant without a clear reason.
+6. Recalculate the complete week after every addition.
+7. Recalculate the affected day duration after every addition.
+8. Preserve:
+   - health restrictions,
+   - avoided exercises,
+   - equipment restrictions,
+   - required movement patterns.
+
+Multiple compound exercises may coexist in one session when they have
+meaningfully different functions.
+
+Valid example:
+
+- squat,
+- hip hinge,
+- hip thrust.
+
+Do not create a rigid rule allowing only one compound movement family per day.
+
+A selected session duration is a real client preference.
+
+Example:
+
+When an Advanced client selected 90 minutes and an Upper session currently lasts
+approximately 47 minutes while important volume deficits remain, the generator
+must continue adding useful work when safe and feasible.
+
+Do not require every workout to last exactly the selected time.
+
+Do not add random exercises only to fill minutes.
+
+Stop completion when:
+
+- all final proposals are satisfied,
+- the next legal addition would exceed sessionDurationMinutes,
+- max/session would be exceeded,
+- max/week or the allowed priority extension would be exceeded,
+- recovery or restrictions prevent additional work,
+- no safe compatible exercise remains.
+
+==================================================
+CONTROLLED PRIORITY EXTENSION
+==================================================
+
+The normal max/week remains the standard target.
+
+In exceptional cases the generator may exceed normal max/week only for priority
+muscles.
+
+Allowed weekly extension:
+
+- priority 1: up to 10% above normal max/week,
+- priority 2: up to 10% above normal max/week,
+- priority 3: up to 5% above normal max/week.
+
+Do not round the internal extended ceiling to a whole number.
+
+Effective-volume values may remain decimal.
+
+The UI may display one or two decimal places.
+
+Automatic priority extension is allowed only when all conditions are met:
+
+- experience level is Intermediate or Advanced,
+- training goal is physique, hypertrophy, recomposition or another compatible
+  muscle-development goal,
+- recovery evaluation permits additional volume,
+- trainingDaysPerWeek allows the work to be distributed sensibly,
+- every affected day remains within sessionDurationMinutes,
+- max/session remains respected,
+- no relevant health restriction prevents additional work,
+- required movement patterns remain preserved,
+- non-priority muscles have reached their final adjusted proposals,
+- the additional work does not require unnecessary near-duplicate exercises.
+
+Do not use automatic priority extension for:
+
+- Brak aktywności fizycznej,
+- Początkujący.
+
+The generator must first satisfy the normal max/week proposal.
+
+Only after normal proposals are satisfied may the completion pass consider
+controlled priority extension.
+
+Examples:
+
+Priority 1:
+
+“Maksymalna rekomendowana objętość: 20 pkt.
+Rozszerzenie dla priorytetu 1: +2 pkt.
+Końcowa propozycja: 22 pkt.”
+
+Priority 2:
+
+“Maksymalna rekomendowana objętość: 20 pkt.
+Rozszerzenie dla priorytetu 2: +2 pkt.
+Końcowa propozycja: 22 pkt.”
+
+Priority 3:
+
+“Maksymalna rekomendowana objętość: 20 pkt.
+Rozszerzenie dla priorytetu 3: +1 pkt.
+Końcowa propozycja: 21 pkt.”
+
+The existing whole-week balancer must treat a valid calculated priority
+extension as permitted.
+
+It must not reduce a valid priority extension back to normal max/week.
+
+Anything above the calculated extended ceiling must never be generated
+automatically.
+
+==================================================
+FINAL VALIDATION AFTER COMPLETION
+==================================================
+
+Completion must not be the final unchecked operation.
+
+After the completion pass finishes:
+
+1. Recalculate complete-week effective volume.
+2. Recalculate effective volume for every workout day.
+3. Recalculate every workout-day duration.
+4. Rerun the existing whole-week ceiling validation.
+5. Rerun the existing whole-week balancer if required.
+6. Rerun activation eligibility.
+7. Return the final validated week.
+
+The final order must be:
+
+- generate complete base week,
+- run existing whole-week balance,
+- run completion pass,
+- calculate controlled priority extension when allowed,
+- recalculate complete-week effective volume,
+- validate max/session,
+- validate normal or extended max/week,
+- validate duration,
+- run activation eligibility,
+- return final result.
+
+==================================================
+WHOLE-WEEK SAFETY RESULT
+==================================================
+
+The current whole-week endpoint may return a best-effort result even when
+invalid volume remains above the applicable ceiling.
+
+Change only this narrow behaviour.
+
+If volume remains above the applicable ceiling after all legal corrections,
+return:
+
+needsTrainerDecision: true
+
+Include:
+
+- target ID,
+- target name,
+- current effective volume,
+- normal max/week,
+- applicable extended ceiling when relevant,
+- remaining overage,
+- constraints preventing correction.
+
+Such a plan must not be returned as automatically activation-eligible.
+
+A valid controlled priority extension must not be treated as an invalid overage.
+
+Do not silently return unresolved excessive volume.
+
+==================================================
+UI
+==================================================
+
+For every target display:
+
+- existing recommended range,
+- “Maksymalna rekomendowana objętość tygodniowa”,
+- final system proposal,
+- current realised effective volume,
+- reason for every reduction,
+- reason and amount of any controlled priority extension.
+
+Do not display the phrase:
+
+“Limit absolutny”
+
+in user-facing UI.
+
+Example reduction display:
+
+“Maksymalna rekomendowana objętość: 20 pkt.
+Propozycja systemu: 17 pkt.
+Obniżono z powodu liczby dni, dostępnego czasu i regeneracji.”
+
+Example extension display:
+
+“Maksymalna rekomendowana objętość: 20 pkt.
+Rozszerzenie priorytetowe: +2 pkt.
+Końcowa propozycja: 22 pkt.”
+
+==================================================
+FOCUSED TESTS
+==================================================
+
+Add focused tests proving:
+
+1. All listed max/week values are loaded correctly.
+
+2. All listed max/session values are loaded correctly.
+
+3. The active guideline max/week values for Brak aktywności are exactly:
+
+- Mięsień czworogłowy uda: 8
+- Mięśnie pośladkowe: 8
+- Mięsień trójgłowy łydki: 3
+- Przywodziciele: 4
+- Grupa kulszowo-goleniowa: 5
+- Mięśnie naramienne: 8
+- Mięsień trójgłowy ramienia: 3
+- Mięsień piersiowy większy: 8
+- Mięsień najszerszy grzbietu: 6
+- Mięsień czworoboczny grzbietu: 8
+- Mięsień dwugłowy ramienia: 3
+- Brzuch: 6
+
+These are guideline maximum values, not necessarily the final proposal after
+existing Brak aktywności recovery and availability adjustments.
+
+4. Existing Brzuch values for Beginner, Intermediate and Advanced remain
+unchanged.
+
+5. Existing Core / brzuch direct-series rules remain unchanged.
+
+6. Beginner no longer automatically starts at 25% of its range.
+
+7. Intermediate no longer automatically starts at the midpoint.
+
+8. Advanced no longer automatically starts at the midpoint.
+
+9. With sufficient days, session time and recovery, the proposal can reach
+normal max/week.
+
+10. With insufficient availability, non-priority targets are reduced first.
+
+11. Reductions rotate across comparable non-priority targets instead of
+collapsing one target.
+
+12. Priority 3 is reduced before priority 2.
+
+13. Priority 2 is reduced before priority 1.
+
+14. max/session is calculated using existing effective-volume coefficients,
+including indirect contributions.
+
+15. No generated target exceeds max/session.
+
+16. Priority 1 can reach up to +10% only under valid conditions.
+
+17. Priority 2 can reach up to +10% only under valid conditions.
+
+18. Priority 3 can reach up to +5% only under valid conditions.
+
+19. Brak aktywności never receives automatic priority extension.
+
+20. Beginner never receives automatic priority extension.
+
+21. A 90-minute Advanced Upper day with meaningful volume deficits continues
+completion instead of stopping near 47 minutes.
+
+22. Completion does not add unnecessary near-duplicate exercise variants.
+
+23. Completion allows different compound functions such as:
+- squat,
+- hip hinge,
+- hip thrust.
+
+24. After completion, complete-week volume and duration are recalculated.
+
+25. After completion, activation eligibility is rerun.
+
+26. A residual invalid overage returns:
+needsTrainerDecision: true
+
+and blocks automatic activation eligibility.
+
+27. A valid controlled priority extension is accepted by the whole-week
+balancer.
+
+28. The user-facing UI no longer displays “Limit absolutny”.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Report only:
+
+- files changed,
+- active production guideline rows changed,
+- previous and new user-facing terminology,
+- final max/session values,
+- final max/week values,
+- where the proposal now starts from max/week,
+- how trainingDaysPerWeek and sessionDurationMinutes affect feasibility,
+- how the existing recovery logic reduces proposals,
+- exact priority-aware reduction order,
+- how balanced reduction rotation works,
+- where the completion pass runs,
+- exact controlled priority extension rules,
+- where final post-completion validation runs,
+- focused test results,
+- one before/after example for a 90-minute Advanced Upper day.
+
+Maximum 30 actions.
+Do not modify unrelated files.

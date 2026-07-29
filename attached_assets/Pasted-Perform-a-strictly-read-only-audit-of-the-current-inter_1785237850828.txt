@@ -1,0 +1,201 @@
+Perform a strictly read-only audit of the current interview and workout-plan generator.
+
+Do not implement, edit, refactor, migrate, seed, commit or publish anything.
+Do not create follow-up code or automatically start suggested tasks.
+
+The purpose is to identify which agreed features already exist and are actively
+used by the generator, which only exist in the UI/database, and which are missing.
+
+AUDIT ONLY THESE AREAS:
+
+1. TRAINING METHODS
+
+Search for:
+- supersets
+- drop sets
+- rest-pause
+- myo-reps
+- top set + back-off
+- cluster sets
+
+For each method report:
+- interview field or UI option,
+- API and database storage,
+- whether the generator reads it,
+- whether it structurally changes the generated plan,
+- whether it changes sets, reps, RIR or rest,
+- whether the editor supports it,
+- whether duration and volume calculations understand it,
+- tests.
+
+Do not treat a method as implemented merely because its name exists in an enum,
+form field, note or database column.
+
+2. SESSION TIME AND WARM-UP
+
+Audit whether the system currently has:
+- mandatory 10-minute warm-up,
+- warm-up included in total duration,
+- duration selected in the interview,
+- working time based on reps and tempo,
+- inter-set rests counted as sets minus 1,
+- setup and transition time,
+- unilateral exercise time,
+- session buffer,
+- live recalculation after editing the plan.
+
+Report the exact current duration formula if one exists.
+
+Check whether the UI currently supports:
+- green: within selected duration,
+- orange: 1–10 minutes above duration,
+- red: more than 10 minutes above duration.
+
+Confirm whether the system silently removes exercises, reduces sets or shortens
+rests to fit the time.
+
+3. REST-PERIOD LOGIC
+
+Report every current generator rule assigning rest periods.
+
+Check whether rest currently depends on:
+- training goal,
+- individual day goal,
+- exercise type,
+- repetition range,
+- planned RIR,
+- power or plyometric classification.
+
+Check whether exercises are classified as:
+- primary compound,
+- accessory/secondary compound,
+- isolation,
+- power/plyometric,
+- cardio.
+
+Check whether a heavy accessory can be recognised from reps, RIR and day goal,
+rather than only from the exercise name.
+
+4. EXPERIENCE LEVELS
+
+Audit the exact active generator behaviour for:
+- Brak aktywności fizycznej
+- Początkujący
+- Średniozaawansowany
+- Zaawansowany
+
+Check whether the following already exists:
+
+Brak aktywności:
+- adaptation-focused plan,
+- simple exercises,
+- approximately 90-second rests,
+- high RIR,
+- main workout target 35–45 minutes,
+- recommended maximum main-workout time 50 minutes,
+- no intensification methods.
+
+Początkujący:
+- general strength-and-muscle foundation,
+- one main goal,
+- isolation rest around 90 seconds,
+- machines/accessories 90–120 seconds,
+- compounds 120–180 seconds.
+
+Średniozaawansowany:
+- one main mesocycle goal,
+- 1–2 muscle priorities,
+- one style within the selected goal,
+- access to controlled training methods,
+- no separate goal for every training day.
+
+Zaawansowany:
+- overall plan goal,
+- optional day-specific goals,
+- day-specific muscle priorities,
+- mixed strength, hypertrophy and power sessions,
+- access to training methods,
+- whole-week consistency validation.
+
+5. TRAINING GOALS
+
+Audit current generator behaviour for:
+- Budowa sylwetki
+- Zwiększenie siły
+- Redukcja tkanki tłuszczowej
+- Poprawa kondycji
+- Poprawa sprawności
+- Cel sportowy
+
+For every goal report current differences in:
+- exercise selection,
+- sets and reps,
+- RIR,
+- rest,
+- cardio,
+- weekly structure.
+
+For Poprawa kondycji specifically check whether the resistance plan includes:
+- knee-dominant movement,
+- hip-dominant movement,
+- calves,
+- core,
+- at least one upper-body push,
+- at least one upper-body pull.
+
+6. DIRECT ARM TRAINING
+
+Check whether the generator currently enforces:
+
+Brak aktywności:
+- no required direct arm isolation.
+
+Początkujący:
+- direct arms in 1–2 sessions,
+- one biceps and one triceps exercise when used,
+- normally 2–3 sets.
+
+Średniozaawansowany:
+- direct biceps and triceps in at least 2 separate sessions,
+- normally one exercise for each muscle in each selected session,
+- normally 3 sets.
+
+Zaawansowany:
+- direct arms in at least 2 separate sessions,
+- normally 3–4 sets per exercise,
+- optional second exercise when time, priority and volume allow.
+
+Compound push/pull volume must not be treated as satisfying the direct exercise
+frequency requirement.
+
+7. ADVANCED DAY GOALS
+
+Check whether an advanced user can currently configure examples such as:
+- strength — chest priority,
+- hypertrophy — back priority,
+- power — lower-body priority,
+- hypertrophy — traps priority.
+
+Check whether “Kaptury” can be a user-facing alias for the existing
+“Mięsień czworoboczny grzbietu” target without creating a duplicate target.
+
+FINAL REPORT
+
+Return one compact table with statuses:
+- Fully implemented and actively used
+- Partially implemented
+- UI/database only
+- Missing
+- Incorrect or unsafe
+
+For every status provide:
+- exact file,
+- exact function,
+- API/database field when relevant,
+- short evidence.
+
+Then propose the smallest implementation order that reuses current code.
+
+Do not make any changes.
+Do not publish.
+Do not create or start follow-up tasks.

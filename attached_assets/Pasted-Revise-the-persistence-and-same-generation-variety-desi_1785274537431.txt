@@ -1,0 +1,134 @@
+Revise the persistence and same-generation variety design one final time.
+
+Do not modify code.
+Do not create a migration.
+Do not add tests.
+Do not use subagents.
+Read only Step4Exercises.tsx and the directly related generate-day and
+balance-week response types.
+
+Maximum 5 actions.
+
+==================================================
+1. COMPLETE-DRAFT SUCCESS CONDITION
+==================================================
+
+The condition:
+
+errors.length === 0
+
+is not sufficient because it only proves that individual day generation did
+not fail.
+
+Identify the exact response field or condition proving that:
+
+- all required days were generated,
+- balance-week completed successfully,
+- the final complete draft is valid.
+
+History must not be committed when balance-week fails or when the final
+whole-week result is invalid.
+
+If no final validity field currently exists, report the smallest field or
+condition that would need to be added.
+
+==================================================
+2. SAME-GENERATION EXERCISE DIVERSITY
+==================================================
+
+Persistent history only contains previous successful generations.
+
+It does not prevent an exercise selected for Day 1 from being selected again
+for Day 2 during the same generation.
+
+Define the smallest change that lets every later generate-day request receive
+the automatically selected exercise IDs from earlier days in the current
+generation.
+
+Required flow:
+
+currentGenerationUsedExerciseIds = empty Set
+
+After Day 1 succeeds:
+- add its automatically selected exercise IDs
+
+When generating Day 2:
+- send currentGenerationUsedExerciseIds to generate-day
+
+The engine must strongly avoid those IDs when another legal suitable exercise
+exists.
+
+Safety, equipment, contraindications and required movement coverage remain
+higher priority than same-week variety.
+
+Do not write these current-generation IDs to persistent history before the
+complete draft succeeds.
+
+==================================================
+3. IDEMPOTENT GENERATION ID
+==================================================
+
+Do not generate a fresh UUID inside every record-generation request.
+
+Create one generationId once at the beginning of handleGenerateFromEmpty.
+
+Use the same generationId for the final commit and for any retry of that same
+commit request.
+
+A new click on Generate must create a new generationId.
+
+The backend must validate the supplied UUID.
+
+==================================================
+4. DUPLICATE-SAFE INSERT
+==================================================
+
+A UNIQUE constraint alone does not silently deduplicate duplicate exercise IDs.
+
+The commit endpoint must:
+
+1. deduplicate exerciseIds before insertion:
+   [...new Set(exerciseIds)]
+
+2. use conflict-safe insertion:
+   ON CONFLICT (client_id, generation_id, exercise_id) DO NOTHING
+
+The unique constraint remains:
+
+UNIQUE (client_id, generation_id, exercise_id)
+
+==================================================
+5. AUTOMATIC EXERCISES ONLY
+==================================================
+
+Do not build the committed list using every exercise in the final draft unless
+the response proves they were automatically selected.
+
+Identify the exact field that distinguishes:
+
+- automatically generated exercises,
+- manual exercises,
+- locked exercises.
+
+Only automatically selected IDs enter:
+
+- current-generation variety history,
+- persistent generation history.
+
+If this metadata does not currently exist, report the smallest required
+response-field addition.
+
+==================================================
+REPORT ONLY
+==================================================
+
+Return only:
+
+- exact final-success condition,
+- exact same-generation ID flow,
+- exact idempotency flow,
+- corrected duplicate-safe insert,
+- exact source of automatically selected IDs,
+- final list of files that would change.
+
+Stop without implementation.
