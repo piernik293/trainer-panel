@@ -25,6 +25,7 @@ import {
   isSwappableAccessory,
   findReplacementForPattern,
   applyBeginnerBalancingPass,
+  runExerciseSelectionEngineV0,
   type MajorPattern,
   type V0PriorityContext,
 } from "../ExerciseSelectionEngineV0";
@@ -500,5 +501,154 @@ describe("applyBeginnerBalancingPass", () => {
     expect(names).toContain(pull.name);
     // Biceps (Wysoki = higher priority) remains
     expect(names).toContain(bicepsHigh.name);
+  });
+});
+
+// ─── Beginner hard difficulty filter ─────────────────────────────────────────
+//
+// Exercises with learningDifficulty > 2 must NEVER appear in a beginner plan.
+// Exercises with learningDifficulty ≤ 2 (or null) must be admitted.
+// Non-beginner (advanced) plans must still receive ld=4 exercises normally.
+
+/** Full pool helper — runs the engine with an explicit candidate list. */
+function runEngineWith(
+  exercises: ScoredAndFilteredExercise[],
+  ctx: V0PriorityContext,
+  altIdx = 0,
+): ScoredAndFilteredExercise[] {
+  const result = runExerciseSelectionEngineV0(
+    exercises,
+    "full_body",
+    new Set<string>(),
+    ctx,
+    { alternativeIndex: altIdx },
+  );
+  return result.exercises;
+}
+
+/** Build a minimal full-body pool that satisfies all required patterns.
+ *  Each exercise is given the specified learningDifficulty. */
+function makeMinimalFullBodyPool(ld: number | null): ScoredAndFilteredExercise[] {
+  return [
+    makeEx({ name: "Push exercise", mainMuscleGroup: "Klatka piersiowa", exerciseType: "Złożone", movementPattern: "Pchanie poziome", learningDifficulty: ld }),
+    makeEx({ name: "Pull exercise", mainMuscleGroup: "Plecy", exerciseType: "Złożone", movementPattern: "Przyciąganie poziome", learningDifficulty: ld }),
+    makeEx({ name: "Squat exercise", mainMuscleGroup: "Mięśnie czworogłowe uda", exerciseType: "Złożone", movementPattern: "Przysiad", learningDifficulty: ld }),
+    makeEx({ name: "Hinge exercise", mainMuscleGroup: "Pośladki", exerciseType: "Złożone", movementPattern: "Zawias biodrowy", learningDifficulty: ld }),
+    makeEx({ name: "Core exercise", mainMuscleGroup: "Brzuch", exerciseType: "Izolowane", movementPattern: "Stabilizacja", learningDifficulty: ld }),
+  ];
+}
+
+const CTX_ADVANCED: V0PriorityContext = {
+  isPriorityEligible: true,
+  isBeginnerClient: false,
+  tierA: [],
+  tierB: [],
+};
+
+describe("Beginner hard difficulty filter — pick()", () => {
+  it("ld=4 exercise is excluded from beginner plan (never appears in results)", () => {
+    // Pool: one ld=4 exercise per slot + one ld=2 alternative for each
+    const advancedPush = makeEx({ name: "Advanced Push ld4", mainMuscleGroup: "Klatka piersiowa", exerciseType: "Złożone", movementPattern: "Pchanie poziome", learningDifficulty: 4 });
+    const easyPush    = makeEx({ name: "Easy Push ld2",     mainMuscleGroup: "Klatka piersiowa", exerciseType: "Złożone", movementPattern: "Pchanie poziome", learningDifficulty: 2 });
+    const rest = makeMinimalFullBodyPool(1).filter((e) => e.name !== "Push exercise");
+
+    const selected = runEngineWith([advancedPush, easyPush, ...rest], CTX_BEGINNER);
+    const ids = selected.map((e) => e.id);
+
+    expect(ids).not.toContain(advancedPush.id);
+    expect(ids).toContain(easyPush.id);
+  });
+
+  it("ld=2 exercise IS admitted for beginner plan", () => {
+    const pool = makeMinimalFullBodyPool(2);
+    const selected = runEngineWith(pool, CTX_BEGINNER);
+    // All exercises in pool are ld=2 — all should be selectable
+    expect(selected.length).toBeGreaterThan(0);
+    for (const ex of selected) {
+      const orig = pool.find((p) => p.id === ex.id);
+      expect(orig?.learningDifficulty).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it("ld=null exercise IS admitted for beginner plan (null treated as easy)", () => {
+    const pool = makeMinimalFullBodyPool(null);
+    const selected = runEngineWith(pool, CTX_BEGINNER);
+    expect(selected.length).toBeGreaterThan(0);
+    for (const ex of selected) {
+      const orig = pool.find((p) => p.id === ex.id);
+      expect(orig?.learningDifficulty).toBeNull();
+    }
+  });
+
+  it("ld=4 exercise IS admitted for advanced (non-beginner) plan", () => {
+    const advancedPool = makeMinimalFullBodyPool(4);
+    const selected = runEngineWith(advancedPool, CTX_ADVANCED);
+    // Advanced clients have no difficulty cap — ld=4 exercises should be selected
+    expect(selected.length).toBeGreaterThan(0);
+    for (const ex of selected) {
+      const orig = advancedPool.find((p) => p.id === ex.id);
+      expect(orig?.learningDifficulty).toBe(4);
+    }
+  });
+
+  it("ld=3 exercise is excluded from beginner plan (boundary: only ≤ 2 allowed)", () => {
+    const ld3Push = makeEx({ name: "ld3 Push", mainMuscleGroup: "Klatka piersiowa", exerciseType: "Złożone", movementPattern: "Pchanie poziome", learningDifficulty: 3 });
+    const ld2Push = makeEx({ name: "ld2 Push", mainMuscleGroup: "Klatka piersiowa", exerciseType: "Złożone", movementPattern: "Pchanie poziome", learningDifficulty: 2 });
+    const rest = makeMinimalFullBodyPool(1).filter((e) => e.name !== "Push exercise");
+
+    const selected = runEngineWith([ld3Push, ld2Push, ...rest], CTX_BEGINNER);
+    const ids = selected.map((e) => e.id);
+
+    expect(ids).not.toContain(ld3Push.id);
+    expect(ids).toContain(ld2Push.id);
+  });
+});
+
+describe("Beginner hard difficulty filter — findReplacementForPattern()", () => {
+  it("ld=4 exercise is excluded from beginner balancing replacements", () => {
+    const advancedPull = makeEx({
+      name: "Advanced Pull ld4",
+      mainMuscleGroup: "Plecy",
+      exerciseType: "Złożone",
+      movementPattern: "Przyciąganie poziome",
+      learningDifficulty: 4,
+    });
+    const result = findReplacementForPattern("pull", [advancedPull], new Set(), CTX_BEGINNER);
+    expect(result).toBeNull();
+  });
+
+  it("ld=2 exercise IS returned as a beginner balancing replacement", () => {
+    const easyPull = makeEx({
+      name: "Easy Pull ld2",
+      mainMuscleGroup: "Plecy",
+      exerciseType: "Złożone",
+      movementPattern: "Przyciąganie poziome",
+      learningDifficulty: 2,
+    });
+    const result = findReplacementForPattern("pull", [easyPull], new Set(), CTX_BEGINNER);
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe(easyPull.id);
+  });
+
+  it("non-beginner context returns ld=4 exercise as a replacement", () => {
+    const advancedPull = makeEx({
+      name: "Advanced Pull ld4",
+      mainMuscleGroup: "Plecy",
+      exerciseType: "Złożone",
+      movementPattern: "Przyciąganie poziome",
+      learningDifficulty: 4,
+    });
+    // Use an intermediate/advanced context — no noActivity and no beginner cap
+    const ctxIntermediate: V0PriorityContext = {
+      isPriorityEligible: true,
+      isBeginnerClient: false,
+      isNoActivityClient: false,
+      tierA: [],
+      tierB: [],
+    };
+    const result = findReplacementForPattern("pull", [advancedPull], new Set(), ctxIntermediate);
+    // Intermediate/advanced: no difficulty cap, ld=4 is fully valid
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe(advancedPull.id);
   });
 });

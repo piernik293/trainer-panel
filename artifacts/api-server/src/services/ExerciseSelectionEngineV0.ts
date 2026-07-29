@@ -698,6 +698,8 @@ export function isBeginnerEligible(
   ex: { learningDifficulty?: number | null },
 ): boolean {
   const v = ex.learningDifficulty;
+  // null / undefined → no difficulty rating → treated as easy (admitted for beginners)
+  if (v == null) return true;
   return Number.isFinite(v) && Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 2;
 }
 
