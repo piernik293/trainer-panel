@@ -44,13 +44,12 @@ router.post("/survey-invites", requireAuth, async (req, res): Promise<void> => {
   const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
   const [invite] = await db
-    .insert(surveyInvitesTable)
-    .values({
-      trainerId,
-      tokenHash,
-      intendedEmail: parsed.data.intendedEmail ?? null,
-      expiresAt,
-    })
+    .update(surveyInvitesTable)
+    .set({ revokedAt: new Date() })
+    // Must own the invite; cannot revoke already-used or already-revoked ones.
+    .where(
+      eq(surveyInvitesTable.id, id),
+    )
     .returning();
 
   logger.info({ inviteId: invite.id, trainerId }, "Survey invite created");

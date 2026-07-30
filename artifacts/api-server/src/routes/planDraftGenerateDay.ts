@@ -266,29 +266,16 @@ router.post(
       const familyRule = FAMILY_BLOCKING_MAP.find((rule) =>
         lowerName.includes(rule.trigger),
       );
-      if (familyRule) {
-        // Expand: add every active exercise whose name contains the family fragment.
-        blockedFamilies.push({ avoidedName: ex.name ?? "", label: familyRule.label });
-        for (const candidate of exercises) {
-          if ((candidate.name ?? "").toLowerCase().includes(familyRule.blocksFragment)) {
-            avoidedExerciseIds.add(candidate.id);
-          }
-        }
-      } else {
-        exactOnlyBlocks.push(ex.name ?? "");
-      }
-    }
 
-    // ── Build scored pool — equipment + location hard filters applied ──────────
-    //
-    // KEY DIFFERENCE from the recommendations route:
-    //   alreadyAddedIds is intentionally absent — the pool includes ALL eligible
-    //   exercises; deduplication happens inside V0 via usedExerciseIds (empty).
+    const _surveyEquipForPushUpGuard = (survey.equipment ?? "").toLowerCase();
+    const hasWeightLoadingEquipment =
+      _surveyEquipForPushUpGuard.includes("obciążenie") ||
+      _surveyEquipForPushUpGuard.includes("talerze") ||
+      _surveyEquipForPushUpGuard.includes("pas obciążeniowy") ||
+      _surveyEquipForPushUpGuard.includes("kamizelka obciążeniowa");
     const pool = [];
-    for (const ex of completeExercises) {
-      if (!isLocationCompatible(ex.trainingLocation ?? [], survey.trainingLocation)) continue;
-      if (!isEquipmentCompatible(ex.equipment ?? [], ex.requiredEquipmentAll ?? [], survey.equipment)) continue;
 
+      const exNameLower = (ex.name ?? "").trim().toLowerCase();
       const { score, matchReasons, warnReasons } = scoreExercise(ex, survey);
 
       pool.push({
@@ -912,7 +899,7 @@ router.post(
             let worstTargetId = -1;
             let worstDeficit  = 0;
             for (const [tId, ceiling] of ceilingMap) {
-              const total   = (accumulated.get(tId) ?? 0) + (sessionTotals.get(tId) ?? 0);
+            const total = (accumulated.get(tId) ?? 0) + (finalTotals.get(tId) ?? 0);
               const deficit = total - ceiling;
               if (deficit > worstDeficit) {
                 worstDeficit  = deficit;

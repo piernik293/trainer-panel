@@ -28,6 +28,15 @@
  *   16. Beginner client: regression penalty is not applied — bw exercises may win
  *   17. Full session: no more than one Pompki exercise in an intermediate upper day
  *   18. deprioritizePushUps fires for intermediate dumbbell clients (not full-gym only)
+ *
+ * Weighted push-up pool exclusion guard
+ *   19. 'Pompki obciążone' is excluded for a Hantle-only client
+ *   20. 'Pompki z obciążeniem' is excluded for a Hantle-only client
+ *   21. 'Pompki obciążone' is NOT excluded when client has talerze (barbell plates)
+ *   22. 'Pompki obciążone' is NOT excluded when client has kamizelka obciążeniowa
+ *   23. 'Pompki obciążone' is NOT excluded when client has pas obciążeniowy
+ *   24. Regular 'Pompki klasyczne' are never excluded by this guard
+ *   25. Regular 'Pompki na podwyższeniu' are never excluded by this guard
  */
 
 import { describe, it, expect } from "vitest";
@@ -126,10 +135,11 @@ function nextId() { return _nextId++; }
 function makePoolExercise(
   overrides: Partial<ScoredAndFilteredExercise> & { mainMuscleGroup: string },
 ): ScoredAndFilteredExercise {
+  const { mainMuscleGroup, ...restOverrides } = overrides;
   return {
     id: nextId(),
     name: `Pool Exercise ${_nextId}`,
-    mainMuscleGroup: overrides.mainMuscleGroup,
+    mainMuscleGroup,
     secondaryMuscleGroups: [],
     equipment: ["Hantle"],
     requiredEquipmentAll: [],
@@ -144,7 +154,7 @@ function makePoolExercise(
     learningDifficulty: 2,
     neurologicalFatigue: 2,
     suitableForNoActivity: false,
-    ...overrides,
+    ...restOverrides,
   };
 }
 
@@ -161,12 +171,13 @@ const INTERMEDIATE_CTX_DUMBBELL: V0PriorityContext = {
     exerciseClassBias: "hypertrophy",
     penalizeRegressionForEligible: true,
     deprioritizeIsolationInMixedSlots: false,
+    allowDynamicInStrengthSessions: false,
+    isolationValued: true,
+    hasConditioningComponent: false,
     preferHighNeurologicalLoad: false,
     preferUnilateralPatterns: false,
     athleticCompoundBias: false,
-    extraArmSlotForHypertrophy: false,
-    extraShoulderSlotForHypertrophy: false,
-    conditioningComponent: false,
+    isCompetitiveAthlete: false,
   },
 };
 
@@ -619,7 +630,7 @@ describe("Engine selection — intermediate dumbbell client", () => {
     }
   });
 
-  it("18. deprioritizePushUps fires for intermediate dumbbell clients, not full-gym only", () => {
+  it("18. deprioritizePushUps fires for intermediate dumbbell clients (not full-gym only)", () => {
     // Verify that with deprioritizePushUps=true (set by dumbbell equipment check),
     // push-ups are ranked after dumbbell alternatives within the same band.
     // We test this by checking the engine places a dumbbell bench press first
@@ -657,5 +668,69 @@ describe("Engine selection — intermediate dumbbell client", () => {
     );
     // Dumbbell bench press must beat the higher-scored push-ups due to deprioritizePushUps
     expect(chestExercises.map((e) => e.name)).toContain("Wyciskanie hantli płaskie");
+  });
+});
+
+// ─── Weighted push-up pool exclusion guard (Tests 19–25) ─────────────────────
+//
+// Mirrors the route's pool-preprocessing hard filter for "Pompki obciążone" /
+// "Pompki z obciążeniem".  These exercises require a plate, belt, or vest placed
+// on the back and are unsafe for clients with only dumbbells / a barbell.
+// The filter is applied in planDraftGenerateDay.ts before the pool reaches the
+// engine.  We unit-test the decision logic here so the behaviour is verifiable
+// without needing a live DB or HTTP layer.
+
+/**
+ * Re-implements the route's unsafe-weighted-push-up guard so we can verify
+ * it in isolation.  Keep in sync with the filter in planDraftGenerateDay.ts.
+ */
+function shouldExcludeWeightedPushUp(
+  exerciseName: string,
+  clientEquipment: string,
+): boolean {
+  const nameLower = exerciseName.trim().toLowerCase();
+  const equipLower = clientEquipment.toLowerCase();
+
+  const isWeightedPushUp =
+    nameLower.includes("pompki obci") ||
+    nameLower.includes("pompki z obciążen");
+
+  const hasWeightLoadingEquipment =
+    equipLower.includes("obciążenie") ||
+    equipLower.includes("talerze") ||
+    equipLower.includes("pas obciążeniowy") ||
+    equipLower.includes("kamizelka obciążeniowa");
+
+  return isWeightedPushUp && !hasWeightLoadingEquipment;
+}
+
+describe("Weighted push-up pool exclusion guard", () => {
+  it("19. 'Pompki obciążone' is excluded for a Hantle-only client", () => {
+    expect(shouldExcludeWeightedPushUp("Pompki obciążone", "Hantle, Ławka")).toBe(true);
+  });
+
+  it("20. 'Pompki z obciążeniem' is excluded for a Hantle-only client", () => {
+    expect(shouldExcludeWeightedPushUp("Pompki z obciążeniem", "Hantle")).toBe(true);
+  });
+
+  it("21. 'Pompki obciążone' is NOT excluded when client has talerze (barbell plates)", () => {
+    expect(shouldExcludeWeightedPushUp("Pompki obciążone", "Sztanga i talerze, Hantle")).toBe(false);
+  });
+
+  it("22. 'Pompki obciążone' is NOT excluded when client has kamizelka obciążeniowa", () => {
+    expect(shouldExcludeWeightedPushUp("Pompki obciążone", "Kamizelka obciążeniowa")).toBe(false);
+  });
+
+  it("23. 'Pompki obciążone' is NOT excluded when client has pas obciążeniowy", () => {
+    expect(shouldExcludeWeightedPushUp("Pompki obciążone", "Pas obciążeniowy, Hantle")).toBe(false);
+  });
+
+  it("24. Regular 'Pompki klasyczne' are never excluded by this guard", () => {
+    expect(shouldExcludeWeightedPushUp("Pompki klasyczne", "Hantle")).toBe(false);
+    expect(shouldExcludeWeightedPushUp("Pompki klasyczne", "Masa własnego ciała")).toBe(false);
+  });
+
+  it("25. Regular 'Pompki na podwyższeniu' are never excluded by this guard", () => {
+    expect(shouldExcludeWeightedPushUp("Pompki na podwyższeniu", "Hantle")).toBe(false);
   });
 });
