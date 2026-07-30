@@ -185,8 +185,16 @@ export default function ClientDetail() {
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState("");
 
-  const { data: client, isLoading: clientLoading } = useGetClient(id, {
-    query: { enabled: !!id, queryKey: getGetClientQueryKey(id) }
+  const { data: client, isLoading: clientLoading, isError: clientIsError, error: clientError } = useGetClient(id, {
+    query: {
+      enabled: !!id,
+      queryKey: getGetClientQueryKey(id),
+      retry: (failureCount, error) => {
+        const status = (error as { status?: number })?.status;
+        if (status === 401 || status === 404) return false;
+        return failureCount < 2;
+      },
+    }
   });
 
   const { data: survey, isLoading: surveyLoading } = useGetClientSurvey(id, {
@@ -277,6 +285,41 @@ export default function ClientDetail() {
     return <div className="p-8 text-center text-muted-foreground animate-pulse">Ładowanie profilu...</div>;
   }
 
+  if (clientIsError) {
+    const status = (clientError as { status?: number })?.status;
+    if (status === 401) {
+      return (
+        <div className="p-8 text-center space-y-3">
+          <p className="text-destructive font-medium">Sesja wygasła lub brak dostępu.</p>
+          <Link href="/sign-in" className="text-primary hover:underline text-sm inline-block">
+            Zaloguj się ponownie
+          </Link>
+        </div>
+      );
+    }
+    if (status === 404) {
+      return (
+        <div className="p-8 text-center space-y-3">
+          <p className="text-muted-foreground">Klient nie istnieje lub nie masz do niego dostępu.</p>
+          <Link href="/clients" className="text-primary hover:underline text-sm inline-block">
+            Powrót do listy klientów
+          </Link>
+        </div>
+      );
+    }
+    return (
+      <div className="p-8 text-center space-y-3">
+        <p className="text-destructive">Błąd połączenia z serwerem.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-primary hover:underline text-sm inline-block"
+        >
+          Spróbuj odświeżyć stronę
+        </button>
+      </div>
+    );
+  }
+
   if (!client) {
     return <div className="p-8 text-center text-destructive">Nie znaleziono klienta</div>;
   }
@@ -319,7 +362,7 @@ export default function ClientDetail() {
             className="gap-2"
             disabled={!client.email}
             onClick={() => {
-              const portalUrl = `${window.location.origin}/client-landing/plan?email=${encodeURIComponent(client.email ?? "")}`;
+              const portalUrl = `${window.location.origin}/client-landing/plan`;
               navigator.clipboard.writeText(portalUrl).then(() => {
                 toast({ title: "Link skopiowany do schowka" });
               }).catch(() => {

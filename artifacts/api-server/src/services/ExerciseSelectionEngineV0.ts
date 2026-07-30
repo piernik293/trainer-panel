@@ -129,7 +129,7 @@ export interface V0PriorityContext {
    * dumbbell pressing alternatives within every slot's candidate band.
    *
    * Activated when ALL of:
-   *   1. Full gym equipment is available (barbell + machines)
+   *   1. Loadable equipment is available (Hantle, Sztanga, or full gym)
    *   2. Client is intermediate or advanced (isPriorityEligible)
    *   3. Goal bias is strength, athletic, or hypertrophy
    *   4. The client did NOT explicitly list push-ups as a preferred exercise
@@ -138,6 +138,21 @@ export interface V0PriorityContext {
    * barbell/dumbbell alternative passes the slot's hard filter.
    */
   deprioritizePushUps?: boolean;
+  /**
+   * When true, at most one "Pompki" (push-up variant) exercise is allowed per
+   * session.  Once one Pompki exercise has been selected into the session,
+   * subsequent slot picks exclude all Pompki exercises.
+   *
+   * This prevents push-up variations (incline, flat, decline, close-grip)
+   * from occupying multiple primary pressing slots when loadable alternatives
+   * are available.  Push-ups may still appear as a single accessory or
+   * finisher — the cap does not ban them entirely.
+   *
+   * Activated for intermediate+ clients who have loadable equipment (Hantle /
+   * Sztanga) — they have better pressing options and should not receive two or
+   * more push-up variants as the primary pressing structure.
+   */
+  capPushUpsAtOne?: boolean;
   /**
    * Goal-driven decision profile built from survey.trainingGoal.
    * Controls regression penalty, isolation deprioritisation, dynamic-work
@@ -1428,8 +1443,20 @@ export function runExerciseSelectionEngineV0(
       return true;
     };
 
+    // Push-up session cap: when capPushUpsAtOne is active, block additional
+    // Pompki exercises once one has already been selected into the session.
+    // The cap does NOT ban push-ups entirely — the first one may still appear
+    // as an accessory or finisher.
+    const pushUpAlreadyInSession =
+      ctx?.capPushUpsAtOne === true &&
+      results.some((r) => r.ex.name.trim().toLowerCase().startsWith("pompki"));
+
     const filtered = eligible.filter(
-      (ex) => !usedExerciseIds.has(String(ex.id)) && safetyFilter(ex) && filter(ex),
+      (ex) =>
+        !usedExerciseIds.has(String(ex.id)) &&
+        safetyFilter(ex) &&
+        filter(ex) &&
+        !(pushUpAlreadyInSession && ex.name.trim().toLowerCase().startsWith("pompki")),
     );
     const candidates =
       ctx?.isPriorityEligible

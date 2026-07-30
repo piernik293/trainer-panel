@@ -47,10 +47,11 @@
  */
 
 import { Router, type IRouter } from "express";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { z } from "zod/v4";
 import { db, clientsTable, surveysTable } from "@workspace/db";
 import { desc } from "drizzle-orm";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
@@ -75,6 +76,7 @@ const BodySchema = z.object({
 
 router.post(
   "/clients/:clientId/plan-draft/balance-week",
+  requireAuth,
   async (req, res): Promise<void> => {
     const params = ParamsSchema.safeParse(req.params);
     if (!params.success) {
@@ -91,11 +93,11 @@ router.post(
     const { clientId } = params.data;
     const { days } = body.data;
 
-    // Verify client exists.
+    // Verify client belongs to the authenticated trainer.
     const [client] = await db
       .select({ id: clientsTable.id })
       .from(clientsTable)
-      .where(eq(clientsTable.id, clientId));
+      .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
     if (!client) {
       res.status(404).json({ error: "Klient nie znaleziony" });
       return;

@@ -1,0 +1,133 @@
+## Task #82 — Secure all client-portal session routes with authenticated client identity
+
+Do not modify the already-secured trainer-facing routes.
+
+### Objective
+
+Remove the insecure authorization model in which `/client-portal/*` routes trust a `clientId` supplied through query parameters or request bodies.
+
+A client must only be able to access resources assigned to their own authenticated account.
+
+### Security requirement
+
+For every protected client-portal route:
+
+1. Authenticate the client.
+2. Resolve the internal client record from the authenticated identity on the server.
+3. Never use a caller-provided `clientId` as the source of authorization.
+4. Bind every requested plan, session, warmup, exercise, and execution log to the authenticated client.
+5. Return `404` for resources that do not belong to the authenticated client.
+6. Perform ownership verification before returning or modifying any nested data.
+
+### Routes in scope
+
+* `GET /client-portal/sessions`
+* `POST /client-portal/sessions`
+* `GET /client-portal/sessions/:sessionId`
+* `PATCH /client-portal/sessions/:sessionId`
+* `GET /client-portal/sessions/:sessionId/warmup`
+
+Inspect the file for any additional `/client-portal/*` session-related routes and apply the same rule.
+
+### Required architecture
+
+Create or reuse client authentication middleware that exposes authenticated client context, for example:
+
+```ts
+req.client = {
+  id: internalClientId,
+  authUserId: authenticatedExternalUserId,
+};
+```
+
+The exact property names should follow the existing project conventions.
+
+The internal `clientId` must be resolved from the authenticated user identity using a server-side database lookup.
+
+Do not accept authorization identity from:
+
+* `req.query.clientId`
+* `req.body.clientId`
+* headers controlled by the client
+* a route parameter unless it is compared against the authenticated client and is genuinely required
+
+Prefer removing `clientId` from these request contracts entirely.
+
+### Ownership chains
+
+Enforce the following chains where applicable:
+
+```text
+session → authenticated client
+plan → authenticated client
+plan day → plan → authenticated client
+warmup → session → authenticated client
+execution log → session → authenticated client
+```
+
+For session detail and update routes, the query must ensure:
+
+```text
+session.id = :sessionId
+AND session.clientId = req.client.id
+```
+
+Do not fetch a session globally by `sessionId` and check ownership only after exposing nested resources.
+
+For session creation, verify that the selected plan and plan day belong to the authenticated client before creating the session.
+
+### Request-contract cleanup
+
+Remove reliance on `clientId` in GET request bodies.
+
+Update frontend/API callers and tests so client identity is derived from authentication rather than manually submitted.
+
+Legacy `clientId` values supplied in query or body must not allow impersonation. Prefer ignoring or rejecting them consistently.
+
+### Required tests
+
+Add tests proving:
+
+1. Unauthenticated request to every protected client-portal route returns `401`.
+2. Client A can list only Client A’s sessions.
+3. Client A cannot list Client B’s sessions by supplying Client B’s `clientId`.
+4. Client A can open Client A’s session.
+5. Client A cannot open Client B’s session by `sessionId`.
+6. Client A cannot open execution logs or warmup data belonging to Client B’s session.
+7. Client A cannot update Client B’s session.
+8. Client A cannot create a session from Client B’s plan or plan day.
+9. Supplying a foreign `clientId` in query does not change authenticated scope.
+10. Supplying a foreign `clientId` in body does not change authenticated scope.
+11. Valid authenticated client workflows still return the expected data.
+12. Trainer-facing session routes remain protected and their existing tests continue to pass.
+
+Include a cross-resource test where Client A owns session A and Client B owns session B, then attempt to access session B through all relevant Client A request combinations.
+
+### Constraints
+
+* Do not weaken trainer authorization.
+* Do not trust frontend-hidden fields.
+* Do not add a full-band or compatibility fallback that restores the old insecure behavior.
+* Do not return different authorization errors that reveal whether another client’s resource exists.
+* Keep the change focused on client-portal authentication and ownership.
+* Run the new tests plus all related existing authentication/session tests.
+
+### Final report
+
+Report:
+
+* routes protected,
+* authentication middleware used,
+* how authenticated identity maps to the internal client,
+* ownership chain for every route,
+* request fields removed or ignored,
+* tests added,
+* full test results,
+* files changed,
+* any remaining security risks.
+
+Do not mark the task ready if any client-portal session route still authorizes access using a caller-provided `clientId`.
+
+Required completion statement:
+
+`READY — client-portal sessions are isolated by authenticated client identity`

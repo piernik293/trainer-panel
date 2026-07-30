@@ -1,0 +1,90 @@
+Perform a final read-only verification of Task #81A.
+
+Do not modify files.
+Do not run migrations.
+Do not restart services.
+Do not create, update, or delete records.
+Keep Agent usage below $0.75.
+
+Verify the actual current database and route state.
+
+## Database integrity
+
+Report:
+
+- total trainer rows
+- total client rows using a raw unscoped database count
+- total clients with trainer_id NULL
+- total clients assigned to each trainer
+- whether any client rows were deleted during Task #81A
+- why the previous state reported 52 clients while Task #81A reported 28
+- whether both counts refer to the same database and environment
+- whether clients.trainer_id currently has a NOT NULL constraint
+
+Do not expose complete external user IDs.
+
+## Backfill implementation
+
+Confirm:
+
+- the backfill dynamically selected the only existing trainer
+- trainer_id = 1 was not hardcoded
+- backfill updated only rows where trainer_id IS NULL
+- client count was checked before and after
+- the migration is safe and idempotent
+
+## Client creation paths
+
+Inventory every backend route that can create a client.
+
+For each report:
+
+Route | Authentication/token requirement | Source of trainerId | Can create trainer_id NULL?
+
+There must be no remaining client-creation path that accepts trainerId from the request body.
+
+## Legacy public survey
+
+Test the old generic public survey creation endpoint directly.
+
+Confirm that:
+
+- it is removed, disabled, or rejects creation without a valid invite token
+- hiding the form in the frontend is not the only protection
+- an unauthenticated request without a token cannot create a client
+
+## Survey token safety
+
+Confirm:
+
+- raw tokens are never stored
+- tokens are generated with at least 256 bits of cryptographically secure randomness
+- raw tokens are not logged
+- token hash has a unique constraint
+- expired, revoked, and used tokens are rejected
+- concurrent submissions cannot create two clients
+- invitation ownership comes only from the database record
+
+## Remaining security gaps
+
+List every client-owned route still lacking trainer ownership enforcement, including:
+
+- surveys
+- plans
+- notes
+- workout sessions
+- generator / plan-draft routes
+- statistics
+- client portal
+
+## Final decision
+
+Return exactly one:
+
+`PASS — Task #81A preserves all data and closes ownerless client creation`
+
+or
+
+`FAIL — data integrity or ownerless client creation remains unresolved`
+
+Do not implement fixes or propose additional tasks.

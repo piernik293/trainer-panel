@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useUser, SignIn } from "@clerk/react";
 import { Loader2, CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Flame, Zap, Activity, Shield, Save, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +9,16 @@ import { cn } from "@/lib/utils";
 
 // ─── API helpers ─────────────────────────────────────────────────────────────
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-
+// Absolute /api/... path — no BASE_URL prefix.
+// The Replit proxy routes /api/* → API server for all artifacts on the same
+// domain.  Using BASE_URL would produce /client-landing/api/..., which the
+// proxy routes to the Vite dev server instead.
+//
+// credentials: "include" is required here: Clerk's __session cookie must be
+// sent for the API to authenticate the client-portal caller.
 async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}/api${path}`, {
+  const res = await fetch(`/api${path}`, {
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     ...opts,
   });
@@ -142,65 +149,22 @@ const PHASE_ICONS: Record<string, React.ReactNode> = {
   Potentiate: <Shield className="w-4 h-4 text-green-400" />,
 };
 
-// ─── EmailGate ────────────────────────────────────────────────────────────────
+// ─── SignInGate ────────────────────────────────────────────────────────────────
+// Shown when the client is not signed in. Uses Clerk's embedded sign-in
+// component so clients authenticate before their plan is fetched.
 
-function EmailGate({ onSuccess }: { onSuccess: (client: ClientInfo, plan: Plan, email: string) => void }) {
-  const queryEmail = new URLSearchParams(window.location.search).get("email")?.trim().toLowerCase() ?? "";
-
-  const [email, setEmail] = useState(() => queryEmail || (sessionStorage.getItem("portal_email") ?? ""));
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const submit = async (emailValue: string) => {
-    if (!emailValue) return;
-    setLoading(true);
-    setError("");
-    try {
-      const data = await apiFetch<{ client: ClientInfo; plan: Plan }>(`/client-portal/plan?email=${encodeURIComponent(emailValue)}`);
-      sessionStorage.setItem("portal_email", emailValue);
-      onSuccess(data.client, data.plan, emailValue);
-    } catch (err: unknown) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Note: auto-submit from query email is handled exclusively in PlanPortal
-  // (single fetch path). EmailGate only pre-fills the input so the user can
-  // resubmit manually if the initial attempt failed.
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed) { setError("Podaj adres e-mail."); return; }
-    await submit(trimmed);
-  };
-
+function SignInGate() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6">
-      <div className="w-full max-w-sm space-y-8">
+      <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 bg-primary/10 rounded-none flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 bg-primary/10 flex items-center justify-center mx-auto mb-6">
             <Dumbbell className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Portal klienta</h1>
-          <p className="text-sm text-muted-foreground">Podaj swój adres e-mail, aby zobaczyć przypisany plan treningowy.</p>
+          <p className="text-sm text-muted-foreground">Zaloguj się, aby zobaczyć swój plan treningowy.</p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            type="email"
-            placeholder="twój@email.pl"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="h-12 bg-background/50 border-white/10 focus-visible:border-primary rounded-none text-base"
-            autoFocus
-          />
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" disabled={loading} className="w-full h-12 rounded-none font-semibold uppercase tracking-wide">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Pokaż mój plan"}
-          </Button>
-        </form>
+        <SignIn routing="hash" />
       </div>
     </div>
   );
@@ -208,7 +172,7 @@ function EmailGate({ onSuccess }: { onSuccess: (client: ClientInfo, plan: Plan, 
 
 // ─── RampWarmup ───────────────────────────────────────────────────────────────
 
-function RampWarmup({ sessionId, clientId }: { sessionId: number; clientId: number }) {
+function RampWarmup({ sessionId }: { sessionId: number }) {
   const [open, setOpen] = useState(false);
   const [blocks, setBlocks] = useState<RampBlock[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -217,7 +181,7 @@ function RampWarmup({ sessionId, clientId }: { sessionId: number; clientId: numb
     if (blocks) { setOpen(!open); return; }
     setLoading(true);
     try {
-      const data = await apiFetch<{ dayType: string; blocks: RampBlock[] }>(`/client-portal/sessions/${sessionId}/warmup?clientId=${clientId}`);
+      const data = await apiFetch<{ dayType: string; blocks: RampBlock[] }>(`/client-portal/sessions/${sessionId}/warmup`);
       setBlocks(data.blocks);
       setOpen(true);
     } catch {
@@ -293,13 +257,11 @@ interface LogState {
 function ExerciseLogRow({
   ex,
   sessionId,
-  clientId,
   initialLog,
   onLogSaved,
 }: {
   ex: PlanExercise;
   sessionId: number;
-  clientId: number;
   initialLog: ExerciseLog | null;
   onLogSaved: (log: ExerciseLog) => void;
 }) {
@@ -326,7 +288,6 @@ function ExerciseLogRow({
         {
           method: "PUT",
           body: JSON.stringify({
-            clientId,
             setsCompleted: data.setsCompleted !== "" ? parseInt(data.setsCompleted) : null,
             repsCompleted: data.repsCompleted !== "" ? parseInt(data.repsCompleted) : null,
             weightKg: data.weightKg !== "" ? parseFloat(data.weightKg) : null,
@@ -344,7 +305,7 @@ function ExerciseLogRow({
     } finally {
       setSaving(false);
     }
-  }, [sessionId, clientId, ex.id, onLogSaved]);
+  }, [sessionId, ex.id, onLogSaved]);
 
   const scheduleSave = (next: LogState) => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -483,12 +444,10 @@ function ExerciseLogRow({
 
 function SessionView({
   day,
-  clientId,
   planId,
   onBack,
 }: {
   day: PlanDay;
-  clientId: number;
   planId: number;
   onBack: () => void;
 }) {
@@ -501,21 +460,19 @@ function SessionView({
       setLoading(true);
       try {
         // Look for existing session today.
-        const sessions = await apiFetch<Session[]>(
-          `/client-portal/sessions?clientId=${clientId}&planDayId=${day.id}`
-        );
+        const sessions = await apiFetch<Session[]>(`/client-portal/sessions?planDayId=${day.id}`);
         const today = getTodayDate();
         const todaySession = sessions.find((s) => s.sessionDate === today);
 
         if (todaySession) {
           // Load full session with logs.
-          const full = await apiFetch<Session>(`/client-portal/sessions/${todaySession.id}?clientId=${clientId}`);
+          const full = await apiFetch<Session>(`/client-portal/sessions/${todaySession.id}`);
           setSession(full);
         } else {
           // Create new session for today.
           const created = await apiFetch<Session>("/client-portal/sessions", {
             method: "POST",
-            body: JSON.stringify({ clientId, planId, planDayId: day.id, sessionDate: today }),
+            body: JSON.stringify({ planId, planDayId: day.id, sessionDate: today }),
           });
           setSession({ ...created, logs: [] });
         }
@@ -525,7 +482,7 @@ function SessionView({
         setLoading(false);
       }
     })();
-  }, [clientId, planId, day.id]);
+  }, [planId, day.id]);
 
   const handleLogSaved = (log: ExerciseLog) => {
     setSession((s) => {
@@ -541,7 +498,7 @@ function SessionView({
     try {
       const updated = await apiFetch<Session>(`/client-portal/sessions/${session.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ clientId, isCompleted: !session.isCompleted }),
+        body: JSON.stringify({ isCompleted: !session.isCompleted }),
       });
       setSession((s) => (s ? { ...s, isCompleted: updated.isCompleted, completedAt: updated.completedAt } : s));
     } finally {
@@ -608,7 +565,7 @@ function SessionView({
         )}
 
         {/* RAMP Warm-up */}
-        <RampWarmup sessionId={session.id} clientId={clientId} />
+        <RampWarmup sessionId={session.id} />
 
         {/* Exercise list */}
         <div className="space-y-2">
@@ -621,7 +578,6 @@ function SessionView({
                 key={ex.id}
                 ex={ex}
                 sessionId={session.id}
-                clientId={clientId}
                 initialLog={session.logs.find((l) => l.planExerciseId === ex.id) ?? null}
                 onLogSaved={handleLogSaved}
               />
@@ -720,36 +676,63 @@ function PlanView({
 // ─── Main Portal page ─────────────────────────────────────────────────────────
 
 export default function PlanPortal() {
+  const { isSignedIn, isLoaded } = useUser();
   const [client, setClient] = useState<ClientInfo | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [planError, setPlanError] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<PlanDay | null>(null);
 
-  // Single deterministic identity resolution on mount.
-  // Priority: ?email= query param (shared link) > sessionStorage (returning user).
-  // Having one fetch path here prevents a race where both sources fire concurrently
-  // and the slower response overwrites the faster one with a different client's data.
+  // Once Clerk confirms the session, fetch the plan from the authenticated endpoint.
+  // The route uses req.client.id — no email or clientId query param is needed.
   useEffect(() => {
-    const queryEmail = new URLSearchParams(window.location.search).get("email")?.trim().toLowerCase() ?? "";
-    const emailToTry = queryEmail || sessionStorage.getItem("portal_email") || "";
-    if (!emailToTry) return;
-    apiFetch<{ client: ClientInfo; plan: Plan }>(`/client-portal/plan?email=${encodeURIComponent(emailToTry)}`)
+    if (!isLoaded || !isSignedIn) return;
+    setPlanLoading(true);
+    setPlanError(null);
+    apiFetch<{ client: ClientInfo; plan: Plan }>("/client-portal/plan")
       .then(({ client: c, plan: p }) => {
-        sessionStorage.setItem("portal_email", emailToTry);
         setClient(c);
         setPlan(p);
       })
-      .catch(() => {
-        // If the pre-fill fails (expired link, deleted account), clear storage
-        // so the user sees the email form with the address pre-filled for retry.
-        if (!queryEmail) sessionStorage.removeItem("portal_email");
-      });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+      .catch((err: unknown) => setPlanError((err as Error).message))
+      .finally(() => setPlanLoading(false));
+  }, [isLoaded, isSignedIn]);
 
-  if (!client || !plan) {
+  // Clerk is still initializing.
+  if (!isLoaded) {
     return (
-      <EmailGate
-        onSuccess={(c, p, _email) => { setClient(c); setPlan(p); }}
-      />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Not signed in — show Clerk sign-in form.
+  if (!isSignedIn) {
+    return <SignInGate />;
+  }
+
+  // Signed in but plan is still loading.
+  if (planLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Signed in but no active plan linked to this Clerk account.
+  if (planError || !client || !plan) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
+        <div className="text-center space-y-2 max-w-sm">
+          <Dumbbell className="w-10 h-10 mx-auto text-muted-foreground/30 mb-4" />
+          <p className="font-semibold">{planError ?? "Brak aktywnego planu"}</p>
+          <p className="text-sm text-muted-foreground">
+            Skontaktuj się ze swoim trenerem — musi aktywować Twój plan i powiązać konto z Twoim profilem.
+          </p>
+        </div>
+      </div>
     );
   }
 
@@ -757,7 +740,6 @@ export default function PlanPortal() {
     return (
       <SessionView
         day={selectedDay}
-        clientId={client.id}
         planId={plan.id}
         onBack={() => setSelectedDay(null)}
       />

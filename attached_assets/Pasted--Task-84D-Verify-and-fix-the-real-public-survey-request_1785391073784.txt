@@ -1,0 +1,141 @@
+## Task #84D — Verify and fix the real public survey request path
+
+The previous task must not be considered complete.
+
+CORS configuration has been improved, but the survey page still displays a network error. The local inspection showed that one request path is handled by the Vite SPA server and returns HTML instead of API JSON.
+
+Do not assume that the external Replit proxy fixes this automatically.
+
+### Objective
+
+Prove that a newly generated survey invitation works through the actual public Replit URL, and fix the frontend/API routing if it does not.
+
+### 1. Reproduce through the real public URL
+
+Generate a fresh invitation and open its complete public HTTPS URL in an incognito browser.
+
+Use browser Network tools or equivalent browser automation against the public `*.replit.dev` address.
+
+Capture the invitation verification request:
+
+- full request URL,
+- request Origin,
+- HTTP status,
+- Content-Type,
+- response body,
+- Access-Control-Allow-Origin,
+- which server handled the request.
+
+The verification response must be JSON from the API server, not Vite `index.html`.
+
+### 2. Verify the API URL construction
+
+Inspect the survey frontend code and determine exactly how the verification endpoint URL is constructed.
+
+Check:
+
+- relative versus absolute URL,
+- `VITE_API_URL`,
+- path prefixes,
+- Replit proxy and routing configuration,
+- development versus deployed routing,
+- whether `/client-landing/api/...` is incorrectly being generated,
+- whether the correct endpoint is `/api/public/survey/...`.
+
+Do not rely on assumptions about Replit path rewriting.
+
+### 3. Fix routing if necessary
+
+If the request reaches Vite instead of the API:
+
+- correct the frontend API base URL,
+- or add the correct explicit proxy/rewrite configuration,
+- use the same established API-routing mechanism as working trainer-app requests.
+
+Do not create a special insecure endpoint and do not bypass the API authentication or CORS middleware.
+
+The public survey verification endpoint may be unauthenticated, but it must still be reached through the intended API route.
+
+### 4. Validate response parsing
+
+Before calling `response.json()`, verify the response Content-Type.
+
+If the response is HTML or otherwise unexpected:
+
+- treat it as a server/routing error,
+- do not misclassify it as an invalid invitation,
+- log enough development information to identify the request URL and response status,
+- do not expose sensitive details in the production UI.
+
+### 5. Review credentials behavior
+
+The survey verification endpoint is public.
+
+Confirm whether `credentials: "include"` is necessary for this specific request.
+
+If it is not required, use a request configuration appropriate for a public token-verification endpoint while preserving restricted CORS.
+
+Do not change authenticated client-portal requests that require Clerk session credentials.
+
+### 6. Environment separation
+
+Do not treat the temporary Replit development origin as the permanent production origin.
+
+Clearly define and document:
+
+- development trainer origin,
+- development client/survey origin,
+- production trainer origin,
+- production client/survey origin.
+
+Use the existing LOCAL_* variables for development where appropriate.
+
+Do not allow arbitrary `*.replit.dev`.
+
+### Required end-to-end confirmation
+
+The task may only be marked ready after all of the following succeed on the public HTTPS URL:
+
+1. Generate a fresh active invitation.
+2. Open it in incognito.
+3. Verification request returns API JSON.
+4. Survey form renders.
+5. Complete and submit the survey.
+6. Trainer can see the submitted client/interview.
+7. The invitation becomes used.
+8. Opening the same invitation again displays the used-link state.
+9. Revoked and expired links display their correct states.
+10. A foreign Origin does not receive CORS access.
+
+### Required tests
+
+Add or update tests for:
+
+- frontend constructs the correct API URL,
+- HTML response is not parsed as valid API JSON,
+- public verification request reaches the expected API route,
+- configured development origin is allowed,
+- foreign origin remains rejected,
+- existing client portal and trainer CORS tests still pass.
+
+### Final report
+
+Report:
+
+- exact public invitation URL tested,
+- exact verification request URL,
+- response status and Content-Type,
+- whether Vite or API handled it before and after the fix,
+- API base URL or proxy changes,
+- credentials decision,
+- environment variables used for development and production,
+- end-to-end submission result,
+- reuse result,
+- tests and builds run,
+- files changed.
+
+Do not mark ready based only on unit tests or curl against localhost.
+
+Required completion statement only after the public browser flow succeeds:
+
+READY — public survey invitation verification and submission work end to end

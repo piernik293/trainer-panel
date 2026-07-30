@@ -20,6 +20,7 @@ import ExerciseDetail from "@/pages/ExerciseDetail";
 import PlanCreate from "@/pages/PlanCreate";
 import PlanEditor from "@/pages/PlanEditor";
 import PlanDraftWizard from "@/pages/PlanDraftWizard";
+import SurveyInvite from "@/pages/SurveyInvite";
 
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so the
 // same build serves multiple Clerk custom domains. Do not inline the env var.
@@ -166,6 +167,7 @@ function Router() {
         <Route path="/exercises/:id" component={ExerciseDetail} />
         <Route path="/exercises" component={ExerciseList} />
         <Route path="/plans/:id" component={PlanEditor} />
+        <Route path="/survey-invite" component={SurveyInvite} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

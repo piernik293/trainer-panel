@@ -1,0 +1,104 @@
+Implement Task #81B-1: protect trainer-facing survey, avoided-exercise, and trainer-note routes.
+
+This is a small authorization task.
+
+Do not inspect or modify plan routes, generator routes, workout sessions, statistics, client portal, exercise selection, or frontend UX.
+
+Do not change the secure public survey invitation routes:
+- GET /api/public/survey/:token
+- POST /api/public/survey/:token
+
+Keep Agent usage below $3.50.
+Stop after completing and testing this scope.
+
+## Goal
+
+An authenticated trainer may access surveys, avoided exercises, and internal notes only for clients owned by that trainer.
+
+Rules:
+
+- unauthenticated private request → 401,
+- authenticated request for another trainer’s client → 404,
+- ownership must be checked through clients.trainer_id,
+- trainerId from body, query, headers, or URL is never trusted,
+- public survey-token routes remain functional,
+- internal trainer notes never appear in public responses.
+
+## Protect survey routes
+
+Inventory and protect only routes responsible for:
+
+- reading a client survey,
+- creating or updating a client survey,
+- partial survey updates,
+- survey status,
+- survey-derived trainer endpoints,
+- avoided exercises belonging to a client.
+
+Every route containing clientId must verify ownership before reading or writing.
+
+Survey creation and updates must not create a second survey for the same client when one already exists.
+
+## Protect trainer notes
+
+Protect:
+
+- list notes,
+- create note,
+- update note,
+- delete note.
+
+For routes using noteId, derive ownership through:
+
+note → client → trainer
+
+Do not trust a separate clientId when ownership can be derived from the note itself.
+
+## Database conditions
+
+Where practical:
+
+- include trainer ownership directly in the database query,
+- use an owner-scoped join or subquery,
+- return 404 for a foreign resource,
+- do not load unrestricted data and rely on a frontend check.
+
+## Tests
+
+Add targeted tests:
+
+1. unauthenticated survey read → 401,
+2. Trainer A reads own survey → success,
+3. Trainer A reads Trainer B survey → 404,
+4. Trainer A updates Trainer B survey → 404,
+5. request-body trainerId is ignored,
+6. Trainer A reads own avoided exercises → success,
+7. Trainer A reads Trainer B avoided exercises → 404,
+8. unauthenticated notes list → 401,
+9. Trainer A reads Trainer B notes → 404,
+10. Trainer A cannot create a note for Trainer B client,
+11. Trainer A cannot update or delete Trainer B note,
+12. public survey invitation GET and POST still work without trainer login,
+13. public survey response never contains internal trainer notes.
+
+Run only tests related to these route groups.
+
+## Required report
+
+# Routes protected
+# Ownership checks
+# Public routes unchanged
+# Tests
+# Files changed
+# Routes intentionally left for Task #81B-2 and #81B-3
+# Agent usage
+
+Return exactly:
+
+`READY — surveys and notes are owner-isolated`
+
+or
+
+`NEEDS FIXING — a survey or note route can bypass ownership`
+
+Do not start another task.

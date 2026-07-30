@@ -1,0 +1,113 @@
+## Task #84B — Resolve deployment-readiness blockers found in the client authentication audit
+
+The authorization implementation from Tasks #82–#83 must remain unchanged unless a concrete defect is discovered.
+
+The previous audit incorrectly marked the system as ready despite:
+
+1. `cors({ credentials: true, origin: true })`,
+2. failing API TypeScript validation,
+3. no reported production build results.
+
+### 1. Harden CORS
+
+Replace reflective `origin: true` with an explicit allowlist based on the exact existing environment variables or clearly named new variables.
+
+The allowlist must cover only the legitimate trainer frontend and client portal origins.
+
+Requirements:
+
+* support local development intentionally,
+* support production URLs intentionally,
+* reject unknown browser origins,
+* keep `credentials: true` only where required,
+* never use `Access-Control-Allow-Origin: *` with credentials,
+* do not assume Clerk authentication makes unrestricted CORS safe,
+* do not assume Replit proxying removes public exposure.
+
+Add focused tests for:
+
+* allowed trainer origin,
+* allowed client portal origin,
+* rejected foreign origin,
+* request without an Origin header,
+* credentials headers for allowed origins.
+
+Report the resulting `Access-Control-Allow-Origin` behavior.
+
+### 2. Check cookie and CSRF assumptions
+
+Inspect the actual Clerk cookie/session configuration and mutating client-portal routes.
+
+Report:
+
+* cookie name,
+* SameSite policy where observable,
+* Secure behavior,
+* whether cross-site credentialed requests are possible,
+* whether POST, PATCH, and PUT routes need additional CSRF protection.
+
+Do not make unsupported claims. If cookie attributes cannot be verified from the repository or runtime, state that manual deployed-environment verification is required.
+
+### 3. Run real production builds
+
+Run the actual workspace build commands for:
+
+* `artifacts/client-landing`,
+* `artifacts/trainer-app`,
+* `artifacts/api-server`, if it has a build script,
+* any shared package required by these applications.
+
+Do not substitute `tsc --noEmit` for a production build.
+
+Report the exact commands and exit results.
+
+### 4. Resolve or formally isolate API TypeScript failures
+
+Run the API TypeScript check again.
+
+If failures remain:
+
+* identify every failing file,
+* confirm through version control or prior baseline whether each failure predates Tasks #82–#83,
+* do not describe the whole repository as deployment ready while the API typecheck fails.
+
+Small fixture-only fixes may be applied if they are straightforward and do not change generator behavior.
+
+If the errors cannot safely be fixed within this task, report the audit as blocked.
+
+### 5. Re-run security tests
+
+Run:
+
+* client portal plan authentication tests,
+* client portal session authentication tests,
+* trainer ownership tests,
+* Clerk middleware tests,
+* CORS tests,
+* all broader relevant authentication tests.
+
+### Constraints
+
+* Do not weaken `requireClientAuth`.
+* Do not restore email or clientId-based authorization.
+* Do not create an unrestricted compatibility CORS mode.
+* Do not alter exercise-generation production logic merely to silence stale tests.
+* Do not claim infrastructure properties that were not verified.
+
+### Completion criteria
+
+Mark the task ready only when:
+
+* production CORS uses a verified allowlist,
+* relevant production builds pass,
+* affected authentication tests pass,
+* no new TypeScript errors exist,
+* any remaining repository-wide TypeScript errors are explicitly treated as blockers or fixed.
+
+Required completion statement when all criteria pass:
+
+`READY — client portal authentication passes builds, restricted CORS, and deployment checks`
+
+Otherwise:
+
+`BLOCKED — deployment readiness still requires the following fixes`

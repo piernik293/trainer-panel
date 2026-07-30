@@ -12,6 +12,12 @@ export const clientsTable = pgTable("clients", {
   status: text("status").notNull().default("active"),
   /** FK to trainers.id — assigned server-side; nullable until migration Step C completes */
   trainerId: integer("trainer_id"),
+  /**
+   * Clerk user ID for the client's own portal account.
+   * Nullable — clients without a portal account have no Clerk identity.
+   * Set when the client first authenticates through the client portal.
+   */
+  clerkUserId: text("clerk_user_id").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

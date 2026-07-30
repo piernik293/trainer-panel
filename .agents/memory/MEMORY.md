@@ -21,3 +21,10 @@
 - [Session warmup constant propagation](session-warmup-propagation.md) — WARMUP_FALLBACK_SECONDS is shared by sessionDurationEstimator and workoutDurationEstimator; autoFill tests with small maxSessionMinutes must be updated whenever it changes.
 - [Exercise variety history pattern](exercise-variety-history.md) — client_exercise_usage_log table; generationId from crypto.randomUUID() in frontend; sortDeterministic has two sort instances (use `// 0. Preferred exercise boost` context to uniquely target it).
 - [Clerk auth middleware wiring](clerk-auth-wiring.md) — clerkProxyMiddleware + clerkMiddleware before body parsers; requireAuth uses JIT trainer provisioning via INSERT ON CONFLICT DO NOTHING; CATALOGUE_ADMIN_CLERK_IDS controls exercise mutations; trainer-app uses publishableKeyFromHost + @clerk/react/internal.
+
+- [Survey invite token pattern](survey-invite-token-pattern.md) — 64-char hex raw token, only SHA-256 hash stored; validate token BEFORE body parse; concurrent guard via UPDATE WHERE usedAt IS NULL; 404 vs 410 distinction.
+- [Vitest Drizzle mock patterns](vitest-drizzle-mock-patterns.md) — isNull() mock must use `field` key not `f`; mock SubmitPublicSurveyBody for unit tests with minimal payloads.
+- [client-landing API URL pattern](client-landing-api-url.md) — always use absolute `/api/...`; never prepend BASE_URL (`/client-landing/api/...` routes to Vite, not the API server).
+- [CORS env var semantics](cors-env-var-semantics.md) — LOCAL_* vars for dev Replit domain; TRAINER_APP_ORIGIN/CLIENT_PORTAL_ORIGIN reserved for prod (throw in prod if absent); dev DB needs migration 0006 applied manually.
+- [Thin-pool retry for alt sessions](thin-pool-retry.md) — altIdx>0 upper session fails when weekUsedExerciseIds exhausts the dumbbell pool; fix: retry with same-type-only exclusion set; also fixes missing sameTypePreviousExercises pass-through.
+- [Progression suitability scoring](progression-suitability-scoring.md) — scoreProgressionSuitability (+12 loadable / -8 regression) + deprioritizePushUps extended to dumbbell clients + capPushUpsAtOne flag in V0PriorityContext.

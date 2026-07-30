@@ -1,0 +1,136 @@
+Implement Task #81B-2B-2: protect the remaining generator-adjacent routes in `plans.ts`.
+
+This is a narrow authorization task.
+
+Do not use subagents.
+Do not use parallel reads or edits.
+Do not inspect unrelated files.
+
+Inspect and modify only:
+
+- artifacts/api-server/src/routes/plans.ts
+- one new or existing targeted authorization test file
+
+Do not modify:
+
+- exercise-selection engine,
+- generator services,
+- workout-programming rules,
+- saved-plan authorization already completed,
+- surveys,
+- notes,
+- sessions,
+- statistics,
+- client portal,
+- frontend.
+
+Keep Agent usage below $2.50.
+Stop after implementing and testing this exact scope.
+
+## Routes in scope
+
+Protect only:
+
+1. POST /clients/:clientId/plans/draft
+2. POST /plans/volume-preview
+3. POST /plans/analysis-preview
+
+Do not edit the other 17 saved-plan routes unless compilation requires a minimal import adjustment.
+
+## Authorization rules
+
+All three routes must require authentication.
+
+### POST /clients/:clientId/plans/draft
+
+Before reading a survey, generating a draft, or saving anything, require:
+
+client.id = URL clientId
+AND client.trainerId = authenticated trainer id
+
+Foreign client → 404.
+Unauthenticated request → 401.
+
+Never trust trainerId from the body.
+
+### POST /plans/volume-preview
+### POST /plans/analysis-preview
+
+First inspect the request schemas for these two routes.
+
+If the request contains clientId:
+
+- verify the authenticated trainer owns that exact client before processing.
+
+If the request contains planId:
+
+- derive ownership through plan → client → trainer.
+
+If it contains both:
+
+- verify that the plan belongs to the supplied client,
+- verify that the client belongs to the authenticated trainer.
+
+If a preview is completely stateless and contains no clientId, planId, survey data lookup, or persisted resource reference:
+
+- require authentication,
+- document why no ownership lookup is possible or required,
+- ensure it does not load another client’s data indirectly.
+
+Do not invent a clientId requirement if the endpoint is intentionally stateless.
+
+## Security rules
+
+- no authentication → 401,
+- foreign or mismatched persisted resource → 404,
+- never trust trainerId from body, query, custom headers, or URL,
+- ownership checks run before generator or preview services,
+- do not change generated results.
+
+## Tests
+
+Add targeted tests:
+
+1. unauthenticated POST /clients/:clientId/plans/draft → 401,
+2. Trainer A cannot create a draft for Trainer B’s client → 404,
+3. owner can create a draft normally,
+4. unauthenticated volume preview → 401,
+5. unauthenticated analysis preview → 401,
+6. foreign clientId or planId in either preview → 404, when those IDs are supported,
+7. mismatched clientId and planId → 404, when both are supported,
+8. stateless preview still works for an authenticated trainer,
+9. trainerId supplied in the body is ignored.
+
+Also run one existing targeted beginner/inactive generator safety test suite.
+
+Do not modify safety tests or generator code.
+
+## Required report
+
+# Routes protected
+
+# Preview ownership model
+
+For each preview route state:
+
+- IDs accepted,
+- whether it reads persisted client data,
+- exact authorization applied.
+
+# Test results
+
+# Generator safety regression result
+
+# Files changed
+
+# Agent usage
+
+Return exactly:
+
+`READY — all remaining plan and preview routes are appropriately protected`
+
+or
+
+`NEEDS FIXING — a remaining route can access client data without ownership`
+
+Do not start session, client-portal, or frontend work.

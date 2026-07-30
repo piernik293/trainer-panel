@@ -15,6 +15,7 @@ import planDraftGenerateDayRouter from "./planDraftGenerateDay";
 import planDraftBalanceWeekRouter from "./planDraftBalanceWeek";
 import planDraftRecordGenerationRouter from "./planDraftRecordGeneration";
 import clientPortalRouter from "./clientPortal";
+import surveyInvitesRouter from "./surveyInvites";
 
 const router: IRouter = Router();
 
@@ -23,6 +24,7 @@ router.use(clientsRouter);
 router.use(surveysRouter);
 router.use(statsRouter);
 router.use(publicRouter);
+router.use(surveyInvitesRouter);
 router.use(notesRouter);
 router.use(exercisesRouter);
 router.use(musclesRouter);
@@ -72,7 +74,7 @@ router.use(clientPortalRouter);
  * | GET  /clients/:clientId/workout-sessions           | YES             | YES (sessions)      | NO                   |
  * | GET  /clients/:clientId/workout-sessions/:id       | YES             | YES (session)       | NO                   |
  * | GET  /stats                                        | NO              | YES (aggregates)    | NO                   |
- * | GET  /client-portal/plan?email=x                   | NO (email)      | YES (plan)          | NO (public portal)   |
+ * | GET  /client-portal/plan                           | YES (Clerk)     | YES (plan)          | YES (requireClientAuth) |
  * | POST /client-portal/sessions                       | YES (body)      | YES (session)       | NO (client-keyed)    |
  *
  * ⚠️  THIS APP IS NOT SAFE FOR MULTI-TRAINER PUBLIC DEPLOYMENT until the above

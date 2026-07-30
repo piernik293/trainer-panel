@@ -27,6 +27,13 @@ if (!basePath) {
   );
 }
 
+// When running the Vite dev server directly (not via the Replit proxy), /api/*
+// requests need to be forwarded to the API server.  In the Replit proxy the
+// routing is automatic (kind:api artifact handles paths not claimed by web
+// artifacts), so this proxy is only needed for direct-Vite access.
+// Set LOCAL_API_SERVER_URL=http://localhost:8080 in the workspace env.
+const localApiServerUrl = process.env.LOCAL_API_SERVER_URL;
+
 export default defineConfig({
   base: basePath,
   plugins: [
@@ -72,6 +79,16 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    ...(localApiServerUrl
+      ? {
+          proxy: {
+            '/api': {
+              target: localApiServerUrl,
+              changeOrigin: true,
+            },
+          },
+        }
+      : {}),
   },
   preview: {
     port,

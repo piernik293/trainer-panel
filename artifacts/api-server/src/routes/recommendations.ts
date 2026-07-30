@@ -25,6 +25,7 @@ import { eq, and } from "drizzle-orm";
 import { z } from "zod/v4";
 import { db, clientsTable, surveysTable, exercisesTable } from "@workspace/db";
 import { desc } from "drizzle-orm";
+import { requireAuth } from "../middlewares/requireAuth";
 import { ListExerciseRecommendationsResponse } from "@workspace/api-zod";
 import { scoreExercise } from "../lib/recommendation-engine";
 import { computeCompleteness, fetchMuscleStats } from "../lib/exercise-completeness";
@@ -40,7 +41,7 @@ const RecommendationsQuery = z.object({
   mainMuscleGroup: z.string().optional(),
 });
 
-router.get("/clients/:clientId/exercise-recommendations", async (req, res): Promise<void> => {
+router.get("/clients/:clientId/exercise-recommendations", requireAuth, async (req, res): Promise<void> => {
   const params = RecommendationsParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -56,11 +57,11 @@ router.get("/clients/:clientId/exercise-recommendations", async (req, res): Prom
   const { clientId } = params.data;
   const { limit = 30, mainMuscleGroup } = query.data;
 
-  // Verify the client exists.
+  // Verify the client belongs to the authenticated trainer.
   const [client] = await db
     .select({ id: clientsTable.id })
     .from(clientsTable)
-    .where(eq(clientsTable.id, clientId));
+    .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
 
   if (!client) {
     res.status(404).json({ error: "Klient nie znaleziony" });

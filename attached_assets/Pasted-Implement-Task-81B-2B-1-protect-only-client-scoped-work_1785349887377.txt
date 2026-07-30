@@ -1,0 +1,111 @@
+Implement Task #81B-2B-1: protect only client-scoped workout-plan generator routes.
+
+Do not use subagents.
+Do not use parallel reads or parallel edits.
+Read files sequentially in small sections.
+
+Inspect and modify only:
+
+- artifacts/api-server/src/routes/planDraftInput.ts
+- artifacts/api-server/src/routes/planDraftGenerateDay.ts
+- artifacts/api-server/src/routes/planDraftBalanceWeek.ts
+- artifacts/api-server/src/routes/planDraftRecordGeneration.ts
+- artifacts/api-server/src/routes/recommendations.ts
+
+Do not inspect or modify:
+
+- plans.ts
+- volume-preview
+- analysis-preview
+- saved-plan routes
+- surveys
+- notes
+- sessions
+- statistics
+- client portal
+- frontend
+- exercise-selection engine
+- workout-generation rules
+
+Keep Agent usage below $3.50.
+Stop after implementing and testing this exact scope.
+
+## Goal
+
+Every trainer-facing generator route that reads or modifies data for a client must require authentication and confirm that the authenticated trainer owns that exact client.
+
+Rules:
+
+- unauthenticated request → 401,
+- another trainer’s client → 404,
+- trainerId comes only from the authenticated Clerk session,
+- never trust trainerId from body, query, headers, or URL,
+- ownership must be checked before generator services read the survey, history, preferences, or plans,
+- do not change generated exercises, volume rules, warnings, or plan structure.
+
+## Authorization
+
+Apply `requireAuth` to every private route in the listed files.
+
+For every route using clientId, require a database check equivalent to:
+
+client.id = clientId
+AND client.trainerId = authenticatedTrainer.id
+
+If a route accepts both clientId and another resource ID:
+
+- verify that the resource belongs to that exact client,
+- do not authorize it only because the trainer owns some other client.
+
+Do not expose whether a foreign client exists. Return 404.
+
+## Protect these functional areas
+
+- plan-draft input,
+- generate-day,
+- balance-week,
+- record-generation,
+- exercise recommendations,
+- any other client-specific generator route found only in the listed files.
+
+Do not protect public survey-token routes because they are outside these files and outside this task.
+
+## Tests
+
+Add targeted authorization tests:
+
+1. unauthenticated plan-draft input → 401,
+2. Trainer A can read generator input for Client A,
+3. Trainer A cannot read generator input for Trainer B’s client → 404,
+4. unauthenticated generate-day → 401,
+5. Trainer A cannot generate a day for Trainer B’s client → 404,
+6. Trainer A cannot balance a week for Trainer B’s client → 404,
+7. Trainer A cannot record generation for Trainer B’s client → 404,
+8. Trainer A cannot request recommendations for Trainer B’s client → 404,
+9. trainerId supplied in the request body is ignored,
+10. valid owner generation returns the same result as before authorization,
+11. existing beginner and inactive-client safety tests remain unchanged.
+
+Run only authorization-focused tests plus the minimum generator regression tests needed.
+
+## Required report
+
+# Routes protected
+# Ownership checks
+# Test results
+# Generator regression result
+# Files changed
+# Routes intentionally left for Task #81B-2B-2
+# Agent usage
+
+Explicitly list volume preview, analysis preview, and any generator-related route remaining in plans.ts as not covered yet.
+
+Return exactly:
+
+`READY — client-scoped generator routes are owner-isolated`
+
+or
+
+`NEEDS FIXING — a generator route can bypass trainer ownership`
+
+Do not start preview authorization or another task.

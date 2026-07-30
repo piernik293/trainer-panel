@@ -1,0 +1,85 @@
+Perform a read-only inventory of saved workout-plan routes.
+
+Do not modify files.
+Do not run tests, builds, migrations, or restart services.
+Do not inspect generator, plan-draft, recommendation, preview, session, survey, note, stats, client-portal, or frontend files.
+
+Important execution rules:
+
+- Do not use subagents.
+- Do not use parallel reads.
+- Do not use broad repository exploration.
+- Read only `artifacts/api-server/src/routes/plans.ts`.
+- Read it sequentially in small chunks, maximum 200 lines per action.
+- Read `artifacts/api-server/src/routes/index.ts` only if required to confirm the router prefix.
+- After each chunk, continue from the next unread line.
+- Stop after producing the inventory.
+
+Keep Agent usage below $0.70.
+
+For every saved-plan route report:
+
+Method | Path | Purpose | IDs accepted | Current auth | Required ownership chain | Nested binding required
+
+Separate the routes into:
+
+## 1. Top-level saved-plan operations
+
+- list plans
+- create/save plan
+- read plan
+- update plan
+- change status or activate
+- delete plan
+
+## 2. Plan-day operations
+
+Include:
+
+- create day
+- update day
+- reorder day
+- delete day
+
+## 3. Stored plan-exercise operations
+
+Include:
+
+- add exercise
+- update exercise
+- reorder exercise
+- delete exercise
+
+## 4. Copy or duplicate operations
+
+Include them only if they actually exist.
+
+Also report:
+
+- exact number of saved-plan routes found,
+- which routes use clientId,
+- which routes use planId,
+- which routes use dayId,
+- which routes use stored planExerciseId,
+- which routes load a resource by its ID alone,
+- which routes accept multiple nested IDs,
+- whether any nested resource can currently be accessed through a mismatched parent ID,
+- whether `plans.ts` contains any generator logic despite this task being limited to saved plans.
+
+## Required output
+
+# Saved-plan route inventory
+
+# Current authorization gaps
+
+# Highest-risk routes
+
+# Recommended implementation split
+
+Recommend no more than two small implementation tasks:
+
+- Task #81B-2A-1 — top-level saved-plan operations
+- Task #81B-2A-2 — plan days and stored plan exercises
+
+Do not implement anything.
+Do not propose generator authorization yet.

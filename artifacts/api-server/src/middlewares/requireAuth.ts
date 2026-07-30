@@ -13,7 +13,7 @@ import type { Request, Response, NextFunction } from "express";
 import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
 import { trainersTable, type Trainer } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
 // Augment Express Request so downstream handlers have typed access.
@@ -27,6 +27,23 @@ declare global {
       trainer?: Trainer;
     }
   }
+}
+
+/**
+ * checkIsAppAdmin
+ *
+ * Returns true when the given Clerk user ID is listed in APP_ADMIN_CLERK_IDS.
+ * Fail-closed: an absent or empty env var grants no admin access.
+ * Never expose the Clerk ID allowlist in logs or responses.
+ */
+export function checkIsAppAdmin(clerkUserId: string | undefined): boolean {
+  if (!clerkUserId) return false;
+  const raw = process.env.APP_ADMIN_CLERK_IDS ?? "";
+  const adminIds = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return adminIds.includes(clerkUserId);
 }
 
 /**

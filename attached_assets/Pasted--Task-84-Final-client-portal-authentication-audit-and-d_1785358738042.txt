@@ -1,0 +1,213 @@
+## Task #84 — Final client-portal authentication audit and deployment readiness check
+
+### Objective
+
+Perform a focused audit of the newly secured client portal authentication before ending today's work.
+
+Do not add new product features.
+
+The goal is to confirm that the Clerk-based client authentication, database migration, frontend requests, and production configuration are internally consistent and ready for the next onboarding task.
+
+---
+
+## Scope
+
+Audit the following areas:
+
+1. `requireClientAuth`
+2. `clients.clerk_user_id`
+3. `/client-portal/plan`
+4. `/client-portal/sessions`
+5. Client portal Clerk integration
+6. API request credentials
+7. CORS and cookie configuration
+8. Environment variables
+9. Database migration ordering
+10. Remaining legacy email/clientId authorization logic
+
+---
+
+## Authentication audit
+
+Verify that:
+
+* every protected client-portal plan and session route uses `requireClientAuth`,
+* no protected route authorizes access using caller-provided `clientId`,
+* no protected route authorizes access using caller-provided email,
+* `req.client.id` always comes from the authenticated Clerk identity,
+* foreign resources return `404`,
+* unauthenticated requests return `401`,
+* nested data is loaded only after ownership has been confirmed.
+
+Search the entire API project for:
+
+```text
+req.query.clientId
+req.body.clientId
+req.query.email
+req.body.email
+/client-portal/plan?email
+```
+
+Report every remaining occurrence and classify it as:
+
+* safe,
+* unrelated,
+* legacy,
+* security risk.
+
+Do not blindly remove fields used in legitimate trainer workflows.
+
+---
+
+## Migration audit
+
+Verify that:
+
+```text
+0006_add_client_clerk_user_id.sql
+```
+
+is:
+
+* present in the migration directory,
+* ordered correctly after previous migrations,
+* valid for the project's database,
+* consistent with the Drizzle schema,
+* not duplicated by another migration,
+* safe when run once.
+
+Confirm that the database schema and migration both define:
+
+```text
+clerk_user_id TEXT UNIQUE
+```
+
+with nullable behavior.
+
+Do not create another migration unless the current one is genuinely invalid.
+
+---
+
+## Frontend Clerk audit
+
+Verify that the client landing application:
+
+* is wrapped in `ClerkProvider`,
+* uses the correct publishable key configuration,
+* supports sign-in and sign-up,
+* waits for Clerk loading state before requesting protected data,
+* sends authenticated API requests correctly,
+* does not store client identity in `sessionStorage`,
+* does not require email or clientId to fetch plans or sessions,
+* does not expose email in copied portal URLs.
+
+Check for accidental request loops where the plan endpoint is repeatedly called before authentication finishes.
+
+---
+
+## Production configuration audit
+
+Inspect the current configuration and report the required production environment variables, including any relevant:
+
+```text
+CLERK_SECRET_KEY
+VITE_CLERK_PUBLISHABLE_KEY
+VITE_CLERK_PROXY_URL
+FRONTEND_URL
+API_URL
+CORS origin configuration
+```
+
+Use the exact variable names already present in the project.
+
+Verify that:
+
+* credentials and cookies are allowed where required,
+* CORS does not use an unsafe wildcard together with credentials,
+* development and production origins are handled intentionally,
+* no Clerk secret is exposed in frontend code,
+* publishable keys are only used in frontend code,
+* API requests point to the correct backend environment.
+
+Do not invent new variable names unless required.
+
+---
+
+## Build and test verification
+
+Run:
+
+* API type checking,
+* client-landing type checking,
+* trainer-app type checking,
+* relevant builds,
+* all authentication tests,
+* client portal plan tests,
+* client portal session tests,
+* trainer ownership tests.
+
+Report warnings separately from failures.
+
+Do not mark the task ready if:
+
+* TypeScript fails,
+* the client portal build fails,
+* migration/schema definitions disagree,
+* protected routes still trust email or clientId,
+* frontend requests cannot include the Clerk session.
+
+---
+
+## Manual test checklist
+
+Provide a short manual browser checklist for tomorrow covering:
+
+1. Client A login.
+2. Client A plan retrieval.
+3. Client A session retrieval.
+4. Client B isolation.
+5. Invalid session ID.
+6. Unlinked Clerk account.
+7. Signed-out behavior.
+8. Refresh after login.
+9. Direct opening of `/client-landing/plan`.
+10. Production cookie and CORS behavior.
+
+Do not attempt to automate account creation or onboarding in this task.
+
+---
+
+## Constraints
+
+* No invitation system yet.
+* No automatic email-based client linking.
+* No major refactoring.
+* No UI redesign.
+* No unrelated database changes.
+* Prefer reporting issues over making broad speculative changes.
+* Small fixes are allowed only when they are clearly necessary for the current authentication flow.
+
+---
+
+## Final report
+
+Report:
+
+* protected routes confirmed,
+* remaining unsafe identity inputs,
+* migration status,
+* frontend Clerk status,
+* production configuration requirements,
+* build results,
+* test results,
+* files changed,
+* issues requiring tomorrow's work.
+
+Required completion statement:
+
+`READY — client portal authentication passed final deployment readiness audit`
+
+If readiness cannot be confirmed, end with:
+
+`BLOCKED — client portal authentication requires the following fixes before deployment`

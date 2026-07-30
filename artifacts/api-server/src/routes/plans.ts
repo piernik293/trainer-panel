@@ -7,6 +7,7 @@
  */
 
 import { Router, type IRouter } from "express";
+import type { Request, Response } from "express";
 import { eq, and, inArray, sql, max, desc } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -30,8 +31,62 @@ import {
   type VolumePreviewWarning,
 } from "../services/volumeCalculator";
 import { analyseDraftPreview, type AnalysisPreviewInput } from "../services/planAnalyzer";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
+
+// ─── Ownership helpers ────────────────────────────────────────────────────────
+
+/**
+ * Load a plan and verify it belongs to the authenticated trainer.
+ * Returns the plan row on success, or null after sending 401/404.
+ */
+async function loadPlanAndVerifyOwner(
+  req: Request,
+  res: Response,
+  planId: number,
+): Promise<{ id: number; clientId: number } | null> {
+  const [row] = await db
+    .select({ id: workoutPlansTable.id, clientId: workoutPlansTable.clientId })
+    .from(workoutPlansTable)
+    .innerJoin(clientsTable, eq(clientsTable.id, workoutPlansTable.clientId))
+    .where(
+      and(
+        eq(workoutPlansTable.id, planId),
+        eq(clientsTable.trainerId, req.trainer!.id),
+      ),
+    );
+  if (!row) {
+    res.status(404).json({ error: "Plan nie znaleziony" });
+    return null;
+  }
+  return row;
+}
+
+/**
+ * Verify a client belongs to the authenticated trainer.
+ * Returns true on success, or false after sending 404.
+ */
+async function verifyClientOwner(
+  req: Request,
+  res: Response,
+  clientId: number,
+): Promise<boolean> {
+  const [client] = await db
+    .select({ id: clientsTable.id })
+    .from(clientsTable)
+    .where(
+      and(
+        eq(clientsTable.id, clientId),
+        eq(clientsTable.trainerId, req.trainer!.id),
+      ),
+    );
+  if (!client) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
+    return false;
+  }
+  return true;
+}
 
 // ─── Inline Zod schemas ───────────────────────────────────────────────────────
 
@@ -292,19 +347,16 @@ async function getPlanFull(planId: number) {
 // ─── POST /plans/volume-preview ──────────────────────────────────────────────
 // Must be registered before any /plans/:id routes.
 //
-// Ownership protection (current state):
-//   • clientId is validated — the client must exist in the database (404 if not).
-//   • planId (optional) — when supplied, the route verifies plan.clientId ===
-//     body.clientId so a caller cannot read volume data for another client's
-//     saved plan (returns 403 on mismatch).
-//   • Trainer-level ownership (restrict each trainer to their own clients) is NOT
-//     enforced here because no authentication system exists in this project yet.
-//     When session-based auth is added, inject the session trainerId and add
-//     a WHERE trainer_id = :trainerId clause to both the client-existence query
-//     and the plan-ownership query above.  Reuse the existing middleware pattern
-//     rather than creating a new auth system.
+// Ownership protection:
+//   • requireAuth — unauthenticated requests → 401.
+//   • clientId (required) — verified to belong to the authenticated trainer via
+//     verifyClientOwner; foreign client → 404.
+//   • planId (optional) — when supplied, verified via loadPlanAndVerifyOwner
+//     (plan → client → trainer join).  If the plan belongs to a different client
+//     than the one in the body, the call also returns 404.
+//   • trainerId is never read from the body; it comes from req.trainer.id.
 
-router.post("/plans/volume-preview", async (req, res): Promise<void> => {
+router.post("/plans/volume-preview", requireAuth, async (req, res): Promise<void> => {
   const parsed = VolumePreviewBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -318,16 +370,8 @@ router.post("/plans/volume-preview", async (req, res): Promise<void> => {
   // Route-level warnings accumulated before calculation.
   const routeWarnings: VolumePreviewWarning[] = [];
 
-  // ── Verify client exists ──────────────────────────────────────────────────
-  const [client] = await db
-    .select({ id: clientsTable.id })
-    .from(clientsTable)
-    .where(eq(clientsTable.id, clientId));
-
-  if (!client) {
-    res.status(404).json({ error: "Klient nie znaleziony" });
-    return;
-  }
+  // ── Verify client belongs to the authenticated trainer ────────────────────
+  if (!(await verifyClientOwner(req, res, clientId))) return;
 
   // ── Determine authoritative guidelineVersionId and experienceLevelUsed ───
   // Strategy:
@@ -339,25 +383,22 @@ router.post("/plans/volume-preview", async (req, res): Promise<void> => {
   let authoritativeLevel: string | null;
 
   if (planId) {
-    // FIX 4 — existing plan: load plan's own stored values.
+    // Existing plan: load plan's own stored values; also verifies trainer ownership.
+    const planRow = await loadPlanAndVerifyOwner(req, res, planId);
+    if (!planRow) return;
+
+    if (planRow.clientId !== clientId) {
+      res.status(404).json({ error: "Plan nie należy do podanego klienta" });
+      return;
+    }
+
     const [existingPlan] = await db
       .select({
-        id: workoutPlansTable.id,
-        clientId: workoutPlansTable.clientId,
         guidelineVersionId: workoutPlansTable.guidelineVersionId,
         experienceLevelUsed: workoutPlansTable.experienceLevelUsed,
       })
       .from(workoutPlansTable)
       .where(eq(workoutPlansTable.id, planId));
-
-    if (!existingPlan) {
-      res.status(404).json({ error: "Plan nie znaleziony" });
-      return;
-    }
-    if (existingPlan.clientId !== clientId) {
-      res.status(403).json({ error: "Plan nie należy do podanego klienta" });
-      return;
-    }
 
     authoritativeVersionId = existingPlan.guidelineVersionId;
     authoritativeLevel = existingPlan.experienceLevelUsed;
@@ -493,9 +534,14 @@ router.post("/plans/volume-preview", async (req, res): Promise<void> => {
 // ─── POST /plans/analysis-preview ────────────────────────────────────────────
 // Must be registered before any /plans/:id routes.
 //
-// Authorization note: same scope as volume-preview — clientId existence checked,
-// planId ownership verified when supplied.  Trainer-level ownership not enforced
-// until an auth system exists (see volume-preview comment for details).
+// Ownership protection:
+//   • requireAuth — unauthenticated requests → 401.
+//   • clientId (required) — verified to belong to the authenticated trainer via
+//     verifyClientOwner; foreign client → 404.
+//   • planId (optional) — when supplied, verified via loadPlanAndVerifyOwner
+//     (plan → client → trainer join).  If plan belongs to a different client
+//     than the one in the body → 404.
+//   • trainerId is never read from the body; it comes from req.trainer.id.
 
 const AnalysisPreviewExerciseSchema = z.object({
   exerciseEntryId: z.number().int(),
@@ -518,7 +564,7 @@ const AnalysisPreviewBody = z.object({
   days:     z.array(AnalysisPreviewDaySchema),
 });
 
-router.post("/plans/analysis-preview", async (req, res): Promise<void> => {
+router.post("/plans/analysis-preview", requireAuth, async (req, res): Promise<void> => {
   const parsed = AnalysisPreviewBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -527,30 +573,16 @@ router.post("/plans/analysis-preview", async (req, res): Promise<void> => {
 
   const { clientId, planId, goal, days } = parsed.data;
 
-  // Verify client exists.
-  const [client] = await db
-    .select({ id: clientsTable.id })
-    .from(clientsTable)
-    .where(eq(clientsTable.id, clientId));
+  // Verify client belongs to the authenticated trainer.
+  if (!(await verifyClientOwner(req, res, clientId))) return;
 
-  if (!client) {
-    res.status(404).json({ error: "Klient nie znaleziony" });
-    return;
-  }
-
-  // If planId is supplied, verify it belongs to this client.
+  // If planId is supplied, verify it belongs to this trainer and this client.
   if (planId !== undefined) {
-    const [existingPlan] = await db
-      .select({ id: workoutPlansTable.id, clientId: workoutPlansTable.clientId })
-      .from(workoutPlansTable)
-      .where(eq(workoutPlansTable.id, planId));
+    const planRow = await loadPlanAndVerifyOwner(req, res, planId);
+    if (!planRow) return;
 
-    if (!existingPlan) {
-      res.status(404).json({ error: "Plan nie znaleziony" });
-      return;
-    }
-    if (existingPlan.clientId !== clientId) {
-      res.status(403).json({ error: "Plan nie należy do podanego klienta" });
+    if (planRow.clientId !== clientId) {
+      res.status(404).json({ error: "Plan nie należy do podanego klienta" });
       return;
     }
   }
@@ -623,12 +655,15 @@ const SaveDraftPlanBody = z.object({
   days: z.array(SaveDraftDayBody),
 });
 
-router.post("/clients/:clientId/plans/draft", async (req, res): Promise<void> => {
+router.post("/clients/:clientId/plans/draft", requireAuth, async (req, res): Promise<void> => {
   const clientId = Number(req.params.clientId);
   if (!Number.isFinite(clientId)) {
     res.status(400).json({ error: "Nieprawidłowe ID klienta" });
     return;
   }
+
+  // ── Verify client belongs to the authenticated trainer ────────────────────
+  if (!(await verifyClientOwner(req, res, clientId))) return;
 
   const parsed = SaveDraftPlanBody.safeParse(req.body);
   if (!parsed.success) {
@@ -775,12 +810,14 @@ router.post("/clients/:clientId/plans/draft", async (req, res): Promise<void> =>
 
 // ─── GET /clients/:clientId/plans ─────────────────────────────────────────────
 
-router.get("/clients/:clientId/plans", async (req, res): Promise<void> => {
+router.get("/clients/:clientId/plans", requireAuth, async (req, res): Promise<void> => {
   const clientId = Number(req.params.clientId);
   if (!Number.isFinite(clientId)) {
     res.status(400).json({ error: "Nieprawidłowe ID klienta" });
     return;
   }
+
+  if (!(await verifyClientOwner(req, res, clientId))) return;
 
   const plans = await db
     .select()
@@ -793,12 +830,14 @@ router.get("/clients/:clientId/plans", async (req, res): Promise<void> => {
 
 // ─── POST /clients/:clientId/plans ────────────────────────────────────────────
 
-router.post("/clients/:clientId/plans", async (req, res): Promise<void> => {
+router.post("/clients/:clientId/plans", requireAuth, async (req, res): Promise<void> => {
   const clientId = Number(req.params.clientId);
   if (!Number.isFinite(clientId)) {
     res.status(400).json({ error: "Nieprawidłowe ID klienta" });
     return;
   }
+
+  if (!(await verifyClientOwner(req, res, clientId))) return;
 
   const parsed = CreatePlanBody.safeParse(req.body);
   if (!parsed.success) {
@@ -874,12 +913,14 @@ router.post("/clients/:clientId/plans", async (req, res): Promise<void> => {
 
 // ─── GET /plans/:id ───────────────────────────────────────────────────────────
 
-router.get("/plans/:id", async (req, res): Promise<void> => {
+router.get("/plans/:id", requireAuth, async (req, res): Promise<void> => {
   const planId = Number(req.params.id);
   if (!Number.isFinite(planId)) {
     res.status(400).json({ error: "Nieprawidłowe ID planu" });
     return;
   }
+
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
 
   const full = await getPlanFull(planId);
   if (!full) {
@@ -892,26 +933,18 @@ router.get("/plans/:id", async (req, res): Promise<void> => {
 
 // ─── PATCH /plans/:id ─────────────────────────────────────────────────────────
 
-router.patch("/plans/:id", async (req, res): Promise<void> => {
+router.patch("/plans/:id", requireAuth, async (req, res): Promise<void> => {
   const planId = Number(req.params.id);
   if (!Number.isFinite(planId)) {
     res.status(400).json({ error: "Nieprawidłowe ID planu" });
     return;
   }
 
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
+
   const parsed = UpdatePlanBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const [existing] = await db
-    .select({ id: workoutPlansTable.id })
-    .from(workoutPlansTable)
-    .where(eq(workoutPlansTable.id, planId));
-
-  if (!existing) {
-    res.status(404).json({ error: "Plan nie znaleziony" });
     return;
   }
 
@@ -937,22 +970,14 @@ router.patch("/plans/:id", async (req, res): Promise<void> => {
 
 // ─── DELETE /plans/:id ────────────────────────────────────────────────────────
 
-router.delete("/plans/:id", async (req, res): Promise<void> => {
+router.delete("/plans/:id", requireAuth, async (req, res): Promise<void> => {
   const planId = Number(req.params.id);
   if (!Number.isFinite(planId)) {
     res.status(400).json({ error: "Nieprawidłowe ID planu" });
     return;
   }
 
-  const [existing] = await db
-    .select({ id: workoutPlansTable.id })
-    .from(workoutPlansTable)
-    .where(eq(workoutPlansTable.id, planId));
-
-  if (!existing) {
-    res.status(404).json({ error: "Plan nie znaleziony" });
-    return;
-  }
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
 
   await db.delete(workoutPlansTable).where(eq(workoutPlansTable.id, planId));
   res.status(204).end();
@@ -960,26 +985,18 @@ router.delete("/plans/:id", async (req, res): Promise<void> => {
 
 // ─── POST /plans/:id/days ─────────────────────────────────────────────────────
 
-router.post("/plans/:id/days", async (req, res): Promise<void> => {
+router.post("/plans/:id/days", requireAuth, async (req, res): Promise<void> => {
   const planId = Number(req.params.id);
   if (!Number.isFinite(planId)) {
     res.status(400).json({ error: "Nieprawidłowe ID planu" });
     return;
   }
 
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
+
   const parsed = CreatePlanDayBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const [plan] = await db
-    .select({ id: workoutPlansTable.id })
-    .from(workoutPlansTable)
-    .where(eq(workoutPlansTable.id, planId));
-
-  if (!plan) {
-    res.status(404).json({ error: "Plan nie znaleziony" });
     return;
   }
 
@@ -1013,12 +1030,14 @@ router.post("/plans/:id/days", async (req, res): Promise<void> => {
 
 // ─── PATCH /plans/:id/days/reorder ────────────────────────────────────────────
 
-router.patch("/plans/:id/days/reorder", async (req, res): Promise<void> => {
+router.patch("/plans/:id/days/reorder", requireAuth, async (req, res): Promise<void> => {
   const planId = Number(req.params.id);
   if (!Number.isFinite(planId)) {
     res.status(400).json({ error: "Nieprawidłowe ID planu" });
     return;
   }
+
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
 
   const parsed = ReorderDaysBody.safeParse(req.body);
   if (!parsed.success) {
@@ -1086,13 +1105,15 @@ router.patch("/plans/:id/days/reorder", async (req, res): Promise<void> => {
 
 // ─── PATCH /plans/:id/days/:dayId ────────────────────────────────────────────
 
-router.patch("/plans/:id/days/:dayId", async (req, res): Promise<void> => {
+router.patch("/plans/:id/days/:dayId", requireAuth, async (req, res): Promise<void> => {
   const planId = Number(req.params.id);
   const dayId = Number(req.params.dayId);
   if (!Number.isFinite(planId) || !Number.isFinite(dayId)) {
     res.status(400).json({ error: "Nieprawidłowe ID" });
     return;
   }
+
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
 
   const parsed = UpdatePlanDayBody.safeParse(req.body);
   if (!parsed.success) {
@@ -1136,13 +1157,15 @@ router.patch("/plans/:id/days/:dayId", async (req, res): Promise<void> => {
 
 // ─── DELETE /plans/:id/days/:dayId ───────────────────────────────────────────
 
-router.delete("/plans/:id/days/:dayId", async (req, res): Promise<void> => {
+router.delete("/plans/:id/days/:dayId", requireAuth, async (req, res): Promise<void> => {
   const planId = Number(req.params.id);
   const dayId = Number(req.params.dayId);
   if (!Number.isFinite(planId) || !Number.isFinite(dayId)) {
     res.status(400).json({ error: "Nieprawidłowe ID" });
     return;
   }
+
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
 
   const [day] = await db
     .select()
@@ -1167,13 +1190,15 @@ router.delete("/plans/:id/days/:dayId", async (req, res): Promise<void> => {
 
 // ─── POST /plans/:id/days/:dayId/duplicate ────────────────────────────────────
 
-router.post("/plans/:id/days/:dayId/duplicate", async (req, res): Promise<void> => {
+router.post("/plans/:id/days/:dayId/duplicate", requireAuth, async (req, res): Promise<void> => {
   const planId = Number(req.params.id);
   const dayId = Number(req.params.dayId);
   if (!Number.isFinite(planId) || !Number.isFinite(dayId)) {
     res.status(400).json({ error: "Nieprawidłowe ID" });
     return;
   }
+
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
 
   const [day] = await db
     .select()
@@ -1234,13 +1259,15 @@ router.post("/plans/:id/days/:dayId/duplicate", async (req, res): Promise<void> 
 
 // ─── POST /plans/:id/days/:dayId/exercises ────────────────────────────────────
 
-router.post("/plans/:id/days/:dayId/exercises", async (req, res): Promise<void> => {
+router.post("/plans/:id/days/:dayId/exercises", requireAuth, async (req, res): Promise<void> => {
   const planId = Number(req.params.id);
   const dayId = Number(req.params.dayId);
   if (!Number.isFinite(planId) || !Number.isFinite(dayId)) {
     res.status(400).json({ error: "Nieprawidłowe ID" });
     return;
   }
+
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
 
   const parsed = CreatePlanExerciseBody.safeParse(req.body);
   if (!parsed.success) {
@@ -1317,6 +1344,7 @@ router.post("/plans/:id/days/:dayId/exercises", async (req, res): Promise<void> 
 
 router.patch(
   "/plans/:id/days/:dayId/exercises/reorder",
+  requireAuth,
   async (req, res): Promise<void> => {
     const planId = Number(req.params.id);
     const dayId = Number(req.params.dayId);
@@ -1324,6 +1352,8 @@ router.patch(
       res.status(400).json({ error: "Nieprawidłowe ID" });
       return;
     }
+
+    if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
 
     const parsed = ReorderExercisesBody.safeParse(req.body);
     if (!parsed.success) {
@@ -1403,6 +1433,7 @@ router.patch(
 
 router.patch(
   "/plans/:id/days/:dayId/exercises/:exerciseId",
+  requireAuth,
   async (req, res): Promise<void> => {
     const planId = Number(req.params.id);
     const dayId = Number(req.params.dayId);
@@ -1411,6 +1442,8 @@ router.patch(
       res.status(400).json({ error: "Nieprawidłowe ID" });
       return;
     }
+
+    if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
 
     const parsed = UpdatePlanExerciseBody.safeParse(req.body);
     if (!parsed.success) {
@@ -1495,6 +1528,7 @@ router.patch(
 
 router.post(
   "/plans/:id/days/:dayId/exercises/:exerciseId/duplicate",
+  requireAuth,
   async (req, res): Promise<void> => {
     const planId = Number(req.params.id);
     const dayId = Number(req.params.dayId);
@@ -1503,6 +1537,8 @@ router.post(
       res.status(400).json({ error: "Nieprawidłowe ID" });
       return;
     }
+
+    if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
 
     const [planEx] = await db
       .select()
@@ -1542,13 +1578,15 @@ router.post(
 
 // ─── DELETE /plans/:id/days/:dayId/exercises (clear all) ─────────────────────
 
-router.delete("/plans/:id/days/:dayId/exercises", async (req, res): Promise<void> => {
+router.delete("/plans/:id/days/:dayId/exercises", requireAuth, async (req, res): Promise<void> => {
   const planId = Number(req.params.id);
   const dayId = Number(req.params.dayId);
   if (!Number.isFinite(planId) || !Number.isFinite(dayId)) {
     res.status(400).json({ error: "Nieprawidłowe ID" });
     return;
   }
+
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
 
   const [day] = await db
     .select()
@@ -1577,6 +1615,7 @@ router.delete("/plans/:id/days/:dayId/exercises", async (req, res): Promise<void
 
 router.delete(
   "/plans/:id/days/:dayId/exercises/:exerciseId",
+  requireAuth,
   async (req, res): Promise<void> => {
     const planId = Number(req.params.id);
     const dayId = Number(req.params.dayId);
@@ -1585,6 +1624,8 @@ router.delete(
       res.status(400).json({ error: "Nieprawidłowe ID" });
       return;
     }
+
+    if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
 
     const [planEx] = await db
       .select()
@@ -1733,12 +1774,14 @@ function buildActivationMissingFields(
   return missing;
 }
 
-router.post("/plans/:id/activate", async (req, res): Promise<void> => {
+router.post("/plans/:id/activate", requireAuth, async (req, res): Promise<void> => {
   const planId = Number(req.params.id);
   if (!Number.isFinite(planId)) {
     res.status(400).json({ error: "Nieprawidłowe ID planu" });
     return;
   }
+
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
 
   const [plan] = await db
     .select()

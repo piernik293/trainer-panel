@@ -1,0 +1,131 @@
+Implement Task #81B-3A: protect only trainer-facing workout-session, execution-log, workout-history, and progress-data routes.
+
+Do not use subagents.
+Do not use parallel reads or edits.
+Work sequentially in small sections.
+
+Do not modify:
+
+- saved workout plans,
+- generator or preview routes,
+- surveys,
+- notes,
+- statistics,
+- authentication setup,
+- client creation,
+- survey invitations,
+- frontend,
+- exercise-selection logic.
+
+Do not change the current `/api/client-portal/*` access model in this task.
+Those routes must be listed as unresolved for Task #82.
+
+Keep Agent usage below $3.50.
+Stop after implementing and testing this exact scope.
+
+## Goal
+
+An authenticated trainer may access workout sessions, execution logs, workout history, and progress data only for clients owned by that trainer.
+
+Rules:
+
+- unauthenticated trainer-facing request → 401,
+- authenticated request for another trainer’s resource → 404,
+- ownership comes only from the authenticated Clerk session,
+- never trust trainerId from body, query params, headers, or URL,
+- ownership must be checked before returning or modifying session data,
+- client-facing portal routes remain unchanged.
+
+## Route discovery
+
+Use grep first to locate only trainer-facing routes related to:
+
+- workout-sessions,
+- workout history,
+- exercise execution logs,
+- client progress,
+- trainer-visible session details.
+
+Read only small sections surrounding those route definitions.
+
+Do not perform a broad repository audit.
+
+## Ownership chains
+
+For routes using clientId:
+
+client → trainer
+
+For routes using sessionId:
+
+session → client → trainer
+
+For routes using executionLogId:
+
+execution log → session → client → trainer
+
+For routes containing multiple IDs, require exact parent binding:
+
+- session belongs to the supplied client,
+- execution log belongs to the supplied session,
+- session belongs to the trainer’s client.
+
+A trainer owning Client A and Client C must not be able to access Client C’s session through Client A’s URL.
+
+## Protection
+
+Protect trainer-facing operations for:
+
+- listing a client’s workout sessions,
+- reading session details,
+- trainer-visible workout history,
+- reading exercise execution logs,
+- updating or deleting trainer-managed session data, if such routes exist,
+- progress/history summaries that load client-specific session data.
+
+Do not add trainer authentication to `/api/client-portal/*` routes because they use a separate client-facing access model.
+
+## Tests
+
+Add targeted tests:
+
+1. unauthenticated trainer session list → 401,
+2. Trainer A reads sessions for Client A → success,
+3. Trainer A reads sessions for Trainer B’s client → 404,
+4. Trainer A cannot read Trainer B’s session by sessionId,
+5. Session C cannot be accessed through Client A’s URL when both clients belong to Trainer A,
+6. execution log cannot be accessed through another session,
+7. Trainer A cannot modify or delete Trainer B’s session data,
+8. valid owner history and progress requests still work,
+9. trainerId from request body is ignored,
+10. client-portal session routes remain functional under their existing access model.
+
+Run only session/history authorization tests.
+
+## Required report
+
+# Trainer-facing routes protected
+
+# Ownership chains
+
+# Nested-resource binding
+
+# Test results
+
+# Client-portal routes intentionally unchanged
+
+# Files changed
+
+# Remaining security risks
+
+# Agent usage
+
+Return exactly:
+
+`READY — trainer-facing sessions and history are owner-isolated`
+
+or
+
+`NEEDS FIXING — session or history data can bypass trainer ownership`
+
+Do not start client-account or client-portal redesign.

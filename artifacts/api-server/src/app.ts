@@ -10,12 +10,17 @@ import {
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { buildAllowedOrigins, makeCorsOriginCallback } from "./lib/corsOrigins";
 
 // In production, Clerk publishable key must be present. Fail at startup
 // rather than silently serving unprotected routes.
 if (process.env.NODE_ENV === "production" && !process.env.CLERK_PUBLISHABLE_KEY) {
   throw new Error("CLERK_PUBLISHABLE_KEY is required in production");
 }
+
+// Build the explicit CORS allowlist at startup.
+// Throws in production when TRAINER_APP_ORIGIN or CLIENT_PORTAL_ORIGIN is absent.
+const _allowedOrigins = buildAllowedOrigins();
 
 const app: Express = express();
 
@@ -42,7 +47,7 @@ app.use(
 // Clerk proxy — must be before body parsers (streams raw bytes).
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
-app.use(cors({ credentials: true, origin: true }));
+app.use(cors({ credentials: true, origin: makeCorsOriginCallback(_allowedOrigins) }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 

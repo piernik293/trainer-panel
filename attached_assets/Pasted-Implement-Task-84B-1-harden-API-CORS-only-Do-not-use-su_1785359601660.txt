@@ -1,0 +1,153 @@
+Implement Task #84B-1: harden API CORS only.
+
+Do not use subagents.
+Do not use parallel reads or edits.
+Do not run full repository typecheck.
+Do not fix any existing TypeScript errors.
+Do not run production builds.
+Do not modify authentication, authorization, database schema, routes, generator logic, or frontend behavior.
+
+Keep Agent usage below $1.75.
+
+## Scope
+
+Inspect only:
+
+- artifacts/api-server/src/app.ts
+- existing API environment/config helper files directly used by app.ts
+- API package scripts only if needed to identify the focused test command
+- one focused CORS test file
+
+Do not inspect unrelated route or service files.
+
+## Goal
+
+Replace reflective CORS configuration:
+
+`cors({ credentials: true, origin: true })`
+
+with an explicit origin allowlist.
+
+Use these clearly named environment variables unless equivalent exact-origin variables already exist:
+
+- `TRAINER_APP_ORIGIN`
+- `CLIENT_PORTAL_ORIGIN`
+- `LOCAL_TRAINER_APP_ORIGIN`
+- `LOCAL_CLIENT_PORTAL_ORIGIN`
+
+Each variable represents exactly one origin:
+
+`scheme://hostname[:port]`
+
+## Validation
+
+For configured origins:
+
+- trim whitespace,
+- remove one trailing slash,
+- parse with `new URL`,
+- reject values containing a path other than `/`,
+- reject query strings and fragments,
+- reject usernames or passwords,
+- store only `url.origin`,
+- remove duplicates.
+
+Do not support:
+
+- wildcards,
+- suffix matching,
+- substring matching,
+- arbitrary Replit domains,
+- arbitrary localhost ports,
+- `origin: true`,
+- `Access-Control-Allow-Origin: *`.
+
+## Environment behavior
+
+### Production
+
+When `NODE_ENV=production`:
+
+- `TRAINER_APP_ORIGIN` is required,
+- `CLIENT_PORTAL_ORIGIN` is required,
+- missing or malformed required origins must throw during application startup,
+- local-development origin variables must not be automatically added unless explicitly intended by existing deployment configuration.
+
+### Development and test
+
+Allow only exact origins supplied through the four environment variables.
+
+Do not silently allow all localhost origins.
+
+## Requests without Origin
+
+Allow requests without an `Origin` header to continue to the normal route, authentication, and authorization middleware.
+
+Document in code that:
+
+- CORS is enforced by browsers,
+- no-Origin requests are not trusted,
+- protected routes remain protected by authentication and ownership checks.
+
+## Credentials
+
+Inspect how the existing trainer and client applications authenticate API calls.
+
+Keep `credentials: true` only if currently required.
+
+Do not redesign authentication.
+
+In the report, state exactly why credentials were kept or removed.
+
+## Tests
+
+Add focused tests covering:
+
+1. exact trainer origin is allowed,
+2. exact client portal origin is allowed,
+3. foreign origin is rejected,
+4. lookalike origin such as `https://trainer.example.com.attacker.com` is rejected,
+5. unexpected port is rejected,
+6. request without Origin reaches the normal endpoint or auth middleware,
+7. allowed response contains its exact origin,
+8. wildcard origin is never returned,
+9. credentials header behavior matches the selected configuration,
+10. allowed OPTIONS preflight succeeds,
+11. foreign OPTIONS preflight is rejected,
+12. production startup fails when trainer origin is missing,
+13. production startup fails when client portal origin is missing,
+14. malformed configured origin fails closed.
+
+Run only the focused CORS tests.
+
+Do not run full API typecheck because known pre-existing errors remain.
+
+## Required report
+
+# CORS implementation
+
+# Environment variables
+
+# Credentials decision
+
+# No-Origin behavior
+
+# Test results
+
+# Files changed
+
+# Known untouched blockers
+
+Explicitly state that API TypeScript validation and production builds remain unresolved.
+
+# Agent usage
+
+Return exactly:
+
+`READY — explicit CORS allowlist is implemented and tested`
+
+or
+
+`NEEDS FIXING — CORS still accepts an unintended browser origin`
+
+Stop after the report.

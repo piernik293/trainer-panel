@@ -4,12 +4,19 @@
  * Provides the execution layer: clients view their active plan, create workout
  * sessions, and log exercise data.  Trainers can read session history.
  *
- * Auth: email-keyed lookup for plan access; all subsequent session operations
- * require the clientId (derived from the email lookup) and are verified
- * server-side so one client cannot read or write another's sessions.
+ * Auth model (client-portal session routes):
+ *   All /client-portal/sessions* routes are protected by requireClientAuth.
+ *   The authenticated client identity (req.client.id) is the exclusive source
+ *   of clientId — caller-provided clientId values in query params or bodies
+ *   are removed from the contract and must never be used for authorization.
+ *
+ * Auth model (trainer-facing session routes):
+ *   GET /clients/:clientId/workout-sessions and :sessionId are protected by
+ *   requireAuth (trainer Clerk session) + verifyClientBelongsToTrainer.
  */
 
 import { Router, type IRouter } from "express";
+import type { Request, Response } from "express";
 import { eq, and, desc, inArray } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -23,20 +30,20 @@ import {
   exerciseExecutionLogsTable,
 } from "@workspace/db";
 import { determineDayType, getRampWarmup } from "../services/rampWarmup";
+import { requireAuth } from "../middlewares/requireAuth";
+import { requireClientAuth } from "../middlewares/requireClientAuth";
 
 const router: IRouter = Router();
 
 // ─── Zod schemas ──────────────────────────────────────────────────────────────
 
 const CreateSessionBody = z.object({
-  clientId: z.number().int().positive(),
   planId: z.number().int().positive(),
   planDayId: z.number().int().positive(),
   sessionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format: YYYY-MM-DD"),
 });
 
 const UpsertExerciseLogBody = z.object({
-  clientId: z.number().int().positive(),
   setsCompleted: z.number().int().min(0).nullable().optional(),
   repsCompleted: z.number().int().min(0).nullable().optional(),
   weightKg: z.number().min(0).nullable().optional(),
@@ -46,10 +53,37 @@ const UpsertExerciseLogBody = z.object({
 });
 
 const PatchSessionBody = z.object({
-  clientId: z.number().int().positive(),
   isCompleted: z.boolean().optional(),
   notes: z.string().max(1000).nullable().optional(),
 });
+
+// ─── Trainer-ownership helpers ────────────────────────────────────────────────
+
+/**
+ * Verify a client belongs to the authenticated trainer.
+ * Returns true on success, or false after sending 404.
+ * Must only be called on routes guarded by requireAuth.
+ */
+async function verifyClientBelongsToTrainer(
+  req: Request,
+  res: Response,
+  clientId: number,
+): Promise<boolean> {
+  const [client] = await db
+    .select({ id: clientsTable.id })
+    .from(clientsTable)
+    .where(
+      and(
+        eq(clientsTable.id, clientId),
+        eq(clientsTable.trainerId, req.trainer!.id),
+      ),
+    );
+  if (!client) {
+    res.status(404).json({ error: "Klient nie znaleziony." });
+    return false;
+  }
+  return true;
+}
 
 // ─── Helper: verify session ownership ────────────────────────────────────────
 // Returns the session row if it exists and belongs to clientId, else null.
@@ -146,31 +180,31 @@ async function getClientPlanFull(planId: number) {
   };
 }
 
-// ─── GET /client-portal/plan?email=xxx ──────────────────────────────────────
-// Returns the active plan for the client identified by email.
+// ─── GET /client-portal/plan ──────────────────────────────────────────────────
+// Returns the active plan for the authenticated client.
+// Auth: requireClientAuth — clientId comes from req.client.id, never from query.
+// The legacy ?email= query parameter is silently ignored.
 
-router.get("/client-portal/plan", async (req, res): Promise<void> => {
-  const email = (req.query["email"] as string | undefined)?.trim().toLowerCase();
-  if (!email) {
-    res.status(400).json({ error: "Podaj adres e-mail." });
-    return;
-  }
+router.get("/client-portal/plan", requireClientAuth, async (req, res): Promise<void> => {
+  const clientId = req.client!.id;
 
-  const [client] = await db
+  // Resolve display fields for the response (name shown in the portal).
+  const [clientRow] = await db
     .select({ id: clientsTable.id, firstName: clientsTable.firstName, lastName: clientsTable.lastName })
     .from(clientsTable)
-    .where(eq(clientsTable.email, email))
+    .where(eq(clientsTable.id, clientId))
     .limit(1);
 
-  if (!client) {
-    res.status(404).json({ error: "Nie znaleziono klienta z podanym adresem e-mail." });
+  if (!clientRow) {
+    // requireClientAuth already guarantees the row exists, but guard defensively.
+    res.status(404).json({ error: "Klient nie znaleziony." });
     return;
   }
 
   const [activePlan] = await db
     .select({ id: workoutPlansTable.id })
     .from(workoutPlansTable)
-    .where(and(eq(workoutPlansTable.clientId, client.id), eq(workoutPlansTable.status, "active")))
+    .where(and(eq(workoutPlansTable.clientId, clientId), eq(workoutPlansTable.status, "active")))
     .orderBy(desc(workoutPlansTable.activatedAt))
     .limit(1);
 
@@ -185,18 +219,18 @@ router.get("/client-portal/plan", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json({ client: { id: client.id, firstName: client.firstName, lastName: client.lastName }, plan });
+  res.json({ client: { id: clientRow.id, firstName: clientRow.firstName, lastName: clientRow.lastName }, plan });
 });
 
-// ─── GET /client-portal/sessions?clientId=x&planDayId=y ─────────────────────
-// Returns existing sessions for a client + day combination.
-// clientId is the ownership key — only sessions for that client are returned.
+// ─── GET /client-portal/sessions ─────────────────────────────────────────────
+// Returns sessions for a specific plan day that belong to the authenticated client.
+// Auth: requireClientAuth — clientId comes from req.client.id, never from query.
 
-router.get("/client-portal/sessions", async (req, res): Promise<void> => {
-  const clientId = Number(req.query["clientId"]);
+router.get("/client-portal/sessions", requireClientAuth, async (req, res): Promise<void> => {
+  const clientId = req.client!.id;
   const planDayId = Number(req.query["planDayId"]);
-  if (!clientId || !planDayId) {
-    res.status(400).json({ error: "clientId i planDayId są wymagane." });
+  if (!planDayId) {
+    res.status(400).json({ error: "planDayId jest wymagane." });
     return;
   }
 
@@ -211,23 +245,36 @@ router.get("/client-portal/sessions", async (req, res): Promise<void> => {
 
 // ─── POST /client-portal/sessions ────────────────────────────────────────────
 // Creates a new workout session for a plan day.
+// Auth: requireClientAuth — clientId comes from req.client.id, never from body.
+// Ownership: plan must belong to the authenticated client.
 
-router.post("/client-portal/sessions", async (req, res): Promise<void> => {
+router.post("/client-portal/sessions", requireClientAuth, async (req, res): Promise<void> => {
   const parsed = CreateSessionBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
-  const { clientId, planId, planDayId, sessionDate } = parsed.data;
+  const clientId = req.client!.id;
+  const { planId, planDayId, sessionDate } = parsed.data;
 
-  // Verify plan belongs to client.
+  // Verify plan belongs to the authenticated client (plan → authenticated client chain).
   const [plan] = await db
     .select({ id: workoutPlansTable.id })
     .from(workoutPlansTable)
     .where(and(eq(workoutPlansTable.id, planId), eq(workoutPlansTable.clientId, clientId)));
   if (!plan) {
-    res.status(403).json({ error: "Plan nie należy do tego klienta." });
+    res.status(404).json({ error: "Plan nie znaleziony." });
+    return;
+  }
+
+  // Verify plan day belongs to the plan (plan day → plan → authenticated client chain).
+  const [planDay] = await db
+    .select({ id: workoutPlanDaysTable.id })
+    .from(workoutPlanDaysTable)
+    .where(and(eq(workoutPlanDaysTable.id, planDayId), eq(workoutPlanDaysTable.planId, planId)));
+  if (!planDay) {
+    res.status(404).json({ error: "Dzień planu nie znaleziony." });
     return;
   }
 
@@ -239,14 +286,15 @@ router.post("/client-portal/sessions", async (req, res): Promise<void> => {
   res.status(201).json(session);
 });
 
-// ─── GET /client-portal/sessions/:sessionId?clientId=x ───────────────────────
+// ─── GET /client-portal/sessions/:sessionId ──────────────────────────────────
 // Returns session details with all exercise execution logs.
-// Requires clientId query param to verify ownership.
+// Auth: requireClientAuth — clientId from req.client.id, never from query.
+// Ownership: session.clientId must equal req.client.id.
 
-router.get("/client-portal/sessions/:sessionId", async (req, res): Promise<void> => {
+router.get("/client-portal/sessions/:sessionId", requireClientAuth, async (req, res): Promise<void> => {
   const sessionId = Number(req.params["sessionId"]);
-  const clientId = Number(req.query["clientId"]);
-  if (!sessionId || !clientId) {
+  const clientId = req.client!.id;
+  if (!sessionId) {
     res.status(400).json({ error: "Nieprawidłowe parametry żądania." });
     return;
   }
@@ -264,14 +312,16 @@ router.get("/client-portal/sessions/:sessionId", async (req, res): Promise<void>
 
 // ─── PATCH /client-portal/sessions/:sessionId ────────────────────────────────
 // Mark session complete or update session-level notes.
-// Requires clientId in body to verify ownership.
+// Auth: requireClientAuth — clientId from req.client.id, never from body.
+// Ownership: session.clientId must equal req.client.id.
 
-router.patch("/client-portal/sessions/:sessionId", async (req, res): Promise<void> => {
+router.patch("/client-portal/sessions/:sessionId", requireClientAuth, async (req, res): Promise<void> => {
   const sessionId = Number(req.params["sessionId"]);
+  const clientId = req.client!.id;
   const parsed = PatchSessionBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
-  const { clientId, isCompleted, notes } = parsed.data;
+  const { isCompleted, notes } = parsed.data;
 
   const existing = await verifySessionOwnership(sessionId, clientId);
   if (!existing) { res.status(404).json({ error: "Sesja nie znaleziona." }); return; }
@@ -303,19 +353,22 @@ router.patch("/client-portal/sessions/:sessionId", async (req, res): Promise<voi
 
 // ─── PUT /client-portal/sessions/:sessionId/exercises/:planExerciseId ────────
 // Upsert an exercise execution log.
-// Requires clientId in body to verify session ownership before writing.
+// Auth: requireClientAuth — clientId from req.client.id, never from body.
+// Ownership: session.clientId must equal req.client.id before any write.
 
 router.put(
   "/client-portal/sessions/:sessionId/exercises/:planExerciseId",
+  requireClientAuth,
   async (req, res): Promise<void> => {
     const sessionId = Number(req.params["sessionId"]);
     const planExerciseId = Number(req.params["planExerciseId"]);
+    const clientId = req.client!.id;
     const parsed = UpsertExerciseLogBody.safeParse(req.body);
     if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
-    const { clientId, setsCompleted, repsCompleted, weightKg, rir, note, isCompleted } = parsed.data;
+    const { setsCompleted, repsCompleted, weightKg, rir, note, isCompleted } = parsed.data;
 
-    // Verify this session belongs to the requesting client.
+    // Verify this session belongs to the authenticated client.
     const session = await verifySessionOwnership(sessionId, clientId);
     if (!session) { res.status(404).json({ error: "Sesja nie znaleziona." }); return; }
 
@@ -379,14 +432,15 @@ router.put(
   },
 );
 
-// ─── GET /client-portal/sessions/:sessionId/warmup?clientId=x ────────────────
+// ─── GET /client-portal/sessions/:sessionId/warmup ───────────────────────────
 // Returns RAMP warm-up blocks for the day associated with this session.
-// Requires clientId query param to verify ownership.
+// Auth: requireClientAuth — clientId from req.client.id, never from query.
+// Ownership: session.clientId must equal req.client.id.
 
-router.get("/client-portal/sessions/:sessionId/warmup", async (req, res): Promise<void> => {
+router.get("/client-portal/sessions/:sessionId/warmup", requireClientAuth, async (req, res): Promise<void> => {
   const sessionId = Number(req.params["sessionId"]);
-  const clientId = Number(req.query["clientId"]);
-  if (!sessionId || !clientId) {
+  const clientId = req.client!.id;
+  if (!sessionId) {
     res.status(400).json({ error: "Nieprawidłowe parametry żądania." });
     return;
   }
@@ -408,15 +462,20 @@ router.get("/client-portal/sessions/:sessionId/warmup", async (req, res): Promis
 });
 
 // ─── GET /clients/:clientId/workout-sessions ─────────────────────────────────
-// Trainer view: list all sessions for a client, newest first.
+// Trainer-facing: list sessions for a client belonging to the authenticated trainer.
+// Auth: requireAuth (trainer Clerk session) + ownership check.
 
-router.get("/clients/:clientId/workout-sessions", async (req, res): Promise<void> => {
+router.get("/clients/:clientId/workout-sessions", requireAuth, async (req, res): Promise<void> => {
   const clientId = Number(req.params["clientId"]);
-  if (!clientId) { res.status(400).json({ error: "Nieprawidłowe ID klienta." }); return; }
+  if (!clientId) { res.status(400).json({ error: "Nieprawidłowy clientId." }); return; }
+
+  const ok = await verifyClientBelongsToTrainer(req, res, clientId);
+  if (!ok) return;
 
   const sessions = await db
     .select({
       id: workoutSessionsTable.id,
+      clientId: workoutSessionsTable.clientId,
       planId: workoutSessionsTable.planId,
       planDayId: workoutSessionsTable.planDayId,
       sessionDate: workoutSessionsTable.sessionDate,
@@ -438,15 +497,21 @@ router.get("/clients/:clientId/workout-sessions", async (req, res): Promise<void
 });
 
 // ─── GET /clients/:clientId/workout-sessions/:sessionId ──────────────────────
-// Trainer view: full session detail with prescribed vs. actual per exercise.
+// Trainer-facing: session detail for a client belonging to the authenticated trainer.
+// Auth: requireAuth (trainer Clerk session) + ownership check.
 
-router.get("/clients/:clientId/workout-sessions/:sessionId", async (req, res): Promise<void> => {
+router.get("/clients/:clientId/workout-sessions/:sessionId", requireAuth, async (req, res): Promise<void> => {
   const clientId = Number(req.params["clientId"]);
   const sessionId = Number(req.params["sessionId"]);
+  if (!clientId || !sessionId) { res.status(400).json({ error: "Nieprawidłowe parametry." }); return; }
+
+  const ok = await verifyClientBelongsToTrainer(req, res, clientId);
+  if (!ok) return;
 
   const [session] = await db
     .select({
       id: workoutSessionsTable.id,
+      clientId: workoutSessionsTable.clientId,
       planId: workoutSessionsTable.planId,
       planDayId: workoutSessionsTable.planDayId,
       sessionDate: workoutSessionsTable.sessionDate,

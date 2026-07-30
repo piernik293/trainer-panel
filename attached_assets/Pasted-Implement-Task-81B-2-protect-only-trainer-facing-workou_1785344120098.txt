@@ -1,0 +1,168 @@
+Implement Task #81B-2: protect only trainer-facing workout-plan and plan-generation routes.
+
+This is a focused authorization task.
+
+Do not inspect or modify:
+
+- survey routes,
+- trainer notes,
+- survey invitation flow,
+- workout sessions or execution logs,
+- client portal,
+- statistics,
+- authentication setup,
+- exercise-selection or workout-generation rules,
+- frontend UX.
+
+Do not change the content of generated plans.
+Only add authentication, ownership enforcement, and targeted authorization tests.
+
+Keep Agent usage below $5.50.
+Stop after implementing and testing this exact scope.
+
+## Goal
+
+An authenticated trainer may access, create, edit, generate, activate, or delete plans only for clients they own.
+
+Rules:
+
+- unauthenticated private request → 401,
+- authenticated request for another trainer’s resource → 404,
+- ownership must be derived from the database,
+- never trust trainerId from request body, query params, headers, or URL,
+- when both clientId and planId are present, the plan must belong to that exact client,
+- public survey routes and the client-facing portal must remain unchanged.
+
+## 1. Plan routes
+
+Inventory and protect only trainer-facing routes responsible for:
+
+- listing plans for a client,
+- creating or saving a plan,
+- reading a plan by planId,
+- updating a plan,
+- changing plan status,
+- activating a plan,
+- deleting a plan,
+- adding, editing, reordering, or deleting plan days,
+- adding, editing, reordering, or deleting exercises inside a plan,
+- copying or duplicating plans if such routes exist.
+
+For routes containing only planId, derive ownership through:
+
+plan → client → trainer
+
+For routes containing clientId and planId, require:
+
+plan.id = planId
+AND plan.clientId = clientId
+AND client.trainerId = authenticatedTrainer.id
+
+Do not check ownership only through an unrelated clientId.
+
+## 2. Plan-generation routes
+
+Protect trainer-facing routes responsible for:
+
+- plan-draft input,
+- plan-draft validation when client data is involved,
+- generate-day,
+- balance-week,
+- record-generation,
+- exercise recommendations,
+- volume preview,
+- analysis preview,
+- other generator endpoints reading a client survey or client history.
+
+Every route referencing a client must verify that the authenticated trainer owns that exact client before generator logic runs.
+
+If a request contains planId:
+
+- verify the plan belongs to the authenticated trainer,
+- verify it belongs to the supplied clientId when both IDs exist.
+
+Do not modify generator filtering, exercise choice, volume rules, warnings, or plan structure.
+
+## 3. Nested-resource binding
+
+Verify that IDs cannot be mixed between resources.
+
+Examples that must return 404:
+
+- Trainer A owns Client A and Client C.
+- Plan C belongs to Client C.
+- Trainer A requests Plan C through Client A’s nested URL.
+
+Also verify:
+
+- a plan day belongs to the supplied plan,
+- a plan exercise belongs to the supplied day or plan,
+- an exercise cannot be edited through another owned plan’s URL.
+
+## 4. Query enforcement
+
+Where practical:
+
+- enforce trainer ownership in the database condition,
+- use owner-scoped joins or subqueries,
+- return 404 for foreign or mismatched resources,
+- do not load unrestricted plan data and rely on frontend checks.
+
+## 5. Tests
+
+Add targeted tests covering:
+
+1. unauthenticated plan list → 401,
+2. Trainer A lists only plans belonging to Client A,
+3. Trainer A cannot list Trainer B’s client plans,
+4. Trainer A cannot read Trainer B’s plan by planId,
+5. Trainer A cannot update Trainer B’s plan,
+6. Trainer A cannot delete Trainer B’s plan,
+7. Trainer A cannot activate Trainer B’s plan,
+8. request-body trainerId is ignored,
+9. Plan C cannot be accessed through Client A’s URL even when both clients belong to Trainer A,
+10. plan day cannot be modified through another plan,
+11. plan exercise cannot be modified through another day or plan,
+12. unauthenticated generate-day → 401,
+13. Trainer A cannot generate a plan for Trainer B’s client,
+14. Trainer A cannot request recommendations for Trainer B’s client,
+15. Trainer A cannot request volume preview for Trainer B’s client,
+16. Trainer A cannot request analysis preview for Trainer B’s client,
+17. valid owner plan operations still work,
+18. valid owner generation still produces the same result as before authorization changes.
+
+Run only tests related to plan authorization and generator-route authorization.
+
+Run one minimal regression test confirming that existing beginner and inactive-client safety behavior remains unchanged, without modifying the generator.
+
+## Required report
+
+# Plan routes protected
+
+# Generator routes protected
+
+# Ownership resolution
+
+# Nested-resource binding
+
+# Tests
+
+# Generator regression result
+
+# Files changed
+
+# Routes intentionally left for Task #81B-3
+
+Explicitly list workout sessions, execution logs, progress/history, statistics, and client portal as outside this task.
+
+# Agent usage
+
+Return exactly:
+
+`READY — plans and generator routes are owner-isolated`
+
+or
+
+`NEEDS FIXING — a plan or generator route can bypass ownership`
+
+Do not start Task #81B-3 or modify frontend UX.

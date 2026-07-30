@@ -33,9 +33,10 @@ import {
   DraftVolumeDistributionBody,
   type PlanDraftInputWarningType,
 } from "@workspace/api-zod";
-import { eq } from "drizzle-orm";
-import { db, volumeTargetsTable } from "@workspace/db";
+import { eq, and } from "drizzle-orm";
+import { db, clientsTable, volumeTargetsTable } from "@workspace/db";
 import { loadPlanDraftInput } from "../services/planDraftInputService";
+import { requireAuth } from "../middlewares/requireAuth";
 import { calculateVolumeDecisions } from "../services/planDraftVolumeDecisionService";
 import { calculateVolumeDistribution } from "../services/planDraftVolumeDistributionService";
 
@@ -43,14 +44,26 @@ const router: IRouter = Router();
 
 // ─── GET /clients/:clientId/plan-draft-input ──────────────────────────────────
 
-router.get("/clients/:clientId/plan-draft-input", async (req, res): Promise<void> => {
+router.get("/clients/:clientId/plan-draft-input", requireAuth, async (req, res): Promise<void> => {
   const params = GetClientPlanDraftInputParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const result = await loadPlanDraftInput(params.data.clientId);
+  const clientId = params.data.clientId;
+
+  // Verify the client belongs to the authenticated trainer.
+  const [ownedClient] = await db
+    .select({ id: clientsTable.id })
+    .from(clientsTable)
+    .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
+  if (!ownedClient) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
+    return;
+  }
+
+  const result = await loadPlanDraftInput(clientId);
   if (!result) {
     res.status(404).json({ error: "Klient nie znaleziony" });
     return;
@@ -61,7 +74,7 @@ router.get("/clients/:clientId/plan-draft-input", async (req, res): Promise<void
 
 // ─── POST /plans/draft-input/validate ────────────────────────────────────────
 
-router.post("/plans/draft-input/validate", async (req, res): Promise<void> => {
+router.post("/plans/draft-input/validate", requireAuth, async (req, res): Promise<void> => {
   const parsed = ValidateDraftInputBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -69,6 +82,17 @@ router.post("/plans/draft-input/validate", async (req, res): Promise<void> => {
   }
 
   const { clientId, preferences } = parsed.data;
+
+  // Verify the client belongs to the authenticated trainer.
+  const [ownedClient] = await db
+    .select({ id: clientsTable.id })
+    .from(clientsTable)
+    .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
+  if (!ownedClient) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
+    return;
+  }
+
   const warnings: PlanDraftInputWarningType[] = [];
 
   // Load input to validate experience level
@@ -145,7 +169,7 @@ router.post("/plans/draft-input/validate", async (req, res): Promise<void> => {
 
 // ─── POST /plans/draft-volume/preview ─────────────────────────────────────────
 
-router.post("/plans/draft-volume/preview", async (req, res): Promise<void> => {
+router.post("/plans/draft-volume/preview", requireAuth, async (req, res): Promise<void> => {
   const parsed = DraftVolumePreviewBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -153,6 +177,16 @@ router.post("/plans/draft-volume/preview", async (req, res): Promise<void> => {
   }
 
   const { clientId, preferences, trainerVolumeOverrides } = parsed.data;
+
+  // Verify the client belongs to the authenticated trainer.
+  const [ownedClient] = await db
+    .select({ id: clientsTable.id })
+    .from(clientsTable)
+    .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
+  if (!ownedClient) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
+    return;
+  }
 
   // Load the client's Phase 1 draft input (normalized survey data)
   const draftInput = await loadPlanDraftInput(clientId);
@@ -192,7 +226,7 @@ router.post("/plans/draft-volume/preview", async (req, res): Promise<void> => {
 
 // ─── POST /plans/draft-distribution/preview ────────────────────────────────────
 
-router.post("/plans/draft-distribution/preview", async (req, res): Promise<void> => {
+router.post("/plans/draft-distribution/preview", requireAuth, async (req, res): Promise<void> => {
   const parsed = DraftVolumeDistributionBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -200,6 +234,16 @@ router.post("/plans/draft-distribution/preview", async (req, res): Promise<void>
   }
 
   const { clientId, experienceLevel, trainingDays, selectedSplitType, selectedWeeklyVolumes, priorityTargetIds, corePriority } = parsed.data;
+
+  // Verify the client belongs to the authenticated trainer.
+  const [ownedClient] = await db
+    .select({ id: clientsTable.id })
+    .from(clientsTable)
+    .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
+  if (!ownedClient) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
+    return;
+  }
 
   // Validate experienceLevel is one of the four canonical levels
   if (!(VALID_EXPERIENCE_LEVELS as readonly string[]).includes(experienceLevel)) {

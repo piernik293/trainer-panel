@@ -1,0 +1,232 @@
+## Task #83 — Secure client-portal plan access with authenticated client identity
+
+### Objective
+
+Secure the remaining unauthenticated client-portal plan route:
+
+```text
+GET /client-portal/plan?email=...
+```
+
+The route must no longer trust an email address supplied by the caller.
+
+A client must only be able to retrieve the active plan assigned to their own authenticated client account.
+
+Do not modify the already-secured trainer-facing session routes or client-portal session routes unless required to reuse existing authentication helpers.
+
+---
+
+## Current authentication model
+
+Client session routes now use:
+
+```ts
+requireClientAuth
+```
+
+The middleware resolves the authenticated client using:
+
+```text
+Clerk JWT
+→ getAuth(req).userId
+→ clients.clerk_user_id
+→ req.client.id
+```
+
+Reuse this authentication model.
+
+Do not create a separate email-based authentication mechanism.
+
+---
+
+## Route in scope
+
+Secure:
+
+```text
+GET /client-portal/plan
+```
+
+Inspect the surrounding file for any additional client-portal plan, plan-day, exercise, warmup, or preview routes that rely on caller-provided email or client identity.
+
+Apply the same authenticated ownership model where directly relevant.
+
+Do not expand this task into unrelated trainer-plan CRUD work.
+
+---
+
+## Required behavior
+
+The secured route must:
+
+1. Require `requireClientAuth`.
+2. Use `req.client.id` as the only client identity.
+3. Stop requiring or reading `email` from query parameters.
+4. Retrieve only a plan assigned to the authenticated client.
+5. Return `404` when the authenticated client has no accessible active plan.
+6. Return `401` when no valid Clerk session exists.
+7. Never reveal whether another email address or client has a plan.
+8. Preserve the expected valid client portal response shape wherever possible.
+
+The authorization query must be equivalent to:
+
+```text
+plan.clientId = req.client.id
+```
+
+If active-plan status, assignment status, dates, or additional ownership fields already exist, preserve those constraints.
+
+---
+
+## Request-contract cleanup
+
+Remove authorization reliance on:
+
+```ts
+req.query.email
+req.body.email
+req.query.clientId
+req.body.clientId
+```
+
+Caller-provided email or client identifiers must not affect the result.
+
+Prefer removing the email parameter from frontend calls and validation schemas entirely.
+
+If legacy callers still send `email`, it may be ignored temporarily, but it must never influence authorization or plan selection.
+
+---
+
+## Ownership chains
+
+Enforce the following chains wherever applicable:
+
+```text
+plan → authenticated client
+plan day → plan → authenticated client
+plan exercise → plan day → plan → authenticated client
+warmup configuration → authenticated client's plan
+```
+
+Nested plan data must only be loaded after the top-level plan has been confirmed to belong to `req.client.id`.
+
+Do not fetch a plan globally by email or plan ID and then expose nested data before checking ownership.
+
+---
+
+## Frontend/API caller updates
+
+Find every frontend or API call using:
+
+```text
+/client-portal/plan?email=...
+```
+
+Update it to call:
+
+```text
+/client-portal/plan
+```
+
+using the authenticated Clerk session.
+
+Remove unnecessary email forwarding from the relevant client portal components, hooks, or API utilities.
+
+Do not remove email from the client profile itself if it is used for legitimate display or trainer management purposes.
+
+---
+
+## Required tests
+
+Add tests proving:
+
+1. Unauthenticated `GET /client-portal/plan` returns `401`.
+2. Authenticated Client A receives only Client A’s active plan.
+3. Authenticated Client A cannot receive Client B’s plan.
+4. Supplying Client B’s email in query does not change Client A’s scope.
+5. Supplying Client B’s `clientId` in query does not change Client A’s scope.
+6. A client with no linked plan receives `404`.
+7. A Clerk user with no linked client record receives the expected secure response.
+8. Nested plan days and exercises belong only to the authenticated client’s plan.
+9. Existing secured client session routes still pass their tests.
+10. Existing trainer-facing authorization tests still pass.
+11. The updated frontend caller no longer requires an email query parameter.
+12. No protected plan route uses caller-provided email or client identity for authorization.
+
+Where practical, include:
+
+```text
+Client A
+Client B
+Plan A
+Plan B
+Plan days and exercises for both plans
+```
+
+Then verify that Client A never receives IDs, exercises, plan days, or metadata belonging to Plan B.
+
+---
+
+## Security constraints
+
+* Do not restore an unauthenticated compatibility fallback.
+* Do not use email as an authentication secret.
+* Do not compare only frontend-provided email against database email.
+* Do not trust hidden form fields.
+* Do not return different errors that reveal whether another client or email exists.
+* Do not weaken `requireClientAuth`.
+* Do not modify trainer ownership checks.
+* Do not introduce a route where a caller may select their identity.
+* Keep the change focused on client plan retrieval and related frontend calls.
+
+---
+
+## Migration and schema constraints
+
+No new identity column should be required because:
+
+```text
+clients.clerk_user_id
+```
+
+already exists.
+
+Only add a migration if a genuinely necessary plan-ownership field is missing. Explain clearly why it is required before adding it.
+
+Do not create duplicate Clerk identity columns.
+
+---
+
+## Test execution
+
+Run:
+
+* new client plan authentication tests,
+* client-portal authentication tests,
+* trainer session authorization tests,
+* plan authorization tests,
+* Clerk authentication tests,
+* the broader related authentication suite.
+
+Do not mark the task ready unless all affected tests pass.
+
+---
+
+## Final report
+
+Report:
+
+* routes protected,
+* old access model,
+* new authenticated access model,
+* ownership query used,
+* request parameters removed or ignored,
+* frontend callers updated,
+* tests added,
+* complete test results,
+* files changed,
+* remaining client-portal authentication risks.
+
+Required completion statement:
+
+`READY — client portal plan access is isolated by authenticated client identity`

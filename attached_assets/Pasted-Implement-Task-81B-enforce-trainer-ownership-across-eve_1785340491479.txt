@@ -1,0 +1,250 @@
+Implement Task #81B: enforce trainer ownership across every private client-owned route.
+
+This is a focused authorization task.
+
+Do not redesign the UI.
+Do not implement client accounts or passwords.
+Do not modify workout-generation rules.
+Do not modify exercise-selection logic.
+Do not add payments, chat, organizations, or subscriptions.
+Do not change the secure survey invitation flow from Task #81A.
+Do not work on the client-facing portal authentication model yet, except to clearly document its remaining risk.
+
+Keep Agent usage below $9 if possible.
+Stop and report before making broad architectural changes.
+
+## Current state
+
+Task #81A is complete:
+
+- every client has a non-null trainerId,
+- trainerId comes only from authenticated server context or a survey invitation,
+- the generic public client-creation endpoint is removed,
+- trainer client CRUD is protected,
+- survey invitation tokens are secure.
+
+However, several nested client-owned resources remain accessible without complete trainer authentication and ownership checks.
+
+## Goal
+
+After this task, an authenticated ordinary trainer can access only resources belonging to their own clients.
+
+Unauthenticated requests to private trainer routes must return 401.
+
+Authenticated requests for another trainer’s resources must return 404.
+
+Ownership must be enforced in database queries, not only in the frontend.
+
+## 1. Shared authorization helpers
+
+Create or reuse small shared helpers for:
+
+- resolving an authenticated trainer,
+- verifying ownership through `clients.trainerId`,
+- resolving ownership from `clientId`,
+- resolving ownership from `planId` through plan → client,
+- resolving ownership from session or note IDs where necessary.
+
+Do not trust:
+
+- trainerId from request bodies,
+- trainerId from query parameters,
+- custom headers,
+- clientId alone as authorization.
+
+Prefer database conditions that include the authenticated trainer ID.
+
+## 2. Protect client survey routes
+
+Protect every route for:
+
+- reading a survey,
+- creating or updating a survey,
+- partial survey updates,
+- avoided exercises connected to the client,
+- any survey status or survey-derived endpoint.
+
+Requirements:
+
+- require authenticated trainer,
+- verify client ownership,
+- Trainer A requesting Trainer B’s survey receives 404,
+- survey updates cannot change client ownership,
+- the public token-based survey routes remain public and isolated.
+
+Do not apply trainer authentication to `/api/public/survey/:token`.
+
+## 3. Protect notes
+
+Protect all trainer-note routes:
+
+- list notes,
+- create notes,
+- update notes,
+- delete notes.
+
+Notes must be reachable only through a client owned by the authenticated trainer.
+
+Internal trainer notes must never appear through public survey or client portal routes.
+
+## 4. Protect workout plans
+
+Protect:
+
+- listing plans for a client,
+- creating a plan for a client,
+- reading a plan by plan ID,
+- updating a plan,
+- activating or changing plan status,
+- deleting a plan,
+- editing plan days,
+- editing plan exercises,
+- any plan-copy or duplicate operation.
+
+For routes using only `planId`, derive ownership through:
+
+plan → client → trainer
+
+Do not trust a clientId supplied separately if ownership can be resolved from the plan.
+
+Update and delete statements should include ownership in their database condition or use a verified owner-scoped subquery.
+
+## 5. Protect generator and plan-draft routes
+
+Protect every trainer-facing route related to:
+
+- plan-draft input,
+- plan-draft validation,
+- generate-day,
+- balance-week,
+- record-generation,
+- exercise recommendations,
+- volume preview,
+- analysis preview.
+
+Every operation must verify that the referenced client belongs to the authenticated trainer.
+
+If a request contains both clientId and planId, verify that:
+
+- the client belongs to the trainer,
+- the plan belongs to that client.
+
+Do not modify generator behavior or generated exercise selection.
+
+## 6. Protect workout sessions and logs
+
+Protect trainer-facing routes for:
+
+- client workout sessions,
+- exercise execution logs,
+- workout history,
+- trainer-visible progress data.
+
+Ordinary trainers may access only sessions belonging to their clients.
+
+Do not redesign the separate client-facing portal authentication in this task.
+
+Clearly identify all `/api/client-portal/*` routes that remain governed by the current client-facing access model.
+
+## 7. Protect statistics and dashboard queries
+
+Confirm that:
+
+- dashboard recent clients,
+- client counts,
+- survey counts,
+- plan counts,
+- workout statistics
+
+are scoped to the authenticated trainer.
+
+Application-wide access is allowed only when the authenticated Clerk ID appears in:
+
+`APP_ADMIN_CLERK_IDS`
+
+Missing or empty admin configuration grants no admin access.
+
+## 8. Route inventory
+
+Inspect every registered API route.
+
+Produce a complete inventory of routes that:
+
+- accept `clientId`,
+- accept `planId`,
+- accept note/session/log IDs,
+- return client-specific data.
+
+Do not assume a route is protected because its parent router is protected. Confirm actual middleware placement.
+
+## 9. Tests
+
+Add targeted isolation tests using Trainer A and Trainer B.
+
+Minimum required cases:
+
+1. unauthenticated survey read → 401,
+2. Trainer A cannot read Trainer B’s survey → 404,
+3. Trainer A cannot update Trainer B’s survey → 404,
+4. Trainer A cannot read Trainer B’s notes → 404,
+5. Trainer A cannot create a note for Trainer B’s client → 404,
+6. Trainer A cannot read Trainer B’s plan by planId → 404,
+7. Trainer A cannot update Trainer B’s plan → 404,
+8. Trainer A cannot delete Trainer B’s plan → 404,
+9. Trainer A cannot generate a plan for Trainer B’s client → 404,
+10. Trainer A cannot request volume or analysis preview for Trainer B’s client,
+11. Trainer A cannot read Trainer B’s workout sessions,
+12. Trainer A’s dashboard excludes Trainer B’s data,
+13. admin access works only when explicitly allowlisted,
+14. empty admin allowlist gives no elevated access,
+15. public survey token flow still works without trainer login,
+16. valid owner requests still work normally,
+17. plan ownership is derived through plan → client → trainer,
+18. changing IDs in URLs cannot bypass ownership.
+
+Run only authorization-focused tests and minimal regression smoke tests.
+
+## 10. Smoke test
+
+Perform a minimal two-trainer test:
+
+- Trainer A creates or owns Client A,
+- Trainer B creates or owns Client B,
+- each trainer sees only their own client,
+- direct requests to the other trainer’s survey, plan, notes and generator return 404,
+- unauthenticated private requests return 401,
+- the public survey invitation remains functional.
+
+Delete temporary records after testing.
+
+## Required report
+
+# Protected route groups
+
+# Ownership resolution methods
+
+# Routes still public
+
+# Client portal routes still unresolved
+
+# Test results
+
+# Two-trainer isolation results
+
+# Files changed
+
+# Remaining security risks
+
+# Agent usage
+
+## Final decision
+
+Return exactly one:
+
+`READY — all trainer-facing client data is owner-isolated`
+
+or
+
+`NEEDS FIXING — at least one private client-owned route can bypass trainer ownership`
+
+Do not implement client accounts, quick interview UX, or public portal redesign.

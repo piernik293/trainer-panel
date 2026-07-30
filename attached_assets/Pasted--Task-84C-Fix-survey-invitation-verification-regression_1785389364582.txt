@@ -1,0 +1,147 @@
+## Task #84C — Fix survey invitation verification regression after CORS hardening
+
+A newly generated and active survey invitation currently opens the client page, but the page displays:
+
+“Błąd połączenia — Nie udało się zweryfikować linku.”
+
+The invitation is active and unexpired in the trainer panel, so investigate the complete browser request path rather than assuming the token is invalid.
+
+### Objective
+
+Restore the end-to-end survey invitation flow while preserving the explicit CORS allowlist.
+
+Do not revert to:
+
+cors({ origin: true })
+
+and do not weaken trainer or client authentication.
+
+### Reproduce the issue
+
+1. Generate a new survey invitation in the trainer app.
+2. Copy the generated URL.
+3. Open it in a signed-out/incognito browser.
+4. Identify the exact frontend route opened.
+5. Identify the exact API request used to verify the invitation token.
+6. Capture:
+   - request URL,
+   - browser Origin,
+   - response status,
+   - CORS response headers,
+   - frontend error,
+   - backend logs.
+
+Do not guess the cause before reproducing it.
+
+### Audit the invitation flow
+
+Inspect:
+
+- the trainer-side URL-generation code,
+- the generated invitation URL,
+- the client-landing survey route,
+- the invite-token extraction logic,
+- the invite verification API endpoint,
+- the frontend API base URL,
+- CORS middleware order,
+- environment-origin configuration.
+
+Confirm whether the browser request is:
+
+- same-origin,
+- cross-origin,
+- using the expected API host,
+- sending an Origin included in the allowlist.
+
+### CORS requirements
+
+The public survey invitation and verification endpoints may be unauthenticated, but they must still work from the legitimate survey/client frontend origin.
+
+Add the exact legitimate frontend origin to the allowlist through the proper environment variable.
+
+If the survey frontend has a separate origin from the authenticated client portal, introduce a clearly named variable such as:
+
+SURVEY_APP_ORIGIN
+LOCAL_SURVEY_APP_ORIGIN
+
+only if the existing variables cannot accurately represent it.
+
+Do not allow:
+
+- arbitrary `*.replit.dev`,
+- substring matching,
+- suffix-only matching,
+- wildcard origins,
+- reflective origins.
+
+Origin matching must remain exact.
+
+### URL-generation requirements
+
+Verify that the generated invitation URL points to the correct public frontend route, not directly to an API route and not to a trainer-only route.
+
+The generated URL must contain the token in the format expected by the client frontend.
+
+Do not expose internal IDs unnecessarily.
+
+### Error-handling requirements
+
+The frontend must distinguish:
+
+- network/CORS failure,
+- invalid token,
+- expired token,
+- revoked token,
+- already-used token,
+- backend server error.
+
+Do not show “check your internet connection” for every non-200 response.
+
+Avoid exposing sensitive backend details.
+
+### Required tests
+
+Add tests proving:
+
+1. A newly generated active invite verifies successfully.
+2. The legitimate survey frontend origin receives the correct ACAO header.
+3. A foreign origin receives no ACAO header.
+4. An allowed OPTIONS preflight succeeds when applicable.
+5. The generated invitation URL opens the expected client route.
+6. The token is extracted correctly.
+7. An invalid token shows the invalid-link state.
+8. An expired token shows the expired-link state.
+9. A revoked token shows the revoked-link state.
+10. A network failure shows the connection-error state.
+11. Existing trainer and client portal CORS tests continue to pass.
+12. The CORS implementation is not reverted to reflective or wildcard behavior.
+
+### Manual confirmation
+
+After the fix:
+
+1. Generate a fresh invite.
+2. Open it in incognito.
+3. Confirm verification succeeds.
+4. Complete the training interview.
+5. Confirm the invite becomes used and cannot be reused.
+6. Confirm a foreign origin cannot read the verification response.
+
+### Final report
+
+Report:
+
+- root cause,
+- broken request URL,
+- actual browser Origin,
+- allowlist/environment changes,
+- URL-generation changes,
+- frontend error-handling changes,
+- tests added,
+- test results,
+- manual flow result,
+- files changed.
+
+Required completion statement only after a real browser flow succeeds:
+
+READY — newly generated survey invitations verify and open correctly with restricted CORS

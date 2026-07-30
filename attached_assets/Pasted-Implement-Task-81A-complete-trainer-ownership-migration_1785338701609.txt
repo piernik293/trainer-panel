@@ -1,0 +1,232 @@
+Implement Task #81A: complete trainer ownership migration and add trainer-scoped one-time survey invitations.
+
+This is a focused ownership and onboarding task.
+
+Do not implement client accounts or client passwords yet.
+Do not modify workout generation rules.
+Do not modify exercise selection.
+Do not redesign unrelated screens.
+Do not add payments, chat, organizations, or subscriptions.
+Keep Agent usage below $9 if possible.
+
+## Current confirmed problems
+
+- The initial trainer has now signed in.
+- Existing clients were created before ownership existed and may still have trainer_id = NULL.
+- The authenticated client list is empty because it filters by trainer_id.
+- The dashboard still displays old recent clients, creating inconsistent ownership behavior.
+- Opening an inaccessible client profile can leave the UI permanently displaying “Ładowanie profilu…”.
+- The existing generic public survey can create clients without trainer ownership.
+
+## Goal
+
+After this task:
+
+- all existing clients are safely assigned to the initial trainer,
+- every newly created client always has a trainer owner,
+- each trainer generates a unique one-time survey invitation,
+- submitting that invitation creates a client belonging only to that trainer,
+- the dashboard and client list use the same ownership rules,
+- inaccessible clients show a proper error instead of an infinite loading state,
+- the application administrator can access all clients,
+- ordinary trainers can access only their own clients.
+
+## 1. Verify initial trainer state
+
+Before changing data, verify:
+
+- exactly one trainer row exists,
+- count all clients,
+- count clients where trainer_id IS NULL,
+- count clients already assigned to another trainer.
+
+Abort without modifying data if:
+
+- zero trainers exist,
+- more than one trainer exists and NULL client ownership is ambiguous,
+- any existing client is already assigned to a different trainer unexpectedly.
+
+Report the abort reason clearly.
+
+## 2. Backfill existing clients
+
+If exactly one trainer exists:
+
+- take a pre-migration client count snapshot,
+- assign only clients with trainer_id IS NULL to that trainer,
+- use a transaction,
+- verify that the total client count is unchanged,
+- verify that zero clients have trainer_id IS NULL,
+- do not delete or recreate clients, surveys, plans, notes, or sessions.
+
+Do not apply NOT NULL until the old generic public survey creation flow has been replaced by the token-scoped flow below.
+
+## 3. Application administrator
+
+Add a fail-closed application admin allowlist:
+
+`APP_ADMIN_CLERK_IDS`
+
+Rules:
+
+- IDs come only from environment configuration,
+- an empty or missing allowlist grants no admin access,
+- ordinary trainers see only records where trainer_id = their trainer id,
+- an administrator may view all trainer-owned clients,
+- being an owner/admin of the Replit workspace alone must not grant application admin access.
+
+Do not expose complete Clerk IDs in logs or UI.
+
+## 4. One-time survey invitations
+
+Create a minimal `survey_invites` table containing:
+
+- id
+- trainerId
+- tokenHash
+- optional intendedEmail
+- expiresAt
+- usedAt
+- revokedAt
+- createdAt
+
+Never store the raw token.
+
+Add an authenticated trainer endpoint:
+
+`POST /api/survey-invites`
+
+It must:
+
+- derive trainerId from the authenticated session,
+- generate a cryptographically secure random token,
+- store only its hash,
+- return the raw invitation URL once,
+- ignore trainerId supplied in the request body.
+
+Add token-scoped public endpoints:
+
+- `GET /api/public/survey/:token`
+- `POST /api/public/survey/:token`
+
+The POST endpoint must:
+
+- reject invalid, expired, used, or revoked tokens,
+- derive trainerId only from the matching invitation,
+- create the client with that trainerId,
+- save the submitted survey,
+- mark the invitation as used,
+- perform client creation, survey creation, and token consumption in one transaction,
+- prevent duplicate submission from creating two clients.
+
+The public survey endpoint must not expose:
+
+- trainer notes,
+- other clients,
+- existing plans,
+- trainer-only metadata.
+
+## 5. Disable unsafe generic intake
+
+Disable or replace every public route that can create a client without trainer ownership.
+
+After this change, no client creation path may produce trainer_id = NULL.
+
+Only then apply the NOT NULL constraint to clients.trainer_id.
+
+## 6. Dashboard ownership consistency
+
+Audit the queries used by:
+
+- main client list,
+- recent clients dashboard,
+- client search,
+- client counters/statistics displayed in the trainer app.
+
+Every ordinary trainer query must filter by authenticated trainerId at database level.
+
+Administrator queries may return all records only after the admin allowlist check.
+
+Clear stale trainer-specific frontend cache after login and logout.
+
+## 7. Client profile loading state
+
+Fix the profile page so:
+
+- 401 redirects to login,
+- 404 displays:
+  `Klient nie istnieje lub nie masz do niego dostępu`,
+- network/server errors display a retryable error state,
+- the loading spinner always ends after success or failure.
+
+Do not reveal whether a foreign trainer’s client exists.
+
+## 8. Tests
+
+Add targeted tests for:
+
+1. exactly one trainer + NULL clients → successful backfill,
+2. total client count unchanged after backfill,
+3. zero NULL trainer_id after successful migration,
+4. zero trainers → migration abort,
+5. more than one trainer with ambiguous NULL ownership → migration abort,
+6. Trainer A sees only Trainer A clients,
+7. recent clients dashboard is trainer-scoped,
+8. admin sees all clients,
+9. ordinary trainer cannot impersonate admin,
+10. survey invite receives trainerId from session,
+11. request-body trainerId is ignored,
+12. valid invite creates a client owned by the invite trainer,
+13. invalid token is rejected,
+14. expired token is rejected,
+15. revoked token is rejected,
+16. reused token is rejected,
+17. concurrent double submission creates at most one client,
+18. no client creation path leaves trainer_id NULL,
+19. foreign client profile returns 404,
+20. frontend does not remain in an infinite loading state after 401/404.
+
+## Required report
+
+# Migration result
+
+Include:
+
+- trainer count,
+- client count before,
+- client count after,
+- clients backfilled,
+- clients with trainer_id NULL,
+- whether NOT NULL was applied.
+
+Do not expose complete external user IDs.
+
+# Survey invitation flow
+
+# Dashboard ownership fixes
+
+# Client profile error handling
+
+# Protected routes
+
+# Tests
+
+# Files changed
+
+# Remaining unprotected routes
+
+Explicitly state whether plans, notes, sessions, generator routes, and the client portal still require Task #81B.
+
+# Agent usage
+
+## Final decision
+
+Return exactly one:
+
+`READY — trainer ownership and survey invitation flow are secure`
+
+or
+
+`NEEDS FIXING — clients can still be created or displayed without correct trainer ownership`
+
+Do not start client-account implementation.

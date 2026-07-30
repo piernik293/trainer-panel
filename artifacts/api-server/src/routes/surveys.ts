@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, and, inArray } from "drizzle-orm";
-import { db, surveysTable, exercisesTable } from "@workspace/db";
+import { db, surveysTable, exercisesTable, clientsTable } from "@workspace/db";
 import {
   GetClientSurveyParams,
   UpsertClientSurveyParams,
@@ -14,6 +14,7 @@ import {
   GetClientAvoidedExercisesParams,
   GetClientAvoidedExercisesResponse,
 } from "@workspace/api-zod";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
@@ -27,12 +28,33 @@ function calculateAge(dateOfBirth: Date): number {
   return age;
 }
 
+/**
+ * Verifies that the given client belongs to the authenticated trainer.
+ * Returns false when the client does not exist or belongs to a different trainer.
+ * Ownership is always derived through clients.trainer_id — never from request body
+ * or query parameters.
+ */
+async function assertClientOwnership(clientId: number, trainerId: number): Promise<boolean> {
+  const [client] = await db
+    .select({ id: clientsTable.id })
+    .from(clientsTable)
+    .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, trainerId)));
+  return !!client;
+}
+
+// ─── GET /clients/:clientId/survey ───────────────────────────────────────────
 // Returns the client's most recent survey (used for the profile/edit-form prefill
 // and as the "current" survey for overview/full-survey views).
-router.get("/clients/:clientId/survey", async (req, res): Promise<void> => {
+
+router.get("/clients/:clientId/survey", requireAuth, async (req, res): Promise<void> => {
   const params = GetClientSurveyParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  if (!await assertClientOwnership(params.data.clientId, req.trainer!.id)) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
     return;
   }
 
@@ -51,11 +73,18 @@ router.get("/clients/:clientId/survey", async (req, res): Promise<void> => {
   res.json(GetClientSurveyResponse.parse(survey));
 });
 
+// ─── GET /clients/:clientId/surveys ──────────────────────────────────────────
 // Full survey history for a client, newest first.
-router.get("/clients/:clientId/surveys", async (req, res): Promise<void> => {
+
+router.get("/clients/:clientId/surveys", requireAuth, async (req, res): Promise<void> => {
   const params = ListClientSurveysParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  if (!await assertClientOwnership(params.data.clientId, req.trainer!.id)) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
     return;
   }
 
@@ -68,11 +97,18 @@ router.get("/clients/:clientId/surveys", async (req, res): Promise<void> => {
   res.json(ListClientSurveysResponse.parse(surveys));
 });
 
+// ─── GET /clients/:clientId/surveys/:surveyId ─────────────────────────────────
 // A specific historical survey, for read-only viewing.
-router.get("/clients/:clientId/surveys/:surveyId", async (req, res): Promise<void> => {
+
+router.get("/clients/:clientId/surveys/:surveyId", requireAuth, async (req, res): Promise<void> => {
   const params = GetClientSurveyByIdParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  if (!await assertClientOwnership(params.data.clientId, req.trainer!.id)) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
     return;
   }
 
@@ -89,12 +125,19 @@ router.get("/clients/:clientId/surveys/:surveyId", async (req, res): Promise<voi
   res.json(GetClientSurveyByIdResponse.parse(survey));
 });
 
+// ─── GET /clients/:clientId/avoided-exercises ────────────────────────────────
 // Returns the client's avoided exercises resolved from their latest survey.
 // Fetches exercise metadata in a single DB query (no N+1).
-router.get("/clients/:clientId/avoided-exercises", async (req, res): Promise<void> => {
+
+router.get("/clients/:clientId/avoided-exercises", requireAuth, async (req, res): Promise<void> => {
   const params = GetClientAvoidedExercisesParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  if (!await assertClientOwnership(params.data.clientId, req.trainer!.id)) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
     return;
   }
 
@@ -171,12 +214,19 @@ router.get("/clients/:clientId/avoided-exercises", async (req, res): Promise<voi
   res.json(GetClientAvoidedExercisesResponse.parse(items));
 });
 
+// ─── PUT /clients/:clientId/survey ───────────────────────────────────────────
 // Always inserts a new survey row — surveys are append-only history so past
 // answers are never lost when the trainer saves an updated interview.
-router.put("/clients/:clientId/survey", async (req, res): Promise<void> => {
+
+router.put("/clients/:clientId/survey", requireAuth, async (req, res): Promise<void> => {
   const params = UpsertClientSurveyParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  if (!await assertClientOwnership(params.data.clientId, req.trainer!.id)) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
     return;
   }
 
@@ -216,8 +266,7 @@ router.put("/clients/:clientId/survey", async (req, res): Promise<void> => {
     if (trimmed) normalizedReasons[k] = trimmed;
   }
 
-  // `dateOfBirth` is a plain "YYYY-MM-DD" string (see @workspace/api-zod's
-  // `dateOnly` schema) — parse it into a `Date` only for validation/age math.
+  // `dateOfBirth` is a plain "YYYY-MM-DD" string — parse for validation/age math only.
   const { dateOfBirth, ...rest } = parsed.data;
   const dateOfBirthDate = dateOfBirth ? new Date(dateOfBirth) : undefined;
   if (dateOfBirthDate && dateOfBirthDate.getTime() > Date.now()) {
@@ -225,8 +274,13 @@ router.put("/clients/:clientId/survey", async (req, res): Promise<void> => {
     return;
   }
   const { avoidedExerciseIds: _rawIds, avoidedExerciseReasons: _rawReasons, ...rest2 } = rest;
+
+  // Strip any trainerId the caller may have included in the body — ownership comes
+  // only from the authenticated session, never from the request payload.
+  const { trainerId: _ignoredTrainerId, ...rest3 } = rest2 as typeof rest2 & { trainerId?: unknown };
+
   const normalizedData = {
-    ...rest2,
+    ...rest3,
     dateOfBirth: dateOfBirthDate ? dateOfBirthDate.toISOString().split("T")[0] : undefined,
     age: dateOfBirthDate ? calculateAge(dateOfBirthDate) : rest.age,
     avoidedExerciseIds: deduplicatedIds,
@@ -243,13 +297,20 @@ router.put("/clients/:clientId/survey", async (req, res): Promise<void> => {
   res.json(UpsertClientSurveyResponse.parse(survey));
 });
 
+// ─── PATCH /clients/:clientId/surveys/:surveyId ───────────────────────────────
 // Updates an existing survey row in-place — used by the trainer-side edit form.
 // Validates the body identically to PUT but does UPDATE instead of INSERT so the
 // client's survey history is not extended.
-router.patch("/clients/:clientId/surveys/:surveyId", async (req, res): Promise<void> => {
+
+router.patch("/clients/:clientId/surveys/:surveyId", requireAuth, async (req, res): Promise<void> => {
   const params = GetClientSurveyByIdParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  if (!await assertClientOwnership(params.data.clientId, req.trainer!.id)) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
     return;
   }
 
@@ -294,8 +355,12 @@ router.patch("/clients/:clientId/surveys/:surveyId", async (req, res): Promise<v
     return;
   }
   const { avoidedExerciseIds: _rawIds, avoidedExerciseReasons: _rawReasons, ...rest2 } = rest;
+
+  // Strip any trainerId the caller may have included in the body.
+  const { trainerId: _ignoredTrainerId, ...rest3 } = rest2 as typeof rest2 & { trainerId?: unknown };
+
   const normalizedData = {
-    ...rest2,
+    ...rest3,
     dateOfBirth: dateOfBirthDate ? dateOfBirthDate.toISOString().split("T")[0] : undefined,
     age: dateOfBirthDate ? calculateAge(dateOfBirthDate) : rest.age,
     avoidedExerciseIds: deduplicatedIds,

@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSubmitPublicSurvey } from "@workspace/api-client-react";
+import { useMutation } from "@tanstack/react-query";
 import { Calendar, CheckCircle2, ChevronDown, Loader2 } from "lucide-react";
 import { AvoidedExercisesPicker, type SelectedExercise } from "./AvoidedExercisesPicker";
 import { FavoriteExercisesPicker, type FavoriteExercise } from "./FavoriteExercisesPicker";
@@ -237,7 +238,7 @@ function DateOfBirthInput({
   );
 }
 
-export default function SurveyForm() {
+export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?: string; prefillEmail?: string } = {}) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [showValidationBanner, setShowValidationBanner] = useState(false);
@@ -248,7 +249,7 @@ export default function SurveyForm() {
     defaultValues: {
       firstName: "",
       lastName: "",
-      email: "",
+      email: prefillEmail ?? "",
       phone: "",
       dateOfBirth: "",
       gender: undefined,
@@ -333,6 +334,34 @@ export default function SurveyForm() {
 
   const mutation = useSubmitPublicSurvey();
 
+  // Token-scoped mutation — used when an inviteToken prop is provided.
+  //
+  // Uses absolute /api/... (no BASE_URL prefix).  See survey.tsx module comment
+  // for why BASE_URL would route to Vite instead of the API server.
+  //
+  // The public survey endpoint is unauthenticated — credentials: "omit" is correct.
+  const tokenMutation = useMutation({
+    mutationFn: async (payload: unknown) => {
+      const res = await fetch(`/api/public/survey/${encodeURIComponent(inviteToken ?? "")}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "omit",
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const ct = res.headers.get("content-type") ?? "";
+        if (!ct.includes("application/json")) {
+          throw new Error("Błąd serwera — spróbuj ponownie.");
+        }
+        const body = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error((body as { error?: string }).error ?? res.statusText);
+      }
+      return res.json() as Promise<{ success: boolean; message?: string }>;
+    },
+  });
+
+  const isSubmitting = inviteToken ? tokenMutation.isPending : mutation.isPending;
+
   const onInvalid = () => {
     setShowValidationBanner(true);
     setTimeout(() => {
@@ -391,15 +420,29 @@ export default function SurveyForm() {
       avoidedExerciseOtherText: avoidedExerciseOtherText.trim() || undefined,
       avoidedExerciseOtherReason: avoidedExerciseOtherReason.trim() || undefined,
     };
-    mutation.mutate(
-      { data: payload as Parameters<typeof mutation.mutate>[0]["data"] },
-      {
+    if (inviteToken) {
+      tokenMutation.mutate(payload, {
         onSuccess: (res) => {
-          setSuccessMessage(res.message || "Dziękuję za wypełnienie wywiadu treningowego. Przeanalizuję Twoje odpowiedzi i przygotuję indywidualny plan treningowy.");
+          setSuccessMessage((res as { message?: string }).message || "Dziękuję za wypełnienie wywiadu treningowego. Przeanalizuję Twoje odpowiedzi i przygotuję indywidualny plan treningowy.");
           setIsSubmitted(true);
         },
-      }
-    );
+        onError: (err) => {
+          // Show error message on the banner
+          setShowValidationBanner(true);
+          form.setError("root", { message: String(err) });
+        },
+      });
+    } else {
+      mutation.mutate(
+        { data: payload as Parameters<typeof mutation.mutate>[0]["data"] },
+        {
+          onSuccess: (res) => {
+            setSuccessMessage(res.message || "Dziękuję za wypełnienie wywiadu treningowego. Przeanalizuję Twoje odpowiedzi i przygotuję indywidualny plan treningowy.");
+            setIsSubmitted(true);
+          },
+        }
+      );
+    }
   };
 
   if (isSubmitted) {
@@ -1394,10 +1437,10 @@ export default function SurveyForm() {
         <div className="pt-8 flex justify-center">
           <Button 
             type="submit" 
-            disabled={mutation.isPending}
+            disabled={isSubmitting}
             className="w-full md:w-auto min-w-[280px] h-14 bg-primary text-primary-foreground font-semibold text-lg uppercase tracking-wide hover:bg-primary/90 transition-all rounded-none"
           >
-            {mutation.isPending ? (
+            {isSubmitting ? (
               <span className="flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Przetwarzanie...</span>
             ) : (
               "Wyślij wywiad treningowy"

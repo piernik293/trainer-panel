@@ -56,6 +56,7 @@ import {
   prescribeExercise,
 } from "../services/exercisePrescriptionService.js";
 import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
@@ -163,6 +164,7 @@ const BodySchema = z.object({
 
 router.post(
   "/clients/:clientId/plan-draft/generate-day",
+  requireAuth,
   async (req, res): Promise<void> => {
     // ── Parse + validate inputs ────────────────────────────────────────────────
     const params = ParamsSchema.safeParse(req.params);
@@ -183,11 +185,11 @@ router.post(
     const { clientId } = params.data;
     const { v0SessionType } = body.data;
 
-    // ── Verify client ──────────────────────────────────────────────────────────
+    // ── Verify client belongs to the authenticated trainer ────────────────────
     const [client] = await db
       .select({ id: clientsTable.id })
       .from(clientsTable)
-      .where(eq(clientsTable.id, clientId));
+      .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
 
     if (!client) {
       res.status(404).json({ error: "Klient nie znaleziony" });
@@ -400,24 +402,39 @@ router.post(
     // complex isolation-heavy choices — the engine's isBeginnerClient sort step handles this.
     const isBeginnerClient = survey.experienceLevel === "Początkujący";
 
+    // ── Equipment flags ────────────────────────────────────────────────────────
+    const surveyEquipLower = (survey.equipment ?? "").toLowerCase();
+    // Full gym: barbell + weight plates + machines (original full-gym gate)
+    const isFullGym =
+      !!(survey.equipment) &&
+      (surveyEquipLower.includes("sztanga i talerze") ||
+        surveyEquipLower.includes("maszyny") ||
+        (surveyEquipLower.includes("sztanga") &&
+          surveyEquipLower.includes("maszynami")));
+    // Loadable equipment: any equipment that enables progressive overload.
+    // Includes dumbbell-only setups — used as a wider gate than isFullGym.
+    const hasLoadableEquipment =
+      surveyEquipLower.includes("hantle") ||
+      surveyEquipLower.includes("sztanga") ||
+      surveyEquipLower.includes("kettlebell");
+
     // ── Push-up contextual deprioritisation (Stage G — Part 2) ────────────────
     //
-    // In full-gym intermediate+ contexts, "Pompki" should not win the chest-compound
-    // slot by default when barbell and dumbbell presses are available.
+    // "Pompki" should not win the chest-compound slot by default when the client
+    // has any loadable pressing option (dumbbells, barbell, kettlebell).
+    //
+    // Extended from the original full-gym-only gate to cover dumbbell-only clients:
+    // an intermediate client with just a bench and dumbbells should see dumbbell
+    // bench press before incline push-ups in every pressing slot.
     //
     // Fires when ALL of:
-    //   1. Full gym available — "Sztanga i talerze" (or "Maszyny") in equipment
+    //   1. Loadable equipment available (Hantle / Sztanga / Kettlebell — or full gym)
     //   2. Client is intermediate or advanced (isPriorityEligible)
     //   3. Goal bias is strength, athletic, or hypertrophy
     //   4. Client did NOT explicitly list push-ups in preferred exercises
     //
-    // Push-ups are NOT banned — they remain in the pool as a fallback.
-    const isFullGym =
-      !!(survey.equipment) &&
-      (survey.equipment.toLowerCase().includes("sztanga i talerze") ||
-        survey.equipment.toLowerCase().includes("maszyny") ||
-        (survey.equipment.toLowerCase().includes("sztanga") &&
-          survey.equipment.toLowerCase().includes("maszynami")));
+    // Push-ups are NOT banned — they remain as a fallback and may appear once
+    // per session as an accessory or finisher (see capPushUpsAtOne).
     const prefersPushUps = preferredExerciseKeywords.some((kw) =>
       "pompki".includes(kw) || kw.includes("pompk"),
     );
@@ -426,7 +443,22 @@ router.post(
       goalProfile.exerciseClassBias === "athletic" ||
       goalProfile.exerciseClassBias === "hypertrophy";
     const deprioritizePushUps =
-      isFullGym && isPriorityEligible && isDeprioritizableBias && !prefersPushUps;
+      (isFullGym || hasLoadableEquipment) &&
+      isPriorityEligible &&
+      isDeprioritizableBias &&
+      !prefersPushUps;
+
+    // ── Push-up session cap ────────────────────────────────────────────────────
+    //
+    // For intermediate+ clients with loadable equipment, at most one push-up
+    // variant is allowed per session.  Prevents multiple "Pompki" exercises
+    // (incline, flat, decline, close-grip) from dominating pressing slots when
+    // dumbbell / barbell alternatives are available.
+    //
+    // The cap is applied inside runExerciseSelectionEngineV0 via the pick()
+    // closure — once one Pompki is in the results, further Pompki picks are
+    // excluded.  Push-ups remain selectable as a single accessory or finisher.
+    const capPushUpsAtOne = hasLoadableEquipment && isPriorityEligible;
 
     // ── Load per-client exercise novelty history (§7) ──────────────────────────
     //
@@ -518,6 +550,7 @@ router.post(
       allowPlyometrics,
       preferredExerciseKeywords,
       deprioritizePushUps,
+      capPushUpsAtOne,
       goalProfile,
       // Severely under-covered muscle groups — lower-cased for norm() comparison.
       // When non-empty the engine boosts gap-fixing exercises in optional slots.
@@ -550,13 +583,54 @@ router.post(
 
     // ── Run V0 slot-based generator ────────────────────────────────────────────
     const alternativeIndex = body.data.alternativeIndex ?? 0;
-    const v0Result = runExerciseSelectionEngineV0(
+    // sameTypePreviousExercises drives band-level implement/angle diversity for
+    // alt sessions (e.g. Upper B avoids barbell when Upper A already used it).
+    // Pass it through to the engine so the diversity logic actually fires.
+    const sameTypePrev = body.data.sameTypePreviousExercises ?? [];
+    let v0Result = runExerciseSelectionEngineV0(
       pool,
       v0SessionType as V0SessionType,
       usedExerciseIds,
       priorityContext,
-      { alternativeIndex },
+      { alternativeIndex, sameTypePreviousExercises: sameTypePrev },
     );
+
+    // ── Thin-pool retry for alternative sessions ──────────────────────────────
+    //
+    // Problem: weekUsedExerciseIds accumulates ALL exercises from every prior
+    // session in the generated week (upper + lower + full_body).  For equipment-
+    // constrained clients (e.g. dumbbell-only), this cross-session exclusion
+    // depletes the pool below MIN_EXERCISES for the second occurrence of a
+    // session type — upper-body exercises used in a full_body day are blocked
+    // from reappearing in the second upper day, even though the weekly training
+    // structure makes that repetition acceptable.
+    //
+    // Fix: when the first attempt fails on an alternative session (altIdx > 0),
+    // retry using only the same-type previous exercises as the exclusion set.
+    // This restores pool depth by allowing exercises from other session types to
+    // re-enter while still enforcing variety vs. the immediately preceding
+    // same-type session.
+    if (!v0Result.valid && alternativeIndex > 0 && weekIds.length > sameTypePrev.length) {
+      const sameTypeOnlyIds = new Set<string>(sameTypePrev.map((e) => String(e.id)));
+      console.log(
+        `V0_RETRY_THIN_POOL: altIdx=${alternativeIndex} ` +
+        `full-week excluded=${weekIds.length} same-type excluded=${sameTypeOnlyIds.size} — ` +
+        `retrying with same-type-only exclusion`,
+      );
+      v0Result = runExerciseSelectionEngineV0(
+        pool,
+        v0SessionType as V0SessionType,
+        sameTypeOnlyIds,
+        priorityContext,
+        { alternativeIndex, sameTypePreviousExercises: sameTypePrev },
+      );
+      if (v0Result.valid) {
+        console.log(
+          `V0_RETRY_THIN_POOL_SUCCESS: ${v0Result.exercises.length} exercises selected ` +
+          `(cross-session dedup relaxed due to thin pool)`,
+        );
+      }
+    }
 
     if (!v0Result.valid) {
       res.status(422).json({

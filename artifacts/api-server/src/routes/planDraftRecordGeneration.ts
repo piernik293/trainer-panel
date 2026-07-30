@@ -31,6 +31,7 @@ import {
   clientsTable,
   clientExerciseUsageLogTable,
 } from "@workspace/db";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
@@ -47,6 +48,7 @@ const BodySchema = z.object({
 
 router.post(
   "/clients/:clientId/plan-draft/record-generation",
+  requireAuth,
   async (req, res): Promise<void> => {
     const params = ParamsSchema.safeParse(req.params);
     if (!params.success) {
@@ -63,11 +65,11 @@ router.post(
     const { clientId } = params.data;
     const { generationId, exerciseIds } = body.data;
 
-    // Verify client exists.
+    // Verify client belongs to the authenticated trainer.
     const [client] = await db
       .select({ id: clientsTable.id })
       .from(clientsTable)
-      .where(eq(clientsTable.id, clientId));
+      .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
     if (!client) {
       res.status(404).json({ error: "Klient nie znaleziony" });
       return;

@@ -1,0 +1,78 @@
+Implement authorization for saved workout plans in `artifacts/api-server/src/routes/plans.ts`.
+
+Do not use subagents.
+Do not use parallel actions.
+Do not inspect generator, plan-draft, preview, recommendations, sessions, surveys, notes, stats, client portal, or frontend files.
+Do not modify workout-generation behavior.
+
+Keep Agent usage below $3.50.
+
+First:
+- use grep to locate route definitions in plans.ts,
+- read only small sections around each route,
+- do not read unrelated files.
+
+Protect every route in plans.ts with these rules:
+
+- unauthenticated request → 401,
+- another trainer’s resource → 404,
+- ownership comes only from the authenticated trainer,
+- never trust trainerId from body, query, headers, or URL.
+
+Ownership chains:
+
+- plan → client → trainer,
+- plan day → plan → client → trainer,
+- stored plan exercise → day → plan → client → trainer.
+
+When a route contains multiple IDs, confirm the exact relationship:
+
+- plan belongs to the supplied client,
+- day belongs to the supplied plan,
+- stored exercise belongs to the supplied day.
+
+A trainer owning two clients must not be able to access a resource through the wrong client, plan, or day URL.
+
+Protect:
+
+- plan list,
+- plan create/save,
+- plan read,
+- plan update,
+- plan activation/status,
+- plan delete,
+- plan-day create/update/reorder/delete,
+- stored plan-exercise create/update/reorder/delete,
+- copy/duplicate routes if they exist in plans.ts.
+
+Add only targeted authorization tests:
+
+1. unauthenticated plan request → 401,
+2. owner can access their plan,
+3. Trainer A cannot access Trainer B’s plan,
+4. plan cannot be accessed through another owned client,
+5. day cannot be modified through another plan,
+6. stored exercise cannot be modified through another day,
+7. foreign update/delete/activation → 404,
+8. valid owner operations still work.
+
+Run only the new saved-plan authorization tests.
+
+Return:
+
+# Routes protected
+# Ownership checks
+# Nested-resource checks
+# Test results
+# Files changed
+# Agent usage
+
+Final decision:
+
+`READY — saved workout plans are owner-isolated`
+
+or
+
+`NEEDS FIXING — a saved-plan route can bypass ownership`
+
+Stop after the report. Do not start generator authorization.

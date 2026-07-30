@@ -1,6 +1,18 @@
+/**
+ * Public survey routes (token-scoped)
+ *
+ * The old generic POST /public/survey has been removed. All client creation
+ * now requires a valid one-time invitation token issued by an authenticated trainer.
+ *
+ * GET  /public/survey/:token   Validate a token and return metadata for the form.
+ * POST /public/survey/:token   Submit the survey, create the client, consume the token.
+ */
+
 import { Router, type IRouter } from "express";
-import { db, clientsTable, surveysTable } from "@workspace/db";
-import { SubmitPublicSurveyBody, SubmitPublicSurveyResponse } from "@workspace/api-zod";
+import crypto from "crypto";
+import { and, eq, gt, isNull } from "drizzle-orm";
+import { db, clientsTable, surveysTable, surveyInvitesTable } from "@workspace/db";
+import { SubmitPublicSurveyBody } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -15,6 +27,10 @@ function calculateAge(dateOfBirth: Date): number {
     age--;
   }
   return age;
+}
+
+function hashToken(rawToken: string): string {
+  return crypto.createHash("sha256").update(rawToken).digest("hex");
 }
 
 async function sendNotificationEmail(
@@ -35,7 +51,6 @@ async function sendNotificationEmail(
   const smtpPort = parseInt(process.env["SMTP_PORT"] ?? "587", 10);
 
   try {
-    // Dynamic import to avoid errors when nodemailer is not needed
     const nodemailer = await import("nodemailer");
     const transporter = nodemailer.default.createTransport({
       host: smtpHost,
@@ -60,11 +75,62 @@ async function sendNotificationEmail(
     logger.info({ adminEmail, clientName }, "Notification email sent");
   } catch (err) {
     logger.error({ err }, "Failed to send notification email");
-    // Don't throw — email failure should not fail the API request
   }
 }
 
-router.post("/public/survey", async (req, res): Promise<void> => {
+// ─── GET /public/survey/:token ────────────────────────────────────────────────
+
+router.get("/public/survey/:token", async (req, res): Promise<void> => {
+  const rawToken = req.params.token;
+  if (!rawToken || rawToken.length !== 64) {
+    res.status(400).json({ error: "Nieprawidłowy token zaproszenia" });
+    return;
+  }
+
+  const tokenHash = hashToken(rawToken);
+  const now = new Date();
+
+  const [invite] = await db
+    .select()
+    .from(surveyInvitesTable)
+    .where(eq(surveyInvitesTable.tokenHash, tokenHash));
+
+  if (!invite) {
+    res.status(404).json({ code: "INVITE_NOT_FOUND", error: "Nieprawidłowy link zaproszeniowy" });
+    return;
+  }
+
+  if (invite.revokedAt) {
+    res.status(410).json({ code: "INVITE_REVOKED", error: "Link zaproszeniowy został odwołany" });
+    return;
+  }
+
+  if (invite.usedAt) {
+    res.status(410).json({ code: "INVITE_USED", error: "Link zaproszeniowy został już wykorzystany" });
+    return;
+  }
+
+  if (invite.expiresAt < now) {
+    res.status(410).json({ code: "INVITE_EXPIRED", error: "Link zaproszeniowy wygasł" });
+    return;
+  }
+
+  res.json({
+    valid: true,
+    intendedEmail: invite.intendedEmail ?? null,
+    expiresAt: invite.expiresAt,
+  });
+});
+
+// ─── POST /public/survey/:token ───────────────────────────────────────────────
+
+router.post("/public/survey/:token", async (req, res): Promise<void> => {
+  const rawToken = req.params.token;
+  if (!rawToken || rawToken.length !== 64) {
+    res.status(400).json({ error: "Nieprawidłowy token zaproszenia" });
+    return;
+  }
+
   const parsed = SubmitPublicSurveyBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -79,6 +145,34 @@ router.post("/public/survey", async (req, res): Promise<void> => {
 
   if (parsed.data.trainingGoal === "Inny" && (!parsed.data.trainingGoalOther || parsed.data.trainingGoalOther.trim() === "")) {
     res.status(400).json({ error: "Opis celu treningowego jest wymagany, gdy wybrano \"Inny\"" });
+    return;
+  }
+
+  // Pre-validate the token BEFORE parsing the body so that expired/revoked
+  // tokens always return 410 regardless of whether the body is valid.
+  // The transaction re-checks atomically — this is just an early-exit guard.
+  const tokenHash = hashToken(rawToken);
+  const preNow = new Date();
+
+  const [precheck] = await db
+    .select()
+    .from(surveyInvitesTable)
+    .where(eq(surveyInvitesTable.tokenHash, tokenHash));
+
+  if (!precheck) {
+    res.status(404).json({ error: "Nieprawidłowy link zaproszeniowy" });
+    return;
+  }
+  if (precheck.revokedAt) {
+    res.status(410).json({ error: "Link zaproszeniowy został odwołany" });
+    return;
+  }
+  if (precheck.usedAt) {
+    res.status(410).json({ error: "Link zaproszeniowy został już wykorzystany" });
+    return;
+  }
+  if (precheck.expiresAt < preNow) {
+    res.status(410).json({ error: "Link zaproszeniowy wygasł" });
     return;
   }
 
@@ -129,8 +223,6 @@ router.post("/public/survey", async (req, res): Promise<void> => {
     sportsPriorities,
   } = parsed.data;
 
-  // `dateOfBirth` is a plain "YYYY-MM-DD" string (see @workspace/api-zod's
-  // `dateOnly` schema) — parse it into a `Date` only for validation/age math.
   const dateOfBirthDate = new Date(dateOfBirth);
   if (dateOfBirthDate.getTime() > Date.now()) {
     res.status(400).json({ error: "Data urodzenia nie może być w przyszłości" });
@@ -138,72 +230,107 @@ router.post("/public/survey", async (req, res): Promise<void> => {
   }
   const calculatedAge = calculateAge(dateOfBirthDate);
 
-  // Insert client, then insert a new survey history row for them
-  const [client] = await db
-    .insert(clientsTable)
-    .values({ firstName, lastName, email: trimmedEmail, phone })
-    .returning();
+  try {
+    const result = await db.transaction(async (tx) => {
+      // Lock the invite row via UPDATE WHERE usedAt IS NULL.
+      // Only the first concurrent request will succeed — the second gets 0 rows back.
+      const now = new Date();
+      const [consumed] = await tx
+        .update(surveyInvitesTable)
+        .set({ usedAt: now })
+        .where(
+          and(
+            eq(surveyInvitesTable.tokenHash, tokenHash),
+            isNull(surveyInvitesTable.usedAt),
+            isNull(surveyInvitesTable.revokedAt),
+            gt(surveyInvitesTable.expiresAt, now),
+          ),
+        )
+        .returning();
 
-  await db.insert(surveysTable).values({
-    clientId: client.id,
-    trainingGoal,
-    trainingGoalOther,
-    experienceLevel,
-    trainingDuration,
-    healthLimitations,
-    injuryStatus: injuryStatus ?? null,
-    athleteStatus: athleteStatus ?? null,
-    sportDiscipline: sportDiscipline ?? null,
-    sportPerformanceNeeds: sportPerformanceNeeds ?? [],
-    weeklyFrequency,
-    desiredWeeklyFrequency,
-    sessionDuration,
-    preferredMuscles,
-    avoidedMuscles,
-    avoidedExercises,
-    favoriteExercises,
-    advancedMethodsToAvoid: advancedMethodsToAvoid ?? [],
-    additionalInfo,
-    age: calculatedAge,
-    dateOfBirth: dateOfBirthDate.toISOString().split("T")[0],
-    gender,
-    heightCm,
-    weightKg,
-    activityLevel,
-    sleepHours,
-    stressLevel,
-    planStylePreference,
-    priorityMuscle1,
-    priorityMuscle2,
-    priorityMuscle3,
-    trainingLocation,
-    equipment,
-    cardioPreference,
-    cardioFrequency,
-    preferredCardioType,
-    trainingMotivation,
-    sportsPriorities: sportsPriorities ?? [],
-    avoidsAdvancedMethods,
-    avoidedExerciseIds: avoidedExerciseIds ?? [],
-    avoidedExerciseReasons: avoidedExerciseReasons ?? {},
-    avoidedExerciseOtherText: avoidedExerciseOtherText ?? null,
-    avoidedExerciseOtherReason: avoidedExerciseOtherReason ?? null,
-  });
+      if (!consumed) {
+        // Token was invalid, already used, revoked, or expired.
+        throw Object.assign(new Error("TOKEN_INVALID"), { code: "TOKEN_INVALID" });
+      }
 
-  // Fire-and-forget email notification
-  void sendNotificationEmail(
-    `${firstName} ${lastName}`,
-    trimmedEmail,
-    trainingGoal
-  );
+      // trainerId is derived ONLY from the invite — never from the request body.
+      const trainerId = consumed.trainerId;
 
-  res.status(201).json(
-    SubmitPublicSurveyResponse.parse({
+      const [client] = await tx
+        .insert(clientsTable)
+        .values({ firstName, lastName, email: trimmedEmail, phone, trainerId })
+        .returning();
+
+      await tx.insert(surveysTable).values({
+        clientId: client.id,
+        trainingGoal,
+        trainingGoalOther,
+        experienceLevel,
+        trainingDuration,
+        healthLimitations,
+        injuryStatus: injuryStatus ?? null,
+        athleteStatus: athleteStatus ?? null,
+        sportDiscipline: sportDiscipline ?? null,
+        sportPerformanceNeeds: sportPerformanceNeeds ?? [],
+        weeklyFrequency,
+        desiredWeeklyFrequency,
+        sessionDuration,
+        preferredMuscles,
+        avoidedMuscles,
+        avoidedExercises,
+        favoriteExercises,
+        advancedMethodsToAvoid: advancedMethodsToAvoid ?? [],
+        additionalInfo,
+        age: calculatedAge,
+        dateOfBirth: dateOfBirthDate.toISOString().split("T")[0],
+        gender,
+        heightCm,
+        weightKg,
+        activityLevel,
+        sleepHours,
+        stressLevel,
+        planStylePreference,
+        priorityMuscle1,
+        priorityMuscle2,
+        priorityMuscle3,
+        trainingLocation,
+        equipment,
+        cardioPreference,
+        cardioFrequency,
+        preferredCardioType,
+        trainingMotivation,
+        sportsPriorities: sportsPriorities ?? [],
+        avoidsAdvancedMethods,
+        avoidedExerciseIds: avoidedExerciseIds ?? [],
+        avoidedExerciseReasons: avoidedExerciseReasons ?? {},
+        avoidedExerciseOtherText: avoidedExerciseOtherText ?? null,
+        avoidedExerciseOtherReason: avoidedExerciseOtherReason ?? null,
+      });
+
+      logger.info({ clientId: client.id, trainerId, inviteId: consumed.id }, "Client created via survey invite");
+      return { clientId: client.id, firstName, lastName, trainingGoal };
+    });
+
+    // Fire-and-forget email notification
+    void sendNotificationEmail(
+      `${result.firstName} ${result.lastName}`,
+      trimmedEmail,
+      result.trainingGoal
+    );
+
+    res.status(201).json({
       success: true,
-      clientId: client.id,
+      clientId: result.clientId,
       message: "Dziękuję za wypełnienie wywiadu treningowego. Przeanalizuję Twoje odpowiedzi i przygotuję indywidualny plan treningowy.",
-    })
-  );
+    });
+  } catch (err) {
+    if ((err as { code?: string }).code === "TOKEN_INVALID") {
+      res.status(410).json({ error: "Link zaproszeniowy jest nieprawidłowy, wygasł lub został już wykorzystany." });
+      return;
+    }
+    logger.error({ err }, "Failed to process survey invite submission");
+    res.status(500).json({ error: "Błąd serwera. Spróbuj ponownie." });
+  }
 });
 
 export default router;

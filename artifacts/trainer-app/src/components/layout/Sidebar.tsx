@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Users, LayoutDashboard, PlusCircle, Dumbbell, Menu, X } from "lucide-react";
+import { Users, LayoutDashboard, PlusCircle, Dumbbell, Menu, X, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Sheet,
@@ -13,6 +13,7 @@ const navItems = [
   { href: "/", label: "Pulpit", icon: LayoutDashboard },
   { href: "/clients", label: "Klienci", icon: Users },
   { href: "/exercises", label: "Biblioteka ćwiczeń", icon: Dumbbell },
+  { href: "/survey-invite", label: "Zaproś klienta", icon: UserPlus },
 ];
 
 function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () => void }) {

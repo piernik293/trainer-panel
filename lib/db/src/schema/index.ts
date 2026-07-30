@@ -7,3 +7,4 @@ export * from "./muscles";
 export * from "./plans";
 export * from "./exercise-usage";
 export * from "./trainers";
+export * from "./surveyInvites";

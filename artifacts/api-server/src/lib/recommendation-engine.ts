@@ -512,6 +512,91 @@ function scoreExerciseClassAlignment(ex: Exercise, sv: Survey): ScoreBreakdown {
 }
 
 /**
+ * Progression suitability for intermediate+ clients with loadable equipment.
+ *
+ * Fires only when the client is "Średniozaawansowany" or "Zaawansowany"
+ * AND their survey lists loadable equipment (Hantle, Sztanga, or Kettlebell).
+ *
+ * Motivation
+ * ----------
+ * Two gaps in the base scoring stack let beginner regressions beat loadable
+ * exercises for intermediate dumbbell clients:
+ *
+ *   1. scoreEquipment gives +15 to bodyweight exercises (always accessible)
+ *      AND +15 to dumbbell exercises when the client has dumbbells — there is
+ *      no "prefer the loaded variant over the unloaded one" signal.
+ *
+ *   2. scoreDifficultyMatch gives +10 to "Początkujący" difficulty exercises
+ *      for intermediate clients (Początkujący ∈ appropriate range).  A beginner
+ *      regression tagged "Początkujący" therefore scores identically on difficulty
+ *      to a well-matched intermediate exercise.
+ *
+ * Result: incline push-ups and dumbbell bench presses score the same for an
+ * intermediate client who owns a bench and dumbbells.  This dimension adds the
+ * missing "prefer the option that can be progressively overloaded" signal.
+ *
+ * Rules (only active for intermediate+ with loadable equipment)
+ * -------------------------------------------------------------
+ *   +12 — exercise uses loadable equipment (Hantle / Sztanga / Kettlebell)
+ *         AND is NOT a beginner regression (suitableForNoActivity ≠ true).
+ *         Rationale: positive overload potential, appropriate challenge level.
+ *   −8  — exercise is flagged suitableForNoActivity = true (a beginner
+ *         regression / no-activity exercise).  The penalty is mild enough to
+ *         keep the exercise selectable as a last resort when no loaded option
+ *         passes the slot's hard filters (equipment constraints, pain limits).
+ *   0   — pure bodyweight exercise that is NOT a regression (pull-ups, dips,
+ *         standard push-ups used as accessories, core movements).  Neutral —
+ *         appropriate for any level, no overload bonus needed.
+ *
+ * Safe fallback: always returns 0 for beginners, inactive clients, or clients
+ * without loadable equipment in their survey (e.g. bodyweight-only training).
+ */
+function scoreProgressionSuitability(ex: Exercise, sv: Survey): ScoreBreakdown {
+  const level = norm(sv.experienceLevel ?? "");
+  const isIntermediatePlus =
+    level === "średniozaawansowany" || level === "zaawansowany";
+  if (!isIntermediatePlus) {
+    return { dimension: "progressionSuitability", points: 0, reason: null };
+  }
+
+  const surveyEquip = sv.equipment ?? "";
+  const surveyEquipLower = surveyEquip.toLowerCase();
+  const hasLoadable =
+    surveyEquipLower.includes("hantle") ||
+    surveyEquipLower.includes("sztanga") ||
+    surveyEquipLower.includes("kettlebell");
+  if (!hasLoadable) {
+    return { dimension: "progressionSuitability", points: 0, reason: null };
+  }
+
+  // Beginner regression penalty — mild enough to keep exercise as fallback.
+  if (ex.suitableForNoActivity === true) {
+    return {
+      dimension: "progressionSuitability",
+      points: -8,
+      reason: "Ćwiczenie regresywne — dostępny sprzęt z progresją",
+    };
+  }
+
+  // Loadable reward — exercise actively uses the client's available loaded equipment.
+  const exEquip = ex.equipment ?? [];
+  const usesLoadable = exEquip.some((e) => {
+    const en = norm(e);
+    return en.includes("hantle") || en.includes("sztanga") || en.includes("kettlebell");
+  });
+  if (usesLoadable) {
+    return {
+      dimension: "progressionSuitability",
+      points: 12,
+      reason: "Ćwiczenie z progresją obciążenia",
+    };
+  }
+
+  // Pure bodyweight, non-regression — neutral (pull-ups, dips, core, etc.)
+  return { dimension: "progressionSuitability", points: 0, reason: null };
+}
+
+/**
  * Sub-target muscle bias matching.
  *
  * Reads the exercise's sub_target_biases JSONB column (populated for ~62/156
@@ -604,6 +689,11 @@ export function scoreExercise(exercise: Exercise, survey: Survey): ExerciseScore
     // or priority muscles set.
     scoreExerciseClassAlignment(exercise, survey),
     scoreSubTargetBias(exercise, survey),
+    // Progression suitability: rewards loadable exercises and penalises beginner
+    // regressions for intermediate+ clients who have dumbbell / barbell equipment.
+    // Only fires for "Średniozaawansowany" / "Zaawansowany" with Hantle / Sztanga /
+    // Kettlebell in survey.equipment — safe no-op for beginners and inactive clients.
+    scoreProgressionSuitability(exercise, survey),
     penaliseAvoidedMuscles(exercise, survey),
   ];
 

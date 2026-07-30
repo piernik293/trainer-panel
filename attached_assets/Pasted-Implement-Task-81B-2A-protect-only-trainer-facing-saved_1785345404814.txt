@@ -1,0 +1,124 @@
+Implement Task #81B-2A: protect only trainer-facing saved workout-plan routes.
+
+This is a narrow authorization task.
+
+Do not inspect or modify:
+
+- plan generator,
+- plan-draft routes,
+- generate-day,
+- volume or analysis preview,
+- exercise recommendations,
+- surveys,
+- trainer notes,
+- workout sessions,
+- statistics,
+- client portal,
+- frontend,
+- exercise-selection logic.
+
+Do not change plan-generation or workout-programming behavior.
+
+Keep Agent usage below $3.50.
+Stop after implementing and testing this exact scope.
+
+## Goal
+
+An authenticated trainer may access or modify saved workout plans only when they belong to that trainer’s client.
+
+Rules:
+
+- unauthenticated private request → 401,
+- authenticated request for another trainer’s resource → 404,
+- ownership must be derived from the database,
+- never trust trainerId from request bodies, URL parameters, query parameters, or headers,
+- nested resources must belong to the exact parent resource in the URL.
+
+## Protect saved-plan routes
+
+Inventory and protect only routes responsible for:
+
+- listing plans for a client,
+- creating and saving a plan for a client,
+- reading a plan by planId,
+- updating plan information,
+- changing plan status,
+- activating a plan,
+- deleting a plan,
+- creating, editing, reordering, and deleting plan days,
+- creating, editing, reordering, and deleting exercises stored inside plan days,
+- copying or duplicating a saved plan if such a route exists.
+
+## Ownership resolution
+
+For a route containing only planId, derive ownership through:
+
+plan → client → trainer
+
+For a route containing clientId and planId, require:
+
+- plan.id = planId,
+- plan.clientId = clientId,
+- client.trainerId = authenticated trainer id.
+
+For plan days require:
+
+- day belongs to the exact plan,
+- plan belongs to the trainer’s client.
+
+For stored plan exercises require:
+
+- exercise record belongs to the exact day,
+- day belongs to the exact plan,
+- plan belongs to the trainer’s client.
+
+Do not authorize an operation merely because the trainer owns another client, plan, or day appearing in the URL.
+
+## Database enforcement
+
+Where practical:
+
+- apply trainer ownership inside the database condition,
+- use owner-scoped joins or subqueries,
+- return 404 for foreign or mismatched resources,
+- do not rely on frontend checks,
+- do not first load unrestricted sensitive data and check ownership afterward.
+
+## Tests
+
+Add targeted tests:
+
+1. unauthenticated plan list → 401,
+2. Trainer A lists plans for Client A,
+3. Trainer A cannot list plans for Trainer B’s client,
+4. Trainer A cannot read Trainer B’s plan by planId,
+5. Trainer A cannot update Trainer B’s plan,
+6. Trainer A cannot activate Trainer B’s plan,
+7. Trainer A cannot delete Trainer B’s plan,
+8. Plan C cannot be accessed through Client A’s URL when both clients belong to Trainer A,
+9. a plan day cannot be edited through another plan,
+10. a stored plan exercise cannot be edited through another day,
+11. valid owner operations continue to work,
+12. request-body trainerId cannot change ownership.
+
+Run only saved-plan authorization tests.
+
+## Required report
+
+# Routes protected
+# Ownership resolution
+# Nested-resource binding
+# Test results
+# Files changed
+# Generator routes intentionally left for Task #81B-2B
+# Agent usage
+
+Return exactly:
+
+`READY — saved workout plans are owner-isolated`
+
+or
+
+`NEEDS FIXING — a saved-plan route can bypass trainer ownership`
+
+Do not start generator authorization or another task.
