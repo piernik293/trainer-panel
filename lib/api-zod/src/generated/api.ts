@@ -51,8 +51,6 @@ export const ListClientsResponse = zod.array(ListClientsResponseItem)
  */
 
 
-
-
 export const CreateClientBody = zod.object({
   "firstName": zod.string().min(1),
   "lastName": zod.string().min(1),
@@ -125,9 +123,6 @@ export const GetClientResponse = zod.object({
 export const UpdateClientParams = zod.object({
   "id": zod.coerce.number()
 })
-
-
-
 
 
 export const UpdateClientBody = zod.object({
@@ -248,7 +243,6 @@ export const upsertClientSurveyBodyWeightKgMin = 20;
 export const upsertClientSurveyBodyWeightKgMax = 400;
 
 export const upsertClientSurveyBodyStressLevelMax = 10;
-
 
 
 export const UpsertClientSurveyBody = zod.object({
@@ -498,8 +492,6 @@ export const CreateClientNoteParams = zod.object({
 })
 
 
-
-
 export const CreateClientNoteBody = zod.object({
   "content": zod.string().min(1)
 })
@@ -520,8 +512,6 @@ export const UpdateClientNoteParams = zod.object({
   "clientId": zod.coerce.number(),
   "noteId": zod.coerce.number()
 })
-
-
 
 
 export const UpdateClientNoteBody = zod.object({
@@ -592,7 +582,6 @@ export const GetStatsResponse = zod.object({
  */
 
 
-
 export const submitPublicSurveyBodyAgeMin = 0;
 export const submitPublicSurveyBodyAgeMax = 120;
 
@@ -603,7 +592,6 @@ export const submitPublicSurveyBodyWeightKgMin = 20;
 export const submitPublicSurveyBodyWeightKgMax = 400;
 
 export const submitPublicSurveyBodyStressLevelMax = 10;
-
 
 
 export const SubmitPublicSurveyBody = zod.object({
@@ -767,8 +755,6 @@ export const ListExercisesResponse = zod.array(ListExercisesResponseItem)
  */
 
 
-
-
 export const CreateExerciseBody = zod.object({
   "name": zod.string().min(1),
   "slug": zod.string().optional(),
@@ -913,9 +899,6 @@ export const UpdateExerciseParams = zod.object({
 })
 
 
-
-
-
 export const UpdateExerciseBody = zod.object({
   "name": zod.string().min(1).optional(),
   "slug": zod.string().optional(),
@@ -1020,8 +1003,6 @@ export const ListMusclesResponse = zod.array(ListMusclesResponseItem)
  */
 
 
-
-
 export const CreateMuscleBody = zod.object({
   "name": zod.string().min(1),
   "broadCategory": zod.string().min(1)
@@ -1062,7 +1043,6 @@ export const SetExerciseMusclesParams = zod.object({
 
 export const setExerciseMusclesBodyAssignmentsItemCoefficientMin = 0;
 export const setExerciseMusclesBodyAssignmentsItemCoefficientMax = 1;
-
 
 
 export const SetExerciseMusclesBody = zod.object({
@@ -1327,5 +1307,4 @@ export const GetTrainingGoalsDistributionResponseItem = zod.object({
   "count": zod.number()
 })
 export const GetTrainingGoalsDistributionResponse = zod.array(GetTrainingGoalsDistributionResponseItem)
-
 
