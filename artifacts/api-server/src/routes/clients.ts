@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, and } from "drizzle-orm";
-import { db, clientsTable, surveysTable, type Client, type Survey } from "@workspace/db";
+import crypto from "crypto";
+import { db, clientsTable, surveysTable, surveyInvitesTable, type Client, type Survey } from "@workspace/db";
 import {
   GetClientParams,
   UpdateClientParams,
@@ -13,6 +14,7 @@ import {
 import { z } from "zod";
 import { computeSurveyStatus, fetchLatestSurveyPerClient } from "../lib/survey-status";
 import { requireAuth } from "../middlewares/requireAuth";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -96,6 +98,139 @@ router.post("/clients", requireAuth, async (req, res): Promise<void> => {
     .returning();
 
   res.status(201).json(CreateClientResponse.parse(toClientListItem(client, undefined)));
+});
+
+// ─── POST /clients/:clientId/survey-invite ────────────────────────────────────
+// Creates a public survey invitation for a pre-existing client.
+// After creation, optionally sends the link to the client's email.
+// Returns: { token, url, expiresAt, emailSent, emailError? }
+
+const INVITE_EXPIRY_DAYS = 7;
+const CLIENT_PORTAL_PATH = "/client-landing/survey";
+
+function hashToken(raw: string): string {
+  return crypto.createHash("sha256").update(raw).digest("hex");
+}
+
+function buildSurveyUrl(token: string): string {
+  const localOrigin = process.env["LOCAL_CLIENT_PORTAL_ORIGIN"];
+  const devDomain = process.env["REPLIT_DEV_DOMAIN"];
+  const prodOrigin = process.env["CLIENT_PORTAL_ORIGIN"];
+  const base = localOrigin ?? (devDomain ? `https://${devDomain}` : (prodOrigin ?? ""));
+  return `${base}${CLIENT_PORTAL_PATH}/${token}`;
+}
+
+async function sendSurveyInviteEmail(
+  toEmail: string,
+  surveyUrl: string,
+  expiresAt: Date,
+): Promise<{ sent: boolean; error?: string }> {
+  const smtpHost = process.env["SMTP_HOST"];
+  const smtpUser = process.env["SMTP_USER"];
+  const smtpPass = process.env["SMTP_PASS"];
+
+  if (!smtpHost || !smtpUser || !smtpPass) {
+    return { sent: false, error: "SMTP_HOST, SMTP_USER, SMTP_PASS not configured" };
+  }
+
+  const smtpPort = parseInt(process.env["SMTP_PORT"] ?? "587", 10);
+  const expiryStr = expiresAt.toLocaleDateString("pl-PL", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+
+  try {
+    const nodemailer = await import("nodemailer");
+    const transporter = nodemailer.default.createTransport({
+      host: smtpHost, port: smtpPort, secure: smtpPort === 465,
+      auth: { user: smtpUser, pass: smtpPass },
+    });
+
+    await transporter.sendMail({
+      from: smtpUser,
+      to: toEmail,
+      subject: "Twój wywiad treningowy",
+      html: `
+        <p>Twój trener zaprasza Cię do wypełnienia wywiadu treningowego.
+        Odpowiedzi pozwolą przygotować plan dopasowany do Twoich potrzeb,
+        możliwości i celu.</p>
+        <p><a href="${surveyUrl}" style="background:#2563eb;color:#fff;padding:12px 24px;
+          border-radius:6px;text-decoration:none;display:inline-block;">
+          Wypełnij wywiad
+        </a></p>
+        <p><strong>Ważne:</strong> Link jest jednorazowy i wygasa ${expiryStr}.</p>
+        <p>Jeśli link nie działa, skontaktuj się ze swoim trenerem, a wyśle Ci nowy.</p>
+      `,
+    });
+
+    return { sent: true };
+  } catch (err) {
+    logger.error({ err, toEmail }, "Failed to send survey invite email");
+    return { sent: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+router.post("/clients/:clientId/survey-invite", requireAuth, async (req, res): Promise<void> => {
+  const clientId = Number(req.params["clientId"]);
+  if (!Number.isInteger(clientId) || clientId <= 0) {
+    res.status(400).json({ error: "Nieprawidłowy clientId." });
+    return;
+  }
+
+  const trainerId = req.trainer!.id;
+
+  // Ownership guard — trainer can only invite their own clients.
+  const [client] = await db
+    .select({ id: clientsTable.id, email: clientsTable.email })
+    .from(clientsTable)
+    .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, trainerId)))
+    .limit(1);
+
+  if (!client) {
+    res.status(404).json({ error: "Klient nie znaleziony." });
+    return;
+  }
+
+  // Revoke any previous active invite for this client so only one is valid.
+  await db
+    .update(surveyInvitesTable)
+    .set({ revokedAt: new Date() })
+    .where(
+      and(
+        eq(surveyInvitesTable.clientId, clientId),
+        eq(surveyInvitesTable.trainerId, trainerId),
+      ),
+    );
+
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const tokenHash = hashToken(rawToken);
+  const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+
+  const [invite] = await db
+    .insert(surveyInvitesTable)
+    .values({ trainerId, clientId, tokenHash, intendedEmail: client.email ?? null, expiresAt })
+    .returning();
+
+  logger.info({ inviteId: invite.id, clientId, trainerId }, "Survey invite created for existing client");
+
+  const url = buildSurveyUrl(rawToken);
+
+  let emailSent = false;
+  let emailError: string | undefined;
+
+  if (client.email) {
+    const emailResult = await sendSurveyInviteEmail(client.email, url, expiresAt);
+    emailSent = emailResult.sent;
+    emailError = emailResult.error;
+  }
+
+  res.status(201).json({
+    id: invite.id,
+    token: rawToken,
+    url,
+    expiresAt: invite.expiresAt,
+    emailSent,
+    ...(emailError !== undefined ? { emailError } : {}),
+  });
 });
 
 // ─── GET /clients/:id ─────────────────────────────────────────────────────────

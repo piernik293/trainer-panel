@@ -1,16 +1,18 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateClient, getListClientsQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle, Copy, AlertCircle, Mail, ExternalLink, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const clientSchema = z.object({
   firstName: z.string().min(1, "Imię jest wymagane"),
@@ -22,30 +24,306 @@ const clientSchema = z.object({
 
 type ClientFormValues = z.infer<typeof clientSchema>;
 
+interface InviteResult {
+  clientId: number;
+  token: string;
+  url: string;
+  expiresAt: string;
+  emailSent: boolean;
+  emailError?: string;
+  clientEmail?: string;
+}
+
+type CreationState =
+  | { phase: "form" }
+  | { phase: "result"; invite: InviteResult }
+  | { phase: "invite-failed"; clientId: number; inviteError: string };
+
 export default function ClientNew() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const createClient = useCreateClient();
+  const [state, setState] = useState<CreationState>({ phase: "form" });
+  const [copied, setCopied] = useState(false);
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      notes: ""
-    }
+    defaultValues: { firstName: "", lastName: "", email: "", phone: "", notes: "" }
+  });
+
+  // Mutation for creating the survey invite after client creation.
+  const createInvite = useMutation({
+    mutationFn: async ({ clientId }: { clientId: number }) => {
+      const res = await fetch(`/api/clients/${clientId}/survey-invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`);
+      }
+      return res.json() as Promise<{
+        token: string; url: string; expiresAt: string;
+        emailSent: boolean; emailError?: string;
+      }>;
+    },
+  });
+
+  // Mutation for resending the invite email.
+  const resendInvite = useMutation({
+    mutationFn: async ({ clientId }: { clientId: number }) => {
+      const res = await fetch(`/api/clients/${clientId}/survey-invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`);
+      }
+      return res.json() as Promise<{
+        token: string; url: string; expiresAt: string;
+        emailSent: boolean; emailError?: string;
+      }>;
+    },
   });
 
   const onSubmit = (data: ClientFormValues) => {
     createClient.mutate({ data }, {
-      onSuccess: (newClient) => {
+      onSuccess: async (newClient) => {
         queryClient.invalidateQueries({ queryKey: getListClientsQueryKey() });
-        setLocation(`/clients/${newClient.id}/survey`);
-      }
+        try {
+          const invite = await createInvite.mutateAsync({ clientId: newClient.id });
+          setState({
+            phase: "result",
+            invite: {
+              clientId: newClient.id,
+              token: invite.token,
+              url: invite.url,
+              expiresAt: invite.expiresAt,
+              emailSent: invite.emailSent,
+              emailError: invite.emailError,
+              clientEmail: data.email || undefined,
+            },
+          });
+        } catch (err) {
+          setState({
+            phase: "invite-failed",
+            clientId: newClient.id,
+            inviteError: err instanceof Error ? err.message : "Nieznany błąd",
+          });
+        }
+      },
     });
   };
+
+  const handleCopy = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback — just select text
+    }
+  };
+
+  const handleResend = async (clientId: number) => {
+    try {
+      const invite = await resendInvite.mutateAsync({ clientId });
+      setState((prev) => {
+        if (prev.phase !== "result") return prev;
+        return {
+          ...prev,
+          invite: {
+            ...prev.invite,
+            token: invite.token,
+            url: invite.url,
+            expiresAt: invite.expiresAt,
+            emailSent: invite.emailSent,
+            emailError: invite.emailError,
+          },
+        };
+      });
+    } catch {
+      // error shown via resendInvite.isError
+    }
+  };
+
+  // ── Result screen ──────────────────────────────────────────────────────────
+
+  if (state.phase === "result") {
+    const { invite } = state;
+    const emailFailed = !invite.emailSent && invite.clientEmail;
+    const noEmail = !invite.clientEmail;
+
+    return (
+      <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-300">
+        <Link href="/clients" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit">
+          <ArrowLeft size={16} />
+          Powrót do listy
+        </Link>
+
+        <div className="flex items-center gap-3">
+          <CheckCircle className="text-green-600" size={28} />
+          <h1 className="text-2xl font-display font-bold tracking-tight text-foreground">
+            Klient dodany
+          </h1>
+        </div>
+
+        <Card className="border-border/50 shadow-sm">
+          <CardContent className="pt-6 space-y-5">
+            {/* Case A — success + email sent */}
+            {invite.emailSent && invite.clientEmail && (
+              <Alert className="border-green-200 bg-green-50">
+                <Mail className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  Klient został dodany, a link do wywiadu wysłano na adres:{" "}
+                  <strong>{invite.clientEmail}</strong>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Case B — client + invite OK, email failed */}
+            {emailFailed && (
+              <Alert className="border-yellow-200 bg-yellow-50">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="text-yellow-800">
+                  Klient został dodany, ale nie udało się wysłać wiadomości e-mail.
+                  {invite.emailError && (
+                    <span className="block text-xs mt-1 opacity-70">
+                      Powód: {invite.emailError}
+                    </span>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Case C — no email provided */}
+            {noEmail && (
+              <Alert className="border-blue-200 bg-blue-50">
+                <AlertDescription className="text-blue-800">
+                  Klient został dodany. Skopiuj link do wywiadu i wyślij go klientowi samodzielnie.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Survey link */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-foreground">Link do wywiadu</p>
+              <div className="flex items-center gap-2 p-3 bg-muted/40 rounded-lg border border-border/50">
+                <code className="flex-1 text-xs text-muted-foreground break-all">{invite.url}</code>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Link jest jednorazowy. Wygasa:{" "}
+                {new Date(invite.expiresAt).toLocaleDateString("pl-PL", {
+                  day: "numeric", month: "long", year: "numeric"
+                })}
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Button
+                variant="default"
+                onClick={() => handleCopy(invite.url)}
+                className="gap-2"
+              >
+                <Copy size={16} />
+                {copied ? "Skopiowano!" : "Skopiuj link"}
+              </Button>
+
+              {(emailFailed || noEmail) && invite.clientEmail && (
+                <Button
+                  variant="outline"
+                  onClick={() => handleResend(invite.clientId)}
+                  disabled={resendInvite.isPending}
+                  className="gap-2"
+                >
+                  <RefreshCw size={16} className={resendInvite.isPending ? "animate-spin" : ""} />
+                  {resendInvite.isPending ? "Wysyłanie…" : "Wyślij ponownie"}
+                </Button>
+              )}
+
+              <Button
+                variant="outline"
+                onClick={() => setLocation(`/clients/${invite.clientId}`)}
+                className="gap-2"
+              >
+                <ExternalLink size={16} />
+                Przejdź do klienta
+              </Button>
+            </div>
+
+            {resendInvite.isError && (
+              <p className="text-sm text-destructive">
+                Nie udało się wysłać ponownie:{" "}
+                {resendInvite.error instanceof Error ? resendInvite.error.message : "Nieznany błąd"}
+              </p>
+            )}
+            {resendInvite.isSuccess && !resendInvite.isPending && (
+              <p className="text-sm text-green-600">Email wysłany ponownie.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ── Invite-failed screen ───────────────────────────────────────────────────
+
+  if (state.phase === "invite-failed") {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-300">
+        <Link href="/clients" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit">
+          <ArrowLeft size={16} />
+          Powrót do listy
+        </Link>
+
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <AlertCircle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            Klient został dodany, ale nie udało się utworzyć linku do wywiadu.
+            <span className="block text-xs mt-1 opacity-70">{state.inviteError}</span>
+          </AlertDescription>
+        </Alert>
+
+        <div className="flex gap-3">
+          <Button
+            onClick={() => {
+              resendInvite.mutate({ clientId: state.clientId }, {
+                onSuccess: (invite) => {
+                  setState({
+                    phase: "result",
+                    invite: {
+                      clientId: state.clientId,
+                      token: invite.token,
+                      url: invite.url,
+                      expiresAt: invite.expiresAt,
+                      emailSent: invite.emailSent,
+                      emailError: invite.emailError,
+                    },
+                  });
+                },
+              });
+            }}
+            disabled={resendInvite.isPending}
+            className="gap-2"
+          >
+            <RefreshCw size={16} className={resendInvite.isPending ? "animate-spin" : ""} />
+            {resendInvite.isPending ? "Próbuję…" : "Spróbuj ponownie"}
+          </Button>
+
+          <Button variant="outline" onClick={() => setLocation(`/clients/${state.clientId}`)}>
+            <ExternalLink size={16} className="mr-2" />
+            Przejdź do klienta
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Form screen ────────────────────────────────────────────────────────────
+
+  const isSaving = createClient.isPending || createInvite.isPending;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-300">
@@ -59,9 +337,20 @@ export default function ClientNew() {
           Nowy Klient
         </h1>
         <p className="text-muted-foreground mt-1">
-          Dodaj podstawowe dane kontaktowe podopiecznego
+          Dodaj dane kontaktowe — wyślemy klientowi link do wywiadu treningowego.
         </p>
       </div>
+
+      {createClient.isError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {createClient.error instanceof Error
+              ? createClient.error.message
+              : "Nie udało się zapisać klienta. Spróbuj ponownie."}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card className="border-border/50 shadow-sm">
         <CardHeader className="bg-muted/20 border-b border-border/50">
@@ -85,7 +374,7 @@ export default function ClientNew() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="lastName"
@@ -136,10 +425,10 @@ export default function ClientNew() {
                   <FormItem>
                     <FormLabel>Wewnętrzne notatki trenera</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Skąd jest ten klient? Jakie są ustalenia finansowe?" 
-                        className="min-h-[120px] resize-y" 
-                        {...field} 
+                      <Textarea
+                        placeholder="Skąd jest ten klient? Jakie są ustalenia finansowe?"
+                        className="min-h-[120px] resize-y"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -148,11 +437,11 @@ export default function ClientNew() {
               />
 
               <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
-                <Button type="button" variant="outline" onClick={() => setLocation("/clients")}>
+                <Button type="button" variant="outline" onClick={() => setLocation("/clients")} disabled={isSaving}>
                   Anuluj
                 </Button>
-                <Button type="submit" disabled={createClient.isPending}>
-                  {createClient.isPending ? "Zapisywanie..." : "Zapisz Klienta"}
+                <Button type="submit" disabled={isSaving}>
+                  {isSaving ? "Zapisywanie…" : "Zapisz Klienta"}
                 </Button>
               </div>
             </form>

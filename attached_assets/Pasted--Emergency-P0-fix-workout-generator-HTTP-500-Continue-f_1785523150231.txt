@@ -1,0 +1,80 @@
+## Emergency P0 fix — workout generator HTTP 500
+
+Continue from the current workspace state.
+
+Stop working on:
+- database test mocks,
+- survey email delivery,
+- invitation improvements,
+- unrelated tests.
+
+Do not revert the working client and survey production changes.
+
+Current production issue:
+
+Generating the preliminary workout plan returns:
+
+- Day 1: HTTP 500
+- Day 2: HTTP 500
+- Day 3: HTTP 500
+
+This generator failure is the only priority.
+
+### Strict low-budget scope
+
+1. Reproduce generation for only one day.
+2. Read the first real API stack trace from the server logs.
+3. Inspect only:
+   - the failing generate-day route,
+   - `planDraftGenerateDay.ts`,
+   - the directly referenced helper indicated by the stack trace.
+4. Fix the exact runtime exception.
+5. Do not redesign or refactor the generator.
+6. Do not continue the unfinished Drizzle mock tests.
+7. Do not run the full test suite.
+
+### Important check
+
+A previous interrupted task mentioned removing dangling/broken lines from:
+
+`planDraftGenerateDay.ts`
+
+Confirm that this file does not contain:
+
+- code left outside a function,
+- duplicated fragments,
+- undefined variables,
+- invalid references introduced by an interrupted edit,
+- a missing return,
+- malformed imports.
+
+Do not assume this is the cause. Use the actual first stack trace.
+
+### Verification
+
+After the fix:
+
+1. Generate Day 1 successfully.
+2. Generate the full three-day plan once.
+3. Confirm each day returns a successful response and contains exercises.
+4. Confirm the UI no longer displays HTTP 500.
+
+Fix at most the first real production error blocking generation.
+
+If another independent error remains after that, report its exact stack trace and stop instead of beginning a broad investigation.
+
+### Final report
+
+Report only:
+
+- exact root cause,
+- file and line changed,
+- whether Day 1 generated,
+- whether all three days generated,
+- remaining production error, if any.
+
+Stop immediately after verification.
+
+Required completion statement:
+
+READY — workout generation no longer returns HTTP 500

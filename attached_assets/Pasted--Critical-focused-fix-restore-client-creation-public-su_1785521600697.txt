@@ -1,0 +1,438 @@
+## Critical focused fix — restore client creation, public survey submission, and email invitation flow
+
+### Important correction to the previous task
+
+The previous requirement to redirect the trainer after client creation to:
+
+`/clients/${newClient.id}/survey`
+
+is cancelled.
+
+Revert the ClientNew.tsx change that introduced this redirect.
+
+Do not automatically open an internal interview after creating a client.
+
+The required flow is now:
+
+create client
+→ generate a secure public survey invitation
+→ send the invitation to the supplied email
+→ show the trainer whether delivery succeeded
+→ provide copy-link and resend actions
+→ client completes the existing public survey
+→ submitted interview appears in the trainer panel.
+
+Do not remove `/clients/:id/survey` if it is used elsewhere. Only stop using it as the automatic post-creation destination.
+
+---
+
+# Problem
+
+There are currently three separate issues:
+
+1. On the trainer “Nowy Klient” page, clicking “Zapisz Klienta” appears to do nothing or gives no useful result.
+
+2. The existing public survey previously worked and submitted completed interviews into the trainer panel, but after recent changes it is now broken and shows a generic required-fields error.
+
+3. When the trainer creates a client with an email address, that client should automatically receive an individual, secure public survey invitation by email.
+
+Do not create a second survey system.
+
+Reuse the existing public survey invitation and token flow.
+
+---
+
+# Strict scope
+
+Fix only:
+
+- trainer-side client creation,
+- the existing public survey regression,
+- secure survey invitation generation after client creation,
+- transactional email delivery,
+- copy-link and resend fallback,
+- clear result states in the trainer UI.
+
+Do not modify:
+
+- plan generator logic,
+- adaptive-start scoring,
+- confirmed-restriction scoring,
+- client portal activation,
+- multi-trainer isolation,
+- Clerk authentication,
+- unrelated dashboard or UX screens.
+
+No broad repository audit.
+No subagents.
+Read only directly related client creation, survey invitation, public survey, email integration and focused test files.
+
+---
+
+# 1. Diagnose why “Zapisz Klienta” appears to do nothing
+
+Reproduce the issue from the trainer UI.
+
+Capture:
+
+- whether the form submit handler fires,
+- request URL,
+- HTTP status,
+- response body,
+- frontend console error,
+- whether the client row is actually created,
+- whether mutation `onSuccess` or `onError` executes,
+- whether the current redirect causes the UI failure.
+
+Fix the first actual failure.
+
+## Required client creation behavior
+
+When the trainer clicks `Zapisz Klienta`:
+
+1. Validate the contact form.
+2. Send exactly one create request.
+3. Create the client under:
+   `req.trainer.id`
+4. Return the newly created client ID.
+5. Create a secure public survey invitation for that client.
+6. Attempt to email the invitation.
+7. Show the result inside the trainer UI.
+
+Do not immediately redirect away before the trainer sees the result.
+
+While saving:
+
+- disable the button,
+- show `Zapisywanie…`,
+- prevent duplicate submissions.
+
+On failure:
+
+- keep all entered values,
+- show a specific Polish error,
+- re-enable the button,
+- do not create duplicate clients on retry.
+
+Caller-provided `trainerId` must be ignored or rejected.
+
+---
+
+# 2. Restore the existing public survey
+
+The public survey previously:
+
+- opened from an invitation link,
+- prefilled available contact data,
+- allowed the client to complete all required client-facing questions,
+- submitted successfully,
+- appeared in the correct trainer panel.
+
+Restore that exact flow.
+
+Investigate recent changes involving:
+
+- priority-limit validation,
+- adaptive-start fields,
+- confirmed restrictions,
+- API Zod schemas,
+- default form values,
+- shared public/trainer form code,
+- newly required fields.
+
+## Trainer-only fields must not block public submission
+
+The public client must not be required to complete trainer-controlled fields such as:
+
+- adaptive-start decision,
+- trainer-confirmed restriction action,
+- internal notes,
+- trainer-only statuses,
+- internal scoring fields.
+
+The public survey may collect the client’s own pain or limitation description, but trainer confirmation fields must remain optional or absent in public mode.
+
+## Validation UX
+
+When submission fails because required fields are missing:
+
+- identify the exact missing fields,
+- highlight them,
+- scroll to or focus the first invalid field,
+- show section-specific messages where practical.
+
+Do not show only:
+
+`Nie można wysłać wywiadu treningowego`
+
+without identifying what must be corrected.
+
+## Public survey security
+
+Preserve:
+
+- single-use invitation token,
+- expiration,
+- revoked status,
+- used status,
+- trainer/client ownership binding,
+- invalid-token protection.
+
+The completed interview must be attached only to the client represented by the invitation.
+
+---
+
+# 3. Automatically create a survey invitation after client creation
+
+After successfully creating the client:
+
+1. Create an invitation assigned to:
+   - the authenticated trainer,
+   - the newly created client.
+
+2. Generate a cryptographically secure token.
+
+3. Store only the secure representation required by the existing invitation system.
+   Do not store or log plaintext tokens unnecessarily.
+
+4. Build the correct public survey URL.
+
+5. If an email address was provided, attempt to send the link.
+
+Reuse the existing survey-invitation system rather than introducing another incompatible token table.
+
+## Invitation requirements
+
+The invitation must:
+
+- be single-use,
+- have an expiration date,
+- support revocation,
+- belong to one trainer and one client,
+- not expose internal IDs as authentication,
+- not use the email address itself as proof of identity.
+
+If an active invitation already exists, follow the existing safe behavior for regeneration or revocation.
+
+---
+
+# 4. Transactional email delivery
+
+First inspect whether a real transactional email provider is already configured.
+
+If one exists, reuse it.
+
+If no provider exists:
+
+- do not pretend an email was sent,
+- do not implement fake console-only delivery as production success,
+- still create the client and secure invitation,
+- show the copy-link fallback,
+- report the exact provider configuration and environment variables still required.
+
+Email secrets must remain server-side.
+
+## Email content
+
+Subject:
+
+`Twój wywiad treningowy`
+
+Body:
+
+`Twój trener zaprasza Cię do wypełnienia wywiadu treningowego. Odpowiedzi pozwolą przygotować plan dopasowany do Twoich potrzeb, możliwości i celu.`
+
+CTA:
+
+`Wypełnij wywiad`
+
+Also include:
+
+- that the link is single-use,
+- its expiration date,
+- a short instruction to contact the trainer if the link does not work.
+
+Do not send:
+
+- a generated password,
+- internal client IDs,
+- trainer-only notes,
+- medical interpretations.
+
+---
+
+# 5. Failure handling
+
+Client creation must not be rolled back only because email delivery failed.
+
+## Case A — client, invitation and email succeed
+
+Show:
+
+`Klient został dodany, a link do wywiadu wysłano na adres: {email}`
+
+Actions:
+
+- `Przejdź do klienta`
+- `Skopiuj link`
+
+## Case B — client and invitation succeed, email fails
+
+Keep both records.
+
+Show:
+
+`Klient został dodany, ale nie udało się wysłać wiadomości e-mail.`
+
+Actions:
+
+- `Wyślij ponownie`
+- `Skopiuj link`
+- `Przejdź do klienta`
+
+Do not claim delivery success.
+
+## Case C — no email supplied
+
+Create the client and invitation.
+
+Show:
+
+`Klient został dodany. Skopiuj link do wywiadu i wyślij go klientowi samodzielnie.`
+
+Actions:
+
+- `Skopiuj link`
+- `Przejdź do klienta`
+
+## Case D — invitation creation fails
+
+Do not hide the failure.
+
+If the client was already created, show:
+
+`Klient został dodany, ale nie udało się utworzyć linku do wywiadu.`
+
+Provide:
+
+- `Spróbuj ponownie`
+- `Przejdź do klienta`
+
+---
+
+# 6. Copy-link security and UX
+
+The raw invitation URL may be shown immediately after creation.
+
+Do not persist the raw token in:
+
+- database,
+- localStorage,
+- sessionStorage,
+- logs,
+- analytics.
+
+If the secure token design stores only a hash, then after refreshing the page:
+
+- do not pretend the previous raw link can still be copied,
+- show invitation status,
+- offer `Wygeneruj nowy link` or `Wyślij ponownie`,
+- explain that generating a new link invalidates the previous active link where applicable.
+
+---
+
+# 7. Multi-trainer isolation
+
+Every trainer-facing operation must use:
+
+`req.trainer.id`
+
+Prove that:
+
+- Trainer A can create invitations only for Trainer A’s clients,
+- Trainer A cannot inspect, resend, regenerate or revoke Trainer B’s invitation,
+- foreign resources return 404,
+- body/query `trainerId` cannot alter ownership.
+
+The public submission must remain bound to the trainer and client represented by the invitation.
+
+---
+
+# 8. Public survey result
+
+After successful submission:
+
+- mark the invitation used,
+- save the interview for the correct client,
+- make the completed interview visible in that trainer’s panel,
+- display a clear success state to the client.
+
+Reopening the same invitation must show the used-link state and must not allow another submission.
+
+---
+
+# Focused tests
+
+Add focused tests proving:
+
+1. Clicking `Zapisz Klienta` sends exactly one create request.
+2. Double-click does not create duplicate clients.
+3. Created client belongs to `req.trainer.id`.
+4. Create-client API returns the new client ID.
+5. Client creation no longer redirects automatically to `/clients/:id/survey`.
+6. Creating a client also creates a survey invitation.
+7. The invitation belongs to the correct trainer and client.
+8. Trainer A cannot create, resend or revoke Trainer B’s invitation.
+9. Successful email delivery produces the full-success UI.
+10. Failed email delivery preserves the client and invitation.
+11. Failed delivery exposes copy-link and resend actions.
+12. Missing email exposes the manual copy-link flow.
+13. Valid public invitation loads the survey.
+14. Trainer-only adaptive/restriction fields do not block public submission.
+15. Missing required public fields are identified and focused.
+16. Completed public survey appears under the correct trainer and client.
+17. Expired, revoked, used and unknown invitations remain blocked.
+18. Reopening a used link does not allow another submission.
+19. Existing multi-trainer isolation tests remain passing.
+
+---
+
+# Manual end-to-end verification
+
+Verify the following real flow:
+
+1. Trainer creates a client with an email.
+2. Client appears exactly once in the trainer panel.
+3. A secure survey invitation is created.
+4. Confirm whether a real email is delivered.
+5. If no provider is configured, confirm that the UI honestly shows the fallback.
+6. Open the invitation in incognito.
+7. Complete the full public survey.
+8. Submit successfully.
+9. Confirm the interview appears for the correct client in the trainer panel.
+10. Reopen the link and confirm the used state.
+11. Confirm Trainer B cannot access or manage the invitation.
+
+---
+
+# Final report
+
+Report:
+
+- why `Zapisz Klienta` appeared to do nothing,
+- whether the incorrect `/clients/:id/survey` redirect was reverted,
+- exact public survey regression,
+- trainer-only fields that incorrectly blocked submission, if any,
+- invitation model reused,
+- email provider used or missing,
+- required environment variables,
+- delivery success/failure behavior,
+- copy-link behavior,
+- focused tests,
+- manual end-to-end result,
+- files changed,
+- remaining configuration requirements.
+
+Required completion statement only after the real flow succeeds:
+
+`READY — creating a client generates and delivers a working public survey invitation`

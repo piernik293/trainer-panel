@@ -131,6 +131,11 @@ export async function runSchemaMigrations(): Promise<void> {
     sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS adaptive_start_decision TEXT`,
   );
 
+  // ── survey_invites.client_id — ties an invite to a pre-created client ────────
+  await db.execute(
+    sql`ALTER TABLE survey_invites ADD COLUMN IF NOT EXISTS client_id INTEGER REFERENCES clients(id) ON DELETE SET NULL`,
+  );
+
   // ── confirmed_restrictions — structured restriction list for plan generation ──
   await db.execute(
     sql`ALTER TABLE surveys ADD COLUMN IF NOT EXISTS confirmed_restrictions TEXT`,

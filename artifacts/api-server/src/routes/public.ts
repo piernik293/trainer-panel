@@ -256,13 +256,21 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
       // trainerId is derived ONLY from the invite — never from the request body.
       const trainerId = consumed.trainerId;
 
-      const [client] = await tx
-        .insert(clientsTable)
-        .values({ firstName, lastName, email: trimmedEmail, phone, trainerId })
-        .returning();
+      // If the invite is tied to a pre-existing client (trainer used "Nowy Klient"),
+      // skip creating a new client and attach the survey to the existing one.
+      let clientId: number;
+      if (consumed.clientId) {
+        clientId = consumed.clientId;
+      } else {
+        const [client] = await tx
+          .insert(clientsTable)
+          .values({ firstName, lastName, email: trimmedEmail, phone, trainerId })
+          .returning();
+        clientId = client.id;
+      }
 
       await tx.insert(surveysTable).values({
-        clientId: client.id,
+        clientId,
         trainingGoal,
         trainingGoalOther,
         experienceLevel,
@@ -307,8 +315,8 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
         avoidedExerciseOtherReason: avoidedExerciseOtherReason ?? null,
       });
 
-      logger.info({ clientId: client.id, trainerId, inviteId: consumed.id }, "Client created via survey invite");
-      return { clientId: client.id, firstName, lastName, trainingGoal };
+      logger.info({ clientId, trainerId, inviteId: consumed.id }, "Survey invite submission processed");
+      return { clientId, firstName, lastName, trainingGoal };
     });
 
     // Fire-and-forget email notification

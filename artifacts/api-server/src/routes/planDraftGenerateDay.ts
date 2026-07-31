@@ -213,6 +213,10 @@ router.post(
       !!(survey.trainingLocation?.trim()) && !!(survey.equipment?.trim());
     const hasEquipmentData = !!(survey.equipment?.trim());
 
+    // adaptiveStartMode: trainer has explicitly accepted the adaptive-start
+    // recommendation for this client (stored as adaptiveStartDecision === "adaptive").
+    const adaptiveStartMode = client.adaptiveStartDecision === "accepted";
+
     const avoidedExerciseIds = new Set<number>(survey.avoidedExerciseIds ?? []);
 
     // ── Fetch all active exercises ─────────────────────────────────────────────
@@ -1014,10 +1018,3 @@ router.post(
 );
 
 export default router;
-
-    const isBeginnerLevelForAdaptive =
-      !!survey.experienceLevel &&
-      BEGINNER_EXPERIENCE_LEVELS_FOR_ADAPTIVE.has(survey.experienceLevel);
-
-    const adaptiveStartMode =
-      client.adaptiveStartDecision === "accepted" && isBeginnerLevelForAdaptive;
