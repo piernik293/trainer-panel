@@ -220,7 +220,7 @@ export const GetClientSurveyResponse = zod.object({
   "athleteStatus": zod.string().nullish(),
   "injuryStatus": zod.string().nullish(),
   "sportPerformanceNeeds": zod.array(zod.string()).optional(),
-  "confirmedRestrictions": zod.string().nullish(),
+  "confirmedRestrictions": zod.string().nullable().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -287,7 +287,7 @@ export const UpsertClientSurveyBody = zod.object({
   "athleteStatus": zod.string().optional(),
   "injuryStatus": zod.string().optional(),
   "sportPerformanceNeeds": zod.array(zod.string()).optional(),
-  "confirmedRestrictions": zod.string().nullish()
+  "confirmedRestrictions": zod.string().max(10000).nullable().optional()
 })
 
 export const UpsertClientSurveyResponse = zod.object({
@@ -334,7 +334,7 @@ export const UpsertClientSurveyResponse = zod.object({
   "athleteStatus": zod.string().nullish(),
   "injuryStatus": zod.string().nullish(),
   "sportPerformanceNeeds": zod.array(zod.string()).optional(),
-  "confirmedRestrictions": zod.string().nullish(),
+  "confirmedRestrictions": zod.string().nullable().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -391,7 +391,7 @@ export const ListClientSurveysResponseItem = zod.object({
   "athleteStatus": zod.string().nullish(),
   "injuryStatus": zod.string().nullish(),
   "sportPerformanceNeeds": zod.array(zod.string()).optional(),
-  "confirmedRestrictions": zod.string().nullish(),
+  "confirmedRestrictions": zod.string().nullable().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -461,7 +461,7 @@ export const GetClientSurveyByIdResponse = zod.object({
   "athleteStatus": zod.string().nullish(),
   "injuryStatus": zod.string().nullish(),
   "sportPerformanceNeeds": zod.array(zod.string()).optional(),
-  "confirmedRestrictions": zod.string().nullish(),
+  "confirmedRestrictions": zod.string().nullable().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1307,4 +1307,3 @@ export const GetTrainingGoalsDistributionResponseItem = zod.object({
   "count": zod.number()
 })
 export const GetTrainingGoalsDistributionResponse = zod.array(GetTrainingGoalsDistributionResponseItem)
-

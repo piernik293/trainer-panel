@@ -1149,6 +1149,10 @@ components:
           type: ["string", "null"]
         avoidsAdvancedMethods:
           type: ["boolean", "null"]
+        confirmedRestrictions:
+          type: ["string", "null"]
+          description: JSON array of confirmed restriction objects (bodyPart + optional note). Null when no restrictions have been confirmed.
+          maxLength: 10000
         createdAt:
           type: string
           format: date-time
@@ -1244,6 +1248,11 @@ components:
           type: string
         avoidsAdvancedMethods:
           type: boolean
+        confirmedRestrictions:
+          type: string
+          nullable: true
+          description: JSON array of confirmed restriction objects (bodyPart + optional note). Null or absent clears restrictions.
+          maxLength: 10000
 
     TrainerNote:
       type: object

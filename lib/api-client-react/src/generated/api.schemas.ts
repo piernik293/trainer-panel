@@ -164,6 +164,12 @@ export interface Survey {
   avoidedExerciseOtherText?: string | null;
   /** @nullable */
   avoidedExerciseOtherReason?: string | null;
+  /**
+   * JSON array of confirmed restriction objects (bodyPart + optional note). Null when no restrictions have been confirmed.
+   * @nullable
+   * @maxLength 10000
+   */
+  confirmedRestrictions?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -259,6 +265,12 @@ export interface SurveyInput {
   cardioFrequency?: string;
   preferredCardioType?: string;
   avoidsAdvancedMethods?: boolean;
+  /**
+   * JSON array of confirmed restriction objects (bodyPart + optional note). Null or absent clears restrictions.
+   * @nullable
+   * @maxLength 10000
+   */
+  confirmedRestrictions?: string | null;
 }
 
 export interface TrainerNote {

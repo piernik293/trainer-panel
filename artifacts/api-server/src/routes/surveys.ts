@@ -300,10 +300,10 @@ router.put("/clients/:clientId/survey", requireAuth, async (req, res): Promise<v
   // only from the authenticated session, never from the request payload.
   const { trainerId: _ignoredTrainerId, ...rest3 } = rest2 as typeof rest2 & { trainerId?: unknown };
 
-  // Confirmed restrictions: extracted from raw body (not in the generated Zod schema).
-  // Validated as a JSON array; stored as-is (text). Invalid / missing → null.
+  // confirmedRestrictions is validated by UpsertClientSurveyBody (nullable string, max 10 000 chars).
+  // We additionally require it to be a valid JSON array; any other value is stored as null.
   const confirmedRestrictions = (() => {
-    const raw = (req.body as Record<string, unknown>).confirmedRestrictions;
+    const raw = parsed.data.confirmedRestrictions;
     if (typeof raw !== "string" || !raw) return null;
     try { const v = JSON.parse(raw); return Array.isArray(v) ? raw : null; }
     catch { return null; }
@@ -410,9 +410,10 @@ router.patch("/clients/:clientId/surveys/:surveyId", requireAuth, async (req, re
   // Strip any trainerId the caller may have included in the body.
   const { trainerId: _ignoredTrainerId, ...rest3 } = rest2 as typeof rest2 & { trainerId?: unknown };
 
-  // Confirmed restrictions (same extraction as PUT handler).
+  // confirmedRestrictions is validated by UpsertClientSurveyBody (nullable string, max 10 000 chars).
+  // We additionally require it to be a valid JSON array; any other value is stored as null.
   const confirmedRestrictions = (() => {
-    const raw = (req.body as Record<string, unknown>).confirmedRestrictions;
+    const raw = parsed.data.confirmedRestrictions;
     if (typeof raw !== "string" || !raw) return null;
     try { const v = JSON.parse(raw); return Array.isArray(v) ? raw : null; }
     catch { return null; }
