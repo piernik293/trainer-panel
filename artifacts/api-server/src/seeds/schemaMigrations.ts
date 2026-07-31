@@ -126,6 +126,11 @@ export async function runSchemaMigrations(): Promise<void> {
     END $$
   `);
 
+  // ── adaptive_start_decision — trainer decision on adaptive start mode ────────
+  await db.execute(
+    sql`ALTER TABLE clients ADD COLUMN IF NOT EXISTS adaptive_start_decision TEXT`,
+  );
+
   // ── confirmed_restrictions — structured restriction list for plan generation ──
   await db.execute(
     sql`ALTER TABLE surveys ADD COLUMN IF NOT EXISTS confirmed_restrictions TEXT`,

@@ -42,7 +42,7 @@ export default function ClientNew() {
     createClient.mutate({ data }, {
       onSuccess: (newClient) => {
         queryClient.invalidateQueries({ queryKey: getListClientsQueryKey() });
-        setLocation(`/clients/${newClient.id}`);
+        setLocation(`/clients/${newClient.id}/survey`);
       }
     });
   };
