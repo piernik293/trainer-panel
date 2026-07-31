@@ -187,7 +187,7 @@ router.post(
 
     // ── Verify client belongs to the authenticated trainer ────────────────────
     const [client] = await db
-      .select({ id: clientsTable.id })
+      .select({ id: clientsTable.id, adaptiveStartDecision: clientsTable.adaptiveStartDecision })
       .from(clientsTable)
       .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
 
@@ -259,10 +259,17 @@ router.post(
     const blockedFamilies: Array<{ avoidedName: string; label: string }> = [];
     const exactOnlyBlocks: string[] = [];
 
-    // Pool building: score every complete exercise against the survey.
+    const BEGINNER_EXPERIENCE_LEVELS_FOR_ADAPTIVE = new Set([
+      "Brak aktywności fizycznej",
+      "Początkujący",
+    ]);
     const pool = [];
     for (const ex of completeExercises) {
-      const { score, matchReasons, warnReasons } = scoreExercise(ex, survey);
+      const { score, matchReasons, warnReasons } = scoreExercise(
+        ex,
+        survey,
+        adaptiveStartMode ? { useAdaptiveStart: true } : undefined,
+      );
 
       pool.push({
         id: ex.id,
@@ -369,7 +376,13 @@ router.post(
     // isPriorityEligible is always false for this level (handled by the set above),
     // but isNoActivityClient additionally signals the sort to actively prefer
     // suitableForNoActivity exercises within each slot's band.
-    const isNoActivityClient = survey.experienceLevel === "Brak aktywności fizycznej";
+    //
+    // adaptiveStartMode extends this behaviour to "Początkujący" clients when the
+    // trainer has explicitly accepted the adaptive-start recommendation: the engine
+    // treats them identically to an inactive client — preferring simple, stable,
+    // suitableForNoActivity exercises and applying the stricter slot constraints.
+    const isNoActivityClient =
+      survey.experienceLevel === "Brak aktywności fizycznej" || adaptiveStartMode;
     // "Początkujący" is a distinct, separate level from "Brak aktywności fizycznej".
     // It allows more basic compound lifting but still prefers simpler exercises over
     // complex isolation-heavy choices — the engine's isBeginnerClient sort step handles this.
@@ -888,7 +901,7 @@ router.post(
             let worstTargetId = -1;
             let worstDeficit  = 0;
             for (const [tId, ceiling] of ceilingMap) {
-            const total = (accumulated.get(tId) ?? 0) + (sessionTotals.get(tId) ?? 0);
+            const total = (accumulated.get(tId) ?? 0) + (finalTotals.get(tId) ?? 0);
               const deficit = total - ceiling;
               if (deficit > worstDeficit) {
                 worstDeficit  = deficit;
@@ -1001,3 +1014,10 @@ router.post(
 );
 
 export default router;
+
+    const isBeginnerLevelForAdaptive =
+      !!survey.experienceLevel &&
+      BEGINNER_EXPERIENCE_LEVELS_FOR_ADAPTIVE.has(survey.experienceLevel);
+
+    const adaptiveStartMode =
+      client.adaptiveStartDecision === "accepted" && isBeginnerLevelForAdaptive;

@@ -763,4 +763,3 @@ suitableForNoActivity?: boolean;
 export type ListMusclesParams = {
 broadCategory?: string;
 };
-

@@ -152,7 +152,7 @@ router.get(
 
     // ── Verify client (must belong to the authenticated trainer) ──────────────
     const [client] = await db
-      .select({ id: clientsTable.id })
+      .select({ id: clientsTable.id, adaptiveStartDecision: clientsTable.adaptiveStartDecision })
       .from(clientsTable)
       .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
 
@@ -194,6 +194,23 @@ router.get(
       return isComplete;
     });
 
+    // ── Adaptive-start mode ────────────────────────────────────────────────────
+    //
+    // Mirrors the logic in planDraftInputService.ts and planDraftGenerateDay.ts.
+    // When the trainer has accepted adaptive start for a beginner / sedentary
+    // client, scoreExercise receives useAdaptiveStart:true so that simple,
+    // stable, suitableForNoActivity exercises are boosted and technically
+    // demanding ones are penalised — without changing other scoring dimensions.
+    const BEGINNER_EXPERIENCE_LEVELS_FOR_ADAPTIVE = new Set([
+      "Brak aktywności fizycznej",
+      "Początkujący",
+    ]);
+    const isBeginnerLevelForAdaptive =
+      !!survey.experienceLevel &&
+      BEGINNER_EXPERIENCE_LEVELS_FOR_ADAPTIVE.has(survey.experienceLevel);
+    const adaptiveStartMode =
+      client.adaptiveStartDecision === "accepted" && isBeginnerLevelForAdaptive;
+
     // ── Score + apply hard exclusions ──────────────────────────────────────────
     const pool: ScoredAndFilteredExercise[] = [];
 
@@ -202,7 +219,11 @@ router.get(
       if (!isLocationCompatible(ex.trainingLocation ?? [], survey.trainingLocation)) continue;
       if (!isEquipmentCompatible(ex.equipment ?? [], ex.requiredEquipmentAll ?? [], survey.equipment)) continue;
 
-      const { score, matchReasons, warnReasons } = scoreExercise(ex, survey);
+      const { score, matchReasons, warnReasons } = scoreExercise(
+        ex,
+        survey,
+        adaptiveStartMode ? { useAdaptiveStart: true } : undefined,
+      );
 
       pool.push({
         id: ex.id,
@@ -296,7 +317,11 @@ router.get(
       // "Brak aktywności fizycznej" is a distinct, more conservative level — not
       // merged with "Początkujący".  isNoActivityClient signals the sort to prefer
       // suitableForNoActivity exercises within each slot's band.
-      const isNoActivityClient = survey.experienceLevel === "Brak aktywności fizycznej";
+      //
+      // adaptiveStartMode extends this to "Początkujący" clients whose trainer
+      // accepted the adaptive-start recommendation, mirroring the generate-day route.
+      const isNoActivityClient =
+        survey.experienceLevel === "Brak aktywności fizycznej" || adaptiveStartMode;
       // "Początkujący" is a distinct, separate level — broader than no-activity
       // but still prefers simpler exercises over complex isolation choices.
       const isBeginnerClient = survey.experienceLevel === "Początkujący";

@@ -367,3 +367,73 @@ describe("(10) Pain warnings do not automatically activate adaptive start", () =
     expect(localisedPain.area).toBe("shoulder"); // pain is scoped, not global
   });
 });
+
+// ─── 11. Generator pool ranking — accepted adaptive start boosts no-activity exercises ──
+//
+// Simulates what planDraftGenerateDay.ts does when building the scored pool:
+// score every candidate with { useAdaptiveStart: true } and verify that
+// suitableForNoActivity exercises rank higher on average than hard exercises.
+
+describe("(11) Generator pool: accepted adaptive-start ranks suitableForNoActivity exercises higher", () => {
+  /**
+   * A pool of exercises mixed between beginner-safe and demanding ones.
+   * Mirrors the diversity a real exercise catalogue would contain.
+   */
+  const POOL: Exercise[] = [
+    // Easy / no-activity-safe
+    { ...EASY_EXERCISE, id: 10, name: "Przysiad z masą ciała",          suitableForNoActivity: true,  learningDifficulty: 1, neurologicalFatigue: 1, domsPotential: 1, jointStress: "Niskie" } as unknown as Exercise,
+    { ...EASY_EXERCISE, id: 11, name: "Martwy ciąg z kubkiem",          suitableForNoActivity: true,  learningDifficulty: 2, neurologicalFatigue: 2, domsPotential: 2, jointStress: "Niskie" } as unknown as Exercise,
+    { ...EASY_EXERCISE, id: 12, name: "Pompki z kolan",                  suitableForNoActivity: true,  learningDifficulty: 1, neurologicalFatigue: 1, domsPotential: 1, jointStress: "Niskie" } as unknown as Exercise,
+    // Hard / demanding
+    { ...HARD_EXERCISE, id: 20, name: "Martwy ciąg klasyczny",           suitableForNoActivity: false, learningDifficulty: 5, neurologicalFatigue: 5, domsPotential: 5, jointStress: "Wysokie" } as unknown as Exercise,
+    { ...HARD_EXERCISE, id: 21, name: "Wyciskanie żołnierskie sztangą", suitableForNoActivity: false, learningDifficulty: 4, neurologicalFatigue: 4, domsPotential: 4, jointStress: "Wysokie" } as unknown as Exercise,
+    { ...HARD_EXERCISE, id: 22, name: "Snatch",                          suitableForNoActivity: false, learningDifficulty: 5, neurologicalFatigue: 5, domsPotential: 5, jointStress: "Wysokie" } as unknown as Exercise,
+  ];
+
+  it("average score of suitableForNoActivity exercises is higher than demanding ones when adaptiveStartMode is true", () => {
+    const survey = makeSurvey("Początkujący");
+
+    const scores = POOL.map((ex) => ({
+      name: ex.name,
+      suitableForNoActivity: ex.suitableForNoActivity,
+      score: scoreExercise(ex, survey, { useAdaptiveStart: true }).score,
+    }));
+
+    const easyScores = scores.filter((s) => s.suitableForNoActivity).map((s) => s.score);
+    const hardScores = scores.filter((s) => !s.suitableForNoActivity).map((s) => s.score);
+
+    const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+
+    expect(avg(easyScores)).toBeGreaterThan(avg(hardScores));
+  });
+
+  it("without adaptiveStartMode the average score difference disappears or reverses", () => {
+    const survey = makeSurvey("Początkujący");
+
+    const scoresWithout = POOL.map((ex) => ({
+      suitableForNoActivity: ex.suitableForNoActivity,
+      score: scoreExercise(ex, survey).score,       // no useAdaptiveStart
+    }));
+
+    const easyWithout = scoresWithout.filter((s) => s.suitableForNoActivity).map((s) => s.score);
+    const hardWithout = scoresWithout.filter((s) => !s.suitableForNoActivity).map((s) => s.score);
+
+    const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+
+    // Without the flag the no-activity boost is absent — hard exercises should
+    // score no worse on average (often better due to higher difficulty matching
+    // and progression suitability).
+    expect(avg(hardWithout)).toBeGreaterThanOrEqual(avg(easyWithout));
+  });
+
+  it("each individual suitableForNoActivity exercise scores higher with adaptiveStart than without", () => {
+    const survey = makeSurvey("Początkujący");
+    const easyExercises = POOL.filter((ex) => ex.suitableForNoActivity);
+
+    for (const ex of easyExercises) {
+      const withAdaptive    = scoreExercise(ex, survey, { useAdaptiveStart: true }).score;
+      const withoutAdaptive = scoreExercise(ex, survey).score;
+      expect(withAdaptive).toBeGreaterThan(withoutAdaptive);
+    }
+  });
+});

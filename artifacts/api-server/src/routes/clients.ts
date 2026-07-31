@@ -112,7 +112,8 @@ router.get("/clients/:id", requireAuth, async (req, res): Promise<void> => {
   const [client] = await db
     .select()
     .from(clientsTable)
-    .where(and(eq(clientsTable.id, params.data.id), eq(clientsTable.trainerId, trainerId)));
+    .where(and(eq(clientsTable.id, params.data.id), eq(clientsTable.trainerId, trainerId)))
+    .limit(1);
 
   if (!client) {
     res.status(404).json({ error: "Klient nie znaleziony" });
@@ -171,6 +172,10 @@ const AdaptiveStartBody = z.object({
   decision: z.enum(["accepted", "declined"]),
 });
 
+const AdaptiveStartParams = z.object({
+  id: z.coerce.number().int().positive(),
+});
+
 /**
  * Records the trainer's explicit decision on the adaptive-start recommendation.
  * Only eligible clients (beginners / sedentary) should receive this call from
@@ -178,11 +183,12 @@ const AdaptiveStartBody = z.object({
  * can freely change their mind or override the system's eligibility judgement.
  */
 router.patch("/clients/:id/adaptive-start", requireAuth, async (req, res): Promise<void> => {
-  const id = parseInt(String(req.params.id), 10);
-  if (isNaN(id)) {
+  const paramsResult = AdaptiveStartParams.safeParse(req.params);
+  if (!paramsResult.success) {
     res.status(400).json({ error: "Invalid client ID" });
     return;
   }
+  const id = paramsResult.data.id;
 
   const parsed = AdaptiveStartBody.safeParse(req.body);
   if (!parsed.success) {
