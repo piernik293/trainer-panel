@@ -1,6 +1,7 @@
 import { pgTable, serial, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { trainersTable } from "./trainers";
 
 export const clientsTable = pgTable("clients", {
   id: serial("id").primaryKey(),
@@ -11,7 +12,7 @@ export const clientsTable = pgTable("clients", {
   notes: text("notes"),
   status: text("status").notNull().default("active"),
   /** FK to trainers.id — assigned server-side; nullable until migration Step C completes */
-  trainerId: integer("trainer_id"),
+  trainerId: integer("trainer_id").references(() => trainersTable.id),
   /**
    * Clerk user ID for the client's own portal account.
    * Nullable — clients without a portal account have no Clerk identity.

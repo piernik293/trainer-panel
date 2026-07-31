@@ -1,0 +1,85 @@
+Implement Task #84B-3: fix only the remaining production TypeScript errors in planDraftGenerateDay.ts.
+
+Do not use subagents.
+Do not use parallel reads or edits.
+Do not modify tests.
+Do not modify CORS, authentication, authorization, database schema, frontend, plans.ts, exercise-selection rules, or generated workout behavior.
+Do not deploy or run migrations.
+
+Keep Agent usage below $1.20.
+
+## Scope
+
+Inspect and modify only:
+
+- artifacts/api-server/src/routes/planDraftGenerateDay.ts
+
+You may read directly imported type definitions only when required to understand the errors, but do not edit them.
+
+## Confirmed errors
+
+The full API TypeScript output reports:
+
+- `pool` is not declared — 3 occurrences,
+- `finalTotals` is used before declaration — 2 occurrences.
+
+First run the API TypeScript command and capture the exact line numbers and complete diagnostic messages for errors in planDraftGenerateDay.ts.
+
+Then fix only those five errors.
+
+## Safety requirements
+
+- Determine whether `pool` is a stale variable name, missing local declaration, or incorrect scope.
+- Reuse the correct existing value rather than creating duplicate exercise pools.
+- Do not change filtering, exercise ordering, beginner safety, inactive-client safety, balancing, volume, warnings, or response structure.
+- Move or restructure `finalTotals` only enough to ensure it is initialized before use.
+- Do not silence errors with `any`, type assertions, `@ts-ignore`, or compiler configuration changes.
+
+## Validation
+
+Run:
+
+1. the full API TypeScript validation command,
+2. the API production build,
+3. the existing targeted no-activity safety test suite.
+
+Report the complete number of remaining production-source TypeScript errors separately from test-file errors.
+
+Do not filter the validation through grep when determining the final result.
+
+## Required report
+
+# Exact original diagnostics
+
+# Root cause
+
+# Fixes applied
+
+# Production-source TypeScript validation
+- exact command
+- total production-source errors remaining
+- test-file errors remaining
+- exit code
+
+# API build
+- command
+- exit code
+
+# Generator safety regression
+- command
+- passed
+- failed
+
+# Files changed
+
+# Agent usage
+
+Return exactly:
+
+`READY — planDraftGenerateDay production TypeScript errors are resolved`
+
+or
+
+`NEEDS FIXING — production TypeScript errors remain in planDraftGenerateDay`
+
+Stop after the report.

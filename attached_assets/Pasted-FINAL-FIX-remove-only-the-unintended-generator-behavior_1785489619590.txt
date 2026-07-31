@@ -1,0 +1,86 @@
+FINAL FIX — remove only the unintended generator behavior change and finish deployment checks.
+
+Do not use subagents.
+Do not work in parallel.
+Do not add features.
+Do not deploy or publish.
+Keep Agent usage below $2.50.
+
+## 1. planDraftGenerateDay.ts
+
+Modify only the latest changed block in:
+
+artifacts/api-server/src/routes/planDraftGenerateDay.ts
+
+Keep these compile fixes:
+
+- `const pool = []` must exist outside the loop and remain in scope,
+- build the pool from `completeExercises`,
+- keep `sessionTotals` instead of the premature `finalTotals` reference,
+- dead unused variables may remain removed.
+
+Remove only the behavior-changing family expansion added in the latest fix:
+
+- do not add related candidate IDs to `avoidedExerciseIds`,
+- do not newly populate `blockedFamilies`,
+- do not newly populate `exactOnlyBlocks`,
+- preserve the runtime behavior from before the TypeScript repair.
+
+Do not change any other generator logic.
+
+## 2. Rebuild database workspace types
+
+Run the existing workspace command that rebuilds `@workspace/db`.
+
+Then rerun API TypeScript validation.
+
+If the four `surveyInvites.ts` errors disappear after the DB type rebuild, do not edit surveyInvites.ts.
+
+If they remain, fix only type mismatches related to the already-existing `archivedAt` field without changing invite behavior.
+
+## 3. Validation
+
+Run:
+
+- full API TypeScript validation,
+- API production build,
+- trainer-app production build,
+- client-landing/client-portal production build,
+- CORS focused tests,
+- invite-list tests,
+- invite-flow tests,
+- no-activity-pool tests.
+
+Known pre-existing failures in beginner-safety.test.ts and brak-aktywnosci-fixes.test.ts are outside scope. Do not edit those tests.
+
+## Success conditions
+
+- zero production-source TypeScript errors,
+- API build exits 0,
+- trainer-app build exits 0,
+- client portal build exits 0,
+- CORS tests pass,
+- invite tests pass,
+- no-activity-pool tests pass,
+- no new family-blocking behavior remains.
+
+## Final report
+
+# Generator behavior restoration
+# Database type rebuild
+# Production-source TypeScript errors remaining
+# Tests
+# Production builds
+# Files changed
+# Remaining blockers
+# Agent usage
+
+Return exactly one:
+
+`READY TO PUBLISH — production source compiles and all builds pass`
+
+or
+
+`DO NOT PUBLISH — a concrete production blocker remains`
+
+Stop after the report.

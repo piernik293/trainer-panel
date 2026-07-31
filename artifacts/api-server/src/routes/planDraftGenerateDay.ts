@@ -259,23 +259,9 @@ router.post(
     const blockedFamilies: Array<{ avoidedName: string; label: string }> = [];
     const exactOnlyBlocks: string[] = [];
 
-    for (const ex of exercises) {
-      if (!avoidedExerciseIds.has(ex.id)) continue;
-      const lowerName = (ex.name ?? "").trim().toLowerCase();
-
-      const familyRule = FAMILY_BLOCKING_MAP.find((rule) =>
-        lowerName.includes(rule.trigger),
-      );
-
-    const _surveyEquipForPushUpGuard = (survey.equipment ?? "").toLowerCase();
-    const hasWeightLoadingEquipment =
-      _surveyEquipForPushUpGuard.includes("obciążenie") ||
-      _surveyEquipForPushUpGuard.includes("talerze") ||
-      _surveyEquipForPushUpGuard.includes("pas obciążeniowy") ||
-      _surveyEquipForPushUpGuard.includes("kamizelka obciążeniowa");
+    // Pool building: score every complete exercise against the survey.
     const pool = [];
-
-      const exNameLower = (ex.name ?? "").trim().toLowerCase();
+    for (const ex of completeExercises) {
       const { score, matchReasons, warnReasons } = scoreExercise(ex, survey);
 
       pool.push({
@@ -899,7 +885,7 @@ router.post(
             let worstTargetId = -1;
             let worstDeficit  = 0;
             for (const [tId, ceiling] of ceilingMap) {
-            const total = (accumulated.get(tId) ?? 0) + (finalTotals.get(tId) ?? 0);
+            const total = (accumulated.get(tId) ?? 0) + (sessionTotals.get(tId) ?? 0);
               const deficit = total - ceiling;
               if (deficit > worstDeficit) {
                 worstDeficit  = deficit;

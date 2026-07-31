@@ -1,0 +1,98 @@
+Implement Task #84B-2: fix only the confirmed production-source TypeScript blockers in the API.
+
+Do not use subagents.
+Do not use parallel reads or edits.
+Do not fix test files.
+Do not modify authentication, authorization, CORS, database schema, frontend, routes, or generator behavior.
+Do not run migrations or deploy.
+
+Keep Agent usage below $1.50.
+
+## Confirmed errors in scope
+
+1. artifacts/api-server/src/services/planDraftVolumeDecisionService.ts
+
+TS2304:
+Cannot find name `EXPERIENCE_LEVEL_RANGE_POSITIONS`
+near line 618.
+
+Fix this by using the correct existing exported constant or importing it from its canonical source.
+
+Do not duplicate the constant.
+Do not invent new experience-level mappings.
+Do not change volume decision behavior.
+
+2. artifacts/api-server/src/services/testAllocation.ts
+
+Two TS5097 errors caused by imports ending in `.ts`.
+
+Fix only the import paths so they are valid under the current TypeScript configuration.
+
+Do not rewrite the service.
+Do not rename files.
+Do not enable `allowImportingTsExtensions`.
+
+## First inspect only
+
+- artifacts/api-server/package.json
+- artifacts/api-server/tsconfig.json
+- workspace tsconfig files directly extended by it
+- the two source files listed above
+- the canonical file exporting `EXPERIENCE_LEVEL_RANGE_POSITIONS`
+
+Read sequentially in small sections.
+
+## Validation
+
+Run the API production compile or build command defined in package.json.
+
+Also run a production-source-only TypeScript validation that excludes test files using the existing build tsconfig if one exists.
+
+Do not create a new tsconfig unless the project has no production-only TypeScript configuration and the API build genuinely requires one.
+
+Do not run:
+
+`npx tsc --noEmit`
+
+against all test files, because 56 known pre-existing test fixture errors are outside this task.
+
+## Required report
+
+# Errors fixed
+
+For each of the three errors:
+- original cause,
+- exact fix,
+- confirmation that behavior was not changed.
+
+# Production TypeScript validation
+
+- exact command,
+- exit code,
+- production-source errors remaining.
+
+# API production build
+
+- exact command,
+- exit code,
+- output directory,
+- important warnings.
+
+# Test-file errors intentionally untouched
+
+Confirm that no test source file was edited.
+
+# Files changed
+
+# Agent usage
+
+Return exactly:
+
+`READY — API production TypeScript blockers are resolved`
+
+or
+
+`NEEDS FIXING — a production-source TypeScript blocker remains`
+
+Do not start trainer-app or client-portal builds.
+Stop after the report.
