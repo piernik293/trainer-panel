@@ -736,6 +736,9 @@ router.post(
         const isBodyweightInGym =
           deprioritizePushUps && ex.name.trim().toLowerCase().startsWith("pompki");
         const prescription = prescribeExercise(exerciseClass, goalBias, isBodyweightInGym);
+        // restrictionLabel is already set on DayRecommendationExercise by the
+        // V0 engine (Step 5) when the exercise was chosen for a confirmed
+        // restriction with action = "regression".  Just spread it through.
         return { ...ex, exerciseClass, prescription, _rank: sessionOrderRank(exerciseClass) };
       })
       .sort((a, b) => a._rank - b._rank)

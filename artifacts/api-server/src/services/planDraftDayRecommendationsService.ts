@@ -86,6 +86,13 @@ export interface DayRecommendationExercise {
   /** Stage 6: secondary muscle groups for session fatigue tie-breaking. */
   secondaryMuscleGroups?: string[] | null;
   /**
+   * Set when this exercise was selected specifically because of a trainer-confirmed
+   * restriction with action = "regression".  Populated by extracting the
+   * "Wariant regresyjny — dobrany ze względu na zgłoszone ograniczenie." reason
+   * from `matchReasons`.  undefined when the exercise was not chosen for a restriction.
+   */
+  restrictionLabel?: string;
+  /**
    * Pass-through from the DB `suitable_for_no_activity` flag.
    * Required by the prescription service to identify regression_beginner class.
    */
@@ -590,6 +597,7 @@ export function selectDayRecommendations(
       movementCategoryKey: ex.movementCategoryKey ?? null,
       // Stage 6: secondary muscle groups for session fatigue tie-breaking
       secondaryMuscleGroups: ex.secondaryMuscleGroups ?? null,
+      restrictionLabel: ex.matchReasons.find((r) => r.startsWith("Wariant regresyjny")) ?? undefined,
     });
   }
 
@@ -707,6 +715,7 @@ export function selectByUncoveredTargets(
       movementCategoryKey: ex.movementCategoryKey ?? null,
       // Stage 6: secondary muscle groups for session fatigue tie-breaking
       secondaryMuscleGroups: ex.secondaryMuscleGroups ?? null,
+      restrictionLabel: ex.matchReasons.find((r) => r.startsWith("Wariant regresyjny")) ?? undefined,
     });
   }
 

@@ -18,7 +18,8 @@ import { scoreExercise } from "../lib/recommendation-engine";
 
 // ─── Minimal exercise factory ─────────────────────────────────────────────────
 
-function makeExercise(overrides: Partial<ReturnType<typeof baseExercise>> = {}): ReturnType<typeof baseExercise> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function makeExercise(overrides: Partial<ReturnType<typeof baseExercise>> = {}): any {
   return { ...baseExercise(), ...overrides };
 }
 
@@ -54,7 +55,8 @@ function baseExercise() {
 
 // ─── Minimal survey factory ───────────────────────────────────────────────────
 
-function makeSurvey(overrides: Partial<ReturnType<typeof baseSurvey>> = {}): ReturnType<typeof baseSurvey> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function makeSurvey(overrides: Partial<ReturnType<typeof baseSurvey>> = {}): any {
   return { ...baseSurvey(), ...overrides };
 }
 
@@ -72,7 +74,7 @@ function baseSurvey() {
     activityLevel: null,
     injuryStatus: null,
     healthLimitations: null,
-    confirmedRestrictions: null,
+    confirmedRestrictions: null as string | null,
   };
 }
 
@@ -309,6 +311,90 @@ describe("Item 7 — restriction does not affect unrelated movement patterns", (
     const result = scoreExercise(upperBodyPullEx, survey);
     const dim = result.breakdown.find((b) => b.dimension === "confirmedRestrictions");
     expect(dim?.points ?? 0).toBe(0);
+  });
+});
+
+// ─── restrictionLabel propagation ────────────────────────────────────────────
+// These tests verify the exact contract that DayRecommendationExercise.restrictionLabel
+// relies on: that scoreExercise places the "Wariant regresyjny" label in matchReasons
+// (positive reasons) — not warnReasons — for regression-action exercises.
+
+describe("restrictionLabel propagation — matchReasons contract", () => {
+  const RESTRICTION_LABEL = "Wariant regresyjny — dobrany ze względu na zgłoszone ograniczenie.";
+
+  it("regression exercise matching a confirmed restriction has label in matchReasons", () => {
+    const ex = makeExercise({
+      movementPattern: "Wyciskanie",
+      suitableForNoActivity: true,
+    });
+    const survey = makeSurvey({
+      confirmedRestrictions: JSON.stringify([
+        { bodyArea: "Bark", movementPattern: "Wyciskanie", action: "regression" },
+      ]),
+    });
+
+    const result = scoreExercise(ex, survey);
+    expect(result.matchReasons).toContain(RESTRICTION_LABEL);
+    expect(result.warnReasons).not.toContain(RESTRICTION_LABEL);
+  });
+
+  it("avoid-action exercise matching a confirmed restriction does NOT have label in matchReasons", () => {
+    const ex = makeExercise({
+      movementPattern: "Wyciskanie",
+      suitableForNoActivity: false,
+    });
+    const survey = makeSurvey({
+      confirmedRestrictions: JSON.stringify([
+        { bodyArea: "Bark", movementPattern: "Wyciskanie", action: "avoid" },
+      ]),
+    });
+
+    const result = scoreExercise(ex, survey);
+    expect(result.matchReasons).not.toContain(RESTRICTION_LABEL);
+  });
+
+  it("exercise unrelated to any restriction has no label in matchReasons or warnReasons", () => {
+    const ex = makeExercise({
+      movementPattern: "Wiosłowanie",
+      suitableForNoActivity: false,
+    });
+    const survey = makeSurvey({
+      confirmedRestrictions: JSON.stringify([
+        { bodyArea: "Bark", movementPattern: "Wyciskanie", action: "regression" },
+      ]),
+    });
+
+    const result = scoreExercise(ex, survey);
+    expect(result.matchReasons).not.toContain(RESTRICTION_LABEL);
+    expect(result.warnReasons).not.toContain(RESTRICTION_LABEL);
+  });
+
+  it("non-regression suitableForNoActivity exercise without matching restriction has no label", () => {
+    // suitableForNoActivity=true alone is not enough — restriction must also match
+    const ex = makeExercise({
+      movementPattern: "Wiosłowanie",
+      suitableForNoActivity: true,
+    });
+    const survey = makeSurvey({
+      confirmedRestrictions: JSON.stringify([
+        { bodyArea: "Bark", movementPattern: "Wyciskanie", action: "regression" },
+      ]),
+    });
+
+    const result = scoreExercise(ex, survey);
+    expect(result.matchReasons).not.toContain(RESTRICTION_LABEL);
+  });
+
+  it("client with no confirmed restrictions produces no restriction label on any exercise", () => {
+    const ex = makeExercise({
+      movementPattern: "Wyciskanie",
+      suitableForNoActivity: true,
+    });
+    const survey = makeSurvey({ confirmedRestrictions: null });
+
+    const result = scoreExercise(ex, survey);
+    const hasLabel = result.matchReasons.some((r) => r.startsWith("Wariant regresyjny"));
+    expect(hasLabel).toBe(false);
   });
 });
 

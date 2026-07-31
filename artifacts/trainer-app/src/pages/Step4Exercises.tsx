@@ -190,6 +190,7 @@ export default function Step4Exercises({
         rir: DRAFT_EXERCISE_DEFAULTS.rir,
         restSeconds: DRAFT_EXERCISE_DEFAULTS.restSeconds,
         tempo: getDefaultTempo(exerciseClass, experienceLevel),
+        restrictionLabel: payload.restrictionLabel,
       });
       onDraftChange(next);
     },
@@ -297,6 +298,7 @@ export default function Step4Exercises({
         equipment: string[];
         exerciseClass?: ExerciseClass;
         prescription?: { sets: number; repsLabel: string; restSeconds: number };
+        restrictionLabel?: string;
       }>;
       explanation?: GeneratedDayExplanation;
     }> = [];
@@ -411,6 +413,8 @@ export default function Step4Exercises({
             equipment: string[];
             exerciseClass?: ExerciseClass;
             prescription?: { sets: number; repsLabel: string; restSeconds: number };
+            /** Set when selected because of a confirmed restriction (action=regression). */
+            restrictionLabel?: string;
           }>;
           explanation?: GeneratedDayExplanation;
         };
@@ -514,6 +518,7 @@ export default function Step4Exercises({
           rir: DRAFT_EXERCISE_DEFAULTS.rir,
           restSeconds: ex.prescription?.restSeconds ?? DRAFT_EXERCISE_DEFAULTS.restSeconds,
           tempo: getDefaultTempo(ex.exerciseClass, experienceLevel),
+          restrictionLabel: ex.restrictionLabel,
         });
       }
     }
@@ -1270,6 +1275,14 @@ function SortableDraftExerciseCard({
               </Badge>
             )}
           </div>
+
+          {/* Restriction badge — shown when exercise was selected for a confirmed restriction */}
+          {exercise.restrictionLabel && (
+            <div className="flex items-center gap-1 mt-1 text-[11px] text-teal-700 bg-teal-50 border border-teal-200 rounded px-1.5 py-0.5 w-fit">
+              <AlertCircle size={10} className="shrink-0" />
+              <span>{exercise.restrictionLabel}</span>
+            </div>
+          )}
 
           {/* Avoided warning */}
           {avoidedReason !== null && (

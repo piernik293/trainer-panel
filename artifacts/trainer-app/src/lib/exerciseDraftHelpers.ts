@@ -109,11 +109,12 @@ export interface DraftExercise {
    */
   manualOverrides?: Partial<Record<ManualOverrideField, true>>;
   /**
-   * Set when this exercise was selected as a regression due to a confirmed
-   * client restriction.  Displayed as a badge on the exercise card.
-   * null / undefined = normal selection — no badge shown.
+   * Set when this exercise was selected specifically because of a trainer-confirmed
+   * restriction (action = "regression"). Surfaced as a badge in Step 4 and Step 5.
+   * Value is the human-readable Polish label from the scoring engine, e.g.
+   * "Wariant regresyjny — dobrany ze względu na zgłoszone ograniczenie."
    */
-  restrictionLabel?: string | null;
+  restrictionLabel?: string;
 }
 
 /** Exercises keyed by day index (from distributionResult.days[i].dayIndex). */

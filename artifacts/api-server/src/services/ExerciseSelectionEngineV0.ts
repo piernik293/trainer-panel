@@ -2595,6 +2595,7 @@ export function runExerciseSelectionEngineV0(
       movementCategoryKey: ex.movementCategoryKey ?? null,
       secondaryMuscleGroups: ex.secondaryMuscleGroups ?? null,
       suitableForNoActivity: ex.suitableForNoActivity ?? null,
+      restrictionLabel: ex.matchReasons.find((r) => r.startsWith("Wariant regresyjny")) ?? undefined,
     }),
   );
 

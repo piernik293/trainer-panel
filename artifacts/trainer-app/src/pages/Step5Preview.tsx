@@ -741,6 +741,12 @@ function ExercisePreviewItem({
                 wykluczone — zaakceptowane
               </span>
             )}
+            {ex.restrictionLabel && (
+              <span className="inline-flex items-center gap-1 text-[10px] text-teal-700 bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded-sm">
+                <AlertCircle size={9} />
+                {ex.restrictionLabel}
+              </span>
+            )}
           </div>
           {/* Prescription */}
           <div className="flex items-center gap-3 flex-wrap mt-1 text-xs">

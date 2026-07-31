@@ -178,7 +178,7 @@ const AdaptiveStartBody = z.object({
  * can freely change their mind or override the system's eligibility judgement.
  */
 router.patch("/clients/:id/adaptive-start", requireAuth, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(String(req.params.id), 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid client ID" });
     return;

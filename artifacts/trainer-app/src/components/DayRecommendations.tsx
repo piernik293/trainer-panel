@@ -47,6 +47,8 @@ export interface DayRecExercise {
   exercisePriority?: string | null;
   movementCategory?: string | null;
   suitableForNoActivity?: boolean | null;
+  /** Populated by the server when the exercise was chosen for a confirmed restriction (action=regression). */
+  restrictionLabel?: string;
 }
 
 interface DayRecResponse {
@@ -65,6 +67,8 @@ export interface AddFromRecommendationPayload {
   exercisePriority?: string | null;
   movementCategory?: string | null;
   suitableForNoActivity?: boolean | null;
+  /** Set when the exercise was chosen because of a confirmed restriction (action=regression). */
+  restrictionLabel?: string;
 }
 
 // ─── Score label ──────────────────────────────────────────────────────────────
@@ -188,6 +192,7 @@ export default function DayRecommendations({
       exercisePriority: exercise.exercisePriority ?? null,
       movementCategory: exercise.movementCategory ?? null,
       suitableForNoActivity: exercise.suitableForNoActivity ?? null,
+      restrictionLabel: exercise.restrictionLabel,
     });
     setPendingAvoided(null);
   }
