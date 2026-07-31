@@ -1,16 +1,19 @@
 import { useGetStats, getGetStatsQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, FileText, Activity, PauseCircle, CheckCircle2, Sparkles } from "lucide-react";
-import { Link } from "wouter";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Users, FileText, Activity, PauseCircle, CheckCircle2, Sparkles, UserPlus } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
+  const [, navigate] = useLocation();
+
   const { data: stats, isLoading } = useGetStats({
     query: {
       queryKey: getGetStatsQueryKey(),
-      refetchInterval: 12_000,      // poll every 12 s while tab is open
-      refetchOnWindowFocus: true,   // also refresh when trainer returns to tab
-      refetchOnReconnect: true,     // and when network comes back
+      refetchInterval: 12_000,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   });
 
@@ -26,8 +29,62 @@ export default function Dashboard() {
     );
   }
 
+  // ── Empty state: no clients yet ──────────────────────────────────────────
+  if (!stats || stats.totalClients === 0) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <div>
+          <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">
+            Pulpit
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Podsumowanie Twojej działalności trenerskiej
+          </p>
+        </div>
+
+        <Empty
+          className="border border-dashed"
+          data-testid="dashboard-empty-state"
+        >
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <UserPlus />
+            </EmptyMedia>
+            <EmptyTitle data-testid="empty-title">
+              Zacznij pracę z pierwszym klientem
+            </EmptyTitle>
+            <EmptyDescription data-testid="empty-description">
+              Wyślij link do Wywiadu treningowego lub dodaj klienta ręcznie, aby
+              rozpocząć tworzenie planu.
+            </EmptyDescription>
+          </EmptyHeader>
+
+          <EmptyContent>
+            <Button
+              className="w-full sm:w-auto"
+              data-testid="empty-action-invite"
+              onClick={() => navigate("/survey-invite")}
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Wyślij zaproszenie
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              data-testid="empty-action-add-manual"
+              onClick={() => navigate("/clients/new")}
+            >
+              Dodaj klienta ręcznie
+            </Button>
+          </EmptyContent>
+        </Empty>
+      </div>
+    );
+  }
+
+  // ── Populated dashboard ──────────────────────────────────────────────────
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500" data-testid="dashboard-populated">
       <div>
         <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">
           Pulpit
@@ -46,7 +103,7 @@ export default function Dashboard() {
             <Users className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold font-display">{stats?.totalClients || 0}</div>
+            <div className="text-3xl font-bold font-display">{stats.totalClients}</div>
           </CardContent>
         </Card>
 
@@ -58,9 +115,9 @@ export default function Dashboard() {
             <PauseCircle className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold font-display">{stats?.activeClients || 0} / {stats?.pausedClients || 0}</div>
+            <div className="text-3xl font-bold font-display">{stats.activeClients} / {stats.pausedClients}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              zakończonych: {stats?.finishedClients || 0}
+              zakończonych: {stats.finishedClients}
             </p>
           </CardContent>
         </Card>
@@ -73,7 +130,7 @@ export default function Dashboard() {
             <FileText className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold font-display">{stats?.surveysCompleted || 0}</div>
+            <div className="text-3xl font-bold font-display">{stats.surveysCompleted}</div>
           </CardContent>
         </Card>
 
@@ -85,7 +142,7 @@ export default function Dashboard() {
             <CheckCircle2 className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold font-display">{stats?.incompleteSurveys || 0} / {stats?.noSurveyClients || 0}</div>
+            <div className="text-3xl font-bold font-display">{stats.incompleteSurveys} / {stats.noSurveyClients}</div>
           </CardContent>
         </Card>
 
@@ -97,7 +154,7 @@ export default function Dashboard() {
             <Sparkles className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold font-display">{stats?.newSurveysThisWeek || 0}</div>
+            <div className="text-3xl font-bold font-display">{stats.newSurveysThisWeek}</div>
           </CardContent>
         </Card>
 
@@ -109,7 +166,7 @@ export default function Dashboard() {
             <Activity className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold font-display">{Math.round(stats?.surveysPercent || 0)}%</div>
+            <div className="text-3xl font-bold font-display">{Math.round(stats.surveysPercent)}%</div>
             <p className="text-xs text-muted-foreground mt-1">
               klientów posiada wywiad treningowy
             </p>
@@ -125,7 +182,7 @@ export default function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          {stats?.recentClients && stats.recentClients.length > 0 ? (
+          {stats.recentClients && stats.recentClients.length > 0 ? (
             <div className="divide-y divide-border/50">
               {stats.recentClients.map(client => (
                 <div key={client.id} className="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors">
@@ -137,7 +194,7 @@ export default function Dashboard() {
                       {client.email || 'Brak email'}
                     </span>
                   </div>
-                  <Link 
+                  <Link
                     href={`/clients/${client.id}`}
                     className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                   >
@@ -146,14 +203,7 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="p-8 text-center text-muted-foreground">
-              <p>Brak klientów w systemie.</p>
-              <Button asChild variant="outline" className="mt-4">
-                <Link href="/clients/new">Dodaj pierwszego klienta</Link>
-              </Button>
-            </div>
-          )}
+          ) : null}
         </CardContent>
       </Card>
     </div>

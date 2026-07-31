@@ -28,7 +28,7 @@
  */
 
 import { Router, type IRouter } from "express";
-import { eq, inArray } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   db,
@@ -64,6 +64,7 @@ import {
 } from "../services/ExerciseSelectionEngineV0";
 import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
 import { buildGoalProfile } from "../services/goalProfileService";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
@@ -110,6 +111,7 @@ const QuerySchema = z.object({
 
 router.get(
   "/clients/:clientId/plan-draft/day-recommendations",
+  requireAuth,
   async (req, res): Promise<void> => {
     const params = ParamsSchema.safeParse(req.params);
     if (!params.success) {
@@ -148,11 +150,11 @@ router.get(
     // Stage 7A: resolve candidate pool size (caller override, capped server-side at 30)
     const resolvedPoolSize = query.data.poolSize ?? MAX_TOTAL;
 
-    // ── Verify client ──────────────────────────────────────────────────────────
+    // ── Verify client (must belong to the authenticated trainer) ──────────────
     const [client] = await db
       .select({ id: clientsTable.id })
       .from(clientsTable)
-      .where(eq(clientsTable.id, clientId));
+      .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
 
     if (!client) {
       res.status(404).json({ error: "Klient nie znaleziony" });

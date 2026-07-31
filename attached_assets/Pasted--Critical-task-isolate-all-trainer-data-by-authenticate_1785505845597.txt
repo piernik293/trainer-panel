@@ -1,0 +1,165 @@
+## Critical task — isolate all trainer data by authenticated trainer identity
+
+### Problem
+
+After deployment, every newly registered trainer sees the same clients, plans, invitations, and other trainer data.
+
+A new trainer should start with an empty workspace.
+
+All trainers may use the same physical database, but every trainer-owned resource must be isolated by the authenticated trainer account.
+
+### Objective
+
+Audit and fix the trainer multi-tenancy model so that:
+
+- Trainer A sees and modifies only Trainer A's data.
+- Trainer B sees and modifies only Trainer B's data.
+- A newly registered trainer sees an empty panel.
+- No route uses a default trainer ID, hardcoded trainer ID, or caller-provided trainerId for authorization.
+
+### 1. Verify trainer identity resolution
+
+Inspect `requireAuth` and the trainer account creation flow.
+
+Required flow:
+
+Clerk JWT
+→ getAuth(req).userId
+→ trainers.clerk_user_id
+→ req.trainer.id
+
+Verify that:
+
+- each Clerk user maps to a unique trainers row,
+- `trainers.clerk_user_id` is unique,
+- a new Clerk trainer gets their own trainers row,
+- there is no fallback to trainer ID 1,
+- there is no shared demo trainer fallback,
+- missing trainer mapping does not silently resolve to another trainer.
+
+If a signed-in Clerk user has no trainers row, create or safely provision one according to existing project conventions, or return a clear onboarding state. Never map them to an existing trainer.
+
+### 2. Audit every trainer-owned route
+
+Inspect all trainer-facing routes for:
+
+- clients,
+- training interviews,
+- plans,
+- plan drafts,
+- workout sessions,
+- notes,
+- survey invitations,
+- exercises or custom catalogue entries owned by a trainer,
+- any dashboard counts or summaries.
+
+Every list query must include:
+
+trainerId = req.trainer.id
+
+Every create operation must set:
+
+trainerId: req.trainer.id
+
+Every read, update, delete, revoke, archive, and copy operation must verify ownership using `req.trainer.id`.
+
+Do not trust:
+
+- req.body.trainerId
+- req.query.trainerId
+- req.params.trainerId
+- frontend-hidden trainer fields
+- localStorage trainer IDs
+
+Caller-provided trainerId values must be ignored or rejected.
+
+### 3. Ownership chains
+
+Enforce chains such as:
+
+client → trainer
+plan → client → trainer
+session → client → trainer
+survey invite → trainer
+plan draft → client → trainer
+note → client → trainer
+
+Nested resources must not be loaded before the top-level trainer ownership check succeeds.
+
+Foreign resources should return 404.
+
+### 4. New trainer empty state
+
+Create a regression scenario:
+
+- Trainer A has clients, plans, sessions, and invitations.
+- Trainer B signs up for the first time.
+- Trainer B receives an empty list for every trainer-owned resource.
+- Trainer B does not receive Trainer A's dashboard counts or recent activity.
+
+Do not copy demo or seed data into every new trainer account.
+
+If demo records exist, assign them only to a dedicated demo trainer.
+
+### 5. Existing data
+
+Do not delete production records.
+
+Inspect whether existing records have:
+
+- missing trainer_id,
+- hardcoded trainer_id = 1,
+- incorrect ownership.
+
+Report the affected row counts.
+
+If a migration/backfill is required:
+
+- make it explicit,
+- do not assign ambiguous records to newly registered trainers,
+- preserve existing legitimate ownership.
+
+### Required tests
+
+Add tests proving:
+
+1. Two Clerk users resolve to two different internal trainer IDs.
+2. A new trainer receives an empty client list.
+3. Trainer A cannot list Trainer B's clients.
+4. Trainer A cannot read Trainer B's client detail.
+5. Trainer A cannot update or delete Trainer B's client.
+6. Trainer A cannot access Trainer B's plans, drafts, sessions, notes, or invitations.
+7. Dashboard counts are scoped to the authenticated trainer.
+8. Creating a client automatically assigns `req.trainer.id`.
+9. Supplying another trainerId in body or query does not change ownership.
+10. No route falls back to trainer ID 1.
+11. Existing trainer authorization tests remain passing.
+
+### Constraints
+
+- Do not create a separate physical database per trainer.
+- Do not rely only on frontend filtering.
+- Do not delete existing data.
+- Do not weaken Clerk authentication.
+- Do not modify client-portal ownership unless a shared helper requires a safe correction.
+- Keep changes focused on trainer tenant isolation.
+
+### Final report
+
+Report:
+
+- exact root cause,
+- whether all users were resolving to one trainer row or routes lacked filtering,
+- trainer provisioning behavior,
+- routes fixed,
+- ownership chains,
+- existing data inconsistencies,
+- migration or backfill performed,
+- tests added,
+- test results,
+- files changed,
+- remaining multi-tenant risks.
+
+Required completion statement:
+
+READY — every trainer has an isolated workspace and new trainers start empty

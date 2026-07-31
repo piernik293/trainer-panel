@@ -69,7 +69,11 @@ router.get("/clients", requireAuth, async (req, res): Promise<void> => {
     .where(eq(clientsTable.trainerId, trainerId))
     .orderBy(desc(clientsTable.createdAt));
 
-  const latestByClient = await fetchLatestSurveyPerClient();
+  // Scope the survey query to only this trainer's clients to avoid loading all
+  // surveys into memory.  When the trainer has no clients yet, skip the DB call.
+  const clientIds = clients.map((c) => c.id);
+  const latestByClient =
+    clientIds.length > 0 ? await fetchLatestSurveyPerClient(clientIds) : new Map();
 
   const result = clients.map((c) => toClientListItem(c, latestByClient.get(c.id)));
   res.json(ListClientsResponse.parse(result));

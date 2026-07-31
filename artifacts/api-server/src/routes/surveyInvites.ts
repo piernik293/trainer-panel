@@ -174,13 +174,16 @@ router.delete("/survey-invites/:id", requireAuth, async (req, res): Promise<void
   const [invite] = await db
     .update(surveyInvitesTable)
     .set({ revokedAt: new Date() })
-    // Must own the invite; cannot revoke already-used or already-revoked ones.
+    // trainerId filter is part of the WHERE — the update only fires for owned invites.
     .where(
-      eq(surveyInvitesTable.id, id),
+      and(
+        eq(surveyInvitesTable.id, id),
+        eq(surveyInvitesTable.trainerId, trainerId),
+      ),
     )
     .returning();
 
-  if (!invite || invite.trainerId !== trainerId) {
+  if (!invite) {
     res.status(404).json({ error: "Invite not found" });
     return;
   }

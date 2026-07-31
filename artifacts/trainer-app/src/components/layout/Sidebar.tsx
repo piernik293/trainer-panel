@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Users, LayoutDashboard, PlusCircle, Dumbbell, Menu, X, UserPlus } from "lucide-react";
+import { Users, LayoutDashboard, PlusCircle, Dumbbell, Menu, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Sheet,
@@ -8,6 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { AccountMenu } from "./AccountMenu";
 
 const navItems = [
   { href: "/", label: "Pulpit", icon: LayoutDashboard },
@@ -54,15 +55,20 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
         </nav>
       </div>
 
-      <div className="mt-auto p-4 border-t border-sidebar-border/50">
-        <Link
-          href="/clients/new"
-          onClick={onNavigate}
-          className="flex items-center justify-center gap-2 w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 px-4 py-2 rounded-md transition-colors text-sm font-medium"
-        >
-          <PlusCircle size={16} />
-          Nowy Klient
-        </Link>
+      <div className="mt-auto border-t border-sidebar-border/50">
+        <div className="p-3">
+          <AccountMenu />
+        </div>
+        <div className="px-4 pb-4">
+          <Link
+            href="/clients/new"
+            onClick={onNavigate}
+            className="flex items-center justify-center gap-2 w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 px-4 py-2 rounded-md transition-colors text-sm font-medium"
+          >
+            <PlusCircle size={16} />
+            Nowy Klient
+          </Link>
+        </div>
       </div>
     </>
   );
@@ -90,13 +96,16 @@ export function Sidebar() {
       {/* ── Mobile top bar (below md) ──────────────────────────────── */}
       <header className="md:hidden flex items-center justify-between px-4 py-3 border-b bg-sidebar no-print sticky top-0 z-40">
         <BrandMark />
-        <button
-          aria-label="Otwórz menu"
-          onClick={() => setMobileOpen(true)}
-          className="p-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-        >
-          <Menu size={22} />
-        </button>
+        <div className="flex items-center gap-1">
+          <AccountMenu compact />
+          <button
+            aria-label="Otwórz menu"
+            onClick={() => setMobileOpen(true)}
+            className="p-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+          >
+            <Menu size={22} />
+          </button>
+        </div>
       </header>
 
       {/* ── Mobile drawer ──────────────────────────────────────────── */}

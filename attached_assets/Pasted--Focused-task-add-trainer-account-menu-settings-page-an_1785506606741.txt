@@ -1,0 +1,152 @@
+## Focused task — add trainer account menu, settings page, and sign out
+
+### Objective
+
+Add a simple trainer account area to the trainer panel.
+
+The application already uses Clerk authentication and multi-trainer isolation. Reuse Clerk for account identity, account management, and sign out.
+
+Do not build a custom password, authentication, or session system.
+
+### 1. Trainer account menu
+
+Add a profile/avatar button in the top-right corner of the trainer panel header.
+
+The menu should display:
+
+- trainer avatar,
+- trainer display name,
+- trainer email,
+- Ustawienia,
+- Zarządzaj kontem,
+- Wyloguj się.
+
+Use the currently authenticated Clerk user as the identity source.
+
+Do not use a hardcoded trainer name or email.
+
+The account menu must be available on all authenticated trainer-panel pages.
+
+### 2. Sign out
+
+Use Clerk’s official sign-out method.
+
+Required behavior:
+
+- clicking “Wyloguj się” signs the trainer out,
+- authenticated API access stops immediately,
+- redirect to the trainer sign-in page,
+- browser Back must not restore access to protected trainer data,
+- another trainer signing in afterward must receive only their own workspace.
+
+Do not only clear localStorage or frontend state.
+
+### 3. Settings page
+
+Create a protected route:
+
+`/settings`
+
+Initial settings page sections:
+
+#### Profil
+
+Display:
+
+- profile image,
+- first and last name,
+- display name where available,
+- authenticated email.
+
+Use Clerk data for these fields.
+
+#### Konto
+
+Add:
+
+- “Zarządzaj kontem” button opening Clerk account management or Clerk UserProfile,
+- “Wyloguj się” button.
+
+Do not create custom password-change forms.
+
+#### Ustawienia aplikacji
+
+Keep this section minimal for now.
+
+Do not create a new database settings system unless an existing trainer-specific setting already needs editing.
+
+A placeholder such as:
+
+`Więcej ustawień trenera pojawi się w kolejnych wersjach.`
+
+is acceptable.
+
+### 4. Navigation and UX
+
+Add “Ustawienia” to the appropriate navigation or account dropdown.
+
+Requirements:
+
+- preserve the current trainer-panel design,
+- work on desktop and mobile,
+- close the dropdown after navigation,
+- close the dropdown when clicking outside,
+- show loading state while Clerk resolves the user,
+- prevent signed-out users from opening `/settings`,
+- redirect signed-out users to sign in,
+- do not expose another trainer’s identity during account switching.
+
+### 5. Recommended Clerk implementation
+
+Prefer existing Clerk components and hooks, for example:
+
+- `UserButton`,
+- `UserProfile`,
+- `useUser`,
+- `useClerk`,
+- `signOut`.
+
+Follow the Clerk setup already used by the trainer application.
+
+Do not introduce another authentication provider.
+
+### Required focused tests
+
+Add tests proving:
+
+1. The account menu shows the authenticated trainer’s name and email.
+2. Trainer A never sees Trainer B’s account information.
+3. Signed-out users cannot open `/settings`.
+4. Clicking “Wyloguj się” calls Clerk sign out.
+5. After sign out, the user is redirected to the sign-in screen.
+6. Protected trainer data is not rendered after sign out.
+7. “Zarządzaj kontem” opens Clerk account management.
+8. The account menu works on mobile and desktop layouts.
+9. Existing trainer authentication and multi-tenancy tests remain passing.
+
+### Constraints
+
+- No broad application redesign.
+- No custom passwords.
+- No custom session handling.
+- No unrelated backend refactoring.
+- Do not modify client-portal authentication.
+- Do not weaken multi-trainer isolation.
+- Keep the task focused and low-cost.
+- Run only focused account-menu/settings tests and directly related authentication tests.
+
+### Final report
+
+Report:
+
+- components added,
+- settings route added,
+- Clerk hooks/components used,
+- sign-out and redirect behavior,
+- tests added,
+- focused test results,
+- files changed.
+
+Required completion statement:
+
+`READY — trainers can access their own account settings and securely sign out`
