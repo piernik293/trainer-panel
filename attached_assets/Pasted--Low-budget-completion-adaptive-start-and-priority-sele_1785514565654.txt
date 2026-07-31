@@ -1,0 +1,130 @@
+## Low-budget completion — adaptive start and priority-selection UX only
+
+Strict budget and scope:
+
+- Maximum 8 relevant file reads.
+- No broad repository audit.
+- No subagents.
+- No generator refactor.
+- No structured pain-restriction system in this task.
+- Do not modify the existing pain keyword detection or right-side warning panel.
+- Run only focused tests.
+- Stop immediately after completing the requirements below.
+
+### 1. Fix priority-selection UX
+
+Current issue:
+
+When experience level changes to “Brak aktywności fizycznej” or “Początkujący”, slots 2 and 3 are silently cleared.
+
+Required behavior:
+
+- do not silently delete selected priorities,
+- if more than one priority is selected, display:
+
+  “Na tym poziomie możesz zachować tylko jeden priorytet. Wybierz, który pozostawić.”
+
+- keep all currently selected priorities visible,
+- allow the user to remove priorities manually,
+- block interview submission while more than one remains,
+- preserve the existing backend validation limiting these levels to one priority.
+
+Do not change the behavior for intermediate and advanced clients.
+
+### 2. Adaptive-start explanation and trainer decision
+
+For:
+
+- Brak aktywności fizycznej
+- Początkujący
+
+show on the interview-detail page:
+
+Title:
+
+“Rekomendowany start adaptacyjny”
+
+Description:
+
+“Start adaptacyjny skupia się na nauce podstawowych wzorców ruchowych, kontroli techniki oraz prostych i stabilnych ćwiczeniach z masą ciała lub lekkim oporem. Obciążenie jest wprowadzane stopniowo.”
+
+Actions:
+
+- “Zastosuj start adaptacyjny”
+- “Pomiń i przygotuj standardowy plan”
+
+The recommendation must not activate automatically.
+
+Persist one of three states:
+
+- pending
+- accepted
+- declined
+
+### 3. Show the decision consistently
+
+Display the current state on:
+
+- clients list,
+- interview-detail page,
+- plan-generation profile step.
+
+Polish labels:
+
+- “Start adaptacyjny · Oczekuje na decyzję”
+- “Start adaptacyjny · Zastosowany”
+- “Start adaptacyjny · Pominięty”
+
+Replace the unclear “Nie rozpoczęto” label where applicable.
+
+### 4. Minimal generator connection
+
+When state is accepted, pass the existing adaptive/no-activity mode into generation.
+
+Preserve existing rules:
+
+- suitableForNoActivity hard filtering,
+- simple and stable exercises,
+- gradual loading,
+- no unsafe fallback,
+- no high-impact plyometrics as primary strength work.
+
+Do not create a new recommendation engine.
+
+When state is pending:
+
+- do not silently generate in adaptive mode,
+- require the trainer to accept or decline before generation.
+
+When state is declined:
+
+- use the standard generator while preserving all existing safety restrictions.
+
+### Focused tests only
+
+Add tests proving:
+
+1. Changing level with multiple priorities does not silently remove them.
+2. Submission is blocked until only one priority remains.
+3. Beginner and no-activity clients receive the adaptive-start recommendation.
+4. Intermediate and advanced clients do not receive it automatically.
+5. The trainer can accept or decline.
+6. The decision persists.
+7. The same status appears on the client list, interview detail and plan wizard.
+8. Pending state does not activate adaptive generation.
+9. Accepted state activates the existing safe adaptive mode.
+10. Declined state uses standard generation.
+
+Do not implement structured body-area restrictions or localized pain regression in this task.
+
+Final report:
+
+- files changed,
+- decision storage used,
+- UI behavior,
+- generator flag used,
+- focused test results.
+
+Required completion statement:
+
+READY — adaptive start is explicitly controlled by the trainer and beginner priorities are not silently removed

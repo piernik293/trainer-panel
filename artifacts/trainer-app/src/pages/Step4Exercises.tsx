@@ -776,6 +776,7 @@ export default function Step4Exercises({
           rir: DRAFT_EXERCISE_DEFAULTS.rir,
           restSeconds: DRAFT_EXERCISE_DEFAULTS.restSeconds,
           tempo: getDefaultTempo(toAdd.exerciseClass, experienceLevel),
+          restrictionLabel: toAdd.restrictionLabel ?? null,
         });
       }
     }
@@ -1077,6 +1078,7 @@ function DayExerciseList({
                 key={ex.localId}
                 exercise={ex}
                 avoidedReason={avoided?.reason ?? null}
+                restrictionLabel={ex.restrictionLabel ?? null}
                 onRemove={() => onRemove(dayIndex, ex.localId)}
                 onFieldChange={(field, value) => onFieldChange(dayIndex, ex.localId, field, value)}
                 onTempoChange={(tempo) => onTempoChange(dayIndex, ex.localId, tempo)}
@@ -1096,6 +1098,7 @@ function DayExerciseList({
 interface SortableDraftExerciseCardProps {
   exercise: DraftExercise;
   avoidedReason: string | null;
+  restrictionLabel: string | null;
   onRemove: () => void;
   onFieldChange: <K extends keyof DraftExercise>(field: K, value: DraftExercise[K]) => void;
   onTempoChange: (tempo: string | undefined) => void;
@@ -1106,6 +1109,7 @@ interface SortableDraftExerciseCardProps {
 function SortableDraftExerciseCard({
   exercise,
   avoidedReason,
+  restrictionLabel,
   onRemove,
   onFieldChange,
   onTempoChange,
@@ -1272,6 +1276,14 @@ function SortableDraftExerciseCard({
             <div className="flex items-start gap-1 mt-1 text-[11px] text-amber-700">
               <AlertTriangle size={11} className="shrink-0 mt-0.5" />
               <span>Klient wskazał, że chce unikać tego ćwiczenia.</span>
+            </div>
+          )}
+
+          {/* Restriction regression label */}
+          {restrictionLabel !== null && (
+            <div className="flex items-start gap-1 mt-1 text-[11px] text-sky-700">
+              <AlertTriangle size={11} className="shrink-0 mt-0.5" />
+              <span>{restrictionLabel}</span>
             </div>
           )}
         </div>

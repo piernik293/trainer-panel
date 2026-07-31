@@ -165,6 +165,47 @@ router.patch("/clients/:id", requireAuth, async (req, res): Promise<void> => {
   res.json(UpdateClientResponse.parse(toClientListItem(client, clientSurveys[0])));
 });
 
+// ─── PATCH /clients/:id/adaptive-start ───────────────────────────────────────
+
+const AdaptiveStartBody = z.object({
+  decision: z.enum(["accepted", "declined"]),
+});
+
+/**
+ * Records the trainer's explicit decision on the adaptive-start recommendation.
+ * Only eligible clients (beginners / sedentary) should receive this call from
+ * the UI, but the endpoint itself is not gated on experience level so a trainer
+ * can freely change their mind or override the system's eligibility judgement.
+ */
+router.patch("/clients/:id/adaptive-start", requireAuth, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid client ID" });
+    return;
+  }
+
+  const parsed = AdaptiveStartBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const trainerId = req.trainer!.id;
+
+  const [updated] = await db
+    .update(clientsTable)
+    .set({ adaptiveStartDecision: parsed.data.decision, updatedAt: new Date() })
+    .where(and(eq(clientsTable.id, id), eq(clientsTable.trainerId, trainerId)))
+    .returning();
+
+  if (!updated) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
+    return;
+  }
+
+  res.json({ adaptiveStartDecision: updated.adaptiveStartDecision });
+});
+
 // ─── DELETE /clients/:id ──────────────────────────────────────────────────────
 
 router.delete("/clients/:id", requireAuth, async (req, res): Promise<void> => {

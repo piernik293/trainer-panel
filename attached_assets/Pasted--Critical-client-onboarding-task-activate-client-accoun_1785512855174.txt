@@ -1,0 +1,81 @@
+## Critical client onboarding task — activate client accounts securely
+
+### Objective
+
+Allow a trainer to invite a specific client to the client application and securely link the client's Clerk account to the existing internal client record.
+
+Do not generate, display, email, or store plaintext passwords.
+
+### Required flow
+
+1. A client completes the training interview.
+2. The trainer reviews the client and chooses:
+   “Wyślij dostęp do aplikacji”.
+3. The server creates a cryptographically secure, single-use invitation token.
+4. The invitation:
+   - belongs to one client,
+   - belongs to that client's trainer,
+   - expires after a limited period,
+   - can be revoked,
+   - cannot be reused.
+5. The client opens the invitation link.
+6. The client signs up or signs in through Clerk and chooses their own password.
+7. The server verifies the invitation and authenticated Clerk user.
+8. The server writes the authenticated Clerk user ID to:
+   clients.clerk_user_id
+9. The token is marked as used.
+10. The client is redirected to their own portal.
+
+### Security requirements
+
+- Never send a trainer-generated password.
+- Never link a client only by a caller-provided email address.
+- Never accept clientId from the frontend as proof of identity.
+- Never allow one Clerk account to claim multiple unrelated clients accidentally.
+- Never allow an already-linked client to be claimed by another Clerk user.
+- Return 404 for foreign or invalid resources.
+- Preserve trainer and client tenant isolation.
+
+### Client portal states
+
+Support:
+
+- invitation waiting for activation,
+- active account with no plan:
+  “Twój trener przygotowuje plan”,
+- active account with an assigned plan,
+- expired invitation,
+- revoked invitation,
+- already-used invitation,
+- client already linked to an account.
+
+### Trainer controls
+
+On the client profile add:
+
+- “Wyślij dostęp do aplikacji”,
+- “Skopiuj link aktywacyjny”,
+- “Wyślij ponownie”,
+- “Odwołaj zaproszenie”,
+- account status:
+  - Brak dostępu,
+  - Zaproszenie wysłane,
+  - Konto aktywne.
+
+### Required tests
+
+Add focused tests proving:
+
+1. Trainer A can invite only Trainer A's client.
+2. Trainer A cannot invite Trainer B's client.
+3. A valid token links the authenticated Clerk user to the correct client.
+4. An expired, revoked or used token cannot link an account.
+5. A foreign Clerk user cannot replace an existing client link.
+6. Caller-provided clientId or email cannot change the target client.
+7. A new client account sees only its own plan and sessions.
+8. An active client without a plan sees the “plan in preparation” state.
+9. No password is generated or stored by the application.
+
+Required completion statement:
+
+READY — clients can securely activate their own portal accounts

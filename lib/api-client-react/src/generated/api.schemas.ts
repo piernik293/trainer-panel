@@ -62,6 +62,8 @@ export interface Client {
   trainingLocation?: string | null;
   /** @nullable */
   cardioPreference?: string | null;
+  /** @nullable */
+  adaptiveStartDecision?: 'pending' | 'accepted' | 'declined' | null;
   createdAt: string;
   updatedAt: string;
 }

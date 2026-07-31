@@ -22,19 +22,90 @@
 function normalizePL(text: string): string {
   return text
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")  // strips: ą→a, ę→e, ó→o, ś→s, ź/ż→z, ć→c, ń→n
+    .replace(/\u0142/g, "l")          // ł (U+0142) does not decompose in NFD — replace explicitly
+    .replace(/\u0141/g, "L")
     .toLowerCase();
 }
 
-const PAIN_PATTERNS = [
-  /\bbol\b/,       // "ból" / "bol" as whole word
-  /\bbolac\b/,     // bólach, bólący
-  /\bboli\b/,      // boli mnie
-  /\bbola\b/,      // bolała
-  /\bboly\b/,      // bóle
-  /\bbolu\b/,      // bólu
-  /\bbolenie\b/,   // bolenie
+/**
+ * Single-word pain/limitation patterns — applied to accent-normalised, ł-replaced text.
+ *
+ * Covers all inflected forms from the spec:
+ *   ból / boli / bolą / bolesny / problem / problemy / strzela / strzelanie /
+ *   strzyka / strzykanie / kłuje / kłucie / drętwieje / drętwienie / mrowienie /
+ *   uraz / kontuzja / zwichnięcie / obrzęk / puchnie / niestabilność /
+ *   przeskakuje / chrupie  (+  multi-word: ograniczenie ruchu — see below)
+ *
+ * Each pattern is tested against a single whitespace-tokenised word so \b anchors
+ * behave correctly and there are no substring false-positives.
+ */
+const PAIN_PATTERNS: RegExp[] = [
+  // ból and inflections
+  /^bol$/,          // ból (base)
+  /^bolu$/,         // bólu
+  /^bole$/,         // bóle
+  /^boly$/,         // bóle (gen. pl.)
+  /^boli$/,         // boli
+  /^bola(m|s|l|la|lo)?$/,  // bolą / bolała / bolał (bolą→bola after NFD)
+  /^bolac$/,        // bólach / bólący
+  /^bolenie$/,      // bolenie
+  /^bolesn/,        // bolesny / bolesna / bolesne / bolesność
+  // problem
+  /^problem(y|ow|ami|em|ie|u|ach)?$/,
+  // strzela / strzyka
+  /^strzela(nie|m|sz|l|la|lo)?$/,
+  /^strzyka(nie|m|sz|l|la|lo)?$/,
+  // kłuje / kłucie  (ł→l after normalization)
+  /^kluje?$/,
+  /^klucie$/,
+  // drętwieje / drętwienie  (ę→e, ę→e)
+  /^dretwiej(e|a)?$/,
+  /^dretwienie$/,
+  // mrowienie / mrowi
+  /^mrowienie$/,
+  /^mrowi$/,
+  // uraz and inflections
+  /^uraz(em|u|y|owi|ami|ach)?$/,
+  // kontuzja
+  /^kontuzj(a|i|e|ami|ach)?$/,
+  // zwichnięcie  (ę→e)
+  /^zwichni(ecie|ec|en)/,
+  // obrzęk  (ę→e)
+  /^obrzek(u|owi|iem)?$/,
+  // puchnie
+  /^puchni(e|ecie)?$/,
+  // niestabilność  (ó→o, ść→sc)
+  /^niestabiln(osc|y|a|e|ie|ymi)?$/,
+  // przeskakuje
+  /^przeskakuje?$/,
+  // chrupie
+  /^chrupie$/,
 ];
+
+/**
+ * Multi-word patterns checked against the full normalised string.
+ * Negation is still verified for these.
+ */
+const MULTI_WORD_PAIN_PATTERNS: RegExp[] = [
+  /ograniczenie\s+ruchu/,
+];
+
+/**
+ * Negation words that — when found within the 4 words immediately preceding a
+ * pain keyword — indicate the phrase is negated and should not count as a warning.
+ *
+ * Examples suppressed:
+ *   "nic mnie nie boli"      ("nic", "nie" before "boli")
+ *   "nie boli mnie"          ("nie" before "boli")
+ *   "nie mam problemów"      ("nie" before "problemow")
+ *   "brak bólu"              ("brak" before "bolu")
+ *   "bez bólu"               ("bez" before "bolu")
+ *   "nie mam żadnej kontuzji" ("nie", "zadnej" before "kontuzji")
+ */
+const NEGATION_WORDS = new Set([
+  "nie", "nic", "brak", "bez", "zadnej", "zadnego", "zadna", "zadnych",
+]);
 
 /**
  * Detects pain-related keywords in health-related text only.
@@ -45,10 +116,62 @@ const PAIN_PATTERNS = [
  * @param healthText - text from a health / limitations field, or null/empty
  * @returns true when any pain keyword is found (accent-insensitive)
  */
+/**
+ * Detects unambiguous pain or limitation keywords in health-related free text.
+ *
+ * Uses a 4-word sliding window to suppress clearly negated occurrences such as
+ * "nie boli", "nic mnie nie boli", "brak bólu", or "bez kontuzji".
+ * Ambiguous phrases ("nie zawsze boli") are still flagged — the intent is to
+ * surface potential warnings, not to suppress uncertain cases.
+ *
+ * IMPORTANT — scope rules:
+ *   Only call with health-related text (healthLimitations, injury description).
+ *   Never pass trainingGoal, motivational text, or other non-medical fields.
+ */
 export function detectPainKeywords(healthText: string | null | undefined): boolean {
   if (!healthText || healthText.trim() === "") return false;
   const normalized = normalizePL(healthText);
-  return PAIN_PATTERNS.some((re) => re.test(normalized));
+
+  // Tokenise into words; strip punctuation so negation words are not stuck to
+  // adjacent characters (e.g. "nie." would not match the negation set otherwise).
+  const words = normalized
+    .replace(/[.,;:!?()'"""„"'–—]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    // Fast-exit: only proceed when the word matches at least one pain pattern
+    if (!PAIN_PATTERNS.some((p) => p.test(word))) continue;
+
+    // Pain keyword candidate — look for a negation word in the 4 preceding positions
+    const windowStart = Math.max(0, i - 4);
+    let negated = false;
+    for (let j = windowStart; j < i; j++) {
+      if (NEGATION_WORDS.has(words[j])) {
+        negated = true;
+        break;
+      }
+    }
+    if (!negated) return true;
+  }
+
+  // Multi-word patterns checked against the full normalised string; negation is
+  // verified by scanning the ~4 words that appear before the matched phrase.
+  for (const pattern of MULTI_WORD_PAIN_PATTERNS) {
+    const match = normalized.match(pattern);
+    if (!match || match.index === undefined) continue;
+    const before = normalized
+      .slice(Math.max(0, match.index - 40), match.index)
+      .replace(/[.,;:!?()'"""„"'–—]/g, " ")
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(-4);
+    const negated = before.some((w) => NEGATION_WORDS.has(w));
+    if (!negated) return true;
+  }
+
+  return false;
 }
 
 // ─── Feature 2 — Health alert state ──────────────────────────────────────────

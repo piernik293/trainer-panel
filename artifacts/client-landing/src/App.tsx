@@ -9,6 +9,7 @@ import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import Home from '@/pages/home';
 import PlanPortal from '@/pages/plan';
 import SurveyTokenPage from '@/pages/survey';
+import ActivatePage from '@/pages/activate';
 
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so
 // the same build serves multiple Clerk custom domains. Do not inline the env var.
@@ -51,6 +52,8 @@ function Router() {
       <Route path="/plan" component={PlanPortal} />
       {/* Survey token pages are accessible without Clerk auth */}
       <Route path="/survey/:token" component={SurveyTokenPage} />
+      {/* Client portal activation — token validates server-side before Clerk auth */}
+      <Route path="/invite/:token" component={ActivatePage} />
       <Route component={NotFound} />
     </Switch>
   );

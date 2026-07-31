@@ -386,11 +386,19 @@ function Step1Summary({
       plyoReason: string | null;
       plyoSessionLabel: string | null;
     } | null;
+    /** null = trainer has not yet made a decision (pending), "accepted" | "declined" = decided */
+    adaptiveStartDecision?: string | null;
+    adaptiveStartMode?: boolean;
   };
   const safetyAlerts = d.safetyAlerts ?? null;
   const cardioRecommendation = d.cardioRecommendation ?? null;
   const conditioningRecommendation = d.conditioningRecommendation ?? null;
   const athleteRecommendation = d.athleteRecommendation ?? null;
+  const adaptiveStartDecision = d.adaptiveStartDecision ?? null;
+  const adaptiveStartMode = d.adaptiveStartMode ?? false;
+  const isBeginnerCandidate =
+    input.experienceLevel === "Brak aktywności fizycznej" ||
+    input.experienceLevel === "Początkujący";
 
   const showPainAlert = safetyAlerts?.painDetected === true;
   const showHealthAlert = safetyAlerts?.hasHealthLimitation === true && !showPainAlert;
@@ -403,30 +411,99 @@ function Step1Summary({
     poor: "Słaba",
   };
 
+  // Two-column layout is active whenever at least one warning or recommendation exists.
+  // When neither exists the outer div has no class and behaves as a plain block.
+  const hasRightPanel = showPainAlert || showHealthAlert || showCardioNote;
+
   return (
-    <div className="space-y-4">
-      {/* Athlete / sport info + Plyo recommendation */}
-      {athleteRecommendation?.isAthlete && (
-        <AthletePlyoBanner athleteRec={athleteRecommendation} />
-      )}
+    <div
+      className={hasRightPanel ? "lg:grid lg:grid-cols-[1fr_360px] lg:gap-6 lg:items-start" : ""}
+    >
+      {/* Left column — main data sections + mobile-only warning cards */}
+      <div className="space-y-4 min-w-0">
+        {/* Mobile: warning / recommendation cards sit ABOVE the data sections.
+            On desktop (lg+) they are hidden here — the sticky right panel shows them. */}
+        {hasRightPanel && (
+          <div
+            className="lg:hidden space-y-3"
+            role="region"
+            aria-label="Ostrzeżenia i rekomendacje"
+            data-testid="mobile-cards"
+          >
+            {showPainAlert && (
+              <PainAlertBanner healthText={safetyAlerts?.healthText ?? null} />
+            )}
+            {showHealthAlert && (
+              <HealthLimitationBanner healthText={safetyAlerts?.healthText ?? null} />
+            )}
+            {showCardioNote && (
+              <CardioConditioningBanner
+                cardioText={cardioRecommendation?.text ?? null}
+                conditioningText={conditioningRecommendation?.text ?? null}
+              />
+            )}
+          </div>
+        )}
 
-      {/* Feature 1 — RED pain alert (highest priority, always at top) */}
-      {showPainAlert && (
-        <PainAlertBanner healthText={safetyAlerts?.healthText ?? null} />
-      )}
+        {/* Athlete / sport info + Plyo recommendation — always in the main column */}
+        {athleteRecommendation?.isAthlete && (
+          <AthletePlyoBanner athleteRec={athleteRecommendation} />
+        )}
 
-      {/* Feature 2 — YELLOW health limitation alert */}
-      {showHealthAlert && (
-        <HealthLimitationBanner healthText={safetyAlerts?.healthText ?? null} />
-      )}
-
-      {/* Features 3 & 4 — Cardio / conditioning recommendation */}
-      {showCardioNote && (
-        <CardioConditioningBanner
-          cardioText={cardioRecommendation?.text ?? null}
-          conditioningText={conditioningRecommendation?.text ?? null}
-        />
-      )}
+        {/* Adaptive-start status — shown for beginner / no-activity candidates */}
+        {isBeginnerCandidate && (
+          <Card
+            className={
+              adaptiveStartDecision === "accepted"
+                ? "border-emerald-200 bg-emerald-50/60 shadow-sm"
+                : adaptiveStartDecision === "declined"
+                ? "border-border/50 bg-muted/30 shadow-sm"
+                : "border-sky-200 bg-sky-50/60 shadow-sm"
+            }
+          >
+            <CardContent className="px-4 py-3 flex items-start gap-3">
+              {adaptiveStartDecision === "accepted" ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              ) : adaptiveStartDecision === "declined" ? (
+                <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+              ) : (
+                <Clock className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+              )}
+              <div>
+                <p
+                  className={`text-sm font-medium ${
+                    adaptiveStartDecision === "accepted"
+                      ? "text-emerald-800"
+                      : adaptiveStartDecision === "declined"
+                      ? "text-muted-foreground"
+                      : "text-sky-800"
+                  }`}
+                >
+                  {adaptiveStartDecision === "accepted"
+                    ? "Start adaptacyjny aktywny"
+                    : adaptiveStartDecision === "declined"
+                    ? "Start adaptacyjny pominięty"
+                    : "Oczekuje na decyzję w sprawie startu adaptacyjnego"}
+                </p>
+                <p
+                  className={`text-xs mt-0.5 ${
+                    adaptiveStartDecision === "accepted"
+                      ? "text-emerald-700"
+                      : adaptiveStartDecision === "declined"
+                      ? "text-muted-foreground"
+                      : "text-sky-700"
+                  }`}
+                >
+                  {adaptiveStartDecision === "accepted"
+                    ? "Wybór ćwiczeń zostanie dostosowany do etapu adaptacyjnego — łatwe do nauczenia, z progresją obciążenia."
+                    : adaptiveStartDecision === "declined"
+                    ? "Zostanie zastosowany standardowy dobór ćwiczeń z zachowaniem ograniczeń bezpieczeństwa."
+                    : "Przejdź do profilu klienta i zdecyduj, czy zastosować start adaptacyjny przed wygenerowaniem planu."}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       {warnings.length > 0 && (
         <Card className={`border-border/50 shadow-sm ${hasBlockingWarnings ? "border-destructive/40 bg-destructive/5" : "bg-amber-50/50 border-amber-200"}`}>
@@ -570,6 +647,31 @@ function Step1Summary({
           )}
         </CardContent>
       </Card>
+      </div>{/* end left column */}
+
+      {/* Desktop sticky right-side panel.
+          Offset (top-28 = 112 px) clears the page header + step navigation bar.
+          max-h + overflow-y-auto prevents the panel from growing past the viewport. */}
+      {hasRightPanel && (
+        <aside
+          className="hidden lg:block lg:sticky lg:top-28 lg:self-start space-y-3 max-h-[calc(100vh-8rem)] overflow-y-auto"
+          aria-label="Ostrzeżenia i rekomendacje"
+          data-testid="right-panel"
+        >
+          {showPainAlert && (
+            <PainAlertBanner healthText={safetyAlerts?.healthText ?? null} />
+          )}
+          {showHealthAlert && (
+            <HealthLimitationBanner healthText={safetyAlerts?.healthText ?? null} />
+          )}
+          {showCardioNote && (
+            <CardioConditioningBanner
+              cardioText={cardioRecommendation?.text ?? null}
+              conditioningText={conditioningRecommendation?.text ?? null}
+            />
+          )}
+        </aside>
+      )}
     </div>
   );
 }

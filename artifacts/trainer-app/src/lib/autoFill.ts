@@ -91,6 +91,11 @@ export interface AutoFillRecExercise {
   movementCategoryKey?: string | null;
   /** Stage 6: secondary muscle groups for session fatigue tie-breaking. */
   secondaryMuscleGroups?: string[] | null;
+  /**
+   * Reasons why this exercise scored positively — passed through from the
+   * recommendation engine.  Used to detect restriction-regression exercises.
+   */
+  matchReasons?: string[];
 }
 
 export interface AutoFillExerciseToAdd {
@@ -118,6 +123,11 @@ export interface AutoFillExerciseToAdd {
    * exercise is committed to the draft.
    */
   exerciseClass?: ExerciseClass;
+  /**
+   * Set to the spec label when this exercise was chosen as a regression due to
+   * a confirmed client restriction.  null = normal selection.
+   */
+  restrictionLabel?: string | null;
 }
 
 export interface AutoFillDayResult {
@@ -808,6 +818,11 @@ export function selectExercisesForDay(
   };
 
   function commitExercise(rec: AutoFillRecExercise, sets: number, isCore: boolean): void {
+    const RESTRICTION_REGRESSION_LABEL =
+      "Wariant regresyjny — dobrany ze względu na zgłoszone ograniczenie.";
+    const isRestrictionRegression =
+      rec.matchReasons?.some((r) => r.includes("Wariant regresyjny")) ?? false;
+
     toAdd.push({
       exerciseId: rec.id,
       exerciseName: rec.name,
@@ -829,6 +844,7 @@ export function selectExercisesForDay(
         mainMuscleGroup: rec.mainMuscleGroup,
         movementCategoryKey: rec.movementCategoryKey,
       }),
+      restrictionLabel: isRestrictionRegression ? RESTRICTION_REGRESSION_LABEL : null,
     });
     addedIds.add(rec.id);
     currentCount++;

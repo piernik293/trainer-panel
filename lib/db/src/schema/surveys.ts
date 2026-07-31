@@ -68,6 +68,12 @@ export const surveysTable = pgTable("surveys", {
   avoidedExerciseReasons: jsonb("avoided_exercise_reasons").$type<Record<string, string>>().notNull().default({}),
   avoidedExerciseOtherText: text("avoided_exercise_other_text"),
   avoidedExerciseOtherReason: text("avoided_exercise_other_reason"),
+  /**
+   * Trainer-confirmed structured restrictions (JSON array of ConfirmedRestriction).
+   * Each element: { bodyArea, movementPattern, action }.
+   * Parsed in the recommendation engine to apply restriction scoring.
+   */
+  confirmedRestrictions: text("confirmed_restrictions"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

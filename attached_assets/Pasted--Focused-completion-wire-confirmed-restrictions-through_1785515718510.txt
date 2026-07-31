@@ -1,0 +1,128 @@
+## Focused completion — wire confirmed restrictions through API and prove generation uses them
+
+Strict scope:
+
+- no broad audit,
+- no generator redesign,
+- no new restriction types,
+- no authentication changes,
+- no unrelated UI work,
+- maximum 8 relevant file reads,
+- run only focused tests.
+
+### Problem
+
+The structured restriction UI and recommendation scoring were added, but the API response may strip the new `confirmedRestrictions` / `confirmed_restrictions` field.
+
+This means restrictions may be stored in the database but disappear after refresh or never reach plan generation.
+
+### 1. API schema and response
+
+Trace `confirmed_restrictions` through:
+
+1. survey form submission,
+2. request validation,
+3. database write,
+4. survey read query,
+5. API response schema,
+6. trainer-app survey state,
+7. plan-generation request,
+8. recommendation engine context.
+
+Fix the first stage that strips or omits the field.
+
+Requirements:
+
+- preserve the field on create and update,
+- return it when reading the interview,
+- preserve it after page refresh,
+- pass it into plan generation,
+- keep trainer ownership filtering unchanged,
+- do not trust caller-provided trainerId or clientId.
+
+Use one consistent frontend property name, preferably:
+
+`confirmedRestrictions`
+
+and map it explicitly to the database column:
+
+`confirmed_restrictions`
+
+### 2. Persistence behavior
+
+After saving and reopening the interview:
+
+- all restriction rows must still exist,
+- body area, movement pattern and action must be unchanged,
+- removing one row must not delete unrelated rows,
+- an empty list must be handled safely.
+
+### 3. Generator connection
+
+Prove that the saved restrictions reach the recommendation engine.
+
+Required example:
+
+- saved restriction:
+  - body area: knee,
+  - movement pattern: squat / knee dominant,
+  - action: regression.
+
+Expected:
+
+- matching knee-dominant candidates receive restriction scoring,
+- an eligible regression receives the existing regression label,
+- unrelated upper-body exercises receive no restriction penalty.
+
+Also prove:
+
+- `avoid` meaningfully excludes or strongly blocks the matching candidate,
+- `informational` does not change selection,
+- restrictions for another trainer’s client are inaccessible.
+
+### 4. Minimal UI label
+
+When an exercise is actually selected as a regression because of a confirmed restriction, show on its plan card:
+
+`Wariant regresyjny — dobrany ze względu na zgłoszone ograniczenie.`
+
+Do not show the label merely because the client has any warning. Show it only when that exercise received the regression decision.
+
+### 5. Focused integration tests
+
+Add tests proving:
+
+1. confirmed restrictions are written to the database,
+2. the API returns them after refresh,
+3. PATCH preserves the new field,
+4. Trainer A cannot read or modify Trainer B’s restrictions,
+5. saved restriction reaches generation context,
+6. matching exercise receives restriction scoring,
+7. unrelated movement does not receive restriction scoring,
+8. selected regression exposes the visible label,
+9. restrictions do not disappear when reopening the interview.
+
+Do not add more keyword patterns or redesign the restriction picker.
+
+### Migration check
+
+Confirm that migration `0009` is included in the migration mechanism actually executed in production.
+
+Do not assume that applying it manually to the development database is sufficient.
+
+### Final report
+
+Report:
+
+- first stage that previously stripped the field,
+- API/schema mapping fixed,
+- persistence after refresh,
+- generator context confirmed,
+- label rendering behavior,
+- production migration path,
+- focused tests,
+- files changed.
+
+Required completion statement:
+
+READY — confirmed restrictions persist through API and influence the generated plan

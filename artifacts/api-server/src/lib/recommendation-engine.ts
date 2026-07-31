@@ -645,6 +645,151 @@ function scoreSubTargetBias(ex: Exercise, sv: Survey): ScoreBreakdown {
   };
 }
 
+// ─── Adaptive-start safety constraints ───────────────────────────────────────
+
+/**
+ * Hard penalty for plyometric/explosive exercises when adaptive-start mode is
+ * active.  The score-no-activity-fit dimension already penalises high learning
+ * difficulty and joint stress, but plyometric_power exercises can still score
+ * well for clients with athletic goals.  This dimension ensures they are
+ * effectively excluded as primary work in an adaptive-start plan — regardless
+ * of the client's goal bias — matching the spec requirement:
+ *
+ *   "No advanced instability or plyometrics as primary work."
+ *
+ * Penalty: -20 for plyometric_power class.
+ * Fires only when opts.useAdaptiveStart is true; otherwise returns 0.
+ */
+function scoreAdaptiveConstraints(
+  ex: Exercise,
+  opts?: { useAdaptiveStart?: boolean },
+): ScoreBreakdown {
+  if (!opts?.useAdaptiveStart) {
+    return { dimension: "adaptiveConstraints", points: 0, reason: null };
+  }
+
+  const cls = deriveExerciseClass(ex);
+  if (cls === "plyometric_power") {
+    return {
+      dimension: "adaptiveConstraints",
+      points: -20,
+      reason:
+        "Ćwiczenia plyometryczne / wybuchowe są nieodpowiednie na etapie startu adaptacyjnego.",
+    };
+  }
+
+  return { dimension: "adaptiveConstraints", points: 0, reason: null };
+}
+
+// ─── Confirmed restriction scoring ───────────────────────────────────────────
+
+/**
+ * A single trainer-confirmed restriction.  Stored as a JSON array in
+ * surveys.confirmed_restrictions.
+ */
+export type ConfirmedRestriction = {
+  bodyArea: string;
+  movementPattern: string;
+  action:
+    | "avoid"
+    | "regression"
+    | "reduce_range"
+    | "reduce_load"
+    | "informational"
+    | "medical_clearance";
+};
+
+function parseConfirmedRestrictions(json: string | null | undefined): ConfirmedRestriction[] {
+  if (!json) return [];
+  try {
+    const val = JSON.parse(json);
+    return Array.isArray(val) ? (val as ConfirmedRestriction[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Returns true when the exercise's movement pattern overlaps with the
+ * restriction's declared pattern (bidirectional substring match after
+ * normalisation).
+ */
+function restrictionMatchesExercise(restriction: ConfirmedRestriction, ex: Exercise): boolean {
+  const exPat = norm(ex.movementPattern ?? "");
+  const rPat = norm(restriction.movementPattern ?? "");
+  if (!rPat || !exPat) return false;
+  return exPat.includes(rPat) || rPat.includes(exPat);
+}
+
+/**
+ * Apply trainer-confirmed restrictions to exercise scoring.
+ *
+ * Action effects:
+ *   avoid             → -30  (effectively excludes)
+ *   regression        → suitableForNoActivity: +5 + label "Wariant regresyjny"
+ *                        otherwise: -15 (prefer the regression variant)
+ *   reduce_range / reduce_load → -5  (mild preference for regression)
+ *   informational / medical_clearance → 0  (trainer note only)
+ *
+ * Does NOT regress unrelated body regions — only exercises whose movement
+ * pattern matches the restriction are affected.
+ */
+function scoreConfirmedRestrictions(ex: Exercise, sv: Survey): ScoreBreakdown {
+  const restrictions = parseConfirmedRestrictions(sv.confirmedRestrictions);
+  if (restrictions.length === 0) {
+    return { dimension: "confirmedRestrictions", points: 0, reason: null };
+  }
+
+  let totalPoints = 0;
+  const positiveReasons: string[] = [];
+  const negativeReasons: string[] = [];
+
+  for (const restriction of restrictions) {
+    if (!restrictionMatchesExercise(restriction, ex)) continue;
+
+    switch (restriction.action) {
+      case "avoid":
+        totalPoints -= 30;
+        negativeReasons.push(`Unikane — ograniczenie: ${restriction.bodyArea}`);
+        break;
+
+      case "regression":
+        if (ex.suitableForNoActivity === true) {
+          totalPoints += 5;
+          positiveReasons.push(
+            "Wariant regresyjny — dobrany ze względu na zgłoszone ograniczenie.",
+          );
+        } else {
+          totalPoints -= 15;
+          negativeReasons.push(
+            `Preferowany wariant regresyjny dla ${restriction.bodyArea}`,
+          );
+        }
+        break;
+
+      case "reduce_range":
+      case "reduce_load":
+        // Mild penalty — prefer a modification or regression over the full-load variant.
+        totalPoints -= 5;
+        break;
+
+      case "informational":
+      case "medical_clearance":
+        // No scoring impact — purely informational for the trainer.
+        break;
+    }
+  }
+
+  const reason =
+    positiveReasons.length > 0
+      ? positiveReasons[0]
+      : negativeReasons.length > 0
+      ? negativeReasons[0]
+      : null;
+
+  return { dimension: "confirmedRestrictions", points: totalPoints, reason };
+}
+
 // ─── Main public function ─────────────────────────────────────────────────────
 
 /**
@@ -671,7 +816,19 @@ const MAX_RAW_SCORE =
  * Returns a normalised 0-100 score plus breakdown.
  * Only complete + active exercises should be passed (filter before calling).
  */
-export function scoreExercise(exercise: Exercise, survey: Survey): ExerciseScore {
+export function scoreExercise(
+  exercise: Exercise,
+  survey: Survey,
+  opts?: { useAdaptiveStart?: boolean },
+): ExerciseScore {
+  // When the trainer has accepted adaptive start, apply no-activity fit scoring
+  // regardless of the client's declared experience level.  This boosts simple,
+  // stable, low-complexity movements and penalises high-impact / technically
+  // demanding ones — without overriding other scoring dimensions (goal, equipment,
+  // location, priority muscles, etc.) which continue to use the real survey data.
+  const noActivitySurvey: Survey = opts?.useAdaptiveStart
+    ? { ...survey, experienceLevel: "Brak aktywności fizycznej" }
+    : survey;
   const dimensions: ScoreBreakdown[] = [
     scoreExperienceLevel(exercise, survey),
     scoreTrainingGoal(exercise, survey),
@@ -680,7 +837,7 @@ export function scoreExercise(exercise: Exercise, survey: Survey): ExerciseScore
     scorePriorityMuscles(exercise, survey),
     scoreExercisePriority(exercise),
     scoreDifficultyMatch(exercise, survey),
-    scoreNoActivityFit(exercise, survey),
+    scoreNoActivityFit(exercise, noActivitySurvey),
     // Stage E: goal-class alignment and sub-target bias.
     // These add up to +8 and +12 respectively for well-matched exercises.
     // MAX_RAW_SCORE is intentionally not increased — following the same pattern
@@ -695,6 +852,10 @@ export function scoreExercise(exercise: Exercise, survey: Survey): ExerciseScore
     // Kettlebell in survey.equipment — safe no-op for beginners and inactive clients.
     scoreProgressionSuitability(exercise, survey),
     penaliseAvoidedMuscles(exercise, survey),
+    // Adaptive-start: hard plyometric exclusion (fires only when useAdaptiveStart).
+    scoreAdaptiveConstraints(exercise, opts),
+    // Trainer-confirmed restrictions (body area + movement pattern + action).
+    scoreConfirmedRestrictions(exercise, survey),
   ];
 
   const rawTotal = dimensions.reduce((sum, d) => sum + d.points, 0);

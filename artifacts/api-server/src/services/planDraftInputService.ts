@@ -141,6 +141,14 @@ export interface PlanDraftInputResult {
   conditioningRecommendation: ConditioningRecommendationType | null;
   /** Athlete / sport recommendation — null for non-athlete clients */
   athleteRecommendation: AthleteRecommendationResult | null;
+  /** Trainer's persisted decision on the adaptive-start recommendation (null = no decision yet). */
+  adaptiveStartDecision: string | null;
+  /**
+   * True when the trainer has explicitly accepted adaptive start for a beginner/sedentary client.
+   * The plan generator should use this flag to boost simple/stable exercises and apply
+   * the no-activity safety scoring even for "Początkujący" clients.
+   */
+  adaptiveStartMode: boolean;
 }
 
 export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInputResult | null> {
@@ -475,5 +483,8 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     cardioRecommendation,
     conditioningRecommendation,
     athleteRecommendation,
+    adaptiveStartDecision: client.adaptiveStartDecision ?? null,
+    adaptiveStartMode:
+      client.adaptiveStartDecision === "accepted" && isBeginnerLevel,
   };
 }

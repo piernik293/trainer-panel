@@ -108,6 +108,12 @@ export interface DraftExercise {
    * Only present keys count as overridden; absent key means auto/default.
    */
   manualOverrides?: Partial<Record<ManualOverrideField, true>>;
+  /**
+   * Set when this exercise was selected as a regression due to a confirmed
+   * client restriction.  Displayed as a badge on the exercise card.
+   * null / undefined = normal selection — no badge shown.
+   */
+  restrictionLabel?: string | null;
 }
 
 /** Exercises keyed by day index (from distributionResult.days[i].dayIndex). */

@@ -39,6 +39,7 @@ export const ListClientsResponseItem = zod.object({
   "priorityMuscle1": zod.string().nullish(),
   "trainingLocation": zod.string().nullish(),
   "cardioPreference": zod.string().nullish(),
+  "adaptiveStartDecision": zod.enum(['pending', 'accepted', 'declined']).nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -80,6 +81,7 @@ export const CreateClientResponse = zod.object({
   "priorityMuscle1": zod.string().nullish(),
   "trainingLocation": zod.string().nullish(),
   "cardioPreference": zod.string().nullish(),
+  "adaptiveStartDecision": zod.enum(['pending', 'accepted', 'declined']).nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -111,6 +113,7 @@ export const GetClientResponse = zod.object({
   "priorityMuscle1": zod.string().nullish(),
   "trainingLocation": zod.string().nullish(),
   "cardioPreference": zod.string().nullish(),
+  "adaptiveStartDecision": zod.enum(['pending', 'accepted', 'declined']).nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -155,6 +158,7 @@ export const UpdateClientResponse = zod.object({
   "priorityMuscle1": zod.string().nullish(),
   "trainingLocation": zod.string().nullish(),
   "cardioPreference": zod.string().nullish(),
+  "adaptiveStartDecision": zod.enum(['pending', 'accepted', 'declined']).nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -221,6 +225,7 @@ export const GetClientSurveyResponse = zod.object({
   "athleteStatus": zod.string().nullish(),
   "injuryStatus": zod.string().nullish(),
   "sportPerformanceNeeds": zod.array(zod.string()).optional(),
+  "confirmedRestrictions": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -287,7 +292,8 @@ export const UpsertClientSurveyBody = zod.object({
   "sportsPriorities": zod.array(zod.string()).optional(),
   "athleteStatus": zod.string().optional(),
   "injuryStatus": zod.string().optional(),
-  "sportPerformanceNeeds": zod.array(zod.string()).optional()
+  "sportPerformanceNeeds": zod.array(zod.string()).optional(),
+  "confirmedRestrictions": zod.string().nullish()
 })
 
 export const UpsertClientSurveyResponse = zod.object({
@@ -334,6 +340,7 @@ export const UpsertClientSurveyResponse = zod.object({
   "athleteStatus": zod.string().nullish(),
   "injuryStatus": zod.string().nullish(),
   "sportPerformanceNeeds": zod.array(zod.string()).optional(),
+  "confirmedRestrictions": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -390,6 +397,7 @@ export const ListClientSurveysResponseItem = zod.object({
   "athleteStatus": zod.string().nullish(),
   "injuryStatus": zod.string().nullish(),
   "sportPerformanceNeeds": zod.array(zod.string()).optional(),
+  "confirmedRestrictions": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -459,6 +467,7 @@ export const GetClientSurveyByIdResponse = zod.object({
   "athleteStatus": zod.string().nullish(),
   "injuryStatus": zod.string().nullish(),
   "sportPerformanceNeeds": zod.array(zod.string()).optional(),
+  "confirmedRestrictions": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -571,6 +580,7 @@ export const GetStatsResponse = zod.object({
   "priorityMuscle1": zod.string().nullish(),
   "trainingLocation": zod.string().nullish(),
   "cardioPreference": zod.string().nullish(),
+  "adaptiveStartDecision": zod.enum(['pending', 'accepted', 'declined']).nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }))

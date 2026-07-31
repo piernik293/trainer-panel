@@ -16,6 +16,7 @@ import planDraftBalanceWeekRouter from "./planDraftBalanceWeek";
 import planDraftRecordGenerationRouter from "./planDraftRecordGeneration";
 import clientPortalRouter from "./clientPortal";
 import surveyInvitesRouter from "./surveyInvites";
+import clientInvitationsRouter from "./clientInvitations";
 
 const router: IRouter = Router();
 
@@ -36,6 +37,7 @@ router.use(planDraftGenerateDayRouter);
 router.use(planDraftBalanceWeekRouter);
 router.use(planDraftRecordGenerationRouter);
 router.use(clientPortalRouter);
+router.use(clientInvitationsRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────

@@ -241,6 +241,27 @@ router.put("/clients/:clientId/survey", requireAuth, async (req, res): Promise<v
     return;
   }
 
+  // Beginner / inactive clients: maximum 1 priority muscle group.
+  // Enforce server-side so a manipulated request cannot bypass the frontend limit.
+  {
+    const BEGINNER_LEVELS = new Set(["Brak aktywności fizycznej", "Początkujący"]);
+    const lvl = parsed.data.experienceLevel;
+    if (lvl && BEGINNER_LEVELS.has(lvl)) {
+      const filledPriorities = [
+        parsed.data.priorityMuscle1,
+        parsed.data.priorityMuscle2,
+        parsed.data.priorityMuscle3,
+      ].filter((p) => typeof p === "string" && p.trim() !== "");
+      if (filledPriorities.length > 1) {
+        res.status(400).json({
+          error:
+            "Klienci na poziomie Początkujący lub Brak aktywności fizycznej mogą mieć maksymalnie jedną priorytetową partię mięśniową.",
+        });
+        return;
+      }
+    }
+  }
+
   // Validate & normalise avoidedExerciseIds
   const rawAvoidedIds = parsed.data.avoidedExerciseIds ?? [];
   const deduplicatedIds = [...new Set(rawAvoidedIds)];
@@ -279,6 +300,15 @@ router.put("/clients/:clientId/survey", requireAuth, async (req, res): Promise<v
   // only from the authenticated session, never from the request payload.
   const { trainerId: _ignoredTrainerId, ...rest3 } = rest2 as typeof rest2 & { trainerId?: unknown };
 
+  // Confirmed restrictions: extracted from raw body (not in the generated Zod schema).
+  // Validated as a JSON array; stored as-is (text). Invalid / missing → null.
+  const confirmedRestrictions = (() => {
+    const raw = (req.body as Record<string, unknown>).confirmedRestrictions;
+    if (typeof raw !== "string" || !raw) return null;
+    try { const v = JSON.parse(raw); return Array.isArray(v) ? raw : null; }
+    catch { return null; }
+  })();
+
   const normalizedData = {
     ...rest3,
     dateOfBirth: dateOfBirthDate ? dateOfBirthDate.toISOString().split("T")[0] : undefined,
@@ -287,6 +317,7 @@ router.put("/clients/:clientId/survey", requireAuth, async (req, res): Promise<v
     avoidedExerciseReasons: normalizedReasons,
     avoidedExerciseOtherText: parsed.data.avoidedExerciseOtherText ?? null,
     avoidedExerciseOtherReason: parsed.data.avoidedExerciseOtherReason ?? null,
+    confirmedRestrictions,
   };
 
   const [survey] = await db
@@ -325,6 +356,26 @@ router.patch("/clients/:clientId/surveys/:surveyId", requireAuth, async (req, re
     return;
   }
 
+  // Beginner / inactive clients: maximum 1 priority muscle group (PATCH).
+  {
+    const BEGINNER_LEVELS = new Set(["Brak aktywności fizycznej", "Początkujący"]);
+    const lvl = parsed.data.experienceLevel;
+    if (lvl && BEGINNER_LEVELS.has(lvl)) {
+      const filledPriorities = [
+        parsed.data.priorityMuscle1,
+        parsed.data.priorityMuscle2,
+        parsed.data.priorityMuscle3,
+      ].filter((p) => typeof p === "string" && p.trim() !== "");
+      if (filledPriorities.length > 1) {
+        res.status(400).json({
+          error:
+            "Klienci na poziomie Początkujący lub Brak aktywności fizycznej mogą mieć maksymalnie jedną priorytetową partię mięśniową.",
+        });
+        return;
+      }
+    }
+  }
+
   const rawAvoidedIds = parsed.data.avoidedExerciseIds ?? [];
   const deduplicatedIds = [...new Set(rawAvoidedIds)];
 
@@ -359,6 +410,14 @@ router.patch("/clients/:clientId/surveys/:surveyId", requireAuth, async (req, re
   // Strip any trainerId the caller may have included in the body.
   const { trainerId: _ignoredTrainerId, ...rest3 } = rest2 as typeof rest2 & { trainerId?: unknown };
 
+  // Confirmed restrictions (same extraction as PUT handler).
+  const confirmedRestrictions = (() => {
+    const raw = (req.body as Record<string, unknown>).confirmedRestrictions;
+    if (typeof raw !== "string" || !raw) return null;
+    try { const v = JSON.parse(raw); return Array.isArray(v) ? raw : null; }
+    catch { return null; }
+  })();
+
   const normalizedData = {
     ...rest3,
     dateOfBirth: dateOfBirthDate ? dateOfBirthDate.toISOString().split("T")[0] : undefined,
@@ -367,6 +426,7 @@ router.patch("/clients/:clientId/surveys/:surveyId", requireAuth, async (req, re
     avoidedExerciseReasons: normalizedReasons,
     avoidedExerciseOtherText: parsed.data.avoidedExerciseOtherText ?? null,
     avoidedExerciseOtherReason: parsed.data.avoidedExerciseOtherReason ?? null,
+    confirmedRestrictions,
   };
 
   const [updated] = await db

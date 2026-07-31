@@ -1018,6 +1018,8 @@ components:
           type: ["string", "null"]
         cardioPreference:
           type: ["string", "null"]
+        adaptiveStartDecision:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time

@@ -1,0 +1,73 @@
+## 7. Trainer decision for the adaptive-start recommendation
+
+For clients classified as:
+
+- Brak aktywności fizycznej
+- Początkujący
+
+show a visible recommendation on the training-interview detail page:
+
+“Rekomendowany start adaptacyjny”
+
+Explain it in plain Polish:
+
+“Start adaptacyjny skupia się na nauce podstawowych wzorców ruchowych, kontroli techniki oraz prostych i stabilnych ćwiczeniach z masą ciała lub lekkim oporem. Obciążenie jest wprowadzane stopniowo.”
+
+Do not describe the adaptive start as always requiring zero external load. A light dumbbell, resistance band, cable, machine, or supported variation may be appropriate when it improves control and safety.
+
+### Trainer decision
+
+The system may recommend the adaptive start, but the trainer must make the final decision.
+
+Provide two clear actions:
+
+- “Zastosuj start adaptacyjny”
+- “Pomiń i przygotuj standardowy plan”
+
+Do not silently activate the adaptive-start generator mode.
+
+Persist the trainer’s decision with states equivalent to:
+
+- pending
+- accepted
+- declined
+
+The client-list status and interview-detail page must show the current state:
+
+- “Start adaptacyjny · Oczekuje na decyzję”
+- “Start adaptacyjny · Zastosowany”
+- “Start adaptacyjny · Pominięty”
+
+### Generator behavior
+
+When accepted:
+
+- prioritize simple, stable and easy-to-learn movement variations,
+- prioritize technique, control and repeatability,
+- use bodyweight or light external resistance where appropriate,
+- preserve the existing suitableForNoActivity safety requirements,
+- avoid unnecessary complexity, instability, high-impact plyometrics and advanced variations,
+- introduce progressive overload gradually,
+- do not automatically fill the plan only with unloaded exercises.
+
+When declined:
+
+- use the normal generator appropriate to the client’s declared level,
+- continue to respect all pain, medical, equipment and movement restrictions.
+
+Pain-related restrictions remain separate from the adaptive-start decision. A localized complaint must not automatically regress the entire plan.
+
+### Required focused tests
+
+Add tests proving:
+
+1. No-activity clients receive the adaptive-start recommendation.
+2. Beginner clients receive the recommendation.
+3. Intermediate and advanced clients do not receive it automatically.
+4. The recommendation explains what adaptive start means.
+5. The trainer can accept or decline it.
+6. No adaptive-start mode is activated before the trainer decides.
+7. The decision is persisted and visible on the client list and interview detail.
+8. Accepted mode uses simple and stable exercises with gradual loading.
+9. Declining the recommendation preserves the normal generator.
+10. Pain warnings do not automatically activate adaptive start for the whole plan.

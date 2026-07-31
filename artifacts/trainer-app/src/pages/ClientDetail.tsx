@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useId } from "react";
 import { useParams, Link } from "wouter";
 import {
   useGetClient,
@@ -16,16 +16,18 @@ import {
   useGetClientAvoidedExercises,
   useUpsertClientSurvey,
   getClientAvoidedExercisesQueryKey,
+  customFetch,
 } from "@workspace/api-client-react";
 import { AvoidedExercisesPicker, type AvoidedExercise } from "@/components/AvoidedExercisesPicker";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Printer, FileEdit, Phone, Mail, Calendar, ClipboardList, History, StickyNote, Trash2, Pencil, Dumbbell, Sparkles, Link2 } from "lucide-react";
+import { ArrowLeft, Printer, FileEdit, Phone, Mail, Calendar, ClipboardList, History, StickyNote, Trash2, Pencil, Dumbbell, Sparkles, Link2, Moon, Activity, Copy, Send, UserCheck, ShieldOff, RefreshCw } from "lucide-react";
+import { CollapsibleSurveySection, DetailRow } from "@/components/CollapsibleSurveySection";
 import ExerciseRecommendationsTab from "./ExerciseRecommendationsTab";
 import WorkoutHistoryTab from "./WorkoutHistoryTab";
 import { formatDate } from "@/lib/utils";
@@ -71,6 +73,45 @@ function calculateBmi(heightCm: number | null | undefined, weightKg: number | nu
 
 const BMI_RECOMMENDATION_TEXT =
   "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj jednak, że BMI nie rozróżnia tkanki tłuszczowej od masy mięśniowej. W wielu przypadkach dobrym rozwiązaniem może być redukcja tkanki tłuszczowej lub rekompozycja sylwetki.";
+
+// ─── Recovery quality — client-side derivation (mirrors server logic) ─────────
+
+function deriveRecoveryQualityClient(
+  sleepHoursRaw: string | number | null | undefined,
+  stressLevel: number | null | undefined,
+  activityLevel: string | null | undefined,
+): "excellent" | "good" | "standard" | "poor" | null {
+  const parsed =
+    sleepHoursRaw == null
+      ? null
+      : typeof sleepHoursRaw === "number"
+        ? sleepHoursRaw
+        : parseInt(String(sleepHoursRaw), 10);
+  const sleep = parsed != null && !isNaN(parsed) ? parsed : null;
+  const stress = stressLevel ?? null;
+  if (sleep === null && stress === null) return null;
+  const s = sleep ?? 7;
+  const st = stress ?? 5;
+  const physicalWork = activityLevel === "Praca fizyczna";
+  if (s >= 8 && st <= 3 && !physicalWork) return "excellent";
+  if (s >= 7 && st <= 5) return "good";
+  if (s >= 6 && st <= 7) return "standard";
+  return "poor";
+}
+
+const RECOVERY_LABEL: Record<string, string> = {
+  excellent: "Doskonała",
+  good: "Dobra",
+  standard: "Umiarkowana",
+  poor: "Słaba",
+};
+
+const RECOVERY_BADGE_CLASS: Record<string, string> = {
+  excellent: "bg-green-50 text-green-700 border-green-200",
+  good: "bg-blue-50 text-blue-700 border-blue-200",
+  standard: "bg-amber-50 text-amber-700 border-amber-200",
+  poor: "bg-red-50 text-red-700 border-red-200",
+};
 
 const PLAN_STATUS_LABEL: Record<string, string> = {
   draft: "Szkic",
@@ -636,22 +677,55 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 
 function SurveyTab({ client, survey, surveyLoading, id, bmi, showBmiRecommendation }: any) {
   const clientEmail = client?.email;
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [adaptiveDecisionPending, setAdaptiveDecisionPending] = useState(false);
+
+  const handleAdaptiveDecision = async (decision: "accepted" | "declined") => {
+    setAdaptiveDecisionPending(true);
+    try {
+      await customFetch(`/api/clients/${client.id}/adaptive-start`, {
+        method: "PATCH",
+        body: JSON.stringify({ decision }),
+      });
+      queryClient.invalidateQueries({ queryKey: getGetClientQueryKey(client.id) });
+      queryClient.invalidateQueries({ queryKey: getListClientsQueryKey() });
+      toast({
+        title:
+          decision === "accepted"
+            ? "Start adaptacyjny zastosowany"
+            : "Pominięto start adaptacyjny",
+      });
+    } catch {
+      toast({
+        title: "Błąd",
+        description: "Nie udało się zapisać decyzji",
+        variant: "destructive",
+      });
+    } finally {
+      setAdaptiveDecisionPending(false);
+    }
+  };
+
   if (!client.hasSurvey) {
     return (
-      <Card className="border-border/50 shadow-sm border-dashed">
-        <CardContent className="p-12 flex flex-col items-center justify-center text-center">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-            <FileEdit className="w-8 h-8 text-muted-foreground/50" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">Brak wywiadu startowego</h3>
-          <p className="text-muted-foreground max-w-md mb-6">
-            Zbierz wywiad od klienta przed pierwszym treningiem, aby optymalnie ułożyć plan treningowy i zapobiec kontuzjom.
-          </p>
-          <Button asChild>
-            <Link href={`/clients/${id}/survey`}>Rozpocznij Wywiad</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <InvitationCard clientId={client.id} />
+        <Card className="border-border/50 shadow-sm border-dashed">
+          <CardContent className="p-12 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+              <FileEdit className="w-8 h-8 text-muted-foreground/50" />
+            </div>
+            <h3 className="text-lg font-medium text-foreground mb-2">Brak wywiadu startowego</h3>
+            <p className="text-muted-foreground max-w-md mb-6">
+              Zbierz wywiad od klienta przed pierwszym treningiem, aby optymalnie ułożyć plan treningowy i zapobiec kontuzjom.
+            </p>
+            <Button asChild>
+              <Link href={`/clients/${id}/survey`}>Rozpocznij Wywiad</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -661,7 +735,258 @@ function SurveyTab({ client, survey, surveyLoading, id, bmi, showBmiRecommendati
 
   if (!survey) return null;
 
-  return <SurveyDetails survey={survey} bmi={bmi} showBmiRecommendation={showBmiRecommendation} clientEmail={clientEmail} editable />;
+  const isAdaptiveEligible =
+    survey.experienceLevel === "Brak aktywności fizycznej" ||
+    survey.experienceLevel === "Początkujący";
+  const adaptiveDecision = (client as any).adaptiveStartDecision ?? null;
+
+  return (
+    <div className="space-y-6">
+      <InvitationCard clientId={client.id} />
+      {isAdaptiveEligible && (
+        <AdaptiveStartCard
+          decision={adaptiveDecision}
+          onAccept={() => handleAdaptiveDecision("accepted")}
+          onDecline={() => handleAdaptiveDecision("declined")}
+          isPending={adaptiveDecisionPending}
+        />
+      )}
+      <SurveyDetails
+        survey={survey}
+        bmi={bmi}
+        showBmiRecommendation={showBmiRecommendation}
+        clientEmail={clientEmail}
+        editable
+      />
+    </div>
+  );
+}
+
+// ─── Client portal invitation card ───────────────────────────────────────────
+
+type InviteStatus = {
+  accountStatus: "active" | "invited" | "none";
+  invitation: { id: number; expiresAt: string; createdAt: string; revokedAt: string | null; usedAt: string | null } | null;
+  clerkUserId: string | null;
+};
+
+function InvitationCard({ clientId }: { clientId: number }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [busy, setBusy] = useState(false);
+
+  const { data, isLoading } = useQuery<InviteStatus>({
+    queryKey: ["client-invite-status", clientId],
+    queryFn: () => customFetch(`/api/clients/${clientId}/invite/status`),
+    staleTime: 30_000,
+  });
+
+  const refetch = () => queryClient.invalidateQueries({ queryKey: ["client-invite-status", clientId] });
+
+  const createInvite = async () => {
+    setBusy(true);
+    try {
+      const result: { token: string } = await customFetch(`/api/clients/${clientId}/invite`, { method: "POST" });
+      // Copy activation link to clipboard.
+      const url = `${window.location.origin}/client-landing/invite/${result.token}`;
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Link skopiowany", description: "Link aktywacyjny został skopiowany do schowka." });
+      refetch();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Nieznany błąd";
+      toast({ title: "Błąd", description: msg, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copyLink = async () => {
+    if (!data?.invitation) return;
+    // We don't have the raw token anymore; ask for a new one.
+    createInvite();
+  };
+
+  const revokeInvite = async () => {
+    setBusy(true);
+    try {
+      await customFetch(`/api/clients/${clientId}/invite`, { method: "DELETE" });
+      toast({ title: "Zaproszenie odwołane" });
+      refetch();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Nieznany błąd";
+      toast({ title: "Błąd", description: msg, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="h-16 bg-muted animate-pulse rounded-xl" />;
+  }
+
+  const status = data?.accountStatus ?? "none";
+
+  return (
+    <Card className="border-border/50 shadow-sm">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <UserCheck className="w-4 h-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Dostęp do portalu klienta</CardTitle>
+          </div>
+          {status === "active" && (
+            <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-700">
+              <UserCheck className="w-3 h-3" /> Konto aktywne
+            </span>
+          )}
+          {status === "invited" && (
+            <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-amber-100 text-amber-700">
+              <Send className="w-3 h-3" /> Zaproszenie wysłane
+            </span>
+          )}
+          {status === "none" && (
+            <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-muted text-muted-foreground">
+              Brak dostępu
+            </span>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {status === "none" && (
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-muted-foreground flex-1">
+              Klient nie ma jeszcze dostępu do portalu treningowego.
+            </p>
+            <Button size="sm" onClick={createInvite} disabled={busy}>
+              <Send className="w-3.5 h-3.5 mr-1.5" />
+              Wyślij dostęp
+            </Button>
+          </div>
+        )}
+
+        {status === "invited" && data?.invitation && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Zaproszenie ważne do{" "}
+              <span className="font-medium text-foreground">
+                {new Date(data.invitation.expiresAt).toLocaleDateString("pl-PL")}
+              </span>
+              . Po aktywacji klient uzyska dostęp do swojego planu.
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button size="sm" variant="outline" onClick={copyLink} disabled={busy}>
+                <Copy className="w-3.5 h-3.5 mr-1.5" />
+                Skopiuj link
+              </Button>
+              <Button size="sm" variant="outline" onClick={createInvite} disabled={busy}>
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                Wyślij ponownie
+              </Button>
+              <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={revokeInvite} disabled={busy}>
+                <ShieldOff className="w-3.5 h-3.5 mr-1.5" />
+                Odwołaj zaproszenie
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {status === "active" && (
+          <p className="text-sm text-muted-foreground">
+            Klient ma aktywne konto i może logować się do portalu treningowego.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Adaptive-start recommendation card ───────────────────────────────────────
+
+function AdaptiveStartCard({
+  decision,
+  onAccept,
+  onDecline,
+  isPending,
+}: {
+  decision: string | null;
+  onAccept: () => void;
+  onDecline: () => void;
+  isPending: boolean;
+}) {
+  const isDecided = decision === "accepted" || decision === "declined";
+
+  return (
+    <Card
+      className="border-sky-200 bg-sky-50/50 shadow-sm"
+      data-testid="adaptive-start-card"
+    >
+      <CardHeader className="pb-3">
+        <div className="flex items-start gap-2">
+          <Sparkles className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-base text-sky-900">
+              Rekomendowany start adaptacyjny
+            </CardTitle>
+            {isDecided && (
+              <span
+                className={`inline-flex items-center mt-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                  decision === "accepted"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-slate-100 text-slate-500"
+                }`}
+                data-testid="adaptive-start-decision-badge"
+              >
+                {decision === "accepted" ? "Zastosowany" : "Pominięty"}
+              </span>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        <p className="text-sm text-sky-800 leading-relaxed" data-testid="adaptive-start-description">
+          Start adaptacyjny skupia się na nauce podstawowych wzorców ruchowych,
+          kontroli techniki oraz prostych i stabilnych ćwiczeniach z masą ciała lub
+          lekkim oporem. Obciążenie jest wprowadzane stopniowo.
+        </p>
+
+        {!isDecided ? (
+          <div className="flex flex-col sm:flex-row gap-2 pt-1">
+            <Button
+              size="sm"
+              onClick={onAccept}
+              disabled={isPending}
+              data-testid="adaptive-start-accept"
+            >
+              Zastosuj start adaptacyjny
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onDecline}
+              disabled={isPending}
+              data-testid="adaptive-start-decline"
+            >
+              Pomiń i przygotuj standardowy plan
+            </Button>
+          </div>
+        ) : (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={decision === "accepted" ? onDecline : onAccept}
+            disabled={isPending}
+            className="text-muted-foreground text-xs h-7 px-2"
+            data-testid="adaptive-start-change"
+          >
+            {decision === "accepted"
+              ? "Zmień na standardowy plan"
+              : "Zmień na start adaptacyjny"}
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientEmail, editable }: any) {
@@ -810,42 +1135,92 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
         </Card>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <SurveyBlock label="Cel treningowy" value={survey.trainingGoal} />
-        {Array.isArray(survey.sportsPriorities) && (survey.sportsPriorities as string[]).length > 0 && (
-          <SurveyBlock
-            label="Priorytety sportowe"
-            value={
-              <div className="flex flex-wrap gap-2 mt-1">
-                {(survey.sportsPriorities as string[]).map((v: string) => (
-                  <Badge key={v} variant="secondary" className="font-normal">
-                    {({"dynamika": "Dynamika", "szybkosc": "Szybkość", "stabilizacja": "Stabilizacja"} as Record<string, string>)[v] ?? v}
-                  </Badge>
-                ))}
-              </div>
-            }
-          />
-        )}
-        {survey.trainingMotivation && (
-          <SurveyBlock label="Dlaczego chcesz trenować?" value={survey.trainingMotivation} />
-        )}
-        <SurveyBlock label="Poziom doświadczenia" value={survey.experienceLevel} />
+      {/* Profil treningowy — collapsible, primary summary = experience level */}
+      <CollapsibleSurveySection
+        icon={<Activity size={14} />}
+        title="Profil treningowy"
+        summaryLabel={survey.experienceLevel ? "Poziom" : undefined}
+        summaryValue={survey.experienceLevel ?? undefined}
+        data-testid="profil-section"
+      >
+        <DetailRow label="Cel treningowy" value={survey.trainingGoal} />
+        <DetailRow label="Poziom doświadczenia" value={survey.experienceLevel} />
         {survey.experienceLevel === "Brak aktywności fizycznej" && (
-          <p className="sm:col-span-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 my-2">
             Etap wprowadzający — priorytetem jest technika, kontrola ruchu i przygotowanie motoryczne.
           </p>
         )}
-        <SurveyBlock label="Staż treningowy" value={survey.trainingDuration} />
-        <SurveyBlock label="Preferowana liczba treningów tygodniowo" value={survey.desiredWeeklyFrequency?.toString()} />
-        <SurveyBlock label="Czas trwania sesji" value={survey.sessionDuration} />
-      </div>
+        <DetailRow label="Staż treningowy" value={survey.trainingDuration} />
+        <DetailRow
+          label="Treningi / tydzień"
+          value={survey.desiredWeeklyFrequency?.toString()}
+        />
+        <DetailRow label="Czas sesji" value={survey.sessionDuration} />
+        {survey.trainingMotivation && (
+          <DetailRow label="Motywacja" value={survey.trainingMotivation} />
+        )}
+        {Array.isArray(survey.sportsPriorities) &&
+          (survey.sportsPriorities as string[]).length > 0 && (
+            <div className="py-2 border-b border-border/30 last:border-0">
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-sm text-muted-foreground shrink-0 min-w-[140px]">
+                  Priorytety sportowe
+                </span>
+                <div className="flex flex-wrap gap-1.5 justify-end">
+                  {(survey.sportsPriorities as string[]).map((v: string) => (
+                    <Badge key={v} variant="secondary" className="font-normal text-xs">
+                      {(
+                        {
+                          dynamika: "Dynamika",
+                          szybkosc: "Szybkość",
+                          stabilizacja: "Stabilizacja",
+                        } as Record<string, string>
+                      )[v] ?? v}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+      </CollapsibleSurveySection>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <SurveyBlock label="Aktywność w ciągu dnia" value={survey.activityLevel} />
-        <SurveyBlock label="Sen (śr. godz./dobę)" value={survey.sleepHours} />
-        <SurveyBlock label="Poziom stresu (1-10)" value={survey.stressLevel?.toString()} />
-        <SurveyBlock label="Preferowany styl planu" value={survey.planStylePreference} />
-      </div>
+      {/* Regeneracja i styl życia — collapsible, primary summary = recovery quality badge */}
+      {(() => {
+        const recoveryQuality = deriveRecoveryQualityClient(
+          survey.sleepHours,
+          survey.stressLevel,
+          survey.activityLevel,
+        );
+        const recoveryLabel = recoveryQuality ? RECOVERY_LABEL[recoveryQuality] : undefined;
+        const badgeClass = recoveryQuality ? RECOVERY_BADGE_CLASS[recoveryQuality] : undefined;
+        const physicalWork = survey.activityLevel === "Praca fizyczna";
+        return (
+          <CollapsibleSurveySection
+            icon={<Moon size={14} />}
+            title="Regeneracja i styl życia"
+            summaryLabel={recoveryLabel ? "Jakość regeneracji" : undefined}
+            summaryValue={recoveryLabel}
+            badgeClass={badgeClass}
+            data-testid="regeneracja-section"
+          >
+            <DetailRow label="Aktywność codzienna" value={survey.activityLevel} />
+            <DetailRow
+              label="Praca fizyczna"
+              value={physicalWork ? "Tak" : survey.activityLevel ? "Nie" : undefined}
+            />
+            <DetailRow
+              label="Sen"
+              value={survey.sleepHours ? `${survey.sleepHours} h` : undefined}
+            />
+            <DetailRow
+              label="Poziom stresu"
+              value={survey.stressLevel != null ? `${survey.stressLevel}/10` : undefined}
+            />
+            <DetailRow label="Jakość regeneracji" value={recoveryLabel} />
+            <DetailRow label="Preferowany styl planu" value={survey.planStylePreference} />
+          </CollapsibleSurveySection>
+        );
+      })()}
 
       <Card className="border-border/50 shadow-sm print-break-inside-avoid">
         <CardHeader className="bg-destructive/5 pb-3">

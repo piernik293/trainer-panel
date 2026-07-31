@@ -1,0 +1,551 @@
+## Focused task — beginner priority limit, adaptive start decision, and pain-aware plan generation
+
+### Strict scope
+
+Implement only the following connected improvements:
+
+1. Limit aesthetic/muscle priorities for “Brak aktywności fizycznej” and “Początkujący”.
+2. Add a trainer-controlled “Start adaptacyjny” recommendation.
+3. Detect possible pain and limitation language in the interview.
+4. Show pain and activity recommendations in a sticky right-side panel during plan generation.
+5. Use confirmed limitations to select localized regressions safely.
+
+Do not redesign the whole interview, generator, dashboard, authentication, client portal, navigation, or database architecture.
+
+Preserve existing multi-trainer isolation and the hard `suitableForNoActivity === true` safety rules.
+
+---
+
+# 1. Priority limit by experience level
+
+For clients classified as:
+
+- `Brak aktywności fizycznej`
+- `Początkujący`
+
+allow a maximum of one selected priority muscle group.
+
+For:
+
+- `Średniozaawansowany`
+- `Zaawansowany`
+
+preserve the current higher limit.
+
+## Interview frontend behavior
+
+Show helper text:
+
+`Na tym poziomie możesz wybrać maksymalnie jedną partię priorytetową.`
+
+After one priority is selected:
+
+- keep the selected priority removable,
+- disable or block additional priority selections,
+- do not silently replace the selected priority,
+- show a clear message when the user attempts to select another one.
+
+Message:
+
+`Na tym poziomie możesz wybrać jeden priorytet. Pozostałe partie będą rozwijane w ramach planu ogólnorozwojowego.`
+
+If the user changes experience level from intermediate/advanced to beginner/no-activity while multiple priorities are selected:
+
+- do not silently save an invalid state,
+- ask the user to keep one priority,
+- prevent interview submission until the selection is valid.
+
+## Backend validation
+
+Do not rely only on the frontend.
+
+Validate submitted interview data:
+
+- no activity / beginner → maximum 1 priority,
+- intermediate / advanced → existing limit.
+
+A manipulated request containing multiple priorities for a beginner or inactive client must return a clear validation error and must not reach plan generation.
+
+---
+
+# 2. Adaptive-start recommendation
+
+For clients classified as:
+
+- `Brak aktywności fizycznej`
+- `Początkujący`
+
+show a visible recommendation on the training-interview detail page:
+
+## Title
+
+`Rekomendowany start adaptacyjny`
+
+## Explanation
+
+`Start adaptacyjny skupia się na nauce podstawowych wzorców ruchowych, kontroli techniki oraz prostych i stabilnych ćwiczeniach z masą ciała lub lekkim oporem. Obciążenie jest wprowadzane stopniowo.`
+
+Do not describe it as always requiring zero external load.
+
+A light dumbbell, resistance band, cable, machine or supported variation may be appropriate when it improves control, stability and safety.
+
+## Trainer decision
+
+The system recommends the adaptive start, but the trainer makes the final decision.
+
+Provide two clear actions:
+
+- `Zastosuj start adaptacyjny`
+- `Pomiń i przygotuj standardowy plan`
+
+Do not silently enable adaptive-start mode.
+
+Persist a decision state equivalent to:
+
+- `pending`
+- `accepted`
+- `declined`
+
+## Visible status
+
+On the clients list and interview-detail page show:
+
+- `Start adaptacyjny · Oczekuje na decyzję`
+- `Start adaptacyjny · Zastosowany`
+- `Start adaptacyjny · Pominięty`
+
+The current label `Start adaptacyjny · Nie rozpoczęto` may be replaced with the clearer pending state.
+
+## Generator behavior when accepted
+
+When adaptive start is accepted:
+
+- prioritize simple and stable movement patterns,
+- prioritize technique, control and repeatability,
+- use bodyweight or light external resistance when appropriate,
+- use beginner-level or no-activity-safe variations,
+- preserve the hard `suitableForNoActivity === true` rule where required,
+- avoid advanced variations,
+- avoid unnecessary instability,
+- avoid high-impact plyometrics as primary strength work,
+- avoid complex loading setups,
+- introduce progressive overload gradually,
+- do not fill the whole plan only with unloaded exercises when safe light loading is available.
+
+Examples of suitable patterns may include:
+
+- supported squat variation,
+- goblet squat to a comfortable depth,
+- simple hip hinge with light load,
+- supported row,
+- machine or band pull where available,
+- stable pressing variation,
+- simple core control work.
+
+Do not hardcode these exact exercises.
+
+## Generator behavior when declined
+
+When the trainer declines adaptive start:
+
+- use the normal generator appropriate to the client’s declared experience level,
+- continue respecting pain, medical, movement and equipment restrictions,
+- do not treat “declined” as permission to ignore safety rules.
+
+Intermediate and advanced clients should not receive the adaptive-start recommendation automatically.
+
+---
+
+# 3. Detection of possible pain and limitation language
+
+Inspect relevant free-text interview answers for Polish words and common inflections related to:
+
+- ból
+- boli
+- bolą
+- bolesny
+- problem
+- problemy
+- strzela
+- strzelanie
+- strzyka
+- strzykanie
+- kłuje
+- kłucie
+- drętwieje
+- drętwienie
+- mrowienie
+- uraz
+- kontuzja
+- zwichnięcie
+- obrzęk
+- puchnie
+- niestabilność
+- ograniczenie ruchu
+- przeskakuje
+- chrupie
+
+Normalize:
+
+- letter case,
+- surrounding punctuation,
+- Polish character variants where appropriate.
+
+Keyword detection is only a warning system. It is not a medical diagnosis.
+
+## Negation handling
+
+Do not treat clear negations as confirmed pain, for example:
+
+- `nic mnie nie boli`
+- `nie boli mnie`
+- `nie mam problemów`
+- `brak bólu`
+- `bez bólu`
+- `nie mam żadnej kontuzji`
+
+When meaning is ambiguous, show an amber warning requiring trainer review rather than assuming a confirmed restriction.
+
+Preserve the original answer written by the client.
+
+---
+
+# 4. Trainer-visible pain warning
+
+When possible pain or limitation language is detected, show a visible warning during plan generation.
+
+Use a bandage/medical-warning style icon, but do not rely only on icon or color.
+
+Example:
+
+`Zwróć uwagę: klient zgłasza ból`
+
+Original client answer:
+
+`„Mam problem z prawym kolanem, boli mnie.”`
+
+Additional text:
+
+- `Sprawdź, które ruchy lub ćwiczenia nasilają objawy.`
+- `Dobierz wariant bezbolesny, regresję lub ograniczony zakres ruchu, jeśli jest dobrze tolerowany.`
+- `Jeżeli ból utrzymuje się lub narasta, rozważ skierowanie klienta do odpowiedniego specjalisty.`
+
+Do not automatically diagnose the client or claim that a specific exercise is medically safe.
+
+Use:
+
+- amber for an unconfirmed limitation requiring trainer review,
+- red only for a confirmed blocking restriction or explicit medical contraindication.
+
+---
+
+# 5. Structured trainer confirmation
+
+Keyword detection must not globally lower the difficulty of the entire plan.
+
+Allow the trainer to confirm or edit:
+
+- affected body area,
+- side: left / right / both / not specified,
+- movement or exercise that triggers symptoms,
+- whether the issue is currently active,
+- impact on training,
+- selected action:
+  - avoid movement,
+  - use regression,
+  - reduce range of motion,
+  - reduce load,
+  - informational only,
+  - requires medical clearance.
+
+Suggested body areas:
+
+- shoulder,
+- elbow,
+- wrist/hand,
+- spine/back,
+- hip,
+- knee,
+- ankle/foot,
+- other.
+
+Suggested movement patterns:
+
+- squat / knee dominant,
+- hinge / hip dominant,
+- horizontal push,
+- vertical push,
+- horizontal pull,
+- vertical pull,
+- loaded carry,
+- jumping/running,
+- rotation,
+- other.
+
+The generator must use confirmed structured restrictions when available.
+
+Raw keyword detection alone must not become a permanent hard restriction without trainer review, except where an explicit medical contraindication already exists in the interview.
+
+---
+
+# 6. Pain-aware exercise selection
+
+Safety priority order:
+
+1. Confirmed medical and pain restrictions.
+2. Experience level and no-activity safety.
+3. Available equipment.
+4. Safe movement pattern.
+5. Muscle priority.
+6. Weekly volume and available time.
+
+Pain restrictions must override aesthetic priorities and volume targets.
+
+## Localized regression
+
+Apply regressions only to the affected area or movement pattern.
+
+Examples:
+
+- reported knee pain during squats may affect knee-dominant exercise selection,
+- reported shoulder pain during overhead pressing may affect vertical pressing,
+- unrelated upper- or lower-body exercises should not automatically be regressed.
+
+Do not globally lower the full plan because one localized complaint was detected.
+
+## Exercise selection behavior
+
+For a confirmed restriction:
+
+- exclude explicitly contraindicated candidates,
+- prefer an eligible regression where appropriate,
+- prefer stable and controllable variants,
+- reduce complexity where necessary,
+- preserve available equipment compatibility,
+- never fill an empty slot with an unsafe candidate,
+- if no safe candidate exists, leave a clear blocking warning and fail that slot rather than using an unsafe fallback.
+
+If a regression is selected because of a confirmed limitation, show:
+
+`Wariant regresyjny — dobrany ze względu na zgłoszone ograniczenie.`
+
+If an exercise may conflict with a warning, show a blocking warning and require trainer confirmation before saving or assigning the plan.
+
+---
+
+# 7. Right-side warning and recommendation panel
+
+On the `Generuj szkic planu` screen, move these two cards from the main content column into a dedicated right-side panel:
+
+1. `Zwróć uwagę: klient zgłasza ból`
+2. `Rekomendacje aktywności`
+
+Use the empty space on the right side of the main form shown in the reference screenshot.
+
+## Desktop layout
+
+Create a two-column layout:
+
+- left column: client data, training profile, equipment, goals and remaining setup sections,
+- right column: warnings and recommendations.
+
+Recommended right panel width:
+
+- approximately 320–380 px,
+- responsive to available viewport width.
+
+Order:
+
+1. pain warning,
+2. activity recommendation.
+
+The right-side panel should:
+
+- remain visible while scrolling using sticky positioning,
+- have a sticky offset that accounts for the page title and step navigation,
+- not overlap the main content,
+- not extend outside the viewport,
+- preserve the existing red and blue visual styles,
+- maintain readable line length.
+
+Example:
+
+`Main content | Right-side panel`
+
+`Dane klienta | Ostrzeżenie o bólu`
+
+`Profil       | Rekomendacje aktywności`
+
+`Sprzęt       |`
+
+`Cele         |`
+
+## Conditional visibility
+
+- Show the pain card only when pain or limitation language has been detected.
+- Show the activity card only when an activity recommendation exists.
+- If only one card exists, show only that card.
+- If neither card exists, do not render an empty right column.
+- When neither card exists, allow the main content to use the available width.
+
+## Mobile and tablet
+
+On narrow screens:
+
+- disable sticky side-panel behavior,
+- place the cards above the main client-data sections,
+- pain warning first,
+- activity recommendation second,
+- use full width,
+- prevent horizontal scrolling,
+- preserve logical screen-reader order.
+
+## Accessibility
+
+- do not rely only on red/blue color,
+- retain heading text and icon,
+- keep the original client quote readable,
+- provide meaningful accessible labels,
+- maintain keyboard navigation and focus visibility.
+
+---
+
+# 8. Activity recommendation
+
+Preserve the existing activity recommendation, for example:
+
+`Ze względu na siedzący tryb życia i cel redukcyjny dodano obowiązkowy cel aktywności: 8000–10000 kroków dziennie.`
+
+Do not let the activity recommendation override:
+
+- pain restrictions,
+- medical contraindications,
+- mobility limitations.
+
+If walking itself is reported as painful or contraindicated, show a warning requiring trainer review instead of applying the target blindly.
+
+---
+
+# 9. Clients-list and interview-detail consistency
+
+The adaptive-start status must remain consistent across:
+
+- clients list,
+- interview detail,
+- plan generation flow.
+
+The trainer should be able to open the interview and understand:
+
+- why adaptive start was recommended,
+- whether it has been accepted or declined,
+- whether pain or limitation warnings were detected,
+- what restrictions will influence the generator.
+
+Do not hide this context only inside the generator.
+
+---
+
+# Required focused tests
+
+Add focused tests proving:
+
+## Priority limit
+
+1. No-activity client can select only one priority.
+2. Beginner can select only one priority.
+3. Intermediate and advanced retain the existing priority limit.
+4. Manipulated backend request with multiple beginner priorities is rejected.
+5. Changing experience level to beginner with multiple priorities requires correction.
+
+## Adaptive start
+
+6. No-activity clients receive the recommendation.
+7. Beginner clients receive the recommendation.
+8. Intermediate and advanced do not receive it automatically.
+9. The recommendation clearly explains adaptive start.
+10. The trainer can accept it.
+11. The trainer can decline it.
+12. Adaptive mode is not activated while the decision is pending.
+13. The decision persists and is visible on clients list and interview detail.
+14. Accepted mode uses simple and stable exercise selections.
+15. Declined mode uses the normal generator while preserving restrictions.
+
+## Pain detection
+
+16. `Boli mnie kolano` creates a warning.
+17. `Bolą mnie plecy` creates a warning.
+18. `Strzela mi w barku` creates a warning.
+19. `Kłuje mnie w kolanie` creates a warning.
+20. `Nic mnie nie boli` does not create a confirmed pain warning.
+21. `Nie mam problemów z kolanami` does not create a confirmed pain warning.
+22. Original client text remains visible to the trainer.
+
+## Localized generator behavior
+
+23. Confirmed knee restriction affects knee-dominant exercise selection.
+24. Knee restriction does not regress upper-body exercise difficulty.
+25. Confirmed shoulder limitation affects the relevant pressing pattern.
+26. Shoulder limitation does not regress unrelated lower-body exercises.
+27. Pain restrictions override conflicting muscle priorities.
+28. No unsafe fallback is used when no valid regression exists.
+29. Regression-selected exercises receive the limitation label.
+30. Existing `suitableForNoActivity` hard-filter tests remain passing.
+
+## Layout
+
+31. Pain warning renders in the right-side panel on desktop.
+32. Activity recommendation renders below the pain warning.
+33. The panel is sticky on desktop.
+34. Cards move above the main form content on mobile.
+35. Main content expands when no card exists.
+36. Empty placeholder panels are not rendered.
+37. Existing warning and recommendation text remains unchanged.
+38. Layout does not introduce horizontal scrolling.
+
+---
+
+# Constraints
+
+- Do not diagnose medical conditions.
+- Do not use keywords alone as a hard medical restriction.
+- Do not globally regress the full plan because of one localized complaint.
+- Do not weaken `suitableForNoActivity`.
+- Do not introduce an unsafe fallback.
+- Do not silently activate adaptive start.
+- Do not modify authentication or multi-trainer isolation.
+- Do not redesign unrelated screens.
+- Do not broadly refactor the generator.
+- Use the existing design system.
+- Run only focused interview, adaptive-start, restriction, generator and layout tests.
+
+## Budget discipline
+
+- Read only files directly related to interview priorities, interview detail, plan-generation profile step, exercise selection and focused tests.
+- No broad repository audit.
+- No subagents.
+- No full application test suite unless a focused test reveals a regression.
+- Prefer small reusable helpers over broad architecture changes.
+
+---
+
+# Final report
+
+Report:
+
+- experience-based priority limit,
+- frontend and backend validation,
+- adaptive-start recommendation behavior,
+- trainer decision states,
+- keyword normalization and negation handling,
+- structured restriction fields,
+- localized generator behavior,
+- regression-selection behavior,
+- right-side layout behavior,
+- tests added,
+- focused test results,
+- files changed,
+- remaining safety or UX risks.
+
+Required completion statement:
+
+`READY — beginner priorities, adaptive start, and reported limitations are safely controlled by the trainer`

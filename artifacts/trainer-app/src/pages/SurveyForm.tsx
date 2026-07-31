@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, Save, Pencil } from "lucide-react";
+import { ArrowLeft, Save, Pencil, AlertCircle, Plus, X } from "lucide-react";
 import { MuscleGroupCombobox } from "@/components/MuscleGroupCombobox";
 import { FavoriteExercisesPicker, type FavoriteExercise } from "@/components/FavoriteExercisesPicker";
 import { AvoidedExercisesPicker, type AvoidedExercise } from "@/components/AvoidedExercisesPicker";
@@ -748,6 +748,14 @@ function SurveyFormBody({
     experienceLevel === "Brak aktywności fizycznej" ||
     experienceLevel === "Początkujący";
   const showBmiRecommendation = isBeginner && bmi !== undefined && bmi >= 25;
+
+  // Priority conflict detection: when a beginner already has pm2 or pm3 filled
+  // (e.g. carried over from an intermediate-level edit), show all 3 slots with a
+  // blocking error so the trainer manually clears the extras — never silently wipe data.
+  const pm2 = form.watch("priorityMuscle2");
+  const pm3 = form.watch("priorityMuscle3");
+  const hasBeginnerPriorityConflict = isBeginner && !!(pm2 || pm3);
+
   const trainingFrequencyRecommendation = experienceLevel
     ? TRAINING_FREQUENCY_RECOMMENDATIONS[experienceLevel]
     : undefined;
@@ -763,6 +771,65 @@ function SurveyFormBody({
     form.setValue("equipment", buildEquipmentString(equipmentItems, equipmentOther));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [equipmentItems, equipmentOther]);
+
+  // ── Confirmed restrictions state ─────────────────────────────────────────────
+  type ConfirmedRestriction = {
+    bodyArea: string;
+    movementPattern: string;
+    action:
+      | "avoid"
+      | "regression"
+      | "reduce_range"
+      | "reduce_load"
+      | "informational"
+      | "medical_clearance";
+  };
+  const RESTRICTION_BODY_AREAS = [
+    "Bark", "Łokieć", "Nadgarstek/przedramię", "Klatka piersiowa",
+    "Odcinek piersiowy", "Lędźwia", "Biodro", "Kolano", "Stopa/kostka",
+    "Kark/szyja", "Inne",
+  ];
+  const RESTRICTION_MOVEMENT_PATTERNS = [
+    "Wyciskanie", "Ciągnienie", "Wiosłowanie", "Przysiad",
+    "Martwy ciąg", "Rotacja", "Skok/wybicie", "Inne",
+  ];
+  const RESTRICTION_ACTION_OPTIONS: { value: ConfirmedRestriction["action"]; label: string }[] = [
+    { value: "avoid",             label: "Unikaj całkowicie" },
+    { value: "regression",        label: "Zastosuj regresję" },
+    { value: "reduce_range",      label: "Ogranicz zakres ruchu" },
+    { value: "reduce_load",       label: "Zmniejsz obciążenie" },
+    { value: "informational",     label: "Informacja dla trenera" },
+    { value: "medical_clearance", label: "Wymaga konsultacji lekarskiej" },
+  ];
+
+  const [confirmedRestrictions, setConfirmedRestrictions] = useState<ConfirmedRestriction[]>([]);
+  // Sync from loaded survey — fires once when survey data arrives.
+  useEffect(() => {
+    const raw = (survey as unknown as Record<string, unknown>)?.confirmedRestrictions;
+    if (typeof raw === "string" && raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) setConfirmedRestrictions(parsed as ConfirmedRestriction[]);
+      } catch { /* invalid JSON — leave empty */ }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(survey as unknown as Record<string, unknown>)?.confirmedRestrictions]);
+
+  const addRestriction = () =>
+    setConfirmedRestrictions((prev) => [
+      ...prev,
+      { bodyArea: "Inne", movementPattern: "Inne", action: "informational" },
+    ]);
+  const removeRestriction = (idx: number) =>
+    setConfirmedRestrictions((prev) => prev.filter((_, i) => i !== idx));
+  const updateRestriction = (
+    idx: number,
+    key: keyof ConfirmedRestriction,
+    value: string,
+  ) =>
+    setConfirmedRestrictions((prev) =>
+      prev.map((r, i) => (i === idx ? { ...r, [key]: value } : r)),
+    );
 
   // ── Exercise picker state ──
   const [selectedFavoriteExercises, setSelectedFavoriteExercises] = useState<FavoriteExercise[]>([]);
@@ -811,6 +878,18 @@ function SurveyFormBody({
 
   // ── Submit ──
   const onSubmit = (data: SurveyFormValues) => {
+    // Block submission when a beginner client has multiple priority slots filled.
+    // The trainer must manually clear extras — we never auto-wipe in case data was intentional.
+    if (hasBeginnerPriorityConflict) {
+      toast({
+        title: "Nadmiarowe priorytety mięśniowe",
+        description:
+          "Klient na tym poziomie może mieć tylko jeden priorytet. Usuń dodatkowe, aby zapisać formularz.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const avoidsAdvancedMethodsBool =
       data.avoidsAdvancedMethods === "Tak"
         ? true
@@ -869,6 +948,13 @@ function SurveyFormBody({
       avoidedExercises: avoidedString,
       avoidedExerciseIds: avoidedIds,
       avoidedExerciseReasons: avoidedReasons,
+      // Confirmed restrictions: stored as a JSON string in a separate TEXT column.
+      // Passed directly in the payload body; extracted by the route outside of
+      // the generated Zod schema (see surveys.ts route handler).
+      confirmedRestrictions:
+        confirmedRestrictions.length > 0
+          ? JSON.stringify(confirmedRestrictions)
+          : undefined,
     };
 
     // When editing an existing survey: PATCH (update in-place, no new row).
@@ -1428,6 +1514,106 @@ function SurveyFormBody({
                         </FormItem>
                       )}
                     />
+
+                    {/* ── Structured restriction confirmation ── */}
+                    <div className="mt-5 space-y-3">
+                      <div>
+                        <p className="text-sm font-medium">Potwierdź ograniczenia ruchowe</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Określ precyzyjnie obszar i rodzaj ograniczenia — system uwzględni je
+                          przy automatycznym doborze ćwiczeń.
+                        </p>
+                      </div>
+
+                      {confirmedRestrictions.map((r, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-start gap-2 bg-muted/30 border border-border/50 rounded-lg p-3"
+                        >
+                          <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <Select
+                              value={r.bodyArea}
+                              onValueChange={(v) => updateRestriction(idx, "bodyArea", v)}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Obszar ciała" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {RESTRICTION_BODY_AREAS.map((a) => (
+                                  <SelectItem key={a} value={a} className="text-xs">
+                                    {a}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+
+                            <Select
+                              value={r.movementPattern}
+                              onValueChange={(v) => updateRestriction(idx, "movementPattern", v)}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Wzorzec ruchowy" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {RESTRICTION_MOVEMENT_PATTERNS.map((p) => (
+                                  <SelectItem key={p} value={p} className="text-xs">
+                                    {p}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+
+                            <Select
+                              value={r.action}
+                              onValueChange={(v) =>
+                                updateRestriction(
+                                  idx,
+                                  "action",
+                                  v as ConfirmedRestriction["action"],
+                                )
+                              }
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Działanie" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {RESTRICTION_ACTION_OPTIONS.map((opt) => (
+                                  <SelectItem
+                                    key={opt.value}
+                                    value={opt.value}
+                                    className="text-xs"
+                                  >
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground shrink-0"
+                            onClick={() => removeRestriction(idx)}
+                            aria-label="Usuń ograniczenie"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={addRestriction}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Dodaj ograniczenie
+                      </Button>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1452,37 +1638,102 @@ function SurveyFormBody({
                 </p>
                 <p className="text-xs text-muted-foreground mb-3">
                   {isBeginner
-                    ? "Na tym etapie nie musisz wybierać konkretnych priorytetów. Najpierw skupimy się na równomiernym rozwoju całego ciała."
+                    ? "Na tym poziomie możesz wybrać maksymalnie jedną partię priorytetową."
                     : "Do 3 partii, na których klientowi zależy najbardziej."}
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {(["priorityMuscle1", "priorityMuscle2", "priorityMuscle3"] as const).map(
-                    (name, i) => (
-                      <FormField
-                        key={name}
-                        control={form.control}
-                        name={name}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs text-muted-foreground/80">
-                              Priorytet {i + 1}
-                            </FormLabel>
-                            <FormControl>
-                              <MuscleGroupCombobox
-                                value={field.value ?? ""}
-                                onChange={field.onChange}
-                                placeholder={
-                                  ["np. Barki", "np. Pośladki", "np. Plecy"][i]
-                                }
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )
-                  )}
-                </div>
+                {isBeginner && !hasBeginnerPriorityConflict ? (
+                  // Beginner / inactive without conflict: single priority slot only
+                  <FormField
+                    control={form.control}
+                    name="priorityMuscle1"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs text-muted-foreground/80">
+                          Priorytet 1
+                        </FormLabel>
+                        <FormControl>
+                          <MuscleGroupCombobox
+                            value={field.value ?? ""}
+                            onChange={field.onChange}
+                            placeholder="np. Barki"
+                          />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Na tym poziomie możesz wybrać jeden priorytet. Pozostałe partie będą rozwijane w ramach planu ogólnorozwojowego.
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : isBeginner && hasBeginnerPriorityConflict ? (
+                  // Conflict: beginner has extra priority slots filled.
+                  // Show all 3 slots + blocking error so the trainer can clear the extras.
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2.5">
+                      <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                      <p className="text-sm text-destructive leading-snug">
+                        Klient jest na poziomie <strong>początkującym</strong> — dozwolony jest tylko jeden priorytet mięśniowy.
+                        Usuń dodatkowe priorytety, aby zapisać formularz.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {(["priorityMuscle1", "priorityMuscle2", "priorityMuscle3"] as const).map(
+                        (name, i) => (
+                          <FormField
+                            key={name}
+                            control={form.control}
+                            name={name}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs text-muted-foreground/80">
+                                  Priorytet {i + 1}
+                                </FormLabel>
+                                <FormControl>
+                                  <MuscleGroupCombobox
+                                    value={field.value ?? ""}
+                                    onChange={field.onChange}
+                                    placeholder={["np. Barki", "np. Pośladki", "np. Plecy"][i]}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  // Intermediate / advanced: up to 3 priority slots
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {(["priorityMuscle1", "priorityMuscle2", "priorityMuscle3"] as const).map(
+                      (name, i) => (
+                        <FormField
+                          key={name}
+                          control={form.control}
+                          name={name}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs text-muted-foreground/80">
+                                Priorytet {i + 1}
+                              </FormLabel>
+                              <FormControl>
+                                <MuscleGroupCombobox
+                                  value={field.value ?? ""}
+                                  onChange={field.onChange}
+                                  placeholder={
+                                    ["np. Barki", "np. Pośladki", "np. Plecy"][i]
+                                  }
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">

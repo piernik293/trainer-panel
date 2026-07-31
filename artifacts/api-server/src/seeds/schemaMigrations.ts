@@ -126,5 +126,10 @@ export async function runSchemaMigrations(): Promise<void> {
     END $$
   `);
 
+  // ── confirmed_restrictions — structured restriction list for plan generation ──
+  await db.execute(
+    sql`ALTER TABLE surveys ADD COLUMN IF NOT EXISTS confirmed_restrictions TEXT`,
+  );
+
   logger.info("Schema migrations complete");
 }

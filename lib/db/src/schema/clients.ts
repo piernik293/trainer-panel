@@ -19,6 +19,14 @@ export const clientsTable = pgTable("clients", {
    * Set when the client first authenticates through the client portal.
    */
   clerkUserId: text("clerk_user_id").unique(),
+  /**
+   * Trainer's explicit decision on the adaptive-start recommendation.
+   * null    = no decision yet (recommendation pending for eligible clients)
+   * pending = recommendation shown, awaiting trainer action
+   * accepted = trainer chose adaptive-start generator mode
+   * declined = trainer chose the normal generator
+   */
+  adaptiveStartDecision: text("adaptive_start_decision"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

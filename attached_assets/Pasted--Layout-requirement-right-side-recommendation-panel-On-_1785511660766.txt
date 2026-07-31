@@ -1,0 +1,70 @@
+## Layout requirement — right-side recommendation panel
+
+On the “Generuj szkic planu” screen, move the following two cards from the main content column into a dedicated right-side panel:
+
+1. “Zwróć uwagę: klient zgłasza ból”
+2. “Rekomendacje aktywności”
+
+### Desktop layout
+
+Use a two-column layout:
+
+- left column: client data, training profile, equipment, goals and the remaining plan setup sections,
+- right column: warnings and recommendations.
+
+The right-side panel should appear in the empty area indicated in the reference screenshot, next to the main form rather than above it.
+
+Recommended behavior:
+
+- width approximately 320–380 px,
+- pain warning displayed first,
+- activity recommendation displayed below it,
+- panel remains visible while scrolling using a sticky position,
+- sticky offset must account for the page header and step navigation,
+- cards must not overlap the main content or extend outside the viewport,
+- preserve the existing red and blue visual styles.
+
+Example structure:
+
+Main content | Right-side panel
+Client data  | Pain warning
+Profile      | Activity recommendation
+Equipment    |
+Goals        |
+
+### Conditional visibility
+
+- Show the pain card only when pain or limitation language has been detected.
+- Show the activity card only when an activity recommendation exists.
+- If neither card exists, the main content should use the available width without leaving an empty right column.
+- If only one card exists, show only that card.
+
+### Mobile and narrow screens
+
+On tablet/mobile widths:
+
+- disable the sticky side panel,
+- place the cards above the main client-data sections,
+- keep pain warning first and activity recommendation second,
+- use full width,
+- do not create horizontal scrolling.
+
+### Accessibility
+
+- warnings must not rely only on color,
+- keep the text heading and icon,
+- ensure sufficient contrast,
+- the original client quote must remain readable,
+- screen-reader order should place warnings before the related form content on mobile.
+
+### Focused tests
+
+Add tests proving:
+
+1. Pain warning renders in the right-side panel on desktop.
+2. Activity recommendation renders below the pain warning.
+3. The panel is sticky on desktop.
+4. The cards move above the main content on mobile.
+5. The main content expands when no warning or recommendation exists.
+6. The panel does not render empty placeholders.
+7. Existing warning text and recommendation content remain unchanged.

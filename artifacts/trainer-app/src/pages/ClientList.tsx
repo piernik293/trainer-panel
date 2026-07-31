@@ -404,9 +404,26 @@ export default function ClientList() {
                             >
                               {surveyStatusLabel(client.surveyStatus)}
                             </Badge>
-                            {(client as { experienceLevel?: string | null }).experienceLevel === "Brak aktywności fizycznej" && (
-                              <Badge variant="outline" className="text-xs px-1.5 border-sky-200 text-sky-600 bg-sky-50">
-                                Start adaptacyjny · Nie rozpoczęto
+                            {(["Brak aktywności fizycznej", "Początkujący"] as const).includes(
+                              (client as any).experienceLevel ?? ""
+                            ) && (
+                              <Badge
+                                variant="outline"
+                                className={`text-xs px-1.5 ${
+                                  (client as any).adaptiveStartDecision === "accepted"
+                                    ? "border-emerald-200 text-emerald-700 bg-emerald-50"
+                                    : (client as any).adaptiveStartDecision === "declined"
+                                    ? "border-slate-200 text-slate-500 bg-slate-50"
+                                    : "border-sky-200 text-sky-600 bg-sky-50"
+                                }`}
+                              >
+                                {`Start adaptacyjny · ${
+                                  (client as any).adaptiveStartDecision === "accepted"
+                                    ? "Zastosowany"
+                                    : (client as any).adaptiveStartDecision === "declined"
+                                    ? "Pominięty"
+                                    : "Oczekuje na decyzję"
+                                }`}
                               </Badge>
                             )}
                           </div>
@@ -493,9 +510,26 @@ export default function ClientList() {
                       >
                         {surveyStatusLabel(client.surveyStatus)}
                       </Badge>
-                      {(client as { experienceLevel?: string | null }).experienceLevel === "Brak aktywności fizycznej" && (
-                        <Badge variant="outline" className="text-xs px-1.5 border-sky-200 text-sky-600 bg-sky-50">
-                          Start adaptacyjny
+                      {(["Brak aktywności fizycznej", "Początkujący"] as const).includes(
+                        (client as any).experienceLevel ?? ""
+                      ) && (
+                        <Badge
+                          variant="outline"
+                          className={`text-xs px-1.5 ${
+                            (client as any).adaptiveStartDecision === "accepted"
+                              ? "border-emerald-200 text-emerald-700 bg-emerald-50"
+                              : (client as any).adaptiveStartDecision === "declined"
+                              ? "border-slate-200 text-slate-500 bg-slate-50"
+                              : "border-sky-200 text-sky-600 bg-sky-50"
+                          }`}
+                        >
+                          {`Start adaptacyjny · ${
+                            (client as any).adaptiveStartDecision === "accepted"
+                              ? "Zastosowany"
+                              : (client as any).adaptiveStartDecision === "declined"
+                              ? "Pominięty"
+                              : "Oczekuje na decyzję"
+                          }`}
                         </Badge>
                       )}
                       <span className="text-xs text-muted-foreground ml-auto">{formatDate(client.createdAt)}</span>

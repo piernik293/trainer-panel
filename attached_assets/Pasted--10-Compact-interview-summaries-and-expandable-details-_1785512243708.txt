@@ -1,0 +1,110 @@
+# 10. Compact interview summaries and expandable details
+
+The current client-profile cards look too much like long tables and require the trainer to scan many rows before seeing the important conclusion.
+
+Improve only the presentation of the interview summary sections. Do not redesign the entire page or navigation.
+
+## Regeneration and lifestyle
+
+Replace the permanently expanded table with a compact summary card.
+
+Default collapsed state:
+
+Title:
+`Regeneracja i styl życia`
+
+Primary summary:
+`Jakość regeneracji: Słaba`
+
+Show the quality as a clearly visible status badge:
+
+- Dobra
+- Umiarkowana
+- Słaba
+
+Add an action:
+
+`Pokaż szczegóły`
+
+When expanded, show the source values:
+
+- Aktywność codzienna: Siedzący
+- Praca fizyczna: Nie
+- Sen: 5 h
+- Poziom stresu: 2/10
+- Jakość regeneracji: Słaba
+
+Allow the trainer to collapse it again using:
+
+`Ukryj szczegóły`
+
+Do not remove the underlying interview data. Only change its information hierarchy.
+
+## Visual hierarchy
+
+Use a “summary first, details on demand” pattern:
+
+- important conclusion visible immediately,
+- secondary interview values hidden until expanded,
+- clear section title and icon,
+- softer border and shadow,
+- more internal spacing,
+- avoid a dense spreadsheet-like appearance,
+- preserve high readability and contrast.
+
+Do not place every value in a separate heavy table row.
+
+Prefer:
+
+- compact summary header,
+- status badges,
+- small grouped detail blocks,
+- consistent spacing,
+- subtle separators only when needed.
+
+## Apply consistently
+
+Where appropriate, use the same compact pattern for other long profile sections:
+
+- show the most important value or conclusion in the collapsed header,
+- keep complete source data available after expansion,
+- do not hide safety-critical information such as pain warnings or medical restrictions,
+- pain and limitation warnings must remain visible without requiring expansion.
+
+Do not collapse:
+
+- pain warnings,
+- medical contraindications,
+- blocking generation errors,
+- trainer decisions that still require action.
+
+## Interaction and accessibility
+
+- the whole header or a clear button may toggle expansion,
+- display a chevron indicating the current state,
+- support keyboard interaction,
+- use `aria-expanded`,
+- preserve logical reading order,
+- do not rely only on color,
+- remember the expanded state only during the current page session if needed.
+
+## Mobile
+
+On mobile:
+
+- use full-width cards,
+- prevent horizontal scrolling,
+- place detail values in a one-column layout,
+- keep tap targets comfortable.
+
+## Focused tests
+
+Add tests proving:
+
+1. `Jakość regeneracji: Słaba` is visible while the section is collapsed.
+2. Activity, physical work, sleep and stress are hidden initially.
+3. Clicking `Pokaż szczegóły` reveals all source values.
+4. Clicking `Ukryj szczegóły` collapses the section.
+5. Pain and medical warnings are never hidden by this accordion.
+6. The section exposes the correct accessible expanded state.
+7. No interview data is removed or changed.
