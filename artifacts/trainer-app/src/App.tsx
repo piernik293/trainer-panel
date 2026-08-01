@@ -149,7 +149,19 @@ function SignInPage() {
 
 function SignUpPage() {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-8">
+      {/* Optimatren branding above the Clerk card */}
+      <div className="flex flex-col items-center text-center mb-6 max-w-full">
+        <img
+          src={markUrl}
+          alt="Optimatren"
+          className="w-[100px] md:w-[130px] h-auto object-contain"
+        />
+        <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">Optimatren</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Zarządzaj klientami, planami i postępami
+        </p>
+      </div>
       <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
     </div>
   );
