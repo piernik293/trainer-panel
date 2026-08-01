@@ -558,9 +558,34 @@ function SessionView({
       <div className="max-w-2xl mx-auto px-4 pt-6 space-y-4">
         {/* Completion banner */}
         {session.isCompleted && (
-          <div className="border border-primary/30 bg-primary/5 px-4 py-3 flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
-            <p className="text-sm font-medium">Trening zakończony! Świetna robota.</p>
+          <div className="border border-primary/30 bg-primary/5 px-4 py-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Trening zakończony! Świetna robota.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Ukończono {completedCount} z {totalCount} ćwiczeń
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={onBack}
+              className="w-full h-11 rounded-none font-semibold uppercase tracking-wide"
+            >
+              Wróć do planu
+            </Button>
+            <button
+              type="button"
+              onClick={handleComplete}
+              disabled={completing}
+              className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              {completing ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <><RotateCcw className="w-3.5 h-3.5" /> Cofnij zakończenie treningu</>
+              )}
+            </button>
           </div>
         )}
 
@@ -586,22 +611,21 @@ function SessionView({
         </div>
 
         {/* Complete session button */}
-        <div className="pt-4">
-          <Button
-            onClick={handleComplete}
-            disabled={completing}
-            variant={session.isCompleted ? "outline" : "default"}
-            className="w-full h-12 rounded-none font-semibold uppercase tracking-wide"
-          >
-            {completing ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : session.isCompleted ? (
-              <><RotateCcw className="w-4 h-4 mr-2" /> Cofnij zakończenie treningu</>
-            ) : (
-              <><CheckCircle2 className="w-4 h-4 mr-2" /> Zakończ trening</>
-            )}
-          </Button>
-        </div>
+        {!session.isCompleted && (
+          <div className="pt-4">
+            <Button
+              onClick={handleComplete}
+              disabled={completing}
+              className="w-full h-12 rounded-none font-semibold uppercase tracking-wide"
+            >
+              {completing ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <><CheckCircle2 className="w-4 h-4 mr-2" /> Zakończ trening</>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
