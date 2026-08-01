@@ -76,7 +76,57 @@ interface Plan {
   startDate: string | null;
   endDate: string | null;
   status: string;
+  updatedAt: string | null;
+  /** Trainer-authored cardio prescription — JSON string or null (no cardio saved). */
+  cardioRecommendation: string | null;
   days: PlanDay[];
+}
+
+/** Shape of the trainer-saved cardio JSON (mirrors trainer-app cardioGenerator). */
+interface CardioData {
+  activity: string;
+  sessionsPerWeek: number;
+  sessions: Array<{ durationMinutes: number; metric: string }>;
+  progressionText: string;
+  executionInstruction: string;
+  preSessionNote: string;
+  hasHealthLimitation: boolean;
+}
+
+function parseCardioData(raw: string | null): CardioData | null {
+  if (!raw) return null;
+  try {
+    const data = JSON.parse(raw) as Partial<CardioData> | null;
+    if (
+      !data ||
+      typeof data !== "object" ||
+      typeof data.activity !== "string" ||
+      typeof data.sessionsPerWeek !== "number" ||
+      !Array.isArray(data.sessions)
+    ) {
+      return null;
+    }
+    // Every session must be a well-formed object — malformed persisted data
+    // must degrade to the neutral empty state, never crash the plan view.
+    const sessions = data.sessions.filter(
+      (s): s is CardioData["sessions"][number] =>
+        !!s && typeof s === "object" &&
+        typeof s.durationMinutes === "number" &&
+        typeof s.metric === "string",
+    );
+    if (sessions.length === 0) return null;
+    return {
+      activity: data.activity,
+      sessionsPerWeek: data.sessionsPerWeek,
+      sessions,
+      progressionText: typeof data.progressionText === "string" ? data.progressionText : "",
+      executionInstruction: typeof data.executionInstruction === "string" ? data.executionInstruction : "",
+      preSessionNote: typeof data.preSessionNote === "string" ? data.preSessionNote : "",
+      hasHealthLimitation: data.hasHealthLimitation === true,
+    };
+  } catch {
+    return null;
+  }
 }
 
 interface ClientInfo {
@@ -167,6 +217,11 @@ function formatPrevious(prev: PrevResult): string {
     parts.push(`${prev.setsCompleted} serii`);
   }
   return parts.join(" × ");
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" });
 }
 
 function formatDateTime(iso: string | null): string {
@@ -1020,6 +1075,90 @@ function HistorySection() {
   );
 }
 
+// ─── CardioSection (display-only) ────────────────────────────────────────────
+// Renders the trainer-saved cardio prescription. Never generated client-side:
+// null/invalid JSON → compact neutral state.
+
+function CardioCard({ cardio }: { cardio: CardioData | null }) {
+  return (
+    <div className="space-y-3">
+      <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+        Cardio / aktywność dodatkowa
+      </h2>
+      {!cardio ? (
+        <div className="border border-white/10 bg-card px-5 py-4 text-sm text-muted-foreground">
+          Brak dodatkowego cardio w planie.
+        </div>
+      ) : (
+        <div className="border border-white/10 bg-card px-5 py-4 space-y-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Activity className="w-4 h-4 text-primary shrink-0" />
+            <span className="font-semibold text-sm">{cardio.activity}</span>
+            <span className="text-sm text-muted-foreground">
+              · {cardio.sessionsPerWeek} {cardio.sessionsPerWeek === 1 ? "sesja" : cardio.sessionsPerWeek <= 4 ? "sesje" : "sesji"} / tydzień
+              {cardio.sessions[0] ? ` · ${cardio.sessions[0].durationMinutes} min` : ""}
+            </span>
+          </div>
+
+          {cardio.preSessionNote && (
+            <p className="text-xs text-muted-foreground">{cardio.preSessionNote}</p>
+          )}
+
+          <div className="space-y-2">
+            {cardio.sessions.map((s, i) => (
+              <div key={i} className="border border-white/10 bg-white/[0.02] px-4 py-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">
+                  Sesja {i + 1}
+                </p>
+                <p className="text-sm">
+                  {s.durationMinutes} minut{s.metric ? `. ${s.metric}` : "."}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {cardio.executionInstruction && (
+            <p className="text-sm text-muted-foreground">{cardio.executionInstruction}</p>
+          )}
+
+          {cardio.progressionText && (
+            <div className="border border-primary/20 bg-primary/5 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-primary font-semibold mb-1">
+                Progresja cardio
+              </p>
+              <p className="text-sm text-foreground/90">{cardio.progressionText}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Strength progression guidance ───────────────────────────────────────────
+// Generic, plan-agnostic guidance — the frontend never invents exercise-specific
+// load increases; the trainer's plan remains authoritative.
+
+function StrengthProgressionCard() {
+  return (
+    <div className="space-y-3">
+      <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+        Jak progresować w treningu siłowym
+      </h2>
+      <div className="border border-white/10 bg-card px-5 py-4 space-y-3">
+        <ul className="space-y-2 text-sm text-foreground/90 list-disc pl-4">
+          <li>Gdy wykonasz wszystkie zaplanowane serie w górnym zakresie powtórzeń, zachowując założony zapas (RIR), zwiększ lekko ciężar na kolejnym treningu.</li>
+          <li>Jeśli nie osiągasz dolnego zakresu powtórzeń, zostań przy obecnym ciężarze lub delikatnie go zmniejsz.</li>
+          <li>Nie zwiększaj ciężaru kosztem techniki.</li>
+        </ul>
+        <p className="text-xs text-muted-foreground">
+          Obowiązuje zawsze aktualny plan od trenera — te wskazówki go nie zastępują.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── PlanView ─────────────────────────────────────────────────────────────────
 
 function PlanView({
@@ -1031,6 +1170,7 @@ function PlanView({
   plan: Plan;
   onSelectDay: (day: PlanDay) => void;
 }) {
+  const cardio = parseCardioData(plan.cardioRecommendation);
   return (
     <div className="min-h-screen bg-background text-foreground pb-16">
       <div className="max-w-2xl mx-auto px-4 pt-10 space-y-8">
@@ -1041,6 +1181,11 @@ function PlanView({
           {plan.goal && (
             <p className="text-sm text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 mt-3">
               Cel: {plan.goal}
+            </p>
+          )}
+          {plan.updatedAt && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Plan zaktualizowany: {formatDate(plan.updatedAt)}
             </p>
           )}
         </div>
@@ -1081,6 +1226,10 @@ function PlanView({
             ))
           )}
         </div>
+
+        <CardioCard cardio={cardio} />
+
+        <StrengthProgressionCard />
 
         <HistorySection />
       </div>
@@ -1145,6 +1294,19 @@ export default function PlanPortal() {
           <p className="font-semibold">{planError ?? "Brak aktywnego planu"}</p>
           <p className="text-sm text-muted-foreground">
             Skontaktuj się ze swoim trenerem — musi aktywować Twój plan i powiązać konto z Twoim profilem.
+          </p>
+          {/* Wrong-login-page recovery: a trainer who signed in through the
+              client entry has no linked client account — offer the way back.
+              Full page load (separate artifact), deliberately not auto-redirect
+              so an unlinked client is never silently sent into the trainer app. */}
+          <p className="text-sm text-muted-foreground pt-2">
+            Jesteś trenerem?{" "}
+            <a
+              href="/"
+              className="inline-block py-2 font-medium text-primary underline underline-offset-2"
+            >
+              Przejdź do Panelu Trenera
+            </a>
           </p>
         </div>
       </div>

@@ -1,0 +1,177 @@
+## Focused auth UX — client login as default, trainer login as secondary
+
+Make only a focused frontend authentication navigation update.
+
+Do not change:
+- Clerk authentication logic,
+- Google provider configuration,
+- backend,
+- database,
+- role ownership,
+- invitation activation,
+- trainer/client authorization,
+- existing protected routes.
+
+Do not create a broad redesign.
+
+### Goal
+
+The default public sign-in entry should be client-first.
+
+Expected flow:
+
+`/sign-in`
+→ client login screen
+
+`/trainer/sign-in`
+→ trainer login screen
+
+`/invite/:token`
+→ existing client invitation activation flow
+
+After authentication, existing role checks must still redirect users to the correct portal.
+
+---
+
+## 1. Default client login page
+
+Make `/sign-in` display the client-facing login screen.
+
+Use the existing Optimatren branding and exact lumberjack logo asset.
+
+Content:
+
+Title:
+`Zaloguj się do portalu klienta`
+
+Description:
+`Zobacz swój plan treningowy, historię treningów i zapisuj ciężary.`
+
+Helper text:
+`Użyj tego samego konta Google, na które otrzymałeś zaproszenie od trenera.`
+
+Keep the existing Clerk login component and Google sign-in flow.
+
+Below the login card add:
+
+`Jesteś trenerem? Przejdź do Panelu Trenera`
+
+This must navigate to:
+
+`/trainer/sign-in`
+
+---
+
+## 2. Trainer login page
+
+Create or reuse a dedicated route:
+
+`/trainer/sign-in`
+
+Use the same Optimatren logo and visual style.
+
+Content:
+
+Title:
+`Zaloguj się do Panelu Trenera`
+
+Description:
+`Zarządzaj klientami, planami treningowymi i postępami.`
+
+Below the login card add:
+
+`Jesteś klientem? Przejdź do portalu klienta`
+
+This must navigate back to:
+
+`/sign-in`
+
+---
+
+## 3. Branding
+
+Reuse the existing Optimatren branding already implemented:
+
+- exact lumberjack logo,
+- brand name `Optimatren`,
+- responsive sizing,
+- improved visible Google button styling.
+
+Do not duplicate or regenerate the logo asset.
+
+Do not show:
+- `Panel Trenera` copy on the client page,
+- client-specific copy on the trainer page.
+
+---
+
+## 4. Authentication behavior
+
+Preserve all existing role checks.
+
+After successful authentication:
+
+- a trainer must go to the trainer dashboard,
+- a client must go to the client portal,
+- a client must not gain access to trainer routes,
+- a trainer must not gain client ownership merely by using the client login page.
+
+Do not trust the selected login screen as the user's role.
+
+The authenticated Clerk user mapping remains the source of truth.
+
+If a user enters through the wrong login page, use the existing role-based redirect behavior.
+
+---
+
+## 5. Invitation flow
+
+Do not break `/invite/:token`.
+
+A client opening an invitation link must:
+
+- keep the invitation token,
+- sign in or sign up,
+- return to the same activation flow,
+- activate the correct client account,
+- continue to the client portal.
+
+Do not redirect invitation users to the trainer login page.
+
+---
+
+## 6. Mobile UX
+
+Verify at iPhone widths:
+
+- logo and card remain centered,
+- no horizontal overflow,
+- helper text remains readable,
+- role-switching link is easy to tap,
+- auth card is not pushed too far below the fold.
+
+---
+
+## Focused verification
+
+Verify only:
+
+1. `/sign-in` shows client-specific copy.
+2. `/trainer/sign-in` shows trainer-specific copy.
+3. Client page links to trainer login.
+4. Trainer page links to client login.
+5. Google login remains functional.
+6. Existing role-based redirects remain unchanged.
+7. Invitation activation still returns to the client flow.
+8. Mobile layout does not overflow.
+
+Do not run a broad audit or full test suite.
+
+Stop after this focused change.
+
+Report:
+- routes changed or added,
+- files changed,
+- client/trainer copy used,
+- how existing role redirects were preserved,
+- invitation-flow verification result.

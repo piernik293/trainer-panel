@@ -1,0 +1,228 @@
+## Focused client-portal feature — cardio and progression guidance
+
+Continue from the current workspace state.
+
+Implement only:
+
+1. cardio / additional activity visible in the client portal,
+2. cardio progression visible to the client,
+3. strength-training progression guidance visible to the client.
+
+Do not add post-workout questionnaires, pain forms, difficulty ratings or text feedback in this task.
+
+Do not modify:
+- authentication,
+- invitations,
+- trainer/client ownership,
+- workout history,
+- generator scoring,
+- adaptive-start logic,
+- restrictions logic,
+- existing workout session completion,
+- unrelated trainer screens.
+
+Do not perform a broad audit.
+Do not run the full test suite.
+
+---
+
+## 1. Show cardio in the client portal
+
+The trainer already has a cardio / additional activity section containing data such as:
+
+- activity type,
+- sessions per week,
+- duration,
+- session instructions,
+- progression guidance.
+
+Expose this existing data in the client portal plan view.
+
+Add a clearly visible section:
+
+`Cardio / aktywność dodatkowa`
+
+Place it near the strength-training days, preferably above or directly below `Dni treningowe`.
+
+The section should display:
+
+- cardio activity type, e.g. `Marsz`,
+- frequency, e.g. `2 sesje / tydzień`,
+- duration, e.g. `20 min`,
+- each planned cardio session,
+- trainer instructions,
+- progression guidance.
+
+Example:
+
+`Cardio / aktywność dodatkowa`
+
+`Marsz · 2 sesje / tydzień · 20 min`
+
+`Sesja 1`
+`20 minut. Idź energicznym tempem, ale bez dużej zadyszki.`
+
+`Sesja 2`
+`20 minut. Idź energicznym tempem, ale bez dużej zadyszki.`
+
+Do not create duplicate cardio data.
+Reuse the existing trainer-side cardio plan data and existing API fields where available.
+
+If no cardio is assigned, hide the section or show a compact neutral state:
+
+`Brak dodatkowego cardio w planie.`
+
+---
+
+## 2. Cardio selection
+
+If the existing client flow already supports completing or selecting activities, let the client open the cardio section and choose the assigned session to perform.
+
+Do not allow the client to change the trainer’s prescribed cardio type, frequency or progression.
+
+The client may only:
+
+- open the assigned cardio session,
+- view its instructions,
+- mark it as completed if the existing session model supports this safely.
+
+Do not build a separate complex cardio-tracking system in this task.
+
+If cardio completion is not already supported by the current model, keep this task display-only and report that limitation instead of redesigning workout sessions.
+
+---
+
+## 3. Cardio progression guidance
+
+Show the trainer’s progression text clearly in the client portal.
+
+Use a dedicated compact block:
+
+`Progresja cardio`
+
+Example:
+
+`Po 1–2 tygodniach wydłuż każdą sesję z 20 do 25 minut. Nie zwiększaj jednocześnie czasu i tempa.`
+
+The progression text must:
+
+- come from the trainer plan data,
+- not be generated or rewritten by the client frontend,
+- remain readable on mobile,
+- appear near the cardio prescription.
+
+Do not automatically increase duration or intensity.
+
+The guidance is informational until the trainer updates the plan.
+
+---
+
+## 4. Strength-training progression guidance
+
+Add a compact section visible near the strength-training days:
+
+`Jak progresować w treningu siłowym`
+
+Use either:
+
+- the existing trainer-defined progression method, if one exists,
+- or a single generic fallback only when no trainer-specific method exists.
+
+Preferred trainer-defined example:
+
+`Gdy wykonasz wszystkie serie w górnym zakresie powtórzeń z zachowaniem założonego RIR, zwiększ ciężar na kolejnym treningu.`
+
+Generic fallback:
+
+- reach the top of the rep range in all planned sets,
+- maintain the prescribed RIR,
+- then increase the load slightly next time,
+- if the minimum reps are missed, keep or reduce the load.
+
+Do not let the frontend invent exercise-specific weight increases.
+
+Do not automatically edit the plan.
+
+The progression section must clearly state that the trainer’s current plan remains authoritative.
+
+---
+
+## 5. Plan updates
+
+When the trainer updates:
+
+- cardio type,
+- cardio frequency,
+- duration,
+- cardio progression,
+- strength progression guidance,
+
+the client portal must show the latest saved version after refresh or normal query invalidation.
+
+Use the existing plan data source.
+
+Do not duplicate progression text into a separate stale client-only record unless the existing architecture requires it.
+
+If an `updatedAt` value already exists, show a small note:
+
+`Plan zaktualizowany: {date}`
+
+Do not build notifications or change-history tracking in this task.
+
+---
+
+## 6. Mobile and desktop UX
+
+Desktop:
+
+- keep the existing dark client-portal style,
+- cardio should look like part of the plan, not an unrelated warning,
+- use one compact card with clear hierarchy.
+
+Mobile:
+
+- no horizontal overflow,
+- activity, frequency and duration may wrap,
+- progression text remains readable,
+- tap targets remain large enough.
+
+Do not create a large dashboard redesign.
+
+---
+
+## Focused verification
+
+Verify only:
+
+1. a client with assigned cardio sees the cardio section,
+2. activity type, frequency and duration match trainer data,
+3. all assigned cardio sessions are visible,
+4. cardio progression text is visible,
+5. strength progression guidance is visible,
+6. changing the plan as trainer is reflected in the client portal,
+7. a client without cardio gets the correct empty behavior,
+8. mobile layout does not overflow.
+
+Run only directly related focused tests.
+
+Stop after this feature.
+
+---
+
+## Final report
+
+Report:
+
+- existing cardio data source reused,
+- files changed,
+- client portal placement,
+- whether cardio completion was supported or display-only,
+- how cardio progression is shown,
+- how strength progression is shown,
+- how trainer updates reach the client,
+- focused test results,
+- mobile verification result.
+
+Required completion statement:
+
+READY — clients can see assigned cardio and progression guidance in the portal

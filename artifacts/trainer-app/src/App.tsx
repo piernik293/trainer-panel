@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/reac
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
-import { Route, Switch, Router as WouterRouter, useLocation, Redirect } from "wouter";
+import { Route, Switch, Router as WouterRouter, useLocation, Redirect, Link } from "wouter";
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import markUrl from "@/assets/optimatren-mark.png";
@@ -36,6 +36,10 @@ const clerkPubKey = publishableKeyFromHost(
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+// Client portal lives in a separate artifact (client-landing) — navigating
+// there requires a full page load, not an SPA route change.
+const CLIENT_PORTAL_PATH = "/client-landing/plan";
 
 // Clerk passes full paths to routerPush/routerReplace, but wouter's
 // setLocation prepends the base — strip it to avoid doubling.
@@ -127,7 +131,19 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
-function SignInPage() {
+function AuthShell({
+  title,
+  description,
+  helper,
+  switchLink,
+  children,
+}: {
+  title: string;
+  description: string;
+  helper?: string;
+  switchLink: { text: string; label: string; href: string };
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-8">
       {/* Optimatren branding above the Clerk card */}
@@ -138,12 +154,68 @@ function SignInPage() {
           className="w-[100px] md:w-[130px] h-auto object-contain"
         />
         <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">Optimatren</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Zarządzaj klientami, planami i postępami
-        </p>
+        <p className="mt-1 text-base font-semibold text-foreground">{title}</p>
+        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>
+        {helper && (
+          <p className="mt-2 max-w-sm text-xs text-muted-foreground">{helper}</p>
+        )}
       </div>
-      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+      {children}
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        {switchLink.text}{" "}
+        <Link
+          href={switchLink.href}
+          className="inline-block py-2 font-medium text-orange-600 underline underline-offset-2 hover:text-orange-700"
+        >
+          {switchLink.label}
+        </Link>
+      </p>
     </div>
+  );
+}
+
+// Default public entry — client-facing login. Role is NOT derived from the
+// login page used: after auth the client portal's own role checks apply.
+function ClientSignInPage() {
+  return (
+    <AuthShell
+      title="Zaloguj się do portalu klienta"
+      description="Zobacz swój plan treningowy, historię treningów i zapisuj ciężary."
+      helper="Użyj tego samego konta Google, na które otrzymałeś zaproszenie od trenera."
+      switchLink={{
+        text: "Jesteś trenerem?",
+        label: "Przejdź do Panelu Trenera",
+        href: "/trainer/sign-in",
+      }}
+    >
+      <SignIn
+        routing="path"
+        path={`${basePath}/sign-in`}
+        signUpUrl={`${basePath}/sign-up`}
+        forceRedirectUrl={CLIENT_PORTAL_PATH}
+      />
+    </AuthShell>
+  );
+}
+
+function TrainerSignInPage() {
+  return (
+    <AuthShell
+      title="Zaloguj się do Panelu Trenera"
+      description="Zarządzaj klientami, planami treningowymi i postępami."
+      switchLink={{
+        text: "Jesteś klientem?",
+        label: "Przejdź do portalu klienta",
+        href: "/sign-in",
+      }}
+    >
+      <SignIn
+        routing="path"
+        path={`${basePath}/trainer/sign-in`}
+        signUpUrl={`${basePath}/sign-up`}
+        forceRedirectUrl={basePath || "/"}
+      />
+    </AuthShell>
   );
 }
 
@@ -174,7 +246,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
         <Component />
       </Show>
       <Show when="signed-out">
-        <Redirect to="/sign-in" />
+        <Redirect to="/trainer/sign-in" />
       </Show>
     </>
   );
@@ -212,14 +284,17 @@ function AppContent() {
         <Router />
       </Show>
       <Show when="signed-out">
-        <Redirect to="/sign-in" />
+        <Redirect to="/trainer/sign-in" />
       </Show>
     </>
   );
 }
 
 function ClerkProviderWithRoutes() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+
+  // The client login page must not show trainer copy inside the Clerk card.
+  const isTrainerAuthRoute = location.startsWith("/trainer/sign-in");
 
   return (
     <ClerkProvider
@@ -232,7 +307,9 @@ function ClerkProviderWithRoutes() {
         signIn: {
           start: {
             title: "Zaloguj się",
-            subtitle: "Zaloguj się do Panelu Trenera",
+            subtitle: isTrainerAuthRoute
+              ? "Zaloguj się do Panelu Trenera"
+              : "Zaloguj się do portalu klienta",
           },
         },
         signUp: {
@@ -242,15 +319,24 @@ function ClerkProviderWithRoutes() {
           },
         },
       }}
-      routerPush={(to) => setLocation(stripBase(to))}
-      routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
+      routerPush={(to) =>
+        to.startsWith(CLIENT_PORTAL_PATH)
+          ? window.location.assign(to)
+          : setLocation(stripBase(to))
+      }
+      routerReplace={(to) =>
+        to.startsWith(CLIENT_PORTAL_PATH)
+          ? window.location.replace(to)
+          : setLocation(stripBase(to), { replace: true })
+      }
     >
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Switch>
             {/* Sign-in / sign-up — accessible without auth */}
             {/* REQUIRED — copy "/sign-in/*?" and "/sign-up/*?" verbatim */}
-            <Route path="/sign-in/*?" component={SignInPage} />
+            <Route path="/sign-in/*?" component={ClientSignInPage} />
+            <Route path="/trainer/sign-in/*?" component={TrainerSignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
             {/* All other routes require sign-in */}
             <Route>

@@ -1,0 +1,106 @@
+## Focused mobile auth UX redesign — client sign-in screen
+
+Improve only the visual design and readability of the existing client sign-in screen.
+
+Do not change:
+- Clerk authentication logic,
+- providers,
+- routing,
+- backend,
+- invitation activation,
+- account linking.
+
+### Problems to fix
+
+The current screen has:
+- extremely low text contrast,
+- a logo that is too small,
+- too much empty vertical space,
+- mixed Polish and English labels,
+- weak visual hierarchy,
+- a signup link visually separated from the card.
+
+### Typography
+
+Use the existing project font if suitable; otherwise use Inter.
+
+Set:
+- brand name: 26px, font-semibold/bold
+- sign-in heading: 22–24px, font-semibold
+- description: 14–16px, regular
+- labels: 13–14px, font-medium
+- button text: 14–15px, font-semibold
+
+Use:
+- primary text: #111827
+- secondary text: #64748B
+- placeholder text: #94A3B8
+
+Do not use white or near-white text on the white auth card.
+
+### Layout
+
+Use a compact centered card:
+- max-width: 420px
+- width: calc(100% - 32px)
+- padding: 28–32px
+- border-radius: 18px
+- subtle border
+- soft shadow
+- reduce excessive vertical gaps
+
+### Branding
+
+At the top of the card:
+- show the exact Optimatren lumberjack logo
+- logo size: 72–90px
+- show brand name: `Optimatren`
+
+Below:
+- title: `Zaloguj się do portalu klienta`
+- description:
+  `Zobacz swój plan treningowy, historię treningów i zapisuj ciężary.`
+
+### Localization
+
+Change visible auth copy to Polish where Clerk customization allows:
+
+- `Continue with Google` → `Kontynuuj z Google`
+- `Email address` → `Adres e-mail`
+- `Enter your email address` → `Wpisz adres e-mail`
+- `Continue` → `Kontynuuj`
+- `Don't have an account?` → `Nie masz konta?`
+- `Sign up` → `Zarejestruj się`
+
+### Google button
+
+Make it clearly visible:
+- visible slate border
+- dark text
+- light gray background
+- fully visible Google icon
+- hover and keyboard focus states
+
+### Signup link
+
+Keep the signup prompt inside the auth card, directly below the primary button.
+
+### Background
+
+Use a dark navy background instead of pure black:
+`#0B1220`
+
+Keep the card white.
+
+### Mobile
+
+Verify on iPhone widths:
+- 375px
+- 390px
+- no horizontal overflow
+- card fits comfortably
+- buttons are full width
+- text remains readable
+- keyboard does not hide the main action
+
+Stop after this focused visual redesign.

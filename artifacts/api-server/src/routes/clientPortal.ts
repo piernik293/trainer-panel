@@ -161,6 +161,10 @@ async function getClientPlanFull(planId: number) {
       endDate: workoutPlansTable.endDate,
       status: workoutPlansTable.status,
       createdAt: workoutPlansTable.createdAt,
+      updatedAt: workoutPlansTable.updatedAt,
+      // Trainer-authored cardio prescription (JSON string, null = none saved).
+      // The client portal must never generate cardio on its own — display only.
+      cardioRecommendation: workoutPlansTable.cardioRecommendation,
     })
     .from(workoutPlansTable)
     .where(eq(workoutPlansTable.id, planId));
