@@ -1,4 +1,5 @@
 import { ClerkProvider } from '@clerk/react';
+import { plPL } from '@clerk/localizations';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -43,6 +44,26 @@ const clerkAppearance = {
   },
 };
 
+const clerkLocalization = {
+  ...plPL,
+  signIn: {
+    ...plPL.signIn,
+    start: {
+      ...plPL.signIn?.start,
+      title: 'Zaloguj się',
+      subtitle: 'Zaloguj się, aby zobaczyć swój plan treningowy',
+    },
+  },
+  signUp: {
+    ...plPL.signUp,
+    start: {
+      ...plPL.signUp?.start,
+      title: 'Utwórz konto',
+      subtitle: 'Utwórz konto, aby uzyskać dostęp do swojego planu',
+    },
+  },
+};
+
 const queryClient = new QueryClient();
 
 function Router() {
@@ -67,6 +88,7 @@ function ClerkProviderWithRoutes() {
       publishableKey={clerkPubKey}
       proxyUrl={clerkProxyUrl}
       appearance={clerkAppearance}
+      localization={clerkLocalization}
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
