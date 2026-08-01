@@ -521,14 +521,17 @@ function Step1Summary({
         </Card>
       )}
 
-      <Card className="border-border/50 shadow-sm">
-        <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-border/40">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <User size={14} />
-            Dane klienta
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 py-3 divide-y divide-border/40">
+      {/* Single interview-summary panel: flat internal sections separated by
+          dividers instead of independent elevated cards. */}
+      <Card className="border-border/50 shadow-sm divide-y divide-border/40">
+        <section>
+          <div className="pb-1 pt-4 px-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <User size={14} />
+              Dane klienta
+            </h3>
+          </div>
+          <div className="px-4 py-2">
           <div className="flex items-start justify-between gap-2 py-2 border-b border-border/40">
             <span className="text-sm text-muted-foreground w-44 shrink-0">Klient</span>
             <span className="text-sm font-medium text-right">{data.client.firstName} {data.client.lastName}</span>
@@ -546,32 +549,32 @@ function Step1Summary({
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+          </div>
+        </section>
 
-      <Card className="border-border/50 shadow-sm">
-        <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-border/40">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Dumbbell size={14} />
-            Profil treningowy
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 py-1">
+        <section>
+          <div className="pb-1 pt-3 px-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Dumbbell size={14} />
+              Profil treningowy
+            </h3>
+          </div>
+          <div className="px-4 py-1">
           <InfoRow label="Poziom doświadczenia" value={input.experienceLevel} source={sources.experienceLevel} />
           <InfoRow label="Cel treningowy" value={input.trainingGoal} source={sources.trainingGoal} />
           <InfoRow label="Dni treningowe / tydz." value={input.availableDays ? `${input.availableDays} dni` : null} source={sources.availableDays} />
           <InfoRow label="Czas sesji" value={input.sessionDurationMinutes ? `${input.sessionDurationMinutes} min` : null} source={sources.sessionDurationMinutes} />
-        </CardContent>
-      </Card>
+          </div>
+        </section>
 
-      <Card className="border-border/50 shadow-sm">
-        <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-border/40">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <MapPin size={14} />
-            Miejsce i sprzęt
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 py-1">
+        <section>
+          <div className="pb-1 pt-3 px-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <MapPin size={14} />
+              Miejsce i sprzęt
+            </h3>
+          </div>
+          <div className="px-4 py-1">
           <InfoRow label="Miejsce treningu" value={input.trainingLocation} source={sources.trainingLocation} />
           <div className="flex items-start justify-between gap-2 py-2">
             <span className="text-sm text-muted-foreground w-44 shrink-0">Dostępny sprzęt</span>
@@ -588,17 +591,17 @@ function Step1Summary({
               <SourceBadge source={sources.availableEquipment} />
             </div>
           </div>
-        </CardContent>
-      </Card>
+          </div>
+        </section>
 
-      <Card className="border-border/50 shadow-sm">
-        <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-border/40">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Shield size={14} />
-            Regeneracja i styl życia
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 py-1">
+        <section>
+          <div className="pb-1 pt-3 px-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Shield size={14} />
+              Regeneracja i styl życia
+            </h3>
+          </div>
+          <div className="px-4 py-1">
           <InfoRow label="Aktywność codzienna" value={input.dailyActivity} source={sources.dailyActivity} />
           <InfoRow label="Praca fizyczna" value={input.physicalWork ? "Tak" : input.dailyActivity ? "Nie" : null} source={sources.physicalWork} />
           <InfoRow label="Sen (godz.)" value={input.sleepHours ? `${input.sleepHours} h` : null} source={sources.sleepHours} />
@@ -608,17 +611,17 @@ function Step1Summary({
             value={input.recoveryQuality ? recoveryLabels[input.recoveryQuality] ?? input.recoveryQuality : null}
             source={sources.recoveryQuality}
           />
-        </CardContent>
-      </Card>
+          </div>
+        </section>
 
-      <Card className="border-border/50 shadow-sm">
-        <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-border/40">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Gauge size={14} />
-            Preferencje i priorytety
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 py-1">
+        <section>
+          <div className="pb-1 pt-3 px-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Gauge size={14} />
+              Preferencje i priorytety
+            </h3>
+          </div>
+          <div className="px-4 py-1 pb-3">
           <div className="flex items-start justify-between gap-2 py-2 border-b border-border/40">
             <span className="text-sm text-muted-foreground w-44 shrink-0">Priorytetowe partie</span>
             <div className="flex flex-wrap gap-1 justify-end flex-1">
@@ -645,16 +648,16 @@ function Step1Summary({
               </div>
             </div>
           )}
-        </CardContent>
+          </div>
+        </section>
       </Card>
       </div>{/* end left column */}
 
-      {/* Desktop sticky right-side panel.
-          Offset (top-28 = 112 px) clears the page header + step navigation bar.
-          max-h + overflow-y-auto prevents the panel from growing past the viewport. */}
+      {/* Desktop right-side panel — sits at the top of the right column and
+          scrolls away naturally with the page (no sticky behavior). */}
       {hasRightPanel && (
         <aside
-          className="hidden lg:block lg:sticky lg:top-28 lg:self-start space-y-3 max-h-[calc(100vh-8rem)] overflow-y-auto"
+          className="hidden lg:block space-y-3"
           aria-label="Ostrzeżenia i rekomendacje"
           data-testid="right-panel"
         >

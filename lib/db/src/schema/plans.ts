@@ -227,6 +227,13 @@ export const workoutSessionsTable = pgTable("workout_sessions", {
   /** Optional client note for the whole session */
   notes: text("notes"),
   completedAt: timestamp("completed_at"),
+  // ── Optional post-workout feedback (nullable, never blocks completion) ────
+  /** Perceived difficulty 1–10 */
+  difficultyRating: integer("difficulty_rating"),
+  /** Whether the client reported pain during this session */
+  hadPain: boolean("had_pain"),
+  /** 'low' | 'medium' | 'high' */
+  energyLevel: text("energy_level"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -241,15 +248,26 @@ export const exerciseExecutionLogsTable = pgTable("exercise_execution_logs", {
   sessionId: integer("session_id")
     .notNull()
     .references(() => workoutSessionsTable.id, { onDelete: "cascade" }),
+  // Nullable + SET NULL so deleting a plan exercise never wipes workout
+  // history — the snapshot columns below keep the log readable.
   planExerciseId: integer("plan_exercise_id")
-    .notNull()
-    .references(() => workoutPlanExercisesTable.id, { onDelete: "cascade" }),
+    .references(() => workoutPlanExercisesTable.id, { onDelete: "set null" }),
   setsCompleted: integer("sets_completed"),
   repsCompleted: integer("reps_completed"),
   weightKg: numeric("weight_kg", { precision: 6, scale: 2 }),
   rir: integer("rir"),
   note: text("note"),
   isCompleted: boolean("is_completed").notNull().default(false),
+  // ── Snapshot of the prescription at execution time ────────────────────────
+  // Keeps history readable even if the trainer later edits/removes the
+  // plan exercise. exerciseId also enables previous-load matching by
+  // clientId + exerciseId across plan changes.
+  exerciseId: integer("exercise_id"),
+  exerciseNameSnapshot: text("exercise_name_snapshot"),
+  plannedSets: integer("planned_sets"),
+  plannedRepMin: integer("planned_rep_min"),
+  plannedRepMax: integer("planned_rep_max"),
+  plannedRir: integer("planned_rir"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

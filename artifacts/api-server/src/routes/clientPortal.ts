@@ -55,7 +55,58 @@ const UpsertExerciseLogBody = z.object({
 const PatchSessionBody = z.object({
   isCompleted: z.boolean().optional(),
   notes: z.string().max(1000).nullable().optional(),
+  // Optional post-workout feedback — never required, never blocks completion.
+  difficultyRating: z.number().int().min(1).max(10).nullable().optional(),
+  hadPain: z.boolean().nullable().optional(),
+  energyLevel: z.enum(["low", "medium", "high"]).nullable().optional(),
 });
+
+// Postgres error codes may be on the error itself or (Drizzle ≥0.45) on .cause.
+function pgErrorCode(err: unknown): string | undefined {
+  const e = err as { code?: string; cause?: { code?: string } };
+  return e?.code ?? e?.cause?.code;
+}
+
+const OpenSessionBody = z.object({
+  planId: z.number().int().positive(),
+  planDayId: z.number().int().positive(),
+});
+
+// ─── Progression suggestion (informational only — never mutates the plan) ────
+
+export type ProgressionSuggestion = "increase" | "maintain" | "repeat_or_reduce";
+
+export function computeProgressionSuggestion(input: {
+  prevSetsCompleted: number | null;
+  prevRepsCompleted: number | null;
+  prevRir: number | null;
+  plannedSets: number | null;
+  plannedRepMin: number | null;
+  plannedRepMax: number | null;
+  plannedRir: number | null;
+  hadPain: boolean | null;
+}): ProgressionSuggestion | null {
+  const { prevSetsCompleted, prevRepsCompleted, prevRir, plannedSets, plannedRepMin, plannedRepMax, plannedRir, hadPain } = input;
+
+  // Not enough data for any suggestion.
+  if (prevRepsCompleted == null && prevSetsCompleted == null) return null;
+
+  // Pain always blocks an increase.
+  if (hadPain === true) return "repeat_or_reduce";
+
+  // Missed the minimum rep target.
+  if (plannedRepMin != null && prevRepsCompleted != null && prevRepsCompleted < plannedRepMin) {
+    return "repeat_or_reduce";
+  }
+
+  const allSetsDone = plannedSets != null && prevSetsCompleted != null && prevSetsCompleted >= plannedSets;
+  const topOfRange = plannedRepMax != null && prevRepsCompleted != null && prevRepsCompleted >= plannedRepMax;
+  // RIR requirement: if a target exists, it must be recorded and not below target.
+  const rirOk = plannedRir == null || (prevRir != null && prevRir >= plannedRir);
+
+  if (allSetsDone && topOfRange && rirOk) return "increase";
+  return "maintain";
+}
 
 // ─── Trainer-ownership helpers ────────────────────────────────────────────────
 
@@ -278,12 +329,277 @@ router.post("/client-portal/sessions", requireClientAuth, async (req, res): Prom
     return;
   }
 
-  const [session] = await db
-    .insert(workoutSessionsTable)
-    .values({ clientId, planId, planDayId, sessionDate })
-    .returning();
+  // Single-active-session invariant (partial unique index ws_one_active_per_client_day):
+  // if an active session already exists for this day, return it instead of failing.
+  const [existingActive] = await db
+    .select()
+    .from(workoutSessionsTable)
+    .where(
+      and(
+        eq(workoutSessionsTable.clientId, clientId),
+        eq(workoutSessionsTable.planDayId, planDayId),
+        eq(workoutSessionsTable.isCompleted, false),
+      ),
+    )
+    .limit(1);
+  if (existingActive) {
+    res.status(200).json(existingActive);
+    return;
+  }
 
-  res.status(201).json(session);
+  try {
+    const [session] = await db
+      .insert(workoutSessionsTable)
+      .values({ clientId, planId, planDayId, sessionDate })
+      .returning();
+    res.status(201).json(session);
+  } catch (err: unknown) {
+    // Concurrent create hit the unique index — return the winner.
+    if (pgErrorCode(err) === "23505") {
+      const [winner] = await db
+        .select()
+        .from(workoutSessionsTable)
+        .where(
+          and(
+            eq(workoutSessionsTable.clientId, clientId),
+            eq(workoutSessionsTable.planDayId, planDayId),
+            eq(workoutSessionsTable.isCompleted, false),
+          ),
+        )
+        .limit(1);
+      if (winner) { res.status(200).json(winner); return; }
+    }
+    throw err;
+  }
+});
+
+// ─── POST /client-portal/sessions/open ───────────────────────────────────────
+// Get-or-create the single ACTIVE (not completed) session for a plan day.
+// Completed sessions are never reopened or reset here — a new session is
+// created instead. Also returns previous completed results per plan exercise
+// (matched by clientId + exerciseId) plus a non-binding progression suggestion.
+// Auth: requireClientAuth — clientId from req.client.id only.
+
+router.post("/client-portal/sessions/open", requireClientAuth, async (req, res): Promise<void> => {
+  const parsed = OpenSessionBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  const clientId = req.client!.id;
+  const { planId, planDayId } = parsed.data;
+
+  // Ownership chain: plan → authenticated client; plan day → plan.
+  const [plan] = await db
+    .select({ id: workoutPlansTable.id })
+    .from(workoutPlansTable)
+    .where(and(eq(workoutPlansTable.id, planId), eq(workoutPlansTable.clientId, clientId)));
+  if (!plan) { res.status(404).json({ error: "Plan nie znaleziony." }); return; }
+
+  const [planDay] = await db
+    .select({ id: workoutPlanDaysTable.id })
+    .from(workoutPlanDaysTable)
+    .where(and(eq(workoutPlanDaysTable.id, planDayId), eq(workoutPlanDaysTable.planId, planId)));
+  if (!planDay) { res.status(404).json({ error: "Dzień planu nie znaleziony." }); return; }
+
+  // Find the newest ACTIVE session for this day, if any.
+  const [active] = await db
+    .select()
+    .from(workoutSessionsTable)
+    .where(
+      and(
+        eq(workoutSessionsTable.clientId, clientId),
+        eq(workoutSessionsTable.planDayId, planDayId),
+        eq(workoutSessionsTable.isCompleted, false),
+      ),
+    )
+    .orderBy(desc(workoutSessionsTable.createdAt))
+    .limit(1);
+
+  let session = active;
+  if (!session) {
+    const today = new Date().toISOString().split("T")[0]!;
+    try {
+      const [created] = await db
+        .insert(workoutSessionsTable)
+        .values({ clientId, planId, planDayId, sessionDate: today })
+        .returning();
+      session = created!;
+    } catch (err: unknown) {
+      // Concurrent open hit the ws_one_active_per_client_day unique index —
+      // fall back to the session the concurrent request created.
+      if (pgErrorCode(err) !== "23505") throw err;
+      const [winner] = await db
+        .select()
+        .from(workoutSessionsTable)
+        .where(
+          and(
+            eq(workoutSessionsTable.clientId, clientId),
+            eq(workoutSessionsTable.planDayId, planDayId),
+            eq(workoutSessionsTable.isCompleted, false),
+          ),
+        )
+        .orderBy(desc(workoutSessionsTable.createdAt))
+        .limit(1);
+      if (!winner) throw err;
+      session = winner;
+    }
+  }
+
+  const logs = await db
+    .select()
+    .from(exerciseExecutionLogsTable)
+    .where(eq(exerciseExecutionLogsTable.sessionId, session.id));
+
+  // ── Previous completed results per plan exercise (clientId + exerciseId) ──
+  const dayExercises = await db
+    .select({
+      planExerciseId: workoutPlanExercisesTable.id,
+      exerciseId: workoutPlanExercisesTable.exerciseId,
+      workingSets: workoutPlanExercisesTable.workingSets,
+      repRangeMin: workoutPlanExercisesTable.repRangeMin,
+      repRangeMax: workoutPlanExercisesTable.repRangeMax,
+      repsExact: workoutPlanExercisesTable.repsExact,
+      rir: workoutPlanExercisesTable.rir,
+    })
+    .from(workoutPlanExercisesTable)
+    .where(eq(workoutPlanExercisesTable.dayId, planDayId));
+
+  const exerciseIds = [...new Set(dayExercises.map((e) => e.exerciseId))];
+
+  type PrevResult = {
+    weightKg: string | null;
+    repsCompleted: number | null;
+    setsCompleted: number | null;
+    rir: number | null;
+    completedAt: string | null;
+    suggestion: ProgressionSuggestion | null;
+  };
+  const previous: Record<number, PrevResult> = {};
+
+  if (exerciseIds.length > 0) {
+    // All completed logs of this client for these exercises, newest session first.
+    const prevRows = await db
+      .select({
+        exerciseId: exerciseExecutionLogsTable.exerciseId,
+        setsCompleted: exerciseExecutionLogsTable.setsCompleted,
+        repsCompleted: exerciseExecutionLogsTable.repsCompleted,
+        weightKg: exerciseExecutionLogsTable.weightKg,
+        rir: exerciseExecutionLogsTable.rir,
+        plannedSets: exerciseExecutionLogsTable.plannedSets,
+        plannedRepMin: exerciseExecutionLogsTable.plannedRepMin,
+        plannedRepMax: exerciseExecutionLogsTable.plannedRepMax,
+        plannedRir: exerciseExecutionLogsTable.plannedRir,
+        hadPain: workoutSessionsTable.hadPain,
+        completedAt: workoutSessionsTable.completedAt,
+        sessionId: workoutSessionsTable.id,
+      })
+      .from(exerciseExecutionLogsTable)
+      .innerJoin(workoutSessionsTable, eq(exerciseExecutionLogsTable.sessionId, workoutSessionsTable.id))
+      .where(
+        and(
+          eq(workoutSessionsTable.clientId, clientId),
+          eq(workoutSessionsTable.isCompleted, true),
+          // Only exercises the client actually finished count as a
+          // "previous result" — an unchecked log with typed-in numbers
+          // must never prefill or drive a progression suggestion.
+          eq(exerciseExecutionLogsTable.isCompleted, true),
+          inArray(exerciseExecutionLogsTable.exerciseId, exerciseIds),
+        ),
+      )
+      .orderBy(desc(workoutSessionsTable.completedAt));
+
+    // Exclude the session being opened (safety: it is active, but be explicit).
+    const newestByExercise = new Map<number, (typeof prevRows)[number]>();
+    for (const row of prevRows) {
+      if (row.sessionId === session.id || row.exerciseId == null) continue;
+      if (!newestByExercise.has(row.exerciseId)) newestByExercise.set(row.exerciseId, row);
+    }
+
+    for (const ex of dayExercises) {
+      const prev = newestByExercise.get(ex.exerciseId);
+      if (!prev) continue;
+      previous[ex.planExerciseId] = {
+        weightKg: prev.weightKg,
+        repsCompleted: prev.repsCompleted,
+        setsCompleted: prev.setsCompleted,
+        rir: prev.rir,
+        completedAt: prev.completedAt?.toISOString() ?? null,
+        suggestion: computeProgressionSuggestion({
+          prevSetsCompleted: prev.setsCompleted,
+          prevRepsCompleted: prev.repsCompleted,
+          prevRir: prev.rir,
+          // Prefer the snapshot the previous result was performed against;
+          // fall back to the current prescription.
+          plannedSets: prev.plannedSets ?? ex.workingSets,
+          plannedRepMin: prev.plannedRepMin ?? ex.repRangeMin ?? ex.repsExact,
+          plannedRepMax: prev.plannedRepMax ?? ex.repRangeMax ?? ex.repsExact,
+          plannedRir: prev.plannedRir ?? ex.rir,
+          hadPain: prev.hadPain,
+        }),
+      };
+    }
+  }
+
+  res.json({ session: { ...session, logs }, previous });
+});
+
+// ─── GET /client-portal/history ──────────────────────────────────────────────
+// Completed sessions of the authenticated client, newest first, paginated.
+// Auth: requireClientAuth.
+
+router.get("/client-portal/history", requireClientAuth, async (req, res): Promise<void> => {
+  const clientId = req.client!.id;
+  const rawLimit = Number(req.query["limit"]);
+  const rawOffset = Number(req.query["offset"]);
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 50) : 12;
+  const offset = Number.isFinite(rawOffset) && rawOffset > 0 ? rawOffset : 0;
+
+  const sessions = await db
+    .select({
+      id: workoutSessionsTable.id,
+      planId: workoutSessionsTable.planId,
+      planDayId: workoutSessionsTable.planDayId,
+      sessionDate: workoutSessionsTable.sessionDate,
+      completedAt: workoutSessionsTable.completedAt,
+      dayName: workoutPlanDaysTable.dayName,
+      daySubtitle: workoutPlanDaysTable.subtitle,
+      dayOrder: workoutPlanDaysTable.dayOrder,
+      planTitle: workoutPlansTable.title,
+    })
+    .from(workoutSessionsTable)
+    .leftJoin(workoutPlanDaysTable, eq(workoutSessionsTable.planDayId, workoutPlanDaysTable.id))
+    .leftJoin(workoutPlansTable, eq(workoutSessionsTable.planId, workoutPlansTable.id))
+    .where(and(eq(workoutSessionsTable.clientId, clientId), eq(workoutSessionsTable.isCompleted, true)))
+    .orderBy(desc(workoutSessionsTable.completedAt))
+    .limit(limit + 1)
+    .offset(offset);
+
+  const hasMore = sessions.length > limit;
+  const page = hasMore ? sessions.slice(0, limit) : sessions;
+
+  const sessionIds = page.map((s) => s.id);
+  const logs =
+    sessionIds.length > 0
+      ? await db
+          .select({
+            sessionId: exerciseExecutionLogsTable.sessionId,
+            isCompleted: exerciseExecutionLogsTable.isCompleted,
+            setsCompleted: exerciseExecutionLogsTable.setsCompleted,
+          })
+          .from(exerciseExecutionLogsTable)
+          .where(inArray(exerciseExecutionLogsTable.sessionId, sessionIds))
+      : [];
+
+  const items = page.map((s) => {
+    const sLogs = logs.filter((l) => l.sessionId === s.id);
+    const completedLogs = sLogs.filter((l) => l.isCompleted);
+    return {
+      ...s,
+      completedExercises: completedLogs.length,
+      completedSets: completedLogs.reduce((sum, l) => sum + (l.setsCompleted ?? 0), 0),
+    };
+  });
+
+  res.json({ items, hasMore, offset, limit });
 });
 
 // ─── GET /client-portal/sessions/:sessionId ──────────────────────────────────
@@ -302,10 +618,25 @@ router.get("/client-portal/sessions/:sessionId", requireClientAuth, async (req, 
   const session = await verifySessionOwnership(sessionId, clientId);
   if (!session) { res.status(404).json({ error: "Sesja nie znaleziona." }); return; }
 
-  const logs = await db
-    .select()
+  // Left-join current plan exercise + exercise name; snapshots keep history
+  // readable when the trainer has since edited or removed the plan exercise.
+  const logRows = await db
+    .select({
+      log: exerciseExecutionLogsTable,
+      currentName: exercisesTable.name,
+      orderInDay: workoutPlanExercisesTable.orderInDay,
+    })
     .from(exerciseExecutionLogsTable)
+    .leftJoin(workoutPlanExercisesTable, eq(exerciseExecutionLogsTable.planExerciseId, workoutPlanExercisesTable.id))
+    .leftJoin(exercisesTable, eq(workoutPlanExercisesTable.exerciseId, exercisesTable.id))
     .where(eq(exerciseExecutionLogsTable.sessionId, sessionId));
+
+  const logs = logRows
+    .sort((a, b) => (a.orderInDay ?? 999) - (b.orderInDay ?? 999))
+    .map((r) => ({
+      ...r.log,
+      exerciseName: r.log.exerciseNameSnapshot ?? r.currentName ?? null,
+    }));
 
   res.json({ ...session, logs });
 });
@@ -321,7 +652,7 @@ router.patch("/client-portal/sessions/:sessionId", requireClientAuth, async (req
   const parsed = PatchSessionBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
-  const { isCompleted, notes } = parsed.data;
+  const { isCompleted, notes, difficultyRating, hadPain, energyLevel } = parsed.data;
 
   const existing = await verifySessionOwnership(sessionId, clientId);
   if (!existing) { res.status(404).json({ error: "Sesja nie znaleziona." }); return; }
@@ -332,6 +663,9 @@ router.patch("/client-portal/sessions/:sessionId", requireClientAuth, async (req
     isCompleted?: boolean;
     completedAt?: Date | null;
     notes?: string | null;
+    difficultyRating?: number | null;
+    hadPain?: boolean | null;
+    energyLevel?: string | null;
   };
 
   const patch: SessionUpdate = { updatedAt: new Date() };
@@ -340,15 +674,28 @@ router.patch("/client-portal/sessions/:sessionId", requireClientAuth, async (req
     patch.completedAt = isCompleted ? new Date() : null;
   }
   if (notes !== undefined) patch.notes = notes;
+  if (difficultyRating !== undefined) patch.difficultyRating = difficultyRating;
+  if (hadPain !== undefined) patch.hadPain = hadPain;
+  if (energyLevel !== undefined) patch.energyLevel = energyLevel;
 
-  const [updated] = await db
-    .update(workoutSessionsTable)
-    .set(patch)
-    .where(and(eq(workoutSessionsTable.id, sessionId), eq(workoutSessionsTable.clientId, clientId)))
-    .returning();
+  try {
+    const [updated] = await db
+      .update(workoutSessionsTable)
+      .set(patch)
+      .where(and(eq(workoutSessionsTable.id, sessionId), eq(workoutSessionsTable.clientId, clientId)))
+      .returning();
 
-  if (!updated) { res.status(404).json({ error: "Sesja nie znaleziona." }); return; }
-  res.json(updated);
+    if (!updated) { res.status(404).json({ error: "Sesja nie znaleziona." }); return; }
+    res.json(updated);
+  } catch (err: unknown) {
+    // Un-completing while another active session exists for the same day
+    // would violate the single-active-session invariant.
+    if (pgErrorCode(err) === "23505") {
+      res.status(409).json({ error: "Istnieje już aktywna sesja dla tego dnia treningowego." });
+      return;
+    }
+    throw err;
+  }
 });
 
 // ─── PUT /client-portal/sessions/:sessionId/exercises/:planExerciseId ────────
@@ -412,6 +759,22 @@ router.put(
         .returning();
       log = updated;
     } else {
+      // Snapshot the prescription at execution time so history stays readable
+      // even if the trainer later edits or removes this plan exercise.
+      const [prescription] = await db
+        .select({
+          exerciseId: workoutPlanExercisesTable.exerciseId,
+          exerciseName: exercisesTable.name,
+          workingSets: workoutPlanExercisesTable.workingSets,
+          repRangeMin: workoutPlanExercisesTable.repRangeMin,
+          repRangeMax: workoutPlanExercisesTable.repRangeMax,
+          repsExact: workoutPlanExercisesTable.repsExact,
+          rir: workoutPlanExercisesTable.rir,
+        })
+        .from(workoutPlanExercisesTable)
+        .innerJoin(exercisesTable, eq(workoutPlanExercisesTable.exerciseId, exercisesTable.id))
+        .where(eq(workoutPlanExercisesTable.id, planExerciseId));
+
       const [inserted] = await db
         .insert(exerciseExecutionLogsTable)
         .values({
@@ -423,6 +786,12 @@ router.put(
           rir: rir ?? null,
           note: note ?? null,
           isCompleted: isCompleted ?? false,
+          exerciseId: prescription?.exerciseId ?? null,
+          exerciseNameSnapshot: prescription?.exerciseName ?? null,
+          plannedSets: prescription?.workingSets ?? null,
+          plannedRepMin: prescription?.repRangeMin ?? prescription?.repsExact ?? null,
+          plannedRepMax: prescription?.repRangeMax ?? prescription?.repsExact ?? null,
+          plannedRir: prescription?.rir ?? null,
         })
         .returning();
       log = inserted;

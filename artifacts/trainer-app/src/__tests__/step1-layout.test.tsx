@@ -88,7 +88,7 @@ function TestLayout({
       {/* Desktop right panel */}
       {hasRightPanel && (
         <aside
-          className="hidden lg:block lg:sticky lg:top-28 lg:self-start space-y-3 max-h-[calc(100vh-8rem)] overflow-y-auto"
+          className="hidden lg:block space-y-3"
           aria-label="Ostrzeżenia i rekomendacje"
           data-testid="right-panel"
         >
@@ -158,23 +158,23 @@ describe("(32) Activity recommendation appears below the pain warning", () => {
   });
 });
 
-// ─── 33. The panel is sticky on desktop ──────────────────────────────────────
+// ─── 33. The panel is NOT sticky (scrolls away naturally) ────────────────────
 
-describe("(33) Right panel has sticky positioning class", () => {
-  it("aside has the lg:sticky class", () => {
+describe("(33) Right panel has no sticky positioning class", () => {
+  it("aside does not have the lg:sticky class", () => {
     render(
       <TestLayout showPainAlert={true} showHealthAlert={false} showCardioNote={false} />,
     );
     const aside = screen.getByTestId("right-panel");
-    expect(aside.className).toContain("lg:sticky");
+    expect(aside.className).not.toContain("lg:sticky");
   });
 
-  it("aside has a top offset class to clear the header", () => {
+  it("aside has no top offset class", () => {
     render(
       <TestLayout showPainAlert={true} showHealthAlert={false} showCardioNote={false} />,
     );
     const aside = screen.getByTestId("right-panel");
-    expect(aside.className).toContain("lg:top-");
+    expect(aside.className).not.toContain("lg:top-");
   });
 });
 

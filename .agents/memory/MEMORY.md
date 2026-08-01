@@ -27,4 +27,5 @@
 - [client-landing API URL pattern](client-landing-api-url.md) — always use absolute `/api/...`; never prepend BASE_URL (`/client-landing/api/...` routes to Vite, not the API server).
 - [CORS env var semantics](cors-env-var-semantics.md) — LOCAL_* vars for dev Replit domain; TRAINER_APP_ORIGIN/CLIENT_PORTAL_ORIGIN reserved for prod (throw in prod if absent); dev DB needs migration 0006 applied manually.
 - [Thin-pool retry for alt sessions](thin-pool-retry.md) — altIdx>0 upper session fails when weekUsedExerciseIds exhausts the dumbbell pool; fix: retry with same-type-only exclusion set; also fixes missing sameTypePreviousExercises pass-through.
+- [Session history invariants](session-history-invariants.md) — one active session per client/day (partial unique index), previous loads only from completed logs, plan_exercise_id FK is SET NULL, Drizzle hides pg codes in err.cause.
 - [Progression suitability scoring](progression-suitability-scoring.md) — scoreProgressionSuitability (+12 loadable / -8 regression) + deprioritizePushUps extended to dumbbell clients + capPushUpsAtOne flag in V0PriorityContext.

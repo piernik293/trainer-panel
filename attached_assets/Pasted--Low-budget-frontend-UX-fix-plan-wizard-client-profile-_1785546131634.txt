@@ -1,0 +1,70 @@
+## Low-budget frontend UX fix — plan wizard client profile step
+
+Make only a small visual change to the existing “Profil klienta” step.
+
+Do not modify backend, database, generator logic, validation, restrictions logic, routing or authentication.
+
+Do not redesign the entire page.
+Do not run the full test suite.
+Do not read unrelated files.
+
+### 1. Health warning
+
+The yellow “Uwaga: zgłoszono zdrowie / ograniczenia” panel currently follows the trainer while scrolling.
+
+Remove its sticky/fixed behavior.
+
+It should:
+- remain in its normal position at the top of the right column,
+- scroll away naturally with the page,
+- keep its current warning content and behavior,
+- remain clearly visible without dominating the screen.
+
+Remove classes or styles such as:
+- sticky,
+- fixed,
+- top-*,
+- position: sticky.
+
+### 2. Reduce the number of visually separate white cards
+
+The left column currently looks overcrowded because every interview section appears as a separate elevated white card.
+
+Keep the existing content and section order, but visually simplify it:
+
+- use one main white container for the client interview summary,
+- make the internal sections flatter,
+- separate sections with subtle dividers and spacing,
+- remove strong shadows and excessive rounded borders from each internal section,
+- retain section headings and icons,
+- do not hide any information.
+
+The result should feel like:
+
+one interview summary panel
+→ several clearly separated sections inside it
+
+rather than many independent floating cards.
+
+### 3. Preserve behavior
+
+Do not change:
+- displayed values,
+- “wywiad” badges,
+- adaptive-start status,
+- health warning logic,
+- navigation between wizard steps.
+
+Verify only:
+1. the yellow warning no longer follows scrolling,
+2. all interview sections remain visible,
+3. the page is less visually crowded,
+4. desktop layout remains two-column,
+5. mobile layout does not overflow.
+
+Stop immediately after this visual change.
+
+Report only:
+- file changed,
+- sticky style removed,
+- visual card simplification applied.

@@ -1,0 +1,302 @@
+## Focused feature — workout history, persistent loads and next-session progression
+
+Continue from the current workspace state.
+
+Do not start any suggested tasks from the Replit sidebar.
+
+### Strict scope
+
+Implement only the client workout-session lifecycle:
+
+- completed workout summary,
+- client workout history,
+- separate workout sessions,
+- carrying previous loads into the next session,
+- simple progression suggestions.
+
+Do not modify:
+
+- workout-plan generator,
+- survey invitations,
+- email delivery,
+- authentication,
+- trainer isolation,
+- adaptive-start logic,
+- restriction scoring,
+- unrelated tests or old TypeScript errors.
+
+Do not perform a broad repository audit.
+
+---
+
+## Core data rule
+
+Keep these concepts separate:
+
+1. Workout plan/template  
+   Defines exercises, planned sets, rep ranges and RIR.
+
+2. Workout session  
+   Represents one actual performance of a workout on a specific date.
+
+3. Exercise/set results  
+   Stores actual load, repetitions, RIR, completion and notes for that session.
+
+Never reset or overwrite a completed workout session.
+
+When the client performs the same workout again, create a new session.
+
+---
+
+## 1. Workout completion screen
+
+After the client completes the final exercise, show:
+
+- `Trening zakończony! Świetna robota.`
+- `Ukończono {completedExercises} z {totalExercises} ćwiczeń`
+- workout date,
+- total completed sets, if already available.
+
+Actions:
+
+- primary: `Wróć do planu`
+- secondary: `Zobacz podsumowanie`
+- small destructive/undo action: `Cofnij zakończenie treningu`
+
+`Wróć do planu` must reuse the existing client plan/week route.
+
+Do not create a new route unnecessarily.
+
+The completed session must remain saved after leaving the screen.
+
+---
+
+## 2. New session after completion
+
+After a workout session is completed:
+
+- keep all its checkboxes, loads, repetitions, RIR and notes in history,
+- do not reset that completed record,
+- the next time the same workout is opened, create or load a new active session,
+- all completion checkboxes in the new session must initially be unchecked.
+
+Do not copy completion state from the previous workout.
+
+Do not alter the workout-plan template when completing a session.
+
+Only one active session for the same client/workout should exist at a time.
+
+---
+
+## 3. Client workout history
+
+Add an accessible client-side section:
+
+`Historia treningów`
+
+Show the 12 most recent completed sessions by default, newest first.
+
+Each history item should display:
+
+- workout name,
+- completion date and time,
+- completed exercises count,
+- completed sets count,
+- status `Ukończony`.
+
+Clicking a history item opens a read-only detail view containing:
+
+- exercises,
+- loads used,
+- repetitions for each set,
+- RIR, if recorded,
+- notes,
+- completion date.
+
+Keep all older sessions in the database.
+
+Do not permanently limit stored history to 12.
+
+Use pagination or `Pokaż starsze` for older sessions.
+
+A completed historical session should be editable only through the existing `Cofnij zakończenie treningu` action.
+
+Undo must affect only the selected session.
+
+---
+
+## 4. Carry previous loads into the next workout
+
+When a new session is created, load the most recent completed result for each matching exercise.
+
+Match primarily by:
+
+`clientId + exerciseId`
+
+Do not rely only on the exercise name.
+
+Display:
+
+`Poprzednio: 20 kg × 12, 12, 11`
+
+Prefill the new session load field with the previous load where appropriate.
+
+Important:
+
+- copied load is only a starting suggestion,
+- the client may edit it,
+- copied values must not mark any set as completed,
+- actual repetitions must not be falsely recorded as performed,
+- the previous completed session must remain unchanged,
+- exercises with no previous result should remain empty.
+
+If the plan changes, only carry values for exercises that still match safely.
+
+---
+
+## 5. Preserve historical accuracy
+
+Historical sessions must remain understandable even if the trainer later:
+
+- changes the plan,
+- removes an exercise,
+- renames an exercise,
+- changes sets or rep ranges.
+
+Where needed, store a session snapshot of:
+
+- exercise name,
+- planned sets,
+- planned rep range,
+- planned RIR.
+
+Keep the original `exerciseId` as well.
+
+Do not retroactively change old history when the template changes.
+
+---
+
+## 6. Simple progression suggestion
+
+Show a non-binding suggestion next to an exercise when enough previous data exists.
+
+Possible statuses:
+
+- `Zwiększ ciężar`
+- `Utrzymaj ciężar`
+- `Powtórz lub zmniejsz ciężar`
+
+Basic rule:
+
+### Increase
+
+Suggest increasing load only when:
+
+- every planned working set was completed,
+- the upper end of the rep range was achieved,
+- recorded RIR was not lower than the target,
+- no pain was reported for that exercise/session.
+
+### Maintain
+
+Suggest maintaining load when:
+
+- the planned range was completed,
+- but the upper range or RIR requirement was not consistently achieved.
+
+### Repeat or reduce
+
+Suggest repeating or reducing when:
+
+- minimum repetitions were missed,
+- the workout was completed much harder than planned,
+- pain was reported.
+
+Example:
+
+`Poprzednio: 20 kg × 12, 12, 12`
+
+`Sugestia: zwiększ ciężar przy kolejnym treningu`
+
+Do not automatically change the workout plan or prescribed load.
+
+The suggestion is informational only.
+
+If trainer approval infrastructure already exists, expose the suggestion to the trainer for:
+
+- `Zaakceptuj`
+- `Edytuj`
+- `Odrzuć`
+
+Do not build a large new approval system if none exists. In that case, keep progression read-only.
+
+---
+
+## 7. Optional short post-workout feedback
+
+Only if the existing session model can support it with a small change, add:
+
+- `Trudność treningu` — scale 1–10,
+- `Czy pojawił się ból?` — yes/no,
+- `Energia` — low/medium/high,
+- optional session note.
+
+Do not let this optional section block workout completion.
+
+Pain feedback must prevent an automatic `Zwiększ ciężar` suggestion.
+
+---
+
+## Security and ownership
+
+Every client session/history operation must remain bound to the authenticated client.
+
+A client must not read or modify another client’s sessions.
+
+Trainer-side access must remain restricted to that trainer’s clients.
+
+Do not accept ownership from caller-provided `clientId` or `trainerId` without verifying it against authenticated context.
+
+---
+
+## Focused verification
+
+Verify only these flows:
+
+1. Complete workout A.
+2. Confirm workout A remains saved in history.
+3. Open its history details and confirm loads/reps remain visible.
+4. Start workout A again.
+5. Confirm a new session is used.
+6. Confirm all completion checkboxes are unchecked.
+7. Confirm previous loads are prefilled or clearly suggested.
+8. Change a load and complete the new session.
+9. Confirm both sessions remain separately visible in history.
+10. Confirm the 12 newest sessions are shown first.
+11. Confirm older sessions are retained and can be loaded.
+12. Confirm progression suggestions do not automatically change the plan.
+13. Confirm undo reopens only the selected session.
+
+Run only directly related focused tests.
+
+Do not run the full repository test suite.
+
+---
+
+## Final report
+
+Report:
+
+- existing session model reused or schema changes made,
+- how a new session is created,
+- how previous loads are matched,
+- how history pagination works,
+- progression rules implemented,
+- files changed,
+- focused test results,
+- manual verification result,
+- remaining limitation.
+
+Required completion statement:
+
+READY — completed workouts remain in client history and previous loads carry into new sessions

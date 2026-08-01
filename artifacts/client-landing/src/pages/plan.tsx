@@ -94,6 +94,9 @@ interface Session {
   isCompleted: boolean;
   notes: string | null;
   completedAt: string | null;
+  difficultyRating: number | null;
+  hadPain: boolean | null;
+  energyLevel: "low" | "medium" | "high" | null;
   logs: ExerciseLog[];
 }
 
@@ -107,6 +110,70 @@ interface ExerciseLog {
   rir: number | null;
   note: string | null;
   isCompleted: boolean;
+  /** Present on session-detail responses (snapshot or current name). */
+  exerciseName?: string | null;
+}
+
+type ProgressionSuggestion = "increase" | "maintain" | "repeat_or_reduce";
+
+interface PrevResult {
+  weightKg: string | null;
+  repsCompleted: number | null;
+  setsCompleted: number | null;
+  rir: number | null;
+  completedAt: string | null;
+  suggestion: ProgressionSuggestion | null;
+}
+
+interface OpenSessionResponse {
+  session: Session;
+  previous: Record<number, PrevResult>;
+}
+
+interface HistoryItem {
+  id: number;
+  planId: number;
+  planDayId: number;
+  sessionDate: string;
+  completedAt: string | null;
+  dayName: string | null;
+  daySubtitle: string | null;
+  dayOrder: number | null;
+  planTitle: string | null;
+  completedExercises: number;
+  completedSets: number;
+}
+
+interface HistoryResponse {
+  items: HistoryItem[];
+  hasMore: boolean;
+  offset: number;
+  limit: number;
+}
+
+const SUGGESTION_LABELS: Record<ProgressionSuggestion, string> = {
+  increase: "Sugestia: zwiększ ciężar przy kolejnym treningu",
+  maintain: "Sugestia: utrzymaj ciężar",
+  repeat_or_reduce: "Sugestia: powtórz lub zmniejsz ciężar",
+};
+
+function formatPrevious(prev: PrevResult): string {
+  const parts: string[] = [];
+  if (prev.weightKg != null && prev.weightKg !== "") parts.push(`${parseFloat(prev.weightKg)} kg`);
+  if (prev.repsCompleted != null) {
+    const sets = prev.setsCompleted ?? 1;
+    parts.push(Array.from({ length: Math.max(sets, 1) }, () => `${prev.repsCompleted}`).join(", "));
+  } else if (prev.setsCompleted != null) {
+    parts.push(`${prev.setsCompleted} serii`);
+  }
+  return parts.join(" × ");
+}
+
+function formatDateTime(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" }) +
+    ", " + d.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
 }
 
 interface RampItem {
@@ -137,10 +204,6 @@ function formatPrescription(ex: PlanExercise): string {
   return `${sets} serie${reps ? ` × ${reps}` : ""}${rir}${rest}`;
 }
 
-function getTodayDate(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
 const PHASE_ICONS: Record<string, React.ReactNode> = {
   Raise: <Flame className="w-4 h-4 text-orange-400" />,
@@ -258,11 +321,13 @@ function ExerciseLogRow({
   ex,
   sessionId,
   initialLog,
+  previous,
   onLogSaved,
 }: {
   ex: PlanExercise;
   sessionId: number;
   initialLog: ExerciseLog | null;
+  previous: PrevResult | null;
   onLogSaved: (log: ExerciseLog) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -271,7 +336,9 @@ function ExerciseLogRow({
   const [log, setLog] = useState<LogState>({
     setsCompleted: initialLog?.setsCompleted?.toString() ?? "",
     repsCompleted: initialLog?.repsCompleted?.toString() ?? "",
-    weightKg: initialLog?.weightKg ?? "",
+    // Previous load is only a starting suggestion — prefilled in the input,
+    // editable, never auto-saved and never marks anything as completed.
+    weightKg: initialLog?.weightKg ?? (previous?.weightKg != null ? String(parseFloat(previous.weightKg)) : ""),
     rir: initialLog?.rir?.toString() ?? "",
     note: initialLog?.note ?? "",
     isCompleted: initialLog?.isCompleted ?? false,
@@ -365,6 +432,20 @@ function ExerciseLogRow({
           {ex.clientInstructions && (
             <p className="text-xs text-primary/80 bg-primary/5 px-3 py-2 border border-primary/10">{ex.clientInstructions}</p>
           )}
+          {previous && (
+            <div className="text-xs px-3 py-2 border border-white/10 bg-white/5 space-y-0.5">
+              <p className="text-muted-foreground">Poprzednio: <span className="text-foreground font-medium">{formatPrevious(previous) || "—"}</span></p>
+              {previous.suggestion && (
+                <p className={cn(
+                  previous.suggestion === "increase" && "text-green-400",
+                  previous.suggestion === "maintain" && "text-muted-foreground",
+                  previous.suggestion === "repeat_or_reduce" && "text-yellow-500",
+                )}>
+                  {SUGGESTION_LABELS[previous.suggestion]}
+                </p>
+              )}
+            </div>
+          )}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <div>
               <label className="text-xs text-muted-foreground block mb-1">Serie wykonane</label>
@@ -452,30 +533,24 @@ function SessionView({
   onBack: () => void;
 }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [previous, setPrevious] = useState<Record<number, PrevResult>>({});
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        // Look for existing session today.
-        const sessions = await apiFetch<Session[]>(`/client-portal/sessions?planDayId=${day.id}`);
-        const today = getTodayDate();
-        const todaySession = sessions.find((s) => s.sessionDate === today);
-
-        if (todaySession) {
-          // Load full session with logs.
-          const full = await apiFetch<Session>(`/client-portal/sessions/${todaySession.id}`);
-          setSession(full);
-        } else {
-          // Create new session for today.
-          const created = await apiFetch<Session>("/client-portal/sessions", {
-            method: "POST",
-            body: JSON.stringify({ planId, planDayId: day.id, sessionDate: today }),
-          });
-          setSession({ ...created, logs: [] });
-        }
+        // Server-side get-or-create: returns the single active (not completed)
+        // session for this day, or creates a fresh one. Completed sessions are
+        // never reopened — they stay in history untouched.
+        const opened = await apiFetch<OpenSessionResponse>("/client-portal/sessions/open", {
+          method: "POST",
+          body: JSON.stringify({ planId, planDayId: day.id }),
+        });
+        setSession(opened.session);
+        setPrevious(opened.previous ?? {});
       } catch {
         // empty
       } finally {
@@ -526,6 +601,7 @@ function SessionView({
   }
 
   const completedCount = session.logs.filter((l) => l.isCompleted).length;
+  const completedSets = session.logs.filter((l) => l.isCompleted).reduce((sum, l) => sum + (l.setsCompleted ?? 0), 0);
   const totalCount = day.exercises.length;
   const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
@@ -565,14 +641,28 @@ function SessionView({
                 <p className="text-sm font-medium">Trening zakończony! Świetna robota.</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Ukończono {completedCount} z {totalCount} ćwiczeń
+                  {completedSets > 0 ? ` · ${completedSets} serii` : ""}
                 </p>
+                {session.completedAt && (
+                  <p className="text-xs text-muted-foreground mt-0.5">{formatDateTime(session.completedAt)}</p>
+                )}
               </div>
             </div>
+
+            <SessionFeedbackForm session={session} onSaved={(s) => setSession((cur) => (cur ? { ...cur, ...s } : cur))} />
+
             <Button
               onClick={onBack}
               className="w-full h-11 rounded-none font-semibold uppercase tracking-wide"
             >
               Wróć do planu
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowSummary(true)}
+              className="w-full h-9 rounded-none text-sm"
+            >
+              Zobacz podsumowanie
             </Button>
             <button
               type="button"
@@ -589,6 +679,10 @@ function SessionView({
           </div>
         )}
 
+        {showSummary && (
+          <SessionDetailReadOnly sessionId={session.id} onClose={() => setShowSummary(false)} />
+        )}
+
         {/* RAMP Warm-up */}
         <RampWarmup sessionId={session.id} />
 
@@ -600,10 +694,11 @@ function SessionView({
           ) : (
             day.exercises.map((ex) => (
               <ExerciseLogRow
-                key={ex.id}
+                key={`${session.id}-${ex.id}`}
                 ex={ex}
                 sessionId={session.id}
                 initialLog={session.logs.find((l) => l.planExerciseId === ex.id) ?? null}
+                previous={previous[ex.id] ?? null}
                 onLogSaved={handleLogSaved}
               />
             ))
@@ -627,6 +722,300 @@ function SessionView({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── SessionFeedbackForm ──────────────────────────────────────────────────────
+// Optional post-workout feedback — auto-saved, never blocks completion.
+
+function SessionFeedbackForm({
+  session,
+  onSaved,
+}: {
+  session: Session;
+  onSaved: (patch: Partial<Session>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const patch = async (body: Record<string, unknown>) => {
+    setSaving(true);
+    try {
+      const updated = await apiFetch<Session>(`/client-portal/sessions/${session.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      onSaved(updated);
+    } catch {
+      // silent
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border border-white/10 bg-background/40">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <span>Jak poszło? (opcjonalnie)</span>
+        <span className="flex items-center gap-1.5">
+          {saving && <Loader2 className="w-3 h-3 animate-spin" />}
+          {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        </span>
+      </button>
+      {open && (
+        <div className="px-3 pb-3 space-y-3 border-t border-white/10 pt-3">
+          <div>
+            <p className="text-xs text-muted-foreground mb-1.5">Trudność treningu (1–10)</p>
+            <div className="flex flex-wrap gap-1">
+              {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => patch({ difficultyRating: n })}
+                  className={cn(
+                    "w-7 h-7 text-xs border transition-colors",
+                    session.difficultyRating === n
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-white/15 text-muted-foreground hover:border-primary/40",
+                  )}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1.5">Czy pojawił się ból?</p>
+            <div className="flex gap-1">
+              {([["Tak", true], ["Nie", false]] as const).map(([label, val]) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => patch({ hadPain: val })}
+                  className={cn(
+                    "px-3 h-7 text-xs border transition-colors",
+                    session.hadPain === val
+                      ? val
+                        ? "border-yellow-500 bg-yellow-500/15 text-yellow-500"
+                        : "border-primary bg-primary text-primary-foreground"
+                      : "border-white/15 text-muted-foreground hover:border-primary/40",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1.5">Energia</p>
+            <div className="flex gap-1">
+              {([["Niska", "low"], ["Średnia", "medium"], ["Wysoka", "high"]] as const).map(([label, val]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => patch({ energyLevel: val })}
+                  className={cn(
+                    "px-3 h-7 text-xs border transition-colors",
+                    session.energyLevel === val
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-white/15 text-muted-foreground hover:border-primary/40",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1.5">Notatka do sesji</p>
+            <SessionNoteInput initialValue={session.notes ?? ""} onSave={(notes) => patch({ notes: notes || null })} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SessionNoteInput({ initialValue, onSave }: { initialValue: string; onSave: (v: string) => void }) {
+  const [value, setValue] = useState(initialValue);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  return (
+    <Textarea
+      placeholder="np. dobre tempo, następnym razem więcej przerwy..."
+      value={value}
+      onChange={(e) => {
+        setValue(e.target.value);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => onSave(e.target.value), 800);
+      }}
+      className="min-h-[52px] text-sm bg-background/50 border-white/10 focus-visible:border-primary rounded-none resize-none"
+    />
+  );
+}
+
+// ─── SessionDetailReadOnly ────────────────────────────────────────────────────
+// Read-only view of a (usually completed) session — used by the post-workout
+// summary and by history items. Editing happens only via the existing
+// "Cofnij zakończenie treningu" action on the session itself.
+
+function SessionDetailReadOnly({ sessionId, onClose }: { sessionId: number; onClose: () => void }) {
+  const [detail, setDetail] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        setDetail(await apiFetch<Session>(`/client-portal/sessions/${sessionId}`));
+      } catch {
+        // empty
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [sessionId]);
+
+  return (
+    <div className="border border-white/10 bg-card">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Podsumowanie treningu</p>
+        <button type="button" onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+          Zamknij
+        </button>
+      </div>
+      {loading ? (
+        <div className="py-8 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+      ) : !detail ? (
+        <p className="text-sm text-muted-foreground px-4 py-6">Nie udało się załadować podsumowania.</p>
+      ) : (
+        <div className="px-4 py-4 space-y-3">
+          {detail.completedAt && (
+            <p className="text-xs text-muted-foreground">Ukończono: {formatDateTime(detail.completedAt)}</p>
+          )}
+          {detail.logs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Brak zapisanych ćwiczeń w tej sesji.</p>
+          ) : (
+            <div className="space-y-2">
+              {detail.logs.map((log) => (
+                <div key={log.id} className="border border-white/10 px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={cn("text-sm font-medium", log.isCompleted && "text-foreground")}>
+                      {log.exerciseName ?? "Ćwiczenie"}
+                    </p>
+                    {log.isCompleted && (
+                      <Badge variant="outline" className="text-xs px-1.5 py-0 border-primary/30 text-primary shrink-0">Wykonane</Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {[
+                      log.weightKg != null && log.weightKg !== "" ? `${parseFloat(log.weightKg)} kg` : null,
+                      log.repsCompleted != null ? `${log.repsCompleted} powt.` : null,
+                      log.setsCompleted != null ? `${log.setsCompleted} serii` : null,
+                      log.rir != null ? `RIR ${log.rir}` : null,
+                    ].filter(Boolean).join(" × ") || "Brak danych"}
+                  </p>
+                  {log.note && <p className="text-xs text-muted-foreground/70 mt-1 italic">{log.note}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+          {detail.notes && (
+            <p className="text-xs text-muted-foreground border border-white/10 px-3 py-2">Notatka: {detail.notes}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── HistorySection ───────────────────────────────────────────────────────────
+// "Historia treningów" — completed sessions, newest first, 12 per page.
+
+function HistorySection() {
+  const [items, setItems] = useState<HistoryItem[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  const load = useCallback(async (offset: number) => {
+    const res = await apiFetch<HistoryResponse>(`/client-portal/history?limit=12&offset=${offset}`);
+    setItems((prev) => (offset === 0 ? res.items : [...prev, ...res.items]));
+    setHasMore(res.hasMore);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try { await load(0); } catch { /* empty */ } finally { setLoading(false); }
+    })();
+  }, [load]);
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Historia treningów</h2>
+        <div className="py-6 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+      </div>
+    );
+  }
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Historia treningów</h2>
+      {selectedId != null && (
+        <SessionDetailReadOnly sessionId={selectedId} onClose={() => setSelectedId(null)} />
+      )}
+      <div className="space-y-2">
+        {items.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => setSelectedId(item.id === selectedId ? null : item.id)}
+            className={cn(
+              "w-full text-left border bg-card hover:bg-white/5 transition-all px-4 py-3",
+              item.id === selectedId ? "border-primary/40" : "border-white/10 hover:border-primary/30",
+            )}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-sm">
+                    {item.dayName ?? (item.dayOrder != null ? `Dzień ${item.dayOrder}` : item.planTitle ?? "Trening")}
+                  </span>
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 border-primary/30 text-primary">Ukończony</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {formatDateTime(item.completedAt)}
+                  {` · ${item.completedExercises} ćwiczeń`}
+                  {item.completedSets > 0 ? ` · ${item.completedSets} serii` : ""}
+                </p>
+              </div>
+              <ChevronRight className={cn("w-4 h-4 text-muted-foreground shrink-0 transition-transform", item.id === selectedId && "rotate-90")} />
+            </div>
+          </button>
+        ))}
+      </div>
+      {hasMore && (
+        <Button
+          variant="outline"
+          disabled={loadingMore}
+          onClick={async () => {
+            setLoadingMore(true);
+            try { await load(items.length); } catch { /* empty */ } finally { setLoadingMore(false); }
+          }}
+          className="w-full h-9 rounded-none text-sm"
+        >
+          {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : "Pokaż starsze"}
+        </Button>
+      )}
     </div>
   );
 }
@@ -692,6 +1081,8 @@ function PlanView({
             ))
           )}
         </div>
+
+        <HistorySection />
       </div>
     </div>
   );

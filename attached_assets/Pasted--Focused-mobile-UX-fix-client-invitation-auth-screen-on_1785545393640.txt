@@ -1,0 +1,123 @@
+## Focused mobile UX fix — client invitation auth screen on iPhone
+
+Problem:
+
+When a client opens the trainer invitation link on iPhone, the current auth screen is not clear enough.
+
+The page currently looks like a small embedded auth card with weak readability and no clear explanation of what the client is doing.
+
+We need to redesign this invitation-auth screen to be much more readable and mobile-first.
+
+### Goal
+
+Make the client invitation flow feel like a proper mobile onboarding screen:
+
+trainer sends link
+→ client opens link
+→ client clearly understands this is access to their training app
+→ client logs in or signs up
+→ client is connected to their account
+→ client goes to their plan
+
+### Requirements
+
+1. Keep the existing invitation token / account activation logic.
+2. Do not change authentication security.
+3. Do not redesign unrelated pages.
+4. Focus only on the client invitation / auth screen and its immediate success state.
+
+---
+
+## Mobile-first UX requirements
+
+### A. Replace the current embedded-looking auth layout
+
+The screen should no longer look like a small iframe/modal floating in the middle.
+
+Use a full mobile page layout optimized for iPhone:
+- min-height: 100dvh
+- proper horizontal padding
+- safe-area support
+- no clipped or cramped auth card
+- readable spacing and typography
+
+### B. Add clear context above auth
+
+At the top of the screen show:
+
+- title: `Dostęp do planu treningowego`
+- description:
+  `Twój trener udostępnił Ci konto klienta. Zaloguj się lub utwórz konto, aby zobaczyć plan treningowy, historię treningów i zapisywać ciężary.`
+
+If available, also show:
+- trainer name
+- client name or invite email
+
+### C. Separate login and signup intent
+
+Make it very clear whether the user should:
+- log in if they already have an account
+- create an account if they do not
+
+Preferred UX:
+- tabs, segmented switch, or two clear buttons:
+  - `Mam już konto — Zaloguj się`
+  - `Nie mam konta — Utwórz konto`
+
+Do not rely only on a tiny “Don’t have an account? Sign up” link.
+
+### D. Improve button clarity
+
+Replace vague CTA feeling with clear language:
+- `Kontynuuj`
+- `Zaloguj się`
+- `Utwórz konto`
+- after success: `Przejdź do planu`
+
+### E. Improve readability on iPhone
+
+Ensure:
+- strong contrast,
+- larger text for the main heading,
+- clear input fields,
+- enough vertical spacing,
+- full-width buttons,
+- auth card fits comfortably on iPhone.
+
+### F. Preserve invite activation flow
+
+After successful sign-in or sign-up:
+- keep the invite token context,
+- complete the account linking,
+- show a short success state:
+  - `Konto połączone pomyślnie`
+  - `Możesz teraz przejść do swojego planu treningowego`
+- primary button:
+  `Przejdź do planu`
+
+### G. Error / expired state consistency
+
+If the invite is expired, revoked, or already used, keep those existing states, but make them visually consistent with the new mobile layout.
+
+---
+
+## Deliverable
+
+Implement the redesigned invitation auth page and success state.
+
+Verify:
+1. opening the invitation link on a narrow mobile viewport,
+2. clear login/signup choice,
+3. readable full-screen layout on iPhone width,
+4. successful login/signup returns to invitation activation,
+5. success screen leads into the existing client plan view.
+
+Do not run a broad audit.
+Do not modify unrelated trainer-side pages.
+
+Report:
+- files changed,
+- what UX was changed,
+- how login/signup flow now works on mobile,
+- how invite token context is preserved,
+- manual mobile verification result.

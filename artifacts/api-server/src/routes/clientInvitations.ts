@@ -29,6 +29,7 @@ import { eq, and, isNull, gt, desc } from "drizzle-orm";
 import {
   db,
   clientsTable,
+  trainersTable,
   clientInvitationsTable,
 } from "@workspace/db";
 import { getAuth } from "@clerk/express";
@@ -288,16 +289,33 @@ router.get("/client-invitations/:token", async (req, res): Promise<void> => {
     return;
   }
 
-  // Fetch client name for the UI greeting.
+  // Fetch client name + email and trainer name for the UI context header.
   const [client] = await db
-    .select({ firstName: clientsTable.firstName, lastName: clientsTable.lastName })
+    .select({
+      firstName: clientsTable.firstName,
+      lastName: clientsTable.lastName,
+      email: clientsTable.email,
+      trainerId: clientsTable.trainerId,
+    })
     .from(clientsTable)
     .where(eq(clientsTable.id, invite.clientId))
     .limit(1);
 
+  let trainerName: string | null = null;
+  if (client?.trainerId != null) {
+    const [trainer] = await db
+      .select({ displayName: trainersTable.displayName, email: trainersTable.email })
+      .from(trainersTable)
+      .where(eq(trainersTable.id, client.trainerId))
+      .limit(1);
+    trainerName = trainer?.displayName ?? trainer?.email ?? null;
+  }
+
   res.json({
     state: "valid",
     clientName: client ? `${client.firstName} ${client.lastName}`.trim() : null,
+    clientEmail: client?.email ?? null,
+    trainerName,
     expiresAt: invite.expiresAt,
   });
 });
