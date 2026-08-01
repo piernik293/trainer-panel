@@ -9,6 +9,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { AccountMenu } from "./AccountMenu";
+import markUrl from "@/assets/optimatren-mark.png";
 
 const navItems = [
   { href: "/", label: "Pulpit", icon: LayoutDashboard },
@@ -76,13 +77,20 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
 
 function BrandMark() {
   return (
-    <div className="flex items-center gap-3">
-      <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground shrink-0">
-        <Dumbbell size={18} />
+    <div className="flex items-center gap-2.5 min-w-0">
+      <img
+        src={markUrl}
+        alt="Optimatren"
+        className="h-9 w-auto object-contain shrink-0"
+      />
+      <div className="min-w-0 leading-tight">
+        <span className="block font-display font-bold text-base tracking-tight text-sidebar-foreground truncate">
+          Optimatren
+        </span>
+        <span className="block text-[10px] font-semibold tracking-widest uppercase text-sidebar-foreground/60">
+          Panel Trenera
+        </span>
       </div>
-      <span className="font-display font-bold text-xl tracking-tight text-sidebar-foreground">
-        Panel Trenera
-      </span>
     </div>
   );
 }

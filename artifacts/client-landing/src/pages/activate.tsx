@@ -22,11 +22,11 @@ import {
   Clock,
   XCircle,
   ShieldCheck,
-  Dumbbell,
   User,
   Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import markUrl from "@/assets/optimatren-mark.png";
 import { cn } from "@/lib/utils";
 
 // ─── API helper (mirrors plan.tsx) ────────────────────────────────────────────
@@ -265,8 +265,9 @@ export default function ActivatePage() {
       <div className="flex-1 flex flex-col gap-6 py-4">
         {/* Context header */}
         <div className="space-y-3">
-          <div className="w-12 h-12 border border-primary/30 bg-primary/10 flex items-center justify-center">
-            <Dumbbell className="w-6 h-6 text-primary" />
+          <div className="flex items-center gap-2.5">
+            <img src={markUrl} alt="Optimatren" className="h-11 w-auto object-contain" />
+            <span className="font-bold text-lg tracking-tight">Optimatren</span>
           </div>
           <h1 className="text-3xl font-bold tracking-tight leading-tight">
             Dostęp do planu treningowego

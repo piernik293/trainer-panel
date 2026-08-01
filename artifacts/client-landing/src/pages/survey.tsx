@@ -4,6 +4,7 @@ import SurveyForm from "@/components/SurveyForm";
 import { motion } from "framer-motion";
 import { Loader2, XCircle, Clock, ShieldOff, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import markUrl from "@/assets/optimatren-mark.png";
 
 /**
  * The survey verification endpoint is public and unauthenticated.
@@ -234,6 +235,10 @@ export default function SurveyTokenPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <img src={markUrl} alt="Optimatren" className="h-12 w-auto object-contain" />
+              <span className="font-bold text-xl tracking-tight text-foreground">Optimatren</span>
+            </div>
             <div className="inline-block mb-4 border border-primary/30 bg-primary/5 px-4 py-1.5 backdrop-blur-sm">
               <span className="text-primary text-sm font-semibold tracking-[0.2em] uppercase">
                 Wywiad treningowy

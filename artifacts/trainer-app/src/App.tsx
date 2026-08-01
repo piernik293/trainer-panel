@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import { Route, Switch, Router as WouterRouter, useLocation, Redirect } from "wouter";
 
 import { AppLayout } from "@/components/layout/AppLayout";
+import markUrl from "@/assets/optimatren-mark.png";
 import Dashboard from "@/pages/Dashboard";
 import ClientList from "@/pages/ClientList";
 import ClientNew from "@/pages/ClientNew";
@@ -52,9 +53,9 @@ const clerkAppearance = {
   theme: shadcn,
   cssLayerName: "clerk",
   options: {
-    logoPlacement: "inside" as const,
+    // Branding lives above the card (see SignInPage) — no logo inside the card.
+    logoPlacement: "none" as const,
     logoLinkUrl: basePath || "/",
-    logoImageUrl: `${window.location.origin}${basePath}/favicon.svg`,
   },
   variables: {
     colorPrimary: "#FF3C00",
@@ -75,7 +76,7 @@ const clerkAppearance = {
     footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
     headerTitle: "text-gray-900 font-semibold",
     headerSubtitle: "text-gray-500",
-    socialButtonsBlockButtonText: "text-gray-700",
+    socialButtonsBlockButtonText: "!text-gray-800 !font-medium",
     formFieldLabel: "text-gray-700",
     footerActionLink: "text-orange-600 hover:text-orange-700",
     footerActionText: "text-gray-500",
@@ -85,7 +86,10 @@ const clerkAppearance = {
     alertText: "text-gray-700",
     logoBox: "flex justify-center",
     logoImage: "h-10 w-auto",
-    socialButtonsBlockButton: "border border-gray-200 hover:bg-gray-50",
+    socialButtonsBlockButton:
+      "!border !border-slate-300 !bg-slate-50 !shadow-sm hover:!bg-slate-100 hover:!border-slate-400 " +
+      "focus-visible:!ring-2 focus-visible:!ring-orange-500 focus-visible:!ring-offset-2 !opacity-100",
+    socialButtonsProviderIcon: "!opacity-100 !brightness-100 !saturate-100",
     formButtonPrimary: "bg-orange-600 hover:bg-orange-700 text-white",
     formFieldInput: "border-gray-300 focus:ring-orange-500",
     footerAction: "bg-gray-50",
@@ -125,7 +129,19 @@ function ClerkQueryClientCacheInvalidator() {
 
 function SignInPage() {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-8">
+      {/* Optimatren branding above the Clerk card */}
+      <div className="flex flex-col items-center text-center mb-6 max-w-full">
+        <img
+          src={markUrl}
+          alt="Optimatren"
+          className="w-[100px] md:w-[130px] h-auto object-contain"
+        />
+        <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">Optimatren</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Zarządzaj klientami, planami i postępami
+        </p>
+      </div>
       <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
     </div>
   );
