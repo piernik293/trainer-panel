@@ -9,3 +9,4 @@ coverage/
 .env.*
 .replit
 .DS_Store
+tsconfig.tsbuildinfo
