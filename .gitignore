@@ -7,6 +7,5 @@ coverage/
 *.log
 .env
 .env.*
-.replit
 .DS_Store
 tsconfig.tsbuildinfo

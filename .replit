@@ -1,0 +1,32 @@
+modules = ["nodejs-24", "python-base-3.13", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[nix]
+channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+CLIENT_PORTAL_ORIGIN = "https://client-intake-form--andrzejwysocki7.replit.app"
+TRAINER_APP_ORIGIN = "https://client-intake-form--andrzejwysocki7.replit.app"
+LOCAL_API_SERVER_URL = "http://localhost:8080"
+LOCAL_CLIENT_PORTAL_ORIGIN = "https://f6acaaf5-514f-4d7b-8147-f7165494255e-00-2mivh42n2ja5s.worf.replit.dev"
+LOCAL_TRAINER_APP_ORIGIN = "https://f6acaaf5-514f-4d7b-8147-f7165494255e-00-2mivh42n2ja5s.worf.replit.dev"
