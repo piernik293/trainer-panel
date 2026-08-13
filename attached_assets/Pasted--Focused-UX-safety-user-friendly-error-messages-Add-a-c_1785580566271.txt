@@ -1,0 +1,191 @@
+## Focused UX safety — user-friendly error messages
+
+Add a consistent user-facing error handling layer across the trainer app and client portal.
+
+### Goal
+
+Users must never see raw technical errors such as:
+
+- HTTP 500
+- Failed to fetch
+- stack traces
+- database errors
+- endpoint paths
+- JSON error bodies
+- internal exception messages
+
+Technical details must remain available only in server logs and developer console where appropriate.
+
+Do not change the underlying business logic, authentication, database schema or API behavior unless required to map errors safely.
+
+---
+
+## Error categories and Polish messages
+
+### Generic server error
+
+Show:
+
+`Wystąpiły chwilowe problemy techniczne. Spróbuj ponownie za chwilę.`
+
+Actions:
+
+- `Spróbuj ponownie`
+- optionally `Wróć`
+
+### Network error
+
+Show:
+
+`Nie udało się połączyć z serwerem. Sprawdź połączenie z internetem i spróbuj ponownie.`
+
+Action:
+
+- `Spróbuj ponownie`
+
+### Session expired / unauthenticated
+
+Show:
+
+`Twoja sesja wygasła. Zaloguj się ponownie.`
+
+Action:
+
+- `Przejdź do logowania`
+
+### Forbidden access
+
+Show:
+
+`Nie masz dostępu do tego widoku.`
+
+Do not expose whether another trainer’s or client’s record exists.
+
+### Not found
+
+Show:
+
+`Nie znaleziono potrzebnych danych. Mogły zostać usunięte lub zmienione.`
+
+### Plan loading failure
+
+Show:
+
+`Nie udało się pobrać planu treningowego. Spróbuj ponownie.`
+
+### Workout save failure
+
+Show:
+
+`Nie udało się zapisać treningu. Wprowadzone dane pozostają na ekranie — spróbuj ponownie.`
+
+Do not clear entered weights, reps, notes or completion state after a failed save.
+
+### Generator failure
+
+Show:
+
+`Nie udało się przygotować propozycji planu. Spróbuj ponownie lub wróć do tego później.`
+
+Do not show individual HTTP status messages for each day.
+
+### Form validation
+
+Do not use a generic technical error.
+
+Show:
+
+`Uzupełnij lub popraw zaznaczone pola.`
+
+Focus or scroll to the first invalid field.
+
+---
+
+## UI requirements
+
+Create or reuse one consistent error component containing:
+
+- clear heading,
+- short explanation,
+- retry action where possible,
+- optional back action,
+- accessible role="alert".
+
+Use neutral wording.
+
+Do not blame the user.
+
+Do not show alarming phrases such as:
+
+- `Błąd krytyczny`
+- `Awaria systemu`
+- `Twoje dane zostały utracone`
+
+unless data loss is actually confirmed.
+
+Prefer:
+
+`Problemy techniczne`
+
+or:
+
+`Nie udało się wykonać tej operacji`
+
+---
+
+## Logging
+
+Keep full technical details in server logs:
+
+- error name,
+- stack trace,
+- route,
+- authenticated role and internal record IDs where safe,
+- request correlation ID.
+
+Do not log:
+
+- passwords,
+- Clerk tokens,
+- invitation raw tokens,
+- email-provider secrets,
+- sensitive health descriptions unnecessarily.
+
+The client-facing response should contain a safe error code or reference ID when useful, for example:
+
+`Numer zgłoszenia: ABC123`
+
+Do not expose stack traces in production API responses.
+
+---
+
+## Environment behavior
+
+Development:
+- technical details may remain available in console/logs.
+
+Production:
+- frontend displays only safe Polish messages,
+- API does not return stack traces or internal exception text.
+
+---
+
+## Focused verification
+
+Verify:
+
+1. API 500 does not display `HTTP 500` to the client.
+2. Network failure shows the connection message.
+3. Expired session offers login.
+4. Failed workout save preserves entered values.
+5. Failed generator shows one readable message.
+6. Validation focuses the first invalid field.
+7. technical details remain available in logs.
+8. production responses do not expose stack traces.
+
+Do not redesign unrelated screens.
+Do not run a broad audit.
+
+Required completion statement:
+
+READY — users see clear Polish error messages instead of technical errors

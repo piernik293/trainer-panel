@@ -12,6 +12,7 @@
  */
 
 import { useState, useMemo, useEffect, useRef } from "react";
+import { humanizeError } from "@/lib/userError";
 import { useParams, Link, useLocation } from "wouter";
 import {
   useGetClientPlanDraftInput,
@@ -1796,7 +1797,7 @@ export default function PlanDraftWizard() {
       },
       {
         onError: (err) => {
-          toast({ title: "Błąd zapisu planu", description: err.message, variant: "destructive" });
+          toast({ title: "Nie udało się zapisać planu", description: humanizeError(err), variant: "destructive" });
         },
       },
     );

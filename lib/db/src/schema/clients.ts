@@ -27,6 +27,12 @@ export const clientsTable = pgTable("clients", {
    * declined = trainer chose the normal generator
    */
   adaptiveStartDecision: text("adaptive_start_decision"),
+  /**
+   * Forma współpracy — how the trainer works with this client.
+   * 'online' | 'in_person' | 'hybrid'. Existing clients default to 'online'
+   * (current behavior: client executes the plan alone in the portal).
+   */
+  cooperationMode: text("cooperation_mode").notNull().default("online"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

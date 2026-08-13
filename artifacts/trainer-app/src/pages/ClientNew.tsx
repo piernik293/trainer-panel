@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { VALIDATION_MESSAGE, statusMessage, humanizeError } from "@/lib/userError";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -60,7 +62,8 @@ export default function ClientNew() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`);
+        const serverMsg = (body as { error?: string }).error;
+        throw new Error(serverMsg && res.status < 500 && !/HTTP \d{3}/.test(serverMsg) ? serverMsg : statusMessage(res.status));
       }
       return res.json() as Promise<{
         token: string; url: string; expiresAt: string;
@@ -78,7 +81,8 @@ export default function ClientNew() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`);
+        const serverMsg = (body as { error?: string }).error;
+        throw new Error(serverMsg && res.status < 500 && !/HTTP \d{3}/.test(serverMsg) ? serverMsg : statusMessage(res.status));
       }
       return res.json() as Promise<{
         token: string; url: string; expiresAt: string;
@@ -86,6 +90,12 @@ export default function ClientNew() {
       }>;
     },
   });
+
+  const { toast } = useToast();
+  const onInvalidSubmit = () => {
+    // react-hook-form focuses the first invalid field automatically.
+    toast({ title: VALIDATION_MESSAGE, variant: "destructive" });
+  };
 
   const onSubmit = (data: ClientFormValues) => {
     createClient.mutate({ data }, {
@@ -109,7 +119,7 @@ export default function ClientNew() {
           setState({
             phase: "invite-failed",
             clientId: newClient.id,
-            inviteError: err instanceof Error ? err.message : "Nieznany błąd",
+            inviteError: humanizeError(err, "Nie udało się wysłać zaproszenia. Spróbuj ponownie."),
           });
         }
       },
@@ -256,7 +266,7 @@ export default function ClientNew() {
             {resendInvite.isError && (
               <p className="text-sm text-destructive">
                 Nie udało się wysłać ponownie:{" "}
-                {resendInvite.error instanceof Error ? resendInvite.error.message : "Nieznany błąd"}
+                {humanizeError(resendInvite.error, "Nie udało się wysłać zaproszenia. Spróbuj ponownie.")}
               </p>
             )}
             {resendInvite.isSuccess && !resendInvite.isPending && (
@@ -345,9 +355,7 @@ export default function ClientNew() {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            {createClient.error instanceof Error
-              ? createClient.error.message
-              : "Nie udało się zapisać klienta. Spróbuj ponownie."}
+            {humanizeError(createClient.error, "Nie udało się dodać klienta. Spróbuj ponownie.")}
           </AlertDescription>
         </Alert>
       )}
@@ -359,7 +367,7 @@ export default function ClientNew() {
         </CardHeader>
         <CardContent className="pt-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit, onInvalidSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}

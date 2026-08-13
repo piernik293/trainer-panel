@@ -14,6 +14,8 @@ import Dashboard from "@/pages/Dashboard";
 import ClientList from "@/pages/ClientList";
 import ClientNew from "@/pages/ClientNew";
 import ClientDetail from "@/pages/ClientDetail";
+import ClientPortalPreview from "@/pages/ClientPortalPreview";
+import TrainerLedSession from "@/pages/TrainerLedSession";
 import SurveyForm from "@/pages/SurveyForm";
 import ExerciseList from "@/pages/ExerciseList";
 import { ExerciseNew, ExerciseEdit } from "@/pages/ExerciseForm";
@@ -22,6 +24,7 @@ import PlanCreate from "@/pages/PlanCreate";
 import PlanEditor from "@/pages/PlanEditor";
 import PlanDraftWizard from "@/pages/PlanDraftWizard";
 import SurveyInvite from "@/pages/SurveyInvite";
+import CalendarPage from "@/pages/CalendarPage";
 import Settings from "@/pages/Settings";
 
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so the
@@ -262,12 +265,15 @@ function Router() {
         <Route path="/clients/:id/survey" component={SurveyForm} />
         <Route path="/clients/:id/plans/new" component={PlanCreate} />
         <Route path="/clients/:id/plans/generate" component={PlanDraftWizard} />
+        <Route path="/clients/:id/portal-preview" component={ClientPortalPreview} />
+        <Route path="/clients/:id/trainer-session" component={TrainerLedSession} />
         <Route path="/clients/:id" component={ClientDetail} />
         <Route path="/exercises/new" component={ExerciseNew} />
         <Route path="/exercises/:id/edit" component={ExerciseEdit} />
         <Route path="/exercises/:id" component={ExerciseDetail} />
         <Route path="/exercises" component={ExerciseList} />
         <Route path="/plans/:id" component={PlanEditor} />
+        <Route path="/calendar" component={CalendarPage} />
         <Route path="/survey-invite" component={SurveyInvite} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
@@ -338,6 +344,11 @@ function ClerkProviderWithRoutes() {
             <Route path="/sign-in/*?" component={ClientSignInPage} />
             <Route path="/trainer/sign-in/*?" component={TrainerSignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
+            {/* Dev-only visual preview of the calendar (mocked data via ?mockCalendar=1).
+                Stripped from production builds — import.meta.env.DEV is false there. */}
+            {import.meta.env.DEV && (
+              <Route path="/calendar-preview" component={CalendarPage} />
+            )}
             {/* All other routes require sign-in */}
             <Route>
               <AppContent />

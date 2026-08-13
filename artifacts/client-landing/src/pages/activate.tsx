@@ -28,18 +28,29 @@ import {
 import { Button } from "@/components/ui/button";
 import markUrl from "@/assets/optimatren-mark.png";
 import { cn } from "@/lib/utils";
+import { NETWORK_ERROR_MESSAGE, statusMessage } from "@/lib/userError";
 
 // ─── API helper (mirrors plan.tsx) ────────────────────────────────────────────
 
 async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    ...opts,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, {
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      ...opts,
+    });
+  } catch (cause) {
+    // Network-level failure — user-safe message; detail stays in console.
+    console.error("apiFetch network error:", path, cause);
+    throw Object.assign(new Error(NETWORK_ERROR_MESSAGE), { cause });
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    const err = new Error(body.error ?? `HTTP ${res.status}`) as Error & { state?: string; status: number };
+    const serverMsg = typeof body.error === "string" ? body.error : null;
+    const err = new Error(
+      serverMsg && res.status < 500 ? serverMsg : statusMessage(res.status),
+    ) as Error & { state?: string; status: number };
     err.state = body.state;
     err.status = res.status;
     throw err;

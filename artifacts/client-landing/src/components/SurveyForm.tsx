@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { humanizeError } from "@/lib/userError";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -427,9 +428,10 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
           setIsSubmitted(true);
         },
         onError: (err) => {
-          // Show error message on the banner
+          // Show a user-safe message on the banner; detail stays in console.
+          console.error("Survey submit failed:", err);
           setShowValidationBanner(true);
-          form.setError("root", { message: String(err) });
+          form.setError("root", { message: humanizeError(err, "Nie udało się wysłać wywiadu. Spróbuj ponownie.") });
         },
       });
     } else {
@@ -439,6 +441,11 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
           onSuccess: (res) => {
             setSuccessMessage(res.message || "Dziękuję za wypełnienie wywiadu treningowego. Przeanalizuję Twoje odpowiedzi i przygotuję indywidualny plan treningowy.");
             setIsSubmitted(true);
+          },
+          onError: (err) => {
+            console.error("Survey submit failed:", err);
+            setShowValidationBanner(true);
+            form.setError("root", { message: humanizeError(err, "Nie udało się wysłać wywiadu. Spróbuj ponownie.") });
           },
         }
       );

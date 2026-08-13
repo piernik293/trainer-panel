@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { NETWORK_ERROR_MESSAGE, statusMessage } from "@/lib/userError";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -197,19 +198,30 @@ export const planKeys = {
 // ─── Fetch helper ─────────────────────────────────────────────────────────────
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`/api${url}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers ?? {}),
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`/api${url}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options?.headers ?? {}),
+      },
+    });
+  } catch (cause) {
+    // Network-level failure — user-safe Polish message, detail on `cause`.
+    console.error("apiFetch network error:", url, cause);
+    throw Object.assign(new Error(NETWORK_ERROR_MESSAGE), { cause });
+  }
 
   if (res.status === 204) return undefined as T;
 
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    const msg = data?.error ?? `HTTP ${res.status}`;
+    // Server 5xx bodies may carry safe Polish text too, but prefer the
+    // generic message for 5xx so internals never leak; 4xx bodies from our
+    // API are user-safe Polish messages.
+    const serverMsg = typeof data?.error === "string" ? data.error : null;
+    const msg = serverMsg ?? statusMessage(res.status);
     const err = Object.assign(new Error(msg), { status: res.status, data });
     throw err;
   }

@@ -9,3 +9,4 @@ export * from "./exercise-usage";
 export * from "./trainers";
 export * from "./surveyInvites";
 export * from "./clientInvitations";
+export * from "./bookings";

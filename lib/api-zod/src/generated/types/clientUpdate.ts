@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ClientStatus } from './clientStatus';
+import type { CooperationMode } from './cooperationMode';
 
 export interface ClientUpdate {
   /** @minLength 1 */
@@ -16,4 +17,5 @@ export interface ClientUpdate {
   phone?: string;
   notes?: string;
   status?: ClientStatus;
+  cooperationMode?: CooperationMode;
 }

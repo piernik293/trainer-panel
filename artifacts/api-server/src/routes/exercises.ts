@@ -854,9 +854,10 @@ router.post("/exercises/import", requireAuth, requireCatalogueAdmin, async (req,
         message: `Import rolled back: muscle "${e.muscleName}" for "${e.exerciseName}" not found in the canonical muscle table.`,
       });
     } else {
+      req.log?.error({ err: e }, "Exercise import failed — batch rolled back");
       res.status(500).json({
         error: "IMPORT_FAILED",
-        message: e.message ?? "Unknown database error. Full batch rolled back.",
+        message: "Nie udało się zaimportować ćwiczeń. Zmiany zostały wycofane — spróbuj ponownie.",
       });
     }
   }

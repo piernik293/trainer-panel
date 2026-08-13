@@ -148,27 +148,44 @@ function truncate(text: string, maxLength = 300): string {
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
 }
 
-function buildErrorMessage(response: Response, data: unknown): string {
-  const prefix = `HTTP ${response.status} ${response.statusText}`;
+/** Safe Polish fallbacks — never surface raw HTTP codes to end users. */
+function statusFallbackMessage(status: number): string {
+  if (status === 401) return "Twoja sesja wygasła. Zaloguj się ponownie.";
+  if (status === 403) return "Nie masz dostępu do tego widoku.";
+  if (status === 404) return "Nie znaleziono potrzebnych danych. Mogły zostać usunięte lub zmienione.";
+  if (status >= 500) return "Wystąpiły chwilowe problemy techniczne. Spróbuj ponownie za chwilę.";
+  return "Nie udało się wykonać tej operacji. Spróbuj ponownie.";
+}
 
-  if (typeof data === "string") {
-    const text = data.trim();
-    return text ? `${prefix}: ${truncate(text)}` : prefix;
+/** Reject messages that look technical — stack traces, HTTP codes, paths, SQL. */
+function looksTechnical(message: string): boolean {
+  return (
+    /HTTP \d{3}/i.test(message) ||
+    /failed to fetch|networkerror/i.test(message) ||
+    /^\s*at /m.test(message) ||
+    /^\//.test(message) ||
+    /<\/?[a-z]+>/i.test(message) ||
+    /\b(select|insert|update|delete)\b.*\bfrom\b/i.test(message) ||
+    /exception|traceback|econnrefused|etimedout/i.test(message)
+  );
+}
+
+function buildErrorMessage(response: Response, data: unknown): string {
+  // Server-provided message (our API responds with Polish, user-safe text in
+  // `error`/`message`). Show it only when it doesn't look technical, and
+  // never for 5xx (internals must not leak); otherwise fall back to a safe
+  // status-mapped Polish message. No "HTTP xxx" prefixes.
+  const structured =
+    getStringField(data, "error") ??
+    getStringField(data, "message") ??
+    getStringField(data, "detail") ??
+    getStringField(data, "error_description") ??
+    getStringField(data, "title");
+  if (structured && response.status < 500 && !looksTechnical(structured)) {
+    return truncate(structured);
   }
 
-  const title = getStringField(data, "title");
-  const detail = getStringField(data, "detail");
-  const message =
-    getStringField(data, "message") ??
-    getStringField(data, "error_description") ??
-    getStringField(data, "error");
-
-  if (title && detail) return `${prefix}: ${title} — ${detail}`;
-  if (detail) return `${prefix}: ${detail}`;
-  if (message) return `${prefix}: ${message}`;
-  if (title) return `${prefix}: ${title}`;
-
-  return prefix;
+  return statusFallbackMessage(response.status);
 }
 
 export class ApiError<T = unknown> extends Error {
@@ -360,7 +377,17 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  let response: Response;
+  try {
+    response = await fetch(input, { ...init, method, headers });
+  } catch (cause) {
+    // Network-level failure ("Failed to fetch", DNS, offline…) — surface a
+    // user-safe Polish message; technical detail stays on `cause`/console.
+    throw Object.assign(
+      new Error("Nie udało się połączyć z serwerem. Sprawdź połączenie z internetem i spróbuj ponownie."),
+      { name: "NetworkError", cause },
+    );
+  }
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

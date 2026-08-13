@@ -79,7 +79,7 @@ export async function requireAuth(
   const userId = auth?.userId;
 
   if (!userId) {
-    res.status(401).json({ error: "Unauthorized" });
+    res.status(401).json({ error: "Twoja sesja wygasła. Zaloguj się ponownie." });
     return;
   }
 
@@ -89,14 +89,14 @@ export async function requireAuth(
     const trainer = await provisionTrainer(userId);
     if (!trainer) {
       logger.error({ clerkUserId: userId }, "Failed to provision trainer row");
-      res.status(500).json({ error: "Failed to provision trainer account" });
+      res.status(500).json({ error: "Wystąpiły chwilowe problemy techniczne. Spróbuj ponownie za chwilę." });
       return;
     }
     req.trainer = trainer;
     next();
   } catch (err) {
     logger.error({ err, clerkUserId: userId }, "requireAuth: DB error during provisioning");
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Wystąpiły chwilowe problemy techniczne. Spróbuj ponownie za chwilę." });
   }
 }
 
@@ -127,7 +127,7 @@ export function requireCatalogueAdmin(
 
   const clerkUserId = req.clerkUserId;
   if (!clerkUserId || !adminIds.includes(clerkUserId)) {
-    res.status(403).json({ error: "Forbidden: catalogue admin access required" });
+    res.status(403).json({ error: "Nie masz dostępu do tego widoku." });
     return;
   }
 

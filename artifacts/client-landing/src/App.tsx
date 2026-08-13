@@ -11,6 +11,8 @@ import Home from '@/pages/home';
 import PlanPortal from '@/pages/plan';
 import SurveyTokenPage from '@/pages/survey';
 import ActivatePage from '@/pages/activate';
+import BookingPreviewPage from '@/pages/booking-preview';
+import PortalPreviewPage from '@/pages/portal-preview';
 
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so
 // the same build serves multiple Clerk custom domains. Do not inline the env var.
@@ -71,6 +73,16 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/plan" component={PlanPortal} />
+      {/* Dev-only visual preview of the booking calendar (mocked data via
+          ?mockBooking=1). Stripped from production builds. */}
+      {import.meta.env.DEV && (
+        <Route path="/booking-preview" component={BookingPreviewPage} />
+      )}
+      {/* Dev-only visual preview of the client-portal navigation (mocked data
+          via ?mockBooking=1; &online=1 hides Kalendarz). */}
+      {import.meta.env.DEV && (
+        <Route path="/portal-preview" component={PortalPreviewPage} />
+      )}
       {/* Survey token pages are accessible without Clerk auth */}
       <Route path="/survey/:token" component={SurveyTokenPage} />
       {/* Client portal activation — token validates server-side before Clerk auth */}

@@ -399,9 +399,8 @@ export default function Step4Exercises({
 
         if (!resp.ok) {
           const errData = await resp.json().catch(() => ({})) as { error?: string };
-          const msg = `Dzień ${day.dayIndex + 1} (${sessionType}): ${errData.error ?? `HTTP ${resp.status}`}`;
-          console.warn(`[GenerateDay] Failed — ${msg}`);
-          errors.push(msg);
+          console.warn(`[GenerateDay] Failed — day ${day.dayIndex + 1} (${sessionType}): HTTP ${resp.status}`, errData);
+          errors.push(`Dzień ${day.dayIndex + 1}: nie udało się przygotować ćwiczeń.`);
           continue;
         }
 
@@ -434,17 +433,19 @@ export default function Step4Exercises({
           }
         }
       } catch (err) {
-        const msg = `Dzień ${day.dayIndex + 1} (${sessionType}): ${err instanceof Error ? err.message : "Nieznany błąd"}`;
-        console.error(`[GenerateDay] Error:`, msg);
-        errors.push(msg);
+        console.error(`[GenerateDay] Error — day ${day.dayIndex + 1} (${sessionType}):`, err);
+        errors.push(`Dzień ${day.dayIndex + 1}: nie udało się przygotować ćwiczeń.`);
       }
     }
 
     if (dayResults.length === 0) {
       setAutoFillState("error");
+      // Technical per-day details stay in the console (logged above); the
+      // user sees one readable message.
+      if (errors.length > 0) console.warn("[GenerateDay] All days failed:", errors);
       setAutoFillError(
         errors.length > 0
-          ? errors.join("; ")
+          ? "Nie udało się przygotować propozycji planu. Spróbuj ponownie lub wróć do tego później."
           : "Brak dni z obsługiwanym typem sesji (push / pull / legs / upper / lower / plyo).",
       );
       return;

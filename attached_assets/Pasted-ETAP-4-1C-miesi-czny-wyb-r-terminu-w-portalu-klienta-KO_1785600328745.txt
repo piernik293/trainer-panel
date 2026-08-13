@@ -1,0 +1,351 @@
+ETAP 4.1C — miesięczny wybór terminu w portalu klienta
+
+KONTEKST
+
+Etap 4, 4.1A i 4.1B są ukończone.
+
+System posiada obecnie:
+
+- tygodniową dostępność trenera,
+- wyjątki blocked_day, blocked_range i extra_range,
+- wspólny generator wolnych terminów,
+- rezerwacje chronione przed konfliktem na poziomie bazy,
+- miesięczny kalendarz trenera,
+- istniejący proces klienta:
+  data → godzina → podsumowanie → potwierdzenie,
+- limit rezerwacji do 30 dni,
+- poprawną obsługę Europe/Warsaw.
+
+CEL
+
+Rozszerzyć portal klienta o prosty miesięczny wybór daty.
+
+Nie twórz kopii zarządczego kalendarza trenera. Klient ma jedynie szybko znaleźć dzień z wolnym terminem i dokonać rezerwacji.
+
+Przed implementacją:
+
+1. przeczytaj obecny ekran rezerwacji klienta,
+2. wskaż pliki do zmiany,
+3. wskaż istniejący endpoint wolnych terminów,
+4. opisz, jak unikniesz nowego generatora i nowej logiki dostępności,
+5. dopiero potem rozpocznij implementację.
+
+--------------------------------------------------
+1. ZAKRES I ŹRÓDŁO DANYCH
+--------------------------------------------------
+
+Klient może przeglądać i rezerwować terminy wyłącznie w najbliższych 30 dniach.
+
+Kalendarz musi korzystać z istniejącej backendowej listy wolnych terminów uwzględniającej:
+
+- regularną tygodniową dostępność,
+- blocked_day,
+- blocked_range,
+- extra_range,
+- aktywne rezerwacje,
+- terminy przeszłe,
+- Europe/Warsaw.
+
+Nie twórz:
+
+- nowego generatora slotów,
+- osobnej logiki dostępności po stronie frontendu,
+- endpointu zwracającego dane innych klientów,
+- kopii endpointu kalendarza trenera zawierającego rezerwacje i nazwiska.
+
+Frontend może pogrupować zwrócone wolne sloty według dnia, ale nie może samodzielnie obliczać, czy termin jest dostępny.
+
+--------------------------------------------------
+2. DOSTĘP DO REZERWACJI
+--------------------------------------------------
+
+Zachowaj obecne zasady backendowe:
+
+- in_person — dostęp,
+- hybrid — dostęp,
+- online — 403.
+
+Identyfikator klienta pochodzi wyłącznie z sesji.
+
+Nie pozwalaj przesyłać client_id ani trainer_id jako źródła autoryzacji.
+
+--------------------------------------------------
+3. KALENDARZ KLIENTA
+--------------------------------------------------
+
+Na ekranie rezerwacji dodaj miesięczną siatkę dat:
+
+- tydzień zaczyna się w poniedziałek,
+- nazwy dni: Pn, Wt, Śr, Cz, Pt, Sb, Nd,
+- nazwa miesiąca i rok po polsku,
+- przyciski poprzedni i następny miesiąc,
+- przycisk „Dzisiaj”.
+
+Nawigacja może obejmować wyłącznie zakres najbliższych 30 dni.
+
+Jeżeli 30-dniowe okno obejmuje dwa miesiące:
+
+- pozwól przełączyć się między nimi,
+- dni poza dozwolonym zakresem mają być wygaszone i nieaktywne.
+
+Dzień:
+
+- jest aktywny tylko wtedy, gdy ma co najmniej jeden wolny termin,
+- pokazuje informację „Dostępne” albo liczbę wolnych godzin,
+- dzień bez terminów jest nieaktywny,
+- dzień przeszły jest nieaktywny,
+- dzień poza 30-dniowym zakresem jest nieaktywny,
+- nie pokazuje liczby zajętych terminów,
+- nie pokazuje danych innych klientów,
+- nie informuje, dlaczego dany dzień jest niedostępny.
+
+Nie przekazuj znaczenia wyłącznie kolorem.
+
+Dodaj aria-label, focus state i obsługę klawiatury.
+
+--------------------------------------------------
+4. PROCES REZERWACJI
+--------------------------------------------------
+
+Zachowaj proces:
+
+1. wybór daty,
+2. wybór godziny,
+3. podsumowanie,
+4. osobne kliknięcie „Potwierdź rezerwację”,
+5. komunikat „Trening został zarezerwowany.”
+
+Wybranie dnia lub godziny nigdy nie może automatycznie tworzyć rezerwacji.
+
+Po wybraniu dnia:
+
+- pokaż wyłącznie wolne godziny tego dnia,
+- sortuj je chronologicznie,
+- pokaż godzinę rozpoczęcia i zakończenia,
+- pokaż czas trwania.
+
+Po wybraniu godziny pokaż podsumowanie:
+
+- data,
+- dzień tygodnia,
+- godzina,
+- czas trwania,
+- informacja o treningu stacjonarnym.
+
+Przed wysłaniem rezerwacji wymagaj osobnego potwierdzenia.
+
+--------------------------------------------------
+5. KONFLIKT REZERWACJI
+--------------------------------------------------
+
+Backend nadal rewaliduje termin podczas POST.
+
+Jeżeli inny klient zarezerwuje termin wcześniej:
+
+- pokaż:
+  „Ten termin został właśnie zarezerwowany. Wybierz inny.”
+- automatycznie pobierz ponownie wolne terminy,
+- odśwież stan wybranego dnia,
+- usuń niedostępną godzinę,
+- jeżeli dzień nie ma już wolnych godzin, wyczyść wybór dnia i oznacz go jako niedostępny,
+- nie przeładowuj całej strony.
+
+Nie pokazuj technicznego błędu ani treści błędu bazy.
+
+--------------------------------------------------
+6. KARTA NADCHODZĄCEGO TRENINGU
+--------------------------------------------------
+
+Zachowaj obecną kartę „Nadchodzący trening”.
+
+Po udanej rezerwacji:
+
+- karta ma się natychmiast odświeżyć,
+- ekran rezerwacji ma pokazać sukces,
+- użytkownik nie powinien musieć ręcznie odświeżać strony.
+
+Po anulowaniu:
+
+- karta ma się odświeżyć,
+- zwolniony termin ma ponownie pojawić się jako dostępny, o ile nadal mieści się w 30-dniowym oknie i nie jest zablokowany.
+
+Nie zmieniaj istniejącej logiki statusów rezerwacji.
+
+--------------------------------------------------
+7. RESPONSYWNOŚĆ
+--------------------------------------------------
+
+Priorytetem jest mobile.
+
+Zweryfikuj realnie:
+
+- 375 × 812,
+- 390 × 844,
+- 768 px,
+- desktop.
+
+Mobile:
+
+- brak poziomego przewijania,
+- czytelna siatka 7 kolumn,
+- odpowiednio duże pola dotykowe,
+- skrócone informacje w komórkach,
+- godziny jako duże przyciski,
+- podsumowanie w czytelnym panelu,
+- żadna funkcja nie zależy od hover.
+
+Desktop:
+
+- zachowaj ten sam proces,
+- kalendarz może być bardziej kompaktowy,
+- nie twórz osobnej logiki dla desktopu.
+
+--------------------------------------------------
+8. DOSTĘPNOŚĆ
+--------------------------------------------------
+
+Zapewnij:
+
+- pełną obsługę klawiatury,
+- widoczny fokus,
+- aria-label dla dni,
+- aria-current dla dzisiejszego dnia,
+- aria-selected dla wybranego dnia i godziny,
+- komunikaty sukcesu i błędów dostępne dla czytników ekranu,
+- poprawne etykiety przycisków nawigacji miesiąca.
+
+Jeżeli używasz modala lub bottom sheet:
+
+- focus trap,
+- Escape,
+- przywrócenie fokusa,
+- blokada scrollowania tła.
+
+--------------------------------------------------
+9. STANY
+--------------------------------------------------
+
+Dodaj czytelne stany:
+
+- ładowanie terminów,
+- błąd pobierania,
+- ponów próbę,
+- brak wolnych terminów w najbliższych 30 dniach,
+- brak godzin w wybranym dniu,
+- wysyłanie rezerwacji,
+- sukces,
+- konflikt rezerwacji.
+
+Zablokuj wielokrotne kliknięcie „Potwierdź rezerwację”.
+
+--------------------------------------------------
+10. STREFA CZASOWA
+--------------------------------------------------
+
+Całość działa w Europe/Warsaw.
+
+Zweryfikuj:
+
+- grupowanie slotów według dnia warszawskiego,
+- formatowanie dat i godzin,
+- miesiące zawierające zmianę czasu,
+- dzień dzisiejszy,
+- brak przesunięcia dnia przez UTC,
+- niezależność od strefy urządzenia klienta.
+
+Nie używaj new Date("YYYY-MM-DD") w sposób zależny od strefy przeglądarki.
+
+--------------------------------------------------
+11. TESTY
+--------------------------------------------------
+
+Dodaj testy:
+
+1. dni z wolnymi slotami są aktywne,
+2. dni bez slotów są nieaktywne,
+3. dni przeszłe są nieaktywne,
+4. dni poza 30-dniowym zakresem są nieaktywne,
+5. zakres obejmujący dwa miesiące działa poprawnie,
+6. wybranie dnia nie tworzy rezerwacji,
+7. wybranie godziny nie tworzy rezerwacji,
+8. dopiero „Potwierdź rezerwację” wysyła POST,
+9. blocked_day nie pojawia się jako dostępny dzień,
+10. blocked_range usuwa odpowiednie godziny,
+11. extra_range pojawia się jako dostępna godzina,
+12. konflikt 409 odświeża dni i godziny,
+13. anulowanie ponownie udostępnia termin,
+14. klient online nadal otrzymuje 403,
+15. dane innych klientów nie są zwracane ani wyświetlane,
+16. grupowanie działa poprawnie w Europe/Warsaw i podczas DST,
+17. nie można wysłać dwóch rezerwacji przez wielokrotne kliknięcie.
+
+Uruchom:
+
+- wszystkie testy rezerwacji backendu,
+- testy portalu klienta,
+- typecheck api-server,
+- typecheck portal klienta,
+- typecheck panel trenera.
+
+Przeprowadź realną weryfikację przeglądarkową na 375 i 390 px.
+
+Jeżeli logowanie Clerk blokuje podgląd:
+
+- użyj bezpiecznego trybu developerskiego wycinanego z produkcji,
+- nie obchodź zabezpieczeń produkcyjnych,
+- nie umieszczaj danych produkcyjnych w mockach.
+
+--------------------------------------------------
+12. POZA ZAKRESEM
+--------------------------------------------------
+
+Nie implementuj:
+
+- podglądu zajętych terminów klientowi,
+- danych innych klientów,
+- zarządzania dostępnością przez klienta,
+- ręcznego wyboru trenera,
+- rezerwacji cyklicznych,
+- listy oczekujących,
+- synchronizacji z zewnętrznym kalendarzem,
+- płatności,
+- powiadomień e-mail lub SMS,
+- zmiany limitu 30 dni,
+- zmian miesięcznego kalendarza trenera.
+
+--------------------------------------------------
+13. WARUNKI UKOŃCZENIA
+--------------------------------------------------
+
+Etap jest ukończony, gdy:
+
+- klient widzi miesięczny wybór daty,
+- aktywne są wyłącznie dni z wolnymi terminami,
+- może wybrać dzień i godzinę,
+- rezerwacja wymaga osobnego potwierdzenia,
+- konflikty odświeżają dostępność,
+- blokady i dodatkowa dostępność trenera są respektowane,
+- klient nie widzi cudzych danych ani zajętych terminów,
+- online nadal otrzymuje 403,
+- działa na 375 i 390 px,
+- Europe/Warsaw pozostaje źródłem prawdy,
+- testy przechodzą,
+- nie powstał drugi generator terminów.
+
+Na końcu podaj raport:
+
+1. zmienione pliki,
+2. wykorzystane endpointy,
+3. struktura komponentów,
+4. sposób grupowania wolnych terminów,
+5. proces rezerwacji,
+6. obsługa konfliktów,
+7. wyniki testów,
+8. wyniki typecheck,
+9. rzeczywiście zweryfikowane szerokości,
+10. znalezione i naprawione problemy,
+11. znane ograniczenia.
+
+Końcowy komunikat:
+
+READY — clients can choose and book training slots from a monthly calendar

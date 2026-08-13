@@ -419,6 +419,14 @@ router.post("/client-portal/sessions/open", requireClientAuth, async (req, res):
     .limit(1);
 
   let session = active;
+  if (session && session.performedBy === "trainer") {
+    // Mirror of the trainer-route guard: a client must never take over an
+    // active trainer-led session (would let them edit trainer-recorded data).
+    res.status(409).json({
+      error: "Trener prowadzi obecnie sesję dla tego dnia treningowego. Wyniki zapisuje trener.",
+    });
+    return;
+  }
   if (!session) {
     const today = new Date().toISOString().split("T")[0]!;
     try {
@@ -444,10 +452,30 @@ router.post("/client-portal/sessions/open", requireClientAuth, async (req, res):
         .orderBy(desc(workoutSessionsTable.createdAt))
         .limit(1);
       if (!winner) throw err;
+      if (winner.performedBy === "trainer") {
+        res.status(409).json({
+          error: "Trener prowadzi obecnie sesję dla tego dnia treningowego. Wyniki zapisuje trener.",
+        });
+        return;
+      }
       session = winner;
     }
   }
 
+  const payload = await buildOpenSessionPayload(session, planDayId, clientId);
+  res.json(payload);
+});
+
+// ─── Helper: logs + previous results payload for an opened session ───────────
+// Shared by the client "open" route and the trainer-led "open" route.
+
+type ActiveSession = typeof workoutSessionsTable.$inferSelect;
+
+async function buildOpenSessionPayload(
+  session: ActiveSession,
+  planDayId: number,
+  clientId: number,
+) {
   const logs = await db
     .select()
     .from(exerciseExecutionLogsTable)
@@ -543,8 +571,8 @@ router.post("/client-portal/sessions/open", requireClientAuth, async (req, res):
     }
   }
 
-  res.json({ session: { ...session, logs }, previous });
-});
+  return { session: { ...session, logs }, previous };
+}
 
 // ─── GET /client-portal/history ──────────────────────────────────────────────
 // Completed sessions of the authenticated client, newest first, paginated.
@@ -568,6 +596,8 @@ router.get("/client-portal/history", requireClientAuth, async (req, res): Promis
       daySubtitle: workoutPlanDaysTable.subtitle,
       dayOrder: workoutPlanDaysTable.dayOrder,
       planTitle: workoutPlansTable.title,
+      performedBy: workoutSessionsTable.performedBy,
+      sessionMode: workoutSessionsTable.sessionMode,
     })
     .from(workoutSessionsTable)
     .leftJoin(workoutPlanDaysTable, eq(workoutSessionsTable.planDayId, workoutPlanDaysTable.id))
@@ -660,6 +690,10 @@ router.patch("/client-portal/sessions/:sessionId", requireClientAuth, async (req
 
   const existing = await verifySessionOwnership(sessionId, clientId);
   if (!existing) { res.status(404).json({ error: "Sesja nie znaleziona." }); return; }
+  if (existing.performedBy === "trainer") {
+    res.status(403).json({ error: "Tę sesję prowadzi trener — wyniki zapisuje trener." });
+    return;
+  }
 
   // Build a properly typed update object.
   type SessionUpdate = {
@@ -717,11 +751,31 @@ router.put(
     const parsed = UpsertExerciseLogBody.safeParse(req.body);
     if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
-    const { setsCompleted, repsCompleted, weightKg, rir, note, isCompleted } = parsed.data;
-
     // Verify this session belongs to the authenticated client.
     const session = await verifySessionOwnership(sessionId, clientId);
     if (!session) { res.status(404).json({ error: "Sesja nie znaleziona." }); return; }
+    if (session.performedBy === "trainer") {
+      res.status(403).json({ error: "Tę sesję prowadzi trener — wyniki zapisuje trener." });
+      return;
+    }
+
+    await upsertExerciseLog(session, planExerciseId, parsed.data, res);
+  },
+);
+
+// ─── Helper: upsert one exercise execution log for a session ─────────────────
+// Shared by the client route above and the trainer-led route below.
+// Caller must have already verified session ownership/authorization.
+
+async function upsertExerciseLog(
+  session: ActiveSession,
+  planExerciseId: number,
+  data: z.infer<typeof UpsertExerciseLogBody>,
+  res: Response,
+): Promise<void> {
+  {
+    const sessionId = session.id;
+    const { setsCompleted, repsCompleted, weightKg, rir, note, isCompleted } = data;
 
     // Verify the exercise belongs to the session's day.
     const [planExercise] = await db
@@ -779,6 +833,9 @@ router.put(
         .innerJoin(exercisesTable, eq(workoutPlanExercisesTable.exerciseId, exercisesTable.id))
         .where(eq(workoutPlanExercisesTable.id, planExerciseId));
 
+      // Atomic upsert: two concurrent first writes for the same
+      // session/exercise would otherwise race the check above and the loser
+      // would hit the eel_session_exercise_idx unique index with a 500.
       const [inserted] = await db
         .insert(exerciseExecutionLogsTable)
         .values({
@@ -797,13 +854,25 @@ router.put(
           plannedRepMax: prescription?.repRangeMax ?? prescription?.repsExact ?? null,
           plannedRir: prescription?.rir ?? null,
         })
+        .onConflictDoUpdate({
+          target: [exerciseExecutionLogsTable.sessionId, exerciseExecutionLogsTable.planExerciseId],
+          set: {
+            ...(setsCompleted !== undefined ? { setsCompleted } : {}),
+            ...(repsCompleted !== undefined ? { repsCompleted } : {}),
+            ...(weightKg !== undefined ? { weightKg: weightKg?.toString() ?? null } : {}),
+            ...(rir !== undefined ? { rir } : {}),
+            ...(note !== undefined ? { note } : {}),
+            ...(isCompleted !== undefined ? { isCompleted } : {}),
+            updatedAt: new Date(),
+          },
+        })
         .returning();
       log = inserted;
     }
 
     res.json(log);
-  },
-);
+  }
+}
 
 // ─── GET /client-portal/sessions/:sessionId/warmup ───────────────────────────
 // Returns RAMP warm-up blocks for the day associated with this session.
@@ -859,6 +928,8 @@ router.get("/clients/:clientId/workout-sessions", requireAuth, async (req, res):
       planTitle: workoutPlansTable.title,
       dayName: workoutPlanDaysTable.dayName,
       daySubtitle: workoutPlanDaysTable.subtitle,
+      performedBy: workoutSessionsTable.performedBy,
+      sessionMode: workoutSessionsTable.sessionMode,
     })
     .from(workoutSessionsTable)
     .innerJoin(workoutPlansTable, eq(workoutSessionsTable.planId, workoutPlansTable.id))
@@ -894,6 +965,8 @@ router.get("/clients/:clientId/workout-sessions/:sessionId", requireAuth, async 
       planTitle: workoutPlansTable.title,
       dayName: workoutPlanDaysTable.dayName,
       daySubtitle: workoutPlanDaysTable.subtitle,
+      performedBy: workoutSessionsTable.performedBy,
+      sessionMode: workoutSessionsTable.sessionMode,
     })
     .from(workoutSessionsTable)
     .innerJoin(workoutPlansTable, eq(workoutSessionsTable.planId, workoutPlansTable.id))
@@ -935,6 +1008,290 @@ router.get("/clients/:clientId/workout-sessions/:sessionId", requireAuth, async 
   }));
 
   res.json({ ...session, exercises: detail });
+});
+
+// ═══ Trainer-facing: client-portal preview + trainer-led sessions ════════════
+
+// ─── GET /clients/:clientId/portal-preview ───────────────────────────────────
+// Read-only: returns the client's active plan exactly as the client portal
+// shows it. Never creates or mutates anything.
+// Auth: requireAuth (trainer) + ownership check via req.trainer.id.
+
+router.get("/clients/:clientId/portal-preview", requireAuth, async (req, res): Promise<void> => {
+  const clientId = Number(req.params["clientId"]);
+  if (!Number.isInteger(clientId) || clientId <= 0) {
+    res.status(400).json({ error: "Nieprawidłowy clientId." });
+    return;
+  }
+
+  const ok = await verifyClientBelongsToTrainer(req, res, clientId);
+  if (!ok) return;
+
+  const [clientRow] = await db
+    .select({
+      id: clientsTable.id,
+      firstName: clientsTable.firstName,
+      lastName: clientsTable.lastName,
+      cooperationMode: clientsTable.cooperationMode,
+    })
+    .from(clientsTable)
+    .where(eq(clientsTable.id, clientId))
+    .limit(1);
+  if (!clientRow) { res.status(404).json({ error: "Klient nie znaleziony." }); return; }
+
+  const [activePlan] = await db
+    .select({ id: workoutPlansTable.id })
+    .from(workoutPlansTable)
+    .where(and(eq(workoutPlansTable.clientId, clientId), eq(workoutPlansTable.status, "active")))
+    .orderBy(desc(workoutPlansTable.activatedAt))
+    .limit(1);
+
+  if (!activePlan) {
+    res.status(404).json({ error: "Brak aktywnego planu treningowego. Aktywuj plan, aby zobaczyć podgląd." });
+    return;
+  }
+
+  const plan = await getClientPlanFull(activePlan.id);
+  if (!plan) { res.status(404).json({ error: "Plan nie znaleziony." }); return; }
+
+  res.json({ client: clientRow, plan });
+});
+
+// ─── Trainer-led session helpers ─────────────────────────────────────────────
+
+/**
+ * Load a client's row if it belongs to the trainer AND its cooperation mode
+ * allows trainer-led sessions. Sends the error response itself on failure.
+ */
+async function loadTrainerLedClient(
+  req: Request,
+  res: Response,
+  clientId: number,
+): Promise<{ id: number; cooperationMode: string } | null> {
+  const [client] = await db
+    .select({ id: clientsTable.id, cooperationMode: clientsTable.cooperationMode })
+    .from(clientsTable)
+    .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)))
+    .limit(1);
+  if (!client) {
+    res.status(404).json({ error: "Klient nie znaleziony." });
+    return null;
+  }
+  if (client.cooperationMode !== "in_person" && client.cooperationMode !== "hybrid") {
+    res.status(403).json({
+      error: "Treningi prowadzone przez trenera są dostępne tylko dla klientów stacjonarnych lub hybrydowych.",
+    });
+    return null;
+  }
+  return client;
+}
+
+// ─── POST /clients/:clientId/trainer-sessions/open ───────────────────────────
+// Get-or-create the single active TRAINER-LED session for a plan day.
+// If the client already has an active SELF-DIRECTED session for that day,
+// returns 409 instead of silently taking it over.
+// Auth: requireAuth (trainer) + ownership + cooperation-mode check.
+
+router.post("/clients/:clientId/trainer-sessions/open", requireAuth, async (req, res): Promise<void> => {
+  const clientId = Number(req.params["clientId"]);
+  if (!Number.isInteger(clientId) || clientId <= 0) {
+    res.status(400).json({ error: "Nieprawidłowy clientId." });
+    return;
+  }
+  const parsed = OpenSessionBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  const client = await loadTrainerLedClient(req, res, clientId);
+  if (!client) return;
+
+  const { planId, planDayId } = parsed.data;
+
+  // Ownership chain: plan → client; plan day → plan.
+  const [plan] = await db
+    .select({ id: workoutPlansTable.id })
+    .from(workoutPlansTable)
+    .where(and(eq(workoutPlansTable.id, planId), eq(workoutPlansTable.clientId, clientId)));
+  if (!plan) { res.status(404).json({ error: "Plan nie znaleziony." }); return; }
+
+  const [planDay] = await db
+    .select({ id: workoutPlanDaysTable.id })
+    .from(workoutPlanDaysTable)
+    .where(and(eq(workoutPlanDaysTable.id, planDayId), eq(workoutPlanDaysTable.planId, planId)));
+  if (!planDay) { res.status(404).json({ error: "Dzień planu nie znaleziony." }); return; }
+
+  // Single-active-session invariant is per client/day regardless of who runs it.
+  const [active] = await db
+    .select()
+    .from(workoutSessionsTable)
+    .where(
+      and(
+        eq(workoutSessionsTable.clientId, clientId),
+        eq(workoutSessionsTable.planDayId, planDayId),
+        eq(workoutSessionsTable.isCompleted, false),
+      ),
+    )
+    .orderBy(desc(workoutSessionsTable.createdAt))
+    .limit(1);
+
+  let session = active;
+  if (session && session.performedBy !== "trainer") {
+    // Clear conflict: never silently take over the client's own active session.
+    res.status(409).json({
+      error:
+        "Klient ma już aktywną, samodzielnie rozpoczętą sesję dla tego dnia. Poproś klienta o jej zakończenie lub dokończ ją w portalu klienta.",
+    });
+    return;
+  }
+
+  if (!session) {
+    const today = new Date().toISOString().split("T")[0]!;
+    try {
+      const [created] = await db
+        .insert(workoutSessionsTable)
+        .values({
+          clientId,
+          planId,
+          planDayId,
+          sessionDate: today,
+          performedBy: "trainer",
+          sessionMode: "in_person",
+          performedByTrainerId: req.trainer!.id,
+        })
+        .returning();
+      session = created!;
+    } catch (err: unknown) {
+      // Concurrent open hit ws_one_active_per_client_day — surface a conflict
+      // unless the winner is also a trainer-led session we can reuse.
+      if (pgErrorCode(err) !== "23505") throw err;
+      const [winner] = await db
+        .select()
+        .from(workoutSessionsTable)
+        .where(
+          and(
+            eq(workoutSessionsTable.clientId, clientId),
+            eq(workoutSessionsTable.planDayId, planDayId),
+            eq(workoutSessionsTable.isCompleted, false),
+          ),
+        )
+        .orderBy(desc(workoutSessionsTable.createdAt))
+        .limit(1);
+      if (!winner) throw err;
+      if (winner.performedBy !== "trainer") {
+        res.status(409).json({
+          error: "Klient właśnie rozpoczął własną sesję dla tego dnia. Spróbuj ponownie później.",
+        });
+        return;
+      }
+      session = winner;
+    }
+  }
+
+  const payload = await buildOpenSessionPayload(session, planDayId, clientId);
+  res.json(payload);
+});
+
+/**
+ * Load a trainer-led session for writes: session must belong to the given
+ * client, and must itself be trainer-led (a trainer never edits the client's
+ * self-directed sessions through these routes). Sends errors itself.
+ */
+async function loadTrainerLedSession(
+  res: Response,
+  sessionId: number,
+  clientId: number,
+): Promise<ActiveSession | null> {
+  const session = await verifySessionOwnership(sessionId, clientId);
+  if (!session) {
+    res.status(404).json({ error: "Sesja nie znaleziona." });
+    return null;
+  }
+  if (session.performedBy !== "trainer") {
+    res.status(403).json({ error: "Ta sesja została rozpoczęta samodzielnie przez klienta — edytuj ją w portalu klienta." });
+    return null;
+  }
+  return session;
+}
+
+// ─── PUT /clients/:clientId/trainer-sessions/:sessionId/exercises/:planExerciseId ─
+// Trainer records results for one exercise in a trainer-led session.
+
+router.put(
+  "/clients/:clientId/trainer-sessions/:sessionId/exercises/:planExerciseId",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const clientId = Number(req.params["clientId"]);
+    const sessionId = Number(req.params["sessionId"]);
+    const planExerciseId = Number(req.params["planExerciseId"]);
+    if (!clientId || !sessionId || !planExerciseId) {
+      res.status(400).json({ error: "Nieprawidłowe parametry." });
+      return;
+    }
+    const parsed = UpsertExerciseLogBody.safeParse(req.body);
+    if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+    const client = await loadTrainerLedClient(req, res, clientId);
+    if (!client) return;
+
+    const session = await loadTrainerLedSession(res, sessionId, clientId);
+    if (!session) return;
+
+    await upsertExerciseLog(session, planExerciseId, parsed.data, res);
+  },
+);
+
+// ─── PATCH /clients/:clientId/trainer-sessions/:sessionId ────────────────────
+// Trainer completes a trainer-led session or updates its notes/feedback.
+
+router.patch("/clients/:clientId/trainer-sessions/:sessionId", requireAuth, async (req, res): Promise<void> => {
+  const clientId = Number(req.params["clientId"]);
+  const sessionId = Number(req.params["sessionId"]);
+  if (!clientId || !sessionId) { res.status(400).json({ error: "Nieprawidłowe parametry." }); return; }
+
+  const parsed = PatchSessionBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  const client = await loadTrainerLedClient(req, res, clientId);
+  if (!client) return;
+
+  const session = await loadTrainerLedSession(res, sessionId, clientId);
+  if (!session) return;
+
+  const { isCompleted, notes, difficultyRating, hadPain, energyLevel } = parsed.data;
+
+  type SessionUpdate = {
+    updatedAt: Date;
+    isCompleted?: boolean;
+    completedAt?: Date | null;
+    notes?: string | null;
+    difficultyRating?: number | null;
+    hadPain?: boolean | null;
+    energyLevel?: string | null;
+  };
+  const patch: SessionUpdate = { updatedAt: new Date() };
+  if (isCompleted !== undefined) {
+    patch.isCompleted = isCompleted;
+    patch.completedAt = isCompleted ? new Date() : null;
+  }
+  if (notes !== undefined) patch.notes = notes;
+  if (difficultyRating !== undefined) patch.difficultyRating = difficultyRating;
+  if (hadPain !== undefined) patch.hadPain = hadPain;
+  if (energyLevel !== undefined) patch.energyLevel = energyLevel;
+
+  try {
+    const [updated] = await db
+      .update(workoutSessionsTable)
+      .set(patch)
+      .where(and(eq(workoutSessionsTable.id, sessionId), eq(workoutSessionsTable.clientId, clientId)))
+      .returning();
+    if (!updated) { res.status(404).json({ error: "Sesja nie znaleziona." }); return; }
+    res.json(updated);
+  } catch (err: unknown) {
+    if (pgErrorCode(err) === "23505") {
+      res.status(409).json({ error: "Istnieje już aktywna sesja dla tego dnia treningowego." });
+      return;
+    }
+    throw err;
+  }
 });
 
 export default router;

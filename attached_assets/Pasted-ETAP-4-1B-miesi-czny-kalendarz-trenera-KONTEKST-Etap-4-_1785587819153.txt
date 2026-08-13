@@ -1,0 +1,371 @@
+ETAP 4.1B — miesięczny kalendarz trenera
+
+KONTEKST
+
+Etap 4 oraz Etap 4.1A są ukończone.
+
+Obecnie aplikacja posiada:
+
+- tygodniową dostępność trenera,
+- tabelę bookings,
+- wspólny generator terminów,
+- wyjątki:
+  - blocked_day,
+  - blocked_range,
+  - extra_range,
+- endpointy tworzenia, pobierania i usuwania wyjątków,
+- poprawną obsługę Europe/Warsaw,
+- ochronę przed podwójną rezerwacją,
+- przetestowaną izolację danych trenerów.
+
+W tym etapie zbuduj miesięczny kalendarz wyłącznie dla trenera.
+
+Nie przebudowuj backendowej logiki rezerwacji i nie twórz drugiego generatora terminów.
+
+Przed implementacją:
+
+1. przeczytaj aktualny kod panelu „Kalendarz”,
+2. wskaż pliki, które zamierzasz zmienić,
+3. opisz, jak wykorzystasz istniejący generator i endpointy wyjątków,
+4. oceń, czy potrzebny jest nowy endpoint agregujący dane miesiąca,
+5. dopiero potem rozpocznij implementację.
+
+--------------------------------------------------
+1. API MIESIĘCZNEGO KALENDARZA
+--------------------------------------------------
+
+Dodaj zabezpieczony endpoint trenera zwracający dane kalendarza dla wskazanego zakresu dat.
+
+Przykład:
+
+GET /availability/calendar?from=2026-08-01&to=2026-08-31
+
+Wymagania:
+
+- trener identyfikowany wyłącznie przez sesję,
+- maksymalny zakres jednego zapytania: 62 dni,
+- daty interpretowane jako dni w Europe/Warsaw,
+- nie używaj strefy urządzenia użytkownika jako źródła prawdy,
+- wykorzystaj istniejący wspólny generator terminów,
+- nie twórz oddzielnej logiki dostępności dla kalendarza.
+
+Dla każdego dnia zwróć:
+
+- date,
+- totalSlots,
+- freeSlots,
+- bookedSlots,
+- isBlockedDay,
+- hasAvailability,
+- slots,
+- exceptions.
+
+Każdy slot powinien zawierać minimum:
+
+- start,
+- end,
+- status: free lub booked,
+- bookingId tylko dla rezerwacji,
+- clientId tylko dla rezerwacji,
+- clientName tylko dla rezerwacji.
+
+Każdy wyjątek powinien zawierać minimum:
+
+- id,
+- type,
+- startTime,
+- endTime.
+
+Nie zwracaj zbędnych danych osobowych klienta.
+
+Zasady:
+
+- zarezerwowany termin ma być widoczny nawet wtedy, gdy później dodano blokadę,
+- blocked_day usuwa wolne sloty, ale nie ukrywa rezerwacji,
+- blocked_range usuwa wolne sloty nachodzące na zakres,
+- extra_range dodaje jednorazowe sloty,
+- podsumowania dnia muszą odpowiadać faktycznym danym w slots.
+
+--------------------------------------------------
+2. STRUKTURA PANELU
+--------------------------------------------------
+
+W istniejącej pozycji menu „Kalendarz” dodaj dwie zakładki:
+
+- Miesiąc
+- Dostępność
+
+Domyślnie otwieraj „Miesiąc”.
+
+Zakładka „Dostępność”:
+
+- zachowuje istniejący edytor tygodniowej dostępności,
+- nie usuwaj ani nie ograniczaj obecnych funkcji.
+
+Zakładka „Miesiąc”:
+
+- pokazuje pełny miesiąc kalendarzowy,
+- tydzień zaczyna się w poniedziałek,
+- zawiera poprawne puste pola przed pierwszym i po ostatnim dniu miesiąca,
+- umożliwia przełączanie miesięcy.
+
+Nagłówek:
+
+- poprzedni miesiąc,
+- nazwa miesiąca i rok po polsku,
+- przycisk „Dzisiaj”,
+- następny miesiąc.
+
+Nie pobieraj kilku miesięcy naraz. Pobieraj zakres potrzebny dla aktualnie wyświetlanej siatki.
+
+--------------------------------------------------
+3. KOMÓRKI DNI
+--------------------------------------------------
+
+Każdy dzień ma pokazywać:
+
+- numer dnia,
+- liczbę wolnych terminów,
+- liczbę rezerwacji,
+- informację o całkowitej blokadzie,
+- informację o braku dostępności.
+
+Przykładowe teksty:
+
+- „4 wolne”
+- „2 rezerwacje”
+- „Brak wolnych terminów”
+- „Dzień zablokowany”
+- „Brak dostępności”
+
+Nie przekazuj znaczenia wyłącznie kolorem.
+
+Dodaj odpowiednie:
+
+- aria-label,
+- focus state,
+- obsługę klawiatury,
+- widoczny stan zaznaczonego dnia.
+
+Dni przeszłe:
+
+- wizualnie wygaszone,
+- nie pozwalają dodawać nowych wyjątków,
+- nadal mogą pokazywać podsumowanie, jeżeli znajdują się w aktualnej siatce.
+
+Dzień dzisiejszy powinien być wyraźnie oznaczony.
+
+--------------------------------------------------
+4. SZCZEGÓŁY DNIA
+--------------------------------------------------
+
+Kliknięcie dnia otwiera:
+
+- panel boczny na desktopie,
+- pełnoekranowy panel lub dolny arkusz na mobile.
+
+Panel pokazuje:
+
+- pełną datę,
+- wszystkie rezerwacje,
+- wszystkie wolne sloty,
+- istniejące wyjątki,
+- godziny rozpoczęcia i zakończenia,
+- czas trwania,
+- status każdego terminu.
+
+Dla rezerwacji użyj istniejących akcji:
+
+- Otwórz profil klienta
+- Rozpocznij trening
+- Anuluj
+
+Nie duplikuj istniejących przepływów ani endpointów.
+
+--------------------------------------------------
+5. ZARZĄDZANIE WYJĄTKAMI W UI
+--------------------------------------------------
+
+W szczegółach przyszłego dnia dodaj akcje:
+
+- Zablokuj cały dzień
+- Zablokuj zakres godzin
+- Dodaj dodatkową dostępność
+
+Dla istniejącego wyjątku:
+
+- Usuń blokadę
+- Usuń dodatkową dostępność
+
+Użyj endpointów utworzonych w Etapie 4.1A.
+
+„Zablokuj cały dzień”:
+
+- pokaż datę,
+- wymagaj potwierdzenia,
+- wyświetl informację:
+  „Istniejące rezerwacje nie zostaną automatycznie anulowane.”
+
+„Zablokuj zakres godzin”:
+
+- godzina od,
+- godzina do,
+- walidacja po stronie formularza i backendu,
+- jeśli zakres nachodzi na rezerwację, pokaż ostrzeżenie,
+- nie anuluj istniejącej rezerwacji.
+
+„Dodaj dodatkową dostępność”:
+
+- godzina od,
+- godzina do,
+- długość sesji,
+- przerwa,
+- użyj ograniczeń zgodnych z regularną dostępnością.
+
+Po każdej operacji:
+
+- odśwież dane wybranego dnia,
+- odśwież podsumowanie miesiąca,
+- zachowaj aktualnie otwarty miesiąc,
+- pokaż polski komunikat sukcesu,
+- nie wymagaj ręcznego przeładowania strony.
+
+--------------------------------------------------
+6. RESPONSYWNOŚĆ
+--------------------------------------------------
+
+Desktop:
+
+- pełna siatka siedmiu kolumn,
+- czytelne podsumowania dni,
+- panel szczegółów po prawej stronie.
+
+Mobile 375 px i 390 px:
+
+- brak poziomego przewijania całej strony,
+- skróty dni:
+  Pn, Wt, Śr, Cz, Pt, Sb, Nd,
+- komórki mieszczą się w szerokości ekranu,
+- w komórkach pokazuj tylko najważniejsze informacje,
+- pełne informacje dostępne po otwarciu dnia,
+- odpowiednio duże elementy dotykowe,
+- żadna akcja nie może zależeć od hover.
+
+Nie instaluj ciężkiej biblioteki kalendarza bez uzasadnienia.
+
+Preferuj własną siatkę miesiąca, jeśli obecny stack pozwala wdrożyć ją bez nadmiernej złożoności.
+
+--------------------------------------------------
+7. STREFA CZASOWA
+--------------------------------------------------
+
+Cały widok musi działać w Europe/Warsaw.
+
+Sprawdź:
+
+- generowanie zakresu miesiąca,
+- formatowanie godzin,
+- zmianę miesiąca,
+- dzień dzisiejszy,
+- miesiące zawierające zmianę czasu,
+- brak przesunięcia dat przez konwersję UTC.
+
+Nie używaj prostego new Date("YYYY-MM-DD") w sposób zależny od strefy przeglądarki.
+
+--------------------------------------------------
+8. STANY I BŁĘDY
+--------------------------------------------------
+
+Dodaj:
+
+- stan ładowania,
+- pusty stan,
+- stan błędu,
+- ponowienie pobierania,
+- blokadę wielokrotnego wysyłania formularza,
+- czytelne polskie komunikaty.
+
+Nie pokazuj użytkownikowi:
+
+- stack trace,
+- treści błędów SQL,
+- technicznych nazw ograniczeń bazy.
+
+--------------------------------------------------
+9. TESTY
+--------------------------------------------------
+
+Dodaj skoncentrowane testy:
+
+1. poprawne generowanie siatki miesiąca zaczynającego się w każdym dniu tygodnia,
+2. poprawna liczba dni dla lutego i roku przestępnego,
+3. tydzień zaczyna się w poniedziałek,
+4. podsumowanie freeSlots i bookedSlots zgadza się ze slotami,
+5. blocked_day pokazuje blokadę i zachowuje rezerwację,
+6. blocked_range zmniejsza liczbę wolnych terminów,
+7. extra_range zwiększa liczbę wolnych terminów,
+8. usunięcie wyjątku odświeża dzień i miesiąc,
+9. trener nie może zarządzać wyjątkiem innego trenera,
+10. miesiąc zawierający zmianę czasu działa poprawnie,
+11. dni przeszłe nie pozwalają tworzyć wyjątków,
+12. istniejące akcje rezerwacji nadal działają.
+
+Uruchom:
+
+- wszystkie testy rezerwacji,
+- nowe testy kalendarza,
+- typecheck api-server,
+- typecheck panelu trenera,
+- typecheck portalu klienta.
+
+--------------------------------------------------
+10. POZA ZAKRESEM
+--------------------------------------------------
+
+Nie implementuj teraz:
+
+- miesięcznego kalendarza klienta,
+- zmian procesu rezerwacji klienta,
+- ręcznego tworzenia rezerwacji za klienta,
+- przeciągania terminów,
+- synchronizacji z Google Calendar,
+- Outlooka,
+- iCal,
+- płatności,
+- cyklicznych rezerwacji,
+- e-maili i SMS-ów.
+
+--------------------------------------------------
+11. WARUNKI UKOŃCZENIA
+--------------------------------------------------
+
+Etap jest ukończony, gdy:
+
+- trener widzi pełny miesiąc,
+- może przechodzić między miesiącami,
+- każdy dzień pokazuje wolne terminy i rezerwacje,
+- może otworzyć szczegóły dnia,
+- może dodać i usunąć wszystkie trzy typy wyjątków,
+- istniejące rezerwacje nie znikają po blokadzie,
+- dane miesięczne używają wspólnego generatora,
+- kalendarz działa na 375 px i 390 px,
+- strefą prawdy pozostaje Europe/Warsaw,
+- testy przechodzą,
+- typecheck został wykonany.
+
+Na końcu podaj raport:
+
+1. zmienione pliki,
+2. nowe lub zmienione endpointy,
+3. strukturę komponentów,
+4. sposób liczenia danych miesiąca,
+5. obsługę wyjątków,
+6. wyniki testów,
+7. wyniki typecheck,
+8. potwierdzenie działania na mobile,
+9. znalezione i naprawione usterki,
+10. znane ograniczenia.
+
+Końcowy komunikat:
+
+READY — trainers can manage availability and bookings in a monthly calendar

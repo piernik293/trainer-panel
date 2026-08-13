@@ -40,6 +40,7 @@ export const ListClientsResponseItem = zod.object({
   "trainingLocation": zod.string().nullish(),
   "cardioPreference": zod.string().nullish(),
   "adaptiveStartDecision": zod.enum(['pending', 'accepted', 'declined']).nullish(),
+  "cooperationMode": zod.enum(['online', 'in_person', 'hybrid']).optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -80,6 +81,7 @@ export const CreateClientResponse = zod.object({
   "trainingLocation": zod.string().nullish(),
   "cardioPreference": zod.string().nullish(),
   "adaptiveStartDecision": zod.enum(['pending', 'accepted', 'declined']).nullish(),
+  "cooperationMode": zod.enum(['online', 'in_person', 'hybrid']).optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -112,6 +114,7 @@ export const GetClientResponse = zod.object({
   "trainingLocation": zod.string().nullish(),
   "cardioPreference": zod.string().nullish(),
   "adaptiveStartDecision": zod.enum(['pending', 'accepted', 'declined']).nullish(),
+  "cooperationMode": zod.enum(['online', 'in_person', 'hybrid']).optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -131,7 +134,8 @@ export const UpdateClientBody = zod.object({
   "email": zod.string().optional(),
   "phone": zod.string().optional(),
   "notes": zod.string().optional(),
-  "status": zod.enum(['active', 'paused', 'finished']).optional()
+  "status": zod.enum(['active', 'paused', 'finished']).optional(),
+  "cooperationMode": zod.enum(['online', 'in_person', 'hybrid']).optional()
 })
 
 export const UpdateClientResponse = zod.object({
@@ -154,6 +158,7 @@ export const UpdateClientResponse = zod.object({
   "trainingLocation": zod.string().nullish(),
   "cardioPreference": zod.string().nullish(),
   "adaptiveStartDecision": zod.enum(['pending', 'accepted', 'declined']).nullish(),
+  "cooperationMode": zod.enum(['online', 'in_person', 'hybrid']).optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -571,6 +576,7 @@ export const GetStatsResponse = zod.object({
   "trainingLocation": zod.string().nullish(),
   "cardioPreference": zod.string().nullish(),
   "adaptiveStartDecision": zod.enum(['pending', 'accepted', 'declined']).nullish(),
+  "cooperationMode": zod.enum(['online', 'in_person', 'hybrid']).optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }))

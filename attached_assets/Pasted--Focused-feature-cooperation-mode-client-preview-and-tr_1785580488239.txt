@@ -1,0 +1,276 @@
+## Focused feature — cooperation mode, client preview and trainer-led sessions
+
+Continue from the current workspace state.
+
+Implement only:
+
+1. cooperation mode for each client,
+2. safe “preview as client” mode,
+3. trainer-led workout sessions for in-person clients.
+
+Do not implement the booking calendar in this task.
+Do not add notifications, automatic scheduling or availability slots.
+Do not modify unrelated generator, survey, invitation or authentication logic.
+
+Do not perform a broad repository audit.
+Do not run the full test suite.
+
+---
+
+## 1. Cooperation mode in client profile
+
+Add a field to the trainer-side client profile:
+
+`Forma współpracy`
+
+Allowed values:
+
+- `online`
+- `in_person`
+- `hybrid`
+
+Polish labels:
+
+- `Online`
+- `Stacjonarnie`
+- `Hybrydowo`
+
+Default safely to the current existing behavior, which should be treated as `online` unless the existing data model already distinguishes the mode.
+
+The value must belong to the authenticated trainer’s client only.
+
+Do not trust caller-provided trainer ownership.
+
+### UI placement
+
+Place it near the existing client status area.
+
+Show three clear selectable options:
+
+`Online | Stacjonarnie | Hybrydowo`
+
+Below the selector, show a dynamic explanation.
+
+### Online
+
+`Klient realizuje plan samodzielnie i zapisuje wyniki w portalu.`
+
+Access:
+
+- workout plan,
+- workout history,
+- loads and progress,
+- no in-person booking or trainer-led session controls.
+
+### Stacjonarnie
+
+`Klient trenuje z trenerem. Trener może prowadzić sesję i zapisywać wyniki.`
+
+Access:
+
+- workout plan,
+- workout history,
+- trainer-led sessions,
+- future booking module placeholder only.
+
+### Hybrydowo
+
+`Klient łączy treningi samodzielne z treningami prowadzonymi przez trenera.`
+
+Access:
+
+- all online features,
+- trainer-led sessions,
+- future booking module placeholder only.
+
+Do not create a calendar yet.
+
+---
+
+## 2. Safe “preview as client” mode
+
+In the client’s `Plany treningowe` section add:
+
+`Podejrzyj jako klient`
+
+This must open the existing client plan UI using the selected client’s data.
+
+Important:
+
+- do not authenticate the trainer as the client,
+- do not create or modify a client session,
+- do not bypass ownership checks,
+- do not allow editing workout results in preview mode,
+- do not mark exercises or sessions as completed.
+
+Show a visible preview banner:
+
+`Tryb podglądu klienta`
+
+`Widzisz plan tak, jak zobaczy go klient. W tym trybie nie można zapisywać wyników.`
+
+Provide:
+
+`Wróć do profilu klienta`
+
+The trainer may preview only clients belonging to `req.trainer.id`.
+
+Trainer A must not preview Trainer B’s client.
+
+Reuse the existing client plan components where practical instead of duplicating the entire UI.
+
+---
+
+## 3. Trainer-led workout session
+
+For clients with cooperation mode:
+
+- `in_person`
+- `hybrid`
+
+show an action in the client’s plan area:
+
+`Rozpocznij trening z klientem`
+
+Do not show this action for `online` clients.
+
+### Session behavior
+
+When the trainer starts the session:
+
+1. Open the selected client’s assigned workout.
+2. Create or reuse one active workout session safely.
+3. Allow the trainer to enter:
+   - completed exercises,
+   - load,
+   - repetitions,
+   - RIR,
+   - notes.
+4. Allow the trainer to complete the session.
+5. Save the session in the same client workout history used by the client portal.
+
+Do not modify the workout-plan template while recording results.
+
+### Session metadata
+
+Store or expose clearly:
+
+- `performedBy`: `trainer` or `client`
+- `sessionMode`: `in_person` or `self_directed`
+- trainer identifier when performed by trainer
+- completion date and time
+
+Use the existing session model if it already has suitable fields.
+Add only the smallest schema changes required.
+
+### History display
+
+In client and trainer history, distinguish:
+
+`Trening samodzielny`
+
+from:
+
+`Trening stacjonarny z trenerem`
+
+For trainer-led sessions, display:
+
+`Wyniki zapisane przez trenera`
+
+The session must otherwise behave like a normal completed session:
+
+- remain in history,
+- preserve loads and notes,
+- contribute previous-load suggestions,
+- not overwrite an older session.
+
+---
+
+## 4. Permissions and safety
+
+Trainer operations must use authenticated:
+
+`req.trainer.id`
+
+Trainer A cannot:
+
+- change cooperation mode for Trainer B’s client,
+- preview Trainer B’s client,
+- start or edit Trainer B’s client session.
+
+Client operations remain bound to authenticated:
+
+`req.client.id`
+
+Do not accept trainer or client ownership from unverified request body values.
+
+A preview route must be read-only.
+
+A trainer-led route may write session results only for the trainer’s own client.
+
+Avoid concurrent duplicate active sessions for the same client and workout.
+
+If the client already has an active session for that workout, return a clear conflict instead of silently creating another one.
+
+---
+
+## 5. Future calendar placeholder
+
+For `in_person` and `hybrid` clients, you may show a disabled or informational item:
+
+`Rezerwacje treningów — wkrótce`
+
+Do not build:
+
+- availability,
+- time slots,
+- bookings,
+- cancellations,
+- reminders,
+- calendar integration.
+
+This task must remain limited to cooperation mode, preview and trainer-led sessions.
+
+---
+
+## Focused verification
+
+Verify only:
+
+1. Trainer can set Online, Stacjonarnie or Hybrydowo.
+2. The selected mode persists after refresh.
+3. Online clients do not show trainer-led session controls.
+4. Stacjonarnie and Hybrydowo clients do show them.
+5. `Podejrzyj jako klient` is read-only.
+6. Preview displays the correct client’s plan.
+7. Trainer A cannot preview Trainer B’s client.
+8. Trainer can start and complete an in-person session.
+9. The completed session appears in the same client history.
+10. History identifies who performed the session.
+11. Loads from trainer-led sessions remain available for future progression.
+12. A duplicate active session is blocked safely.
+13. Existing client self-directed sessions still work.
+
+Run only directly related focused tests.
+
+Do not run the full repository test suite.
+
+---
+
+## Final report
+
+Report:
+
+- cooperation-mode field and migration,
+- files changed,
+- profile placement,
+- preview route/component reused,
+- trainer-led session flow,
+- session metadata used,
+- permission checks,
+- focused test results,
+- remaining limitation.
+
+Required completion statement:
+
+READY — trainers can classify clients, preview their plan and run in-person workout sessions

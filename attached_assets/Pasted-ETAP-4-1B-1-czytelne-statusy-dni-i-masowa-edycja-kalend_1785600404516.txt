@@ -1,0 +1,371 @@
+ETAP 4.1B.1 — czytelne statusy dni i masowa edycja kalendarza
+
+CEL
+
+Ulepszyć miesięczny kalendarz trenera poprzez:
+
+1. czytelne oznaczenie statusów dni kolorami i tekstem,
+2. możliwość zaznaczania wielu dni,
+3. możliwość przeciągnięcia kursorem po dniach na desktopie,
+4. masowe blokowanie dni lub dodawanie jednorazowej dostępności,
+5. ograniczenie liczby powtarzalnych kliknięć.
+
+Nie implementuj przeciągania rezerwacji pomiędzy godzinami lub dniami.
+
+Przed implementacją:
+
+- przeczytaj aktualny CalendarPage i endpointy wyjątków,
+- wskaż pliki do zmiany,
+- opisz sposób obsługi desktopu i mobile,
+- zaproponuj sposób wykonania operacji masowej bez wysyłania wielu niezależnych żądań,
+- dopiero potem rozpocznij implementację.
+
+--------------------------------------------------
+1. KOLORY I STATUSY DNI
+--------------------------------------------------
+
+Dodaj czytelne stany wizualne komórek dni.
+
+Stany:
+
+AVAILABLE:
+- dzień ma dostępność,
+- nie ma jeszcze żadnych rezerwacji,
+- delikatne zielone tło lub zielony akcent,
+- tekst np. „4 wolne”.
+
+PARTIALLY_BOOKED:
+- dzień ma zarówno wolne terminy, jak i rezerwacje,
+- delikatny żółty lub pomarańczowy akcent,
+- tekst np.:
+  „3 wolne”
+  „1 rezerwacja”.
+
+FULLY_BOOKED:
+- dzień posiada dostępność, ale nie ma już wolnych terminów,
+- neutralny lub niebieski akcent,
+- tekst:
+  „Brak wolnych terminów”
+  lub „Pełny”.
+
+BLOCKED:
+- dzień został ręcznie zablokowany przez blocked_day,
+- delikatne czerwone tło lub czerwony akcent,
+- tekst „Dzień zablokowany”.
+
+NO_AVAILABILITY:
+- dzień nie ma regularnej ani dodatkowej dostępności,
+- neutralne szare tło,
+- tekst „Brak dostępności”.
+
+PAST:
+- dzień przeszły,
+- wizualnie wygaszony,
+- nie pozwala na nowe działania.
+
+TODAY:
+- zachowaj osobne, czytelne oznaczenie dzisiejszego dnia.
+
+SELECTED:
+- zaznaczony dzień musi mieć mocny obrys lub inny stan niezależny od statusu dnia.
+
+Ważne:
+
+- nie przekazuj znaczenia wyłącznie kolorem,
+- każdy stan musi mieć tekst lub aria-label,
+- zachowaj wystarczający kontrast,
+- czerwony oznacza wyłącznie ręczną blokadę, nie dzień całkowicie zarezerwowany,
+- dodaj niewielką legendę statusów nad lub pod kalendarzem,
+- legenda ma być zwijana lub kompaktowa na mobile.
+
+--------------------------------------------------
+2. TRYB MASOWEJ EDYCJI
+--------------------------------------------------
+
+Dodaj nad kalendarzem przycisk:
+
+„Edytuj wiele dni”
+
+Po aktywacji pokaż pasek narzędzi z trybami:
+
+- Zablokuj dni
+- Dodaj dostępność
+- Usuń zmiany dni
+- Anuluj zaznaczenie
+
+„Usuń zmiany dni” oznacza:
+
+- usunięcie jednorazowych wyjątków blocked_day,
+  blocked_range i extra_range dla zaznaczonych dni,
+- powrót dni do grafiku wynikającego z regularnej
+  tygodniowej dostępności,
+- nie usuwaj regularnej tygodniowej dostępności.
+
+Nie pozwalaj zaznaczać:
+
+- dni przeszłych,
+- pustych pól siatki miesiąca,
+- dni spoza aktualnie obsługiwanego zakresu.
+
+--------------------------------------------------
+3. ZAZNACZANIE NA DESKTOPIE
+--------------------------------------------------
+
+W trybie masowej edycji pozwól:
+
+- kliknąć pojedynczy dzień,
+- kliknąć ponownie, aby go odznaczyć,
+- przytrzymać przycisk myszy i przeciągnąć po kolejnych dniach,
+- zaznaczyć zakres ciągły lub wiele osobnych dni.
+
+Podczas przeciągania:
+
+- pokazuj wizualny podgląd zaznaczonych dni,
+- nie zapisuj zmian podczas samego przeciągania,
+- nie otwieraj panelu szczegółów dnia,
+- nie wykonuj operacji przed osobnym zatwierdzeniem.
+
+Po zakończeniu przeciągania pokaż liczbę zaznaczonych dni:
+
+„Wybrano 6 dni”.
+
+Obsłuż również:
+
+- Shift + klik jako zaznaczenie zakresu od ostatniego dnia,
+- Escape jako anulowanie całego zaznaczenia.
+
+Nie używaj natywnego przeciągania HTML5 elementów.
+
+--------------------------------------------------
+4. MOBILE
+--------------------------------------------------
+
+Na urządzeniach dotykowych nie przechwytuj zwykłego gestu
+przewijania kalendarza.
+
+Mobile powinien używać trybu:
+
+„Zaznacz wiele dni”
+
+Po jego aktywacji:
+
+- pojedyncze tapnięcie zaznacza lub odznacza dzień,
+- można zaznaczyć wiele dni,
+- opcjonalnie długie przytrzymanie może rozpocząć zaznaczanie,
+  ale nie może utrudniać pionowego scrollowania,
+- pokaż stały dolny pasek z liczbą wybranych dni i przyciskiem „Dalej”.
+
+Nie wymagaj precyzyjnego przeciągania palcem jako jedynego sposobu obsługi.
+
+Zweryfikuj realnie:
+
+- 375 × 812,
+- 390 × 844,
+- 768 px,
+- desktop.
+
+--------------------------------------------------
+5. MASOWE BLOKOWANIE DNI
+--------------------------------------------------
+
+Po wybraniu „Zablokuj dni” pokaż podsumowanie:
+
+- liczba dni,
+- lista dat lub skrócony zakres,
+- informacja:
+  „Istniejące rezerwacje nie zostaną automatycznie anulowane.”
+
+Operacja tworzy blocked_day dla każdego zaznaczonego dnia.
+
+Jeżeli dzień ma już blocked_day:
+
+- nie twórz duplikatu,
+- potraktuj go jako już zablokowany.
+
+Jeżeli zaznaczony dzień ma aktywną rezerwację:
+
+- pokaż ostrzeżenie,
+- rezerwacja pozostaje booked,
+- blokada usuwa tylko możliwość nowych rezerwacji.
+
+Wymagaj osobnego kliknięcia:
+
+„Potwierdź zablokowanie”.
+
+--------------------------------------------------
+6. MASOWE DODAWANIE DOSTĘPNOŚCI
+--------------------------------------------------
+
+Po wybraniu „Dodaj dostępność” pokaż jeden formularz wspólny dla wszystkich zaznaczonych dni:
+
+- godzina od,
+- godzina do,
+- długość sesji,
+- przerwa.
+
+Po zatwierdzeniu utwórz extra_range dla każdego zaznaczonego dnia.
+
+Przed zapisem pokaż podsumowanie, np.:
+
+„Dodasz dostępność 16:00–20:00 w 5 dniach.”
+
+Walidacja:
+
+- koniec późniejszy niż początek,
+- poprawna długość sesji,
+- poprawna przerwa,
+- brak operacji dla dni przeszłych,
+- brak zduplikowanych wyjątków.
+
+Jeżeli regularna dostępność już tworzy identyczne sloty:
+
+- zachowaj istniejącą zasadę deduplikacji,
+- nie twórz klientowi podwójnych terminów.
+
+--------------------------------------------------
+7. API OPERACJI MASOWYCH
+--------------------------------------------------
+
+Nie wykonuj kilkunastu niezależnych requestów z frontendu.
+
+Dodaj jeden zabezpieczony endpoint operacji masowej, np.:
+
+POST /availability/exceptions/batch
+
+Przykładowe dane:
+
+- action:
+  - block_days
+  - add_extra_range
+  - clear_exceptions
+- dates: tablica dni YYYY-MM-DD
+- startTime opcjonalne
+- endTime opcjonalne
+- sessionDurationMinutes opcjonalne
+- breakMinutes opcjonalne
+
+Wymagania:
+
+- trainer_id wyłącznie z sesji,
+- limit maksymalnie 31 dni w jednej operacji,
+- wszystkie daty walidowane,
+- brak dni przeszłych,
+- Europe/Warsaw jako źródło prawdy,
+- operacja wykonywana w transakcji,
+- w razie błędu nie zapisuj tylko części zmian,
+- ignoruj bezpiecznie istniejące identyczne wyjątki,
+- zwracaj podsumowanie:
+  created,
+  removed,
+  skipped.
+
+Nie usuwaj istniejących rezerwacji.
+
+--------------------------------------------------
+8. POTWIERDZENIE I COFNIĘCIE
+--------------------------------------------------
+
+Każda masowa operacja wymaga podsumowania i osobnego potwierdzenia.
+
+Po sukcesie:
+
+- odśwież dane miesiąca,
+- zachowaj aktualnie otwarty miesiąc,
+- wyczyść zaznaczenie,
+- pokaż komunikat np.:
+  „Zablokowano 6 dni.”
+
+Dodaj opcję „Cofnij” w komunikacie sukcesu, jeżeli można ją bezpiecznie wykonać bez naruszania nowych zmian użytkownika.
+
+Jeżeli bezpieczne cofnięcie wymagałoby dużej przebudowy, pomiń je i opisz w raporcie jako ograniczenie.
+
+--------------------------------------------------
+9. DOSTĘPNOŚĆ
+--------------------------------------------------
+
+Zapewnij:
+
+- obsługę klawiatury,
+- aria-pressed lub aria-selected dla zaznaczonych dni,
+- komunikowanie liczby zaznaczonych dni czytnikom ekranu,
+- focus state,
+- Escape anulujący zaznaczenie,
+- focus trap w dialogach potwierdzenia,
+- przywrócenie fokusa po zamknięciu formularza.
+
+Stan zaznaczenia musi być widoczny niezależnie od koloru statusu dnia.
+
+--------------------------------------------------
+10. TESTY
+--------------------------------------------------
+
+Dodaj testy:
+
+1. available ma poprawny status i tekst.
+2. partially booked jest odróżniony od available.
+3. fully booked nie jest oznaczony jako blocked.
+4. blocked_day ma czerwony status i tekst.
+5. brak dostępności pozostaje neutralny.
+6. przeciągnięcie na desktopie zaznacza kilka dni.
+7. samo przeciągnięcie nie zapisuje zmian.
+8. tapnięcia na mobile zaznaczają wiele dni.
+9. dni przeszłe nie mogą zostać zaznaczone.
+10. block_days tworzy blocked_day dla wszystkich dat.
+11. aktywne rezerwacje nie są anulowane.
+12. add_extra_range tworzy wyjątki dla wszystkich dat.
+13. clear_exceptions usuwa tylko wyjątki, nie regularny grafik.
+14. błędna data powoduje wycofanie całej transakcji.
+15. trener nie może zmieniać danych innego trenera.
+16. podwójne kliknięcie zatwierdzenia nie wykonuje operacji dwa razy.
+17. po sukcesie kalendarz odświeża statusy dni.
+
+Uruchom wszystkie dotychczasowe testy rezerwacji i kalendarza.
+
+--------------------------------------------------
+11. POZA ZAKRESEM
+--------------------------------------------------
+
+Nie implementuj:
+
+- przeciągania istniejących rezerwacji,
+- zmiany godziny rezerwacji metodą drag and drop,
+- automatycznego anulowania klientów,
+- kalendarza klienta,
+- zmian generatora slotów poza koniecznymi integracjami,
+- synchronizacji z Google Calendar,
+- rezerwacji cyklicznych.
+
+--------------------------------------------------
+12. WARUNKI UKOŃCZENIA
+--------------------------------------------------
+
+Etap jest ukończony, gdy:
+
+- status dnia można rozpoznać bez otwierania szczegółów,
+- zablokowane dni są czerwone i opisane,
+- dni z wolnymi terminami są zielone i opisane,
+- dni częściowo zajęte mają osobny stan,
+- trener może zaznaczyć kilka dni,
+- na desktopie działa przeciąganie po dniach,
+- na mobile działa wygodne zaznaczanie tapnięciami,
+- operacja wymaga zatwierdzenia,
+- masowe zmiany wykonują się atomowo,
+- rezerwacje nie są automatycznie anulowane,
+- działa na 375 i 390 px,
+- testy przechodzą.
+
+Na końcu podaj raport:
+
+1. zmienione pliki,
+2. zasady kolorów i statusów,
+3. obsługę zaznaczania desktop/mobile,
+4. nowy endpoint batch,
+5. sposób ochrony istniejących rezerwacji,
+6. wyniki testów,
+7. rzeczywiście zweryfikowane szerokości,
+8. znalezione problemy,
+9. znane ograniczenia.
+
+Końcowy komunikat:
+
+READY — trainers can visually identify and bulk-edit calendar availability

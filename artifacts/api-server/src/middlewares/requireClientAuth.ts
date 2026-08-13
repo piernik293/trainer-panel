@@ -42,7 +42,7 @@ export async function requireClientAuth(
   const userId = auth?.userId;
 
   if (!userId) {
-    res.status(401).json({ error: "Unauthorized" });
+    res.status(401).json({ error: "Twoja sesja wygasła. Zaloguj się ponownie." });
     return;
   }
 
@@ -61,6 +61,6 @@ export async function requireClientAuth(
     next();
   } catch (err) {
     logger.error({ err, clerkUserId: userId }, "requireClientAuth: DB error");
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Wystąpiły chwilowe problemy techniczne. Spróbuj ponownie za chwilę." });
   }
 }

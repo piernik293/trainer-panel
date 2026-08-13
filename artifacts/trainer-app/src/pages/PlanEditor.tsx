@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, createContext, useMemo } from "react";
+import { humanizeError } from "@/lib/userError";
 import { useParams, Link } from "wouter";
 import {
   DndContext,
@@ -437,7 +438,7 @@ function ExerciseEditForm({
       },
       {
         onSuccess: onSaved,
-        onError: (err) => toast({ title: err.message, variant: "destructive" }),
+        onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
       },
     );
   };
@@ -654,7 +655,7 @@ function MoveExerciseDialog({
       { dayId: currentDayId, planExerciseId, dayId_target: Number(targetDayId), orderInDay: newOrder },
       {
         onSuccess: () => { onClose(); setTargetDayId(""); },
-        onError: (err) => toast({ title: err.message, variant: "destructive" }),
+        onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
       },
     );
   };
@@ -738,14 +739,14 @@ function ExerciseRow({
   const handleDeleteConfirmed = () => {
     deleteExercise.mutate(
       { dayId, planExerciseId: ex.id },
-      { onError: (err) => toast({ title: err.message, variant: "destructive" }) },
+      { onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }) },
     );
   };
 
   const handleDuplicate = () => {
     duplicateExercise.mutate(
       { dayId, planExerciseId: ex.id },
-      { onError: (err) => toast({ title: err.message, variant: "destructive" }) },
+      { onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }) },
     );
   };
 
@@ -988,7 +989,7 @@ function DaySection({
       { dayId: day.id, dayName: nameValue.trim() || `Dzień ${day.dayOrder}` },
       {
         onSuccess: () => setEditingName(false),
-        onError: (err) => toast({ title: err.message, variant: "destructive" }),
+        onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
       },
     );
   };
@@ -1006,7 +1007,7 @@ function DaySection({
       },
       {
         onSuccess: () => { setShowDetails(false); toast({ title: "Szczegóły dnia zapisane" }); },
-        onError: (err) => toast({ title: err.message, variant: "destructive" }),
+        onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
       },
     );
   };
@@ -1014,20 +1015,20 @@ function DaySection({
   const handleDeleteDay = () => {
     if (!window.confirm(`Usunąć "${day.dayName ?? `Dzień ${day.dayOrder}`}" wraz ze wszystkimi ćwiczeniami?`)) return;
     deleteDay.mutate(day.id, {
-      onError: (err) => toast({ title: err.message, variant: "destructive" }),
+      onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
     });
   };
 
   const handleDuplicateDay = () => {
     duplicateDay.mutate(day.id, {
-      onError: (err) => toast({ title: err.message, variant: "destructive" }),
+      onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
     });
   };
 
   const handleClearDayConfirmed = () => {
     clearDay.mutate(
       { dayId: day.id },
-      { onError: (err) => toast({ title: err.message, variant: "destructive" }) },
+      { onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }) },
     );
   };
 
@@ -1042,7 +1043,7 @@ function DaySection({
       dayId: day.id,
       order: reordered.map((ex, i) => ({ id: ex.id, orderInDay: i + 1 })),
     }, {
-      onError: (err) => toast({ title: err.message, variant: "destructive" }),
+      onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
     });
   };
 
@@ -1504,7 +1505,7 @@ function PlanInfoForm({ plan, planId }: { plan: WorkoutPlan; planId: number }) {
           setSavedForm(makeFormFromPlan(updated));
           toast({ title: "Informacje planu zapisane" });
         },
-        onError: (err) => toast({ title: err.message, variant: "destructive" }),
+        onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
       },
     );
   };
@@ -1675,9 +1676,9 @@ export default function PlanEditor() {
           const items = (detail.violations as Array<{ targetName: string; weeklyEffectiveSets: number; weeklyAbsoluteCeiling: number }>)
             .map((v) => `• ${v.targetName}: ${v.weeklyEffectiveSets} serii (limit: ${v.weeklyAbsoluteCeiling})`)
             .join("\n");
-          toast({ title: err.message, description: items, variant: "destructive" });
+          toast({ title: humanizeError(err), description: items, variant: "destructive" });
         } else {
-          toast({ title: err.message, variant: "destructive" });
+          toast({ title: humanizeError(err), variant: "destructive" });
         }
       },
     });
@@ -1687,7 +1688,7 @@ export default function PlanEditor() {
     if (!window.confirm("Zarchiwizować plan?")) return;
     updatePlan.mutate({ status: "archived" }, {
       onSuccess: () => toast({ title: "Plan zarchiwizowany" }),
-      onError: (err) => toast({ title: err.message, variant: "destructive" }),
+      onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
     });
   };
 
@@ -1695,7 +1696,7 @@ export default function PlanEditor() {
     const nextOrder = (plan.days.length ?? 0) + 1;
     addDay.mutate(
       { dayName: `Dzień ${nextOrder}` },
-      { onError: (err) => toast({ title: err.message, variant: "destructive" }) },
+      { onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }) },
     );
   };
 
@@ -1703,7 +1704,7 @@ export default function PlanEditor() {
     if (!pickerDayId) return;
     addExercise.mutate(
       { dayId: pickerDayId, exerciseId, workingSets: 3 },
-      { onError: (err) => toast({ title: err.message, variant: "destructive" }) },
+      { onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }) },
     );
   };
 
@@ -1716,7 +1717,7 @@ export default function PlanEditor() {
     const reordered = arrayMove(plan.days, oldIndex, newIndex);
     reorderDays.mutate(
       reordered.map((d, i) => ({ id: d.id, dayOrder: i + 1 })),
-      { onError: (err) => toast({ title: err.message, variant: "destructive" }) },
+      { onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }) },
     );
   };
 

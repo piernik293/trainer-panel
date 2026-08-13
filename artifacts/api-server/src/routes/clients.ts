@@ -58,6 +58,7 @@ const UpdateClientBody = z.object({
   phone: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   status: z.enum(["active", "paused", "finished"]).optional(),
+  cooperationMode: z.enum(["online", "in_person", "hybrid"]).optional(),
 });
 
 // ─── GET /clients ─────────────────────────────────────────────────────────────

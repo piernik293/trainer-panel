@@ -11,6 +11,7 @@ export * from './addSubstitutionBody';
 export * from './client';
 export * from './clientInput';
 export * from './clientStatus';
+export * from './cooperationMode';
 export * from './clientUpdate';
 export * from './errorResponse';
 export * from './exercise';

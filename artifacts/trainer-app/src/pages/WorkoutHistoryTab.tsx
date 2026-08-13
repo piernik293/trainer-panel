@@ -38,6 +38,8 @@ interface SessionSummary {
   planTitle: string;
   dayName: string | null;
   daySubtitle: string | null;
+  performedBy: "client" | "trainer";
+  sessionMode: "self_directed" | "in_person";
 }
 
 interface ExerciseDetail {
@@ -135,6 +137,7 @@ function SessionDetailPanel({
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
             {session.planTitle} · {new Date(session.sessionDate).toLocaleDateString("pl-PL")}
+            {session.performedBy === "trainer" && " · Wyniki zapisane przez trenera"}
           </p>
         </div>
         <Button variant="ghost" size="sm" onClick={onClose}>Zamknij</Button>
@@ -272,6 +275,19 @@ export default function WorkoutHistoryTab({ clientId }: { clientId: number }) {
                           )}
                         >
                           {s.isCompleted ? "Ukończona" : "W trakcie"}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-xs px-1.5 py-0",
+                            s.performedBy === "trainer"
+                              ? "border-blue-500/30 text-blue-600"
+                              : "border-border text-muted-foreground",
+                          )}
+                        >
+                          {s.performedBy === "trainer"
+                            ? "Trening stacjonarny z trenerem"
+                            : "Trening samodzielny"}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">

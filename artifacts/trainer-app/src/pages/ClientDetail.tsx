@@ -1,4 +1,5 @@
 import { useState, useId } from "react";
+import { humanizeError } from "@/lib/userError";
 import { useParams, Link } from "wouter";
 import {
   useGetClient,
@@ -26,7 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Printer, FileEdit, Phone, Mail, Calendar, ClipboardList, History, StickyNote, Trash2, Pencil, Dumbbell, Sparkles, Link2, Moon, Activity, Copy, Send, UserCheck, ShieldOff, RefreshCw } from "lucide-react";
+import { ArrowLeft, Printer, FileEdit, Phone, Mail, Calendar, ClipboardList, History, StickyNote, Trash2, Pencil, Dumbbell, Sparkles, Link2, Moon, Activity, Copy, Send, UserCheck, ShieldOff, RefreshCw, Eye, Play } from "lucide-react";
 import { CollapsibleSurveySection, DetailRow } from "@/components/CollapsibleSurveySection";
 import ExerciseRecommendationsTab from "./ExerciseRecommendationsTab";
 import WorkoutHistoryTab from "./WorkoutHistoryTab";
@@ -113,6 +114,22 @@ const RECOVERY_BADGE_CLASS: Record<string, string> = {
   poor: "bg-red-50 text-red-700 border-red-200",
 };
 
+// ─── Cooperation mode (Forma współpracy) ─────────────────────────────────────
+
+type CooperationMode = "online" | "in_person" | "hybrid";
+
+const COOPERATION_OPTIONS: { value: CooperationMode; label: string }[] = [
+  { value: "online", label: "Online" },
+  { value: "in_person", label: "Stacjonarnie" },
+  { value: "hybrid", label: "Hybrydowo" },
+];
+
+const COOPERATION_EXPLANATION: Record<CooperationMode, string> = {
+  online: "Klient realizuje plan samodzielnie i zapisuje wyniki w portalu.",
+  in_person: "Klient trenuje z trenerem. Trener może prowadzić sesję i zapisywać wyniki.",
+  hybrid: "Klient łączy treningi samodzielne z treningami prowadzonymi przez trenera.",
+};
+
 const PLAN_STATUS_LABEL: Record<string, string> = {
   draft: "Szkic",
   active: "Aktywny",
@@ -124,15 +141,23 @@ const PLAN_STATUS_CLASS: Record<string, string> = {
   archived: "bg-gray-100 text-gray-500",
 };
 
-function PlansTab({ clientId }: { clientId: number }) {
+function PlansTab({
+  clientId,
+  cooperationMode,
+}: {
+  clientId: number;
+  cooperationMode: CooperationMode;
+}) {
   const { toast } = useToast();
   const { data: plans, isLoading } = useListClientPlans(clientId);
   const deletePlan = useDeletePlan(clientId);
+  const trainerLed = cooperationMode === "in_person" || cooperationMode === "hybrid";
+  const hasActivePlan = !!plans?.some((p) => p.status === "active");
 
   const handleDelete = (plan: WorkoutPlanSummary) => {
     if (!window.confirm(`Usunąć plan "${plan.title}"?`)) return;
     deletePlan.mutate(plan.id, {
-      onError: (err) => toast({ title: err.message, variant: "destructive" }),
+      onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
     });
   };
 
@@ -159,6 +184,24 @@ function PlansTab({ clientId }: { clientId: number }) {
         </div>
       </CardHeader>
       <CardContent className="pt-4">
+        {hasActivePlan && (
+          <div className="flex gap-2 flex-wrap mb-4">
+            <Button asChild size="sm" variant="outline" className="gap-1.5">
+              <Link href={`/clients/${clientId}/portal-preview`}>
+                <Eye size={14} />
+                Podejrzyj jako klient
+              </Link>
+            </Button>
+            {trainerLed && (
+              <Button asChild size="sm" className="gap-1.5">
+                <Link href={`/clients/${clientId}/trainer-session`}>
+                  <Play size={14} />
+                  Rozpocznij trening z klientem
+                </Link>
+              </Button>
+            )}
+          </div>
+        )}
         {isLoading ? (
           <div className="space-y-2">
             {[1, 2].map((i) => (
@@ -264,6 +307,22 @@ export default function ClientDetail() {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleCooperationModeChange = (mode: CooperationMode) => {
+    updateClient.mutate(
+      { id, data: { cooperationMode: mode } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetClientQueryKey(id) });
+          queryClient.invalidateQueries({ queryKey: getListClientsQueryKey() });
+          toast({ title: "Forma współpracy zaktualizowana" });
+        },
+        onError: () => {
+          toast({ title: "Nie udało się zmienić formy współpracy", variant: "destructive" });
+        },
+      }
+    );
   };
 
   const handleStatusChange = (status: string) => {
@@ -395,6 +454,42 @@ export default function ClientDetail() {
               </SelectContent>
             </Select>
           </div>
+          <div className="pt-2 space-y-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-muted-foreground">Forma współpracy:</span>
+              <div className="inline-flex rounded-md border border-border/60 overflow-hidden">
+                {COOPERATION_OPTIONS.map((opt) => {
+                  const selected = (client.cooperationMode ?? "online") === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      disabled={updateClient.isPending}
+                      onClick={() => handleCooperationModeChange(opt.value)}
+                      className={
+                        "px-3 py-1.5 text-sm transition-colors border-r border-border/60 last:border-r-0 " +
+                        (selected
+                          ? "bg-primary text-primary-foreground font-medium"
+                          : "bg-background text-muted-foreground hover:bg-muted/40")
+                      }
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground max-w-md">
+              {COOPERATION_EXPLANATION[(client.cooperationMode ?? "online") as CooperationMode] ??
+                COOPERATION_EXPLANATION.online}
+            </p>
+            {(client.cooperationMode === "in_person" || client.cooperationMode === "hybrid") && (
+              <p className="text-xs text-muted-foreground/70 italic flex items-center gap-1.5">
+                <Calendar size={12} />
+                Rezerwacje treningów — wkrótce
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-2 flex-wrap">
@@ -519,7 +614,10 @@ export default function ClientDetail() {
         </TabsContent>
 
         <TabsContent value="plans" className="pt-4">
-          <PlansTab clientId={id} />
+          <PlansTab
+            clientId={id}
+            cooperationMode={(client.cooperationMode ?? "online") as CooperationMode}
+          />
         </TabsContent>
 
         <TabsContent value="workout-history" className="pt-4">

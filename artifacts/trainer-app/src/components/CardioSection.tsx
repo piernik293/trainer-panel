@@ -7,6 +7,7 @@
  */
 
 import { useState, useMemo } from "react";
+import { humanizeError } from "@/lib/userError";
 import {
   Activity,
   Check,
@@ -298,7 +299,7 @@ export function CardioSection({
           toast({ title: "Rekomendacja cardio zapisana" });
         },
         onError: (err) =>
-          toast({ title: err.message, variant: "destructive" }),
+          toast({ title: humanizeError(err), variant: "destructive" }),
       },
     );
   };

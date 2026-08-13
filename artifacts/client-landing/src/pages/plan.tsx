@@ -1,11 +1,29 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser, SignIn } from "@clerk/react";
-import { Loader2, CheckCircle2, ChevronDown, ChevronRight, Dumbbell, Flame, Zap, Activity, Shield, Save, RotateCcw } from "lucide-react";
+import { Loader2, CheckCircle2, ChevronDown, ChevronRight, ChevronLeft, Dumbbell, Flame, Zap, Activity, Shield, Save, RotateCcw, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { ClientPortalNav, type PortalNavTarget } from "@/components/ClientPortalNav";
 import { cn } from "@/lib/utils";
+import {
+  humanizeError,
+  statusMessage,
+  NETWORK_ERROR_MESSAGE,
+  SAVE_WORKOUT_ERROR_MESSAGE,
+  PLAN_LOAD_ERROR_MESSAGE,
+} from "@/lib/userError";
+import {
+  getMonthGrid,
+  todayWarsaw,
+  bookingWindow,
+  windowMonths,
+  monthLabelPl,
+  groupSlotsByDay,
+  freeCountLabel,
+  shiftDay,
+} from "@/lib/bookingCalendar";
 
 // ─── API helpers ─────────────────────────────────────────────────────────────
 
@@ -16,15 +34,62 @@ import { cn } from "@/lib/utils";
 //
 // credentials: "include" is required here: Clerk's __session cookie must be
 // sent for the API to authenticate the client-portal caller.
+/** Dev-only visual-verification mode: /booking-preview?mockBooking=1. */
+const BOOKING_MOCK =
+  import.meta.env.DEV &&
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).has("mockBooking");
+
 async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    ...opts,
-  });
+  if (BOOKING_MOCK && path.startsWith("/client-portal/booking")) {
+    return mockBookingApi<T>(path, opts);
+  }
+  // Portal preview (dev): serve one synthetic history entry so the section
+  // (and nav scroll target) renders with content.
+  if (BOOKING_MOCK && path.startsWith("/client-portal/history")) {
+    return {
+      items: [
+        {
+          id: 1,
+          planId: 1,
+          planDayId: 1,
+          sessionDate: "2026-07-28",
+          completedAt: "2026-07-28T18:30:00.000Z",
+          dayName: "Dzień A",
+          daySubtitle: "Góra ciała",
+          dayOrder: 1,
+          planTitle: "Plan siłowy 3 dni",
+          completedExercises: 5,
+          completedSets: 15,
+        },
+      ],
+      hasMore: false,
+      offset: 0,
+      limit: 12,
+    } as T;
+  }
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, {
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      ...opts,
+    });
+  } catch (cause) {
+    // Network-level failure — user-safe message; detail stays in console.
+    console.error("apiFetch network error:", path, cause);
+    throw Object.assign(new Error(NETWORK_ERROR_MESSAGE), { cause });
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? `HTTP ${res.status}`);
+    // 4xx bodies from our API carry user-safe Polish text; for 5xx (or a
+    // missing body) fall back to a safe status-mapped message.
+    const serverMsg = typeof (body as { error?: unknown }).error === "string"
+      ? (body as { error: string }).error
+      : null;
+    const err = new Error(serverMsg && res.status < 500 ? serverMsg : statusMessage(res.status));
+    (err as Error & { status?: number }).status = res.status;
+    throw err;
   }
   return res.json() as Promise<T>;
 }
@@ -147,6 +212,10 @@ interface Session {
   difficultyRating: number | null;
   hadPain: boolean | null;
   energyLevel: "low" | "medium" | "high" | null;
+  /** 'client' | 'trainer' — who recorded the results (trainer-led sessions). */
+  performedBy?: "client" | "trainer";
+  /** 'self_directed' | 'in_person' */
+  sessionMode?: "self_directed" | "in_person";
   logs: ExerciseLog[];
 }
 
@@ -192,6 +261,8 @@ interface HistoryItem {
   planTitle: string | null;
   completedExercises: number;
   completedSets: number;
+  performedBy?: "client" | "trainer";
+  sessionMode?: "self_directed" | "in_person";
 }
 
 interface HistoryResponse {
@@ -388,6 +459,7 @@ function ExerciseLogRow({
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [log, setLog] = useState<LogState>({
     setsCompleted: initialLog?.setsCompleted?.toString() ?? "",
     repsCompleted: initialLog?.repsCompleted?.toString() ?? "",
@@ -404,6 +476,7 @@ function ExerciseLogRow({
   const save = useCallback(async (data: LogState) => {
     setSaving(true);
     setSaved(false);
+    setSaveError(null);
     try {
       const result = await apiFetch<ExerciseLog>(
         `/client-portal/sessions/${sessionId}/exercises/${ex.id}`,
@@ -422,8 +495,10 @@ function ExerciseLogRow({
       onLogSaved(result);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {
-      // silent — user can retry
+    } catch (err) {
+      // Entered values stay on screen — state is local; only the save failed.
+      console.error("Workout save failed:", err);
+      setSaveError(SAVE_WORKOUT_ERROR_MESSAGE);
     } finally {
       setSaving(false);
     }
@@ -480,6 +555,11 @@ function ExerciseLogRow({
           {open ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
         </div>
       </button>
+
+      {/* Save failure — entered values are preserved (state is local). */}
+      {saveError && (
+        <p role="alert" className="px-4 pb-2 text-xs text-red-400">{saveError}</p>
+      )}
 
       {/* Log form */}
       {open && (
@@ -590,12 +670,16 @@ function SessionView({
   const [session, setSession] = useState<Session | null>(null);
   const [previous, setPrevious] = useState<Record<number, PrevResult>>({});
   const [loading, setLoading] = useState(true);
+  const [openError, setOpenError] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
+  const [retryCounter, setRetryCounter] = useState(0);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
+      setOpenError(null);
       try {
         // Server-side get-or-create: returns the single active (not completed)
         // session for this day, or creates a fresh one. Completed sessions are
@@ -606,13 +690,14 @@ function SessionView({
         });
         setSession(opened.session);
         setPrevious(opened.previous ?? {});
-      } catch {
-        // empty
+      } catch (err) {
+        console.error("Session open failed:", err);
+        setOpenError(humanizeError(err, "Nie udało się załadować sesji. Spróbuj ponownie."));
       } finally {
         setLoading(false);
       }
     })();
-  }, [planId, day.id]);
+  }, [planId, day.id, retryCounter]);
 
   const handleLogSaved = (log: ExerciseLog) => {
     setSession((s) => {
@@ -625,12 +710,16 @@ function SessionView({
   const handleComplete = async () => {
     if (!session) return;
     setCompleting(true);
+    setCompleteError(null);
     try {
       const updated = await apiFetch<Session>(`/client-portal/sessions/${session.id}`, {
         method: "PATCH",
         body: JSON.stringify({ isCompleted: !session.isCompleted }),
       });
       setSession((s) => (s ? { ...s, isCompleted: updated.isCompleted, completedAt: updated.completedAt } : s));
+    } catch (err) {
+      console.error("Session complete failed:", err);
+      setCompleteError(humanizeError(err, SAVE_WORKOUT_ERROR_MESSAGE));
     } finally {
       setCompleting(false);
     }
@@ -647,9 +736,17 @@ function SessionView({
   if (!session) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-6">
-        <div className="text-center">
-          <p className="text-destructive mb-4">Nie udało się załadować sesji.</p>
-          <Button variant="outline" onClick={onBack} className="rounded-none">Powrót</Button>
+        <div className="text-center space-y-4" role="alert">
+          <p className="font-semibold">Nie udało się wykonać tej operacji</p>
+          <p className="text-sm text-muted-foreground">
+            {openError ?? "Nie udało się załadować sesji. Spróbuj ponownie."}
+          </p>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={() => setRetryCounter((c) => c + 1)} className="rounded-none">
+              Spróbuj ponownie
+            </Button>
+            <Button variant="outline" onClick={onBack} className="rounded-none">Wróć</Button>
+          </div>
         </div>
       </div>
     );
@@ -762,7 +859,10 @@ function SessionView({
 
         {/* Complete session button */}
         {!session.isCompleted && (
-          <div className="pt-4">
+          <div className="pt-4 space-y-2">
+            {completeError && (
+              <p role="alert" className="text-xs text-red-400 text-center">{completeError}</p>
+            )}
             <Button
               onClick={handleComplete}
               disabled={completing}
@@ -793,6 +893,7 @@ function SessionFeedbackForm({
 }) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const patch = async (body: Record<string, unknown>) => {
     setSaving(true);
@@ -802,8 +903,11 @@ function SessionFeedbackForm({
         body: JSON.stringify(body),
       });
       onSaved(updated);
-    } catch {
-      // silent
+      setFeedbackError(null);
+    } catch (err) {
+      // Entered feedback stays on screen — only the save failed.
+      console.error("Feedback save failed:", err);
+      setFeedbackError(SAVE_WORKOUT_ERROR_MESSAGE);
     } finally {
       setSaving(false);
     }
@@ -822,6 +926,9 @@ function SessionFeedbackForm({
           {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
         </span>
       </button>
+      {feedbackError && (
+        <p role="alert" className="px-3 pb-2 text-xs text-red-400">{feedbackError}</p>
+      )}
       {open && (
         <div className="px-3 pb-3 space-y-3 border-t border-white/10 pt-3">
           <div>
@@ -952,6 +1059,11 @@ function SessionDetailReadOnly({ sessionId, onClose }: { sessionId: number; onCl
           {detail.completedAt && (
             <p className="text-xs text-muted-foreground">Ukończono: {formatDateTime(detail.completedAt)}</p>
           )}
+          {detail.performedBy === "trainer" && (
+            <p className="text-xs text-blue-400">
+              Trening stacjonarny z trenerem · Wyniki zapisane przez trenera
+            </p>
+          )}
           {detail.logs.length === 0 ? (
             <p className="text-sm text-muted-foreground">Brak zapisanych ćwiczeń w tej sesji.</p>
           ) : (
@@ -991,6 +1103,476 @@ function SessionDetailReadOnly({ sessionId, onClose }: { sessionId: number; onCl
 // ─── HistorySection ───────────────────────────────────────────────────────────
 // "Historia treningów" — completed sessions, newest first, 12 per page.
 
+// ─── Booking (Stage 4 MVP) ────────────────────────────────────────────────────
+
+interface BookingInfo {
+  id: number;
+  startsAt: string;
+  durationMinutes: number;
+  status: string;
+}
+
+interface BookingSlot {
+  startsAt: string;
+  durationMinutes: number;
+}
+
+// ─── Dev-only mock backend for /booking-preview?mockBooking=1 ────────────────
+// Never runs in production (BOOKING_MOCK requires import.meta.env.DEV).
+// Synthetic data only. Simulates: free slots for the 30-day window, one
+// pre-armed 409 conflict (first slot of the 3rd available day), booking and
+// cancellation.
+
+const mockBookingState: {
+  slots: BookingSlot[] | null;
+  booking: BookingInfo | null;
+  conflictSlot: string | null;
+  nextId: number;
+} = { slots: null, booking: null, conflictSlot: null, nextId: 1 };
+
+function buildMockSlots(): BookingSlot[] {
+  const today = todayWarsaw();
+  const out: BookingSlot[] = [];
+  for (let i = 1; i < 30; i++) {
+    const date = shiftDay(today, i);
+    const [y, m, d] = date.split("-").map(Number);
+    const weekday = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
+    if (weekday > 4) continue; // Mon–Fri only
+    if (weekday === 3) continue; // pretend Thursdays are fully blocked
+    for (let h = 16; h < 20; h++) {
+      if (weekday === 1 && h >= 18) continue; // pretend Tuesday 18–20 blocked_range
+      // Fixed CEST offset — dev visual verification only.
+      out.push({ startsAt: `${date}T${String(h).padStart(2, "0")}:00:00+02:00`, durationMinutes: 60 });
+    }
+  }
+  return out;
+}
+
+async function mockBookingApi<T>(path: string, opts?: RequestInit): Promise<T> {
+  await new Promise((r) => setTimeout(r, 150));
+  const method = (opts?.method ?? "GET").toUpperCase();
+  if (mockBookingState.slots === null) {
+    mockBookingState.slots = buildMockSlots();
+    const days = [...groupSlotsByDay(mockBookingState.slots).values()];
+    mockBookingState.conflictSlot = days[2]?.[0]?.startsAt ?? null;
+  }
+  if (method === "GET" && path === "/client-portal/booking") {
+    return { bookable: true, booking: mockBookingState.booking } as T;
+  }
+  if (method === "GET" && path === "/client-portal/booking/slots") {
+    return { slots: mockBookingState.slots } as T;
+  }
+  if (method === "POST" && path === "/client-portal/booking") {
+    const { startsAt } = JSON.parse(String(opts?.body ?? "{}"));
+    if (startsAt === mockBookingState.conflictSlot) {
+      // Simulate another client having just taken this slot.
+      mockBookingState.slots = mockBookingState.slots.filter((s) => s.startsAt !== startsAt);
+      mockBookingState.conflictSlot = null;
+      throw Object.assign(new Error("Ten termin został właśnie zarezerwowany. Wybierz inny."), { status: 409 });
+    }
+    const slot = mockBookingState.slots.find((s) => s.startsAt === startsAt);
+    mockBookingState.slots = mockBookingState.slots.filter((s) => s.startsAt !== startsAt);
+    mockBookingState.booking = {
+      id: mockBookingState.nextId++,
+      startsAt,
+      durationMinutes: slot?.durationMinutes ?? 60,
+      status: "booked",
+    };
+    return mockBookingState.booking as T;
+  }
+  if (method === "PATCH" && /^\/client-portal\/booking\/\d+\/cancel$/.test(path)) {
+    if (mockBookingState.booking) {
+      // Freed slot becomes available again (still inside the window).
+      mockBookingState.slots.push({
+        startsAt: mockBookingState.booking.startsAt,
+        durationMinutes: mockBookingState.booking.durationMinutes,
+      });
+      mockBookingState.slots.sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+      mockBookingState.booking = null;
+    }
+    return { ok: true } as T;
+  }
+  throw Object.assign(new Error("Ta funkcja nie jest dostępna w podglądzie."), { status: 501 });
+}
+
+const BOOKING_STATUS_LABELS: Record<string, string> = {
+  booked: "Zarezerwowany",
+  completed: "Zakończony",
+  cancelled_by_client: "Anulowany",
+  cancelled_by_trainer: "Anulowany przez trenera",
+};
+
+// All booking times are the trainer's wall time in Europe/Warsaw — format
+// explicitly in that zone so a client abroad sees the same time the trainer
+// scheduled, not their device's local shift.
+const BOOKING_TIME_ZONE = "Europe/Warsaw";
+
+function formatSlotDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("pl-PL", {
+    timeZone: BOOKING_TIME_ZONE,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
+function formatSlotTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("pl-PL", {
+    timeZone: BOOKING_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Warsaw calendar-day key for grouping slots (en-CA gives YYYY-MM-DD). */
+function slotDayKey(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-CA", { timeZone: BOOKING_TIME_ZONE });
+}
+
+/**
+ * Mobile-first booking screen: date → time → confirmation → done.
+ * Never books on first tap — confirmation step is always shown.
+ */
+function BookingScreen({ onClose, onBooked }: { onClose: () => void; onBooked: () => void }) {
+  const [slots, setSlots] = useState<BookingSlot[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [bookError, setBookError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    setLoadError(null);
+    apiFetch<{ slots: BookingSlot[] }>("/client-portal/booking/slots")
+      .then((r) => setSlots(r.slots))
+      .catch((err: unknown) => {
+        console.error("Slot load failed:", err);
+        setLoadError(humanizeError(err));
+      });
+  }, [retry]);
+
+  // Pure regrouping of the backend free-slot list — availability itself is
+  // decided exclusively by the backend (shared generator).
+  const byDay = groupSlotsByDay(slots ?? []);
+  const today = todayWarsaw();
+  const { first: windowFirst, last: windowLast } = bookingWindow(today);
+  const months = windowMonths(today);
+  const [monthIdx, setMonthIdx] = useState(0);
+  const view = months[Math.min(monthIdx, months.length - 1)];
+  const activeDay =
+    selectedDay && byDay.has(selectedDay)
+      ? { key: selectedDay, label: formatSlotDate(byDay.get(selectedDay)![0].startsAt), slots: byDay.get(selectedDay)! }
+      : null;
+
+  // After a conflict-triggered refetch, the chosen day may have lost its last
+  // free hour — clear the selection so the day shows as unavailable.
+  useEffect(() => {
+    if (slots !== null && selectedDay && !byDay.has(selectedDay)) {
+      setSelectedDay(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slots, selectedDay]);
+
+  const confirmBooking = async () => {
+    if (!selectedSlot) return;
+    setConfirming(true);
+    setBookError(null);
+    try {
+      await apiFetch("/client-portal/booking", {
+        method: "POST",
+        body: JSON.stringify({ startsAt: selectedSlot.startsAt }),
+      });
+      setDone(true);
+      onBooked();
+    } catch (err) {
+      console.error("Booking failed:", err);
+      setBookError(humanizeError(err));
+      // Conflict → slot list is stale; refresh it and go back to time choice.
+      if ((err as { status?: number }).status === 409) {
+        setSelectedSlot(null);
+        setRetry((c) => c + 1);
+      }
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+      <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (selectedSlot) setSelectedSlot(null);
+              else if (selectedDay) setSelectedDay(null);
+              else onClose();
+            }}
+            className="p-2 -ml-2 text-muted-foreground hover:text-foreground"
+            aria-label="Wróć"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-lg font-bold tracking-tight">Umów trening</h1>
+        </div>
+
+        {done ? (
+          <div className="text-center space-y-4 pt-10" role="status">
+            <CheckCircle2 className="w-12 h-12 mx-auto text-primary" />
+            <p className="text-lg font-semibold">Trening został zarezerwowany.</p>
+            <Button className="rounded-none w-full h-12" onClick={onClose}>
+              Wróć do planu
+            </Button>
+          </div>
+        ) : loadError ? (
+          <div role="alert" className="space-y-3 pt-6 text-center">
+            <p className="text-sm text-muted-foreground">{loadError}</p>
+            <Button variant="outline" className="rounded-none" onClick={() => setRetry((c) => c + 1)}>
+              Spróbuj ponownie
+            </Button>
+          </div>
+        ) : slots === null ? (
+          <div className="flex justify-center pt-16">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : byDay.size === 0 ? (
+          <p className="text-sm text-muted-foreground pt-6 text-center">
+            Brak dostępnych terminów w najbliższych 30 dniach. Skontaktuj się ze swoim trenerem.
+          </p>
+        ) : selectedSlot ? (
+          /* Step 3: confirmation summary */
+          <div className="space-y-5">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">Podsumowanie</p>
+            <div className="border border-white/10 bg-card px-5 py-4 space-y-1">
+              <p className="font-semibold capitalize">{formatSlotDate(selectedSlot.startsAt)}</p>
+              <p className="text-2xl font-bold">
+                {formatSlotTime(selectedSlot.startsAt)}
+                <span className="text-base font-semibold text-muted-foreground">
+                  {" "}–{" "}
+                  {formatSlotTime(new Date(new Date(selectedSlot.startsAt).getTime() + selectedSlot.durationMinutes * 60_000).toISOString())}
+                </span>
+              </p>
+              <p className="text-sm text-muted-foreground">Czas trwania: {selectedSlot.durationMinutes} min</p>
+              <p className="text-sm text-muted-foreground">Trening stacjonarny z trenerem.</p>
+            </div>
+            {bookError && (
+              <p role="alert" className="text-sm text-destructive border border-destructive/30 bg-destructive/10 px-3 py-2">
+                {bookError}
+              </p>
+            )}
+            <Button className="rounded-none w-full h-12 text-base" onClick={() => void confirmBooking()} disabled={confirming}>
+              {confirming ? <Loader2 className="w-5 h-5 animate-spin" /> : "Potwierdź rezerwację"}
+            </Button>
+          </div>
+        ) : activeDay ? (
+          /* Step 2: choose one available time */
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground capitalize">{activeDay.label}</p>
+            {bookError && (
+              <p role="alert" className="text-sm text-destructive border border-destructive/30 bg-destructive/10 px-3 py-2">
+                {bookError}
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              {activeDay.slots.map((s) => (
+                <button
+                  key={s.startsAt}
+                  type="button"
+                  onClick={() => setSelectedSlot(s)}
+                  aria-selected={selectedSlot != null && (selectedSlot as BookingSlot).startsAt === s.startsAt}
+                  className="border border-white/15 bg-card hover:border-primary/50 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary py-3.5 px-2 transition-colors"
+                >
+                  <span className="block text-base font-semibold">
+                    {formatSlotTime(s.startsAt)}–{formatSlotTime(new Date(new Date(s.startsAt).getTime() + s.durationMinutes * 60_000).toISOString())}
+                  </span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">{s.durationMinutes} min</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          /* Step 1: choose date — monthly grid over the backend's free slots */
+          <div className="space-y-3">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">Wybierz datę</p>
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                aria-label="Poprzedni miesiąc"
+                onClick={() => setMonthIdx((i) => Math.max(0, i - 1))}
+                disabled={monthIdx === 0}
+                className="p-2.5 border border-white/15 disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-2">
+                <p className="font-semibold">{monthLabelPl(view.year, view.month)}</p>
+                <button
+                  type="button"
+                  onClick={() => setMonthIdx(0)}
+                  className="text-xs underline text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary px-1 py-0.5"
+                >
+                  Dzisiaj
+                </button>
+              </div>
+              <button
+                type="button"
+                aria-label="Następny miesiąc"
+                onClick={() => setMonthIdx((i) => Math.min(months.length - 1, i + 1))}
+                disabled={monthIdx >= months.length - 1}
+                className="p-2.5 border border-white/15 disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-7 gap-1" role="row">
+              {["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"].map((d) => (
+                <div key={d} className="text-center text-xs text-muted-foreground py-1">{d}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {getMonthGrid(view.year, view.month).flat().map((cell, i) => {
+                if (cell.date === null) return <div key={`b-${i}`} aria-hidden="true" />;
+                const date = cell.date;
+                const inWindow = date >= windowFirst && date <= windowLast;
+                const daySlots = inWindow ? byDay.get(date) : undefined;
+                const enabled = !!daySlots && daySlots.length > 0;
+                const isToday = date === today;
+                const label = formatSlotDate(daySlots?.[0]?.startsAt ?? `${date}T12:00:00+02:00`);
+                return (
+                  <button
+                    key={date}
+                    type="button"
+                    disabled={!enabled}
+                    onClick={() => { setSelectedDay(date); setBookError(null); }}
+                    aria-label={enabled ? `${label}: ${freeCountLabel(daySlots!.length)}` : `${label}: niedostępny`}
+                    aria-current={isToday ? "date" : undefined}
+                    aria-selected={selectedDay === date}
+                    className={cn(
+                      "min-h-14 border p-1 flex flex-col items-center justify-center gap-0.5 transition-colors",
+                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                      enabled
+                        ? "border-white/15 bg-card hover:border-primary/50 hover:bg-white/5"
+                        : "border-white/5 text-muted-foreground/50",
+                      !inWindow && "opacity-35",
+                      isToday && "border-primary/60",
+                    )}
+                  >
+                    <span className={cn("text-sm font-semibold", isToday && "text-primary")}>
+                      {Number(date.slice(8))}
+                    </span>
+                    {enabled && (
+                      <span className="text-[10px] leading-none text-muted-foreground">
+                        {daySlots!.length} wol.
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Aktywne są tylko dni z wolnymi terminami w najbliższych 30 dniach.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * "Nadchodzący trening" card on the plan page.
+ * Rendered only for in_person / hybrid clients (backend decides via `bookable`).
+ */
+export function BookingSection() {
+  const [bookable, setBookable] = useState(false);
+  const [booking, setBooking] = useState<BookingInfo | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [showBooking, setShowBooking] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [refresh, setRefresh] = useState(0);
+
+  useEffect(() => {
+    apiFetch<{ bookable: boolean; booking: BookingInfo | null }>("/client-portal/booking")
+      .then((r) => {
+        setBookable(r.bookable);
+        setBooking(r.booking);
+      })
+      .catch((err: unknown) => {
+        // Card is auxiliary — on failure keep the plan usable, log detail.
+        console.error("Booking info load failed:", err);
+      })
+      .finally(() => setLoaded(true));
+  }, [refresh]);
+
+  if (!loaded || !bookable) return null;
+
+  const cancelBooking = async () => {
+    if (!booking) return;
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      await apiFetch(`/client-portal/booking/${booking.id}/cancel`, { method: "PATCH" });
+      setBooking(null);
+    } catch (err) {
+      console.error("Booking cancel failed:", err);
+      setCancelError(humanizeError(err));
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="border border-white/10 bg-card px-5 py-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="w-4 h-4 text-primary" />
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+            Nadchodzący trening
+          </h2>
+        </div>
+        {booking ? (
+          <div className="space-y-3">
+            <div>
+              <p className="font-semibold capitalize">{formatSlotDate(booking.startsAt)}</p>
+              <p className="text-sm text-muted-foreground">
+                {formatSlotTime(booking.startsAt)} · {booking.durationMinutes} min ·{" "}
+                {BOOKING_STATUS_LABELS[booking.status] ?? booking.status}
+              </p>
+            </div>
+            {cancelError && (
+              <p role="alert" className="text-sm text-destructive">{cancelError}</p>
+            )}
+            <Button
+              variant="outline"
+              className="rounded-none"
+              onClick={() => void cancelBooking()}
+              disabled={cancelling}
+            >
+              {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : "Anuluj"}
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Nie masz zaplanowanego treningu.</p>
+            <Button className="rounded-none w-full sm:w-auto h-11" onClick={() => setShowBooking(true)}>
+              Umów trening
+            </Button>
+          </div>
+        )}
+      </div>
+      {showBooking && (
+        <BookingScreen
+          onClose={() => setShowBooking(false)}
+          onBooked={() => setRefresh((c) => c + 1)}
+        />
+      )}
+    </>
+  );
+}
+
 function HistorySection() {
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -1020,7 +1602,18 @@ function HistorySection() {
     );
   }
 
-  if (items.length === 0) return null;
+  // Empty state (instead of hiding the section): the nav's "Historia
+  // treningów" link needs a visible target even before the first workout.
+  if (items.length === 0) {
+    return (
+      <div className="space-y-3">
+        <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Historia treningów</h2>
+        <div className="border border-white/10 px-5 py-6 text-center text-sm text-muted-foreground">
+          Brak zapisanych treningów — historia pojawi się po ukończeniu pierwszej sesji.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -1046,6 +1639,17 @@ function HistorySection() {
                     {item.dayName ?? (item.dayOrder != null ? `Dzień ${item.dayOrder}` : item.planTitle ?? "Trening")}
                   </span>
                   <Badge variant="outline" className="text-xs px-1.5 py-0 border-primary/30 text-primary">Ukończony</Badge>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-xs px-1.5 py-0",
+                      item.performedBy === "trainer"
+                        ? "border-blue-400/40 text-blue-400"
+                        : "border-white/20 text-muted-foreground",
+                    )}
+                  >
+                    {item.performedBy === "trainer" ? "Trening stacjonarny z trenerem" : "Trening samodzielny"}
+                  </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {formatDateTime(item.completedAt)}
@@ -1161,7 +1765,7 @@ function StrengthProgressionCard() {
 
 // ─── PlanView ─────────────────────────────────────────────────────────────────
 
-function PlanView({
+export function PlanView({
   client,
   plan,
   onSelectDay,
@@ -1176,7 +1780,13 @@ function PlanView({
       <div className="max-w-2xl mx-auto px-4 pt-10 space-y-8">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Plan treningowy</p>
-          <h1 className="text-2xl font-bold tracking-tight">{plan.title}</h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl font-bold tracking-tight">{plan.title}</h1>
+            {/* Informational only — never touches session state. */}
+            <Badge variant="outline" className="border-white/20 text-muted-foreground shrink-0">
+              Plan w trakcie
+            </Badge>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">Cześć, {client.firstName}! Wybierz dzień treningowy, aby rozpocząć sesję.</p>
           {plan.goal && (
             <p className="text-sm text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 mt-3">
@@ -1188,6 +1798,10 @@ function PlanView({
               Plan zaktualizowany: {formatDate(plan.updatedAt)}
             </p>
           )}
+        </div>
+
+        <div id="rezerwacje" className="scroll-mt-20">
+          <BookingSection />
         </div>
 
         <div className="space-y-3">
@@ -1231,7 +1845,9 @@ function PlanView({
 
         <StrengthProgressionCard />
 
-        <HistorySection />
+        <div id="historia" className="scroll-mt-20">
+          <HistorySection />
+        </div>
       </div>
     </div>
   );
@@ -1245,7 +1861,31 @@ export default function PlanPortal() {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
   const [planError, setPlanError] = useState<string | null>(null);
+  const [planRetry, setPlanRetry] = useState(0);
   const [selectedDay, setSelectedDay] = useState<PlanDay | null>(null);
+  // Backend-decided calendar eligibility for the nav (in_person/hybrid only).
+  const [navBookable, setNavBookable] = useState(false);
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+    apiFetch<{ bookable: boolean }>("/client-portal/booking")
+      .then((r) => setNavBookable(r.bookable))
+      .catch(() => setNavBookable(false)); // nav item simply stays hidden
+  }, [isLoaded, isSignedIn]);
+
+  // Nav navigation: always exits an open session view, then scrolls to the
+  // requested plan-page section once it is rendered.
+  const handleNavigate = useCallback((target: PortalNavTarget) => {
+    setSelectedDay(null);
+    requestAnimationFrame(() => {
+      if (target === "plan") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      const id = target === "history" ? "historia" : "rezerwacje";
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
 
   // Once Clerk confirms the session, fetch the plan from the authenticated endpoint.
   // The route uses req.client.id — no email or clientId query param is needed.
@@ -1258,9 +1898,12 @@ export default function PlanPortal() {
         setClient(c);
         setPlan(p);
       })
-      .catch((err: unknown) => setPlanError((err as Error).message))
+      .catch((err: unknown) => {
+        console.error("Plan load failed:", err);
+        setPlanError(humanizeError(err, PLAN_LOAD_ERROR_MESSAGE));
+      })
       .finally(() => setPlanLoading(false));
-  }, [isLoaded, isSignedIn]);
+  }, [isLoaded, isSignedIn, planRetry]);
 
   // Clerk is still initializing.
   if (!isLoaded) {
@@ -1289,12 +1932,17 @@ export default function PlanPortal() {
   if (planError || !client || !plan) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-6">
-        <div className="text-center space-y-2 max-w-sm">
+        <div className="text-center space-y-2 max-w-sm" role="alert">
           <Dumbbell className="w-10 h-10 mx-auto text-muted-foreground/30 mb-4" />
           <p className="font-semibold">{planError ?? "Brak aktywnego planu"}</p>
           <p className="text-sm text-muted-foreground">
             Skontaktuj się ze swoim trenerem — musi aktywować Twój plan i powiązać konto z Twoim profilem.
           </p>
+          {planError && (
+            <Button onClick={() => setPlanRetry((c) => c + 1)} className="rounded-none mt-2">
+              Spróbuj ponownie
+            </Button>
+          )}
           {/* Wrong-login-page recovery: a trainer who signed in through the
               client entry has no linked client account — offer the way back.
               Full page load (separate artifact), deliberately not auto-redirect
@@ -1313,21 +1961,36 @@ export default function PlanPortal() {
     );
   }
 
+  const nav = (
+    <ClientPortalNav
+      firstName={client.firstName}
+      lastName={client.lastName}
+      showCalendar={navBookable}
+      onNavigate={handleNavigate}
+    />
+  );
+
   if (selectedDay) {
     return (
-      <SessionView
-        day={selectedDay}
-        planId={plan.id}
-        onBack={() => setSelectedDay(null)}
-      />
+      <>
+        {nav}
+        <SessionView
+          day={selectedDay}
+          planId={plan.id}
+          onBack={() => setSelectedDay(null)}
+        />
+      </>
     );
   }
 
   return (
-    <PlanView
-      client={client}
-      plan={plan}
-      onSelectDay={setSelectedDay}
-    />
+    <>
+      {nav}
+      <PlanView
+        client={client}
+        plan={plan}
+        onSelectDay={setSelectedDay}
+      />
+    </>
   );
 }

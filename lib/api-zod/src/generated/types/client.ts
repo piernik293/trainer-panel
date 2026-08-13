@@ -8,6 +8,8 @@
 import type { ClientStatus } from './clientStatus';
 import type { SurveyStatus } from './surveyStatus';
 
+import type { CooperationMode } from './cooperationMode';
+
 export interface Client {
   id: number;
   firstName: string;
@@ -41,6 +43,7 @@ export interface Client {
   cardioPreference?: string | null;
   /** @nullable */
   adaptiveStartDecision?: 'pending' | 'accepted' | 'declined' | null;
+  cooperationMode?: CooperationMode;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -1,0 +1,231 @@
+ETAP 4.1A — wyjątki od dostępności i wspólna logika terminów
+
+Cel tego etapu:
+Dodać backendową obsługę jednorazowych wyjątków od tygodniowej dostępności trenera.
+
+W tym etapie NIE twórz jeszcze:
+- miesięcznego kalendarza trenera,
+- nowego kalendarza klienta,
+- nowych widoków frontendowych,
+- integracji z zewnętrznymi kalendarzami.
+
+Najpierw przeczytaj istniejącą implementację Etapu 4, szczególnie:
+
+- migrację 0013,
+- trainer_availability,
+- bookings,
+- generator wolnych terminów,
+- endpointy rezerwacji klienta,
+- endpointy kalendarza trenera,
+- obsługę strefy Europe/Warsaw.
+
+Przed zmianami przedstaw krótko:
+
+1. które pliki zmienisz,
+2. gdzie obecnie znajduje się generator terminów,
+3. jak unikniesz stworzenia drugiej, rozbieżnej logiki,
+4. jakie ryzyka widzisz.
+
+Następnie wykonaj implementację.
+
+--------------------------------------------------
+1. MIGRACJA BAZY
+--------------------------------------------------
+
+Dodaj migrację 0014.
+
+Utwórz tabelę:
+
+trainer_availability_exceptions
+
+Pola:
+
+- id,
+- trainer_id,
+- date,
+- type,
+- start_time nullable,
+- end_time nullable,
+- session_duration_minutes nullable,
+- break_minutes nullable,
+- created_at,
+- updated_at.
+
+Dozwolone wartości type:
+
+- blocked_day
+- blocked_range
+- extra_range
+
+Znaczenie:
+
+blocked_day:
+- blokuje całą dostępność w konkretnym dniu,
+- nie posiada start_time ani end_time.
+
+blocked_range:
+- blokuje określony zakres godzin,
+- wymaga start_time oraz end_time.
+
+extra_range:
+- dodaje jednorazowy zakres dostępności,
+- wymaga start_time, end_time, session_duration_minutes i break_minutes.
+
+Wymagania:
+
+- każdy wyjątek należy do konkretnego trenera,
+- dodaj klucz obcy i potrzebne indeksy,
+- trener nie może odczytywać ani modyfikować danych innego trenera,
+- data jest interpretowana jako dzień w Europe/Warsaw,
+- nie zmieniaj ani nie usuwaj istniejących rezerwacji.
+
+Walidacja:
+
+- end_time musi być późniejsze niż start_time,
+- blocked_day nie może zawierać godzin,
+- blocked_range musi zawierać obie godziny,
+- extra_range musi zawierać godziny, długość sesji i przerwę,
+- użyj rozsądnych ograniczeń zgodnych z istniejącą dostępnością,
+- błędy zwracaj jako czytelne polskie komunikaty.
+
+--------------------------------------------------
+2. WSPÓLNY GENERATOR TERMINÓW
+--------------------------------------------------
+
+Rozszerz istniejący generator terminów. Nie twórz osobnego generatora dla wyjątków.
+
+Kolejność działania:
+
+1. wygeneruj sloty z regularnej tygodniowej dostępności,
+2. dodaj sloty z extra_range,
+3. zastosuj blocked_day,
+4. zastosuj blocked_range,
+5. usuń terminy przeszłe,
+6. usuń terminy zajęte aktywnymi rezerwacjami,
+7. usuń duplikaty,
+8. posortuj chronologicznie.
+
+Ważne zasady:
+
+- klient i trener mają korzystać z tej samej logiki,
+- wyjątki muszą wpływać na wolne terminy klienta,
+- klient nie może zarezerwować zablokowanego terminu,
+- extra_range nie może tworzyć zduplikowanych slotów,
+- istniejąca rezerwacja nie może zostać anulowana ani ukryta tylko dlatego, że później dodano blocked_day lub blocked_range,
+- blokada dotyczy tworzenia nowych rezerwacji, a nie usuwania istniejących,
+- zachowaj ochronę bazy przed podwójną rezerwacją,
+- nie używaj strefy urządzenia użytkownika jako źródła prawdy.
+
+--------------------------------------------------
+3. API TRENERA
+--------------------------------------------------
+
+Dodaj zabezpieczone endpointy umożliwiające trenerowi:
+
+- pobranie wyjątków w podanym zakresie dat,
+- utworzenie wyjątku,
+- usunięcie wyjątku.
+
+Identyfikator trenera zawsze pobieraj z sesji.
+
+Nigdy nie przyjmuj trainer_id z frontendu jako źródła autoryzacji.
+
+Zakres dat:
+
+- waliduj format,
+- ogranicz jedno żądanie do maksymalnie 62 dni,
+- zwracaj polskie komunikaty błędów,
+- nie ujawniaj technicznych komunikatów bazy danych.
+
+Na tym etapie nie twórz jeszcze endpointu agregującego pełny miesiąc dla UI, chyba że istniejąca architektura bezpośrednio tego wymaga. Jeżeli go dodasz, uzasadnij to w raporcie.
+
+--------------------------------------------------
+4. ZGODNOŚĆ Z PORTALEM KLIENTA
+--------------------------------------------------
+
+Nie przebudowuj interfejsu klienta.
+
+Obecny proces:
+
+data → godzina → podsumowanie → potwierdzenie
+
+ma działać bez zmian.
+
+Jedyną zmianą po stronie klienta ma być to, że lista wolnych terminów automatycznie uwzględnia:
+
+- blocked_day,
+- blocked_range,
+- extra_range.
+
+Zachowaj ograniczenie:
+
+- in_person — dostęp do rezerwacji,
+- hybrid — dostęp do rezerwacji,
+- online — 403 egzekwowane przez backend.
+
+Po konflikcie nadal zwracaj:
+
+„Ten termin został właśnie zarezerwowany. Wybierz inny.”
+
+--------------------------------------------------
+5. TESTY
+--------------------------------------------------
+
+Dodaj testy:
+
+1. blocked_day usuwa wszystkie wolne sloty danego dnia.
+2. blocked_range usuwa tylko sloty nakładające się na blokadę.
+3. extra_range tworzy jednorazowe sloty.
+4. extra_range nie tworzy duplikatów.
+5. istniejąca rezerwacja pozostaje aktywna po późniejszym zablokowaniu dnia.
+6. klient nie może zarezerwować zablokowanego terminu.
+7. wyjątki jednego trenera nie wpływają na drugiego.
+8. trener nie może usunąć wyjątku innego trenera.
+9. niepoprawne godziny są odrzucane.
+10. blocked_day z godzinami jest odrzucany.
+11. extra_range bez długości sesji lub przerwy jest odrzucany.
+12. logika działa poprawnie w Europe/Warsaw.
+13. ochrona przed podwójną rezerwacją nadal działa.
+14. klient online nadal otrzymuje 403.
+
+Uruchom:
+
+- migrację 0014 w środowisku developerskim,
+- testy nowej logiki,
+- istniejące testy rezerwacji,
+- typecheck obu aplikacji.
+
+Nie naprawiaj niezwiązanych błędów poza wcześniej udokumentowanym problemem.
+
+--------------------------------------------------
+6. WARUNKI UKOŃCZENIA
+--------------------------------------------------
+
+Etap jest ukończony, gdy:
+
+- migracja 0014 została zastosowana,
+- wyjątki można tworzyć, pobierać i usuwać,
+- generator terminów uwzględnia wszystkie trzy typy wyjątków,
+- klient nie widzi zablokowanych terminów,
+- klient widzi terminy z extra_range,
+- istniejące rezerwacje pozostają aktywne,
+- nie powstał drugi generator terminów,
+- autoryzacja opiera się wyłącznie na sesji,
+- testy przechodzą,
+- typecheck został wykonany.
+
+Na końcu przygotuj raport:
+
+1. lista zmienionych plików,
+2. opis migracji i informacja, czy została zastosowana,
+3. opis nowych endpointów,
+4. wskazanie wspólnego generatora terminów,
+5. wyniki testów,
+6. wynik typecheck,
+7. wykryte problemy,
+8. znane ograniczenia,
+9. potwierdzenie, że nie tworzono jeszcze miesięcznego UI.
+
+Końcowy komunikat:
+
+READY — availability exceptions are enforced across trainer and client booking flows

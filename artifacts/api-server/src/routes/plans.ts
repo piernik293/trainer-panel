@@ -798,9 +798,10 @@ router.post("/clients/:clientId/plans/draft", requireAuth, async (req, res): Pro
       }
     });
   } catch (err) {
-    // Transaction was rolled back automatically.  Surface a clean error to the caller.
-    const message = err instanceof Error ? err.message : "Nieznany błąd";
-    res.status(500).json({ error: `Nie udało się zapisać planu (transakcja wycofana): ${message}` });
+    // Transaction was rolled back automatically. Log the technical details;
+    // the caller only gets a safe Polish message.
+    req.log?.error({ err }, "Plan save transaction rolled back");
+    res.status(500).json({ error: "Nie udało się zapisać planu. Spróbuj ponownie." });
     return;
   }
 
@@ -884,7 +885,8 @@ router.post("/clients/:clientId/plans", requireAuth, async (req, res): Promise<v
     .limit(1);
 
   if (!activeVersion) {
-    res.status(500).json({ error: "Brak aktywnej wersji wytycznych objętości. Upewnij się, że serwer API wykonał seed." });
+    req.log?.error("No active volume guideline version — has the seed been run?");
+    res.status(500).json({ error: "Wystąpiły chwilowe problemy techniczne. Spróbuj ponownie za chwilę." });
     return;
   }
 

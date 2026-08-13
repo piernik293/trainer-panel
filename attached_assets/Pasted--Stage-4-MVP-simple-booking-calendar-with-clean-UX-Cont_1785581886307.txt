@@ -1,0 +1,261 @@
+## Stage 4 MVP — simple booking calendar with clean UX
+
+Continue from the current workspace state.
+
+Implement only the minimum reliable booking flow for in-person and hybrid clients.
+
+Do not implement:
+- Google Calendar integration,
+- reminders,
+- email or SMS notifications,
+- recurring bookings,
+- waitlists,
+- payments,
+- AI time matching,
+- drag-and-drop calendar,
+- complex timezone settings,
+- unrelated redesigns.
+
+Do not modify:
+- workout generator,
+- workout history logic,
+- trainer-led session internals,
+- invitation flow,
+- authentication model,
+- unrelated client or trainer screens.
+
+Do not run a broad audit.
+Run only focused tests.
+
+---
+
+## 1. Visibility rules
+
+Calendar booking is available only for clients with:
+
+- `in_person`
+- `hybrid`
+
+Online clients must not see booking controls.
+
+Backend must enforce this as well.
+
+---
+
+## 2. Trainer placement
+
+Add one main sidebar item:
+
+`Kalendarz`
+
+This page should contain two simple sections:
+
+### Dostępność
+
+Trainer can define weekly availability rows:
+
+- weekday,
+- start time,
+- end time,
+- session duration,
+- optional buffer,
+- active/inactive.
+
+Use a compact editor.
+
+Example:
+
+`Poniedziałek`
+`16:00–20:00`
+`Sesja: 60 min`
+`Przerwa: 15 min`
+
+Actions:
+
+- `Dodaj zakres`
+- `Usuń`
+
+### Nadchodzące rezerwacje
+
+Show a simple list, newest upcoming first:
+
+- date,
+- time,
+- client name,
+- duration,
+- status.
+
+Actions:
+
+- `Otwórz profil klienta`
+- `Rozpocznij trening`
+- `Anuluj`
+
+Do not build a complex visual calendar.
+
+---
+
+## 3. Client placement
+
+In the client portal dashboard/plan page add one compact card near the top:
+
+`Nadchodzący trening`
+
+If booked:
+
+- date,
+- time,
+- duration,
+- status,
+- `Anuluj`, if allowed.
+
+If none:
+
+`Nie masz zaplanowanego treningu.`
+
+Primary action:
+
+`Umów trening`
+
+Open a separate simple booking screen.
+
+---
+
+## 4. Client booking screen
+
+Mobile-first layout.
+
+Flow:
+
+1. Choose date.
+2. Choose one available time.
+3. Show confirmation summary.
+4. Click:
+   `Potwierdź rezerwację`
+5. Show:
+   `Trening został zarezerwowany.`
+
+Do not book on first tap.
+
+Use large tap-friendly time buttons.
+
+No horizontal overflow at 375px and 390px.
+
+---
+
+## 5. Slot generation
+
+Generate slots from:
+
+- weekly trainer availability,
+- session duration,
+- buffer,
+- existing bookings.
+
+Do not show:
+
+- past slots,
+- booked slots,
+- inactive availability.
+
+Limit selection to the next 30 days.
+
+Do not permanently store generated slots unless required by the existing architecture.
+
+---
+
+## 6. Cancellation
+
+Support cancellation by client and trainer.
+
+Statuses:
+
+- `booked`
+- `cancelled_by_client`
+- `cancelled_by_trainer`
+- `completed`
+
+Do not hard-delete bookings.
+
+After cancellation, the slot becomes available again.
+
+Use a fixed simple cancellation rule for now.
+Do not add configurable policies in this task.
+
+---
+
+## 7. Double-booking protection
+
+Mandatory:
+
+Prevent two clients from booking the same trainer and start time.
+
+Use database-level protection.
+
+On conflict show:
+
+`Ten termin został właśnie zarezerwowany. Wybierz inny.`
+
+Do not show database or HTTP errors to the user.
+
+---
+
+## 8. Trainer-led session integration
+
+From an existing booking, allow:
+
+`Rozpocznij trening`
+
+Reuse the existing trainer-led session flow.
+
+Do not duplicate workout-session logic.
+
+---
+
+## 9. UX rules
+
+Use the existing Optimatren visual style.
+
+Trainer:
+- simple sections,
+- subtle borders,
+- clear spacing,
+- avoid many separate cards.
+
+Client:
+- mobile-first,
+- one clear primary action,
+- readable date and time,
+- large slot buttons,
+- explicit empty states.
+
+Do not redesign unrelated screens.
+
+---
+
+## Focused verification
+
+Verify only:
+
+1. Trainer creates weekly availability.
+2. In-person client sees available times.
+3. Hybrid client sees available times.
+4. Online client does not.
+5. Client books one slot.
+6. Another client cannot book the same slot.
+7. Trainer sees the reservation.
+8. Client sees the upcoming training.
+9. Client can cancel.
+10. Trainer can cancel.
+11. Cancelled slot becomes available again.
+12. Booking opens the existing trainer-led session.
+13. Mobile layout works at 375px and 390px.
+14. No raw technical errors are shown.
+
+Run only directly related tests.
+
+Stop after this MVP.
+
+Required completion statement:
+
+READY — clients can book and cancel in-person training slots

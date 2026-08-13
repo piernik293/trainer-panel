@@ -22,6 +22,14 @@ export const ClientStatus = {
   finished: 'finished',
 } as const;
 
+export type CooperationMode = typeof CooperationMode[keyof typeof CooperationMode];
+
+export const CooperationMode = {
+  online: 'online',
+  in_person: 'in_person',
+  hybrid: 'hybrid',
+} as const;
+
 export type SurveyStatus = typeof SurveyStatus[keyof typeof SurveyStatus];
 
 
@@ -64,6 +72,7 @@ export interface Client {
   cardioPreference?: string | null;
   /** @nullable */
   adaptiveStartDecision?: 'pending' | 'accepted' | 'declined' | null;
+  cooperationMode?: CooperationMode;
   createdAt: string;
   updatedAt: string;
 }
@@ -88,6 +97,7 @@ export interface ClientUpdate {
   phone?: string;
   notes?: string;
   status?: ClientStatus;
+  cooperationMode?: CooperationMode;
 }
 
 export interface Survey {

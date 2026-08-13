@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { VALIDATION_MESSAGE } from "@/lib/userError";
+import { useToast } from "@/hooks/use-toast";
 import { useLocation, useParams, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -256,6 +258,12 @@ function ExerciseFormBody({
   const equipment = form.watch("equipment");
   const showEquipmentOther = equipment.includes("Inny");
 
+  const { toast: validationToast } = useToast();
+  const onInvalidSubmit = () => {
+    // react-hook-form focuses the first invalid field automatically.
+    validationToast({ title: VALIDATION_MESSAGE, variant: "destructive" });
+  };
+
   const handleSubmit = (data: ExerciseFormValues) => {
     const cleaned: ExerciseFormValues = data.equipment.includes("Inny")
       ? data
@@ -265,7 +273,7 @@ function ExerciseFormBody({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit, onInvalidSubmit)} className="space-y-6">
 
         {/* ── Section 1: Basic Information ── */}
         <Card className="border-border/50 shadow-sm">

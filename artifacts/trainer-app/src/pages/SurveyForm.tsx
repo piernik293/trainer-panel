@@ -45,6 +45,7 @@ import { MuscleGroupCombobox } from "@/components/MuscleGroupCombobox";
 import { FavoriteExercisesPicker, type FavoriteExercise } from "@/components/FavoriteExercisesPicker";
 import { AvoidedExercisesPicker, type AvoidedExercise } from "@/components/AvoidedExercisesPicker";
 import { useToast } from "@/hooks/use-toast";
+import { VALIDATION_MESSAGE } from "@/lib/userError";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   TRAINING_GOAL_OPTIONS,
@@ -876,6 +877,12 @@ function SurveyFormBody({
     });
   };
 
+  // ── Invalid submit: friendly validation message ──
+  const onInvalidSubmit = () => {
+    // react-hook-form focuses the first invalid field automatically.
+    toast({ title: VALIDATION_MESSAGE, variant: "destructive" });
+  };
+
   // ── Submit ──
   const onSubmit = (data: SurveyFormValues) => {
     // Block submission when a beginner client has multiple priority slots filled.
@@ -997,7 +1004,7 @@ function SurveyFormBody({
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit, onInvalidSubmit)} className="space-y-6">
 
           {/* ── 1. Cel treningowy ─────────────────────────────────────────── */}
           <Card className="border-border/50 shadow-sm">

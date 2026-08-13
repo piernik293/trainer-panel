@@ -1,0 +1,150 @@
+## Low-budget client portal UX — navigation, account menu and logout
+
+Continue from the current workspace state.
+
+Make only a focused frontend UX improvement to the client portal.
+
+Do not modify:
+- workout generator,
+- progression logic,
+- workout session logic,
+- weight persistence,
+- cardio logic,
+- database,
+- backend authorization,
+- exercise editing permissions,
+- experience-level rules,
+- calendar backend.
+
+Do not implement tempo editing, linear periodization, automatic activity suggestions or weekly workout-cycle logic in this task.
+
+Those features remain in progress.
+
+### Goal
+
+The client portal currently shows the training plan but lacks basic navigation and account controls.
+
+Add a compact, responsive client navigation so the user can:
+
+- return to the current plan,
+- open workout history,
+- open booking/calendar when eligible,
+- access account information,
+- sign out.
+
+### Desktop layout
+
+Add a small top navigation/header using the existing Optimatren visual style.
+
+Left side:
+- Optimatren logo or compact brand mark,
+- page label: `Portal klienta`.
+
+Main navigation:
+- `Plan`
+- `Historia treningów`
+- `Kalendarz` — only for `in_person` or `hybrid` clients and only if the route already exists.
+
+Right side:
+- client account/avatar button.
+
+Clicking the account button opens a small menu:
+
+- client name,
+- client email,
+- `Moje konto`
+- `Wyloguj się`
+
+Do not add settings that do not exist.
+
+### Mobile layout
+
+Use a compact mobile header.
+
+Show:
+- Optimatren mark,
+- current page title,
+- account/menu button.
+
+The mobile menu should contain:
+
+- `Plan treningowy`
+- `Historia treningów`
+- `Kalendarz` when eligible
+- `Moje konto`
+- `Wyloguj się`
+
+Requirements:
+- no horizontal overflow,
+- buttons easy to tap,
+- menu accessible,
+- closes after navigation,
+- closes with Escape where relevant.
+
+### Account page or panel
+
+If an existing Clerk account/profile component is already available, reuse it safely.
+
+Otherwise show a simple read-only account panel containing:
+
+- name,
+- email,
+- account status,
+- cooperation mode when available.
+
+Do not create password-changing controls.
+
+The current authentication is Google/Clerk-managed, so do not add a custom password reset system.
+
+### Logout
+
+Use the existing Clerk sign-out method.
+
+After sign-out:
+- redirect to the client sign-in page,
+- do not redirect to the trainer sign-in page,
+- clear only normal client-side cached session data where needed.
+
+Do not change Clerk configuration.
+
+### Current plan status
+
+Near the training-plan heading add a small neutral badge:
+
+`Plan w trakcie`
+
+Do not implement automatic weekly completion logic in this task.
+
+The badge is informational only and must not change session state.
+
+### Preserve current content
+
+Do not change:
+- cardio section,
+- strength progression guidance,
+- training-day cards,
+- history records,
+- current plan-update date,
+- completed-session behavior.
+
+### Focused verification
+
+Verify only:
+
+1. Client can open the account menu.
+2. Client can return to the plan.
+3. Client can open workout history.
+4. Eligible client can open the existing calendar.
+5. Online client does not see an unavailable calendar action.
+6. Logout redirects to client sign-in.
+7. Mobile layout works at 375px and 390px.
+8. Current plan displays `Plan w trakcie`.
+9. Existing plan and workout actions remain unchanged.
+
+Do not run a broad audit or full test suite.
+
+Stop after this focused UX change.
+
+Required completion statement:
+
+READY — the client portal has clear navigation, account access and logout

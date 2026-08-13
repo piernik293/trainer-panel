@@ -11,6 +11,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { clientsTable } from "./clients";
+import { trainersTable } from "./trainers";
 import { surveysTable } from "./surveys";
 import { specificMusclesTable } from "./muscles";
 import { exercisesTable } from "./exercises";
@@ -234,6 +235,16 @@ export const workoutSessionsTable = pgTable("workout_sessions", {
   hadPain: boolean("had_pain"),
   /** 'low' | 'medium' | 'high' */
   energyLevel: text("energy_level"),
+  // ── Who ran the session (trainer-led vs self-directed) ────────────────────
+  /** 'client' (default) | 'trainer' — who entered the results */
+  performedBy: text("performed_by").notNull().default("client"),
+  /** 'self_directed' (default) | 'in_person' */
+  sessionMode: text("session_mode").notNull().default("self_directed"),
+  /** Trainer who ran the session — set only when performedBy = 'trainer'. */
+  performedByTrainerId: integer("performed_by_trainer_id").references(
+    () => trainersTable.id,
+    { onDelete: "set null" },
+  ),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

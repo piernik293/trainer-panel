@@ -29,3 +29,7 @@
 - [Thin-pool retry for alt sessions](thin-pool-retry.md) — altIdx>0 upper session fails when weekUsedExerciseIds exhausts the dumbbell pool; fix: retry with same-type-only exclusion set; also fixes missing sameTypePreviousExercises pass-through.
 - [Session history invariants](session-history-invariants.md) — one active session per client/day (partial unique index), previous loads only from completed logs, plan_exercise_id FK is SET NULL, Drizzle hides pg codes in err.cause.
 - [Progression suitability scoring](progression-suitability-scoring.md) — scoreProgressionSuitability (+12 loadable / -8 regression) + deprioritizePushUps extended to dumbbell clients + capPushUpsAtOne flag in V0PriorityContext.
+- [Generated API hand patches](generated-api-hand-patches.md) — never run orval full regen; generated files hold fields missing from openapi.yaml, regen deletes them. Hand-patch instead.
+- [Booking calendar timezone model](booking-calendar-timezone.md) — booking times are Warsaw wall time; always format with explicit timeZone; slot uniqueness via partial index on status='booked'.
+- [Pointerdown selection double-toggle](bulk-select-pointer-click.md) — drag-paint selection in onPointerDown must suppress the follow-up click or every toggle instantly reverses; test with real input, not dispatchEvent.
+- [Trainer-led sessions boundary](trainer-led-sessions.md) — performedBy/sessionMode metadata; open/write routes must guard both directions of the client↔trainer session takeover.

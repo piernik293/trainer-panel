@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
@@ -63,5 +63,41 @@ app.use(
 );
 
 app.use("/api", router);
+
+// ─── Central error handler ────────────────────────────────────────────────────
+// Any uncaught route error (Express 5 propagates async rejections here) is
+// logged in full (name, message, stack, route, request id) but the client only
+// ever receives a safe Polish message plus a correlation reference. Stack
+// traces and internal exception text are never sent — in any environment.
+app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
+  const reference = String((req as Request & { id?: unknown }).id ?? "");
+  const log = (req as Request & { log?: typeof logger }).log ?? logger;
+  // Log name/message/stack + correlation data only — never the raw err object:
+  // body-parser errors carry the request body, which may contain survey PII.
+  log.error(
+    {
+      errName: err instanceof Error ? err.name : typeof err,
+      errMessage: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+      route: `${req.method} ${req.originalUrl?.split("?")[0]}`,
+      reference,
+    },
+    err instanceof Error ? `${err.name}: ${err.message}` : "Unhandled non-Error thrown",
+  );
+
+  if (res.headersSent) return;
+  // Respect 4xx statuses set by middleware (e.g. body-parser 400 on malformed
+  // JSON) — still with a safe Polish message, never the internal text.
+  const rawStatus = (err as { status?: unknown; statusCode?: unknown }).status ??
+    (err as { statusCode?: unknown }).statusCode;
+  const status = typeof rawStatus === "number" && rawStatus >= 400 && rawStatus < 500 ? rawStatus : 500;
+  res.status(status).json({
+    error:
+      status === 400
+        ? "Nieprawidłowe dane żądania. Popraw dane i spróbuj ponownie."
+        : "Wystąpiły chwilowe problemy techniczne. Spróbuj ponownie za chwilę.",
+    ...(reference ? { reference } : {}),
+  });
+});
 
 export default app;

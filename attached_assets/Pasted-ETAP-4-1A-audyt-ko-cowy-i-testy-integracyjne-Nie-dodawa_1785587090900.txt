@@ -1,0 +1,114 @@
+ETAP 4.1A — audyt końcowy i testy integracyjne
+
+Nie dodawaj żadnego UI ani nowych funkcji produktowych.
+
+Przeprowadź końcowy audyt wdrożonego Etapu 4.1A. Nie opieraj się wyłącznie na poprzednim raporcie. Przeczytaj aktualny kod, uruchom testy i napraw wyłącznie problemy związane z wyjątkami dostępności oraz rezerwacjami.
+
+1. TESTY INTEGRACYJNE ENDPOINTÓW
+
+Dodaj skoncentrowane testy tras obejmujące rzeczywistą warstwę:
+
+- sesji,
+- endpointów,
+- bazy danych,
+- wspólnego generatora,
+- ponownej walidacji przy POST rezerwacji.
+
+Zweryfikuj:
+
+1. GET wyjątków bez zalogowania jest odrzucony.
+2. POST wyjątku bez zalogowania jest odrzucony.
+3. DELETE wyjątku bez zalogowania jest odrzucony.
+4. Trener nie widzi wyjątków innego trenera.
+5. Trener nie może usunąć wyjątku innego trenera.
+6. trainer_id przesłany w body lub query jest ignorowany i nie wpływa na właściciela danych.
+7. Zakres powyżej 62 dni jest odrzucany.
+8. Niepoprawny format dat jest odrzucany.
+9. Nieobsługiwany type jest odrzucany.
+10. Klient nie może utworzyć rezerwacji w blocked_day.
+11. Klient nie może utworzyć rezerwacji nachodzącej na blocked_range.
+12. Klient może zarezerwować termin utworzony przez extra_range.
+13. Klient online nadal otrzymuje 403.
+14. Dwa równoczesne lub kolejne żądania rezerwacji tego samego terminu nie tworzą dwóch aktywnych rezerwacji.
+15. Po anulowaniu aktywnej rezerwacji termin może zostać zarezerwowany ponownie.
+
+Sprawdź polskie komunikaty zwracane do klienta i brak ujawniania technicznych błędów bazy.
+
+2. REGRESJA ISTNIEJĄCEGO PRZEPŁYWU
+
+Uruchom ponownie wszystkie dotychczasowe testy systemu rezerwacji, a nie tylko nowe testy wyjątków.
+
+Nie uznawaj zachowania za poprawne wyłącznie dlatego, że dana część kodu nie została bezpośrednio zmieniona.
+
+3. STREFA EUROPE/WARSAW
+
+Dodaj lub potwierdź konkretne testy dla dat przejścia czasu:
+
+- rozpoczęcie czasu letniego,
+- zakończenie czasu letniego.
+
+Sprawdź, że:
+
+- wyjątek jest przypisany do poprawnego dnia kalendarzowego w Warszawie,
+- nie przesuwa się na poprzedni lub następny dzień przez UTC,
+- sloty mają poprawne czasy rozpoczęcia,
+- porównywanie pola date nie zależy od strefy urządzenia.
+
+4. KONFLIKT EXTRA_RANGE Z REGULARNYM SLOTEM
+
+Sprawdź przypadek, gdy extra_range generuje slot o takim samym czasie rozpoczęcia jak regularna dostępność, ale z inną długością sesji lub przerwą.
+
+Zachowanie musi być deterministyczne.
+
+Dla MVP przyjmij:
+
+- regularny slot ma pierwszeństwo,
+- extra_range z tym samym czasem rozpoczęcia nie tworzy drugiej wersji slotu,
+- dodaj test dokumentujący tę zasadę.
+
+Jeżeli obecna implementacja zachowuje się inaczej, popraw ją.
+
+5. ISTNIEJĄCE REZERWACJE A BLOKADY
+
+Potwierdź testem, że:
+
+- dodanie blocked_day lub blocked_range nie zmienia statusu istniejącej rezerwacji,
+- rezerwacja pozostaje w tabeli bookings jako booked,
+- blokada usuwa wyłącznie możliwość stworzenia nowej rezerwacji,
+- usunięcie wyjątku nie wpływa na istniejącą rezerwację.
+
+6. WERYFIKACJA BAZY
+
+Sprawdź bezpośrednio:
+
+- ograniczenia CHECK,
+- klucz obcy,
+- indeks trainer_id + date,
+- działanie migracji na pustej bazie,
+- działanie migracji na istniejącej bazie developerskiej,
+- brak zmian lub utraty danych w bookings.
+
+7. ZAKRES
+
+Nie twórz:
+
+- miesięcznego kalendarza,
+- formularzy wyjątków,
+- nowych komponentów frontendowych,
+- nowych funkcji niezwiązanych z powyższą weryfikacją.
+
+Na końcu podaj:
+
+1. które testy integracyjne dodano,
+2. pełny wynik wszystkich testów rezerwacji,
+3. wynik testów DST,
+4. ustaloną zasadę konfliktu extra_range,
+5. wynik typecheck,
+6. listę znalezionych i naprawionych usterek,
+7. listę punktów, których nie udało się rzeczywiście potwierdzić.
+
+Nie pisz PASS, jeśli dany przypadek nie został wykonany jako test lub bezpośrednia kontrola bazy.
+
+Końcowy komunikat:
+
+READY — availability exceptions passed integration and regression verification

@@ -974,6 +974,10 @@ components:
       type: string
       enum: [active, paused, finished]
 
+    CooperationMode:
+      type: string
+      enum: [online, in_person, hybrid]
+
     SurveyStatus:
       type: string
       enum: [not_started, incomplete, completed]
@@ -1020,6 +1024,8 @@ components:
           type: ["string", "null"]
         adaptiveStartDecision:
           type: ["string", "null"]
+        cooperationMode:
+          $ref: "#/components/schemas/CooperationMode"
         createdAt:
           type: string
           format: date-time
@@ -1074,6 +1080,8 @@ components:
           type: string
         status:
           $ref: "#/components/schemas/ClientStatus"
+        cooperationMode:
+          $ref: "#/components/schemas/CooperationMode"
 
     Survey:
       type: object

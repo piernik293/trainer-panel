@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { humanizeError } from "@/lib/userError";
 import { useParams, useLocation, Link } from "wouter";
 import { useListClientSurveys } from "@workspace/api-client-react";
 import { useCreatePlan } from "@/lib/planApi";
@@ -43,7 +44,7 @@ export default function PlanCreate() {
           navigate(`/plans/${plan.id}`);
         },
         onError: (err) => {
-          toast({ title: err.message ?? "Błąd podczas tworzenia planu", variant: "destructive" });
+          toast({ title: humanizeError(err, "Nie udało się utworzyć planu. Spróbuj ponownie."), variant: "destructive" });
         },
       },
     );

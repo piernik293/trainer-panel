@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Users, LayoutDashboard, PlusCircle, Dumbbell, Menu, UserPlus } from "lucide-react";
+import { Users, LayoutDashboard, PlusCircle, Dumbbell, Menu, UserPlus, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Sheet,
@@ -15,6 +15,7 @@ const navItems = [
   { href: "/", label: "Pulpit", icon: LayoutDashboard },
   { href: "/clients", label: "Klienci", icon: Users },
   { href: "/exercises", label: "Biblioteka ćwiczeń", icon: Dumbbell },
+  { href: "/calendar", label: "Kalendarz", icon: CalendarDays },
   { href: "/survey-invite", label: "Zaproś klienta", icon: UserPlus },
 ];
 
