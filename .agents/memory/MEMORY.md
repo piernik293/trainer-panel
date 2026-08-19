@@ -33,3 +33,4 @@
 - [Booking calendar timezone model](booking-calendar-timezone.md) — booking times are Warsaw wall time; always format with explicit timeZone; slot uniqueness via partial index on status='booked'.
 - [Pointerdown selection double-toggle](bulk-select-pointer-click.md) — drag-paint selection in onPointerDown must suppress the follow-up click or every toggle instantly reverses; test with real input, not dispatchEvent.
 - [Trainer-led sessions boundary](trainer-led-sessions.md) — performedBy/sessionMode metadata; open/write routes must guard both directions of the client↔trainer session takeover.
+- [Survey Chrome Translate hypothesis](survey-chrome-translate-hypothesis.md) — a synthetic font-wrapper mutation did not reproduce SurveyForm's DOM NotFoundError; require a native Chrome stack before changing lang.

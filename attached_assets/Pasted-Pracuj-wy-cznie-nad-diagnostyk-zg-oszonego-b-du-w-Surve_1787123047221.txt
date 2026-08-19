@@ -1,0 +1,39 @@
+Pracuj wyłącznie nad diagnostyką zgłoszonego błędu w `SurveyForm`. Nie rozszerzaj zakresu i nie wprowadzaj żadnych zmian w kodzie produkcyjnym, dopóki przyczyna nie zostanie potwierdzona testem.
+
+Zakres diagnostyki:
+
+* tylko `SurveyForm`,
+* tylko konkretne przejście przycisku `tekst → spinner → tekst` podczas asynchronicznej akcji,
+* tylko widok mobilny / Chrome,
+* tylko hipoteza dotycząca błędnego `<html lang="en">` w polskim interfejsie i automatycznego tłumaczenia Chrome,
+* tylko błąd `NotFoundError` związany z `removeChild` / `insertBefore`.
+
+Wykonaj jeden kontrolowany test:
+
+1. Odtwórz normalne przejście przycisku `tekst → spinner → tekst` bez ingerencji w DOM i sprawdź, czy występuje `NotFoundError`.
+2. Następnie zasymuluj wyłącznie mutację DOM odpowiadającą automatycznemu tłumaczeniu Chrome, czyli zmianę struktury tekstowego node'a przed kolejnym rerenderem Reacta.
+3. Wykonaj dokładnie tę samą zmianę stanu Reacta.
+4. Sprawdź, czy pojawia się ten sam `NotFoundError` oraz czy stack trace prowadzi do tego przejścia w `SurveyForm`.
+5. Zapisz wynik obu prób: **reprodukcja bez mutacji DOM** vs **reprodukcja po mutacji DOM**.
+
+Kryterium potwierdzenia:
+
+* jeśli błąd pojawia się dopiero po zewnętrznej mutacji DOM i odpowiada temu samemu `removeChild` / `insertBefore`, hipoteza jest potwierdzona;
+* jeśli błąd nie występuje, hipoteza nie jest potwierdzona i należy ją odrzucić.
+
+WAŻNE:
+
+* Nie poprawiaj jeszcze `<html lang="en">`.
+* Nie dodawaj workaroundów, `try/catch`, ręcznego zarządzania DOM ani zmian w React.
+* Nie analizuj routera, portali, innych ekranów ani innych komponentów.
+* Nie twórz danych testowych, jeśli można wykonać test na istniejącym dostępnym przepływie.
+* Nie zgłaszaj hipotezy jako przyczyny, dopóki test jej nie potwierdzi.
+* Jeśli środowisko nie pozwala wykonać któregoś kroku, jasno wskaż, którego testu nie udało się wykonać zamiast udawać wynik.
+
+Po zakończeniu podaj wyłącznie:
+
+1. czy błąd został odtworzony,
+2. czy mutacja DOM była konieczna,
+3. stack trace / miejsce w `SurveyForm`,
+4. czy hipoteza `lang="en"` + Chrome Translate została potwierdzona,
+5. jaki jest najmniejszy następny krok — bez implementowania go.

@@ -1,0 +1,432 @@
+# CRITICAL — Fix Recurring Mobile Navigation / DOM Runtime Errors
+
+I need you to investigate and permanently fix a recurring issue in the application that occurs primarily during mobile navigation and rapid user interaction.
+
+**Do not treat this as a cosmetic UI issue. I need you to find the actual root cause in the code, implement the fix, and verify it.**
+
+---
+
+# 1. CONFIRMED RUNTIME ERRORS
+
+I have captured two real runtime errors on a mobile device.
+
+### Error A — `removeChild`
+
+```text
+[plugin:runtime-error-plugin]
+
+Nie udało się wykonać polecenia „removeChild” na węźle „Node”:
+Węzeł, który ma zostać usunięty, nie jest elementem podrzędnym tego węzła.
+```
+
+Equivalent DOM error:
+
+```text
+NotFoundError:
+Failed to execute 'removeChild' on 'Node':
+The node to be removed is not a child of this node.
+```
+
+### Error B — `insertBefore`
+
+```text
+[plugin:runtime-error-plugin]
+
+Nie udało się wykonać polecenia „insertBefore” na węźle „Node”:
+Węzeł, przed którym ma zostać wstawiony nowy węzeł, nie jest elementem podrzędnym tego węzła.
+```
+
+Equivalent DOM error:
+
+```text
+NotFoundError:
+Failed to execute 'insertBefore' on 'Node':
+The node before which the new node is to be inserted
+is not a child of this node.
+```
+
+These errors are displayed by the Vite runtime error overlay.
+
+**Do NOT solve this by disabling the Vite overlay.**
+
+For example, do NOT use:
+
+```text
+server.hmr.overlay = false
+```
+
+That would only hide the error instead of fixing it.
+
+---
+
+# 2. WHEN THE PROBLEM HAPPENS
+
+The errors appear most frequently on mobile when the user:
+
+* presses Back,
+* uses the mobile browser Back gesture,
+* clicks/taps an element once,
+* taps the same element twice quickly,
+* taps again while an action is still processing,
+* clicks something and immediately presses Back,
+* navigates to another screen and immediately goes back,
+* enters a screen, leaves it quickly, and enters it again,
+* rapidly navigates between screens,
+* interacts with a screen immediately after returning to it.
+
+The issue is intermittent, so do not assume that every occurrence has exactly the same trigger.
+
+The important correlation is:
+
+**mobile navigation + rapid interaction + component lifecycle/state changes + DOM runtime error.**
+
+---
+
+# 3. INVESTIGATE THE ACTUAL ROOT CAUSE
+
+Before changing code, inspect the existing architecture and trace the relevant code paths.
+
+Do not immediately add debounce, delays, try/catch, or button disabling.
+
+Investigate whether the error is caused by:
+
+### React lifecycle / reconciliation
+
+Check:
+
+* component mounting/unmounting,
+* conditional rendering,
+* React reconciliation,
+* unstable or incorrect `key` values,
+* components being mounted/unmounted during navigation,
+* state updates during unmount,
+* effects running after a component has already changed or unmounted.
+
+### `useEffect` and cleanup
+
+Check:
+
+* all relevant `useEffect()` hooks,
+* event listeners,
+* subscriptions,
+* timers,
+* intervals,
+* observers,
+* animation callbacks,
+* cleanup functions.
+
+Verify that listeners/subscriptions are not registered multiple times and that cleanup is performed exactly where appropriate.
+
+### Manual DOM manipulation
+
+Search the codebase for:
+
+```text
+appendChild
+removeChild
+insertBefore
+remove()
+replaceChild
+innerHTML
+outerHTML
+createElement
+```
+
+Determine whether application code or a dependency is manually manipulating DOM nodes that React also controls.
+
+### Portals / overlays / modals
+
+Pay particular attention to:
+
+* React portals,
+* modals,
+* dialogs,
+* dropdowns,
+* popovers,
+* tooltips,
+* toast/notification systems,
+* overlays,
+* elements rendered into `document.body`,
+* components using DOM APIs directly.
+
+These are especially important because they can create DOM ownership conflicts during rapid unmount/remount cycles.
+
+### Animations
+
+Check animation libraries and custom animations that may manipulate or remove DOM elements while React is simultaneously updating the same component.
+
+### Routing / browser history
+
+Inspect:
+
+* routing configuration,
+* `navigate()`,
+* browser history,
+* `pushState`,
+* `replaceState`,
+* `popstate`,
+* Back buttons,
+* mobile Back gestures,
+* navigation triggered after asynchronous operations.
+
+Make sure one Back action cannot accidentally trigger multiple navigation/state transitions.
+
+### Async operations / race conditions
+
+Inspect:
+
+* API requests,
+* promises,
+* mutations,
+* loading states,
+* async callbacks,
+* navigation after requests,
+* state updates after navigation,
+* requests resolving after a component has unmounted,
+* stale closures,
+* operations resolving out of order.
+
+Pay special attention to:
+
+```text
+User taps
+↓
+Action/request starts
+↓
+User taps again OR presses Back
+↓
+Component changes/unmounts
+↓
+Original async operation finishes
+↓
+Old callback/effect attempts to update UI / navigate / manipulate DOM
+↓
+DOM is no longer in the expected state
+↓
+removeChild / insertBefore error
+```
+
+This is one of the scenarios that must be investigated, not assumed.
+
+---
+
+# 4. REPRODUCTION SCENARIOS
+
+Try to reproduce the issue with the following exact flows.
+
+### Scenario A
+
+```text
+SCREEN A
+↓
+tap an interactive element
+↓
+render / state update / request
+↓
+immediately tap again OR press Back
+↓
+SCREEN A changes/unmounts
+↓
+original callback/effect completes
+↓
+DOM update
+```
+
+### Scenario B
+
+```text
+SCREEN A
+↓
+SCREEN B
+↓
+Back
+↓
+SCREEN A
+↓
+quick tap
+↓
+Back
+↓
+enter SCREEN A again
+```
+
+### Scenario C
+
+```text
+tap
+↓
+tap again quickly
+↓
+Back
+↓
+request finishes
+↓
+state update / navigation
+```
+
+### Scenario D
+
+```text
+SCREEN A
+↓
+navigate to SCREEN B
+↓
+immediately Back
+↓
+immediately navigate again
+↓
+Back again
+```
+
+### Scenario E
+
+```text
+open screen
+↓
+start async operation
+↓
+leave screen before operation finishes
+↓
+return to screen
+↓
+old operation finishes
+```
+
+Test these scenarios on a mobile viewport and, where possible, with actual mobile browser Back behavior.
+
+---
+
+# 5. DO NOT APPLY A SUPERFICIAL FIX
+
+Do NOT:
+
+* disable the Vite error overlay,
+* hide runtime errors,
+* suppress console errors,
+* add a global `try/catch`,
+* ignore `NotFoundError`,
+* reload the page to hide the problem,
+* add arbitrary `setTimeout()` delays,
+* add global debouncing,
+* disable every button,
+* permanently disable buttons after one click,
+* rewrite unrelated application logic.
+
+A debounce may be appropriate for a specific action if the investigation proves that duplicate interaction is part of the root cause, but **do not use debounce as a substitute for finding the DOM/lifecycle problem.**
+
+---
+
+# 6. EXPECTED FIX
+
+Trace the complete chain:
+
+**user action → component → state/effect → navigation/async operation → DOM operation → failure**
+
+Identify exactly:
+
+1. Which component is involved.
+2. Which effect/callback/event is involved.
+3. Which navigation/state transition triggers it.
+4. Which DOM operation fails.
+5. Why the DOM node is no longer a child of the expected parent.
+6. Why the application attempts the operation after the DOM structure has changed.
+
+Then implement the smallest reliable fix that addresses the actual cause.
+
+Prefer solutions that preserve React's normal rendering/lifecycle model.
+
+If a third-party library is responsible, identify the exact integration point and fix the integration rather than hiding the exception.
+
+Do not change unrelated business logic.
+
+---
+
+# 7. REGRESSION TESTING
+
+After implementing the fix, verify:
+
+* single tap,
+* double tap,
+* rapid repeated taps,
+* tap while loading,
+* tap → immediate Back,
+* tap → request completes → Back,
+* Back navigation,
+* mobile Back gesture,
+* entering a screen → Back → entering again,
+* rapid navigation between screens,
+* navigating away while a request is pending,
+* returning to a screen after an async operation started on that screen,
+* repeated navigation between the same screens.
+
+Check the browser console and confirm that:
+
+```text
+removeChild
+```
+
+and
+
+```text
+insertBefore
+```
+
+do not occur during these flows.
+
+Also verify that there are no new:
+
+* JavaScript runtime errors,
+* duplicate API requests,
+* stale states,
+* broken navigation,
+* memory leaks,
+* permanently disabled buttons,
+* lost user input.
+
+Run the existing automated tests if available. If the project already has a test framework, use it instead of introducing a new one.
+
+---
+
+# 8. IMPORTANT — DO NOT CLAIM SUCCESS WITHOUT VERIFICATION
+
+Do not say the issue is fixed simply because the error overlay disappeared.
+
+The task is complete only when the underlying cause has been identified and corrected and the relevant interaction flows have been tested.
+
+If the exact reproduction cannot be achieved, say so clearly and explain what evidence was used to identify the root cause.
+
+---
+
+# 9. FINAL REPORT
+
+After completing the investigation and fix, provide a concise technical report:
+
+### Root Cause
+
+What exactly caused the `removeChild` / `insertBefore` errors?
+
+### Affected Components
+
+Which components/hooks/libraries were involved?
+
+### Files Changed
+
+List every modified file and explain the reason for each change.
+
+### Fix
+
+Explain exactly what was changed and why it prevents the race/lifecycle/DOM problem.
+
+### Reproduction
+
+Describe the interaction sequence that triggered the problem.
+
+### Verification
+
+List the mobile and desktop scenarios tested and their results.
+
+### Remaining Risks
+
+Mention any remaining edge cases or limitations.
+
+**Do not stop at identifying a possible cause. Trace the actual code path, implement the fix, and verify the result.**

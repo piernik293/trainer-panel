@@ -1,0 +1,66 @@
+Good. Keep the investigation strictly scoped to the confirmed mobile runtime errors.
+
+Do **not** broadly audit or refactor the entire navigation system.
+
+The priority is to identify the exact code path responsible for these two errors:
+
+```text
+NotFoundError:
+Failed to execute 'removeChild' on 'Node':
+The node to be removed is not a child of this node.
+```
+
+and
+
+```text
+NotFoundError:
+Failed to execute 'insertBefore' on 'Node':
+The node before which the new node is to be inserted
+is not a child of this node.
+```
+
+The fact that the errors appear mainly after **Back navigation, rapid tapping, or re-entering a screen** is the key context.
+
+### Investigation priority
+
+Focus first on:
+
+1. The screens/components where the error can actually be reproduced.
+2. Their mount/unmount lifecycle.
+3. Radix portals/overlays used by those screens.
+4. The animated client form you identified as a high-risk area.
+5. Effects and cleanup executed when navigating Back.
+6. Async callbacks that may complete after the component has changed/unmounted.
+7. Any animation/transition that may remove or insert DOM nodes during navigation.
+
+Only inspect routing code when it is directly involved in one of these failing flows.
+
+Do not perform a general routing audit unless you find evidence that routing is causing the DOM mismatch.
+
+### Important
+
+You already established that the application itself does not appear to contain direct `removeChild` / `insertBefore` calls.
+
+Therefore, prioritize investigating **React lifecycle + Radix portal/overlay lifecycle + animation/transition cleanup + rapid navigation**, rather than searching indefinitely for manual DOM manipulation.
+
+Do not add a debounce or click-blocking workaround yet.
+
+First determine:
+
+**which component → which lifecycle/effect/animation → which navigation/user action → which DOM operation → why the DOM node is no longer where the library/component expects it to be.**
+
+Once you have identified the exact failing path, make the smallest targeted fix possible.
+
+Do not modify unrelated components or navigation flows.
+
+After the fix, reproduce the original mobile scenarios:
+
+* tap → Back
+* double tap → Back
+* screen → Back → screen again
+* tap → navigation → immediate Back
+* async operation → Back → operation completes
+
+Confirm that both `removeChild` and `insertBefore` errors no longer occur.
+
+If you cannot reproduce the error yet, **do not make speculative changes**. Continue tracing the specific high-risk components and report what evidence you found.
