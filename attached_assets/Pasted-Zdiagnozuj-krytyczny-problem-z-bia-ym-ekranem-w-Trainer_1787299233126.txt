@@ -1,0 +1,105 @@
+Zdiagnozuj krytyczny problem z białym ekranem w Trainer Panel.
+
+OBJAW:
+Po wejściu w profil klienta i powrocie albo po wielokrotnym przechodzeniu między zakładkami aplikacja po pewnym czasie pokazuje całkowicie biały ekran i przestaje reagować.
+
+Przykładowy przepływ:
+1. Dashboard
+2. Klienci
+3. wejście w klienta
+4. zmiana zakładki profilu
+5. powrót do listy
+6. wejście w innego klienta
+7. ponowna zmiana zakładek
+8. powtarzanie
+→ w pewnym momencie biały ekran.
+
+NIE ZMIENIAJ KODU NA POCZĄTKU.
+
+Najpierw wykonaj wyłącznie diagnostykę.
+
+Sprawdź:
+
+1. Routing:
+   - wszystkie route'y Trainer Panel,
+   - ClientList,
+   - ClientDetail,
+   - routing parametrów /clients/:id,
+   - przejścia między zakładkami,
+   - browser back/forward.
+
+2. React lifecycle:
+   - useEffect,
+   - cleanup,
+   - zależności efektów,
+   - setState po unmount,
+   - komponenty montowane/odmontowywane przy zmianie klienta i zakładki.
+
+3. Dane:
+   - wszystkie miejsca, gdzie ClientDetail zakłada istnienie danych klienta,
+   - survey,
+   - training interview,
+   - stats,
+   - exercises,
+   - plan,
+   - null/undefined handling.
+
+4. API:
+   - requesty wykonywane przy wejściu w klienta,
+   - requesty wykonywane przy zmianie zakładek,
+   - requesty wykonywane przy powrocie na listę,
+   - race conditions,
+   - request anulowany podczas unmount,
+   - odpowiedzi 404/500.
+
+5. Error handling:
+   - czy istnieje React ErrorBoundary,
+   - czy biały ekran wynika z uncaught exception,
+   - czy błąd jest widoczny w console,
+   - czy istnieje fallback UI.
+
+6. Overlaye / modale / portale:
+   - czy któryś overlay pozostaje aktywny po zmianie route,
+   - czy element z wysokim z-index blokuje całą aplikację,
+   - czy body/html dostaje overflow:hidden i nigdy nie jest resetowane.
+
+7. Cache/query:
+   - React Query,
+   - query keys,
+   - stale data,
+   - refetchOnWindowFocus,
+   - race conditions między klientami,
+   - czy zmiana clientId poprawnie powoduje zmianę query.
+
+8. Wykonaj stress test na istniejącym środowisku:
+   minimum:
+   - 10 wejść/wyjść z profilu klienta,
+   - 10 zmian zakładek,
+   - przełączanie między minimum 2 klientami,
+   - browser back/forward.
+
+Jeżeli biały ekran wystąpi:
+- natychmiast zbierz console error,
+- stack trace,
+- aktualny URL,
+- ostatnie requesty API,
+- statusy HTTP,
+- stan route,
+- nazwę komponentu, który się wywalił.
+
+WAŻNE:
+Nie zgaduj przyczyny.
+Nie naprawiaj jeszcze kodu.
+Najpierw znajdź konkretny wyjątek lub konkretną ścieżkę prowadzącą do białego ekranu.
+
+Na końcu raport:
+
+A. ROOT CAUSE
+B. dokładny plik + funkcja + linia
+C. reprodukcja krok po kroku
+D. dlaczego błąd pojawia się dopiero po kilku przejściach
+E. czy jest to problem frontend / routing / API / danych / overlay
+F. najmniejsza bezpieczna poprawka
+G. czy potrzebny jest ErrorBoundary jako dodatkowe zabezpieczenie
+
+Nie implementuj żadnej poprawki bez mojego potwierdzenia.

@@ -34,3 +34,4 @@
 - [Pointerdown selection double-toggle](bulk-select-pointer-click.md) — drag-paint selection in onPointerDown must suppress the follow-up click or every toggle instantly reverses; test with real input, not dispatchEvent.
 - [Trainer-led sessions boundary](trainer-led-sessions.md) — performedBy/sessionMode metadata; open/write routes must guard both directions of the client↔trainer session takeover.
 - [Survey Chrome Translate hypothesis](survey-chrome-translate-hypothesis.md) — a synthetic font-wrapper mutation did not reproduce SurveyForm's DOM NotFoundError; require a native Chrome stack before changing lang.
+- [Trainer E2E authentication](trainer-e2e-authentication.md) — isolated browser tests do not inherit the trainer session; exact Clerk claim override may still leave the app signed out.
