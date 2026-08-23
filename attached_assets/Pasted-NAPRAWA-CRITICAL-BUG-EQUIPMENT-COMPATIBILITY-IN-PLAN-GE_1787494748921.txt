@@ -1,0 +1,122 @@
+NAPRAWA CRITICAL BUG — EQUIPMENT COMPATIBILITY IN PLAN GENERATOR
+
+Na podstawie zakończonego audytu napraw wyłącznie potwierdzony problem
+kompatybilności sprzętu w generatorze planów.
+
+CEL:
+
+Ćwiczenie wymagające sprzętu, którego klient nie posiada, NIGDY nie może
+trafić do finalnego planu wygenerowanego przez generate-day.
+
+WYMAGANIE ABSOLUTNE:
+
+Każda ścieżka wyboru ćwiczenia musi korzystać wyłącznie z puli
+kompatybilnej ze sprzętem i lokalizacją klienta.
+
+NAPRAW:
+
+1. Główną trasę generate-day.
+
+Przed przekazaniem puli do ExerciseSelectionEngineV0 zastosuj istniejące:
+
+- isEquipmentCompatible
+- isLocationCompatible
+- buildCompatibilityFilter
+
+Nie twórz drugiej, konkurencyjnej implementacji logiki sprzętu.
+
+2. Upewnij się, że ta sama bezpieczna pula jest używana przez:
+
+- PUSH
+- PULL
+- LEGS
+- UPPER
+- LOWER
+- FULL BODY
+- PLYO
+- fallbacki
+- retry/thin-pool
+- beginner balancing
+- findReplacementForPattern
+
+ŻADEN fallback nie może wrócić do nieprzefiltrowanej globalnej puli.
+
+3. Gdy kompatybilna pula jest zbyt mała:
+
+- preferuj ponowne użycie kompatybilnego ćwiczenia, jeśli obecna logika
+  na to pozwala,
+- albo pomiń opcjonalny slot,
+- albo zwróć kontrolowany błąd dla wymaganej liczby ćwiczeń.
+
+NIGDY nie wybieraj ćwiczenia niekompatybilnego tylko po to, aby zapełnić slot.
+
+4. Zachowaj istniejącą semantykę:
+
+equipment = OR / AnyOf
+requiredEquipmentAll = AND / AllOf
+trainingLocation = lokalizacja
+
+Nie zmieniaj znaczenia istniejących pól.
+
+5. Nie zmieniaj:
+
+- routingu,
+- Clerk,
+- UI,
+- Back,
+- animacji,
+- bazy danych,
+- schematu,
+- autoryzacji,
+- innych funkcji generatora niezwiązanych z tym bugiem.
+
+6. Dodaj/zmień testy tylko dla tego konkretnego problemu.
+
+MUSZĄ pokrywać co najmniej:
+
+- brak sprzętu,
+- tylko hantle,
+- tylko sztanga,
+- hantle bez ławki,
+- hantle + ławka,
+- pełne wyposażenie,
+- requiredEquipmentAll,
+- equipment OR,
+- wyczerpanie bezpiecznej puli,
+- fallback,
+- beginner balancing.
+
+W każdym przypadku sprawdź FINALNY PLAN, a nie tylko początkową pulę.
+
+7. WAŻNE:
+
+Nie wystarczy sprawdzić, że filtr istnieje.
+
+Udowodnij testem, że po wszystkich fallbackach i replacementach:
+
+FINAL_PLAN EXERCISE → equipment compatible with CLIENT
+
+jest prawdziwe dla każdego ćwiczenia.
+
+8. Po zmianach uruchom:
+
+- testy dotyczące generatora,
+- typecheck, jeśli możliwy,
+- build.
+
+Jeżeli istnieją wcześniejsze, niezwiązane błędy, nie naprawiaj ich
+w ramach tego zadania. Wyraźnie je oddziel.
+
+9. Na końcu pokaż:
+
+- dokładne zmienione pliki,
+- funkcje,
+- krótkie wyjaśnienie zmiany,
+- wyniki testów,
+- czy każdy fallback jest zabezpieczony,
+- czy istnieje jeszcze jakakolwiek droga do finalnego planu z
+  niekompatybilnym sprzętem.
+
+NIE PRZEBUDOWUJ GENERATORA.
+
+Minimalna poprawka istniejącej architektury.
