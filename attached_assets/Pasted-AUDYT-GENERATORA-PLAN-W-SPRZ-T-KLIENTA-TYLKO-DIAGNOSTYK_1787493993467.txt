@@ -1,0 +1,77 @@
+AUDYT GENERATORA PLANÓW — SPRZĘT KLIENTA
+TYLKO DIAGNOSTYKA — NIE ZMIENIAJ KODU
+
+Sprawdź dokładnie, czy generator planów treningowych zawsze dobiera ćwiczenia zgodnie ze sprzętem dostępnym dla konkretnego klienta.
+
+Nie zmieniaj żadnego kodu.
+Nie zmieniaj bazy danych.
+Nie twórz nowych danych.
+Nie naprawiaj niczego.
+
+Prześledź cały przepływ:
+
+sprzęt klienta
+→ dane wejściowe generatora
+→ wymagania sprzętowe ćwiczeń
+→ filtrowanie kandydatów
+→ wybór ćwiczenia
+→ balansowanie
+→ zamiana ćwiczeń
+→ fallback
+→ finalny plan.
+
+NAJWAŻNIEJSZE:
+
+Sprawdź, czy istnieje JAKAKOLWIEK ścieżka, przez którą ćwiczenie wymagające sprzętu, którego klient nie posiada, może trafić do finalnego planu.
+
+Szczególnie sprawdź:
+
+- fallbacki,
+- wyczerpanie puli bezpiecznych ćwiczeń,
+- ponowne użycie ćwiczeń,
+- randomizację,
+- beginner balancing,
+- zamianę ćwiczeń,
+- regenerowanie planu,
+- wymianę pojedynczego ćwiczenia,
+- każdy slot planu.
+
+Jeżeli bezpieczna pula ćwiczeń się wyczerpie, sprawdź dokładnie, co robi generator:
+
+A) ponownie używa kompatybilnego ćwiczenia
+B) zostawia slot pusty
+C) zwraca błąd
+D) wybiera niekompatybilne ćwiczenie
+
+Jeżeli istnieje możliwość D — znajdź dokładną ścieżkę w kodzie.
+
+Sprawdź również przypadki:
+
+- tylko masa ciała,
+- tylko hantle,
+- tylko sztanga,
+- hantle + ławka,
+- pełna siłownia,
+- brak sprzętu.
+
+Na końcu podaj:
+
+1. Skąd pobierany jest sprzęt klienta.
+2. Jak ćwiczenie określa wymagany sprzęt.
+3. Gdzie dokładnie znajduje się filtr sprzętu.
+4. Czy filtr działa dla KAŻDEGO slotu.
+5. Wszystkie fallbacki.
+6. Co dzieje się po wyczerpaniu bezpiecznej puli.
+7. Czy niekompatybilne ćwiczenie może trafić do finalnego planu.
+8. Dokładne pliki, funkcje i linie.
+9. CRITICAL/HIGH/MEDIUM/LOW.
+10. Co należy naprawić — tylko opis, bez implementacji.
+
+Najważniejsze pytanie:
+
+"Czy logicznie niemożliwe jest, aby ćwiczenie wymagające niedostępnego sprzętu trafiło do finalnego planu?"
+
+Nie odpowiadaj, że "filtr sprzętu istnieje".
+Udowodnij, że każda ścieżka wejścia ćwiczenia do planu respektuje sprzęt klienta.
+
+NIE ZMIENIAJ KODU.
