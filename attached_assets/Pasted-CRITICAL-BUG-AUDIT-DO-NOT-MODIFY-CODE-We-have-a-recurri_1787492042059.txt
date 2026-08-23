@@ -1,0 +1,151 @@
+CRITICAL BUG AUDIT — DO NOT MODIFY CODE
+
+We have a recurring critical mobile/navigation bug in the Trainer Panel application.
+
+MOST RECENT SYMPTOMS:
+1. On mobile, after navigating between pages/screens and interacting quickly, the application can suddenly show a completely WHITE/BLANK SCREEN.
+2. When this happens, the user may lose the ability to return to the previous page/screen using the application's Back button or navigation.
+3. In some cases the browser's Back navigation may also lead to an incorrect state or the UI may become unusable.
+4. This appears to be intermittent and may depend on a specific sequence of navigation, Back, rapid taps/clicks, async operations, overlays/modals, or animated transitions.
+5. We previously observed DOM-related errors such as:
+   - "NotFoundError: Failed to execute 'removeChild' on 'Node'"
+   - "NotFoundError: Failed to execute 'insertBefore' on 'Node'"
+
+IMPORTANT:
+DO NOT FIX ANYTHING YET.
+DO NOT MODIFY APPLICATION CODE.
+DO NOT REFACTOR.
+DO NOT CHANGE UI.
+DO NOT CHANGE DATABASE DATA.
+DO NOT CHANGE ROUTING BEHAVIOR.
+
+Your task is ONLY to diagnose and identify the root cause.
+
+INVESTIGATION PRIORITY:
+
+A. WHITE SCREEN / UNHANDLED RENDER ERRORS
+- Find every possible source of an uncaught React/runtime exception that could result in a blank screen.
+- Check Error Boundaries and determine whether they exist and whether they cover the relevant routes/components.
+- Inspect browser console/runtime errors.
+- Inspect async operations that can resolve/reject after a component has unmounted.
+- Look for state updates after unmount.
+- Check Suspense/lazy loading failures.
+- Check conditional rendering that can result in invalid/null component trees.
+- Check errors thrown during route transitions.
+
+B. BACK/NAVIGATION FAILURE
+Trace the complete navigation lifecycle:
+- React Router configuration
+- route definitions
+- nested routes
+- navigate()
+- useNavigate()
+- navigate(-1)
+- browser history
+- pushState / replaceState
+- popstate listeners
+- custom Back buttons
+- redirects
+- authentication guards
+- role guards
+- modal/overlay navigation
+- mobile-specific navigation logic
+
+Determine exactly how the application can reach a state where:
+- Back no longer works,
+- Back points to an invalid/stale route,
+- the previous screen is lost,
+- navigation occurs but the rendered component is missing,
+- history is modified unexpectedly.
+
+C. MOBILE-SPECIFIC BEHAVIOR
+Pay special attention to:
+- rapid repeated taps
+- navigating Back and immediately tapping another control
+- navigating forward, Back, then forward again
+- opening/closing overlays
+- route transitions
+- animated components
+- AnimatePresence
+- height/layout animations
+- components mounting/unmounting during navigation
+- effects that run multiple times
+- cleanup functions
+- AbortController/cancellation
+- async token/session fetching
+- components unmounting while async work is still running.
+
+D. DOM / ANIMATION ERRORS
+Investigate the previously observed:
+"NotFoundError: Failed to execute 'removeChild' on 'Node'"
+and
+"NotFoundError: Failed to execute 'insertBefore' on 'Node'"
+
+Find the exact component(s) and lifecycle sequence that could cause React to manipulate a DOM node that has already been removed or moved.
+
+Pay particular attention to AnimatePresence, manually manipulated DOM nodes, portals, overlays, transitions and conditional rendering.
+
+E. REPRODUCTION
+Create a precise reproduction scenario if possible.
+
+For example, test sequences such as:
+1. Open page A
+2. Navigate to page B
+3. Quickly press Back
+4. Immediately interact with page A
+5. Navigate forward again
+6. Press Back repeatedly
+7. Repeat quickly on mobile viewport
+
+Also test:
+- slow navigation
+- rapid navigation
+- repeated Back
+- Back during loading
+- Back during animation
+- Back while async data is loading
+- Back immediately after opening/closing modal or overlay.
+
+Do NOT make fixes while testing.
+
+F. ROOT CAUSE
+Do not stop at "there is a navigation error."
+
+Trace the actual lifecycle and identify:
+- exact file
+- exact component/function
+- relevant line(s)
+- triggering sequence
+- why the DOM/state/router becomes invalid
+- why this can produce the white screen
+- why Back becomes unavailable or incorrect
+
+Rank findings:
+
+CRITICAL — can cause white screen or permanently broken navigation
+HIGH — can corrupt navigation/state
+MEDIUM — intermittent UI/state issue
+LOW — minor issue
+
+FINAL REPORT:
+
+Return ONLY a diagnostic report with:
+
+1. EXECUTIVE SUMMARY
+2. EXACT REPRODUCTION STEPS
+3. WHITE SCREEN ROOT CAUSE
+4. BACK/NAVIGATION ROOT CAUSE
+5. DOM/AnimatePresence ROOT CAUSE
+6. ALL RELEVANT FILES AND FUNCTIONS
+7. ERROR/LIFECYCLE SEQUENCE
+8. CRITICAL/HIGH/MEDIUM/LOW FINDINGS
+9. RECOMMENDED FIXES — DESCRIBE ONLY, DO NOT IMPLEMENT
+10. RISK OF EACH FIX
+11. WHETHER THE BUG IS SAFE TO FIX BEFORE MIGRATION TO GITHUB
+
+IMPORTANT:
+The goal is to understand the bug before spending credits on implementation.
+
+Do not make any code changes during this investigation.
+Do not claim a bug is fixed.
+If you cannot reproduce it, perform static code tracing and explain exactly what evidence supports each suspected root cause.
