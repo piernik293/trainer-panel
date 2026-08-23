@@ -875,7 +875,8 @@ function InvitationCard({ clientId }: { clientId: number }) {
 
   const { data, isLoading } = useQuery<InviteStatus>({
     queryKey: ["client-invite-status", clientId],
-    queryFn: () => customFetch(`/api/clients/${clientId}/invite/status`),
+    queryFn: ({ signal }) =>
+      customFetch(`/api/clients/${clientId}/invite/status`, { signal }),
     staleTime: 30_000,
   });
 

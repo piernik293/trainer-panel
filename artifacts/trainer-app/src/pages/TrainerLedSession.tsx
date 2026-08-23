@@ -91,6 +91,24 @@ interface RowState {
   isCompleted: boolean;
 }
 
+interface OpenSessionVariables {
+  dayId: number;
+  planId: number;
+  exerciseIds: number[];
+}
+
+interface SaveExerciseVariables {
+  planExerciseId: number;
+  row: RowState;
+  sessionId: number;
+}
+
+interface CompleteSessionVariables {
+  clientId: number;
+  sessionId: number;
+  notes: string | null;
+}
+
 function rowFromLog(log: SessionLog | undefined): RowState {
   return {
     setsCompleted: log?.setsCompleted != null ? String(log.setsCompleted) : "",
@@ -138,19 +156,20 @@ export default function TrainerLedSession() {
   const [finished, setFinished] = useState(false);
 
   const openSession = useMutation({
-    mutationFn: (dayId: number) =>
+    mutationFn: ({ dayId, planId }: OpenSessionVariables) =>
       apiSend<OpenSessionResponse>("POST", `/api/clients/${clientId}/trainer-sessions/open`, {
-        planId: preview!.plan.id,
+        planId,
         planDayId: dayId,
       }),
-    onSuccess: (data, dayId) => {
+    onSuccess: (data, { dayId, exerciseIds }) => {
       setOpened(data);
       setActiveDayId(dayId);
       setSessionNotes(data.session.notes ?? "");
-      const day = preview!.plan.days.find((d) => d.id === dayId);
       const logByExercise = new Map(data.session.logs.map((l) => [l.planExerciseId, l]));
       const next: Record<number, RowState> = {};
-      for (const ex of day?.exercises ?? []) next[ex.id] = rowFromLog(logByExercise.get(ex.id));
+      for (const exerciseId of exerciseIds) {
+        next[exerciseId] = rowFromLog(logByExercise.get(exerciseId));
+      }
       setRows(next);
     },
     onError: (err) => {
@@ -159,10 +178,10 @@ export default function TrainerLedSession() {
   });
 
   const saveExercise = useMutation({
-    mutationFn: ({ planExerciseId, row }: { planExerciseId: number; row: RowState }) =>
+    mutationFn: ({ planExerciseId, row, sessionId }: SaveExerciseVariables) =>
       apiSend<SessionLog>(
         "PUT",
-        `/api/clients/${clientId}/trainer-sessions/${opened!.session.id}/exercises/${planExerciseId}`,
+        `/api/clients/${clientId}/trainer-sessions/${sessionId}/exercises/${planExerciseId}`,
         rowToBody(row),
       ),
     onError: (err) => {
@@ -175,14 +194,14 @@ export default function TrainerLedSession() {
   });
 
   const completeSession = useMutation({
-    mutationFn: () =>
-      apiSend("PATCH", `/api/clients/${clientId}/trainer-sessions/${opened!.session.id}`, {
+    mutationFn: ({ clientId: mutationClientId, sessionId, notes }: CompleteSessionVariables) =>
+      apiSend("PATCH", `/api/clients/${mutationClientId}/trainer-sessions/${sessionId}`, {
         isCompleted: true,
-        notes: sessionNotes.trim() === "" ? null : sessionNotes.trim(),
+        notes,
       }),
-    onSuccess: () => {
+    onSuccess: (_, { clientId: mutationClientId }) => {
       setFinished(true);
-      queryClient.invalidateQueries({ queryKey: ["client-workout-sessions", clientId] });
+      queryClient.invalidateQueries({ queryKey: ["client-workout-sessions", mutationClientId] });
       toast({ title: "Sesja zakończona i zapisana w historii klienta" });
     },
     onError: (err) => {
@@ -197,7 +216,16 @@ export default function TrainerLedSession() {
   const saveRow = (planExerciseId: number) => {
     const row = rows[planExerciseId];
     if (!row || !opened) return;
-    saveExercise.mutate({ planExerciseId, row });
+    saveExercise.mutate({ planExerciseId, row, sessionId: opened.session.id });
+  };
+
+  const finishSession = () => {
+    if (!opened) return;
+    completeSession.mutate({
+      clientId,
+      sessionId: opened.session.id,
+      notes: sessionNotes.trim() === "" ? null : sessionNotes.trim(),
+    });
   };
 
   const backLink = (
@@ -286,7 +314,13 @@ export default function TrainerLedSession() {
                   size="sm"
                   className="gap-1.5"
                   disabled={openSession.isPending}
-                  onClick={() => openSession.mutate(day.id)}
+                  onClick={() =>
+                    openSession.mutate({
+                      dayId: day.id,
+                      planId: preview.plan.id,
+                      exerciseIds: day.exercises.map((exercise) => exercise.id),
+                    })
+                  }
                 >
                   <Play size={14} />
                   Rozpocznij
@@ -354,7 +388,13 @@ export default function TrainerLedSession() {
                           onChange={(e) => {
                             updateRow(ex.id, { isCompleted: e.target.checked });
                             const updated = { ...row, isCompleted: e.target.checked };
-                            saveExercise.mutate({ planExerciseId: ex.id, row: updated });
+                            if (opened) {
+                              saveExercise.mutate({
+                                planExerciseId: ex.id,
+                                row: updated,
+                                sessionId: opened.session.id,
+                              });
+                            }
                           }}
                           className="h-4 w-4 accent-primary"
                         />
@@ -445,7 +485,7 @@ export default function TrainerLedSession() {
                 <Button
                   className="gap-1.5"
                   disabled={completeSession.isPending}
-                  onClick={() => completeSession.mutate()}
+                  onClick={finishSession}
                 >
                   {completeSession.isPending ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

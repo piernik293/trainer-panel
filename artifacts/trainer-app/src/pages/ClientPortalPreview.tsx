@@ -63,11 +63,19 @@ export interface PortalPreviewData {
   };
 }
 
-async function apiFetch<T>(path: string): Promise<T> {
+function isAbortError(cause: unknown): boolean {
+  return cause instanceof Error && cause.name === "AbortError";
+}
+
+async function apiFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(path, { headers: { "Content-Type": "application/json" } });
+    res = await fetch(path, {
+      headers: { "Content-Type": "application/json" },
+      signal,
+    });
   } catch (cause) {
+    if (isAbortError(cause)) throw cause;
     console.error("portal-preview network error:", cause);
     throw Object.assign(new Error(NETWORK_ERROR_MESSAGE), { cause });
   }
@@ -84,7 +92,9 @@ async function apiFetch<T>(path: string): Promise<T> {
 export function usePortalPreview(clientId: number) {
   return useQuery({
     queryKey: ["client-portal-preview", clientId] as const,
-    queryFn: () => apiFetch<PortalPreviewData>(`/api/clients/${clientId}/portal-preview`),
+    queryFn: ({ signal }) =>
+      apiFetch<PortalPreviewData>(`/api/clients/${clientId}/portal-preview`, signal),
+    enabled: Number.isFinite(clientId) && clientId > 0,
     staleTime: 30_000,
     retry: false,
   });

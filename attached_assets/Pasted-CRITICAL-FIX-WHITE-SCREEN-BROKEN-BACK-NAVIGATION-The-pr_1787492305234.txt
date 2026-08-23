@@ -1,0 +1,219 @@
+CRITICAL FIX — WHITE SCREEN + BROKEN BACK NAVIGATION
+
+The previously diagnosed white-screen/navigation issue is now the HIGHEST PRIORITY BUG.
+
+You are now authorized to MODIFY CODE and FIX the issue.
+
+Do NOT add new product features.
+Do NOT redesign the UI.
+Do NOT make unrelated refactors.
+Do NOT change database schemas or data.
+Keep the fix as small and targeted as possible.
+
+PRIMARY USER-REPORTED BUG:
+
+On mobile, after navigating between screens and interacting quickly, the application can enter a completely WHITE/BLANK SCREEN state.
+
+At the same time, the user can lose the ability to return to the previous screen using the application's navigation/Back behavior.
+
+Previously observed errors included:
+
+- "NotFoundError: Failed to execute 'removeChild' on 'Node'"
+- "NotFoundError: Failed to execute 'insertBefore' on 'Node'"
+
+The previous audit did NOT prove a single root cause, so do NOT blindly rewrite routing or animations.
+
+GOAL:
+
+Make it impossible for a normal render/runtime exception to leave the user with an unusable completely white application.
+
+At the same time, fix the actual navigation lifecycle problems that can cause the broken Back behavior.
+
+==================================================
+PHASE 1 — PROTECT AGAINST WHITE SCREEN
+==================================================
+
+Inspect:
+
+src/main.tsx
+src/App.tsx
+
+Implement an appropriate React Error Boundary around the application.
+
+Requirements:
+
+- The Error Boundary must prevent an uncaught render error from leaving the entire application as a blank white screen.
+- Display a useful recovery UI.
+- Provide a clear "Try again" / reload/recovery action.
+- Do not expose technical stack traces to normal users.
+- Log enough diagnostic information to identify the real component/error if it happens again.
+- Preserve the current application's normal behavior when there is no error.
+
+Do NOT treat ErrorBoundary as the final root-cause fix.
+It is a safety net.
+
+==================================================
+PHASE 2 — FIX THE MOST DANGEROUS ASYNC LIFECYCLES
+==================================================
+
+Inspect the previously identified files:
+
+- src/pages/TrainerLedSession.tsx
+- src/components/WorkoutHistoryTab.tsx
+- src/pages/ClientPortalPreview.tsx
+- src/lib/planApi.ts
+- src/pages/ClientDetail.tsx
+
+Look specifically for:
+
+- async operations continuing after unmount
+- state updates after unmount
+- callbacks using stale clientId
+- callbacks using stale preview/opened objects
+- non-null assertions such as preview! and opened!
+- raw fetch() without AbortSignal
+- responses arriving after navigation to another client
+- mutations completing after the user has already navigated away
+
+Fix ONLY the cases that are genuinely unsafe.
+
+Do not blindly add mounted flags everywhere.
+Prefer proper request cancellation / AbortController where appropriate.
+
+Make sure cancellation does not generate false error states or unwanted toasts.
+
+==================================================
+PHASE 3 — FIX BACK NAVIGATION
+==================================================
+
+Inspect every relevant Back/navigation implementation.
+
+Especially:
+
+- ClientDetail.tsx
+- ClientPortalPreview.tsx
+- TrainerLedSession.tsx
+- PlanEditor.tsx
+- SurveyForm.tsx
+- ClientNew.tsx
+- ExerciseDetail.tsx
+- ExerciseForm.tsx
+- Sidebar.tsx
+- App.tsx
+
+Determine which buttons are intended to mean:
+
+A) "go to a specific parent route"
+
+versus
+
+B) "go to the actual previous screen"
+
+Do NOT globally replace all links with history.back().
+
+For each relevant navigation path, preserve the intended UX.
+
+Most importantly, make sure the following sequence cannot leave the application in a broken state:
+
+1. Open client list
+2. Open Client A
+3. Switch between client tabs
+4. Return to client list
+5. Open Client B
+6. Press Back
+7. Quickly press Back/Forward again
+8. Immediately interact with the page
+9. Repeat several times
+
+Also test:
+
+- Back during loading
+- Back during an async request
+- Back while a dialog/sheet is open
+- Back while a mobile Sheet is closing
+- rapid repeated taps
+- navigating forward immediately after Back
+
+==================================================
+PHASE 4 — DO NOT BLINDLY CHANGE ANIMATEPRESENCE
+==================================================
+
+The previous audit found AnimatePresence in:
+
+src/pages/SurveyForm.tsx
+
+and Radix portals in:
+
+- dialog.tsx
+- sheet.tsx
+- alert-dialog.tsx
+
+Do NOT rewrite or remove AnimatePresence or Radix portals merely because the previous errors mentioned removeChild/insertBefore.
+
+Only modify them if your investigation produces concrete evidence that their current lifecycle causes the failure.
+
+If you identify a real DOM lifecycle problem, make the smallest possible targeted fix.
+
+==================================================
+PHASE 5 — TEST THE FIX
+==================================================
+
+After implementing the fixes:
+
+1. Run the project's existing tests.
+2. Run the application.
+3. Check that all routes still load.
+4. Check mobile viewport behavior.
+5. Test repeated navigation.
+6. Test Back/Forward.
+7. Test rapid clicks.
+8. Test navigation during loading.
+9. Test opening/closing mobile Sheet/Dialog followed immediately by navigation.
+10. Check browser console for new errors.
+
+If possible, specifically attempt to reproduce:
+
+NotFoundError removeChild
+NotFoundError insertBefore
+
+Do not claim success unless you actually tested the relevant flow.
+
+==================================================
+IMPORTANT SAFETY RULES
+==================================================
+
+Before editing each file, understand the existing logic.
+
+Do not:
+- rewrite routing architecture
+- migrate Wouter
+- replace the navigation library
+- rewrite React Query
+- rewrite AnimatePresence
+- change database schema
+- change authentication
+- change unrelated UI
+- add unnecessary dependencies
+
+Keep the changes minimal.
+
+==================================================
+FINAL REPORT
+==================================================
+
+After completing the work, report:
+
+1. EXACT ROOT CAUSE FOUND
+2. FILES CHANGED
+3. EXACT CHANGES MADE
+4. WHY THE WHITE SCREEN COULD OCCUR
+5. WHY BACK NAVIGATION COULD BREAK
+6. WHETHER removeChild/insertBefore WAS reproduced or remains unconfirmed
+7. TESTS PERFORMED
+8. WHETHER THE WHITE SCREEN ISSUE WAS REPRODUCED AFTER THE FIX
+9. ANY REMAINING RISKS
+10. GIT DIFF SUMMARY
+
+Do not make additional changes after the fix unless they are directly required for this bug.
+
+This is a critical stability fix. Prioritize correctness and minimal changes over feature work.

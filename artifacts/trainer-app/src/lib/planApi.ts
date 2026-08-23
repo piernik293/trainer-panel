@@ -208,6 +208,9 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
       },
     });
   } catch (cause) {
+    if (cause instanceof Error && cause.name === "AbortError") {
+      throw cause;
+    }
     // Network-level failure — user-safe Polish message, detail on `cause`.
     console.error("apiFetch network error:", url, cause);
     throw Object.assign(new Error(NETWORK_ERROR_MESSAGE), { cause });
@@ -246,16 +249,17 @@ function usePlanInvalidator(planId: number, clientId?: number) {
 export function useListClientPlans(clientId: number) {
   return useQuery<WorkoutPlanSummary[]>({
     queryKey: planKeys.list(clientId),
-    queryFn: () => apiFetch<WorkoutPlanSummary[]>(`/clients/${clientId}/plans`),
-    enabled: !!clientId,
+    queryFn: ({ signal }) =>
+      apiFetch<WorkoutPlanSummary[]>(`/clients/${clientId}/plans`, { signal }),
+    enabled: Number.isFinite(clientId) && clientId > 0,
   });
 }
 
 export function useGetPlan(planId: number) {
   return useQuery<WorkoutPlan>({
     queryKey: planKeys.detail(planId),
-    queryFn: () => apiFetch<WorkoutPlan>(`/plans/${planId}`),
-    enabled: !!planId,
+    queryFn: ({ signal }) => apiFetch<WorkoutPlan>(`/plans/${planId}`, { signal }),
+    enabled: Number.isFinite(planId) && planId > 0,
   });
 }
 

@@ -381,6 +381,9 @@ export async function customFetch<T = unknown>(
   try {
     response = await fetch(input, { ...init, method, headers });
   } catch (cause) {
+    if (cause instanceof Error && cause.name === "AbortError") {
+      throw cause;
+    }
     // Network-level failure ("Failed to fetch", DNS, offline…) — surface a
     // user-safe Polish message; technical detail stays on `cause`/console.
     throw Object.assign(

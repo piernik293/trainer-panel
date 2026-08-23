@@ -1,0 +1,253 @@
+CRITICAL AUDIT — TRAINING PLAN GENERATOR / EQUIPMENT COMPATIBILITY
+
+Do NOT modify any code yet.
+
+We need to verify whether the training plan generator ACTUALLY selects exercises based on the equipment available to the specific client.
+
+This is a READ-ONLY diagnostic audit.
+
+The most important question is:
+
+"Can the generator ever assign an exercise that requires equipment the client does not have?"
+
+Do not assume the current filtering works because there is an equipment field in the UI or database.
+
+Trace the complete data flow from the client's equipment information to the final generated exercise.
+
+==================================================
+1. CLIENT EQUIPMENT SOURCE
+==================================================
+
+Find exactly where the client's available equipment is stored.
+
+Determine:
+
+- database field(s)
+- API field(s)
+- client profile field(s)
+- training survey field(s)
+- equipment IDs/names/enums
+- whether multiple equipment items are supported
+- how "no equipment" is represented
+- how home gym / gym / other equipment is represented
+
+Trace the data from:
+
+CLIENT/SURVEY
+→ API
+→ GENERATOR INPUT
+→ FILTERING
+→ EXERCISE SELECTION
+
+Report exact files, functions and lines.
+
+==================================================
+2. EXERCISE EQUIPMENT REQUIREMENTS
+==================================================
+
+Find how each exercise declares what equipment it requires.
+
+Determine:
+
+- required equipment field
+- optional equipment
+- bodyweight exercises
+- multiple-equipment exercises
+- equipment categories
+- aliases / naming differences
+- exercises requiring no equipment
+
+Check whether equipment matching is:
+
+- exact
+- by ID
+- by name
+- by category
+- partial string matching
+- some other mechanism
+
+Identify any possible mismatch between client equipment and exercise requirements.
+
+==================================================
+3. GENERATOR FILTERING
+==================================================
+
+Find the EXACT function(s) responsible for selecting exercises.
+
+Trace the selection algorithm step by step.
+
+For every exercise candidate determine:
+
+1. Is equipment compatibility checked?
+2. At what point is it checked?
+3. Is it checked for EVERY generated slot?
+4. Is it checked before or after random selection?
+5. Can an incompatible exercise enter the candidate pool?
+6. Can an incompatible exercise be selected after balancing?
+7. Can a later pass replace a compatible exercise with an incompatible one?
+
+Pay special attention to:
+
+- beginner balancing
+- exercise rotation
+- muscle group balancing
+- duplicate prevention
+- variety logic
+- fallback logic
+- randomization
+- post-processing
+- replacement passes
+- "safe pool"
+- exhaustion of candidate pools
+
+==================================================
+4. CRITICAL FALLBACK AUDIT
+==================================================
+
+Search the ENTIRE generator for logic similar to:
+
+- fallback
+- default exercise
+- any exercise
+- random exercise
+- safe pool
+- reuse
+- candidate exhaustion
+- pool exhaustion
+- if no candidates
+- if empty
+- fallback exercise
+- replacement exercise
+
+Determine what happens when there are not enough exercises compatible with the client's equipment.
+
+The generator MUST NOT silently fall back to an unsafe/incompatible exercise.
+
+If the compatible pool is exhausted, determine whether the system:
+
+A) safely reuses compatible exercises
+B) leaves the slot empty
+C) throws an error
+D) incorrectly selects an incompatible exercise
+
+This is a critical finding.
+
+==================================================
+5. CHECK EVERY SLOT
+==================================================
+
+Do not assume that filtering once at the beginning is sufficient.
+
+Verify whether equipment compatibility is enforced at EVERY point where an exercise can enter the final plan.
+
+Map every path:
+
+candidate pool
+→ selection
+→ balancing
+→ replacement
+→ fallback
+→ final plan
+
+For each path answer:
+
+"Can an exercise that violates the client's equipment constraints reach the final plan?"
+
+==================================================
+6. TEST MATRIX
+
+Create a static/test matrix using hypothetical clients.
+
+At minimum analyze:
+
+CLIENT A:
+Equipment = bodyweight only
+
+CLIENT B:
+Equipment = dumbbells only
+
+CLIENT C:
+Equipment = barbell only
+
+CLIENT D:
+Equipment = dumbbells + bench
+
+CLIENT E:
+Equipment = full gym
+
+CLIENT F:
+Equipment = no equipment
+
+For each client test conceptually or with existing generator tests:
+
+- What exercises are allowed?
+- What exercises are forbidden?
+- Can forbidden exercises enter the final plan?
+- What happens when the compatible pool is too small?
+
+Use real exercise records from the project where possible.
+
+==================================================
+7. IMPORTANT EDGE CASES
+==================================================
+
+Check:
+
+- empty equipment array
+- null equipment
+- missing equipment field
+- unknown equipment ID
+- equipment name mismatch
+- multiple required equipment items
+- exercise requiring two pieces of equipment when only one exists
+- bodyweight exercise
+- equipment added after survey completion
+- equipment removed after a plan already exists
+- regenerated plan
+- regenerated individual exercise
+- replacement of an exercise
+- editing an existing plan
+
+==================================================
+8. DO NOT MODIFY CODE
+
+No code changes.
+
+No database changes.
+
+No migration.
+
+No refactoring.
+
+No UI changes.
+
+We need an objective audit first.
+
+==================================================
+FINAL REPORT
+
+Return:
+
+1. EXECUTIVE SUMMARY
+2. EXACT SOURCE OF CLIENT EQUIPMENT DATA
+3. EXACT SOURCE OF EXERCISE EQUIPMENT REQUIREMENTS
+4. GENERATOR SELECTION PIPELINE
+5. EXACT EQUIPMENT FILTER FUNCTION(S)
+6. WHETHER THE FILTER IS APPLIED TO EVERY SLOT
+7. ALL FALLBACK PATHS
+8. WHAT HAPPENS WHEN THE SAFE/COMPATIBLE POOL IS EXHAUSTED
+9. WHETHER AN INCOMPATIBLE EXERCISE CAN REACH THE FINAL PLAN
+10. TEST MATRIX RESULTS
+11. CRITICAL/HIGH/MEDIUM/LOW FINDINGS
+12. EXACT FILES + FUNCTIONS + LINE NUMBERS
+13. RECOMMENDED FIX — DESCRIPTION ONLY
+
+MOST IMPORTANT:
+
+Do NOT tell me "equipment filtering exists".
+
+I need to know whether it is mathematically/logically IMPOSSIBLE for an incompatible exercise to reach the final generated plan.
+
+If there is ANY path that bypasses the equipment filter, identify that exact path.
+
+Do not make assumptions. Trace the actual code.

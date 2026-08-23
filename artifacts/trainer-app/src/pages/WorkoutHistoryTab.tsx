@@ -15,8 +15,11 @@ import { cn } from "@/lib/utils";
 
 // ─── Fetch helper ─────────────────────────────────────────────────────────────
 
-async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(path, { headers: { "Content-Type": "application/json" } });
+async function apiFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(path, {
+    headers: { "Content-Type": "application/json" },
+    signal,
+  });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`);
@@ -99,7 +102,9 @@ function formatActual(ex: ExerciseDetail): string {
 function useClientSessions(clientId: number) {
   return useQuery({
     queryKey: ["client-workout-sessions", clientId] as const,
-    queryFn: () => apiFetch<SessionSummary[]>(`/api/clients/${clientId}/workout-sessions`),
+    queryFn: ({ signal }) =>
+      apiFetch<SessionSummary[]>(`/api/clients/${clientId}/workout-sessions`, signal),
+    enabled: Number.isFinite(clientId) && clientId > 0,
     staleTime: 30_000,
   });
 }
@@ -107,9 +112,9 @@ function useClientSessions(clientId: number) {
 function useSessionDetail(clientId: number, sessionId: number | null) {
   return useQuery({
     queryKey: ["client-workout-session-detail", clientId, sessionId] as const,
-    queryFn: () =>
-      apiFetch<SessionDetail>(`/api/clients/${clientId}/workout-sessions/${sessionId}`),
-    enabled: sessionId != null,
+    queryFn: ({ signal }) =>
+      apiFetch<SessionDetail>(`/api/clients/${clientId}/workout-sessions/${sessionId}`, signal),
+    enabled: Number.isFinite(clientId) && clientId > 0 && sessionId != null,
     staleTime: 30_000,
   });
 }
