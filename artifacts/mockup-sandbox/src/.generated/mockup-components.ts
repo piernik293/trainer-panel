@@ -5,6 +5,6 @@ export const modules: ModuleMap = {
   "./components/mockups/templates/DarkAIRenderMusicPlayer-Bj9Xvk/App.tsx": () => import("../components/mockups/templates/DarkAIRenderMusicPlayer-Bj9Xvk/App.tsx"),
   "./components/mockups/templates/DarkAIRenderMusicPlayer-PVErxB/App.tsx": () => import("../components/mockups/templates/DarkAIRenderMusicPlayer-PVErxB/App.tsx"),
   "./components/mockups/templates/MissionControlBentoDashboard-OKE05N/Dashboard.tsx": () => import("../components/mockups/templates/MissionControlBentoDashboard-OKE05N/Dashboard.tsx"),
-  "./components/mockups/templates/RetroInvoiceDashboard-tRuV8I/App.tsx": () => import("../components/mockups/templates/RetroInvoiceDashboard-tRuV8I/App.tsx"),
-  "./components/mockups/templates/SwissGridCRMDashboard-sfX8S6/App.tsx": () => import("../components/mockups/templates/SwissGridCRMDashboard-sfX8S6/App.tsx")
+  "./components/mockups/templates/SwissGridCRMDashboard-sfX8S6/App.tsx": () => import("../components/mockups/templates/SwissGridCRMDashboard-sfX8S6/App.tsx"),
+  "./components/mockups/templates/RetroInvoiceDashboard-tRuV8I/App.tsx": () => import("../components/mockups/templates/RetroInvoiceDashboard-tRuV8I/App.tsx")
 };
