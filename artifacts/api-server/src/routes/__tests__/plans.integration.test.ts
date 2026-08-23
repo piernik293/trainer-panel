@@ -21,14 +21,29 @@
  * deletes them via FK cascade so the DB is left clean.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { eq, inArray } from "drizzle-orm";
+
+// The real Clerk middleware is not needed for this database-backed integration
+// suite. Keep the request authenticated as the fixture trainer so the route
+// ownership checks exercise the same path as production.
+vi.mock("@clerk/express", () => ({
+  clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+  getAuth: () => ({ userId: "plans_save_chain_test_trainer" }),
+}));
+
+vi.mock("@clerk/shared/keys", () => ({
+  publishableKeyFromHost: () => "pk_test_mock",
+}));
+
 import app from "../../app";
 import {
   db,
   pool,
   clientsTable,
+  trainersTable,
+  exercisesTable,
   workoutPlansTable,
   workoutPlanDaysTable,
   workoutPlanExercisesTable,
@@ -38,9 +53,17 @@ import { surveysTable } from "@workspace/db";
 // ─── Fixture data ─────────────────────────────────────────────────────────────
 
 const TEST_EMAIL = "plans-save-chain-test@example.invalid";
+const TEST_TRAINER_CLERK_ID = "plans_save_chain_test_trainer";
+const INCOMPATIBLE_EQUIPMENT_SLUG = "plans-save-chain-incompatible-equipment";
+const INCOMPATIBLE_LOCATION_SLUG = "plans-save-chain-incompatible-location";
+const INCOMPATIBLE_EQUIPMENT_EXERCISE_ID = 900_001;
+const INCOMPATIBLE_LOCATION_EXERCISE_ID = 900_002;
 
+let testTrainerId: number;
 let testClientId: number;
 let testSurveyId: number;
+let incompatibleEquipmentExerciseId: number;
+let incompatibleLocationExerciseId: number;
 
 // Exercise IDs known to exist in the dev DB (seeded on startup).
 // Exercise 4 = Wyciskanie hantli nad głowę (confirmed in other integration tests).
@@ -51,6 +74,19 @@ const EXERCISE_IDS = [1, 2, 3, 4] as const;
 beforeAll(async () => {
   // Remove any leftover rows from a previous interrupted run.
   await db.delete(clientsTable).where(eq(clientsTable.email, TEST_EMAIL));
+  await db.delete(trainersTable).where(eq(trainersTable.clerkUserId, TEST_TRAINER_CLERK_ID));
+  await db
+    .delete(exercisesTable)
+    .where(inArray(exercisesTable.slug, [INCOMPATIBLE_EQUIPMENT_SLUG, INCOMPATIBLE_LOCATION_SLUG]));
+
+  const [trainer] = await db
+    .insert(trainersTable)
+    .values({
+      clerkUserId: TEST_TRAINER_CLERK_ID,
+      email: "plans-save-chain-trainer@example.invalid",
+    })
+    .returning();
+  testTrainerId = trainer.id;
 
   const [client] = await db
     .insert(clientsTable)
@@ -58,15 +94,44 @@ beforeAll(async () => {
       firstName: "SaveChain",
       lastName: "TestFixture",
       email: TEST_EMAIL,
+      trainerId: testTrainerId,
     })
     .returning();
   testClientId = client.id;
+
+  const [incompatibleEquipmentExercise] = await db
+    .insert(exercisesTable)
+    .values({
+      id: INCOMPATIBLE_EQUIPMENT_EXERCISE_ID,
+      name: "Fixture — ćwiczenie z niedostępnym sprzętem",
+      slug: INCOMPATIBLE_EQUIPMENT_SLUG,
+      mainMuscleGroup: "Klatka piersiowa",
+      equipment: ["Kettlebell"],
+      trainingLocation: ["Siłownia"],
+    })
+    .returning({ id: exercisesTable.id });
+  incompatibleEquipmentExerciseId = incompatibleEquipmentExercise.id;
+
+  const [incompatibleLocationExercise] = await db
+    .insert(exercisesTable)
+    .values({
+      id: INCOMPATIBLE_LOCATION_EXERCISE_ID,
+      name: "Fixture — ćwiczenie z niedostępną lokalizacją",
+      slug: INCOMPATIBLE_LOCATION_SLUG,
+      mainMuscleGroup: "Klatka piersiowa",
+      equipment: ["Sztanga"],
+      trainingLocation: ["Dom"],
+    })
+    .returning({ id: exercisesTable.id });
+  incompatibleLocationExerciseId = incompatibleLocationExercise.id;
 
   const [survey] = await db
     .insert(surveysTable)
     .values({
       clientId: testClientId,
       experienceLevel: "Średniozaawansowany",
+      trainingLocation: "Siłownia",
+      equipment: "Sztanga,Hantle,Drążek,Ławka,Masa własnego ciała",
       avoidedExerciseIds: [],
       avoidedExerciseReasons: {},
       advancedMethodsToAvoid: [],
@@ -80,6 +145,10 @@ beforeAll(async () => {
 afterAll(async () => {
   // Cascade deletes plan → days → exercises rows as well.
   await db.delete(clientsTable).where(eq(clientsTable.email, TEST_EMAIL));
+  await db
+    .delete(exercisesTable)
+    .where(inArray(exercisesTable.slug, [INCOMPATIBLE_EQUIPMENT_SLUG, INCOMPATIBLE_LOCATION_SLUG]));
+  await db.delete(trainersTable).where(eq(trainersTable.clerkUserId, TEST_TRAINER_CLERK_ID));
   await pool.end();
 });
 
@@ -394,7 +463,7 @@ describe("Edge case — surveyId guard prevents partial writes", () => {
 
     const [otherClient] = await db
       .insert(clientsTable)
-      .values({ firstName: "Other", lastName: "Client", email: otherEmail })
+      .values({ firstName: "Other", lastName: "Client", email: otherEmail, trainerId: testTrainerId })
       .returning();
 
     const [otherSurvey] = await db
@@ -589,4 +658,82 @@ describe("POST /clients/:id/plans/draft — transactional bulk save", () => {
     expect(res.body.days).toHaveLength(1);
     expect(res.body.days[0].exercises).toHaveLength(0);
   });
+});
+
+// ─── Suite 6: Exercise compatibility guards ───────────────────────────────────
+
+describe("Exercise compatibility guards — rejected writes are not persisted", () => {
+  const incompatibleDraftCases = [
+    {
+      label: "niedostępny sprzęt",
+      exerciseId: () => incompatibleEquipmentExerciseId,
+    },
+    {
+      label: "niedostępna lokalizacja",
+      exerciseId: () => incompatibleLocationExerciseId,
+    },
+  ] as const;
+
+  it.each(incompatibleDraftCases)(
+    "POST /clients/:id/plans/draft returns 422 for $label and does not create a plan",
+    async ({ exerciseId }) => {
+      const title = `Bulk Draft — compatibility guard — ${exerciseId()}`;
+      const plansBefore = await db
+        .select()
+        .from(workoutPlansTable)
+        .where(eq(workoutPlansTable.clientId, testClientId));
+
+      const res = await request(app)
+        .post(`/api/clients/${testClientId}/plans/draft`)
+        .send({
+          title,
+          surveyId: testSurveyId,
+          goal: "Hipertrofia",
+          days: [
+            {
+              dayName: "Dzień z niezgodnym ćwiczeniem",
+              exercises: [{ exerciseId: exerciseId(), workingSets: 3 }],
+            },
+          ],
+        });
+
+      expect(res.status).toBe(422);
+      expect(res.body.code).toBe("EXERCISE_INCOMPATIBLE_WITH_CLIENT_PROFILE");
+      expect(res.body.exerciseId).toBe(exerciseId());
+
+      const plansAfter = await db
+        .select()
+        .from(workoutPlansTable)
+        .where(eq(workoutPlansTable.clientId, testClientId));
+      expect(plansAfter.some((plan) => plan.title === title)).toBe(false);
+      expect(plansAfter).toHaveLength(plansBefore.length);
+    },
+  );
+
+  it.each(incompatibleDraftCases)(
+    "POST /plans/:id/days/:dayId/exercises returns 422 for $label and does not add a row",
+    async ({ exerciseId }) => {
+      const planRes = await createPlan({
+        title: `Manual Exercise — compatibility guard — ${exerciseId()}`,
+      });
+      expect(planRes.status).toBe(201);
+      const planId = planRes.body.id as number;
+
+      const dayRes = await addDay(planId, "Dzień z niezgodnym ćwiczeniem");
+      expect(dayRes.status).toBe(201);
+      const dayId = dayRes.body.days[0].id as number;
+
+      const res = await addExercise(planId, dayId, exerciseId());
+
+      expect(res.status).toBe(422);
+      expect(res.body.code).toBe("EXERCISE_INCOMPATIBLE_WITH_CLIENT_PROFILE");
+      expect(res.body.exerciseId).toBe(exerciseId());
+
+      const exerciseRows = await db
+        .select()
+        .from(workoutPlanExercisesTable)
+        .where(eq(workoutPlanExercisesTable.dayId, dayId));
+      expect(exerciseRows).toHaveLength(0);
+    },
+  );
 });
