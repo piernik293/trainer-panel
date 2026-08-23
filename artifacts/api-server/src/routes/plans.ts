@@ -31,7 +31,10 @@ import {
   type VolumePreviewWarning,
 } from "../services/volumeCalculator";
 import { analyseDraftPreview, type AnalysisPreviewInput } from "../services/planAnalyzer";
-import { buildCompatibilityFilter } from "../services/planDraftDayRecommendationsService";
+import {
+  buildCompatibilityFilter,
+  getExerciseCompatibilityError,
+} from "../services/planDraftDayRecommendationsService";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
@@ -46,9 +49,13 @@ async function loadPlanAndVerifyOwner(
   req: Request,
   res: Response,
   planId: number,
-): Promise<{ id: number; clientId: number } | null> {
+): Promise<{ id: number; clientId: number; surveyId: number } | null> {
   const [row] = await db
-    .select({ id: workoutPlansTable.id, clientId: workoutPlansTable.clientId })
+    .select({
+      id: workoutPlansTable.id,
+      clientId: workoutPlansTable.clientId,
+      surveyId: workoutPlansTable.surveyId,
+    })
     .from(workoutPlansTable)
     .innerJoin(clientsTable, eq(clientsTable.id, workoutPlansTable.clientId))
     .where(
@@ -128,11 +135,25 @@ function findIncompatibleExercise(
   );
 }
 
-function rejectIncompatibleExercise(res: Response, exercise: CompatibilityExercise): void {
+function rejectIncompatibleExercise(
+  res: Response,
+  exercise: CompatibilityExercise,
+  profile: CompatibilityProfile,
+): void {
   res.status(422).json({
-    error: `Ćwiczenie „${exercise.name}” nie jest zgodne z miejscem treningu lub dostępnym sprzętem klienta.`,
-    code: "EXERCISE_EQUIPMENT_INCOMPATIBLE",
+    error: getExerciseCompatibilityError(
+      {
+        id: exercise.id,
+        name: exercise.name,
+        trainingLocation: exercise.trainingLocation ?? [],
+        equipment: exercise.equipment ?? [],
+        requiredEquipmentAll: exercise.requiredEquipmentAll ?? [],
+      },
+      profile,
+    ),
+    code: "EXERCISE_INCOMPATIBLE_WITH_CLIENT_PROFILE",
     exerciseId: exercise.id,
+    exerciseName: exercise.name,
   });
 }
 
@@ -797,10 +818,9 @@ router.post("/clients/:clientId/plans/draft", requireAuth, async (req, res): Pro
       res.status(404).json({ error: `Ćwiczenie o ID ${missing} nie zostało znalezione.` });
       return;
     }
-
     const incompatible = findIncompatibleExercise(foundExercises, survey);
     if (incompatible) {
-      rejectIncompatibleExercise(res, incompatible);
+      rejectIncompatibleExercise(res, incompatible, survey);
       return;
     }
   }
@@ -1279,7 +1299,8 @@ router.post("/plans/:id/days/:dayId/duplicate", requireAuth, async (req, res): P
     return;
   }
 
-  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
+  const plan = await loadPlanAndVerifyOwner(req, res, planId);
+  if (!plan) return;
 
   const [day] = await db
     .select()
@@ -1297,9 +1318,51 @@ router.post("/plans/:id/days/:dayId/duplicate", requireAuth, async (req, res): P
     .from(workoutPlanDaysTable)
     .where(eq(workoutPlanDaysTable.planId, planId));
 
+  // Copy all exercises from the original day.
+  const srcExercises = await db
+    .select()
+    .from(workoutPlanExercisesTable)
+    .where(eq(workoutPlanExercisesTable.dayId, dayId))
+    .orderBy(workoutPlanExercisesTable.orderInDay);
+
+  if (srcExercises.length > 0) {
+    const [survey] = await db
+      .select({
+        equipment: surveysTable.equipment,
+        trainingLocation: surveysTable.trainingLocation,
+      })
+      .from(surveysTable)
+      .where(eq(surveysTable.id, plan.surveyId));
+    const exerciseRows = await db
+      .select({
+        id: exercisesTable.id,
+        name: exercisesTable.name,
+        equipment: exercisesTable.equipment,
+        requiredEquipmentAll: exercisesTable.requiredEquipmentAll,
+        trainingLocation: exercisesTable.trainingLocation,
+      })
+      .from(exercisesTable)
+      .where(inArray(exercisesTable.id, srcExercises.map((exercise) => exercise.exerciseId)));
+    const incompatible = exerciseRows
+      .map((exercise) => ({
+        exercise,
+        error: getExerciseCompatibilityError(exercise, survey ?? {}),
+      }))
+      .find((entry) => entry.error);
+    if (incompatible) {
+      res.status(422).json({
+        error: incompatible.error,
+        code: "EXERCISE_INCOMPATIBLE_WITH_CLIENT_PROFILE",
+        exerciseId: incompatible.exercise.id,
+        exerciseName: incompatible.exercise.name,
+      });
+      return;
+    }
+  }
+
   const nextOrder = (maxRow?.maxOrder ?? 0) + 1;
 
-  // Insert the duplicated day.
+  // Insert the duplicated day only after compatibility validation succeeds.
   const [newDay] = await db
     .insert(workoutPlanDaysTable)
     .values({
@@ -1312,13 +1375,6 @@ router.post("/plans/:id/days/:dayId/duplicate", requireAuth, async (req, res): P
       trainerNotes: day.trainerNotes,
     })
     .returning({ id: workoutPlanDaysTable.id });
-
-  // Copy all exercises from the original day.
-  const srcExercises = await db
-    .select()
-    .from(workoutPlanExercisesTable)
-    .where(eq(workoutPlanExercisesTable.dayId, dayId))
-    .orderBy(workoutPlanExercisesTable.orderInDay);
 
   if (srcExercises.length > 0) {
     await db.insert(workoutPlanExercisesTable).values(
@@ -1348,7 +1404,8 @@ router.post("/plans/:id/days/:dayId/exercises", requireAuth, async (req, res): P
     return;
   }
 
-  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
+  const plan = await loadPlanAndVerifyOwner(req, res, planId);
+  if (!plan) return;
 
   const parsed = CreatePlanExerciseBody.safeParse(req.body);
   if (!parsed.success) {
@@ -1392,10 +1449,9 @@ router.post("/plans/:id/days/:dayId/exercises", requireAuth, async (req, res): P
 
   const incompatible = findIncompatibleExercise([exercise], profile);
   if (incompatible) {
-    rejectIncompatibleExercise(res, incompatible);
+    rejectIncompatibleExercise(res, incompatible, profile);
     return;
   }
-
   // Next order_in_day.
   const [maxRow] = await db
     .select({ maxOrder: max(workoutPlanExercisesTable.orderInDay) })
@@ -1637,7 +1693,8 @@ router.post(
       return;
     }
 
-    if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
+    const plan = await loadPlanAndVerifyOwner(req, res, planId);
+    if (!plan) return;
 
     const [planEx] = await db
       .select()
@@ -1652,6 +1709,36 @@ router.post(
     if (!planEx) {
       res.status(404).json({ error: "Ćwiczenie w planie nie znalezione" });
       return;
+    }
+
+    const [survey] = await db
+      .select({
+        equipment: surveysTable.equipment,
+        trainingLocation: surveysTable.trainingLocation,
+      })
+      .from(surveysTable)
+      .where(eq(surveysTable.id, plan.surveyId));
+    const [exercise] = await db
+      .select({
+        id: exercisesTable.id,
+        name: exercisesTable.name,
+        equipment: exercisesTable.equipment,
+        requiredEquipmentAll: exercisesTable.requiredEquipmentAll,
+        trainingLocation: exercisesTable.trainingLocation,
+      })
+      .from(exercisesTable)
+      .where(eq(exercisesTable.id, planEx.exerciseId));
+    if (exercise) {
+      const compatibilityError = getExerciseCompatibilityError(exercise, survey ?? {});
+      if (compatibilityError) {
+        res.status(422).json({
+          error: compatibilityError,
+          code: "EXERCISE_INCOMPATIBLE_WITH_CLIENT_PROFILE",
+          exerciseId: exercise.id,
+          exerciseName: exercise.name,
+        });
+        return;
+      }
     }
 
     // Next order in day.

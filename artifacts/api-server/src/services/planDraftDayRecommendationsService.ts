@@ -498,6 +498,50 @@ export function isEquipmentCompatible(
   );
 }
 
+export interface ExerciseCompatibilityInput {
+  id: number;
+  name: string;
+  equipment: string[];
+  requiredEquipmentAll?: string[];
+  trainingLocation: string[];
+}
+
+/**
+ * Returns a safe, actionable error for a trainer when an exercise cannot be
+ * performed with the client's survey profile.  Keep this next to the boolean
+ * predicates so every write route and recommendation route uses exactly the
+ * same compatibility semantics.
+ */
+export function getExerciseCompatibilityError(
+  exercise: ExerciseCompatibilityInput,
+  survey: { equipment?: string | null; trainingLocation?: string | null },
+): string | null {
+  const name = exercise.name || `#${exercise.id}`;
+  const clientLocation = survey.trainingLocation?.trim();
+
+  if (!isLocationCompatible(exercise.trainingLocation, clientLocation)) {
+    return `Ćwiczenie „${name}” wymaga innej lokalizacji treningowej niż „${clientLocation}”.`;
+  }
+
+  if (
+    !isEquipmentCompatible(
+      exercise.equipment,
+      exercise.requiredEquipmentAll ?? [],
+      survey.equipment,
+    )
+  ) {
+    const requirements =
+      exercise.requiredEquipmentAll && exercise.requiredEquipmentAll.length > 0
+        ? `wymaga: ${exercise.requiredEquipmentAll.join(" i ")}`
+        : exercise.equipment.length > 0
+          ? `wymaga jednego z: ${exercise.equipment.join(", ")}`
+          : "nie ma określonych wymagań";
+    return `Ćwiczenie „${name}” jest niezgodne ze sprzętem klienta (${requirements}).`;
+  }
+
+  return null;
+}
+
 /**
  * Returns a filter function that hard-excludes:
  *   - exercises already added to the day (by exerciseId),

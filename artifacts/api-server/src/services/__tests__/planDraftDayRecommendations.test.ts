@@ -27,6 +27,7 @@ import { describe, it, expect } from "vitest";
 import {
   isLocationCompatible,
   isEquipmentCompatible,
+  getExerciseCompatibilityError,
   buildCompatibilityFilter,
   selectDayRecommendations,
   type ScoredAndFilteredExercise,
@@ -140,6 +141,56 @@ describe("isEquipmentCompatible()", () => {
 
   it("AND check: BW does not bypass required_equipment_all", () => {
     expect(isEquipmentCompatible(["Masa własnego ciała"], ["Ławka"], "Masa własnego ciała")).toBe(false);
+  });
+});
+
+// ─── Trainer-facing compatibility errors ──────────────────────────────────────
+
+describe("getExerciseCompatibilityError()", () => {
+  it("explains the unavailable equipment that blocks a manual add", () => {
+    const error = getExerciseCompatibilityError(
+      {
+        id: 10,
+        name: "Wyciskanie na ławce",
+        equipment: ["Sztanga"],
+        requiredEquipmentAll: ["Ławka"],
+        trainingLocation: ["Siłownia"],
+      },
+      { trainingLocation: "Siłownia", equipment: "Sztanga" },
+    );
+
+    expect(error).toContain("Wyciskanie na ławce");
+    expect(error).toContain("Ławka");
+    expect(error).toContain("sprzętem klienta");
+  });
+
+  it("explains a location mismatch before a plan write", () => {
+    const error = getExerciseCompatibilityError(
+      {
+        id: 11,
+        name: "Maszyna na siłowni",
+        equipment: [],
+        trainingLocation: ["Siłownia"],
+      },
+      { trainingLocation: "Dom", equipment: "Hantle" },
+    );
+
+    expect(error).toContain("Maszyna na siłowni");
+    expect(error).toContain("lokalizacji treningowej");
+  });
+
+  it("does not reject a bodyweight-compatible exercise", () => {
+    expect(
+      getExerciseCompatibilityError(
+        {
+          id: 12,
+          name: "Przysiad z masą ciała",
+          equipment: ["Masa własnego ciała", "Hantle"],
+          trainingLocation: ["Dom"],
+        },
+        { trainingLocation: "Dom", equipment: null },
+      ),
+    ).toBeNull();
   });
 });
 

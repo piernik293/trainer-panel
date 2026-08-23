@@ -1724,7 +1724,14 @@ export default function PlanEditor() {
     if (!pickerDayId) return;
     addExercise.mutate(
       { dayId: pickerDayId, exerciseId, workingSets: 3 },
-      { onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }) },
+      {
+        onError: (err) =>
+          toast({
+            title: "Nie dodano ćwiczenia",
+            description: humanizeError(err),
+            variant: "destructive",
+          }),
+      },
     );
   };
 

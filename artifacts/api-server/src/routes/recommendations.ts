@@ -30,7 +30,6 @@ import { ListExerciseRecommendationsResponse } from "@workspace/api-zod";
 import { scoreExercise } from "../lib/recommendation-engine";
 import { computeCompleteness, fetchMuscleStats } from "../lib/exercise-completeness";
 import { buildCompatibilityFilter } from "../services/planDraftDayRecommendationsService";
-
 const router: IRouter = Router();
 
 const RecommendationsParams = z.object({
