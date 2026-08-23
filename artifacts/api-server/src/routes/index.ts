@@ -18,6 +18,7 @@ import clientPortalRouter from "./clientPortal";
 import surveyInvitesRouter from "./surveyInvites";
 import clientInvitationsRouter from "./clientInvitations";
 import bookingsRouter from "./bookings";
+import subscriptionRouter from "./subscription";
 
 const router: IRouter = Router();
 
@@ -40,6 +41,7 @@ router.use(planDraftRecordGenerationRouter);
 router.use(clientPortalRouter);
 router.use(clientInvitationsRouter);
 router.use(bookingsRouter);
+router.use(subscriptionRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────

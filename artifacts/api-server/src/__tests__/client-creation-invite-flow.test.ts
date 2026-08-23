@@ -51,6 +51,19 @@ vi.mock("../middlewares/requireAuth", () => ({
   },
 }));
 
+vi.mock("../services/subscriptionService", async () => {
+  const { db } = await import("@workspace/db");
+  return {
+    runWithSubscriptionLimit: async (
+      _trainerId: number,
+      _metric: string,
+      operation: (tx: unknown) => Promise<unknown>,
+    ) => db.transaction(operation),
+    assertSubscriptionLimitInTransaction: async () => undefined,
+    isSubscriptionLimitError: () => false,
+  };
+});
+
 // ─── Mock api-zod ─────────────────────────────────────────────────────────────
 
 vi.mock("@workspace/api-zod", async () => {

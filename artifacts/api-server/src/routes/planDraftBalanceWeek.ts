@@ -52,6 +52,10 @@ import { z } from "zod/v4";
 import { db, clientsTable, surveysTable } from "@workspace/db";
 import { desc } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth";
+import {
+  isGenerationSessionError,
+  runWithActiveGenerationSession,
+} from "../services/subscriptionService";
 
 const router: IRouter = Router();
 
@@ -60,6 +64,7 @@ const ParamsSchema = z.object({
 });
 
 const BodySchema = z.object({
+  generationId: z.string().uuid(),
   days: z.array(
     z.object({
       exercises: z.array(
@@ -103,8 +108,16 @@ router.post(
       return;
     }
 
-    // Fetch latest survey for experience level.
-    const [survey] = await db
+    try {
+      await runWithActiveGenerationSession({
+        trainerId: req.trainer!.id,
+        clientId,
+        generationId: body.data.generationId,
+        dayExerciseIds: days.map((day) => day.exercises.map((exercise) => exercise.id)),
+      }, async () => {
+
+        // Fetch latest survey for experience level.
+        const [survey] = await db
       .select({ experienceLevel: surveysTable.experienceLevel })
       .from(surveysTable)
       .where(eq(surveysTable.clientId, clientId))
@@ -308,11 +321,19 @@ router.post(
         }),
       }));
 
-      res.json({ days: result });
-    } catch (err) {
-      console.error("[WeekBalance] Non-fatal error:", err);
-      // Return original sets unchanged so the generate flow is never blocked.
-      res.json(originalResponse());
+        res.json({ days: result });
+      } catch (err) {
+        req.log?.warn({ err }, "Week balance failed; returning original sets");
+        // Return original sets unchanged so the generate flow is never blocked.
+        res.json(originalResponse());
+      }
+      });
+    } catch (error) {
+      if (isGenerationSessionError(error)) {
+        res.status(409).json(error.toResponse());
+        return;
+      }
+      throw error;
     }
   },
 );

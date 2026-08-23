@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, CheckCircle, Copy, AlertCircle, Mail, ExternalLink, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSubscriptionSummary } from "@/lib/use-subscription-summary";
 
 const clientSchema = z.object({
   firstName: z.string().min(1, "Imię jest wymagane"),
@@ -47,6 +48,8 @@ export default function ClientNew() {
   const createClient = useCreateClient();
   const [state, setState] = useState<CreationState>({ phase: "form" });
   const [copied, setCopied] = useState(false);
+  const { data: subscription } = useSubscriptionSummary();
+  const clientLimitReached = subscription?.usage.clients.atLimit ?? false;
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
@@ -350,6 +353,17 @@ export default function ClientNew() {
           Dodaj dane kontaktowe — wyślemy klientowi link do wywiadu treningowego.
         </p>
       </div>
+
+      {clientLimitReached && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Wykorzystano {subscription?.usage.clients.used}/{subscription?.usage.clients.limit} miejsc
+            na klientów w planie {subscription?.plan.name}. Usuń nieużywanego klienta albo wybierz
+            wyższy plan, aby dodać kolejną osobę.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {createClient.isError && (
         <Alert variant="destructive">

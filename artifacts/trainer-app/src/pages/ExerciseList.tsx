@@ -16,6 +16,7 @@ import {
   LOCATION_DISPLAY_LABELS,
   getLocationDisplayLabel,
 } from "@/lib/exercise-constants";
+import { useSubscriptionSummary } from "@/lib/use-subscription-summary";
 
 export default function ExerciseList() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -40,6 +41,9 @@ export default function ExerciseList() {
     movementPattern: movementPatternFilter !== "all" ? movementPatternFilter : undefined,
     suitableForNoActivity: levelFilter === "adaptive" ? true : undefined,
   });
+  const { data: subscription } = useSubscriptionSummary();
+  const customExerciseLimitReached =
+    subscription?.usage.customExercises.atLimit ?? false;
 
   const hasActiveFilters =
     searchTerm !== "" ||
@@ -72,14 +76,29 @@ export default function ExerciseList() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild>
-            <Link href="/exercises/new" className="flex items-center gap-2">
-              <PlusCircle size={18} />
-              Dodaj Ćwiczenie
-            </Link>
+          <Button asChild={!customExerciseLimitReached} disabled={customExerciseLimitReached}>
+            {customExerciseLimitReached ? (
+              <span className="flex items-center gap-2" title="Osiągnięto limit własnych ćwiczeń">
+                <PlusCircle size={18} />
+                Limit ćwiczeń
+              </span>
+            ) : (
+              <Link href="/exercises/new" className="flex items-center gap-2">
+                <PlusCircle size={18} />
+                Dodaj Ćwiczenie
+              </Link>
+            )}
           </Button>
         </div>
       </div>
+
+      {customExerciseLimitReached && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Wykorzystano {subscription?.usage.customExercises.used}/
+          {subscription?.usage.customExercises.limit} własnych ćwiczeń w planie{" "}
+          {subscription?.plan.name}. Usunięcie własnego ćwiczenia zwolni miejsce.
+        </div>
+      )}
 
       <div className="bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
         {/* Filter bar */}

@@ -26,12 +26,12 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod/v4";
-import {
-  db,
-  clientsTable,
-  clientExerciseUsageLogTable,
-} from "@workspace/db";
+import { db, clientsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
+import {
+  completeAndRecordGeneration,
+  isGenerationSessionError,
+} from "../services/subscriptionService";
 
 const router: IRouter = Router();
 
@@ -79,58 +79,29 @@ router.post(
     // server-side safety net).
     const uniqueExerciseIds = [...new Set(exerciseIds)];
 
-    // ── Idempotency check ───────────────────────────────────────────────────────
-    const existing = await db
-      .select({ exerciseId: clientExerciseUsageLogTable.exerciseId })
-      .from(clientExerciseUsageLogTable)
-      .where(
-        and(
-          eq(clientExerciseUsageLogTable.clientId, clientId),
-          eq(clientExerciseUsageLogTable.generationId, generationId),
-        ),
+    try {
+      const result = await completeAndRecordGeneration({
+        trainerId: req.trainer!.id,
+        clientId,
+        generationId,
+        exerciseIds: uniqueExerciseIds,
+      });
+      req.log?.info(
+        { clientId, generationId, exerciseCount: result.committed },
+        "Generation history committed",
       );
-
-    if (existing.length > 0) {
-      const storedSet = new Set(existing.map((r) => r.exerciseId));
-      const incomingSet = new Set(uniqueExerciseIds);
-      const setsMatch =
-        storedSet.size === incomingSet.size &&
-        [...incomingSet].every((id) => storedSet.has(id));
-
-      if (setsMatch) {
-        // §6-B: idempotent retry with the same payload — safe to return success.
-        res.status(200).json({ generationId, status: "already_committed" });
+      if (result.status === "already_committed") {
+        res.status(200).json({ generationId, status: result.status });
         return;
       }
-
-      // §6-C: same generationId, different exercise set — reject to prevent
-      // accidentally merging two different plans under one generation ID.
-      res.status(409).json({
-        error:
-          "generationId is already committed with a different exercise set. " +
-          "Each Generate click must produce a new generationId.",
-      });
-      return;
+      res.status(201).json({ generationId, committed: result.committed });
+    } catch (error) {
+      if (isGenerationSessionError(error)) {
+        res.status(409).json(error.toResponse());
+        return;
+      }
+      throw error;
     }
-
-    // ── Insert in one transaction (§5) ──────────────────────────────────────────
-    await db.transaction(async (tx) => {
-      await tx
-        .insert(clientExerciseUsageLogTable)
-        .values(
-          uniqueExerciseIds.map((exerciseId) => ({
-            clientId,
-            generationId,
-            exerciseId,
-          })),
-        )
-        .onConflictDoNothing(); // UNIQUE guard — safety net for race conditions
-    });
-
-    console.log(
-      `GENERATION_COMMITTED: client=${clientId} generationId=${generationId} exercises=${uniqueExerciseIds.length}`,
-    );
-    res.status(201).json({ generationId, committed: uniqueExerciseIds.length });
   },
 );
 

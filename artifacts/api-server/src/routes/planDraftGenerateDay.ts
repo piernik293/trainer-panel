@@ -56,6 +56,13 @@ import {
 } from "../services/exercisePrescriptionService.js";
 import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import {
+  authorizeGeneratedDay,
+  hashGenerationRequest,
+  isGenerationSessionError,
+  isSubscriptionLimitError,
+  recordGeneratedDayOutput,
+} from "../services/subscriptionService";
 
 const router: IRouter = Router();
 
@@ -64,6 +71,9 @@ const ParamsSchema = z.object({
 });
 
 const BodySchema = z.object({
+  generationId: z.string().uuid(),
+  generationDayIndex: z.number().int().min(0).max(6),
+  expectedDayCount: z.number().int().min(1).max(7),
   /**
    * V0 session type — determines which slot template to apply.
    * "push" | "pull" | "legs" | "upper" | "lower"
@@ -206,6 +216,30 @@ router.post(
     if (!survey) {
       res.json({ hasProfile: false, hasLocationData: false, exercises: [] });
       return;
+    }
+
+    // Reserve/validate the monthly generation session before running the
+    // selection engine. A failed attempt can be retried with the exact same
+    // day payload, but cannot be changed into another plan under the same ID.
+    try {
+      await authorizeGeneratedDay({
+        trainerId: req.trainer!.id,
+        clientId,
+        generationId: body.data.generationId,
+        expectedDayCount: body.data.expectedDayCount,
+        dayIndex: body.data.generationDayIndex,
+        requestHash: hashGenerationRequest(body.data),
+      });
+    } catch (error) {
+      if (isSubscriptionLimitError(error)) {
+        res.status(409).json(error.toResponse());
+        return;
+      }
+      if (isGenerationSessionError(error)) {
+        res.status(409).json(error.toResponse());
+        return;
+      }
+      throw error;
     }
 
     const hasLocationData =
@@ -923,7 +957,7 @@ router.post(
             let worstTargetId = -1;
             let worstDeficit  = 0;
             for (const [tId, ceiling] of ceilingMap) {
-            const total = (accumulated.get(tId) ?? 0) + (finalTotals.get(tId) ?? 0);
+              const total = (accumulated.get(tId) ?? 0) + (sessionTotals.get(tId) ?? 0);
               const deficit = total - ceiling;
               if (deficit > worstDeficit) {
                 worstDeficit  = deficit;
@@ -1017,6 +1051,22 @@ router.post(
         "Brak informacji o dostępnym sprzęcie — generator użył wyłącznie ćwiczeń z masą własnego ciała.";
       equipmentWarnings.push(msg);
       generatorNotes.push(`⚠️ ${msg}`);
+    }
+
+    try {
+      await recordGeneratedDayOutput({
+        trainerId: req.trainer!.id,
+        clientId,
+        generationId: body.data.generationId,
+        dayIndex: body.data.generationDayIndex,
+        exerciseIds: enrichedExercises.map((exercise) => exercise.id),
+      });
+    } catch (error) {
+      if (isGenerationSessionError(error)) {
+        res.status(409).json(error.toResponse());
+        return;
+      }
+      throw error;
     }
 
     res.json({

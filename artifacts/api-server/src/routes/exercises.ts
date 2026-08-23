@@ -39,7 +39,16 @@ import {
   ImportExercisesBody,
   ImportExercisesResponse,
 } from "@workspace/api-zod";
-import { requireAuth, requireCatalogueAdmin } from "../middlewares/requireAuth";
+import {
+  checkIsCatalogueAdmin,
+  requireAuth,
+} from "../middlewares/requireAuth";
+import {
+  assertSubscriptionLimitInTransaction,
+  isSubscriptionLimitError,
+  lockSubscriptionMetricInTransaction,
+  runWithSubscriptionLimit,
+} from "../services/subscriptionService";
 
 /**
  * Returns the caller's trainerId from their Clerk session, or null if
@@ -97,6 +106,23 @@ function exerciseVisibilityCondition(callerTrainerId: number | null) {
     isNull(exercisesTable.createdByTrainerId),
     eq(exercisesTable.createdByTrainerId, callerTrainerId),
   );
+}
+
+function canMutateExercise(
+  req: Request,
+  createdByTrainerId: number | null,
+): boolean {
+  return (
+    createdByTrainerId === req.trainer!.id ||
+    (createdByTrainerId === null && checkIsCatalogueAdmin(req.clerkUserId))
+  );
+}
+
+function canUseLinkedExercise(
+  req: Request,
+  createdByTrainerId: number | null,
+): boolean {
+  return createdByTrainerId === null || createdByTrainerId === req.trainer!.id;
 }
 
 const router: IRouter = Router();
@@ -355,8 +381,8 @@ router.get("/exercises", async (req, res): Promise<void> => {
   res.json(ListExercisesResponse.parse(result));
 });
 
-// POST /exercises — requires auth + catalogue admin.
-router.post("/exercises", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
+// POST /exercises — creates a private exercise owned by the authenticated trainer.
+router.post("/exercises", requireAuth, async (req, res): Promise<void> => {
   const parsed = CreateExerciseBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -366,12 +392,26 @@ router.post("/exercises", requireAuth, requireCatalogueAdmin, async (req, res): 
   const slugSource = parsed.data.slug?.trim() ? parsed.data.slug : parsed.data.name;
   const trainerId = req.trainer!.id;
 
-  const [exercise] = await withUniqueSlugRetry(slugSource, (slug) =>
-    db
-      .insert(exercisesTable)
-      .values({ ...parsed.data, slug, createdByTrainerId: trainerId })
-      .returning(),
-  );
+  let exercise: typeof exercisesTable.$inferSelect;
+  try {
+    [exercise] = await withUniqueSlugRetry(slugSource, (slug) =>
+      runWithSubscriptionLimit(
+        trainerId,
+        "customExercises",
+        (tx) =>
+          tx
+            .insert(exercisesTable)
+            .values({ ...parsed.data, slug, createdByTrainerId: trainerId })
+            .returning(),
+      ),
+    );
+  } catch (error) {
+    if (isSubscriptionLimitError(error)) {
+      res.status(409).json(error.toResponse());
+      return;
+    }
+    throw error;
+  }
 
   // New exercise always starts with 0 muscle assignments → incomplete.
   const completeness = computeCompleteness(exercise, undefined);
@@ -559,7 +599,7 @@ async function withUniqueSlugRetryTx<T>(
 
 // ─── Preview ──────────────────────────────────────────────────────────────────
 
-router.post("/exercises/import/preview", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
+router.post("/exercises/import/preview", requireAuth, async (req, res): Promise<void> => {
   const parsed = PreviewExerciseImportBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -579,7 +619,20 @@ router.post("/exercises/import/preview", requireAuth, requireCatalogueAdmin, asy
   }
 
   // Resolve existing exercises once for duplicate + relation target checks.
-  const existing = await db.select({ id: exercisesTable.id, name: exercisesTable.name }).from(exercisesTable);
+  const trainerId = req.trainer!.id;
+  const existing = await db
+    .select({
+      id: exercisesTable.id,
+      name: exercisesTable.name,
+      createdByTrainerId: exercisesTable.createdByTrainerId,
+    })
+    .from(exercisesTable)
+    .where(
+      or(
+        isNull(exercisesTable.createdByTrainerId),
+        eq(exercisesTable.createdByTrainerId, trainerId),
+      ),
+    );
   const nameMap = new Map(existing.map((e) => [normalizeForComparison(e.name), e.id]));
   // Also add names from this batch so cross-row relation targets are visible.
   for (const row of rows) {
@@ -594,7 +647,11 @@ router.post("/exercises/import/preview", requireAuth, requireCatalogueAdmin, asy
   for (let i = 0; i < rows.length; i++) {
     if (errors.some((e) => e.rowIndex === i)) continue;
     const name = (rows[i] as ImportRowInput).name?.trim() ?? "";
-    const existingId = existing.find((e) => normalizeForComparison(e.name) === normalizeForComparison(name))?.id;
+    const existingId = existing.find(
+      (e) =>
+        e.createdByTrainerId === trainerId &&
+        normalizeForComparison(e.name) === normalizeForComparison(name),
+    )?.id;
     if (existingId) duplicates.push({ rowIndex: i, exerciseName: name, existingId });
   }
 
@@ -627,7 +684,7 @@ router.post("/exercises/import/preview", requireAuth, requireCatalogueAdmin, asy
 
 // ─── Atomic import ────────────────────────────────────────────────────────────
 
-router.post("/exercises/import", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
+router.post("/exercises/import", requireAuth, async (req, res): Promise<void> => {
   const parsed = ImportExercisesBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -660,11 +717,41 @@ router.post("/exercises/import", requireAuth, requireCatalogueAdmin, async (req,
   // ── Atomic transaction ──────────────────────────────────────────────────────
   try {
     const result = await db.transaction(async (tx) => {
-      // Build global name→id map from ALL existing exercises.
+      const trainerId = req.trainer!.id;
+      await lockSubscriptionMetricInTransaction(tx, trainerId, "customExercises");
+      // Relation targets may use public or own exercises. Duplicate updates,
+      // however, are restricted strictly to the trainer's own private records.
       const allExisting = await tx
-        .select({ id: exercisesTable.id, name: exercisesTable.name })
-        .from(exercisesTable);
+        .select({
+          id: exercisesTable.id,
+          name: exercisesTable.name,
+          createdByTrainerId: exercisesTable.createdByTrainerId,
+        })
+        .from(exercisesTable)
+        .where(
+          or(
+            isNull(exercisesTable.createdByTrainerId),
+            eq(exercisesTable.createdByTrainerId, trainerId),
+          ),
+        );
       const globalNameToId = new Map(allExisting.map((e) => [normalizeForComparison(e.name), e.id]));
+      const ownedNameToId = new Map(
+        allExisting
+          .filter((exercise) => exercise.createdByTrainerId === trainerId)
+          .map((exercise) => [normalizeForComparison(exercise.name), exercise.id]),
+      );
+      const newExerciseCount = validRows.filter((row) => {
+        const name = (row.name ?? "").trim();
+        const existingId = ownedNameToId.get(normalizeForComparison(name));
+        return existingId === undefined || duplicateStrategy === "create";
+      }).length;
+      await assertSubscriptionLimitInTransaction(
+        tx,
+        trainerId,
+        "customExercises",
+        newExerciseCount,
+        true,
+      );
 
       let imported = 0, updated = 0, skipped = 0;
       // exerciseId → row (all exercises being processed, including skipped duplicates).
@@ -675,7 +762,7 @@ router.post("/exercises/import", requireAuth, requireCatalogueAdmin, async (req,
       // ── Step 1: Exercises ────────────────────────────────────────────────────
       for (const row of validRows) {
         const name = (row.name ?? "").trim();
-        const existingId = globalNameToId.get(normalizeForComparison(name));
+        const existingId = ownedNameToId.get(normalizeForComparison(name));
 
         if (existingId !== undefined && duplicateStrategy === "skip") {
           skipped++;
@@ -704,7 +791,12 @@ router.post("/exercises/import", requireAuth, requireCatalogueAdmin, async (req,
           } = row;
           const insertedRows = await withUniqueSlugRetryTx(tx, name, (slug) =>
             tx.insert(exercisesTable)
-              .values({ ...(exerciseFields as Partial<typeof exercisesTable.$inferInsert>), name, slug } as typeof exercisesTable.$inferInsert)
+              .values({
+                ...(exerciseFields as Partial<typeof exercisesTable.$inferInsert>),
+                name,
+                slug,
+                createdByTrainerId: trainerId,
+              } as typeof exercisesTable.$inferInsert)
               .returning({ id: exercisesTable.id }),
           );
           const newId = insertedRows[0]?.id;
@@ -831,7 +923,9 @@ router.post("/exercises/import", requireAuth, requireCatalogueAdmin, async (req,
       muscleName?: string;
     };
 
-    if (e.code === "COMPLETENESS_FAILURE") {
+    if (isSubscriptionLimitError(err)) {
+      res.status(409).json(err.toResponse());
+    } else if (e.code === "COMPLETENESS_FAILURE") {
       res.status(422).json({
         error: "COMPLETENESS_FAILURE",
         exerciseName: e.exerciseName,
@@ -894,7 +988,7 @@ router.get("/exercises/:id", async (req, res): Promise<void> => {
   res.json(GetExerciseResponse.parse({ ...exercise, ...completeness }));
 });
 
-router.patch("/exercises/:id", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
+router.patch("/exercises/:id", requireAuth, async (req, res): Promise<void> => {
   const params = UpdateExerciseParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -904,6 +998,24 @@ router.patch("/exercises/:id", requireAuth, requireCatalogueAdmin, async (req, r
   const parsed = UpdateExerciseBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [existingExercise] = await db
+    .select({
+      id: exercisesTable.id,
+      createdByTrainerId: exercisesTable.createdByTrainerId,
+    })
+    .from(exercisesTable)
+    .where(eq(exercisesTable.id, params.data.id));
+  if (!existingExercise) {
+    res.status(404).json({ error: "Ćwiczenie nie znalezione" });
+    return;
+  }
+  const canMutate =
+    canMutateExercise(req, existingExercise.createdByTrainerId);
+  if (!canMutate) {
+    res.status(404).json({ error: "Ćwiczenie nie znalezione" });
     return;
   }
 
@@ -937,6 +1049,33 @@ router.patch("/exercises/:id", requireAuth, requireCatalogueAdmin, async (req, r
   const statsMap = await fetchMuscleStats([exercise.id]);
   const completeness = computeCompleteness(exercise, statsMap.get(exercise.id));
   res.json(UpdateExerciseResponse.parse({ ...exercise, ...completeness }));
+});
+
+router.delete("/exercises/:id", requireAuth, async (req, res): Promise<void> => {
+  const params = UpdateExerciseParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const [exercise] = await db
+    .select({
+      id: exercisesTable.id,
+      createdByTrainerId: exercisesTable.createdByTrainerId,
+    })
+    .from(exercisesTable)
+    .where(eq(exercisesTable.id, params.data.id));
+  if (!exercise) {
+    res.status(404).json({ error: "Ćwiczenie nie znalezione" });
+    return;
+  }
+  const canDelete =
+    canMutateExercise(req, exercise.createdByTrainerId);
+  if (!canDelete) {
+    res.status(404).json({ error: "Ćwiczenie nie znalezione" });
+    return;
+  }
+  await db.delete(exercisesTable).where(eq(exercisesTable.id, exercise.id));
+  res.status(204).end();
 });
 
 // ─── Substitutions ────────────────────────────────────────────────────────────
@@ -980,18 +1119,30 @@ router.get("/exercises/:id/substitutions", async (req, res): Promise<void> => {
   res.json(GetExerciseSubstitutionsResponse.parse(rows));
 });
 
-router.post("/exercises/:id/substitutions", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
+router.post("/exercises/:id/substitutions", requireAuth, async (req, res): Promise<void> => {
   const params = AddExerciseSubstitutionParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
   const parsed = AddExerciseSubstitutionBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
-  const [exercise] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(eq(exercisesTable.id, params.data.id));
-  if (!exercise) { res.status(404).json({ error: "Ćwiczenie nie znalezione" }); return; }
+  const [exercise] = await db
+    .select({ id: exercisesTable.id, createdByTrainerId: exercisesTable.createdByTrainerId })
+    .from(exercisesTable)
+    .where(eq(exercisesTable.id, params.data.id));
+  if (!exercise || !canMutateExercise(req, exercise.createdByTrainerId)) {
+    res.status(404).json({ error: "Ćwiczenie nie znalezione" });
+    return;
+  }
 
-  const [sub] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(eq(exercisesTable.id, parsed.data.substituteExerciseId));
-  if (!sub) { res.status(404).json({ error: "Zamiennik nie znaleziony" }); return; }
+  const [sub] = await db
+    .select({ id: exercisesTable.id, createdByTrainerId: exercisesTable.createdByTrainerId })
+    .from(exercisesTable)
+    .where(eq(exercisesTable.id, parsed.data.substituteExerciseId));
+  if (!sub || !canUseLinkedExercise(req, sub.createdByTrainerId)) {
+    res.status(404).json({ error: "Zamiennik nie znaleziony" });
+    return;
+  }
 
   try {
     const [inserted] = await db
@@ -1026,9 +1177,18 @@ router.post("/exercises/:id/substitutions", requireAuth, requireCatalogueAdmin, 
   }
 });
 
-router.delete("/exercises/:id/substitutions/:substituteId", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
+router.delete("/exercises/:id/substitutions/:substituteId", requireAuth, async (req, res): Promise<void> => {
   const params = RemoveExerciseSubstitutionParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+
+  const [exercise] = await db
+    .select({ createdByTrainerId: exercisesTable.createdByTrainerId })
+    .from(exercisesTable)
+    .where(eq(exercisesTable.id, params.data.id));
+  if (!exercise || !canMutateExercise(req, exercise.createdByTrainerId)) {
+    res.status(404).json({ error: "Ćwiczenie nie znalezione" });
+    return;
+  }
 
   const [deleted] = await db
     .delete(exerciseSubstitutionsTable)
@@ -1086,18 +1246,30 @@ router.get("/exercises/:id/progressions", async (req, res): Promise<void> => {
   res.json(GetExerciseProgressionsResponse.parse(rows));
 });
 
-router.post("/exercises/:id/progressions", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
+router.post("/exercises/:id/progressions", requireAuth, async (req, res): Promise<void> => {
   const params = AddExerciseProgressionParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
   const parsed = AddExerciseProgressionBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
-  const [exercise] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(eq(exercisesTable.id, params.data.id));
-  if (!exercise) { res.status(404).json({ error: "Ćwiczenie nie znalezione" }); return; }
+  const [exercise] = await db
+    .select({ id: exercisesTable.id, createdByTrainerId: exercisesTable.createdByTrainerId })
+    .from(exercisesTable)
+    .where(eq(exercisesTable.id, params.data.id));
+  if (!exercise || !canMutateExercise(req, exercise.createdByTrainerId)) {
+    res.status(404).json({ error: "Ćwiczenie nie znalezione" });
+    return;
+  }
 
-  const [linked] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(eq(exercisesTable.id, parsed.data.linkedExerciseId));
-  if (!linked) { res.status(404).json({ error: "Powiązane ćwiczenie nie znalezione" }); return; }
+  const [linked] = await db
+    .select({ id: exercisesTable.id, createdByTrainerId: exercisesTable.createdByTrainerId })
+    .from(exercisesTable)
+    .where(eq(exercisesTable.id, parsed.data.linkedExerciseId));
+  if (!linked || !canUseLinkedExercise(req, linked.createdByTrainerId)) {
+    res.status(404).json({ error: "Powiązane ćwiczenie nie znalezione" });
+    return;
+  }
 
   try {
     const [inserted] = await db
@@ -1134,9 +1306,18 @@ router.post("/exercises/:id/progressions", requireAuth, requireCatalogueAdmin, a
   }
 });
 
-router.delete("/exercises/:id/progressions/:progressionId", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
+router.delete("/exercises/:id/progressions/:progressionId", requireAuth, async (req, res): Promise<void> => {
   const params = RemoveExerciseProgressionParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+
+  const [exercise] = await db
+    .select({ createdByTrainerId: exercisesTable.createdByTrainerId })
+    .from(exercisesTable)
+    .where(eq(exercisesTable.id, params.data.id));
+  if (!exercise || !canMutateExercise(req, exercise.createdByTrainerId)) {
+    res.status(404).json({ error: "Ćwiczenie nie znalezione" });
+    return;
+  }
 
   const [deleted] = await db
     .delete(exerciseProgressionsTable)

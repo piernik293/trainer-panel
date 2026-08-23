@@ -15,6 +15,10 @@ import { z } from "zod";
 import { computeSurveyStatus, fetchLatestSurveyPerClient } from "../lib/survey-status";
 import { requireAuth } from "../middlewares/requireAuth";
 import { logger } from "../lib/logger";
+import {
+  isSubscriptionLimitError,
+  runWithSubscriptionLimit,
+} from "../services/subscriptionService";
 
 const router: IRouter = Router();
 
@@ -93,12 +97,24 @@ router.post("/clients", requireAuth, async (req, res): Promise<void> => {
 
   const trainerId = req.trainer!.id;
 
-  const [client] = await db
-    .insert(clientsTable)
-    .values({ ...parsed.data, trainerId })
-    .returning();
-
-  res.status(201).json(CreateClientResponse.parse(toClientListItem(client, undefined)));
+  try {
+    const [client] = await runWithSubscriptionLimit(
+      trainerId,
+      "clients",
+      (tx) =>
+        tx
+          .insert(clientsTable)
+          .values({ ...parsed.data, trainerId })
+          .returning(),
+    );
+    res.status(201).json(CreateClientResponse.parse(toClientListItem(client, undefined)));
+  } catch (error) {
+    if (isSubscriptionLimitError(error)) {
+      res.status(409).json(error.toResponse());
+      return;
+    }
+    throw error;
+  }
 });
 
 // ─── POST /clients/:clientId/survey-invite ────────────────────────────────────

@@ -113,23 +113,20 @@ export function requireCatalogueAdmin(
   res: Response,
   next: NextFunction,
 ): void {
+  if (!checkIsCatalogueAdmin(req.clerkUserId)) {
+    res.status(403).json({ error: "Nie masz dostępu do tego widoku." });
+    return;
+  }
+  next();
+}
+
+export function checkIsCatalogueAdmin(clerkUserId: string | undefined): boolean {
+  if (!clerkUserId) return false;
   const raw = process.env.CATALOGUE_ADMIN_CLERK_IDS ?? "";
   const adminIds = raw
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
 
-  if (adminIds.length === 0) {
-    // No admin configured — fail closed.
-    res.status(403).json({ error: "Catalogue mutations are disabled: no admin configured" });
-    return;
-  }
-
-  const clerkUserId = req.clerkUserId;
-  if (!clerkUserId || !adminIds.includes(clerkUserId)) {
-    res.status(403).json({ error: "Nie masz dostępu do tego widoku." });
-    return;
-  }
-
-  next();
+  return adminIds.includes(clerkUserId);
 }

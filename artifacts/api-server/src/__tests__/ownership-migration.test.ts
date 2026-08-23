@@ -30,6 +30,19 @@ vi.mock("@workspace/api-zod", () => ({
   },
 }));
 
+vi.mock("../services/subscriptionService", async () => {
+  const { db } = await import("@workspace/db");
+  return {
+    runWithSubscriptionLimit: async (
+      _trainerId: number,
+      _metric: string,
+      operation: (tx: unknown) => Promise<unknown>,
+    ) => db.transaction(operation),
+    assertSubscriptionLimitInTransaction: async () => undefined,
+    isSubscriptionLimitError: () => false,
+  };
+});
+
 // ─── Shared DB state ──────────────────────────────────────────────────────────
 
 const trainerA = { id: 1, clerkUserId: "user_A", displayName: "Trainer A", email: null, createdAt: new Date() };

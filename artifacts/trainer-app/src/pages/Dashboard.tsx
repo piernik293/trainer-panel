@@ -4,6 +4,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import { Users, FileText, Activity, PauseCircle, CheckCircle2, Sparkles, UserPlus } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { SubscriptionSummary } from "@/components/subscription/SubscriptionSummary";
 
 export default function Dashboard() {
   const [, navigate] = useLocation();
@@ -42,10 +43,11 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <Empty
-          className="border border-dashed"
-          data-testid="dashboard-empty-state"
-        >
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          <Empty
+            className="border border-dashed lg:col-span-2"
+            data-testid="dashboard-empty-state"
+          >
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <UserPlus />
@@ -77,7 +79,9 @@ export default function Dashboard() {
               Dodaj klienta ręcznie
             </Button>
           </EmptyContent>
-        </Empty>
+          </Empty>
+          <SubscriptionSummary context="dashboard" />
+        </div>
       </div>
     );
   }
@@ -174,38 +178,45 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <Card className="border-border/50 shadow-sm overflow-hidden">
-        <CardHeader className="bg-muted/30 border-b border-border/50">
-          <CardTitle>Ostatnio dodani klienci</CardTitle>
-          <CardDescription>
-            Lista 5 najnowszych osób, z którymi rozpocząłeś współpracę
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          {stats.recentClients && stats.recentClients.length > 0 ? (
-            <div className="divide-y divide-border/50">
-              {stats.recentClients.map(client => (
-                <div key={client.id} className="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors">
-                  <div className="flex flex-col">
-                    <span className="font-medium">
-                      {client.firstName} {client.lastName}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {client.email || 'Brak email'}
-                    </span>
-                  </div>
-                  <Link
-                    href={`/clients/${client.id}`}
-                    className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Profil →
-                  </Link>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card className="border-border/50 shadow-sm overflow-hidden h-full">
+            <CardHeader className="bg-muted/30 border-b border-border/50">
+              <CardTitle>Ostatnio dodani klienci</CardTitle>
+              <CardDescription>
+                Lista 5 najnowszych osób, z którymi rozpocząłeś współpracę
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {stats.recentClients && stats.recentClients.length > 0 ? (
+                <div className="divide-y divide-border/50">
+                  {stats.recentClients.map(client => (
+                    <div key={client.id} className="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors">
+                      <div className="flex flex-col">
+                        <span className="font-medium">
+                          {client.firstName} {client.lastName}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          {client.email || 'Brak email'}
+                        </span>
+                      </div>
+                      <Link
+                        href={`/clients/${client.id}`}
+                        className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                      >
+                        Profil →
+                      </Link>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
+              ) : null}
+            </CardContent>
+          </Card>
+        </div>
+        <div className="lg:col-span-1">
+          <SubscriptionSummary context="dashboard" />
+        </div>
+      </div>
     </div>
   );
 }

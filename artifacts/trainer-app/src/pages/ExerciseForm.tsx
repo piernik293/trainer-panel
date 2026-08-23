@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { VALIDATION_MESSAGE } from "@/lib/userError";
+import { humanizeError, VALIDATION_MESSAGE } from "@/lib/userError";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useParams, Link } from "wouter";
 import { useForm } from "react-hook-form";
@@ -21,6 +21,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSubscriptionSummary } from "@/lib/use-subscription-summary";
 import {
   MAIN_MUSCLE_GROUPS,
   EQUIPMENT_OPTIONS,
@@ -813,6 +815,9 @@ export function ExerciseNew() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const createExercise = useCreateExercise();
+  const { data: subscription } = useSubscriptionSummary();
+  const customExerciseLimitReached =
+    subscription?.usage.customExercises.atLimit ?? false;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-300">
@@ -829,6 +834,27 @@ export function ExerciseNew() {
           Dodaj ćwiczenie do biblioteki, aby móc je później wykorzystać w planach treningowych
         </p>
       </div>
+
+      {customExerciseLimitReached && (
+        <Alert>
+          <AlertDescription>
+            Wykorzystano {subscription?.usage.customExercises.used}/
+            {subscription?.usage.customExercises.limit} własnych ćwiczeń w planie{" "}
+            {subscription?.plan.name}. Usuń nieużywane ćwiczenie albo wybierz wyższy plan.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {createExercise.isError && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            {humanizeError(
+              createExercise.error,
+              "Nie udało się zapisać ćwiczenia. Spróbuj ponownie.",
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <ExerciseFormBody
         defaultValues={emptyDefaults}

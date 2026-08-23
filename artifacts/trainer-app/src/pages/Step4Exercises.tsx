@@ -303,6 +303,7 @@ export default function Step4Exercises({
       explanation?: GeneratedDayExplanation;
     }> = [];
     const errors: string[] = [];
+    let blockingGenerationError: string | null = null;
 
     // Track how many times each session type has been requested so that
     // repeated day types (Upper A / Upper B, Lower A / Lower B) receive a
@@ -341,6 +342,7 @@ export default function Step4Exercises({
     const eligibleDayCount = distributionResult.days.filter(
       (d) => V0_SESSION_TYPES.has(d.dayType?.toLowerCase() ?? ""),
     ).length;
+    let generationDayIndex = 0;
 
     for (const day of distributionResult.days) {
       const rawSessionType = day.dayType?.toLowerCase() ?? "";
@@ -351,6 +353,8 @@ export default function Step4Exercises({
       // Normalise full_body_a/full_body_b → full_body so the backend receives a
       // known session type; A/B variation is produced by alternativeIndex below.
       const sessionType = normSessionType(rawSessionType);
+      const sessionDayIndex = generationDayIndex;
+      generationDayIndex += 1;
 
       const altIdx = sessionTypeCount[sessionType] ?? 0;
       sessionTypeCount[sessionType] = altIdx + 1;
@@ -384,6 +388,9 @@ export default function Step4Exercises({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            generationId,
+            generationDayIndex: sessionDayIndex,
+            expectedDayCount: eligibleDayCount,
             v0SessionType: sessionType,
             alternativeIndex: altIdx,
             weekUsedExerciseIds: [...weekUsedIds],
@@ -398,8 +405,20 @@ export default function Step4Exercises({
         console.log(`[GenerateDay] Day ${day.dayIndex} (${sessionType}): HTTP ${resp.status}`);
 
         if (!resp.ok) {
-          const errData = await resp.json().catch(() => ({})) as { error?: string };
+          const errData = await resp.json().catch(() => ({})) as {
+            code?: string;
+            error?: string;
+          };
           console.warn(`[GenerateDay] Failed — day ${day.dayIndex + 1} (${sessionType}): HTTP ${resp.status}`, errData);
+          if (
+            errData.code === "SUBSCRIPTION_LIMIT_REACHED" ||
+            errData.code === "GENERATION_SESSION_INVALID"
+          ) {
+            blockingGenerationError =
+              errData.error ??
+              "Nie można rozpocząć kolejnego automatycznego planu w bieżącym okresie.";
+            break;
+          }
           errors.push(`Dzień ${day.dayIndex + 1}: nie udało się przygotować ćwiczeń.`);
           continue;
         }
@@ -444,9 +463,10 @@ export default function Step4Exercises({
       // user sees one readable message.
       if (errors.length > 0) console.warn("[GenerateDay] All days failed:", errors);
       setAutoFillError(
-        errors.length > 0
+        blockingGenerationError ??
+        (errors.length > 0
           ? "Nie udało się przygotować propozycji planu. Spróbuj ponownie lub wróć do tego później."
-          : "Brak dni z obsługiwanym typem sesji (push / pull / legs / upper / lower / plyo).",
+          : "Brak dni z obsługiwanym typem sesji (push / pull / legs / upper / lower / plyo)."),
       );
       return;
     }
@@ -465,6 +485,7 @@ export default function Step4Exercises({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          generationId,
           days: dayResults.map((r) => ({
             exercises: r.exercises.map((ex) => ({
               id: ex.id,
@@ -554,9 +575,16 @@ export default function Step4Exercises({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ generationId, exerciseIds: autoSelectedIds }),
-      }).catch((err) => {
-        console.error("[GenerateHistory] Failed to commit generation history:", err);
-      });
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            const body = await response.json().catch(() => ({})) as { error?: string };
+            throw new Error(body.error ?? "Nie udało się zakończyć sesji generatora.");
+          }
+        })
+        .catch((err) => {
+          console.error("[GenerateHistory] Failed to commit generation history:", err);
+        });
     }
 
     setAutoFillState("success");

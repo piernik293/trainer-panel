@@ -63,6 +63,19 @@ vi.mock("@workspace/api-zod", () => ({
   SubmitPublicSurveyBody:         passBody,
 }));
 
+vi.mock("../services/subscriptionService", async () => {
+  const { db } = await import("@workspace/db");
+  return {
+    runWithSubscriptionLimit: async (
+      _trainerId: number,
+      _metric: string,
+      operation: (tx: unknown) => Promise<unknown>,
+    ) => db.transaction(operation),
+    assertSubscriptionLimitInTransaction: async () => undefined,
+    isSubscriptionLimitError: () => false,
+  };
+});
+
 // ─── Shared in-memory stores (module-level so mock factory can close over them)
 
 const TRAINER_A = { id: 1, clerkUserId: "user_A", displayName: "Trainer A", email: null as string | null, createdAt: new Date() };

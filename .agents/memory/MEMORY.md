@@ -36,3 +36,4 @@
 - [Survey Chrome Translate hypothesis](survey-chrome-translate-hypothesis.md) — a synthetic font-wrapper mutation did not reproduce SurveyForm's DOM NotFoundError; require a native Chrome stack before changing lang.
 - [No-mutation trainer regression](trainer-e2e-authentication.md) — a regression that forbids auth/data writes needs a pre-existing trainer browser session and isolated fixture; otherwise report it inconclusive.
 - [Serial IDs in DB fixtures](integration-fixture-serial-ids.md) — seeded explicit IDs can leave PostgreSQL serial sequences behind; integration fixtures need collision-free explicit IDs or sequence repair.
+- [Subscription generation integrity](subscription-generation-integrity.md) — quota sessions must bind immutable day outputs; balance and finalization share one lock, and history commits atomically with completion.

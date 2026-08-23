@@ -14,6 +14,10 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import { db, clientsTable, surveysTable, surveyInvitesTable } from "@workspace/db";
 import { SubmitPublicSurveyBody } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
+import {
+  assertSubscriptionLimitInTransaction,
+  isSubscriptionLimitError,
+} from "../services/subscriptionService";
 
 const router: IRouter = Router();
 
@@ -262,6 +266,7 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
       if (consumed.clientId) {
         clientId = consumed.clientId;
       } else {
+        await assertSubscriptionLimitInTransaction(tx, trainerId, "clients");
         const [client] = await tx
           .insert(clientsTable)
           .values({ firstName, lastName, email: trimmedEmail, phone, trainerId })
@@ -332,6 +337,10 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
       message: "Dziękuję za wypełnienie wywiadu treningowego. Przeanalizuję Twoje odpowiedzi i przygotuję indywidualny plan treningowy.",
     });
   } catch (err) {
+    if (isSubscriptionLimitError(err)) {
+      res.status(409).json(err.toResponse());
+      return;
+    }
     if ((err as { code?: string }).code === "TOKEN_INVALID") {
       res.status(410).json({ error: "Link zaproszeniowy jest nieprawidłowy, wygasł lub został już wykorzystany." });
       return;

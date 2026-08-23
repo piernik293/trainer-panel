@@ -1,11 +1,12 @@
 import { useUser, useClerk } from "@clerk/react";
-import { UserCog, LogOut, User } from "lucide-react";
+import { UserCog, LogOut, User, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getInitials } from "@/components/layout/AccountMenu";
+import { SubscriptionSummary } from "@/components/subscription/SubscriptionSummary";
 
 export default function Settings() {
   const { user, isLoaded } = useUser();
@@ -125,6 +126,15 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ── Subskrypcja i Limity ────────────────────────────────────── */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Zap className="w-5 h-5" />
+          Subskrypcja i Limity
+        </h2>
+        <SubscriptionSummary context="settings" />
+      </div>
 
       {/* ── Ustawienia aplikacji ────────────────────────────────────── */}
       <Card>

@@ -95,6 +95,22 @@ vi.mock("../services/exercisePrescriptionService.js", () => ({
   prescribeExercise: () => ({}),
 }));
 
+vi.mock("../services/subscriptionService", () => ({
+  authorizeGeneratedDay: async () => undefined,
+  recordGeneratedDayOutput: async () => undefined,
+  runWithActiveGenerationSession: async (
+    _input: unknown,
+    operation: () => Promise<unknown>,
+  ) => operation(),
+  completeAndRecordGeneration: async (input: { exerciseIds: number[] }) => ({
+    status: "committed",
+    committed: input.exerciseIds.length,
+  }),
+  hashGenerationRequest: () => "test-request-hash",
+  isSubscriptionLimitError: () => false,
+  isGenerationSessionError: () => false,
+}));
+
 // ─── Mock @workspace/api-zod ─────────────────────────────────────────────────
 
 const passBody = { safeParse: (d: unknown) => ({ success: true as const, data: d as Record<string, unknown> }) };
@@ -319,7 +335,14 @@ beforeEach(() => {
 const validateBody = { clientId: 10, preferences: { splitType: "full_body", trainingDays: 3, blockDurationWeeks: 4 } };
 const volumePreviewBody = { clientId: 10, preferences: { trainingDays: 3, sessionDurationMinutes: 60, priorityMuscleGroups: [] }, trainerVolumeOverrides: [] };
 const distributionBody = { clientId: 10, experienceLevel: "Początkujący", trainingDays: 3, selectedSplitType: "full_body", selectedWeeklyVolumes: [], priorityTargetIds: [], corePriority: "normal" };
-const balanceWeekBody = { days: [{ exercises: [] }] };
+const generationId = "550e8400-e29b-41d4-a716-446655440000";
+const generateDayBody = {
+  generationId,
+  generationDayIndex: 0,
+  expectedDayCount: 1,
+  v0SessionType: "push",
+};
+const balanceWeekBody = { generationId, days: [{ exercises: [] }] };
 const recordGenerationBody = { generationId: "550e8400-e29b-41d4-a716-446655440000", exerciseIds: [1] };
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -356,7 +379,7 @@ describe("Generator route authorization (Task #81B-2B-1)", () => {
     setAuth(null);
     const res = await request(app)
       .post("/clients/10/plan-draft/generate-day")
-      .send({ v0SessionType: "push" });
+      .send(generateDayBody);
     expect(res.status).toBe(401);
   });
 
@@ -366,7 +389,7 @@ describe("Generator route authorization (Task #81B-2B-1)", () => {
     setAuth("user_A");
     const res = await request(app)
       .post("/clients/20/plan-draft/generate-day")
-      .send({ v0SessionType: "push" });
+      .send(generateDayBody);
     expect(res.status).toBe(404);
   });
 
