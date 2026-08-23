@@ -1,0 +1,145 @@
+FINAL AUTHENTICATED REGRESSION TEST — NO CODE CHANGES
+
+Do NOT modify any code.
+Do NOT fix anything.
+Do NOT install dependencies.
+Do NOT change database data.
+Do NOT bypass Clerk authentication.
+Do NOT create users or change claims.
+
+We need ONLY to verify whether the previously fixed WHITE SCREEN / BROKEN NAVIGATION issue still occurs in an AUTHENTICATED TRAINER session.
+
+==================================================
+TEST REQUIREMENT
+==================================================
+
+If an already authenticated Trainer session is genuinely available in the browser environment, use it.
+
+If there is NO authenticated Trainer session available:
+
+STOP the test immediately and report:
+
+"Authenticated trainer session unavailable — test not executed."
+
+Do NOT attempt to bypass authentication or create a test account.
+
+==================================================
+MOBILE TEST
+==================================================
+
+Use a mobile viewport approximately:
+
+390 x 844
+
+Perform this sequence if the authenticated session is available:
+
+1. Open Trainer Panel.
+2. Open the client list.
+3. Open Client A.
+4. Move between the client's tabs.
+5. Return to the client list.
+6. Open Client B.
+7. Press Back.
+8. Press Forward.
+9. Press Back again.
+10. Quickly interact with the resulting page.
+11. Repeat Back/Forward several times.
+12. Open Client A again.
+13. Navigate into Trainer Session if available.
+14. Start/open the session.
+15. Navigate Back during or immediately after loading.
+16. Return to the client.
+17. Quickly switch tabs.
+18. Repeat the navigation sequence several times.
+
+==================================================
+RAPID INTERACTION TEST
+==================================================
+
+Also test:
+
+- rapid repeated taps
+- Back immediately after navigation
+- Back while data is loading
+- Forward immediately after Back
+- switching tabs immediately after navigation
+- opening/closing mobile Sheet
+- opening/closing Dialog if available
+- navigating immediately after closing a Sheet/Dialog
+- navigating away while an API request is loading
+
+Do NOT deliberately perform destructive actions.
+
+Do NOT save or modify client/training data unless the existing workflow requires it for navigation.
+
+==================================================
+WATCH FOR THESE SPECIFIC FAILURES
+==================================================
+
+Monitor browser console and runtime logs for:
+
+- NotFoundError
+- removeChild
+- insertBefore
+- React render errors
+- uncaught exceptions
+- unhandled promise rejections
+- failed module loading
+- blank/white screen
+- route disappearing
+- navigation becoming unresponsive
+- Back no longer working
+- stale Client A data appearing after opening Client B
+- duplicated UI/actions
+- broken Sheet/Dialog cleanup
+
+==================================================
+ERROR BOUNDARY
+==================================================
+
+Because an Error Boundary was recently added, also verify its behavior.
+
+If a runtime error occurs:
+
+- record the error
+- record the route
+- record the action immediately preceding it
+- record whether the Error Boundary fallback appeared
+- DO NOT reload immediately before recording the evidence
+
+The test is successful only if the application remains usable OR, if an exception occurs, the Error Boundary correctly prevents an unusable blank application.
+
+==================================================
+IMPORTANT
+==================================================
+
+Do NOT interpret "the sign-in page works" as proof that this bug is fixed.
+
+We specifically need the AUTHENTICATED TRAINER FLOW.
+
+If the authenticated flow cannot be tested, say so clearly.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return:
+
+1. AUTHENTICATED SESSION AVAILABLE: YES / NO
+2. TEST EXECUTED: YES / NO
+3. MOBILE VIEWPORT
+4. EXACT FLOWS TESTED
+5. WHITE SCREEN: FOUND / NOT FOUND
+6. BACK NAVIGATION FAILURE: FOUND / NOT FOUND
+7. removeChild: FOUND / NOT FOUND
+8. insertBefore: FOUND / NOT FOUND
+9. React runtime errors: FOUND / NOT FOUND
+10. Error Boundary triggered: YES / NO
+11. Stale/duplicated client state: FOUND / NOT FOUND
+12. Console/runtime errors
+13. Overall result:
+    - PASS
+    - FAIL
+    - INCONCLUSIVE (authenticated session unavailable)
+
+DO NOT CHANGE CODE.
