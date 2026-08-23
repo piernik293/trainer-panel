@@ -39,8 +39,7 @@ import { desc } from "drizzle-orm";
 import { scoreExercise } from "../lib/recommendation-engine";
 import { computeCompleteness, fetchMuscleStats } from "../lib/exercise-completeness";
 import {
-  isLocationCompatible,
-  isEquipmentCompatible,
+  buildCompatibilityFilter,
   type SubTargetBiases,
 } from "../services/planDraftDayRecommendationsService";
 import { normalizeMovementCategory } from "../services/planAnalyzer";
@@ -234,6 +233,25 @@ router.post(
       return isComplete;
     });
 
+    // Build the generator pool through the same canonical hard filter used by
+    // day recommendations. The generate-day route starts from an empty session,
+    // so the already-added set is intentionally empty. Every V0 path below
+    // (slots, fallbacks, thin-pool retry, safe reuse and beginner balancing)
+    // receives only this compatible subset.
+    const compatibilityFilter = buildCompatibilityFilter(
+      survey.trainingLocation,
+      survey.equipment,
+      new Set<number>(),
+    );
+    const compatibleExercises = completeExercises.filter((ex) =>
+      compatibilityFilter({
+        id: ex.id,
+        trainingLocation: ex.trainingLocation ?? [],
+        equipment: ex.equipment ?? [],
+        requiredEquipmentAll: ex.requiredEquipmentAll ?? [],
+      }),
+    );
+
     // ── Family-level exercise blocking (Stage G — Part 1 — hard constraints) ──
     //
     // An excluded exercise often implies the entire movement family, not just
@@ -268,7 +286,7 @@ router.post(
       "Początkujący",
     ]);
     const pool = [];
-    for (const ex of completeExercises) {
+    for (const ex of compatibleExercises) {
       const { score, matchReasons, warnReasons } = scoreExercise(
         ex,
         survey,
