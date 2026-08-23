@@ -19,7 +19,6 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  useListExercises,
   useListExerciseRecommendations,
   getListExerciseRecommendationsQueryKey,
   useGetClientAvoidedExercises,
@@ -236,7 +235,17 @@ function ExercisePicker({
   const [tab, setTab] = useState<"all" | "recommended">("all");
   const { avoidedMap } = useContext(AvoidedExercisesContext);
 
-  const { data: allExercises } = useListExercises({ isActive: true } as any);
+  const allCompatibleParams = { limit: 100 };
+  const { data: allCompatibleExercises } = useListExerciseRecommendations(
+    clientId ?? 0,
+    allCompatibleParams,
+    {
+      query: {
+        enabled: !!clientId && tab === "all",
+        queryKey: getListExerciseRecommendationsQueryKey(clientId ?? 0, allCompatibleParams),
+      },
+    },
+  );
   const { data: recommendations } = useListExerciseRecommendations(
     clientId ?? 0,
     {},
@@ -249,7 +258,7 @@ function ExercisePicker({
   );
 
   const showTabs = !!clientId;
-  const filtered = (allExercises ?? []).filter((e) =>
+  const filtered = (allCompatibleExercises?.exercises ?? []).filter((e) =>
     e.name.toLowerCase().includes(search.toLowerCase()),
   );
 
@@ -275,7 +284,7 @@ function ExercisePicker({
                 tab === "all" ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Wszystkie
+              Wszystkie zgodne
             </button>
             <button
               type="button"
@@ -303,7 +312,18 @@ function ExercisePicker({
 
         <div className="overflow-y-auto flex-1 space-y-0.5 px-1">
           {tab === "all" ? (
-            filtered.length === 0 ? (
+            !allCompatibleExercises ? (
+              <div className="py-8 space-y-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-10 bg-muted/30 animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : !allCompatibleExercises.hasProfile ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                <p>Brak wywiadu treningowego klienta.</p>
+                <p className="text-xs mt-1">Uzupełnij sprzęt i miejsce treningu, aby wybrać ćwiczenie.</p>
+              </div>
+            ) : filtered.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">Brak wyników</p>
             ) : (
               filtered.map((ex) => (

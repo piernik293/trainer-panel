@@ -78,6 +78,7 @@ vi.mock("../services/ExerciseSelectionEngineV0", () => ({
 vi.mock("../services/planDraftDayRecommendationsService", () => ({
   isLocationCompatible: () => true,
   isEquipmentCompatible: () => true,
+  buildCompatibilityFilter: () => () => true,
 }));
 
 vi.mock("../services/planAnalyzer", () => ({

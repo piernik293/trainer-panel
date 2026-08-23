@@ -31,6 +31,7 @@ import {
   type VolumePreviewWarning,
 } from "../services/volumeCalculator";
 import { analyseDraftPreview, type AnalysisPreviewInput } from "../services/planAnalyzer";
+import { buildCompatibilityFilter } from "../services/planDraftDayRecommendationsService";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
@@ -86,6 +87,66 @@ async function verifyClientOwner(
     return false;
   }
   return true;
+}
+
+type CompatibilityProfile = {
+  trainingLocation: string | null;
+  equipment: string | null;
+};
+
+type CompatibilityExercise = {
+  id: number;
+  name: string;
+  trainingLocation: string[] | null;
+  equipment: string[] | null;
+  requiredEquipmentAll: string[] | null;
+};
+
+/**
+ * Returns the first exercise that cannot be performed with the equipment and
+ * location declared in the client's survey. This is intentionally shared by
+ * all manual write paths so a direct API request cannot bypass the picker.
+ */
+function findIncompatibleExercise(
+  exercises: CompatibilityExercise[],
+  profile: CompatibilityProfile,
+): CompatibilityExercise | undefined {
+  const isCompatible = buildCompatibilityFilter(
+    profile.trainingLocation,
+    profile.equipment,
+    new Set<number>(),
+  );
+
+  return exercises.find(
+    (exercise) =>
+      !isCompatible({
+        id: exercise.id,
+        trainingLocation: exercise.trainingLocation ?? [],
+        equipment: exercise.equipment ?? [],
+        requiredEquipmentAll: exercise.requiredEquipmentAll ?? [],
+      }),
+  );
+}
+
+function rejectIncompatibleExercise(res: Response, exercise: CompatibilityExercise): void {
+  res.status(422).json({
+    error: `Ćwiczenie „${exercise.name}” nie jest zgodne z miejscem treningu lub dostępnym sprzętem klienta.`,
+    code: "EXERCISE_EQUIPMENT_INCOMPATIBLE",
+    exerciseId: exercise.id,
+  });
+}
+
+async function loadPlanCompatibilityProfile(planId: number): Promise<CompatibilityProfile | null> {
+  const [plan] = await db
+    .select({
+      trainingLocation: surveysTable.trainingLocation,
+      equipment: surveysTable.equipment,
+    })
+    .from(workoutPlansTable)
+    .innerJoin(surveysTable, eq(surveysTable.id, workoutPlansTable.surveyId))
+    .where(eq(workoutPlansTable.id, planId));
+
+  return plan ?? null;
 }
 
 // ─── Inline Zod schemas ───────────────────────────────────────────────────────
@@ -675,7 +736,13 @@ router.post("/clients/:clientId/plans/draft", requireAuth, async (req, res): Pro
 
   // ── Validate survey ownership ──────────────────────────────────────────────
   const [survey] = await db
-    .select({ id: surveysTable.id, clientId: surveysTable.clientId, experienceLevel: surveysTable.experienceLevel })
+    .select({
+      id: surveysTable.id,
+      clientId: surveysTable.clientId,
+      experienceLevel: surveysTable.experienceLevel,
+      trainingLocation: surveysTable.trainingLocation,
+      equipment: surveysTable.equipment,
+    })
     .from(surveysTable)
     .where(and(eq(surveysTable.id, surveyId), eq(surveysTable.clientId, clientId)));
 
@@ -715,13 +782,25 @@ router.post("/clients/:clientId/plans/draft", requireAuth, async (req, res): Pro
   const allExerciseIds = [...new Set(days.flatMap((d) => d.exercises.map((e) => e.exerciseId)))];
   if (allExerciseIds.length > 0) {
     const foundExercises = await db
-      .select({ id: exercisesTable.id })
+      .select({
+        id: exercisesTable.id,
+        name: exercisesTable.name,
+        trainingLocation: exercisesTable.trainingLocation,
+        equipment: exercisesTable.equipment,
+        requiredEquipmentAll: exercisesTable.requiredEquipmentAll,
+      })
       .from(exercisesTable)
       .where(inArray(exercisesTable.id, allExerciseIds));
     const foundIds = new Set(foundExercises.map((e) => e.id));
     const missing = allExerciseIds.find((id) => !foundIds.has(id));
     if (missing !== undefined) {
       res.status(404).json({ error: `Ćwiczenie o ID ${missing} nie zostało znalezione.` });
+      return;
+    }
+
+    const incompatible = findIncompatibleExercise(foundExercises, survey);
+    if (incompatible) {
+      rejectIncompatibleExercise(res, incompatible);
       return;
     }
   }
@@ -1290,12 +1369,30 @@ router.post("/plans/:id/days/:dayId/exercises", requireAuth, async (req, res): P
 
   // Verify exercise exists.
   const [exercise] = await db
-    .select({ id: exercisesTable.id })
+    .select({
+      id: exercisesTable.id,
+      name: exercisesTable.name,
+      trainingLocation: exercisesTable.trainingLocation,
+      equipment: exercisesTable.equipment,
+      requiredEquipmentAll: exercisesTable.requiredEquipmentAll,
+    })
     .from(exercisesTable)
     .where(eq(exercisesTable.id, parsed.data.exerciseId));
 
   if (!exercise) {
     res.status(404).json({ error: "Ćwiczenie nie znalezione" });
+    return;
+  }
+
+  const profile = await loadPlanCompatibilityProfile(planId);
+  if (!profile) {
+    res.status(409).json({ error: "Plan nie zawiera poprawnego wywiadu treningowego klienta." });
+    return;
+  }
+
+  const incompatible = findIncompatibleExercise([exercise], profile);
+  if (incompatible) {
+    rejectIncompatibleExercise(res, incompatible);
     return;
   }
 

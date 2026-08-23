@@ -1,0 +1,52 @@
+Zabezpiecz ręczne dodawanie i wymianę ćwiczeń względem sprzętu klienta.
+
+Cel:
+Jeżeli klient nie posiada wymaganego sprzętu zgodnie z wywiadem, trener nie może ręcznie dodać ani podmienić ćwiczenia wymagającego tego sprzętu.
+
+Wymagania:
+
+1. Przy ręcznym dodawaniu ćwiczenia sprawdzaj aktualny sprzęt oraz lokalizację klienta przy użyciu istniejącej logiki kompatybilności.
+
+2. Przy wymianie ćwiczenia wykonuj ten sam backendowy check. Ćwiczenie niekompatybilne ze sprzętem klienta nie może zostać zapisane.
+
+3. Rekomendacje ćwiczeń wyświetlane trenerowi również muszą być filtrowane zgodnie z aktualnym sprzętem i lokalizacją klienta.
+
+4. Zabezpieczenie musi działać po stronie backendu/API, a nie wyłącznie poprzez ukrywanie lub blokowanie opcji w UI. Bezpośrednie wywołanie endpointu nie może pozwolić na zapis niekompatybilnego ćwiczenia.
+
+5. Jeżeli klient nie ma ustalonego sprzętu, nie traktuj tego jako zgody na dowolny sprzęt. Zachowaj istniejącą bezpieczną semantykę "normalizeClientEquipment".
+
+6. Obejmuje to:
+   
+   - ręczne dodanie ćwiczenia,
+   - wymianę ćwiczenia,
+   - rekomendacje ćwiczeń dla trenera,
+   - zapis ćwiczenia do istniejącego planu.
+
+7. Wykorzystaj istniejącą logikę kompatybilności zamiast tworzyć drugi, niezależny system reguł.
+
+8. Dodaj testy obejmujące co najmniej:
+   
+   - "bodyweight-only",
+   - hantle,
+   - sztangę,
+   - "requiredEquipmentAll",
+   - brak ustalonego sprzętu klienta,
+   - lokalizację klienta, jeśli wpływa ona na kompatybilność.
+
+9. Testy mają sprawdzić zarówno pozytywne przypadki, jak i próbę obejścia zabezpieczenia przez bezpośredni backend/API request.
+
+10. Nie zmieniaj "generate-day" ani logiki automatycznego generatora naprawionej w Task #11. Ten task dotyczy wyłącznie ręcznych operacji i rekomendacji.
+
+Przed zmianami:
+
+- zlokalizuj istniejące endpointy/funkcje odpowiedzialne za manual add, replace, recommendations oraz zapis ćwiczenia do planu,
+- znajdź istniejącą funkcję/logikę kompatybilności i "normalizeClientEquipment",
+- ustal jedno miejsce, w którym backend może wymusić regułę przed zapisem,
+- nie duplikuj logiki kompatybilności bez potrzeby.
+
+Po implementacji:
+
+- uruchom odpowiednie testy,
+- potwierdź, że niekompatybilne ćwiczenie nie może zostać zapisane nawet przy ręcznym requestcie,
+- potwierdź, że kompatybilne ćwiczenia nadal działają,
+- potwierdź, że "generate-day" pozostał nietknięty.

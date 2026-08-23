@@ -242,6 +242,34 @@ function compatiblePool(
   return source.filter(filter);
 }
 
+describe("shared compatibility contract for manual plan writes", () => {
+  it.each([
+    ["bodyweight-only profile", undefined, "Dom", 1, true],
+    ["bodyweight-only profile", undefined, "Dom", 21, false],
+    ["dumbbell profile", "Hantle", "Dom", 21, true],
+    ["dumbbell profile", "Hantle", "Dom", 31, false],
+    ["barbell profile", "Sztanga", "Dom", 31, true],
+    ["barbell profile", "Sztanga", "Dom", 21, false],
+    ["dumbbells without a bench", "Hantle", "Dom", 40, false],
+    ["dumbbells with a bench", "Hantle,Ławka", "Dom", 40, true],
+    ["home location", "Hantle", "Dom", 90, false],
+    ["gym location", "Maszyna", "Siłownia", 90, true],
+  ] as const)(
+    "%s %s exercise %i",
+    (_profile, equipment, location, exerciseId, expected) => {
+      const exercise = CATALOG.find((candidate) => candidate.id === exerciseId);
+      expect(exercise).toBeDefined();
+
+      const allowManualWrite = buildCompatibilityFilter(
+        location,
+        equipment,
+        new Set<number>(),
+      );
+      expect(allowManualWrite(exercise!)).toBe(expected);
+    },
+  );
+});
+
 function assertFinalPlanCompatible(
   result: V0Result,
   equipment: string | null | undefined,

@@ -29,6 +29,7 @@ import { requireAuth } from "../middlewares/requireAuth";
 import { ListExerciseRecommendationsResponse } from "@workspace/api-zod";
 import { scoreExercise } from "../lib/recommendation-engine";
 import { computeCompleteness, fetchMuscleStats } from "../lib/exercise-completeness";
+import { buildCompatibilityFilter } from "../services/planDraftDayRecommendationsService";
 
 const router: IRouter = Router();
 
@@ -111,8 +112,25 @@ router.get("/clients/:clientId/exercise-recommendations", requireAuth, async (re
     return isComplete;
   });
 
+  // Missing equipment is deliberately handled as bodyweight-only by the shared
+  // compatibility filter. Recommendations must never imply that an undeclared
+  // barbell, machine, or bench is available.
+  const isCompatible = buildCompatibilityFilter(
+    survey.trainingLocation,
+    survey.equipment,
+    new Set<number>(),
+  );
+  const compatibleExercises = completeExercises.filter((ex) =>
+    isCompatible({
+      id: ex.id,
+      trainingLocation: ex.trainingLocation ?? [],
+      equipment: ex.equipment ?? [],
+      requiredEquipmentAll: ex.requiredEquipmentAll ?? [],
+    }),
+  );
+
   // Score each exercise against the client's survey profile.
-  const scored = completeExercises
+  const scored = compatibleExercises
     .map((ex) => {
       const { score, matchReasons, warnReasons } = scoreExercise(ex, survey);
       return {
