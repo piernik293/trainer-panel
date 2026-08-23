@@ -1,10 +1,17 @@
 ---
-name: Trainer E2E authentication
-description: Authentication constraint for read-only Trainer Panel browser diagnostics.
+name: No-mutation trainer regression
+description: Preconditions for read-only authenticated Trainer Panel regression checks.
 ---
 
-Do not assume an authenticated Trainer Panel session visible in deployment logs or another browser is available to an isolated browser tester. An attempted managed-Clerk test-claim override using an existing trainer identity still resolved to the sign-in screen, and proceeding further would have risked creating a new auth user or trainer row.
+When a regression explicitly forbids authentication and data mutations, its
+browser must begin with a real trainer session and an isolated test fixture
+already available. If either prerequisite is absent, the correct result is
+inconclusive rather than a substituted programmatic login or temporary data
+setup.
 
-**Why:** Repeated navigation diagnostics require access to existing clients owned by the authenticated trainer. A fresh or newly provisioned test identity has no such ownership and cannot exercise the real flow safely.
+**Why:** A no-mutation regression is intended to verify the user-facing state
+that already exists; changing the authentication or data state invalidates that
+evidence.
 
-**How to apply:** For future read-only Trainer Panel stress tests, first obtain an explicitly authenticated test path that owns at least two existing non-production clients. Stop rather than bypassing authentication or provisioning data when the task forbids mutations.
+**How to apply:** State the missing prerequisite plainly and do not claim the
+restricted flow passed.
