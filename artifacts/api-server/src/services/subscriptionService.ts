@@ -7,6 +7,7 @@ import {
   trainerGenerationSessionDaysTable,
   trainerGenerationSessionsTable,
   trainerSubscriptionsTable,
+  trainersTable,
 } from "@workspace/db";
 import { and, asc, count, eq, sql } from "drizzle-orm";
 
@@ -14,6 +15,8 @@ export type PlanCode = "FREE" | "PRO" | "UNLIMITED";
 export type SubscriptionMetric = "clients" | "customExercises" | "planGenerations";
 
 type SubscriptionTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+const UNLIMITED_PLAN_GENERATION_EMAIL = "maksymilian616@gmail.com";
 
 type PlanDefinition = {
   code: PlanCode;
@@ -182,6 +185,17 @@ async function lockMetric(
   );
 }
 
+async function hasUnlimitedPlanGenerations(
+  tx: SubscriptionTransaction,
+  trainerId: number,
+): Promise<boolean> {
+  const [trainer] = await tx
+    .select({ email: trainersTable.email })
+    .from(trainersTable)
+    .where(eq(trainersTable.id, trainerId));
+  return trainer?.email?.trim().toLowerCase() === UNLIMITED_PLAN_GENERATION_EMAIL;
+}
+
 async function countUsage(
   tx: SubscriptionTransaction,
   trainerId: number,
@@ -221,6 +235,7 @@ export async function assertSubscriptionLimitInTransaction(
   additional = 1,
   alreadyLocked = false,
 ): Promise<void> {
+  if (metric === "planGenerations" && await hasUnlimitedPlanGenerations(tx, trainerId)) return;
   if (!alreadyLocked) await lockMetric(tx, trainerId, metric);
   const plan = await ensureSubscription(tx, trainerId);
   const limit = plan.limits[metric];
@@ -328,6 +343,7 @@ export async function authorizeGeneratedDay(input: {
   }
   await db.transaction(async (tx) => {
     await lockMetric(tx, input.trainerId, "planGenerations");
+    const hasUnlimitedGenerations = await hasUnlimitedPlanGenerations(tx, input.trainerId);
     const plan = await ensureSubscription(tx, input.trainerId);
     const { periodStart, resetsAt } = getSubscriptionPeriod();
     const [existingSession] = await tx
@@ -350,7 +366,7 @@ export async function authorizeGeneratedDay(input: {
         throw new GenerationSessionError("Nie można zmienić liczby dni w rozpoczętej sesji generatora.");
       }
     } else {
-      const limit = plan.limits.planGenerations;
+      const limit = hasUnlimitedGenerations ? null : plan.limits.planGenerations;
       if (limit !== null) {
         const used = await countUsage(tx, input.trainerId, "planGenerations", periodStart);
         if (used >= limit) {

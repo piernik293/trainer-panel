@@ -1,0 +1,186 @@
+Wykonaj OBIEKTYWNY AUDYT aktualnego projektu Panel Trenera.
+
+WAŻNE:
+- NIE zmieniaj żadnego kodu.
+- NIE naprawiaj żadnych problemów.
+- NIE refaktoryzuj.
+- NIE twórz nowych funkcji.
+- Nie generuj commitów.
+- Twoim jedynym zadaniem jest analiza i raport.
+- Oceniaj aktualny stan aplikacji, a nie potencjalny przyszły stan.
+
+Chcę uzyskać możliwie szczerą, krytyczną i obiektywną ocenę produktu.
+
+Przeanalizuj:
+
+1. ARCHITEKTURĘ
+- frontend
+- backend
+- routing
+- model danych
+- autoryzację
+- separację trenera i klienta
+- zależności między modułami
+- skalowalność rozwiązania
+
+2. LOGIKĘ BIZNESOWĄ
+- wywiad treningowy
+- profile klientów
+- generowanie planów
+- ręczne tworzenie planów
+- dobór ćwiczeń
+- zamienniki
+- progresje
+- sprzęt
+- lokalizację
+- poziom doświadczenia
+- "Brak aktywności fizycznej"
+- cele
+- ograniczenia
+- historię treningów
+- kalendarz
+- limity/subskrypcje
+
+3. BEZPIECZEŃSTWO
+Sprawdź realne zabezpieczenia backendu, a nie tylko UI:
+- autoryzację
+- ownership danych
+- dostęp trenera do klientów
+- dostęp klienta do własnych danych
+- prywatne ćwiczenia
+- ręczne operacje
+- API
+- tokeny
+- możliwość obejścia ograniczeń po stronie klienta
+- race conditions / podwójne rozliczenia
+- potencjalne IDOR
+- inne oczywiste problemy bezpieczeństwa
+
+4. GENERATOR PLANÓW
+Oceń, czy logika rzeczywiście respektuje:
+- sprzęt
+- lokalizację
+- poziom
+- brak aktywności
+- bezpieczeństwo ćwiczeń
+- wzorce ruchowe
+- cele
+- objętość
+- różnorodność
+- beginner balancing
+- brak niebezpiecznego fallbacku
+- sytuację wyczerpania bezpiecznej puli
+
+Wskaż konkretne miejsca, gdzie generator może zwrócić nielogiczny lub niebezpieczny plan.
+
+5. KATALOG ĆWICZEŃ
+Oceń:
+- aktualną liczbę ćwiczeń
+- źródło danych
+- jakość metadanych
+- sprzęt
+- mięśnie
+- poziom trudności
+- lokalizację
+- wzorce ruchowe
+- bezpieczeństwo
+- duplikaty
+- możliwość dalszego importu 1324 ćwiczeń z exercises-dataset
+
+Nie zakładaj, że większy katalog automatycznie oznacza lepszy generator.
+
+6. UX/UI
+Oceń osobno:
+- Panel Trenera
+- Portal Klienta
+- onboarding
+- dashboard
+- formularze
+- nawigację
+- mobile
+- responsywność
+- komunikaty błędów
+- empty states
+- spójność wizualną
+- hierarchię informacji
+- czy użytkownik rozumie, co ma zrobić po zalogowaniu
+
+Nie oceniaj UX wyłącznie na podstawie kodu. Jeśli masz możliwość uruchomienia aplikacji i przejścia przez flow, zrób to.
+
+7. STABILNOŚĆ
+Sprawdź:
+- testy
+- błędy runtime
+- potencjalne race conditions
+- obsługę błędów
+- ErrorBoundary
+- problemy z routingiem
+- problemy mobilne
+- problemy z sesją/autoryzacją
+- problemy mogące powodować biały ekran
+- problemy z deploymentem
+
+8. PRODUKCJA
+Oceń, czego brakuje, żeby można było bezpiecznie udostępnić aplikację prawdziwym trenerom:
+- produkcyjny auth
+- domena
+- SMTP
+- backup
+- migracje
+- monitoring
+- logi
+- deployment
+- bezpieczeństwo
+- recovery
+
+9. GITHUB / REPLIT
+Sprawdź, czy aktualny kod aplikacji jest faktycznie zapisany w repozytorium GitHub.
+Wskaż, czy istnieją elementy projektu, które są zależne od Replit i mogą zostać utracone po opuszczeniu Replit.
+Szczególnie sprawdź:
+- artifacts/
+- client portal
+- trainer app
+- assets
+- konfigurację deploymentu
+- inne dane niebędące zwykłym kodem.
+
+10. OGÓLNA OCENA
+
+Na końcu podaj:
+
+A. Ocena jako MVP: X/10
+B. Ocena jako produkt gotowy dla prawdziwych użytkowników: X/10
+C. Ocena fundamentu technicznego: X/10
+D. Ocena UX: X/10
+E. Ocena bezpieczeństwa: X/10
+F. Ocena generatora: X/10
+G. Ocena gotowości produkcyjnej: X/10
+
+Następnie przedstaw:
+
+- 5 największych mocnych stron
+- 10 największych problemów
+- 10 najważniejszych rzeczy do zrobienia w kolejności
+- rzeczy, których NIE warto teraz robić
+- rzeczy, które są tylko kosmetyką
+- rzeczy krytyczne przed produkcją
+
+BARDZO WAŻNE:
+
+Nie próbuj mnie zadowolić.
+Nie zawyżaj oceny.
+Nie zakładaj, że wcześniejsze decyzje są poprawne tylko dlatego, że zostały już zaimplementowane.
+
+Jeżeli coś jest dobre — powiedz dlaczego.
+Jeżeli coś jest słabe — powiedz wprost.
+Jeżeli czegoś nie da się potwierdzić — napisz "NIE ZWERYFIKOWANO", zamiast zgadywać.
+
+Raport ma być oparty na rzeczywistym kodzie i rzeczywistym działaniu aplikacji.
+
+Na końcu odpowiedz również na jedno pytanie:
+
+"Czy na obecnym etapie warto dalej inwestować czas i pieniądze w ten projekt, czy fundament jest na tyle słaby, że lepiej przebudować go od początku?"
+
+Uzasadnij odpowiedź konkretnymi argumentami.
+
+NIE WPROWADZAJ ŻADNYCH ZMIAN W PROJEKCIE.
