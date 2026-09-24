@@ -9,8 +9,9 @@ import {
   trainerSubscriptionsTable,
   trainersTable,
 } from "@workspace/db";
+import { clerkClient } from "@clerk/express";
 import { count, eq } from "drizzle-orm";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import publicRouter from "../../routes/public";
 import {
   authorizeGeneratedDay,
@@ -28,15 +29,17 @@ describe("subscription service integration", () => {
   let trainerId: number | null = null;
 
   async function createTrainer() {
+    const clerkUserId = `subscription-test-${randomUUID()}`;
     const [trainer] = await db
       .insert(trainersTable)
-      .values({ clerkUserId: `subscription-test-${randomUUID()}` })
+      .values({ clerkUserId, email: `subscription-test-${randomUUID()}@example.invalid` })
       .returning({ id: trainersTable.id });
     trainerId = trainer.id;
     return trainer.id;
   }
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     if (!trainerId) return;
     await db.delete(surveyInvitesTable).where(eq(surveyInvitesTable.trainerId, trainerId));
     await db
@@ -357,6 +360,32 @@ describe("subscription service integration", () => {
       periodStart: "2026-04-01",
       resetsAt: "2026-05-01",
     });
+  });
+
+  it("exempts only the normalized Clerk email from automatic-plan limits", async () => {
+    const id = await createTrainer();
+    await db
+      .update(trainersTable)
+      .set({ email: null })
+      .where(eq(trainersTable.id, id));
+    vi.spyOn(clerkClient.users, "getUser").mockResolvedValue({
+      primaryEmailAddress: { emailAddress: "  MAKSYMILIAN616@GMAIL.COM " },
+    } as unknown as Awaited<ReturnType<typeof clerkClient.users.getUser>>);
+    const [client] = await db
+      .insert(clientsTable)
+      .values({ firstName: "Unlimited", lastName: "Generation", trainerId: id })
+      .returning({ id: clientsTable.id });
+
+    for (let index = 0; index < 3; index += 1) {
+      await authorizeGeneratedDay({
+        trainerId: id,
+        clientId: client.id,
+        generationId: randomUUID(),
+        expectedDayCount: 1,
+        dayIndex: 0,
+        requestHash: `allowlisted-${index}`,
+      });
+    }
   });
 
   it("applies PRO limits and removes all limits for UNLIMITED", async () => {

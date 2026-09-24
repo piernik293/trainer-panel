@@ -9,6 +9,7 @@ import {
   trainerSubscriptionsTable,
   trainersTable,
 } from "@workspace/db";
+import { clerkClient } from "@clerk/express";
 import { and, asc, count, eq, sql } from "drizzle-orm";
 
 export type PlanCode = "FREE" | "PRO" | "UNLIMITED";
@@ -190,10 +191,20 @@ async function hasUnlimitedPlanGenerations(
   trainerId: number,
 ): Promise<boolean> {
   const [trainer] = await tx
-    .select({ email: trainersTable.email })
+    .select({
+      email: trainersTable.email,
+      clerkUserId: trainersTable.clerkUserId,
+    })
     .from(trainersTable)
     .where(eq(trainersTable.id, trainerId));
-  return trainer?.email?.trim().toLowerCase() === UNLIMITED_PLAN_GENERATION_EMAIL;
+  if (!trainer) return false;
+
+  const storedEmail = trainer.email?.trim().toLowerCase();
+  if (storedEmail && storedEmail !== UNLIMITED_PLAN_GENERATION_EMAIL) return false;
+
+  const email = (await clerkClient.users.getUser(trainer.clerkUserId)).primaryEmailAddress
+    ?.emailAddress;
+  return email?.trim().toLowerCase() === UNLIMITED_PLAN_GENERATION_EMAIL;
 }
 
 async function countUsage(
@@ -342,8 +353,8 @@ export async function authorizeGeneratedDay(input: {
     );
   }
   await db.transaction(async (tx) => {
-    await lockMetric(tx, input.trainerId, "planGenerations");
     const hasUnlimitedGenerations = await hasUnlimitedPlanGenerations(tx, input.trainerId);
+    await lockMetric(tx, input.trainerId, "planGenerations");
     const plan = await ensureSubscription(tx, input.trainerId);
     const { periodStart, resetsAt } = getSubscriptionPeriod();
     const [existingSession] = await tx
