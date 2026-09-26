@@ -1,0 +1,96 @@
+Pracujesz w projekcie **„trener panel”**.
+
+Chcę teraz zaimportować **1324 ćwiczenia OpenGym** z drugiego, osobnego projektu/źródła `gym-*` do **istniejącej biblioteki ćwiczeń w tym projekcie Panelu Trenera**.
+
+**WAŻNE:** `gym-*` i `trener panel` to dwa różne projekty. Ten projekt (`trener panel`) jest miejscem docelowym. Nie modyfikuj projektu `gym-*`.
+
+Najpierw przeanalizuj istniejącą strukturę biblioteki ćwiczeń i sposób, w jaki Panel Trenera korzysta z EXDB/EXIDX. Następnie wykonaj wyłącznie bezpieczny import danych.
+
+### MODEL EXERCISE
+
+Obecny model:
+
+`id, n, bp, eq, tg, mg, sm, st, img, gif`
+
+Dopasuj dane OpenGym do tego istniejącego modelu. **Nie przebudowuj modelu.**
+
+### ZASADY IMPORTU
+
+* Nie usuwaj istniejących ćwiczeń.
+* Nie nadpisuj istniejących ćwiczeń.
+* Zachowaj wszystkie istniejące rekordy.
+* Dodaj brakujące ćwiczenia OpenGym.
+* `eq: "body weight"` musi pozostać dokładnie w tej postaci.
+* `bp: "cardio"` musi pozostać dokładnie w tej postaci.
+* Nie dodawaj automatycznie pola `difficulty`.
+* Nie dodawaj automatycznie pola `suitableForNoActivity`.
+* Nie zgaduj `unilateral` ani `bilateral`.
+* Zachowaj `tg`, `mg`, `sm`, `st`.
+* `img` i `gif` pozostaw zgodne ze źródłem; **nie pobieraj teraz żadnych nowych zdjęć ani GIF-ów**.
+* Nie zmieniaj generatora treningów.
+* Nie zmieniaj algorytmu progresji.
+* Nie zmieniaj historii treningów.
+* Nie przebudowuj UI Panelu Trenera.
+* Nie dodawaj nowych funkcji niezwiązanych z importem.
+
+### ID — NAJWAŻNIEJSZE
+
+Przed zapisem porównaj ID wszystkich importowanych ćwiczeń z istniejącym EXDB.
+
+**Nigdy nie nadpisuj istniejącego ćwiczenia.**
+
+Jeżeli wystąpi kolizja ID:
+
+1. zachowaj istniejące ćwiczenie bez zmian,
+2. nadaj importowanemu ćwiczeniu deterministyczne, unikalne ID,
+3. upewnij się, że wszystkie odwołania korzystają z nowego ID,
+4. nie zmieniaj ID istniejących ćwiczeń.
+
+### PO IMPORCIE
+
+Sprawdź:
+
+1. czy każde ćwiczenie ma unikalne ID,
+2. czy EXDB jest poprawne,
+3. czy EXIDX działa,
+4. czy biblioteka ćwiczeń Panelu Trenera się otwiera,
+5. czy zaimportowane ćwiczenia są widoczne,
+6. czy wyszukiwanie ćwiczeń działa,
+7. czy filtr equipment działa,
+8. czy filtr body part działa,
+9. czy `eq === "body weight"` jest poprawnie rozpoznawane,
+10. czy `bp === "cardio"` jest poprawnie rozpoznawane,
+11. czy można wybrać zaimportowane ćwiczenie do treningu,
+12. czy istniejący generator treningów nadal działa,
+13. czy progresja nadal działa,
+14. czy historia treningów nadal działa.
+
+### CZEGO TERAZ NIE ROBIĆ
+
+Na tym etapie **nie implementuj**:
+
+* `difficulty`,
+* `suitableForNoActivity`,
+* `unilateral/bilateral`,
+* nowych zasad generatora,
+* nowych filtrów,
+* nowych algorytmów,
+* zdjęć/GIF-ów.
+
+Najpierw chcę tylko poprawnie przenieść **1324 ćwiczenia z `gym-*`/OpenGym do istniejącej biblioteki Panelu Trenera** i upewnić się, że niczego istniejącego nie uszkodzono.
+
+Jeżeli dane źródłowe 1324 ćwiczeń nie są obecnie dostępne w tym projekcie, **nie twórz ich od zera i nie zgaduj danych**. Najpierw wskaż dokładnie, czego brakuje do wykonania importu.
+
+### RAPORT KOŃCOWY
+
+Po wykonaniu podaj tylko:
+
+* liczba ćwiczeń przed importem,
+* liczba ćwiczeń źródłowych,
+* liczba dodanych,
+* liczba pominiętych duplikatów,
+* liczba kolizji ID,
+* sposób rozwiązania kolizji,
+* liczba ćwiczeń po imporcie,
+* lista zmienionych plików,
+* wynik każdego testu.
