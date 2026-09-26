@@ -1,0 +1,160 @@
+W projekcie **`trener panel`** został udostępniony ZIP z osobnego projektu **`gym-*`**.
+
+ZIP jest teraz **źródłem danych**. Chcę przenieść z niego katalog ćwiczeń do istniejącej biblioteki ćwiczeń Panelu Trenera.
+
+### NAJPIERW — AUDYT ZIP-A
+
+Najpierw otwórz i przeanalizuj ZIP **read-only**.
+
+Znajdź rzeczywisty katalog ćwiczeń i ustal:
+
+* dokładną ścieżkę do danych,
+* liczbę ćwiczeń,
+* strukturę pojedynczego rekordu,
+* wszystkie dostępne pola,
+* sposób identyfikacji przez ID,
+* duplikaty ID,
+* duplikaty nazw,
+* equipment,
+* body part,
+* target/muscles,
+* difficulty,
+* unilateral/bilateral,
+* `suitableForNoActivity`,
+* obrazy/GIF-y i ich mapowanie.
+
+**Nie zakładaj, że jest dokładnie 1324 rekordy. Policz je z danych.**
+
+Jeżeli znajdziesz więcej niż jeden katalog/plik z ćwiczeniami, porównaj je i ustal, który jest kanonicznym źródłem. Nie łącz automatycznie różnych snapshotów.
+
+### MAPOWANIE DO PANELU TRENERA
+
+Obecny model Panelu Trenera jest bogatszy niż prosty model źródłowy.
+
+Dopasuj dane `gym-*` do **istniejącego schematu Exercise w Panelu Trenera**.
+
+Nie przebudowuj modelu tylko dlatego, że źródło ma inne pola.
+
+Mapuj tylko pola, które można jednoznacznie ustalić.
+
+**Nie zgaduj danych.**
+
+W szczególności:
+
+* nie wymyślaj `difficulty`,
+* nie wymyślaj `suitableForNoActivity`,
+* nie wymyślaj unilateral/bilateral,
+* nie wymyślaj equipment,
+* nie wymyślaj muscles,
+* nie wymyślaj body part.
+
+Jeżeli źródło nie posiada odpowiednika danego pola, pozostaw wartość zgodną z istniejącym schematem/defaultem zamiast zgadywać.
+
+### ID
+
+Przed importem porównaj ID źródłowych ćwiczeń z istniejącymi ID w Panelu Trenera.
+
+**Nigdy nie nadpisuj istniejącego ćwiczenia.**
+
+Jeżeli ID ze źródła koliduje z istniejącym ćwiczeniem:
+
+* zachowaj istniejące ćwiczenie,
+* nadaj importowanemu ćwiczeniu deterministyczne nowe ID,
+* zachowaj wszystkie relacje importowanego ćwiczenia,
+* nie zmieniaj ID istniejących rekordów.
+
+Jeżeli system posiada już mechanizm generowania ID, użyj istniejącego mechanizmu zamiast tworzyć drugi.
+
+### DUPLIKATY
+
+Nie traktuj dwóch ćwiczeń jako duplikatów wyłącznie dlatego, że mają podobną nazwę.
+
+Przed scaleniem porównaj dostępne dane.
+
+Nie usuwaj istniejących ćwiczeń.
+
+Jeżeli źródło zawiera rzeczywisty duplikat, nie twórz bez potrzeby drugiego identycznego rekordu. Najpierw pokaż w raporcie, co zostało rozpoznane jako duplikat.
+
+### MEDIA
+
+Jeżeli ZIP zawiera obrazy/GIF-y:
+
+* zachowaj ich istniejące mapowanie,
+* nie pobieraj nowych mediów z internetu,
+* nie duplikuj plików bez potrzeby,
+* nie zmieniaj istniejących mediów Panelu Trenera.
+
+Jeżeli media nie są dostępne, zaimportuj dane ćwiczeń bez nich.
+
+### RELACJE
+
+Jeżeli źródło zawiera:
+
+* mięśnie,
+* zamienniki,
+* progresje,
+* regresje,
+
+przenieś je tylko wtedy, gdy można je jednoznacznie zmapować do istniejącego modelu Panelu Trenera.
+
+Nie twórz fikcyjnych relacji.
+
+### BEZPIECZEŃSTWO
+
+Przed właściwym zapisem wykonaj analizę importu i przygotuj raport:
+
+* liczba rekordów źródłowych,
+* liczba rekordów możliwych do importu,
+* liczba istniejących odpowiedników,
+* liczba duplikatów,
+* liczba kolizji ID,
+* liczba rekordów wymagających nowego ID,
+* liczba rekordów z brakującymi danymi,
+* liczba mediów,
+* liczba relacji.
+
+**Nie wykonuj zapisu do bazy, dopóki nie zakończysz tego audytu.**
+
+Po audycie, jeżeli dane są wystarczająco kompletne do bezpiecznego importu, wykonaj import.
+
+### PO IMPORCIE
+
+Sprawdź:
+
+1. unikalność wszystkich ID,
+2. integralność EXDB,
+3. poprawność EXIDX,
+4. wyszukiwanie ćwiczeń,
+5. filtr equipment,
+6. filtr body part,
+7. rozpoznawanie bodyweight,
+8. rozpoznawanie cardio,
+9. wybór ćwiczenia do treningu,
+10. działanie generatora treningów,
+11. działanie progresji,
+12. działanie historii treningów,
+13. brak uszkodzonych istniejących ćwiczeń,
+14. brak osieroconych relacji.
+
+**Nie zmieniaj teraz generatora treningów ani jego logiki.**
+
+Nie implementuj jeszcze nowych zasad `difficulty` ani `suitableForNoActivity`. Najpierw poprawnie przenieś dane.
+
+### RAPORT KOŃCOWY
+
+Na końcu podaj:
+
+* rzeczywistą liczbę ćwiczeń znalezionych w ZIP,
+* liczbę zaimportowanych,
+* liczbę pominiętych,
+* liczbę duplikatów,
+* liczbę kolizji ID,
+* liczbę nowych ID,
+* liczbę zaimportowanych relacji,
+* liczbę zaimportowanych mediów,
+* liczbę ćwiczeń w Panelu Trenera przed importem,
+* liczbę po imporcie,
+* listę zmienionych plików,
+* wynik wszystkich testów.
+
+**Nie wykonuj żadnych innych zmian w projekcie.**
