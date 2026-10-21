@@ -99,32 +99,9 @@ export async function runSchemaMigrations(): Promise<void> {
     END $$
   `);
 
-  // ── Apply NOT NULL to clients.trainer_id ─────────────────────────────────────
-  //
-  // Only applied once, only when there are no NULL rows left.
-  // Uses information_schema to check whether the constraint already exists.
-  await db.execute(sql`
-    DO $$
-    DECLARE
-      v_is_nullable TEXT;
-      v_null_count  INTEGER;
-    BEGIN
-      SELECT is_nullable INTO v_is_nullable
-        FROM information_schema.columns
-        WHERE table_name = 'clients' AND column_name = 'trainer_id';
-
-      IF v_is_nullable = 'YES' THEN
-        SELECT COUNT(*) INTO v_null_count FROM clients WHERE trainer_id IS NULL;
-
-        IF v_null_count = 0 THEN
-          ALTER TABLE clients ALTER COLUMN trainer_id SET NOT NULL;
-          RAISE NOTICE 'Applied NOT NULL constraint to clients.trainer_id';
-        ELSE
-          RAISE NOTICE 'Skipped NOT NULL: % clients still have trainer_id IS NULL', v_null_count;
-        END IF;
-      END IF;
-    END $$
-  `);
+  // clients.trainer_id stays NULLABLE (matches lib/db schema): the public
+  // survey creates clients before a trainer is assigned. Do not add NOT NULL
+  // here — on an empty database it would be applied unconditionally.
 
   // ── adaptive_start_decision — trainer decision on adaptive start mode ────────
   await db.execute(
