@@ -15,6 +15,8 @@
  *  B — beginner + inactive combined filter
  *  C — pool exhaustion: reuse and slot-skip paths
  *  D — regression: advanced clients and existing inactive-client tests
+ *  F — inactive clients: suitableForNoActivity === true in every session
+ *      type, slot and fallback path (reuse, skip, supplement, balancing)
  */
 
 import { describe, it, expect } from "vitest";
@@ -22,9 +24,12 @@ import {
   runExerciseSelectionEngineV0,
   isBeginnerEligible,
   findReplacementForPattern,
+  applyBeginnerBalancingPass,
+  type MajorPattern,
   type V0PriorityContext,
+  type V0SessionType,
 } from "../services/ExerciseSelectionEngineV0";
-import type { ScoredAndFilteredExercise } from "../services/ExerciseSelectionEngineV0";
+import type { ScoredAndFilteredExercise } from "../services/planDraftDayRecommendationsService";
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -40,23 +45,19 @@ function makeEx(
   return {
     id,
     name: `Exercise ${id}`,
-    slug: `exercise-${id}`,
     mainMuscleGroup: "Klatka piersiowa",
     secondaryMuscleGroups: [],
     equipment: ["Masa własnego ciała"],
     requiredEquipmentAll: [],
     trainingLocation: ["Dom", "Siłownia"],
-    difficultyLevel: "Początkujący",
     movementPattern: "Pchanie poziome",
     exerciseType: COMPOUND,
-    movementCategory: "Wielostawowe",
-    suitableExperienceLevels: ["Początkujący"],
     learningDifficulty: 1,
     exercisePriority: "Wysoki",
     suitableForNoActivity: null,
-    isActive: true,
     score: 100,
-    completeness: 1,
+    matchReasons: [],
+    warnReasons: [],
     subTargetBiases: {},
     isAvoided: false,
     ...overrides,
@@ -117,7 +118,6 @@ function core(id: number, ld: number, extra: Partial<ScoredAndFilteredExercise> 
     learningDifficulty: ld,
     movementPattern: "Anti-ekstensja",
     exerciseType: ISOLATION,
-    movementCategory: "Izolowane",
     mainMuscleGroup: "Brzuch",
     secondaryMuscleGroups: [],
     ...extra,
@@ -129,6 +129,8 @@ const beginnerCtx: V0PriorityContext = {
   isNoActivityClient: false,
   isPriorityEligible: false,
   preferredExerciseKeywords: [],
+  tierA: [],
+  tierB: [],
 };
 
 const advancedCtx: V0PriorityContext = {
@@ -136,6 +138,8 @@ const advancedCtx: V0PriorityContext = {
   isNoActivityClient: false,
   isPriorityEligible: false,
   preferredExerciseKeywords: [],
+  tierA: [],
+  tierB: [],
 };
 
 const inactiveCtx: V0PriorityContext = {
@@ -143,6 +147,8 @@ const inactiveCtx: V0PriorityContext = {
   isNoActivityClient: true,
   isPriorityEligible: false,
   preferredExerciseKeywords: [],
+  tierA: [],
+  tierB: [],
 };
 
 // ─── Group A — isBeginnerEligible unit tests ──────────────────────────────────
@@ -274,6 +280,8 @@ describe("B. Beginner + inactive combined filter", () => {
     isNoActivityClient: true,
     isPriorityEligible: false,
     preferredExerciseKeywords: [],
+    tierA: [],
+    tierB: [],
   };
 
   function makeCombinedPool(): ScoredAndFilteredExercise[] {
@@ -336,7 +344,7 @@ describe("C. Pool exhaustion: reuse and skip", () => {
     const result = runExerciseSelectionEngineV0(
       makeExhaustedPushPool(), "full_body", new Set<string>(), beginnerCtx, { alternativeIndex: 0 },
     );
-    const hasBeginnerWarning = result.warnings.some((w) => w.includes("Początkujący"));
+    const hasBeginnerWarning = (result.warnings ?? []).some((w) => w.includes("Początkujący"));
     expect(hasBeginnerWarning).toBe(true);
   });
 
@@ -505,5 +513,182 @@ describe("E. findReplacementForPattern — inactive client ld gate", () => {
       inactiveCtx,
     );
     expect(result).toBeNull();
+  });
+});
+
+// ─── Group F — suitableForNoActivity: every slot, every fallback path ────────
+
+describe("F. Inactive client — suitableForNoActivity === true on every path", () => {
+  const ALL_SESSION_TYPES: V0SessionType[] = [
+    "push", "pull", "legs", "upper", "lower", "full_body", "plyo",
+  ];
+  const MUSCLES = [
+    "Klatka piersiowa", "Plecy", "Barki", "Biceps", "Triceps", "Brzuch",
+    "Pośladki", "Mięśnie czworogłowe uda", "Mięśnie dwugłowe uda", "Łydki",
+    "Przywodziciele",
+  ];
+  const PATTERNS: (string | null)[] = [
+    "Pchanie poziome", "Pchanie pionowe", "Przyciąganie pionowe",
+    "Przyciąganie poziome", "Przysiad", "Wykrok", "Zawias biodrowy",
+    "Odwodzenie", "Inne", null,
+  ];
+  const TYPES = [COMPOUND, "Izolowane"];
+
+  const combinedCtx: V0PriorityContext = { ...inactiveCtx, isBeginnerClient: true };
+
+  /**
+   * Every muscle × pattern × type combination exists as a safe exercise
+   * (sfa=true, ld=1) plus two unsafe twins (sfa=null and sfa=false) with a
+   * HIGHER score — without the hard filter the engine would prefer the twins.
+   */
+  function buildTwinPool() {
+    const safe: ScoredAndFilteredExercise[] = [];
+    const unsafe: ScoredAndFilteredExercise[] = [];
+    let id = 1000;
+    for (const mainMuscleGroup of MUSCLES) {
+      for (const movementPattern of PATTERNS) {
+        for (const exerciseType of TYPES) {
+          const base = { mainMuscleGroup, movementPattern, exerciseType, learningDifficulty: 1 };
+          safe.push(makeEx(id++, { ...base, suitableForNoActivity: true, score: 50 }));
+          unsafe.push(makeEx(id++, { ...base, suitableForNoActivity: null, score: 90 }));
+          unsafe.push(makeEx(id++, { ...base, suitableForNoActivity: false, score: 95 }));
+        }
+      }
+    }
+    return { safe, unsafe, mixed: [...unsafe, ...safe] };
+  }
+
+  function expectAllSafe(exercises: { id: number; suitableForNoActivity?: boolean | null }[], label: string) {
+    for (const ex of exercises) {
+      expect(ex.suitableForNoActivity, `${label}: id=${ex.id} sfa=${ex.suitableForNoActivity}`).toBe(true);
+    }
+  }
+
+  for (const [ctxName, ctx] of [["inactive", inactiveCtx], ["inactive + beginner", combinedCtx]] as const) {
+    for (const sessionType of ALL_SESSION_TYPES) {
+      it(`${ctxName} / ${sessionType}: unsafe twins never selected (altIdx 0–4)`, () => {
+        const { safe, mixed } = buildTwinPool();
+        const safeIds = new Set(safe.map((e) => e.id));
+        for (let alternativeIndex = 0; alternativeIndex <= 4; alternativeIndex++) {
+          const label = `${sessionType} altIdx=${alternativeIndex}`;
+          const baseline = runExerciseSelectionEngineV0(safe, sessionType, new Set(), ctx, { alternativeIndex });
+          const result = runExerciseSelectionEngineV0(mixed, sessionType, new Set(), ctx, { alternativeIndex });
+          // Non-vacuous: whenever the safe pool alone builds a session, the
+          // mixed pool must too — the unsafe twins must not crowd it out.
+          if (baseline.valid) {
+            expect(result.valid, label).toBe(true);
+            expect(result.exercises.length, label).toBeGreaterThan(0);
+          }
+          expectAllSafe(result.exercises, label);
+          for (const ex of result.exercises) expect(safeIds.has(ex.id), label).toBe(true);
+        }
+      });
+    }
+  }
+
+  it("the twin pool builds a valid session for most session types (guards against vacuous passes)", () => {
+    const { mixed } = buildTwinPool();
+    const validTypes = ALL_SESSION_TYPES.filter(
+      (t) => runExerciseSelectionEngineV0(mixed, t, new Set(), inactiveCtx, { alternativeIndex: 0 }).valid,
+    );
+    expect(validTypes).toEqual(expect.arrayContaining(["push", "pull", "legs", "upper", "lower", "full_body"]));
+  });
+
+  it("multi-day plan with cross-day dedup: no unsafe exercise on any of 6 days", () => {
+    const { mixed } = buildTwinPool();
+    const used = new Set<string>();
+    const days: V0SessionType[] = ["full_body", "upper", "lower", "push", "pull", "legs"];
+    days.forEach((sessionType, day) => {
+      const result = runExerciseSelectionEngineV0(mixed, sessionType, used, inactiveCtx, { alternativeIndex: day });
+      expectAllSafe(result.exercises, `day ${day + 1} ${sessionType}`);
+      for (const ex of result.exercises) used.add(String(ex.id));
+    });
+  });
+
+  it("safe-reuse fallback: when every safe exercise is already used, a SAFE one is repeated, never an unsafe one", () => {
+    const safe = [
+      push(1, 1, { suitableForNoActivity: true }),
+      pull(2, 1, { suitableForNoActivity: true }),
+      knee(3, 1, { suitableForNoActivity: true }),
+      hip(4, 1, { suitableForNoActivity: true }),
+      core(5, 1, { suitableForNoActivity: true }),
+    ];
+    const unsafe = [
+      push(11, 1, { suitableForNoActivity: null, score: 200 }),
+      pull(12, 1, { suitableForNoActivity: false, score: 200 }),
+      knee(13, 1, { suitableForNoActivity: null, score: 200 }),
+      hip(14, 1, { suitableForNoActivity: false, score: 200 }),
+      core(15, 1, { suitableForNoActivity: null, score: 200 }),
+    ];
+    const usedIds = new Set(safe.map((e) => String(e.id)));
+    const result = runExerciseSelectionEngineV0([...unsafe, ...safe], "full_body", usedIds, inactiveCtx, { alternativeIndex: 0 });
+    expect(result.exercises.length).toBeGreaterThan(0);
+    expectAllSafe(result.exercises, "reuse");
+    expect(result.exercises.map((e) => e.id).some((id) => id >= 11)).toBe(false);
+  });
+
+  it("slot-skip path: no safe push exists → push slot skipped with a warning, unsafe pushes (null/false) never used", () => {
+    const p = [
+      push(1, 1, { suitableForNoActivity: null, score: 200 }),
+      push(2, 1, { suitableForNoActivity: false, score: 200 }),
+      pull(3, 1, { suitableForNoActivity: true }),
+      knee(4, 1, { suitableForNoActivity: true }),
+      hip(5, 1, { suitableForNoActivity: true }),
+      core(6, 1, { suitableForNoActivity: true }),
+    ];
+    const result = runExerciseSelectionEngineV0(p, "full_body", new Set(), inactiveCtx, { alternativeIndex: 0 });
+    const ids = result.exercises.map((e) => e.id);
+    expect(ids).not.toContain(1);
+    expect(ids).not.toContain(2);
+    expectAllSafe(result.exercises, "skip");
+    if (result.valid) {
+      expect((result.warnings ?? []).some((w) => w.includes("Brak aktywności fizycznej"))).toBe(true);
+    }
+  });
+
+  it("lower-body supplement path: no safe hinge → unsafe hinge / lower-body exercises are not used as a fallback", () => {
+    const p = [
+      push(1, 1, { suitableForNoActivity: true }),
+      pull(2, 1, { suitableForNoActivity: true }),
+      knee(3, 1, { suitableForNoActivity: true }),
+      core(4, 1, { suitableForNoActivity: true }),
+      hip(10, 1, { suitableForNoActivity: null, score: 200 }),
+      hip(11, 1, { suitableForNoActivity: false, score: 200 }),
+      knee(12, 2, { suitableForNoActivity: null, score: 200 }),
+      makeEx(13, { mainMuscleGroup: "Pośladki", movementPattern: "Odwodzenie", exerciseType: "Izolowane", suitableForNoActivity: null, score: 200 }),
+    ];
+    for (let alternativeIndex = 0; alternativeIndex <= 2; alternativeIndex++) {
+      const result = runExerciseSelectionEngineV0(p, "full_body", new Set(), inactiveCtx, { alternativeIndex });
+      expectAllSafe(result.exercises, `supplement altIdx=${alternativeIndex}`);
+    }
+  });
+
+  const PATTERN_FIXTURES: Record<Exclude<MajorPattern, "core">, (id: number, ld: number, extra?: Partial<ScoredAndFilteredExercise>) => ScoredAndFilteredExercise> = {
+    push, pull, knee_dominant: knee, hip_dominant: hip,
+  };
+
+  for (const [mp, make] of Object.entries(PATTERN_FIXTURES) as [Exclude<MajorPattern, "core">, typeof push][]) {
+    it(`findReplacementForPattern("${mp}"): sfa=null and sfa=false rejected, sfa=true accepted`, () => {
+      expect(findReplacementForPattern(mp, [make(1, 1, { suitableForNoActivity: null })], new Set(), inactiveCtx)).toBeNull();
+      expect(findReplacementForPattern(mp, [make(2, 1, { suitableForNoActivity: false })], new Set(), inactiveCtx)).toBeNull();
+      expect(findReplacementForPattern(mp, [make(3, 1, { suitableForNoActivity: true })], new Set(), inactiveCtx)?.id).toBe(3);
+    });
+  }
+
+  it("balancing pass: missing pull is NOT patched with an unsafe pull; it IS patched with a safe one", () => {
+    const accessory = makeEx(50, {
+      mainMuscleGroup: "Biceps", movementPattern: "Inne", exerciseType: "Izolowane",
+      suitableForNoActivity: true, exercisePriority: "Niski",
+    });
+    const unsafePull = pull(60, 1, { suitableForNoActivity: false, score: 200 });
+    const safePull = pull(61, 1, { suitableForNoActivity: true });
+
+    const resultsUnsafe = [{ ex: accessory, slotName: "Accessory" }];
+    applyBeginnerBalancingPass(resultsUnsafe, [unsafePull], new Set(["50"]), "pull", inactiveCtx);
+    expect(resultsUnsafe.map((r) => r.ex.id)).toEqual([50]);
+
+    const resultsSafe = [{ ex: accessory, slotName: "Accessory" }];
+    applyBeginnerBalancingPass(resultsSafe, [unsafePull, safePull], new Set(["50"]), "pull", inactiveCtx);
+    expect(resultsSafe.map((r) => r.ex.id)).toEqual([61]);
   });
 });

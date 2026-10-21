@@ -83,12 +83,11 @@ export interface V0PriorityContext {
    * Distinct from both "Brak aktywności fizycznej" (more conservative) and
    * intermediate+ (where priority-muscle tier ranking applies).
    *
-   * When true, sortDeterministic adds a mild preference for exercises with
-   * learningDifficulty ≤ 2 over those with learningDifficulty ≥ 4 within each
-   * slot's band.  The mid-range (3 or null) is neutral.
+   * When true, the hard safety filter (isBeginnerEligible) admits only
+   * exercises with an integer learningDifficulty of 1–2; null, missing or
+   * invalid values are excluded.  sortDeterministic additionally prefers
+   * ld ≤ 2 within each slot's band (relevant only for unfiltered callers).
    *
-   * This is NOT a hard filter — it only re-orders within the existing band so
-   * the slot structure (compound vs isolation, muscle group) is always respected.
    * isPriorityEligible is always false when isBeginnerClient is true.
    */
   isBeginnerClient?: boolean;
@@ -713,8 +712,8 @@ export function isBeginnerEligible(
   ex: { learningDifficulty?: number | null },
 ): boolean {
   const v = ex.learningDifficulty;
-  // null / undefined → no difficulty rating → treated as easy (admitted for beginners)
-  if (v == null) return true;
+  // null / undefined → no difficulty rating → unsafe (fails Number.isFinite).
+  // Missing data must never be admitted, e.g. for future OpenGym imports.
   return Number.isFinite(v) && Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 2;
 }
 
@@ -965,7 +964,8 @@ function sortDeterministic(
 
     // 1c. Beginner preference (Stage E) — for "Początkujący" clients, rank
     //     exercises with learningDifficulty ≤ 2 before complex ones (≥ 4).
-    //     Exercises in the middle (3 or null) are neutral.
+    //     Exercises in the middle (3 or null) are neutral.  In pick() the
+    //     hard filter (isBeginnerEligible) has already removed ld 3+ and null.
     //     "Początkujący" is explicitly distinct from "Brak aktywności":
     //     beginners can handle basic compound lifting; inactive clients cannot.
     if (ctx?.isBeginnerClient) {

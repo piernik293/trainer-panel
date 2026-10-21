@@ -507,7 +507,8 @@ describe("applyBeginnerBalancingPass", () => {
 // ─── Beginner hard difficulty filter ─────────────────────────────────────────
 //
 // Exercises with learningDifficulty > 2 must NEVER appear in a beginner plan.
-// Exercises with learningDifficulty ≤ 2 (or null) must be admitted.
+// Exercises with learningDifficulty ≤ 2 must be admitted; null (missing data)
+// must be excluded.
 // Non-beginner (advanced) plans must still receive ld=4 exercises normally.
 
 /** Full pool helper — runs the engine with an explicit candidate list. */
@@ -570,14 +571,20 @@ describe("Beginner hard difficulty filter — pick()", () => {
     }
   });
 
-  it("ld=null exercise IS admitted for beginner plan (null treated as easy)", () => {
-    const pool = makeMinimalFullBodyPool(null);
-    const selected = runEngineWith(pool, CTX_BEGINNER);
+  it("ld=null exercise is EXCLUDED from beginner plan (missing data = unsafe)", () => {
+    const nullPool = makeMinimalFullBodyPool(null);
+    const easyPool = makeMinimalFullBodyPool(1);
+    const nullIds = new Set(nullPool.map((e) => e.id));
+    const selected = runEngineWith([...nullPool, ...easyPool], CTX_BEGINNER);
     expect(selected.length).toBeGreaterThan(0);
     for (const ex of selected) {
-      const orig = pool.find((p) => p.id === ex.id);
-      expect(orig?.learningDifficulty).toBeNull();
+      expect(nullIds.has(ex.id), `id=${ex.id} has learningDifficulty=null`).toBe(false);
     }
+  });
+
+  it("pool with only ld=null exercises yields no beginner exercises", () => {
+    const selected = runEngineWith(makeMinimalFullBodyPool(null), CTX_BEGINNER);
+    expect(selected).toHaveLength(0);
   });
 
   it("ld=4 exercise IS admitted for advanced (non-beginner) plan", () => {
