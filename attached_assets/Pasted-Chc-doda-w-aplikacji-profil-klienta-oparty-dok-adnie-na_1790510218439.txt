@@ -1,0 +1,121 @@
+Chcę dodać w aplikacji profil klienta oparty dokładnie na danych z wywiadu treningowego.
+
+WAŻNE:
+- NIE zmieniaj istniejącego designu aplikacji.
+- NIE zmieniaj istniejących komponentów, layoutów, kolorów, fontów ani nawigacji.
+- NIE zmieniaj logiki wywiadu treningowego.
+- NIE zmieniaj generatora planów treningowych.
+- NIE zmieniaj modelu danych, jeśli nie jest to absolutnie konieczne.
+- NIE usuwaj ani nie nadpisuj żadnych istniejących funkcji.
+- NIE zmieniaj działania innych ekranów.
+- Najpierw przeanalizuj istniejący kod i znajdź najlepsze miejsce, w którym można dodać ten profil.
+- Jeśli podobny komponent/profil już istnieje, wykorzystaj istniejącą strukturę zamiast tworzyć drugi system.
+- Zmiany mają być minimalne i ograniczone wyłącznie do wyświetlania profilu klienta.
+
+Profil ma prezentować dane DOKŁADNIE w takiej strukturze:
+
+Dane z wywiadu treningowego:
+
+DANE PODSTAWOWE
+- Imię
+- Nazwisko
+- E-mail
+- Telefon
+- Data urodzenia
+- Wiek
+- Płeć
+- Wzrost
+- Waga
+- BMI
+
+CEL TRENINGOWY
+- Cel treningowy
+
+DOŚWIADCZENIE
+- Doświadczenie
+
+ZDROWIE I OGRANICZENIA
+- Kontuzje / dolegliwości / ograniczenia ruchowe
+
+ORGANIZACJA TRENINGÓW
+- Liczba treningów tygodniowo
+- Czas na pojedynczy trening
+
+MIEJSCE TRENINGU I SPRZĘT
+- Miejsce treningu
+- Dostępny sprzęt
+
+CARDIO
+- Uwzględnienie cardio
+- Częstotliwość cardio
+- Preferowana forma
+
+REGENERACJA I STYL ŻYCIA
+- Aktywność poza treningami
+- Sen
+- Poziom stresu
+
+DODATKOWE PREFERENCJE
+- Styl planu
+
+DODATKOWE INFORMACJE
+- Czy jest coś jeszcze
+- Notatka
+
+Dane testowego klienta do sprawdzenia widoku:
+
+Imię: Dominik
+Nazwisko: Gorgoń
+E-mail: gorgon.dominik@gmail.com
+Telefon: 791155113
+Data urodzenia: 28.08.2003
+Wiek: 23 lat
+Płeć: Mężczyzna
+Wzrost: 182 cm
+Waga: 86.7 kg
+BMI: 26.2
+
+Cel treningowy: Budowa sylwetki
+
+Doświadczenie: Brak aktywności fizycznej
+
+Kontuzje / dolegliwości / ograniczenia ruchowe: Nie
+
+Liczba treningów tygodniowo: 3
+Czas na pojedynczy trening: 45–60 min
+
+Miejsce treningu: Siłownia
+Dostęp do sprzętu: Pełne wyposażenie siłowni
+
+Uwzględnienie cardio: Tylko niezbędne minimum
+Częstotliwość cardio: 2–3× / tydz.
+Preferowana forma: Bieganie
+
+Aktywność poza treningami: Duża aktywność
+Sen: 6–7 godzin
+Poziom stresu: 5
+
+Styl planu: Maksymalna efektywność
+
+Czy jest coś jeszcze: Tak
+Notatka: Lepiej żeby nogi nie rosły za bardzo
+
+Dodatkowe wymaganie:
+Profil ma być czytelny dla trenera i umożliwiać szybkie przejrzenie wszystkich informacji z wywiadu bez konieczności otwierania kolejnych ekranów.
+
+Nie dodawaj żadnych nowych pól, których nie ma w powyższej strukturze.
+
+Przed wprowadzeniem zmian:
+1. Przeanalizuj istniejący kod.
+2. Znajdź istniejący system klientów/profili/wywiadu.
+3. Powiedz mi, jakie konkretne pliki zamierzasz zmienić i dlaczego.
+4. Nie wykonuj żadnych zmian, dopóki nie potwierdzisz, że zmiana nie naruszy istniejącej funkcjonalności.
+
+Po implementacji:
+- sprawdź, czy aplikacja się uruchamia,
+- sprawdź, czy istniejący wywiad nadal działa,
+- sprawdź, czy zapis danych nadal działa,
+- sprawdź, czy profil poprawnie odczytuje dane z wywiadu,
+- sprawdź, czy żaden istniejący ekran nie został zmieniony przypadkowo.
+
+PRIORYTET: zachowanie istniejącej aplikacji 1:1. Ta zmiana ma być wyłącznie dodatkiem do obecnego systemu.

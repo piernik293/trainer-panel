@@ -1,0 +1,277 @@
+PRIORYTET: NAPRAWA WYSYŁANIA WYWIADU KLIENTA
+
+Skup się WYŁĄCZNIE na obecnym problemie z wysyłaniem formularza „Wywiad
+treningowy”.
+
+Nie dodawaj teraz testów sprawnościowych.
+Nie zmieniaj generatora planów.
+Nie zmieniaj katalogu ćwiczeń.
+Nie zmieniaj UI trenera poza elementami potrzebnymi do diagnostyki błędu.
+Nie rób refaktoru całego formularza.
+Nie dodawaj nowych funkcji biznesowych.
+
+Maksymalnie 8 akcji.
+
+==================================================
+CEL
+==================================================
+
+Obecnie użytkownik może wypełnić wywiad, kliknąć wysłanie i w niektórych
+przypadkach formularz nie zostaje wysłany, mimo że UI nie pokazuje mu
+jednoznacznie, co jest nie tak.
+
+To jest krytyczny błąd UX.
+
+Użytkownik NIE może dostać sytuacji:
+
+„klikam Wyślij → nic się nie dzieje”
+
+ani:
+
+„Wystąpił błąd → spróbuj ponownie”
+
+bez informacji, co faktycznie się wydarzyło.
+
+System ma samodzielnie rozróżniać:
+
+1. brakujące wymagane pole,
+2. błędną wartość pola,
+3. błąd walidacji po stronie klienta,
+4. błąd walidacji/API po stronie serwera,
+5. błąd sieci,
+6. timeout,
+7. błąd autoryzacji/sesji, jeśli dotyczy,
+8. błąd serwera 5xx,
+9. nieoczekiwany błąd.
+
+==================================================
+1. NAJPIERW ZNAJDŹ PRAWDZIWĄ PRZYCZYNĘ
+==================================================
+
+Prześledź pełny przepływ:
+
+formularz
+→ walidacja frontendowa
+→ przygotowanie payloadu
+→ POST/PUT/PATCH
+→ API
+→ walidacja backendowa
+→ zapis DB
+→ odpowiedź
+→ obsługa odpowiedzi przez frontend.
+
+Nie zgaduj przyczyny.
+
+Znajdź dokładnie miejsce, w którym wysyłanie może zostać przerwane albo
+odrzucone bez czytelnego komunikatu.
+
+Sprawdź szczególnie:
+
+- disabled state przycisku,
+- walidację przed submit,
+- pola warunkowe,
+- wartości null/undefined/empty string,
+- tablice bez elementów,
+- pola zależne od innych odpowiedzi,
+- transformację payloadu,
+- Zod/backend validation,
+- statusy HTTP,
+- parsowanie odpowiedzi API,
+- catch/finally,
+- timeout,
+- auth/session,
+- czy submit może kończyć się bez żadnej informacji dla użytkownika.
+
+==================================================
+2. NIE WOLNO UKRYWAĆ BŁĘDÓW
+==================================================
+
+Jeżeli walidacja frontendowa nie przechodzi:
+
+- przewiń do pierwszego problematycznego pola,
+- zaznacz je wizualnie,
+- pokaż konkretny komunikat,
+- nie wysyłaj requestu.
+
+Przykład:
+
+„Uzupełnij: Cel treningowy”
+
+zamiast:
+
+„Formularz jest niepoprawny”.
+
+Jeżeli kilka pól jest błędnych, pokaż listę wszystkich brakujących wymaganych
+informacji.
+
+==================================================
+3. BŁĄD API / BACKEND
+==================================================
+
+Jeżeli frontend uważa, że formularz jest poprawny, ale API go odrzuca:
+
+pokaż:
+
+„Nie udało się wysłać wywiadu.”
+
+oraz konkretną przyczynę zwróconą przez backend.
+
+Przykłady:
+
+„Brakuje wymaganej informacji: częstotliwość treningów.”
+
+„Nieprawidłowa wartość pola: dostępny sprzęt.”
+
+„Sesja wygasła. Odśwież stronę i spróbuj ponownie.”
+
+Nie pokazuj użytkownikowi surowego stack trace.
+
+Nie pokazuj technicznych nazw typu:
+
+ZodError
+VALIDATION_ERROR
+500
+TypeError
+undefined
+fetch failed
+
+jako głównego komunikatu.
+
+Techniczny szczegół może być dostępny po rozwinięciu „Szczegóły błędu”
+albo w logach developerskich.
+
+==================================================
+4. BŁĄD SIECIOWY
+==================================================
+
+Jeżeli request nie dociera do API:
+
+pokaż:
+
+„Nie udało się połączyć z serwerem. Sprawdź połączenie z internetem i spróbuj
+ponownie.”
+
+Jeżeli request trwa zbyt długo:
+
+„Serwer nie odpowiedział w wymaganym czasie. Twoje odpowiedzi nie zostały
+jeszcze potwierdzone jako zapisane.”
+
+Nie wolno udawać, że formularz został zapisany.
+
+==================================================
+5. NAJWAŻNIEJSZE — DIAGNOSTYKA DLA DEVELOPERA
+==================================================
+
+Dodaj jednolity mechanizm logowania błędu submitu.
+
+Każda nieudana próba wysłania powinna mieć:
+
+- timestamp,
+- endpoint,
+- HTTP method,
+- status HTTP, jeśli istnieje,
+- typ błędu,
+- nazwę pola, jeśli znana,
+- backend error code, jeśli istnieje,
+- correlation/request ID, jeśli backend go zwraca,
+- bez zapisywania haseł, tokenów ani wrażliwych danych formularza.
+
+Frontend powinien również logować:
+
+submit_started
+submit_validation_failed
+submit_request_started
+submit_request_failed
+submit_success
+
+Nie loguj pełnego wywiadu zawierającego dane osobowe.
+
+==================================================
+6. NIE ZMIENIAJ WALIDACJI BIZNESOWEJ W CIEMNO
+==================================================
+
+Jeżeli znajdziesz pole wymagane przez backend, którego frontend nie oznacza
+jako wymagane:
+
+NIE obchodź tego poprzez wysyłanie fikcyjnej wartości.
+
+Zsynchronizuj frontendową walidację z rzeczywistym kontraktem API.
+
+Jeżeli pole rzeczywiście powinno być opcjonalne biznesowo, dopiero wtedy
+zidentyfikuj konflikt między frontendem i backendem.
+
+Nie usuwaj walidacji tylko po to, żeby request przeszedł.
+
+==================================================
+7. PRZYCISK WYŚLIJ
+==================================================
+
+Podczas wysyłania:
+
+- przycisk ma być disabled,
+- pokazuje stan „Wysyłanie...”,
+- użytkownik nie może przypadkiem wysłać formularza wielokrotnie.
+
+Po błędzie:
+
+- przycisk ponownie aktywny,
+- dane wpisane przez użytkownika pozostają w formularzu,
+- użytkownik nie musi wypełniać całego wywiadu od początku.
+
+Po sukcesie:
+
+- jednoznaczny komunikat potwierdzający zapis,
+- przejście do następnego etapu dopiero po potwierdzeniu sukcesu API.
+
+==================================================
+8. TEST RZECZYWISTEGO PROBLEMU
+==================================================
+
+Nie wystarczy sprawdzić typowego poprawnego submitu.
+
+Znajdź minimum 5 scenariuszy:
+
+1. poprawny kompletny wywiad → SUCCESS,
+
+2. brak jednego wymaganego pola → użytkownik dostaje konkretną nazwę pola,
+
+3. kilka brakujących pól → użytkownik dostaje wszystkie,
+
+4. API zwraca błąd walidacji → komunikat pochodzi z odpowiedzi API,
+
+5. API/network failure → użytkownik dostaje komunikat o połączeniu, a dane
+   formularza pozostają zachowane.
+
+Jeżeli obecny błąd, który powoduje „nie chce się wysłać”, jest możliwy do
+odtworzenia, odtwórz go przed i po poprawce.
+
+==================================================
+9. NIE WPROWADZAJ FAŁSZYWEGO SUKCESU
+==================================================
+
+Formularz może pokazać:
+
+„Wywiad wysłany”
+
+TYLKO gdy API faktycznie potwierdzi zapis.
+
+Jeżeli frontend nie wie, czy zapis się udał:
+
+nie pokazuj sukcesu.
+
+==================================================
+10. RAPORT
+==================================================
+
+Na końcu podaj:
+
+1. dokładną przyczynę obecnego problemu,
+2. w którym miejscu przepływu występował,
+3. jakie pliki zostały zmienione,
+4. jakie komunikaty użytkownik teraz zobaczy,
+5. czy dane formularza pozostają po błędzie,
+6. wyniki 5 scenariuszy testowych,
+7. czy problem z „klikam Wyślij i nic się nie dzieje” został rzeczywiście
+   odtworzony i naprawiony.
+
+Nie rób żadnych innych zmian.
