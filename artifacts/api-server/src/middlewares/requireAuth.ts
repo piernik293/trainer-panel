@@ -1,8 +1,10 @@
 /**
  * requireAuth middleware
  *
- * Verifies the Clerk session on every request and JIT-provisions a trainers row
- * on the first authenticated request for a new Clerk user.
+ * Verifies the Clerk session and loads the caller's trainers row. It never
+ * creates one: trainer profiles are created only by POST /api/trainer/profile,
+ * which the trainer app calls right after sign-in. A Clerk account linked to a
+ * client (client portal) is refused with 403 on every trainer endpoint.
  *
  * IMPORTANT: clerkUserId / trainerId are NEVER read from the request body,
  * query string, or custom headers. The only authoritative source is Clerk's
@@ -12,7 +14,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
-import { trainersTable, type Trainer } from "@workspace/db";
+import { trainersTable, clientsTable, type Trainer } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
@@ -23,7 +25,7 @@ declare global {
     interface Request {
       /** Clerk userId — set only after requireAuth succeeds */
       clerkUserId?: string;
-      /** DB trainer row — set only after JIT provisioning succeeds */
+      /** DB trainer row — set only after requireAuth succeeds */
       trainer?: Trainer;
     }
   }
@@ -46,12 +48,27 @@ export function checkIsAppAdmin(clerkUserId: string | undefined): boolean {
   return adminIds.includes(clerkUserId);
 }
 
+export const CLIENT_ACCOUNT_MESSAGE =
+  "To konto należy do klienta. Zaloguj się w portalu klienta albo użyj konta trenera.";
+export const NO_TRAINER_PROFILE_MESSAGE =
+  "To konto nie ma profilu trenera. Zaloguj się w panelu trenera.";
+
+/** True when the Clerk account is linked to a client (client portal account). */
+export async function isClientAccount(clerkUserId: string): Promise<boolean> {
+  const [client] = await db
+    .select({ id: clientsTable.id })
+    .from(clientsTable)
+    .where(eq(clientsTable.clerkUserId, clerkUserId));
+  return client !== undefined;
+}
+
 /**
- * JIT-provision a trainers row for the Clerk user.
+ * Create (or return the existing) trainers row for the Clerk user.
  * Uses INSERT … ON CONFLICT DO NOTHING + SELECT so concurrent first requests
- * from the same user cannot create duplicates.
+ * from the same user cannot create duplicates. Callers must refuse client
+ * accounts first (isClientAccount).
  */
-async function provisionTrainer(clerkUserId: string): Promise<Trainer | null> {
+export async function provisionTrainer(clerkUserId: string): Promise<Trainer | null> {
   return db.transaction(async (tx) => {
     // Attempt insert — silently ignored on duplicate clerk_user_id.
     await tx
@@ -86,16 +103,22 @@ export async function requireAuth(
   req.clerkUserId = userId;
 
   try {
-    const trainer = await provisionTrainer(userId);
+    const [trainer] = await db
+      .select()
+      .from(trainersTable)
+      .where(eq(trainersTable.clerkUserId, userId));
     if (!trainer) {
-      logger.error({ clerkUserId: userId }, "Failed to provision trainer row");
-      res.status(500).json({ error: "Wystąpiły chwilowe problemy techniczne. Spróbuj ponownie za chwilę." });
+      const clientAccount = await isClientAccount(userId);
+      res.status(403).json({
+        error: clientAccount ? CLIENT_ACCOUNT_MESSAGE : NO_TRAINER_PROFILE_MESSAGE,
+        code: clientAccount ? "CLIENT_ACCOUNT" : "TRAINER_PROFILE_REQUIRED",
+      });
       return;
     }
     req.trainer = trainer;
     next();
   } catch (err) {
-    logger.error({ err, clerkUserId: userId }, "requireAuth: DB error during provisioning");
+    logger.error({ err, clerkUserId: userId }, "requireAuth: DB error while loading trainer");
     res.status(500).json({ error: "Wystąpiły chwilowe problemy techniczne. Spróbuj ponownie za chwilę." });
   }
 }
