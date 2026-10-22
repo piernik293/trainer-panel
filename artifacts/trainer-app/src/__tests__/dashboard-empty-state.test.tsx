@@ -8,6 +8,7 @@
  * 3. Primary action navigates to /survey-invite (existing invitation flow).
  * 4. Secondary action navigates to /clients/new (existing client creation flow).
  * 5. No foreign or demo data is rendered in either state.
+ * 6. A failed stats request shows an error with retry — never the empty state.
  */
 
 import { describe, it, expect, vi, afterEach } from "vitest";
@@ -31,12 +32,21 @@ type StatsShape = {
 
 let mockStats: StatsShape | undefined = undefined;
 let mockIsLoading = false;
+let mockIsError = false;
+let mockError: unknown = null;
+const mockRefetch = vi.fn();
 const mockNavigate = vi.fn();
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
 vi.mock("@workspace/api-client-react", () => ({
-  useGetStats: () => ({ data: mockStats, isLoading: mockIsLoading }),
+  useGetStats: () => ({
+    data: mockStats,
+    isLoading: mockIsLoading,
+    isError: mockIsError,
+    error: mockError,
+    refetch: mockRefetch,
+  }),
   getGetStatsQueryKey: () => ["stats"],
 }));
 
@@ -55,6 +65,11 @@ vi.mock("wouter", () => ({
       {children}
     </a>
   ),
+}));
+
+// SubscriptionSummary has its own query — not under test here.
+vi.mock("@/components/subscription/SubscriptionSummary", () => ({
+  SubscriptionSummary: () => <div data-testid="subscription-summary" />,
 }));
 
 // Minimal Card stubs — preserve data-testid pass-through
@@ -120,6 +135,9 @@ vi.mock("lucide-react", () => ({
   CheckCircle2: () => <svg data-testid="icon-check-circle" />,
   Sparkles: () => <svg data-testid="icon-sparkles" />,
   UserPlus: () => <svg data-testid="icon-user-plus" />,
+  AlertCircle: () => <svg data-testid="icon-alert-circle" />,
+  RefreshCw: () => <svg data-testid="icon-refresh" />,
+  ArrowLeft: () => <svg data-testid="icon-arrow-left" />,
 }));
 
 // ─── Import under test (after mocks) ─────────────────────────────────────────
@@ -327,5 +345,29 @@ describe("Dashboard — loading state", () => {
 
     expect(screen.queryByTestId("dashboard-empty-state")).toBeNull();
     expect(screen.queryByTestId("dashboard-populated")).toBeNull();
+  });
+});
+
+// ─── Error state (regression: 401/500 used to look like "no clients") ────────
+
+describe("Dashboard — failed stats request", () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+    mockIsError = false;
+    mockError = null;
+  });
+
+  it("shows an error with a retry action instead of the empty state", () => {
+    mockStats = undefined;
+    mockIsLoading = false;
+    mockIsError = true;
+    mockError = Object.assign(new Error("Twoja sesja wygasła. Zaloguj się ponownie."), { status: 401 });
+    render(<Dashboard />);
+
+    expect(screen.queryByTestId("dashboard-empty-state")).toBeNull();
+    expect(screen.getByRole("alert").textContent).toContain("Twoja sesja wygasła");
+    fireEvent.click(screen.getByText("Spróbuj ponownie"));
+    expect(mockRefetch).toHaveBeenCalledTimes(1);
   });
 });
