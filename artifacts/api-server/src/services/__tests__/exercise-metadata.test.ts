@@ -25,7 +25,7 @@ vi.mock("@clerk/express", () => ({
 vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
 
 import { describe, it, expect, vi, beforeAll } from "vitest";
-import { legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
+import { legacyFixtureClient, legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
 import supertest from "supertest";
 import app from "../../app";
 import {
@@ -38,8 +38,11 @@ import type { Exercise, Survey } from "@workspace/db";
 import { db, exercisesTable, exerciseMuscleAssignmentsTable } from "@workspace/db";
 import { eq, and, gt, lte } from "drizzle-orm";
 
+let fixtureClientId: number; // replaces clientId 1 from the Replit DB
+
 beforeAll(async () => {
   await legacyTrainerId();
+  ({ clientId: fixtureClientId } = await legacyFixtureClient("metadata-fixture@example.invalid"));
 });
 
 const req = supertest(app);
@@ -268,7 +271,7 @@ describe("Data integrity", () => {
 
   it("15. Volume preview route still works for a known client (plan references valid)", async () => {
     const res = await req.post("/api/plans/volume-preview")
-      .send({ clientId: 1, days: [] })
+      .send({ clientId: fixtureClientId, days: [] })
       .set("Content-Type", "application/json");
     // May return 200 with or without warnings depending on client's survey
     expect([200, 404]).toContain(res.status);
@@ -332,7 +335,7 @@ describe("Phase 3 analysis API", () => {
 
   async function getAnalysis() {
     const res = await req.post("/api/plans/analysis-preview")
-      .send({ clientId: 1, days: allExerciseDays })
+      .send({ clientId: fixtureClientId, days: allExerciseDays })
       .set("Content-Type", "application/json");
     expect(res.status).toBe(200);
     return res.body;
@@ -490,7 +493,7 @@ describe("Volume and Phase 3 formula preservation", () => {
   it("26. Volume preview results remain accessible (formula unchanged)", async () => {
     const res = await req.post("/api/plans/volume-preview")
       .send({
-        clientId: 1,
+        clientId: fixtureClientId,
         days: [{
           dayId: 1,
           dayName: "Test",
@@ -508,7 +511,7 @@ describe("Volume and Phase 3 formula preservation", () => {
   it("27. Phase 3 analysis-preview endpoint still works (formula unchanged)", async () => {
     const res = await req.post("/api/plans/analysis-preview")
       .send({
-        clientId: 1,
+        clientId: fixtureClientId,
         days: [{
           dayId: 1,
           dayName: "Test",
