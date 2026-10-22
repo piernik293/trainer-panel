@@ -164,31 +164,44 @@ vi.mock("@workspace/db", () => {
     return [];
   }
 
-  function chain(items: Record<string, unknown>[]) {
+  // `project` maps rows when select() used a nested shape such as
+  // { log: exerciseExecutionLogsTable, currentName: … } (applied on await).
+  function chain(
+    items: Record<string, unknown>[],
+    project: (row: Record<string, unknown>) => unknown = (row) => row,
+  ) {
+    const join = (rightTable: unknown, joinCond: Cond, keepUnmatched: boolean) => {
+      const rightStore = getStore(rightTable);
+      const merged: Record<string, unknown>[] = [];
+      for (const left of items) {
+        const matches = rightStore.filter((right) => matchesJoinCondition(left, right, joinCond));
+        for (const right of matches) merged.push({ ...right, ...left });
+        if (keepUnmatched && matches.length === 0) merged.push({ ...left });
+      }
+      return chain(merged, project);
+    };
     return {
       then: (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
-        Promise.resolve(items).then(resolve, reject),
-      orderBy: (..._args: unknown[]) => chain(items),
-      limit:   (n: number)           => chain(items.slice(0, n)),
-      where:   (cond: Cond)          => chain(items.filter((i) => matchesCondition(i, cond))),
-      innerJoin: (rightTable: unknown, joinCond: Cond) => {
-        const rightStore = getStore(rightTable);
-        const merged: Record<string, unknown>[] = [];
-        for (const left of items) {
-          for (const right of rightStore) {
-            if (matchesJoinCondition(left, right, joinCond)) {
-              merged.push({ ...right, ...left });
-            }
-          }
-        }
-        return chain(merged);
-      },
+        Promise.resolve(items.map(project)).then(resolve, reject),
+      orderBy: (..._args: unknown[]) => chain(items, project),
+      limit:   (n: number)           => chain(items.slice(0, n), project),
+      where:   (cond: Cond)          => chain(items.filter((i) => matchesCondition(i, cond)), project),
+      innerJoin: (rightTable: unknown, joinCond: Cond) => join(rightTable, joinCond, false),
+      leftJoin:  (rightTable: unknown, joinCond: Cond) => join(rightTable, joinCond, true),
     };
   }
 
+  /** select({ key: table, … }) → rows become { key: row, other: undefined }. */
+  function projectionFor(shape: unknown, table: unknown) {
+    if (!shape || typeof shape !== "object") return undefined;
+    const tableKey = Object.entries(shape).find(([, v]) => v === table)?.[0];
+    if (!tableKey) return undefined;
+    return (row: Record<string, unknown>) => ({ [tableKey]: row });
+  }
+
   const db = {
-    select: (_shape?: unknown) => ({
-      from: (table: unknown) => chain(getStore(table)),
+    select: (shape?: unknown) => ({
+      from: (table: unknown) => chain(getStore(table), projectionFor(shape, table)),
     }),
 
     insert: (table: unknown) => ({
@@ -502,7 +515,7 @@ describe("client-portal session route authentication (Task #82)", () => {
 
   // ── 10. Foreign clientId in body does not change authenticated scope ──────────
 
-  it("(10a) clientId in POST body is ignored — uses own plan → 201 with own clientId", async () => {
+  it("(10a) clientId in POST body is ignored — uses own plan, session has own clientId", async () => {
     setAuth(CLIENT_A_CLERK);
     const res = await request(app).post("/client-portal/sessions").send({
       clientId: CLIENT_B_ID,     // must be ignored
@@ -510,8 +523,9 @@ describe("client-portal session route authentication (Task #82)", () => {
       planDayId: DAY_A_ID,
       sessionDate: "2026-08-10",
     });
-    // Plan A belongs to Client A — should succeed with Client A's id in the session
-    expect(res.status).toBe(201);
+    // Plan A belongs to Client A — should succeed with Client A's id in the session.
+    // 201 = new session; 200 = Client A's active session for this day is returned.
+    expect([200, 201]).toContain(res.status);
     expect(res.body.clientId).toBe(CLIENT_A_ID);
   });
 
@@ -525,14 +539,15 @@ describe("client-portal session route authentication (Task #82)", () => {
 
   // ── 11. Valid authenticated workflows return expected data ────────────────────
 
-  it("(11a) Client A creates session from own plan → 201 with correct clientId", async () => {
+  it("(11a) Client A starts a session from own plan → correct clientId", async () => {
     setAuth(CLIENT_A_CLERK);
     const res = await request(app).post("/client-portal/sessions").send({
       planId: PLAN_A_ID,
       planDayId: DAY_A_ID,
       sessionDate: "2026-08-15",
     });
-    expect(res.status).toBe(201);
+    expect([200, 201]).toContain(res.status); // 200 = existing active session of the day
+
     expect(res.body.clientId).toBe(CLIENT_A_ID);
     expect(res.body.planId).toBe(PLAN_A_ID);
   });
