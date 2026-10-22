@@ -114,6 +114,11 @@ async function main(): Promise<void> {
     ["trener-a", "trener-b", "klient-a1", "klient-b1"].map(ensureUser),
   );
   const [A, B, K, KB] = await Promise.all([idA, idB, idK, idKB].map(sessionToken));
+  // The trainer app creates trainer profiles right after sign-in.
+  for (const [name, tok] of [["A", A], ["B", B]] as const) {
+    const profile = await call(tok, "POST", "/trainer/profile");
+    check(`trener ${name}: profil trenera (POST /trainer/profile)`, profile.status === 200, why(profile));
+  }
   const run = `smoke-${Date.now()}`;
   const email = `${run}@example.invalid`;
 
@@ -211,6 +216,14 @@ async function main(): Promise<void> {
     check("klient A1: widzi przypisany plan", portalPlan.status === 200 && leaks(portalPlan, `Plan ${run}`), `HTTP ${portalPlan.status}`);
   } else {
     check("klient A1: portal odpowiada", portalPlan.status === 200, `HTTP ${portalPlan.status}`);
+  }
+
+  // A client portal account never becomes a trainer.
+  if (kLinked) {
+    const kClients = await call(K, "GET", "/clients");
+    check("klient A1: endpoint trenera → 403 CLIENT_ACCOUNT", kClients.status === 403 && kClients.body?.code === "CLIENT_ACCOUNT", why(kClients));
+    const kProfile = await call(K, "POST", "/trainer/profile");
+    check("klient A1: nie może założyć profilu trenera", kProfile.status === 403, why(kProfile));
   }
 
   // ── 4. Isolation ────────────────────────────────────────────────────────────
