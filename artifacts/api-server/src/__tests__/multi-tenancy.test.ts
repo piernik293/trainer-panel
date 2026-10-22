@@ -126,6 +126,22 @@ let nextId = 500;
 
 // ─── DB mock ──────────────────────────────────────────────────────────────────
 
+// Subscription limits are not under test here. The mocked transaction only
+// models trainer provisioning, so run the operation on the mocked db itself
+// (its insert().values().returning() stores clients).
+vi.mock("../services/subscriptionService", async () => {
+  const { db } = await import("@workspace/db");
+  return {
+    runWithSubscriptionLimit: async (
+      _trainerId: number,
+      _metric: string,
+      operation: (tx: unknown) => Promise<unknown>,
+    ) => operation(db),
+    assertSubscriptionLimitInTransaction: async () => undefined,
+    isSubscriptionLimitError: () => false,
+  };
+});
+
 vi.mock("@workspace/db", () => {
   const trainersTable      = { id: "id", clerkUserId: "clerkUserId" };
   const clientsTable       = { id: "id", trainerId: "trainerId", createdAt: "createdAt" };
