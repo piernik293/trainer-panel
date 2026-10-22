@@ -1693,7 +1693,7 @@ export default function PlanDraftWizard() {
   const [generatedExplanations, setGeneratedExplanations] = useState<Record<number, GeneratedDayExplanation>>({});
 
   // Live volume coverage — lifted here so Step 5 reuses the same result without recalculation
-  const { previewResult, isLoading: coverageLoading } = useVolumeCoverage(
+  const { previewResult, isLoading: coverageLoading, failed: coverageFailed } = useVolumeCoverage(
     clientId,
     exerciseDraft,
     distributionResult,
@@ -2150,6 +2150,13 @@ export default function PlanDraftWizard() {
           )}
 
         </>
+      )}
+
+      {coverageFailed && !coverageLoading && (step === 2 || step === 3) && (
+        <p role="alert" className="text-sm text-amber-700">
+          Nie udało się przeliczyć pokrycia objętości — pokazane dane mogą być nieaktualne.
+          Kolejna zmiana ćwiczeń spróbuje ponownie.
+        </p>
       )}
 
       {/* Step 2 — Ćwiczenia */}

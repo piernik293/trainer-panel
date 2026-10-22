@@ -560,11 +560,13 @@ interface VolumePanelProps {
   plan: WorkoutPlan;
   preview: VolumePreviewResult | null;
   isLoadingPreview: boolean;
+  /** Latest recalculation failed — shown data may be out of date. */
+  previewFailed?: boolean;
   /** Client's experience level — controls simplified beginner presentation. */
   experienceLevel?: string | null;
 }
 
-export function VolumePanel({ plan, preview, isLoadingPreview, experienceLevel }: VolumePanelProps) {
+export function VolumePanel({ plan, preview, isLoadingPreview, previewFailed = false, experienceLevel }: VolumePanelProps) {
   const [tab, setTab] = useState<"weekly" | "session">("weekly");
 
   // Use preview weekly when available; fall back to plan.volume.targets adapted
@@ -607,6 +609,13 @@ export function VolumePanel({ plan, preview, isLoadingPreview, experienceLevel }
           <Loader2 size={13} className="animate-spin text-muted-foreground ml-auto" />
         )}
       </div>
+
+      {previewFailed && !isLoadingPreview && (
+        <p role="alert" className="text-xs text-amber-700">
+          Nie udało się przeliczyć objętości — pokazane dane mogą być nieaktualne. Zmiana
+          w planie spróbuje ponownie.
+        </p>
+      )}
 
       {/* Tab selector */}
       <div className="flex gap-1 p-1 rounded-lg bg-muted/50 border border-border/40">

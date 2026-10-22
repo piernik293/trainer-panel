@@ -897,6 +897,9 @@ export interface VolumePreviewResult {
 export function useVolumePreview(plan: WorkoutPlan | undefined) {
   const [preview, setPreview] = useState<VolumePreviewResult | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  // True when the latest recalculation failed — the last valid preview stays
+  // visible, but the trainer must know it may be out of date.
+  const [previewFailed, setPreviewFailed] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const reqIdRef = useRef(0);
@@ -943,10 +946,14 @@ export function useVolumePreview(plan: WorkoutPlan | undefined) {
           const data: VolumePreviewResult = await res.json();
           if (myId !== reqIdRef.current) return; // stale after parse
           setPreview(data);
+          setPreviewFailed(false);
+        } else {
+          setPreviewFailed(true);
         }
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
-        // On network error keep the last valid preview visible.
+        // On network error keep the last valid preview visible (flagged).
+        if (myId === reqIdRef.current) setPreviewFailed(true);
       } finally {
         if (myId === reqIdRef.current) setIsLoadingPreview(false);
       }
@@ -957,5 +964,5 @@ export function useVolumePreview(plan: WorkoutPlan | undefined) {
     };
   }, [plan]);
 
-  return { preview, isLoadingPreview };
+  return { preview, isLoadingPreview, previewFailed };
 }
