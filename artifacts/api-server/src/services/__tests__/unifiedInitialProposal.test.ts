@@ -24,6 +24,7 @@ import {
   type TargetRecord,
   type GuidelineRecord,
   type RecoveryProfileResult,
+  type SingleTargetDecisionInput,
 } from "../planDraftVolumeDecisionService";
 
 // ─── Shared fixtures ──────────────────────────────────────────────────────────
@@ -159,11 +160,11 @@ function makeInput(
   overrides: {
     recoveryResult?: RecoveryProfileResult;
     availability?: "short" | "standard" | "high";
-    priorityOrder?: number | null;
+    priorityOrder?: 1 | 2 | 3 | null;
     isExcluded?: boolean;
     trainerOverride?: number | null;
   } = {},
-) {
+): SingleTargetDecisionInput {
   return {
     target,
     guideline,
@@ -173,7 +174,6 @@ function makeInput(
     priorityOrder: overrides.priorityOrder ?? null,
     isExcluded: overrides.isExcluded ?? false,
     trainerOverride: overrides.trainerOverride ?? null,
-    availabilityScore: 1,
   };
 }
 

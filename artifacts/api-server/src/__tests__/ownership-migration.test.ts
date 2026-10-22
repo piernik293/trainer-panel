@@ -45,7 +45,9 @@ vi.mock("../services/subscriptionService", async () => {
 
 // ─── Shared DB state ──────────────────────────────────────────────────────────
 
-const trainerA = { id: 1, clerkUserId: "user_A", displayName: "Trainer A", email: null, createdAt: new Date() };
+/** Trainer row shape (displayName / email are nullable in the schema). */
+type TrainerFixture = { id: number; clerkUserId: string; displayName: string | null; email: string | null; createdAt: Date };
+const trainerA: TrainerFixture = { id: 1, clerkUserId: "user_A", displayName: "Trainer A", email: null, createdAt: new Date() };
 const trainerB = { id: 2, clerkUserId: "user_B", displayName: "Trainer B", email: null, createdAt: new Date() };
 
 let trainersStore: typeof trainerA[] = [];
@@ -160,7 +162,7 @@ vi.mock("@workspace/db", () => {
                       )
                     );
                     if (idx === -1) return [];
-                    const updated = { ...invitesStore[idx], ...(data.usedAt !== undefined ? { usedAt: data.usedAt } : {}) };
+                    const updated = { ...invitesStore[idx], ...(data.usedAt !== undefined ? { usedAt: data.usedAt as Date | null } : {}) };
                     invitesStore[idx] = updated;
                     return [updated];
                   }

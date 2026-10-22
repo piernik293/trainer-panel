@@ -17,11 +17,11 @@ import { sql } from "drizzle-orm";
 // Helper — query a single exercise row by id
 // ---------------------------------------------------------------------------
 
-interface ExRow {
+type ExRow = {
   id: number;
   name: string;
   equipment: string[];
-}
+};
 
 async function getEquipment(id: number): Promise<string[]> {
   const res = await db.execute<ExRow>(

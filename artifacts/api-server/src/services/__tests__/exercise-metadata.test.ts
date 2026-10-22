@@ -90,6 +90,8 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     mainMuscleGroup: "Klatka piersiowa",
     secondaryMuscleGroups: [],
     equipment: ["Sztanga"],
+    requiredEquipmentAll: [],
+    createdByTrainerId: null, // public catalogue exercise
     equipmentOther: null,
     trainingLocation: ["Siłownia"],
     difficultyLevel: "Początkujący",

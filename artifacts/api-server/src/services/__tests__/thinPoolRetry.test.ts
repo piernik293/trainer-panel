@@ -43,7 +43,6 @@ function makeExercise(
   return {
     id: nextId(),
     name: `Exercise ${_nextId}`,
-    mainMuscleGroup: overrides.mainMuscleGroup,
     secondaryMuscleGroups: [],
     equipment: ["Hantle"],
     requiredEquipmentAll: [],

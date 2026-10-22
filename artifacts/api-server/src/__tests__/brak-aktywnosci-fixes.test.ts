@@ -12,6 +12,7 @@ import {
   runExerciseSelectionEngineV0,
   type V0SessionType,
 } from "../services/ExerciseSelectionEngineV0";
+import { buildGoalProfile } from "../services/goalProfileService";
 import type { ScoredAndFilteredExercise } from "../services/planDraftDayRecommendationsService";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -55,12 +56,7 @@ const noActivityCtx = {
   allowPlyometrics: false,
   preferredExerciseKeywords: [],
   deprioritizePushUps: false,
-  goalProfile: {
-    isCompetitiveAthlete: false,
-    preferHighNeurologicalLoad: false,
-    deprioritizeIsolationInMixedSlots: false,
-    exerciseClassBias: "default" as const,
-  },
+  goalProfile: buildGoalProfile(null), // neutral general profile (complete GoalProfile)
   undercoveredMuscleGroups: [],
   usageHistory: new Map(),
   cooldownIds: new Set<number>(),

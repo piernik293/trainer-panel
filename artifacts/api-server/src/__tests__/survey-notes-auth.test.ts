@@ -163,7 +163,7 @@ vi.mock("@workspace/db", () => {
           const id = nextId++;
           const now = new Date();
           if (table === surveysTable) {
-            const item: StoredSurvey = { id, createdAt: now, avoidedExerciseIds: [], avoidedExerciseReasons: null, avoidedExerciseOtherText: null, avoidedExerciseOtherReason: null, trainingGoal: "", ...data } as StoredSurvey;
+            const item: StoredSurvey = { id, createdAt: now, avoidedExerciseIds: [], avoidedExerciseReasons: null, avoidedExerciseOtherText: null, avoidedExerciseOtherReason: null, trainingGoal: "", ...data } as unknown as StoredSurvey; // clientId comes from data
             surveysStore.push(item);
             return [item];
           }

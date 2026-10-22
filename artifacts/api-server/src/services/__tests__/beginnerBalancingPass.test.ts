@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import type { ScoredAndFilteredExercise } from "../planDraftDayRecommendationsService";
+import type { DayRecommendationExercise, ScoredAndFilteredExercise } from "../planDraftDayRecommendationsService";
 import {
   hasMajorPattern,
   requiredPatternsForSession,
@@ -516,7 +516,7 @@ function runEngineWith(
   exercises: ScoredAndFilteredExercise[],
   ctx: V0PriorityContext,
   altIdx = 0,
-): ScoredAndFilteredExercise[] {
+): DayRecommendationExercise[] {
   const result = runExerciseSelectionEngineV0(
     exercises,
     "full_body",
