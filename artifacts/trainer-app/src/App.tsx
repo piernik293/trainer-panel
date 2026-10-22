@@ -10,6 +10,7 @@ import { Route, Switch, Router as WouterRouter, useLocation, Redirect, Link } fr
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { TrainerProfileGate } from "@/components/TrainerProfileGate";
+import { SessionProblemGuard } from "@/components/SessionProblemGuard";
 import markUrl from "@/assets/optimatren-mark.png";
 import Dashboard from "@/pages/Dashboard";
 import ClientList from "@/pages/ClientList";
@@ -302,9 +303,11 @@ function AppContent() {
     <>
       <Show when="signed-in">
         <ClerkQueryClientCacheInvalidator />
-        <TrainerProfileGate>
-          <Router />
-        </TrainerProfileGate>
+        <SessionProblemGuard>
+          <TrainerProfileGate>
+            <Router />
+          </TrainerProfileGate>
+        </SessionProblemGuard>
       </Show>
       <Show when="signed-out">
         <Redirect to="/trainer/sign-in" />
