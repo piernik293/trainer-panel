@@ -21,6 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowDownUp, GitBranch, Plus, X } from "lucide-react";
+import { ErrorState } from "@/components/ErrorState";
+import { humanizeError } from "@/lib/userError";
 
 interface Props {
   exerciseId: number;
@@ -34,7 +36,7 @@ function SubstitutionsSection({ exerciseId }: Props) {
   const [selectedId, setSelectedId] = useState<string>("");
 
   const { data: allExercises = [] } = useListExercises({ isActive: true });
-  const { data: substitutions = [], isLoading } = useGetExerciseSubstitutions(exerciseId);
+  const { data: substitutions = [], isLoading, isError, error, refetch } = useGetExerciseSubstitutions(exerciseId);
   const addSub = useAddExerciseSubstitution();
   const removeSub = useRemoveExerciseSubstitution();
 
@@ -95,6 +97,8 @@ function SubstitutionsSection({ exerciseId }: Props) {
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground animate-pulse">Ładowanie...</p>
+      ) : isError ? (
+        <ErrorState title="Nie udało się wczytać zamienników" message={humanizeError(error)} onRetry={() => void refetch()} />
       ) : substitutions.length === 0 && !isAdding ? (
         <p className="text-sm text-muted-foreground">
           Brak zamienników.{" "}
@@ -180,7 +184,7 @@ function ProgressionsSection({
   const [selectedId, setSelectedId] = useState<string>("");
 
   const { data: allExercises = [] } = useListExercises({ isActive: true });
-  const { data: allProgressions = [], isLoading } = useGetExerciseProgressions(exerciseId);
+  const { data: allProgressions = [], isLoading, isError, error, refetch } = useGetExerciseProgressions(exerciseId);
   const addProg = useAddExerciseProgression();
   const removeProg = useRemoveExerciseProgression();
 
@@ -241,6 +245,8 @@ function ProgressionsSection({
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground animate-pulse">Ładowanie...</p>
+      ) : isError ? (
+        <ErrorState title="Nie udało się wczytać powiązań" message={humanizeError(error)} onRetry={() => void refetch()} />
       ) : items.length === 0 && !isAdding ? (
         <p className="text-sm text-muted-foreground">
           Brak powiązań.{" "}
