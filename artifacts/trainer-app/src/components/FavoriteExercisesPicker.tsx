@@ -31,7 +31,7 @@ export function FavoriteExercisesPicker({ selectedExercises, onSelectedChange }:
     return () => clearTimeout(t);
   }, [query]);
 
-  const { data: results, isLoading } = useSearchExercises(debouncedQuery);
+  const { data: results, isLoading, isError } = useSearchExercises(debouncedQuery);
 
   const selectedIds = new Set(selectedExercises.map((e) => e.id));
   const filtered = (results ?? []).filter((r) => !selectedIds.has(r.id));
@@ -118,6 +118,10 @@ export function FavoriteExercisesPicker({ selectedExercises, onSelectedChange }:
           <div className="absolute z-50 w-full mt-1 rounded-md border border-border bg-popover shadow-md max-h-52 overflow-y-auto">
             {isLoading ? (
               <div className="px-3 py-2 text-xs text-muted-foreground">Szukam…</div>
+            ) : isError ? (
+              <div role="alert" className="px-3 py-2 text-xs text-destructive">
+                Nie udało się wyszukać ćwiczeń. Spróbuj ponownie za chwilę.
+              </div>
             ) : filtered.length === 0 ? (
               <div className="px-3 py-2 text-xs text-muted-foreground">
                 Brak wyników dla „{query}"

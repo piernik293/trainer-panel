@@ -1140,7 +1140,8 @@ export default function Step5Preview({
   isSaving = false,
   savedPlanId = null,
 }: Step5PreviewProps) {
-  const { data: avoidedExercises = [] } = useGetClientAvoidedExercises(clientId);
+  const { data: avoidedExercises = [], isError: avoidedFailed, refetch: refetchAvoided } =
+    useGetClientAvoidedExercises(clientId);
 
   // All exercise IDs in the avoided list
   const avoidedExerciseIds = useMemo(
@@ -1211,6 +1212,15 @@ export default function Step5Preview({
 
   return (
     <div className="space-y-6">
+      {avoidedFailed && (
+        <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Nie udało się wczytać ćwiczeń, których klient chce unikać — podgląd ich nie
+          oznacza.{" "}
+          <button type="button" className="underline font-medium" onClick={() => void refetchAvoided()}>
+            Spróbuj ponownie
+          </button>
+        </div>
+      )}
       {/* Page heading */}
       <div className="space-y-1">
         <h2 className="text-xl font-display font-bold">Podgląd planu</h2>
