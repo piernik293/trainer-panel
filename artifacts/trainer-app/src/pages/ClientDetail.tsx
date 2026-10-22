@@ -1448,7 +1448,21 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <SurveyBlock label="Miejsce treningu" value={survey.trainingLocation} />
-        <SurveyBlock label="Dostępny sprzęt" value={survey.equipment} />
+        <SurveyBlock
+          label="Dostępny sprzęt"
+          value={
+            survey.equipment?.trim() ? (
+              survey.equipment
+            ) : (
+              <p className="text-amber-700 font-medium" data-testid="missing-equipment-warning">
+                Klient nie określił sprzętu.{" "}
+                {survey.trainingLocation === "Siłownia"
+                  ? "Generator przyjmuje standardowe wyposażenie siłowni."
+                  : "Generator dobierze tylko ćwiczenia z masą własnego ciała."}
+              </p>
+            )
+          }
+        />
         <SurveyBlock label="Nastawienie do cardio" value={survey.cardioPreference} />
         <SurveyBlock label="Częstotliwość cardio" value={survey.cardioFrequency} />
         <SurveyBlock label="Preferowany typ cardio" value={survey.preferredCardioType} />

@@ -281,7 +281,7 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     warnings.push({
       code: "MISSING_EQUIPMENT",
       severity: "notice",
-      message: "Brak informacji o sprzęcie. Generator przyjął domyślny sprzęt dla wybranego miejsca.",
+      message: "Klient nie określił sprzętu. Generator przyjął domyślny sprzęt dla wybranego miejsca.",
       blocking: false,
     });
   }
