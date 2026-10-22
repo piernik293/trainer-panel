@@ -181,14 +181,24 @@ describe("buildDistributionRequest", () => {
     expect(buildDistributionRequest({ ...BASE_PARAMS, selectedSplitType: "" })).toBeNull();
   });
 
-  it("returns null when Phase 2 decisions has fewer than 11 entries", () => {
-    const thinDecisions = {
+  it("returns null when Phase 2 decisions are empty", () => {
+    const noDecisions = {
+      ...makeVolumeDecisions(),
+      decisions: [],
+    } as unknown as WeeklyVolumeDecisionResponseType;
+    expect(
+      buildDistributionRequest({ ...BASE_PARAMS, volumeDecisions: noDecisions }),
+    ).toBeNull();
+  });
+
+  it("accepts any non-empty number of targets (not fixed at 11 — 12 with Brzuch)", () => {
+    const tenDecisions = {
       ...makeVolumeDecisions(),
       decisions: TARGET_IDS.slice(0, 10).map((id) => makeDecision(id)),
     } as unknown as WeeklyVolumeDecisionResponseType;
     expect(
-      buildDistributionRequest({ ...BASE_PARAMS, volumeDecisions: thinDecisions }),
-    ).toBeNull();
+      buildDistributionRequest({ ...BASE_PARAMS, volumeDecisions: tenDecisions }),
+    ).not.toBeNull();
   });
 });
 
@@ -227,10 +237,9 @@ function makeDistributionResponse(overrides: {
 
 describe("checkDistributionConsistency", () => {
   // 8a. wrong decisions count detected
-  it("detects decisions count ≠ 11", () => {
+  it("does not require a fixed number of decisions (targets vary: 12 with Brzuch)", () => {
     const result = checkDistributionConsistency(makeDistributionResponse({ decisionsCount: 10 }), 6);
-    expect(result.isConsistent).toBe(false);
-    expect(result.reason).toMatch(/11/);
+    expect(result.isConsistent).toBe(true);
   });
 
   // 8b. wrong day count detected
