@@ -83,14 +83,22 @@ async function startServer() {
 
   await checkUnmappedMuscles();
 
-  app.listen(port, (err) => {
+  // Optional HOST (e.g. 127.0.0.1 on the GCP VM) — unset keeps the previous
+  // behaviour of listening on all interfaces.
+  const host = process.env["HOST"] || undefined;
+  const onListen = (err?: Error) => {
     if (err) {
       logger.error({ err }, "Error listening on port");
       process.exit(1);
     }
 
-    logger.info({ port }, "Server listening");
-  });
+    logger.info({ port, host }, "Server listening");
+  };
+  if (host) {
+    app.listen(port, host, onListen);
+  } else {
+    app.listen(port, onListen);
+  }
 }
 
 startServer();
