@@ -2,7 +2,7 @@
 
 Panel trenera personalnego (klienci, ankiety, generator planów, portal klienta).
 Przeniesiony z Replit na maszynę wirtualną GCP. Odpowiadaj po polsku, krótko.
-Szczegółowy plan bieżącego etapu jest w `~/etap-1-uruchomienie-i-stabilizacja.txt`, a postęp w `docs/POSTEP-GCP.md`.
+Szczegółowy plan bieżącego etapu jest w `~/etap-1-uruchomienie-i-stabilizacja.txt`, a postęp w `docs/POSTEP-GCP.md`. Kierunek rozwoju: `docs/ROADMAP.md`; stan błędów: `docs/PRZEGLAD-BLEDOW.md`.
 
 ## Stack
 - Monorepo pnpm 10.34.7 (`packageManager`), Node 24, TypeScript 5.9.
@@ -20,9 +20,12 @@ Szczegółowy plan bieżącego etapu jest w `~/etap-1-uruchomienie-i-stabilizacj
 - Wszystko działa pod jednym adresem, jak w Replit. Vite panelu (23889) przekazuje `/api` → 8080 oraz `/client-landing` → 22347. Linki zaproszeń są budowane z `window.location.origin`.
 - Tunel: `gcloud compute ssh instance-20261021-155053 --zone europe-central2-a -- -L 23889:localhost:23889`, potem otwórz http://localhost:23889.
 - Clerk to instancja development. Role adminów nadaje się przez env (`APP_ADMIN_CLERK_IDS`, `CATALOGUE_ADMIN_CLERK_IDS`), nie przez metadane Clerk.
+- Role: rekord `trainers` powstaje tylko przez `POST /api/trainer/profile` (panel trenera woła go po zalogowaniu). `requireAuth` nikogo nie tworzy; konto powiązane z klientem dostaje 403 `CLIENT_ACCOUNT`.
+- API po zmianie kodu wymaga restartu (`scripts/stop-gcp.sh && scripts/dev-gcp.sh`) — działa ze zbudowanego `dist`.
 
 ## Testy, typecheck, build
-- API: `pnpm --filter @workspace/api-server test` (vitest). Frontendy: `--filter @workspace/trainer-app test`, `--filter @workspace/client-landing test`.
+- API: `scripts/test-api.sh [pliki…]` — vitest na osobnej bazie `trainer_panel_test`. Nigdy nie uruchamiaj testów API na bazie aplikacji: testy integracyjne tworzą rekordy (fikstury bez trenera blokują start API przy ≥ 2 trenerach). Frontendy: `pnpm --filter @workspace/trainer-app test`, `pnpm --filter @workspace/client-landing test`.
+- Test dymny działającej aplikacji (po `scripts/dev-gcp.sh`): `scripts/smoke-gcp.sh` — przepływ zaproszenie → ankieta → plan → portal klienta i izolacja dla trenera A/B, klienta A1/B1 i braku sesji; ~2 s, kod wyjścia 0 = OK. Uruchamiaj po każdej większej zmianie. Konta testowe Clerk dev tworzy sam (`…+clerk_test@example.com`); sprząta swoich klientów.
 - Testy bezpieczeństwa generatora (muszą być zielone po każdej zmianie generatora):
   `pnpm --filter @workspace/api-server exec vitest run src/__tests__/beginner-safety.test.ts src/services/__tests__/beginnerBalancingPass.test.ts`
 - Typecheck: `pnpm run typecheck`. Build: `pnpm run build`.
