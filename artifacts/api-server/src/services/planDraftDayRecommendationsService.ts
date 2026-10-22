@@ -11,6 +11,8 @@
  *          →  selectByUncoveredTargets           (exact-targetId path, Phase 4B3)
  */
 
+import { normalizeEquipmentList } from "./equipmentNormalizer";
+
 // ─── Public types ─────────────────────────────────────────────────────────────
 
 export interface ScoredAndFilteredExercise {
@@ -413,7 +415,12 @@ function parseList(raw: string | null | undefined): string[] {
 function equipmentMatchLocal(required: string, available: string): boolean {
   const r = required.trim().toLowerCase();
   const a = available.trim().toLowerCase();
-  return r.includes(a) || a.includes(r);
+  if (r.includes(a) || a.includes(r)) return true;
+  // Catalogue and survey use different names for the same item
+  // (e.g. "Ławka" vs survey option "Ławeczka treningowa") — compare canonically.
+  const [requiredCanonical] = normalizeEquipmentList(required);
+  const [availableCanonical] = normalizeEquipmentList(available);
+  return requiredCanonical !== undefined && requiredCanonical === availableCanonical;
 }
 
 /**
