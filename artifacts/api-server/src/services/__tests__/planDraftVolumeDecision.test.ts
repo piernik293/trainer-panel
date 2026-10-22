@@ -116,8 +116,9 @@ describe("computePreferredFloor", () => {
   it("ceiling  1 → floor  1 (max(1, …) clamps to 1, not 0.5)", () => expect(computePreferredFloor(1)).toBe(1.0));
   it("ceiling  2 → floor  1 (not below 1)", () => expect(computePreferredFloor(2)).toBe(1));
 
-  it("automatic recommendation never exceeds preferredMax — Brak aktywności fizycznej", () => {
-    // rangePosition=0.00: base = preferredMin + 0 = preferredMin ≤ preferredMax always
+  it("automatic recommendation stays within [preferredMin, absoluteMax] — Brak aktywności fizycznej", () => {
+    // Spec 28.07 ("unified 100% weekly recommendation"): every level, including
+    // Brak aktywności, starts from absoluteMax — no conservative exception.
     const g: GuidelineRecord = { targetId: 6, preferredMin: 4, preferredMax: 8, absoluteMax: 12 };
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: g,
@@ -125,7 +126,7 @@ describe("computePreferredFloor", () => {
       priorityOrder: null, isExcluded: false,
       recoveryResult: NEUTRAL_RECOVERY, availability: "standard", trainerOverride: null,
     });
-    expect(d.recommendedValue).toBeLessThanOrEqual(g.preferredMax);
+    expect(d.recommendedValue).toBe(g.absoluteMax);
     expect(d.recommendedValue).toBeGreaterThanOrEqual(g.preferredMin);
   });
 
@@ -380,15 +381,14 @@ describe("computeTargetDecision", () => {
     expect(d.recommendedValue).toBeLessThanOrEqual(G_BARKI.absoluteMax);
   });
 
-  it("Brak aktywności fizycznej → base at 0% of preferred range (= preferredMin)", () => {
-    // base = 4 + 4*0.00 = 4; clamp upper = preferredMax=8
+  it("Brak aktywności fizycznej → base at absoluteMax like every level (spec 28.07)", () => {
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Brak aktywności fizycznej",
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: null,
     });
-    expect(d.baseValue).toBe(4.0);
-    expect(d.recommendedValue).toBe(4.0);
+    expect(d.baseValue).toBe(G_BARKI.absoluteMax);
+    expect(d.recommendedValue).toBe(G_BARKI.absoluteMax);
   });
 
   it("Początkujący, no priority → base starts at absoluteMax", () => {
@@ -551,17 +551,16 @@ describe("computeTargetDecision", () => {
     expect(withGroupSize2a.recommendedValue).toBe(22);
   });
 
-  it("reduced recovery → lowers value by 20% of preferredWidth from absoluteMax base", () => {
+  it("reduced recovery → no numeric reduction of the initial proposal (spec 28.07)", () => {
     const reducedRecovery: RecoveryProfileResult = { profile: "reduced", hasData: true, factors: ["słaba jakość regeneracji"] };
-    // Początkujący base=12 (absoluteMax); recovery raw=-4*0.20=-0.8; stored roundInt(-0.8)=-1
-    // preClamp=12-0.8=11.2 → clamp[4,12]=11.2 → roundInt=11
+    // "REMOVE ALL INITIAL NUMERIC REDUCTIONS": recovery stays neutral information.
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Początkujący",
       priorityOrder: null, isExcluded: false, recoveryResult: reducedRecovery,
       availability: "standard", trainerOverride: null,
     });
-    expect(d.recoveryAdjustment).toBe(-1);
-    expect(d.recommendedValue).toBe(11);
+    expect(d.recoveryAdjustment).toBe(0);
+    expect(d.recommendedValue).toBe(G_BARKI.absoluteMax);
     expect(d.recommendedValue).toBeGreaterThanOrEqual(G_BARKI.preferredMin);
     expect(d.recommendedValue).toBeLessThanOrEqual(G_BARKI.absoluteMax);
   });
@@ -577,15 +576,14 @@ describe("computeTargetDecision", () => {
     expect(d.recommendedValue).toBeGreaterThanOrEqual(G_BARKI.preferredMin);
   });
 
-  it("short availability reduces non-priority targets (from absoluteMax base)", () => {
-    // Początkujący base=12; avail=-4*0.25=-1.0 raw; stored=-1; preClamp=11 → clamp[4,12]=11 → round=11
+  it("short availability → no numeric reduction of the initial proposal (spec 28.07)", () => {
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Początkujący",
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "short", trainerOverride: null,
     });
-    expect(d.availabilityAdjustment).toBeCloseTo(-1.0, 1);
-    expect(d.recommendedValue).toBe(11);
+    expect(d.availabilityAdjustment).toBe(0);
+    expect(d.recommendedValue).toBe(G_BARKI.absoluteMax);
   });
 
   it("short availability does NOT reduce priority targets", () => {
@@ -669,15 +667,15 @@ describe("computeTargetDecision", () => {
     expect(d.warnings.some((w) => w.code === "VOLUME_OVERRIDE_ABOVE_ABSOLUTE_MAX")).toBe(false);
   });
 
-  it("Zone D — override above absoluteMax: REJECTED", () => {
+  it("Zone D — override above absoluteMax: accepted with a warning (spec 28.07: do not block)", () => {
     const d = computeTargetDecision({
       target: TARGETS[5]!, guideline: G_BARKI, experienceLevel: "Początkujący",
       priorityOrder: null, isExcluded: false, recoveryResult: NEUTRAL_RECOVERY,
       availability: "standard", trainerOverride: 15, // 15 > absoluteMax=12
     });
-    expect(d.selectedValue).toBe(12);      // stays at recommendedValue (=absoluteMax)
-    expect(d.isOverridden).toBe(false);
-    expect(d.source).toBe("calculated");
+    expect(d.selectedValue).toBe(15);
+    expect(d.isOverridden).toBe(true);
+    expect(d.source).toBe("trainer_override");
     expect(d.trainerOverride).toBe(15);
     expect(d.warnings.some((w) => w.code === "VOLUME_OVERRIDE_ABOVE_ABSOLUTE_MAX")).toBe(true);
   });
@@ -822,7 +820,7 @@ describe("calculateVolumeDecisions (integration)", () => {
     expect(result.summary.targetsOverridden).toBe(0);
   }, 10000);
 
-  it("Zone D override (above absoluteMax) rejected", async () => {
+  it("Zone D override (above absoluteMax) accepted with a warning", async () => {
     // Barki target 6 Średniozaawansowany: absoluteMax=20. Override 25 is Zone D
     const result = await calculateVolumeDecisions({
       clientId: 1, experienceLevel: "Średniozaawansowany",
@@ -831,8 +829,8 @@ describe("calculateVolumeDecisions (integration)", () => {
       trainingDays: 4, sessionDuration: 60, trainerOverrides: { "6": 25 },
     });
     const d = result.decisions.find((d) => d.targetId === 6)!;
-    expect(d.isOverridden).toBe(false);
-    expect(d.selectedValue).toBe(d.recommendedValue);
+    expect(d.isOverridden).toBe(true);
+    expect(d.selectedValue).toBe(25);
     expect(d.warnings.some((w) => w.code === "VOLUME_OVERRIDE_ABOVE_ABSOLUTE_MAX")).toBe(true);
   }, 10000);
 
