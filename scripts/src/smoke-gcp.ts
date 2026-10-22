@@ -96,6 +96,13 @@ async function call(token: string | null, method: string, path: string, body?: u
 
 const leaks = (r: Res, needle: string) => JSON.stringify(r.body ?? "").includes(needle);
 
+/** Short failure detail: HTTP status plus the API's error code/message. */
+function why(r: Res): string {
+  const b = (r.body ?? {}) as { code?: string; error?: string; message?: string };
+  const msg = b.code ?? b.message ?? b.error;
+  return `HTTP ${r.status}${r.status >= 400 && msg ? ` ${String(msg).slice(0, 120)}` : ""}`;
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
@@ -109,6 +116,13 @@ async function main(): Promise<void> {
   const [A, B, K, KB] = await Promise.all([idA, idB, idK, idKB].map(sessionToken));
   const run = `smoke-${Date.now()}`;
   const email = `${run}@example.invalid`;
+
+  // The FREE plan allows 3 clients: remove clients left by earlier smoke runs
+  // (only test-account clients with a smoke-…@example.invalid address).
+  const before = await call(A, "GET", "/clients");
+  for (const c of (Array.isArray(before.body) ? before.body : []) as { id: number; email: string | null }[]) {
+    if (c.email && /^smoke-\d+@example\.invalid$/.test(c.email)) await call(A, "DELETE", `/clients/${c.id}`);
+  }
 
   // ── 1. Invite → public survey → client visible to trainer A ────────────────
   const invite = await call(A, "POST", "/survey-invites", { intendedEmail: null });
@@ -152,12 +166,14 @@ async function main(): Promise<void> {
 
   // ── 2. Plan: create → day → exercise → activate; generator answers ─────────
   const plan = await call(A, "POST", `/clients/${clientId}/plans`, { title: `Plan ${run}`, surveyId, splitType: "full_body" });
-  check("A: utworzenie planu", plan.status === 201, `HTTP ${plan.status}`);
+  check("A: utworzenie planu", plan.status === 201, why(plan));
   const planId: number = plan.body?.id;
 
   const day = await call(A, "POST", `/plans/${planId}/days`, { dayName: "Dzień A" });
-  check("A: dodanie dnia planu", day.status === 201, `HTTP ${day.status}`);
-  const dayId: number = day.body?.id;
+  check("A: dodanie dnia planu", day.status === 201, why(day));
+  // The endpoint returns the whole plan; the new day is the last one.
+  const days = (day.body?.days ?? []) as { id: number }[];
+  const dayId: number = days[days.length - 1]?.id;
 
   const ex = await call(A, "POST", `/plans/${planId}/days/${dayId}/exercises`, {
     exerciseId: 1,
@@ -166,13 +182,13 @@ async function main(): Promise<void> {
     repRangeMin: 8,
     repRangeMax: 12,
   });
-  check("A: dodanie ćwiczenia do dnia", ex.status === 201, `HTTP ${ex.status}`);
+  check("A: dodanie ćwiczenia do dnia", ex.status === 201, why(ex));
 
   const edit = await call(A, "PATCH", `/plans/${planId}`, { trainerNotes: "smoke edit" });
   check("A: edycja planu", edit.status === 200, `HTTP ${edit.status}`);
 
   const activate = await call(A, "POST", `/plans/${planId}/activate`);
-  check("A: aktywacja planu (przypisanie klientowi)", activate.status === 200, `HTTP ${activate.status}`);
+  check("A: aktywacja planu (przypisanie klientowi)", activate.status === 200, why(activate));
 
   const draftInput = await call(A, "GET", `/clients/${clientId}/plan-draft-input`);
   check("A: generator — dane wejściowe szkicu", draftInput.status === 200, `HTTP ${draftInput.status} ${draftInput.ms} ms`);
@@ -271,6 +287,9 @@ async function main(): Promise<void> {
     const r = await call(A, "GET", path);
     check(`A: GET ${path}`, r.status === 200, `HTTP ${r.status} ${r.ms} ms`);
   }
+
+  const cleanup = await call(A, "DELETE", `/clients/${clientId}`);
+  check("A: usunięcie klienta testowego (sprzątanie)", cleanup.status === 204 || cleanup.status === 200, `HTTP ${cleanup.status}`);
 
   console.log(`\nCzas: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 }
