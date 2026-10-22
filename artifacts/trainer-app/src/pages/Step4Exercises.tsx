@@ -810,7 +810,7 @@ export default function Step4Exercises({
           rir: DRAFT_EXERCISE_DEFAULTS.rir,
           restSeconds: DRAFT_EXERCISE_DEFAULTS.restSeconds,
           tempo: getDefaultTempo(toAdd.exerciseClass, experienceLevel),
-          restrictionLabel: toAdd.restrictionLabel ?? null,
+          restrictionLabel: toAdd.restrictionLabel ?? undefined,
         });
       }
     }
