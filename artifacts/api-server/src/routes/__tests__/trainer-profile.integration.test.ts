@@ -127,3 +127,13 @@ describe("client portal account", () => {
     expect(await trainerRows(CLIENT_ACCOUNT)).toHaveLength(0);
   });
 });
+
+describe("trainer account and client portal invitations", () => {
+  it("a trainer account cannot activate a client invitation (403 TRAINER_ACCOUNT)", async () => {
+    mockUserId = NEW_TRAINER; // has a trainer profile (created above)
+    const res = await request(app).post(`/api/client-invitations/${"a".repeat(64)}/activate`);
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("TRAINER_ACCOUNT");
+    expect(res.body.error).toBe("To konto jest kontem trenera. Użyj innego adresu e-mail.");
+  });
+});

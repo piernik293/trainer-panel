@@ -339,6 +339,20 @@ router.post("/client-invitations/:token/activate", async (req, res): Promise<voi
     return;
   }
 
+  // A trainer account must never become a client portal account (roles stay
+  // separate; see requireAuth / POST /trainer/profile).
+  const [trainerAccount] = await db
+    .select({ id: trainersTable.id })
+    .from(trainersTable)
+    .where(eq(trainersTable.clerkUserId, clerkUserId));
+  if (trainerAccount) {
+    res.status(403).json({
+      error: "To konto jest kontem trenera. Użyj innego adresu e-mail.",
+      code: "TRAINER_ACCOUNT",
+    });
+    return;
+  }
+
   const rawToken = req.params["token"];
   if (!rawToken || rawToken.length < 32) {
     res.status(404).json({ error: "Zaproszenie nie znalezione." });
