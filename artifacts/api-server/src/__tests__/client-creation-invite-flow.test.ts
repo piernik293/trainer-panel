@@ -125,6 +125,22 @@ let nextId = { client: 100, invite: 1, survey: 1 };
 
 // ─── DB mock ──────────────────────────────────────────────────────────────────
 
+// Drizzle operators as plain condition objects the db mock can evaluate.
+vi.mock("drizzle-orm", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("drizzle-orm")>();
+  return {
+    ...actual,
+    eq: (col: unknown, val: unknown) => ({ op: "eq", col, val }),
+    gt: (col: unknown, val: unknown) => ({ op: "gt", col, val }),
+    isNull: (col: unknown) => ({ op: "isNull", col }),
+    isNotNull: (col: unknown) => ({ op: "isNotNull", col }),
+    and: (...conds: unknown[]) => ({ op: "and", conds: conds.filter(Boolean) }),
+    or: (...conds: unknown[]) => ({ op: "or", conds: conds.filter(Boolean) }),
+    desc: (col: unknown) => col,
+    asc: (col: unknown) => col,
+  };
+});
+
 vi.mock("@workspace/db", () => {
   const trainersT = { clerkUserId: "c", id: "id" };
   const clientsT = { id: "id", trainerId: "trainer_id", email: "email", clerkUserId: "clerk_user_id" };
@@ -136,16 +152,46 @@ vi.mock("@workspace/db", () => {
   };
   const surveysT = { id: "id", clientId: "client_id" };
 
-  // Chain-builder that allows .from/.where/.limit/.returning/.orderBy/.set
-  function makeChain(immediate?: () => unknown[]) {
+  // Chain-builder that allows .from/.where/.limit/.returning/.orderBy/.set.
+  // Awaiting a select chain returns the rows of the table's store filtered by
+  // the (mocked) drizzle conditions, so route-level ownership checks work.
+  type Cond = { op: string; col?: string; val?: unknown; conds?: Cond[] };
+  const camel = (col: string) => col.replace(/_([a-z])/g, (_m, c: string) => c.toUpperCase());
+  function matches(row: Record<string, unknown>, cond: Cond | undefined): boolean {
+    if (!cond || typeof cond !== "object" || !("op" in cond)) return true;
+    const v = cond.col !== undefined ? row[camel(cond.col)] : undefined;
+    switch (cond.op) {
+      case "and": return (cond.conds ?? []).every((c) => matches(row, c));
+      case "or": return (cond.conds ?? []).some((c) => matches(row, c));
+      case "eq": return v === cond.val;
+      case "isNull": return v == null;
+      case "isNotNull": return v != null;
+      case "gt": return (v as Date | number) > (cond.val as Date | number);
+      default: return true;
+    }
+  }
+  function storeFor(table: unknown): Record<string, unknown>[] {
+    if (table === clientsT) return clientsStore as unknown as Record<string, unknown>[];
+    if (table === invitesT) return invitesStore as unknown as Record<string, unknown>[];
+    if (table === surveysT) return surveysStore as unknown as Record<string, unknown>[];
+    if (table === trainersT) return [trainerA, trainerB] as unknown as Record<string, unknown>[];
+    return [];
+  }
+  function makeChain(immediate?: () => unknown[], table?: unknown, cond?: Cond, max?: number) {
     const rows: unknown[] = immediate ? immediate() : [];
+    const resolveRows = () => {
+      const filtered = storeFor(table).filter((r) => matches(r, cond));
+      return max === undefined ? filtered : filtered.slice(0, max);
+    };
     return {
-      from: (_t: unknown) => makeChain(immediate),
-      where: (_cond: unknown) => makeChain(immediate),
-      limit: (_n: number) => makeChain(immediate),
-      orderBy: (..._a: unknown[]) => makeChain(immediate),
+      from: (t: unknown) => makeChain(immediate, t, cond, max),
+      where: (c: Cond) => makeChain(immediate, table, c, max),
+      limit: (n: number) => makeChain(immediate, table, cond, n),
+      orderBy: (..._a: unknown[]) => makeChain(immediate, table, cond, max),
       returning: () => rows,
-      set: (_vals: unknown) => makeChain(immediate),
+      set: (_vals: unknown) => makeChain(immediate, table, cond, max),
+      then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
+        Promise.resolve(resolveRows()).then(resolve, reject),
     };
   }
 
@@ -245,8 +291,9 @@ vi.mock("@workspace/db", () => {
             }),
           }),
           insert: (table: Record<string, string>) => ({
-            values: (data: Record<string, unknown>) => ({
-              returning: () => {
+            // Rows are stored on values(): routes may await the insert without .returning().
+            values: (data: Record<string, unknown>) => {
+              const inserted = ((): unknown[] => {
                 if (table === clientsT) {
                   const client: ClientRow = {
                     id: nextId.client++,
@@ -274,8 +321,12 @@ vi.mock("@workspace/db", () => {
                   return [survey];
                 }
                 return [{ id: 999, ...data }];
-              },
-            }),
+              })();
+              return {
+                returning: () => inserted,
+                then: (resolve: (v: unknown) => unknown) => Promise.resolve(undefined).then(resolve),
+              };
+            },
           }),
         });
       },
