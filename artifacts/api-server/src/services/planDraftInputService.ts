@@ -281,7 +281,9 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     warnings.push({
       code: "MISSING_EQUIPMENT",
       severity: "notice",
-      message: "Klient nie określił sprzętu. Generator przyjął domyślny sprzęt dla wybranego miejsca.",
+      message: availableEquipment.includes("Masa własnego ciała")
+        ? "Klient nie określił sprzętu. Generator dobierze tylko ćwiczenia z masą własnego ciała."
+        : "Klient nie określił sprzętu. Generator przyjmuje standardowe wyposażenie siłowni.",
       blocking: false,
     });
   }

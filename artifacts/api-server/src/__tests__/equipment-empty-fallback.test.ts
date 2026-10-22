@@ -144,3 +144,20 @@ describe("Siłownia + empty equipment → standard gym", () => {
     }
   });
 });
+
+// ─── Generator default (planDraftInput) matches the compatibility check ──────
+// Decision (22.10): Dom / Siłownia plenerowa without equipment = bodyweight
+// only, in the plan-draft generator too (not a home-gym equipment guess).
+
+import { defaultEquipmentForLocation, FULL_GYM_EQUIPMENT } from "../services/equipmentNormalizer";
+
+describe("defaultEquipmentForLocation — same rule as compatibility", () => {
+  it("Dom and Siłownia plenerowa without equipment → bodyweight only", () => {
+    expect(defaultEquipmentForLocation("Dom")).toEqual(["Masa własnego ciała"]);
+    expect(defaultEquipmentForLocation("Siłownia plenerowa")).toEqual(["Masa własnego ciała"]);
+  });
+
+  it("Siłownia without equipment → standard gym", () => {
+    expect(defaultEquipmentForLocation("Siłownia")).toEqual(FULL_GYM_EQUIPMENT);
+  });
+});
