@@ -10,11 +10,15 @@
  * guarantees deterministic results regardless of DB state.
  */
 
-// Trainer endpoints require a session: authenticate as the legacy test
-// trainer (see __tests__/helpers/legacyTrainer.ts).
+// Since 5711879 (13.08) the client portal authenticates the client's own
+// Clerk session (requireClientAuth) instead of an ?email= lookup. Requests run
+// as the primary fixture client unless a test switches portalUserId.
+const PORTAL_CLIENT = "portal_test_client";
+const PORTAL_OTHER = "portal_test_other";
+let portalUserId: string | null = PORTAL_CLIENT;
 vi.mock("@clerk/express", () => ({
   clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
-  getAuth: () => ({ userId: "legacy_test_trainer" }),
+  getAuth: () => ({ userId: portalUserId }),
 }));
 vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
 
@@ -60,14 +64,14 @@ beforeAll(async () => {
   // Create primary test client.
   const [client] = await db
     .insert(clientsTable)
-    .values({ firstName: "Portal", lastName: "TestFixture", email: TEST_EMAIL , trainerId: await legacyTrainerId() })
+    .values({ firstName: "Portal", lastName: "TestFixture", email: TEST_EMAIL, trainerId: await legacyTrainerId(), clerkUserId: PORTAL_CLIENT })
     .returning();
   testClientId = client.id;
 
   // Create a second client for cross-client rejection tests.
   const [other] = await db
     .insert(clientsTable)
-    .values({ firstName: "Other", lastName: "Client", email: TEST_EMAIL_OTHER , trainerId: await legacyTrainerId() })
+    .values({ firstName: "Other", lastName: "Client", email: TEST_EMAIL_OTHER, trainerId: await legacyTrainerId(), clerkUserId: PORTAL_OTHER })
     .returning();
   testOtherClientId = other.id;
 
@@ -132,17 +136,19 @@ async function createSession(date = "2099-01-15"): Promise<number> {
       planId: testPlanId,
       planDayId: testDayId,
       sessionDate: date,
-    })
-    .expect(201);
+    });
+  // 201 = new session; 200 = the active session already open for this plan
+  // day is returned (one active session per day, see POST /client-portal/sessions).
+  expect([200, 201]).toContain(res.status);
   return res.body.id as number;
 }
 
 // ─── Suite 1: happy path ──────────────────────────────────────────────────────
 
 describe("Client portal — happy path", () => {
-  it("finds an active plan by email", async () => {
+  it("finds the signed-in client's active plan", async () => {
     const res = await request(app)
-      .get(`/api/client-portal/plan?email=${encodeURIComponent(TEST_EMAIL)}`)
+      .get("/api/client-portal/plan")
       .expect(200);
 
     expect(res.body.client.id).toBe(testClientId);
@@ -196,7 +202,7 @@ describe("Client portal — happy path", () => {
   it("full happy path: find plan → start session → log exercise → complete session", async () => {
     // Step 1 — find plan by email
     const planRes = await request(app)
-      .get(`/api/client-portal/plan?email=${encodeURIComponent(TEST_EMAIL)}`)
+      .get("/api/client-portal/plan")
       .expect(200);
     expect(planRes.body.plan.status).toBe("active");
 
@@ -267,39 +273,52 @@ describe("Client portal — idempotent exercise logging", () => {
 
 // ─── Suite 3: email not found ─────────────────────────────────────────────────
 
-describe("Client portal — email not found", () => {
-  it("returns 404 with a descriptive message when email does not exist", async () => {
-    const res = await request(app)
-      .get("/api/client-portal/plan?email=nobody%40nowhere.invalid")
-      .expect(404);
-
-    expect(res.body.error).toBeTruthy();
-    // Must be a 404, not a 500 / unhandled crash
-    expect(res.status).toBe(404);
-    // Polish UI message should mention email or client
-    expect(res.body.error.toLowerCase()).toMatch(/e-mail|klient/);
+describe("Client portal — no client account", () => {
+  // Replaces the old ?email= cases: access now depends only on the session.
+  it("returns 404 with a descriptive message when the account is not linked to a client", async () => {
+    portalUserId = "portal_test_unlinked";
+    try {
+      const res = await request(app).get("/api/client-portal/plan").expect(404);
+      expect(res.body.error.toLowerCase()).toMatch(/klient/);
+    } finally {
+      portalUserId = PORTAL_CLIENT;
+    }
   });
 
-  it("returns 400 when the email query param is missing entirely", async () => {
-    const res = await request(app)
-      .get("/api/client-portal/plan")
-      .expect(400);
-
-    expect(res.body.error).toBeTruthy();
+  it("returns 401 without a session", async () => {
+    portalUserId = null;
+    try {
+      const res = await request(app).get("/api/client-portal/plan").expect(401);
+      expect(res.body.error).toBeTruthy();
+    } finally {
+      portalUserId = PORTAL_CLIENT;
+    }
   });
 });
 
-// ─── Suite 4: cross-client access rejected ────────────────────────────────────
+// ─── Suite 4: cross-client access ─────────────────────────────────────────────
 
 describe("Client portal — cross-client access rejected", () => {
+  // The other client is signed in and targets the primary client's data.
+  // clientId in the body is ignored by the API (identity = session).
+  async function asOther<T>(fn: () => Promise<T>): Promise<T> {
+    portalUserId = PORTAL_OTHER;
+    try {
+      return await fn();
+    } finally {
+      portalUserId = PORTAL_CLIENT;
+    }
+  }
+
   it("rejects exercise logging for a session that belongs to a different client", async () => {
     const sessionId = await createSession("2099-04-01");
 
-    // Attempt to log using a different clientId — verifySessionOwnership must reject
-    const res = await request(app)
-      .put(`/api/client-portal/sessions/${sessionId}/exercises/${testPlanExerciseId}`)
-      .send({ clientId: testOtherClientId, setsCompleted: 5 })
-      .expect(404);
+    const res = await asOther(() =>
+      request(app)
+        .put(`/api/client-portal/sessions/${sessionId}/exercises/${testPlanExerciseId}`)
+        .send({ clientId: testClientId, setsCompleted: 5 })
+        .expect(404),
+    );
 
     expect(res.body.error).toBeTruthy();
   });
@@ -307,10 +326,12 @@ describe("Client portal — cross-client access rejected", () => {
   it("rejects PATCH (session completion) for a session belonging to a different client", async () => {
     const sessionId = await createSession("2099-04-02");
 
-    const res = await request(app)
-      .patch(`/api/client-portal/sessions/${sessionId}`)
-      .send({ clientId: testOtherClientId, isCompleted: true })
-      .expect(404);
+    const res = await asOther(() =>
+      request(app)
+        .patch(`/api/client-portal/sessions/${sessionId}`)
+        .send({ clientId: testClientId, isCompleted: true })
+        .expect(404),
+    );
 
     expect(res.body.error).toBeTruthy();
 
@@ -322,16 +343,18 @@ describe("Client portal — cross-client access rejected", () => {
     expect(session.isCompleted).toBe(false);
   });
 
-  it("rejects creating a session for a plan owned by a different client", async () => {
-    const res = await request(app)
-      .post("/api/client-portal/sessions")
-      .send({
-        clientId: testOtherClientId,   // does not own testPlanId
-        planId: testPlanId,
-        planDayId: testDayId,
-        sessionDate: "2099-05-01",
-      })
-      .expect(403);
+  it("rejects creating a session for a plan owned by a different client (404)", async () => {
+    const res = await asOther(() =>
+      request(app)
+        .post("/api/client-portal/sessions")
+        .send({
+          clientId: testClientId,   // ignored — the other client does not own testPlanId
+          planId: testPlanId,
+          planDayId: testDayId,
+          sessionDate: "2099-05-01",
+        })
+        .expect(404),
+    );
 
     expect(res.body.error).toBeTruthy();
   });
