@@ -371,10 +371,9 @@ describe("POST /clients body stripping", () => {
 });
 
 describe("concurrent trainer provisioning", () => {
-  it("(11) two simultaneous requests with same clerkUserId → exactly one trainer row", async () => {
-    // This test verifies the INSERT ON CONFLICT DO NOTHING pattern.
-    // We simulate by calling provisionTrainer directly via the real requireAuth.
-    // Since DB is mocked we verify the store stays at 1 entry.
+  it("(11) requireAuth never creates a trainer row — unknown account → 403", async () => {
+    // Trainer profiles are created only by POST /trainer/profile (see
+    // trainer-profile.integration.test.ts for the real-DB race test).
     vi.resetModules();
     vi.mock("@clerk/express", () => ({
       clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
@@ -384,7 +383,7 @@ describe("concurrent trainer provisioning", () => {
     trainersStore = [];
 
     const { requireAuth } = await import("../middlewares/requireAuth");
-    setAuth("user_concurrent");
+    setAuth("user_without_profile");
 
     const app = express();
     app.use(express.json());
@@ -392,19 +391,11 @@ describe("concurrent trainer provisioning", () => {
     app.use(clerkMiddleware());
     app.get("/ping", requireAuth, (_req, res) => res.json({ ok: true }));
 
-    // Fire two concurrent requests.
-    const [r1, r2] = await Promise.all([
-      request(app).get("/ping"),
-      request(app).get("/ping"),
-    ]);
+    const res = await request(app).get("/ping");
 
-    expect(r1.status).toBe(200);
-    expect(r2.status).toBe(200);
-
-    // Only one trainer row should exist for this userId (mock accumulates).
-    const rows = trainersStore.filter((t) => t.clerkUserId === "user_concurrent");
-    // Our mock auto-provisions exactly once per unique clerkUserId.
-    expect(rows.length).toBeLessThanOrEqual(2); // at most one concurrent race winner
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("TRAINER_PROFILE_REQUIRED");
+    expect(trainersStore).toHaveLength(0);
   });
 });
 

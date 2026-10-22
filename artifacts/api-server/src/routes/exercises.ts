@@ -80,7 +80,7 @@ async function getCallerTrainerId(req: Request): Promise<number | null> {
  *
  * Using 404 instead of 403 prevents ID enumeration of private exercises.
  */
-async function canViewExercise(req: Request, createdByTrainerId: number | null): Promise<boolean> {
+export async function canViewExercise(req: Request, createdByTrainerId: number | null): Promise<boolean> {
   if (createdByTrainerId === null) return true; // public
 
   const callerId = await getCallerTrainerId(req);
@@ -108,7 +108,7 @@ function exerciseVisibilityCondition(callerTrainerId: number | null) {
   );
 }
 
-function canMutateExercise(
+export function canMutateExercise(
   req: Request,
   createdByTrainerId: number | null,
 ): boolean {

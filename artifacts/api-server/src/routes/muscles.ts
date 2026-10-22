@@ -17,6 +17,8 @@ import {
   SetExerciseMusclesBody,
   SetExerciseMusclesResponse,
 } from "@workspace/api-zod";
+import { requireAuth, requireCatalogueAdmin } from "../middlewares/requireAuth";
+import { canMutateExercise, canViewExercise } from "./exercises";
 
 const router: IRouter = Router();
 
@@ -88,7 +90,8 @@ router.get("/muscles", async (req, res): Promise<void> => {
 
 // ─── POST /muscles ────────────────────────────────────────────────────────────
 
-router.post("/muscles", async (req, res): Promise<void> => {
+// The specific-muscle list is shared catalogue data: catalogue admins only.
+router.post("/muscles", requireAuth, requireCatalogueAdmin, async (req, res): Promise<void> => {
   const parsed = CreateMuscleBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -121,11 +124,12 @@ router.get("/exercises/:id/muscles", async (req, res): Promise<void> => {
   }
 
   const [exercise] = await db
-    .select({ id: exercisesTable.id })
+    .select({ id: exercisesTable.id, createdByTrainerId: exercisesTable.createdByTrainerId })
     .from(exercisesTable)
     .where(eq(exercisesTable.id, params.data.id));
 
-  if (!exercise) {
+  // Private exercises of other trainers are reported as missing (no enumeration).
+  if (!exercise || !(await canViewExercise(req, exercise.createdByTrainerId))) {
     res.status(404).json({ error: "Ćwiczenie nie znalezione" });
     return;
   }
@@ -144,7 +148,7 @@ router.get("/exercises/:id/muscles", async (req, res): Promise<void> => {
 //   - Primary coefficient is always forced to 1.0 (server-side enforcement).
 // Runs inside a DB transaction; on any failure the old assignments are intact.
 
-router.put("/exercises/:id/muscles", async (req, res): Promise<void> => {
+router.put("/exercises/:id/muscles", requireAuth, async (req, res): Promise<void> => {
   const params = SetExerciseMusclesParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -160,13 +164,14 @@ router.put("/exercises/:id/muscles", async (req, res): Promise<void> => {
   const { assignments } = body.data;
   const exerciseId = params.data.id;
 
-  // Exercise must exist.
+  // Same rule and response as PATCH /exercises/:id: owner, or catalogue admin
+  // for public exercises; anything else is reported as 404.
   const [exercise] = await db
-    .select({ id: exercisesTable.id })
+    .select({ id: exercisesTable.id, createdByTrainerId: exercisesTable.createdByTrainerId })
     .from(exercisesTable)
     .where(eq(exercisesTable.id, exerciseId));
 
-  if (!exercise) {
+  if (!exercise || !canMutateExercise(req, exercise.createdByTrainerId)) {
     res.status(404).json({ error: "Ćwiczenie nie znalezione" });
     return;
   }

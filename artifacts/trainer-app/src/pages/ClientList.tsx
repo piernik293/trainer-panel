@@ -20,6 +20,8 @@ import {
 import { PlusCircle, Search, Trash2, FileText, Users, AlertTriangle, Loader2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { clientStatusLabel, surveyStatusLabel } from "@/lib/client-status";
+import { ErrorState } from "@/components/ErrorState";
+import { humanizeError } from "@/lib/userError";
 
 function statusBadgeVariant(status: string | null | undefined) {
   switch (status) {
@@ -62,10 +64,12 @@ export default function ClientList() {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [failedDeleteIds, setFailedDeleteIds] = useState<Set<number>>(new Set());
 
-  const { data: clients, isLoading } = useListClients({
+  const { data: clients, isLoading, isError, error, refetch } = useListClients({
     query: {
       queryKey: getListClientsQueryKey(),
-      refetchInterval: 15_000,       // refresh every 15 s — new submissions appear promptly
+      // refresh every 15 s — new submissions appear promptly; no polling after
+      // a failure (a never-loaded query would flip back to loading each time)
+      refetchInterval: (query) => (query.state.status === "error" ? false : 15_000),
       refetchOnWindowFocus: true,    // also refresh when trainer returns to the tab
       refetchOnReconnect: true,
     },
@@ -317,6 +321,14 @@ export default function ClientList() {
         {isLoading ? (
           <div className="p-8 text-center text-muted-foreground animate-pulse">
             Ładowanie danych...
+          </div>
+        ) : isError ? (
+          <div className="p-6">
+            <ErrorState
+              title="Nie udało się wczytać listy klientów"
+              message={humanizeError(error)}
+              onRetry={() => void refetch()}
+            />
           </div>
         ) : filteredClients?.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center">

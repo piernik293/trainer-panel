@@ -390,6 +390,9 @@ describe("Multi-tenancy isolation", () => {
   // ── 2. New trainer receives empty client list ──────────────────────────────
 
   it("(2) A brand-new trainer (user_C) sees an empty client list", async () => {
+    // Profile created on first sign-in by POST /trainer/profile.
+    const { provisionTrainer } = await import("../middlewares/requireAuth");
+    await provisionTrainer("user_C");
     setAuth("user_C");
     const res = await request(app).get("/clients");
     expect(res.status).toBe(200);
@@ -545,7 +548,9 @@ describe("Multi-tenancy isolation", () => {
   // ── 12. No route falls back to trainer ID 1 ───────────────────────────────
 
   it("(12) A freshly provisioned trainer gets a unique ID (not hardcoded to 1)", async () => {
-    // user_D has never signed in → gets JIT-provisioned.
+    // user_D signs in for the first time → POST /trainer/profile provisions.
+    const { provisionTrainer } = await import("../middlewares/requireAuth");
+    await provisionTrainer("user_D");
     setAuth("user_D");
     const res = await request(app).get("/clients");
     expect(res.status).toBe(200);

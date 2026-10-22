@@ -5,14 +5,18 @@ import { Users, FileText, Activity, PauseCircle, CheckCircle2, Sparkles, UserPlu
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { SubscriptionSummary } from "@/components/subscription/SubscriptionSummary";
+import { ErrorState } from "@/components/ErrorState";
+import { humanizeError } from "@/lib/userError";
 
 export default function Dashboard() {
   const [, navigate] = useLocation();
 
-  const { data: stats, isLoading } = useGetStats({
+  const { data: stats, isLoading, isError, error, refetch } = useGetStats({
     query: {
       queryKey: getGetStatsQueryKey(),
-      refetchInterval: 12_000,
+      // No background polling after a failure: every refetch of a query that
+      // never succeeded flips back to "pending" and re-shows the skeleton.
+      refetchInterval: (query) => (query.state.status === "error" ? false : 12_000),
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
     },
@@ -26,6 +30,21 @@ export default function Dashboard() {
           {[1, 2, 3].map(i => <div key={i} className="h-32 bg-muted rounded-xl" />)}
         </div>
         <div className="h-64 bg-muted rounded-xl mt-8" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-8">
+        <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">
+          Pulpit
+        </h1>
+        <ErrorState
+          title="Nie udało się wczytać pulpitu"
+          message={humanizeError(error)}
+          onRetry={() => void refetch()}
+        />
       </div>
     );
   }

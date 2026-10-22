@@ -94,3 +94,70 @@ describe("Hantle + Ławka profile — bench exercises allowed", () => {
     expect(isEquipmentCompatible(["Wyciąg"], [], profile)).toBe(false);
   });
 });
+
+// ─── Location-aware: gym without listed equipment = standard gym ──────────────
+// Decision (22.10): a client training at "Siłownia" who left equipment empty
+// gets the standard gym equipment in the generator AND in compatibility
+// checks; home/outdoor clients without equipment stay bodyweight-only.
+
+import {
+  buildCompatibilityFilter,
+  effectiveClientEquipment,
+  getExerciseCompatibilityError,
+} from "../services/planDraftDayRecommendationsService";
+
+describe("Siłownia + empty equipment → standard gym", () => {
+  const benchPress = { id: 1, name: "Wyciskanie sztangi leżąc", trainingLocation: ["Siłownia"], equipment: ["Sztanga"], requiredEquipmentAll: ["Ławka"] };
+  const cableRow = { id: 2, name: "Wiosłowanie na wyciągu", trainingLocation: ["Siłownia"], equipment: ["Wyciąg"], requiredEquipmentAll: [] };
+  const pushUp = { id: 3, name: "Pompki", trainingLocation: ["Siłownia", "Dom"], equipment: ["Masa własnego ciała"], requiredEquipmentAll: [] };
+
+  for (const empty of [null, undefined, "", "   "]) {
+    it(`effectiveClientEquipment(${JSON.stringify(empty)}, "Siłownia") lists standard gym equipment`, () => {
+      const eq = effectiveClientEquipment(empty, "Siłownia");
+      expect(eq).toContain("Wyciąg");
+      expect(eq).toContain("Ławeczka treningowa");
+    });
+  }
+
+  it("compatibility filter admits barbell, bench and cable exercises", () => {
+    const keep = buildCompatibilityFilter("Siłownia", "", new Set());
+    expect(keep(benchPress)).toBe(true);
+    expect(keep(cableRow)).toBe(true);
+    expect(keep(pushUp)).toBe(true);
+  });
+
+  it("manual plan save check reports no equipment error", () => {
+    expect(getExerciseCompatibilityError(benchPress, { trainingLocation: "Siłownia", equipment: null })).toBeNull();
+  });
+
+  it("listed equipment is never overridden", () => {
+    expect(effectiveClientEquipment("Hantle", "Siłownia")).toBe("Hantle");
+    expect(buildCompatibilityFilter("Siłownia", "Hantle", new Set())(cableRow)).toBe(false);
+  });
+
+  it("Dom / Siłownia plenerowa / no location without equipment stay bodyweight-only", () => {
+    for (const loc of ["Dom", "Siłownia plenerowa", null]) {
+      expect(effectiveClientEquipment("", loc)).toBe("");
+      const keep = buildCompatibilityFilter(loc, "", new Set());
+      expect(keep({ ...cableRow, trainingLocation: [] }), String(loc)).toBe(false);
+      expect(keep({ ...pushUp, trainingLocation: [] }), String(loc)).toBe(true);
+    }
+  });
+});
+
+// ─── Generator default (planDraftInput) matches the compatibility check ──────
+// Decision (22.10): Dom / Siłownia plenerowa without equipment = bodyweight
+// only, in the plan-draft generator too (not a home-gym equipment guess).
+
+import { defaultEquipmentForLocation, FULL_GYM_EQUIPMENT } from "../services/equipmentNormalizer";
+
+describe("defaultEquipmentForLocation — same rule as compatibility", () => {
+  it("Dom and Siłownia plenerowa without equipment → bodyweight only", () => {
+    expect(defaultEquipmentForLocation("Dom")).toEqual(["Masa własnego ciała"]);
+    expect(defaultEquipmentForLocation("Siłownia plenerowa")).toEqual(["Masa własnego ciała"]);
+  });
+
+  it("Siłownia without equipment → standard gym", () => {
+    expect(defaultEquipmentForLocation("Siłownia")).toEqual(FULL_GYM_EQUIPMENT);
+  });
+});

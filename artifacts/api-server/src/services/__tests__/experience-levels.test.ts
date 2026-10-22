@@ -23,7 +23,16 @@
  *  26    Existing database records remain present
  */
 
-import { describe, it, expect } from "vitest";
+// Trainer endpoints require a session: authenticate as the legacy test
+// trainer (see __tests__/helpers/legacyTrainer.ts).
+vi.mock("@clerk/express", () => ({
+  clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+  getAuth: () => ({ userId: "legacy_test_trainer" }),
+}));
+vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
+
+import { describe, it, expect, vi, beforeAll } from "vitest";
+import { legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
 import supertest from "supertest";
 import app from "../../app";
 import {
@@ -33,6 +42,10 @@ import {
 } from "../volumeCalculator";
 import { scoreExercise } from "../../lib/recommendation-engine";
 import type { Exercise, Survey } from "@workspace/db";
+
+beforeAll(async () => {
+  await legacyTrainerId();
+});
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 

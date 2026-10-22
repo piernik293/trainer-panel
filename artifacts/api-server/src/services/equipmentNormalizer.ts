@@ -216,11 +216,13 @@ export function isCanonicalEquipment(value: string): value is CanonicalEquipment
 
 /**
  * Determine the default equipment list to use when no equipment data is available.
- * Falls back to FULL_GYM_EQUIPMENT for gym context, HOME_GYM_EQUIPMENT otherwise.
+ * Gym (or unknown location) → FULL_GYM_EQUIPMENT. Home / outdoor → bodyweight
+ * only — the same rule the compatibility check uses (effectiveClientEquipment);
+ * guessing home equipment would admit exercises the client may not be able to do.
  */
 export function defaultEquipmentForLocation(location: string | null | undefined): string[] {
   if (!location) return FULL_GYM_EQUIPMENT;
   const loc = location.toLowerCase();
-  if (loc.includes("dom") || loc.includes("plener")) return HOME_GYM_EQUIPMENT;
+  if (loc.includes("dom") || loc.includes("plener")) return ["Masa własnego ciała"];
   return FULL_GYM_EQUIPMENT;
 }

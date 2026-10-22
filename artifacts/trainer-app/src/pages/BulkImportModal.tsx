@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CheckCircle, AlertTriangle, Upload, FileText, X, Info } from "lucide-react";
+import { humanizeError } from "@/lib/userError";
 
 // ─── CSV Parser ───────────────────────────────────────────────────────────────
 
@@ -344,6 +345,11 @@ export default function BulkImportModal({ open, onClose }: Props) {
               </div>
             </details>
 
+            {preview.isError && (
+              <p role="alert" className="text-sm text-destructive">
+                Nie udało się zwalidować pliku: {humanizeError(preview.error)}
+              </p>
+            )}
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={handleClose}>Anuluj</Button>
               <Button
@@ -495,6 +501,11 @@ export default function BulkImportModal({ open, onClose }: Props) {
               </div>
             )}
 
+            {importExercises.isError && (
+              <p role="alert" className="text-sm text-destructive">
+                Nie udało się zaimportować ćwiczeń: {humanizeError(importExercises.error)}
+              </p>
+            )}
             <div className="flex justify-between gap-2">
               <Button variant="outline" onClick={() => setState((s) => ({ ...s, step: "preview" }))}>
                 ← Wróć

@@ -11,6 +11,8 @@
  *          →  selectByUncoveredTargets           (exact-targetId path, Phase 4B3)
  */
 
+import { FULL_GYM_EQUIPMENT, normalizeEquipmentList } from "./equipmentNormalizer";
+
 // ─── Public types ─────────────────────────────────────────────────────────────
 
 export interface ScoredAndFilteredExercise {
@@ -402,6 +404,24 @@ function canonicalLocation(s: string): string {
 
 const BODYWEIGHT_EQUIPMENT = new Set(["brak sprzętu", "masa własnego ciała"]);
 
+/**
+ * The equipment to use for compatibility checks and the generator.
+ *
+ * A client training at "Siłownia" who did not list equipment (the survey makes
+ * the field optional there) has a standard gym: FULL_GYM_EQUIPMENT, the same
+ * default planDraftInput uses. Anything else is returned unchanged, so home /
+ * outdoor / unknown-location clients without equipment stay bodyweight-only.
+ * The trainer is warned about the missing data (MISSING_EQUIPMENT).
+ */
+export function effectiveClientEquipment(
+  equipment: string | null | undefined,
+  location: string | null | undefined,
+): string | null | undefined {
+  if (equipment?.trim()) return equipment;
+  if (location && canonicalLocation(location) === "siłownia") return FULL_GYM_EQUIPMENT.join(", ");
+  return equipment;
+}
+
 function parseList(raw: string | null | undefined): string[] {
   if (!raw?.trim()) return [];
   return raw
@@ -413,7 +433,12 @@ function parseList(raw: string | null | undefined): string[] {
 function equipmentMatchLocal(required: string, available: string): boolean {
   const r = required.trim().toLowerCase();
   const a = available.trim().toLowerCase();
-  return r.includes(a) || a.includes(r);
+  if (r.includes(a) || a.includes(r)) return true;
+  // Catalogue and survey use different names for the same item
+  // (e.g. "Ławka" vs survey option "Ławeczka treningowa") — compare canonically.
+  const [requiredCanonical] = normalizeEquipmentList(required);
+  const [availableCanonical] = normalizeEquipmentList(available);
+  return requiredCanonical !== undefined && requiredCanonical === availableCanonical;
 }
 
 /**
@@ -527,7 +552,7 @@ export function getExerciseCompatibilityError(
     !isEquipmentCompatible(
       exercise.equipment,
       exercise.requiredEquipmentAll ?? [],
-      survey.equipment,
+      effectiveClientEquipment(survey.equipment, clientLocation),
     )
   ) {
     const requirements =
@@ -555,10 +580,11 @@ export function buildCompatibilityFilter(
   surveyEquipment: string | null | undefined,
   alreadyAddedIds: ReadonlySet<number>,
 ): (ex: { id: number; trainingLocation: string[]; equipment: string[]; requiredEquipmentAll?: string[] }) => boolean {
+  const equipment = effectiveClientEquipment(surveyEquipment, surveyLocation);
   return (ex) => {
     if (alreadyAddedIds.has(ex.id)) return false;
     if (!isLocationCompatible(ex.trainingLocation, surveyLocation)) return false;
-    if (!isEquipmentCompatible(ex.equipment, ex.requiredEquipmentAll ?? [], surveyEquipment)) return false;
+    if (!isEquipmentCompatible(ex.equipment, ex.requiredEquipmentAll ?? [], equipment)) return false;
     return true;
   };
 }

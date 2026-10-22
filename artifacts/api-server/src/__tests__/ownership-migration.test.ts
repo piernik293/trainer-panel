@@ -192,6 +192,11 @@ vi.mock("@workspace/db", () => {
               );
               return Promise.resolve(filtered);
             }
+            if (table === trainersTable) {
+              // requireAuth lookup — read-only, never provisions.
+              const userId = (globalThis as Record<string, unknown>).__currentClerkUserId as string;
+              return Promise.resolve(trainersStore.filter((t) => t.clerkUserId === userId));
+            }
             return Promise.resolve([]);
           },
         }),

@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/select";
 import { Sparkles, AlertCircle, Info, ChevronRight, Dumbbell } from "lucide-react";
 import { MAIN_MUSCLE_GROUPS } from "@/lib/exercise-constants";
+import { ErrorState } from "@/components/ErrorState";
+import { humanizeError } from "@/lib/userError";
 
 // ─── Score badge ──────────────────────────────────────────────────────────────
 
@@ -103,7 +105,7 @@ export default function ExerciseRecommendationsTab({ clientId, hasSurvey }: Prop
   const [muscleFilter, setMuscleFilter] = useState<string>("all");
 
   const params = muscleFilter !== "all" ? { mainMuscleGroup: muscleFilter } : {};
-  const { data, isLoading } = useListExerciseRecommendations(
+  const { data, isLoading, isError, error, refetch } = useListExerciseRecommendations(
     clientId,
     params,
     { query: { enabled: hasSurvey, queryKey: getListExerciseRecommendationsQueryKey(clientId, params) } },
@@ -118,6 +120,16 @@ export default function ExerciseRecommendationsTab({ clientId, hasSurvey }: Prop
           <div key={i} className="h-20 bg-muted/30 animate-pulse rounded-xl" />
         ))}
       </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <ErrorState
+        title="Nie udało się wczytać rekomendacji"
+        message={humanizeError(error)}
+        onRetry={() => void refetch()}
+      />
     );
   }
 

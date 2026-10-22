@@ -45,6 +45,7 @@ import { computeCompleteness, fetchMuscleStats } from "../lib/exercise-completen
 import {
   isLocationCompatible,
   isEquipmentCompatible,
+  effectiveClientEquipment,
   selectExercise,
   selectDayRecommendations,
   selectByUncoveredTargets,
@@ -177,6 +178,9 @@ router.get(
     const hasLocationData =
       !!(survey.trainingLocation?.trim()) && !!(survey.equipment?.trim());
 
+    // Gym without listed equipment = standard gym (same as compatibility checks).
+    const clientEquipment = effectiveClientEquipment(survey.equipment, survey.trainingLocation);
+
     const avoidedExerciseIds = new Set<number>(survey.avoidedExerciseIds ?? []);
 
     // ── Fetch active exercises (DB hard filter for isActive) ───────────────────
@@ -217,7 +221,7 @@ router.get(
     for (const ex of completeExercises) {
       if (alreadyAddedIds.has(ex.id)) continue;
       if (!isLocationCompatible(ex.trainingLocation ?? [], survey.trainingLocation)) continue;
-      if (!isEquipmentCompatible(ex.equipment ?? [], ex.requiredEquipmentAll ?? [], survey.equipment)) continue;
+      if (!isEquipmentCompatible(ex.equipment ?? [], ex.requiredEquipmentAll ?? [], clientEquipment)) continue;
 
       const { score, matchReasons, warnReasons } = scoreExercise(
         ex,
@@ -383,7 +387,7 @@ router.get(
       exercises: pool,
       dayType,
       usedExercises,
-      clientEquipment: survey.equipment,
+      clientEquipment,
       keepCoreGroup: includeCoreFlag,
       subTargetCoverage,
     });

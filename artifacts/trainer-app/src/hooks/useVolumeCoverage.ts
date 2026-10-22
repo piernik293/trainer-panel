@@ -146,9 +146,11 @@ export function useVolumeCoverage(
   clientId: number,
   exerciseDraft: ExerciseDraftByDay,
   distributionResult: WeeklyVolumeDistributionResponseType | null,
-): { previewResult: DraftVolumePreviewResult | null; isLoading: boolean } {
+): { previewResult: DraftVolumePreviewResult | null; isLoading: boolean; failed: boolean } {
   const [result, setResult] = useState<DraftVolumePreviewResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  // Latest recalculation failed — last valid result stays visible but is flagged.
+  const [failed, setFailed] = useState(false);
 
   // Always hold the latest draft+distribution so the timer callback reads fresh data
   const exerciseDraftRef = useRef(exerciseDraft);
@@ -192,11 +194,13 @@ export function useVolumeCoverage(
           if (ctrl.signal.aborted) return; // stale — discard silently
           lastResultRef.current = data;
           setResult(data);
+          setFailed(false);
           setIsLoading(false);
         })
         .catch((err: unknown) => {
           if (err instanceof Error && err.name === "AbortError") return;
-          // Keep last valid result visible; just stop the spinner
+          // Keep last valid result visible, stop the spinner, flag the failure
+          setFailed(true);
           setIsLoading(false);
         });
     }, DEBOUNCE_MS);
@@ -210,5 +214,5 @@ export function useVolumeCoverage(
   // During recalculation show the last valid result so display stays stable
   const displayResult = result ?? lastResultRef.current;
 
-  return { previewResult: displayResult, isLoading };
+  return { previewResult: displayResult, isLoading, failed };
 }

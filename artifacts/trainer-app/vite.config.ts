@@ -27,6 +27,13 @@ if (!basePath) {
   );
 }
 
+// Outside Replit there is no path router in front of the artifacts, so the
+// trainer app's dev server plays that role: /api → API server and
+// /client-landing → client portal dev server. Keeps everything on one origin,
+// which invite links (window.location.origin + /client-landing/...) rely on.
+const localApiServerUrl = process.env.LOCAL_API_SERVER_URL;
+const localClientPortalDevUrl = process.env.LOCAL_CLIENT_PORTAL_DEV_URL;
+
 export default defineConfig({
   base: basePath,
   plugins: [
@@ -71,6 +78,20 @@ export default defineConfig({
     allowedHosts: true,
     fs: {
       strict: true,
+    },
+    proxy: {
+      ...(localApiServerUrl
+        ? { '/api': { target: localApiServerUrl, changeOrigin: true } }
+        : {}),
+      ...(localClientPortalDevUrl
+        ? {
+            '/client-landing': {
+              target: localClientPortalDevUrl,
+              changeOrigin: true,
+              ws: true,
+            },
+          }
+        : {}),
     },
   },
   preview: {

@@ -9,6 +9,8 @@ import NotFound from "@/pages/not-found";
 import { Route, Switch, Router as WouterRouter, useLocation, Redirect, Link } from "wouter";
 
 import { AppLayout } from "@/components/layout/AppLayout";
+import { TrainerProfileGate } from "@/components/TrainerProfileGate";
+import { SessionProblemGuard } from "@/components/SessionProblemGuard";
 import markUrl from "@/assets/optimatren-mark.png";
 import Dashboard from "@/pages/Dashboard";
 import ClientList from "@/pages/ClientList";
@@ -108,7 +110,21 @@ const clerkAppearance = {
   },
 };
 
-const queryClient = new QueryClient();
+// Client errors (401 session expired, 403, 404, 4xx validation) cannot succeed
+// on retry — failing fast lets screens show their error state immediately
+// instead of a skeleton for the whole retry backoff. Transient errors
+// (network, 5xx) are retried up to twice.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        const status = (error as { status?: unknown }).status;
+        if (typeof status === "number" && status >= 400 && status < 500) return false;
+        return failureCount < 2;
+      },
+    },
+  },
+});
 
 // Clears TanStack Query cache on user change / sign-out so stale data
 // from a previous trainer session cannot flash when a new one starts.
@@ -287,7 +303,11 @@ function AppContent() {
     <>
       <Show when="signed-in">
         <ClerkQueryClientCacheInvalidator />
-        <Router />
+        <SessionProblemGuard>
+          <TrainerProfileGate>
+            <Router />
+          </TrainerProfileGate>
+        </SessionProblemGuard>
       </Show>
       <Show when="signed-out">
         <Redirect to="/trainer/sign-in" />

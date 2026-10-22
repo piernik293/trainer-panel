@@ -17,6 +17,8 @@ import {
   getLocationDisplayLabel,
 } from "@/lib/exercise-constants";
 import { useSubscriptionSummary } from "@/lib/use-subscription-summary";
+import { ErrorState } from "@/components/ErrorState";
+import { humanizeError } from "@/lib/userError";
 
 export default function ExerciseList() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -31,7 +33,7 @@ export default function ExerciseList() {
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [exerciseTypeFilter, setExerciseTypeFilter] = useState<string>("all");
   const [movementPatternFilter, setMovementPatternFilter] = useState<string>("all");
-  const { data: exercises, isLoading } = useListExercises({
+  const { data: exercises, isLoading, isError, error, refetch } = useListExercises({
     search: searchTerm || undefined,
     mainMuscleGroup: muscleFilter !== "all" ? muscleFilter : undefined,
     equipment: equipmentFilter !== "all" ? equipmentFilter : undefined,
@@ -204,6 +206,14 @@ export default function ExerciseList() {
         {isLoading ? (
           <div className="p-8 text-center text-muted-foreground animate-pulse">
             Ładowanie danych...
+          </div>
+        ) : isError ? (
+          <div className="p-6">
+            <ErrorState
+              title="Nie udało się wczytać biblioteki ćwiczeń"
+              message={humanizeError(error)}
+              onRetry={() => void refetch()}
+            />
           </div>
         ) : exercises?.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center">

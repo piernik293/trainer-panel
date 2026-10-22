@@ -238,3 +238,35 @@ describe("Profile E — Dom + Ławka + Masa własnego ciała (no external load)"
     expect(isEquipmentCompatible(["Sztanga", "Hantle"], ["Ławka"], profile)).toBe(false);
   });
 });
+
+// ─── Survey option names vs catalogue names (regression) ──────────────────────
+// The survey offers "Ławeczka treningowa" (lib/survey-config EQUIPMENT_OPTIONS)
+// while the catalogue requires "Ławka". Both are the same canonical item in
+// equipmentNormalizer — a client who ticked the bench must get bench exercises.
+
+describe("isEquipmentCompatible — survey option names match catalogue names", () => {
+  const surveyWithBench = "Hantle, Sztanga i talerze, Ławeczka treningowa";
+
+  it("bench press (Sztanga + requires Ławka) accepted when the survey lists Ławeczka treningowa", () => {
+    expect(isEquipmentCompatible(["Sztanga"], ["Ławka"], surveyWithBench)).toBe(true);
+  });
+
+  it("still rejected when the survey has no bench", () => {
+    expect(isEquipmentCompatible(["Sztanga"], ["Ławka"], "Hantle, Sztanga i talerze")).toBe(false);
+  });
+
+  it("every survey equipment option is recognised by at least its catalogue name", () => {
+    const pairs: [string, string][] = [
+      ["Ławka", "Ławeczka treningowa"],
+      ["Sztanga", "Sztanga i talerze"],
+      ["Drążek", "Drążek do podciągania"],
+      ["TRX", "TRX / pasy treningowe"],
+      ["Gumy oporowe", "Gumy oporowe"],
+      ["Hantle", "Hantle"],
+      ["Kettlebell", "Kettlebell"],
+    ];
+    for (const [catalogue, survey] of pairs) {
+      expect(isEquipmentCompatible([catalogue], [], survey), `${catalogue} vs ${survey}`).toBe(true);
+    }
+  });
+});

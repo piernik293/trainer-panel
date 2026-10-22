@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Pencil, Ban, RotateCcw, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { EXECUTION_LABELS, getLocationDisplayLabel } from "@/lib/exercise-constants";
+import { ErrorState } from "@/components/ErrorState";
+import { humanizeError } from "@/lib/userError";
 
 // ─── DetailBlock ──────────────────────────────────────────────────────────────
 
@@ -64,11 +66,26 @@ export default function ExerciseDetail() {
   const exerciseId = Number(id);
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const { data: exercise, isLoading } = useGetExercise(exerciseId);
+  const { data: exercise, isLoading, isError, error, refetch } = useGetExercise(exerciseId);
   const updateExercise = useUpdateExercise();
 
   if (isLoading) {
     return <div className="p-8 text-center text-muted-foreground animate-pulse">Ładowanie danych...</div>;
+  }
+
+  // "Not found" only for a real 404 — other failures get an error with retry.
+  if (isError && (error as { status?: number } | null)?.status !== 404) {
+    return (
+      <div className="p-6">
+        <ErrorState
+          title="Nie udało się wczytać ćwiczenia"
+          message={humanizeError(error)}
+          onRetry={() => void refetch()}
+          backHref="/exercises"
+          backLabel="Wróć do biblioteki"
+        />
+      </div>
+    );
   }
 
   if (!exercise) {

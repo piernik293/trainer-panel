@@ -1633,7 +1633,7 @@ export default function PlanEditor() {
   const [pickerDayId, setPickerDayId] = useState<number | null>(null);
 
   const { data: plan, isLoading, error } = useGetPlan(planId);
-  const { preview, isLoadingPreview } = useVolumePreview(plan);
+  const { preview, isLoadingPreview, previewFailed } = useVolumePreview(plan);
   const { analysisResult, isLoadingAnalysis } = useAnalysisPreview(plan);
 
   // Avoided exercises — fetched regardless of plan load state (hook rule: no conditional calls)
@@ -1937,6 +1937,7 @@ export default function PlanEditor() {
               plan={plan}
               preview={preview}
               isLoadingPreview={isLoadingPreview}
+              previewFailed={previewFailed}
               experienceLevel={plan.experienceLevelUsed}
             />
 

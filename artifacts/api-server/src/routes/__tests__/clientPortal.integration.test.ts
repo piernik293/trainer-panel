@@ -10,7 +10,16 @@
  * guarantees deterministic results regardless of DB state.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+// Trainer endpoints require a session: authenticate as the legacy test
+// trainer (see __tests__/helpers/legacyTrainer.ts).
+vi.mock("@clerk/express", () => ({
+  clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+  getAuth: () => ({ userId: "legacy_test_trainer" }),
+}));
+vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
+
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
 import request from "supertest";
 import { eq, inArray } from "drizzle-orm";
 import app from "../../app";
@@ -25,6 +34,10 @@ import {
   exerciseExecutionLogsTable,
 } from "@workspace/db";
 import { surveysTable } from "@workspace/db";
+
+beforeAll(async () => {
+  await legacyTrainerId();
+});
 
 // ─── Fixture IDs (populated in beforeAll) ────────────────────────────────────
 
@@ -47,14 +60,14 @@ beforeAll(async () => {
   // Create primary test client.
   const [client] = await db
     .insert(clientsTable)
-    .values({ firstName: "Portal", lastName: "TestFixture", email: TEST_EMAIL })
+    .values({ firstName: "Portal", lastName: "TestFixture", email: TEST_EMAIL , trainerId: await legacyTrainerId() })
     .returning();
   testClientId = client.id;
 
   // Create a second client for cross-client rejection tests.
   const [other] = await db
     .insert(clientsTable)
-    .values({ firstName: "Other", lastName: "Client", email: TEST_EMAIL_OTHER })
+    .values({ firstName: "Other", lastName: "Client", email: TEST_EMAIL_OTHER , trainerId: await legacyTrainerId() })
     .returning();
   testOtherClientId = other.id;
 

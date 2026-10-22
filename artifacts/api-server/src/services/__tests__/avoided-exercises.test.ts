@@ -10,13 +10,26 @@
  *  - Re-submission durability: prior survey rows are never mutated (Task #12)
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
+// Trainer endpoints require a session: authenticate as the legacy test
+// trainer (see __tests__/helpers/legacyTrainer.ts).
+vi.mock("@clerk/express", () => ({
+  clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+  getAuth: () => ({ userId: "legacy_test_trainer" }),
+}));
+vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
+
+import { describe, it, expect, beforeAll, vi } from "vitest";
+import { legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
 import request from "supertest";
 import app from "../../app";
 import { db, surveysTable, exercisesTable, clientsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { analyseDraftPreview } from "../planAnalyzer";
 import type { AnalysisPreviewInput } from "../planAnalyzer";
+
+beforeAll(async () => {
+  await legacyTrainerId();
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -40,7 +53,7 @@ async function getOrCreateTestClient() {
     .from(clientsTable)
     .where(eq(clientsTable.email, "avoided-exercises-test@example.com"))
     .limit(1);
-  if (existing) return existing;
+  if (existing) return ownByLegacyTrainer(existing);
 
   const [created] = await db
     .insert(clientsTable)
@@ -51,7 +64,7 @@ async function getOrCreateTestClient() {
       status: "active",
     })
     .returning();
-  return created;
+  return ownByLegacyTrainer(created);
 }
 
 // ─── GET /api/exercises/search ────────────────────────────────────────────────

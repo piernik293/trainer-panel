@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ErrorState } from "@/components/ErrorState";
+import { humanizeError } from "@/lib/userError";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -20,7 +22,9 @@ async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error((body as { error?: string }).error ?? res.statusText);
+    throw Object.assign(new Error((body as { error?: string }).error ?? res.statusText), {
+      status: res.status,
+    });
   }
   // 204 No Content — return empty object
   if (res.status === 204) return {} as T;
@@ -74,7 +78,7 @@ export default function SurveyInvite() {
   const [copied, setCopied] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(false);
 
-  const { data: invites = [], isLoading } = useQuery<Invite[]>({
+  const { data: invites = [], isLoading, isError, error, refetch } = useQuery<Invite[]>({
     queryKey: ["survey-invites"],
     queryFn: () => fetchJson<Invite[]>("/survey-invites"),
   });
@@ -91,7 +95,7 @@ export default function SurveyInvite() {
       queryClient.invalidateQueries({ queryKey: ["survey-invites"] });
     },
     onError: (err) => {
-      toast({ title: String(err), variant: "destructive" });
+      toast({ title: humanizeError(err), variant: "destructive" });
     },
   });
 
@@ -103,7 +107,7 @@ export default function SurveyInvite() {
       toast({ title: "Zaproszenie odwołane" });
     },
     onError: (err) => {
-      toast({ title: String(err), variant: "destructive" });
+      toast({ title: humanizeError(err), variant: "destructive" });
     },
   });
 
@@ -114,7 +118,7 @@ export default function SurveyInvite() {
       queryClient.invalidateQueries({ queryKey: ["survey-invites"] });
     },
     onError: (err) => {
-      toast({ title: String(err), variant: "destructive" });
+      toast({ title: humanizeError(err), variant: "destructive" });
     },
   });
 
@@ -233,6 +237,14 @@ export default function SurveyInvite() {
               {[1, 2].map((i) => (
                 <div key={i} className="h-12 bg-muted animate-pulse rounded" />
               ))}
+            </div>
+          ) : isError ? (
+            <div className="p-6">
+              <ErrorState
+                title="Nie udało się wczytać zaproszeń"
+                message={humanizeError(error)}
+                onRetry={() => void refetch()}
+              />
             </div>
           ) : activeInvites.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground text-sm">
