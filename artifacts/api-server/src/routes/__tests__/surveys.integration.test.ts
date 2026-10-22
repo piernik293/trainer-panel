@@ -20,12 +20,25 @@
  * uses.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+// Trainer endpoints require a session: authenticate as the legacy test
+// trainer (see __tests__/helpers/legacyTrainer.ts).
+vi.mock("@clerk/express", () => ({
+  clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+  getAuth: () => ({ userId: "legacy_test_trainer" }),
+}));
+vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
+
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
 import request from "supertest";
 import { eq, desc } from "drizzle-orm";
 import app from "../../app";
 import { db, clientsTable, surveysTable } from "@workspace/db";
 import { UpsertClientSurveyBody } from "@workspace/api-zod";
+
+beforeAll(async () => {
+  await legacyTrainerId();
+});
 
 // ─── Fixture ──────────────────────────────────────────────────────────────────
 
@@ -50,7 +63,7 @@ beforeAll(async () => {
 
   const [client] = await db
     .insert(clientsTable)
-    .values({ firstName: "AvoidedMuscles", lastName: "TestFixture", email: TEST_EMAIL })
+    .values({ firstName: "AvoidedMuscles", lastName: "TestFixture", email: TEST_EMAIL , trainerId: await legacyTrainerId() })
     .returning();
   testClientId = client.id;
 

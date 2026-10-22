@@ -31,7 +31,16 @@
  * 26.  Running the import a second time creates no duplicates.
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
+// Trainer endpoints require a session: authenticate as the legacy test
+// trainer (see __tests__/helpers/legacyTrainer.ts).
+vi.mock("@clerk/express", () => ({
+  clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+  getAuth: () => ({ userId: "legacy_test_trainer" }),
+}));
+vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
+
+import { describe, it, expect, beforeAll, vi } from "vitest";
+import { legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
 import { readFileSync } from "fs";
 import { join } from "path";
 import supertest from "supertest";
@@ -52,6 +61,10 @@ import {
   volumeGuidelinesTable,
 } from "@workspace/db";
 import { count, eq, gt, inArray } from "drizzle-orm";
+
+beforeAll(async () => {
+  await legacyTrainerId();
+});
 
 const req = supertest(app);
 

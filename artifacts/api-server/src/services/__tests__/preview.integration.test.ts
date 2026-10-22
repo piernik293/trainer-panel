@@ -12,7 +12,16 @@
  * State restoration: any DB mutation (isActive=false) is reverted in afterEach.
  */
 
-import { describe, it, expect, afterEach, afterAll } from "vitest";
+// Trainer endpoints require a session: authenticate as the legacy test
+// trainer (see __tests__/helpers/legacyTrainer.ts).
+vi.mock("@clerk/express", () => ({
+  clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+  getAuth: () => ({ userId: "legacy_test_trainer" }),
+}));
+vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
+
+import { describe, it, expect, afterEach, afterAll, vi, beforeAll } from "vitest";
+import { legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
 import request from "supertest";
 import { and, count, eq } from "drizzle-orm";
 import app from "../../app";
@@ -29,6 +38,10 @@ import {
   workoutPlanDaysTable,
   workoutPlanExercisesTable,
 } from "@workspace/db";
+
+beforeAll(async () => {
+  await legacyTrainerId();
+});
 
 // Close the connection pool after all tests to allow the process to exit cleanly.
 afterAll(async () => {

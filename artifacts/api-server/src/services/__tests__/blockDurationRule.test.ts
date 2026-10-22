@@ -12,12 +12,25 @@
  * ✓ 8. Generator, volume, priority, split and plyometric modules are not imported/modified here
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
+// Trainer endpoints require a session: authenticate as the legacy test
+// trainer (see __tests__/helpers/legacyTrainer.ts).
+vi.mock("@clerk/express", () => ({
+  clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+  getAuth: () => ({ userId: "legacy_test_trainer" }),
+}));
+vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
+
+import { describe, it, expect, beforeAll, vi } from "vitest";
+import { legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
 import request from "supertest";
 import app from "../../app";
 import { db, clientsTable, surveysTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { loadPlanDraftInput } from "../planDraftInputService";
+
+beforeAll(async () => {
+  await legacyTrainerId();
+});
 
 const req = request(app);
 
@@ -27,12 +40,12 @@ async function getOrCreateClient(email: string) {
     .from(clientsTable)
     .where(eq(clientsTable.email, email))
     .limit(1);
-  if (existing) return existing;
+  if (existing) return ownByLegacyTrainer(existing);
   const [created] = await db
     .insert(clientsTable)
     .values({ firstName: "Block", lastName: "Test", email, status: "active" })
     .returning();
-  return created;
+  return ownByLegacyTrainer(created);
 }
 
 async function upsertSurvey(clientId: number, experienceLevel: string) {
