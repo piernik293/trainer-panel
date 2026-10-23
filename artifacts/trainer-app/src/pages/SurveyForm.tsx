@@ -69,6 +69,11 @@ import {
   ATHLETE_STATUS_TO_API,
   calculateBmi,
   calculateAge,
+  birthDateError,
+  AGE_RANGE_MESSAGE,
+  HEIGHT_RANGE_MESSAGE,
+  WEIGHT_RANGE_MESSAGE,
+  SURVEY_LIMITS,
   buildEquipmentString,
   parseEquipment,
   goalIsSport,
@@ -114,18 +119,20 @@ const surveySchema = z.object({
     .refine(
       (val) => !val || new Date(val) <= new Date(),
       "Data urodzenia nie może być w przyszłości"
-    ),
+    )
+    // Same limits as the client interview and the API (lib/survey-config).
+    .refine((val) => !val || birthDateError(val) === null, { message: AGE_RANGE_MESSAGE }),
   gender: z.enum(["Mężczyzna", "Kobieta"]).optional().or(z.literal("")),
   heightCm: z.coerce
     .number()
-    .min(80, "Wzrost musi być między 80 a 260 cm")
-    .max(260, "Wzrost musi być między 80 a 260 cm")
+    .min(SURVEY_LIMITS.heightMin, HEIGHT_RANGE_MESSAGE)
+    .max(SURVEY_LIMITS.heightMax, HEIGHT_RANGE_MESSAGE)
     .optional()
     .or(z.literal("").transform(() => undefined)),
   weightKg: z.coerce
     .number()
-    .min(20)
-    .max(400)
+    .min(SURVEY_LIMITS.weightMin, WEIGHT_RANGE_MESSAGE)
+    .max(SURVEY_LIMITS.weightMax, WEIGHT_RANGE_MESSAGE)
     .optional()
     .or(z.literal("").transform(() => undefined)),
   activityLevel: z.string().optional(),
@@ -1405,8 +1412,8 @@ function SurveyFormBody({
                       <Input
                         type="number"
                         inputMode="numeric"
-                        min="80"
-                        max="260"
+                        min={SURVEY_LIMITS.heightMin}
+                        max={SURVEY_LIMITS.heightMax}
                         placeholder="np. 178"
                         {...field}
                         value={field.value ?? ""}

@@ -660,7 +660,7 @@ describe("14. Trainer-only fields (confirmedRestrictions) do not block public su
       firstName: "Anna",
       lastName: "Nowak",
       email: "anna@example.com",
-      dateOfBirth: "1990-01-01", injuryStatus: "Brak",
+      dateOfBirth: "1990-01-01", injuryStatus: "Brak", heightCm: 170, weightKg: 65,
       gender: "Kobieta",
       // confirmedRestrictions intentionally absent
       // adaptiveStartDecision intentionally absent
@@ -743,7 +743,7 @@ describe("16. Completed public survey saved under correct trainer/client", () =>
       .send({
         firstName: "Pre", lastName: "Created",
         email: "pre@example.com",
-        dateOfBirth: "1990-06-15", injuryStatus: "Brak",
+        dateOfBirth: "1990-06-15", injuryStatus: "Brak", heightCm: 170, weightKg: 65,
         gender: "Mężczyzna",
         trainingGoal: "Siła",
       });
@@ -811,7 +811,7 @@ describe("18. Used invitation blocks re-submission", () => {
       .post(`/api/public/survey/${rawToken}`)
       .send({
         firstName: "A", lastName: "B", email: "a@b.com",
-        dateOfBirth: "1990-01-01", injuryStatus: "Brak", gender: "Kobieta",
+        dateOfBirth: "1990-01-01", injuryStatus: "Brak", gender: "Kobieta", heightCm: 170, weightKg: 65,
       });
 
     expect(res.status).toBe(410);
