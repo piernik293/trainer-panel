@@ -245,3 +245,8 @@ istnieją, z tymi samymi opcjami i walidacją (ekranów jest 29, bo grupy pól s
 - Ekran poziomu: usunięto zdanie „Nie kieruj się wyłącznie liczbą lat treningu…” (kłóci się z regułą 2 lat). Nowe zdanie:
   „Wybierz opis, który najlepiej do Ciebie pasuje. Trener dostosuje plan do Twojego doświadczenia.”
 - Ekran wzrostu i wagi: bez BMI; zdanie wprowadzające: „Wzrost i waga pomagają dobrać obciążenia i tempo progresji.”
+
+## Korekta (23.10.2026, wieczór): pytanie o metody intensyfikacji
+- **Co było źle.** Stary formularz (i pierwsza wersja kreatora) pytał „Czy chcesz, aby w planie były uwzględniane metody intensyfikacji?” (Tak/Nie), a po „Tak” prosił o zaznaczenie metod, które klient **chce stosować** — ale zapisywał je w polach o znaczeniu odwrotnym: `avoids_advanced_methods` i `advanced_methods_to_avoid` („unikane”). W bazie lista i flaga w starych wywiadach znaczą więc co innego, niż mówi ich nazwa.
+- **Co jest teraz.** Jeden ekran „Metody do unikania” (tylko poziom efektywny średniozaawansowany i zaawansowany): lista zaznaczona = metody do unikania; `avoids_advanced_methods` = lista niepusta.
+- **Stare wywiady.** Odpowiedzi zapisane przed `METHODS_QUESTION_FIXED_AT` (`lib/survey-config`, 23.10.2026 20:55 UTC) traktujemy jako **brak danych**: flaga i lista są ignorowane. Panel trenera pokazuje przy nich „Brak danych — odpowiedź z wcześniejszej wersji pytania”, a formularz trenera nie wstępnie wypełnia tych pól. Dane w bazie nie są zmieniane ani usuwane. Generator i tak nie stosuje dziś żadnych metod intensyfikacji.

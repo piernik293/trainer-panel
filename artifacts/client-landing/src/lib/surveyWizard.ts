@@ -18,8 +18,17 @@
 
 import {
   EQUIPMENT_OPTIONS,
+  NO_EQUIPMENT,
+  birthDateError,
   buildEquipmentString,
   calculateAge,
+  heightError,
+  weightError,
+  maxPriorityMuscles,
+  normalizeCardioPreference,
+  resolveEffectiveLevel,
+  CARDIO_PREFERENCE_OPTIONS,
+  PRIORITY_BEGINNER_MESSAGE,
   calculateBmi,
   goalIsSport,
   isBeginnerLevel,
@@ -110,7 +119,7 @@ export type StepId =
   | "injury" | "healthDesc"
   | "activity" | "sleep" | "stress"
   | "cardioPref" | "cardioFreq" | "cardioType"
-  | "planStyle" | "avoided" | "favorite" | "priority" | "methods" | "methodsList" | "additional";
+  | "planStyle" | "avoided" | "favorite" | "priority" | "methodsList" | "additional";
 
 export interface Stage {
   id: string;
@@ -127,8 +136,8 @@ export const STAGES: Stage[] = [
   { id: "time", name: "Czas i częstotliwość", steps: ["frequency", "session"] },
   { id: "health", name: "Zdrowie i ograniczenia", steps: ["injury", "healthDesc"] },
   { id: "life", name: "Styl życia", steps: ["activity", "sleep", "stress"] },
-  { id: "cardio", name: "Cardio", steps: ["cardioPref", "cardioFreq", "cardioType"] },
-  { id: "prefs", name: "Preferencje planu", steps: ["planStyle", "avoided", "favorite", "priority", "methods", "methodsList", "additional"] },
+  { id: "cardio", name: "Cardio", steps: ["cardioFreq", "cardioPref", "cardioType"] },
+  { id: "prefs", name: "Preferencje planu", steps: ["planStyle", "avoided", "favorite", "priority", "methodsList", "additional"] },
 ];
 
 export interface Prefill {
@@ -151,15 +160,17 @@ export function isStepVisible(id: StepId, a: Answers, prefill: Prefill = {}): bo
       return goalIsSport(a.trainingGoal);
     case "duration":
       return showTrainingDurationField(a.experienceLevel);
+    // The cardio form is asked only when the client wants cardio in the plan ("Tak"); "minimum" skips it.
+    case "cardioType":
+      return normalizeCardioPreference(a.cardioPreference) === "include";
     case "equipment":
       return showEquipmentField(a.trainingLocation);
     case "healthDesc":
       return a.injuryStatus === "Tak";
+    // Intermediate / advanced by the EFFECTIVE level (the choice capped by training time).
     case "avoided":
-    case "methods":
-      return isIntermediateOrAdvancedLevel(a.experienceLevel);
     case "methodsList":
-      return isIntermediateOrAdvancedLevel(a.experienceLevel) && a.avoidsAdvancedMethods === "Tak";
+      return isIntermediateOrAdvancedLevel(resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective ?? undefined);
     default:
       return true;
   }
@@ -186,7 +197,11 @@ export function normalizeAnswers(input: Answers, prefill: Prefill = {}): Answers
     a.athleteStatus = "";
     a.sportPerformanceNeeds = [];
   }
+  // "Brak sprzętu" excludes the rest (the UI keeps it that way; a draft from an older version is repaired here).
+  if (a.equipmentItems.includes(NO_EQUIPMENT) && a.equipmentItems.length > 1) a.equipmentItems = [NO_EQUIPMENT];
+  if (a.equipmentItems.includes(NO_EQUIPMENT)) a.equipmentOther = "";
   if (!isStepVisible("duration", a, prefill)) a.trainingDuration = "";
+  if (!isStepVisible("cardioType", a, prefill)) a.preferredCardioType = "";
   if (!isStepVisible("equipment", a, prefill)) {
     a.equipmentItems = [];
     a.equipmentOther = "";
@@ -197,7 +212,17 @@ export function normalizeAnswers(input: Answers, prefill: Prefill = {}): Answers
     a.avoidedOtherText = "";
     a.avoidedOtherReason = "";
   }
-  if (!isStepVisible("methods", a, prefill)) a.avoidsAdvancedMethods = "";
+  // Priority muscle groups: one for beginners (EFFECTIVE level — chosen level capped by training time).
+  const effective = resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective;
+  if (maxPriorityMuscles(effective) === 1) {
+    a.priorityMuscle2 = "";
+    a.priorityMuscle3 = "";
+  }
+  // The removed answer "Cardio może być dodatkiem do planu" (and earlier wordings) map to the two current ones.
+  const cardio = normalizeCardioPreference(a.cardioPreference);
+  if (cardio === "include") a.cardioPreference = CARDIO_PREFERENCE_OPTIONS[0];
+  else if (cardio === "minimum") a.cardioPreference = CARDIO_PREFERENCE_OPTIONS[1];
+  a.avoidsAdvancedMethods = ""; // legacy draft field — derived from the methods list in the payload
   if (!isStepVisible("methodsList", a, prefill)) a.advancedMethodsToAvoid = [];
   return a;
 }
@@ -223,17 +248,19 @@ export function validateStep(id: StepId, a: Answers): string | null {
     case "contact":
       return EMAIL_RE.test(a.email.trim()) ? null : EMAIL_MSG;
     case "birth": {
-      if (!a.dateOfBirth) return "Data urodzenia jest wymagana";
-      const age = calculateAge(a.dateOfBirth);
-      if (age === undefined || age < 0 || age > 100) return "Wprowadzona data urodzenia jest nieprawidłowa. Sprawdź i popraw datę.";
+      const dobErr = birthDateError(a.dateOfBirth);
+      if (dobErr) return dobErr;
       if (!a.gender) return "Płeć jest wymagana";
       return null;
     }
     case "body": {
-      if (a.heightCm === undefined || a.heightCm < 80 || a.heightCm > 260) return "Wzrost musi być między 80 a 260 cm";
-      const w = parseWeight(a.weightKg);
-      if (w === undefined || w < 20 || w > 400) return "Waga musi być między 20 a 400 kg";
-      return null;
+      const hErr = heightError(a.heightCm);
+      if (hErr) return hErr;
+      return weightError(parseWeight(a.weightKg));
+    }
+    case "priority": {
+      const n = [a.priorityMuscle1, a.priorityMuscle2, a.priorityMuscle3].filter((m) => m.trim()).length;
+      return n > maxPriorityMuscles(resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective) ? PRIORITY_BEGINNER_MESSAGE : null;
     }
     case "goal":
       return a.trainingGoal ? null : "To pole jest wymagane";
@@ -283,10 +310,44 @@ const ATHLETE_TO_API: Record<string, string> = {
  * form's payload (tested against a frozen copy of the old builder), apart from the
  * documented differences at the top of this file.
  */
+/**
+ * What the client still has to fill in on a screen — shown next to the disabled "Dalej".
+ * null when the screen is complete. Out-of-range values keep their own message.
+ */
+export function missingHint(id: StepId, a: Answers): string | null {
+  const err = validateStep(id, a);
+  if (!err) return null;
+  const missing = (what: string) => `Uzupełnij: ${what}.`;
+  switch (id) {
+    case "name": return missing(!a.firstName.trim() ? "imię" : "nazwisko");
+    case "contact": return missing("poprawny adres e-mail");
+    // Out-of-range values: the message sits under the field, the hint only points to it.
+    case "birth": return a.dateOfBirth && birthDateError(a.dateOfBirth) ? "Popraw datę urodzenia." : missing(!a.dateOfBirth ? "datę urodzenia" : "płeć");
+    case "body":
+      if (a.heightCm === undefined) return missing("wzrost");
+      if (heightError(a.heightCm)) return "Popraw wzrost.";
+      if (parseWeight(a.weightKg) === undefined) return missing("wagę");
+      return "Popraw wagę.";
+    case "goal": return missing("cel treningowy");
+    case "sportStatus": return missing("jak uprawiasz sport");
+    case "level": return missing("poziom doświadczenia");
+    case "location": return missing("miejsce treningu");
+    case "equipment": return missing("sprzęt (zaznacz coś albo „Brak sprzętu”)");
+    case "frequency": return a.desiredWeeklyFrequency === undefined ? missing("liczbę treningów w tygodniu") : err;
+    case "session": return missing("czas jednego treningu");
+    case "injury": return missing("odpowiedź Tak lub Nie");
+    case "healthDesc": return missing("opis ograniczeń");
+    case "activity": return missing("codzienną aktywność");
+    case "sleep": return missing("liczbę godzin snu");
+    default: return err;
+  }
+}
+
 export function buildSurveyPayload(raw: Answers, prefill: Prefill = {}): Record<string, unknown> {
   const a = normalizeAnswers(raw, prefill);
   const isSport = goalIsSport(a.trainingGoal);
-  const avoids = a.avoidsAdvancedMethods === "Tak" ? true : a.avoidsAdvancedMethods === "Nie" ? false : undefined;
+  // "Metody do unikania": the list IS the answer (non-empty → the client avoids methods); not asked → undefined.
+  const avoids = isStepVisible("methodsList", a, prefill) ? a.advancedMethodsToAvoid.length > 0 : undefined;
   const reasons = Object.fromEntries(
     a.avoidedExercises.filter((e) => e.reason.trim()).map((e) => [String(e.id), e.reason.trim()]),
   );

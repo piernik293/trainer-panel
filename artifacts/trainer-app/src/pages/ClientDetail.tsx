@@ -34,6 +34,7 @@ import ExerciseRecommendationsTab from "./ExerciseRecommendationsTab";
 import TrainingSessionsTab, { usePainReports } from "./TrainingSessionsTab";
 import { formatDate } from "@/lib/utils";
 import { clientStatusLabel, surveyStatusLabel } from "@/lib/client-status";
+import { methodsAnswerUsable } from "@workspace/survey-config";
 import { useToast } from "@/hooks/use-toast";
 import { useListClientPlans, useDeletePlan, type WorkoutPlanSummary } from "@/lib/planApi";
 
@@ -1530,6 +1531,13 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
         <SurveyBlock label="Preferowany typ cardio" value={survey.preferredCardioType} />
       </div>
 
+      {!methodsAnswerUsable((survey as { createdAt?: string }).createdAt) ? (
+        // Older interviews asked the question the other way round — the saved flag and list cannot be trusted.
+        (survey.advancedMethodsToAvoid?.length > 0 || survey.avoidsAdvancedMethods != null) && (
+          <SurveyBlock label="Unikane metody intensyfikacji" value="Brak danych — odpowiedź z wcześniejszej wersji pytania, której nie można wiarygodnie odczytać." fullWidth />
+        )
+      ) : (
+        <>
       {survey.avoidsAdvancedMethods === true && survey.advancedMethodsToAvoid && survey.advancedMethodsToAvoid.length === 0 && (
         <SurveyBlock label="Unikane metody intensyfikacji" value="Klient zgłosił przeciwwskazania, ale nie wskazał konkretnych metod." fullWidth />
       )}
@@ -1548,6 +1556,9 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
           }
           fullWidth
         />
+      )}
+
+        </>
       )}
 
       {survey.additionalInfo && (

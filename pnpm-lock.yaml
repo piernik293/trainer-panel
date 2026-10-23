@@ -108,6 +108,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
+      '@workspace/survey-config':
+        specifier: workspace:*
+        version: link:../../lib/survey-config
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -905,7 +908,14 @@ importers:
         specifier: ^0.31.10
         version: 0.31.10
 
-  lib/design-tokens: {}
+  lib/design-tokens:
+    devDependencies:
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.17
+      react:
+        specifier: 'catalog:'
+        version: 19.1.0
 
   lib/survey-config: {}
 

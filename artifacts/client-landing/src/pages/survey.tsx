@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AppHero } from "@workspace/design-tokens/hero";
 import { BrandMark } from "@/components/BrandMark";
 import { useParams } from "wouter";
 import SurveyWizard from "@/components/SurveyWizard";
@@ -242,6 +243,12 @@ export default function SurveyTokenPage() {
           <span className="section-label ml-auto">Wywiad treningowy</span>
         </div>
       </header>
+      <AppHero variant="portal-welcome">
+        <p className="text-lg font-bold leading-snug">
+          {prefill.firstName ? `Cześć, ${prefill.firstName}!` : "Cześć!"}
+        </p>
+        <p className="mt-1 text-sm text-white/90">Kilka krótkich pytań, żeby trener dobrał plan do Ciebie.</p>
+      </AppHero>
 
       {/* FORM SECTION */}
       <section className="flex-1 px-4 py-3 md:py-10">
@@ -250,9 +257,7 @@ export default function SurveyTokenPage() {
 
       {/* FOOTER */}
       <footer className="border-t border-border py-8 text-center bg-card/50">
-        <p className="text-muted-foreground text-sm uppercase tracking-widest">
-          © {new Date().getFullYear()} Premium Personal Training. Wszelkie prawa zastrzeżone.
-        </p>
+        <p className="text-muted-foreground text-sm">© {new Date().getFullYear()} Optimatren</p>
       </footer>
     </div>
   );

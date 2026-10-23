@@ -3,11 +3,13 @@
  * The link is built from APP_PUBLIC_URL — never from request headers (Host /
  * X-Forwarded-* can be spoofed into phishing links).
  * HTML is table-based with inline CSS (Gmail, Outlook, Apple Mail, dark mode),
- * no images or external resources. Without SMTP_* the send is refused with a
+ * one header banner embedded as a CID attachment (no remote images; the text never depends on it).
+ * Without SMTP_* the send is refused with a
  * readable code, never silently.
  */
 
 import { logger } from "../lib/logger";
+import { EMAIL_BANNER_ALT, EMAIL_BANNER_BASE64, EMAIL_BANNER_CID } from "../assets/emailBanner";
 
 export const DEFAULT_APP_PUBLIC_URL = "http://localhost:23889";
 export const INVITE_VALID_DAYS = 7;
@@ -117,6 +119,11 @@ export function renderInviteEmail(c: InviteEmailContent) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FAFAF9;">
 <tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;background:#FFFFFF;border:1px solid #E7E5E4;border-radius:8px;font-family:Manrope,Segoe UI,Helvetica,Arial,sans-serif;">
+<tr><td bgcolor="#1C1917" height="180" style="background:#1C1917;height:180px;line-height:0;font-size:0;border-radius:8px 8px 0 0;overflow:hidden;">
+  <!-- Banner: the graphite cell behind keeps the layout when images are off; the text below never depends on it.
+       Later the mascot goes here (replace the image, keep size 560 x 180, CID and alt). -->
+  <img src="cid:${EMAIL_BANNER_CID}" width="560" height="180" alt="${escapeHtml(EMAIL_BANNER_ALT)}" style="display:block;width:100%;max-width:560px;height:auto;border:0;color:#FFFFFF;font:700 16px/24px Arial,Helvetica,sans-serif;text-align:center;">
+</td></tr>
 <tr><td style="padding:24px 24px 8px 24px;">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
     <td width="44" height="44" align="center" valign="middle" style="width:44px;height:44px;border-radius:22px;background:#F0EFED;color:#1C1917;font-size:16px;font-weight:700;">${escapeHtml(initialsOf(c.trainerName))}</td>
@@ -184,6 +191,15 @@ export async function sendInviteEmail(
       subject,
       text,
       html,
+      attachments: [
+        {
+          filename: "optimatren-banner.jpg",
+          content: Buffer.from(EMAIL_BANNER_BASE64, "base64"),
+          contentType: "image/jpeg",
+          contentDisposition: "inline",
+          cid: EMAIL_BANNER_CID,
+        },
+      ],
     });
     return { sent: true };
   } catch (err) {

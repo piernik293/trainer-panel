@@ -8,10 +8,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, CheckCircle2, ChevronDown, Loader2 } from "lucide-react";
+import { SECTION_TEXT, HINT_TEXT, LOCATION_DESC, PLAN_STYLE_DESC } from "@/lib/surveyHelpTexts";
 import {
   ADVANCED_METHODS,
   ACTIVITY_LEVEL_OPTIONS,
   CARDIO_AVOID_REASSURANCE_TEXT,
+  birthDateBounds,
+  birthDateError,
+  heightError,
+  BIRTH_INVALID_MESSAGE,
+  BIRTH_REQUIRED_MESSAGE,
+  weightError,
+  toggleEquipment,
+  TRAINING_GOAL_DESCRIPTIONS,
+  SESSION_DURATION_RECOMMENDATIONS,
+  SESSION_RECOMMENDED_BADGE,
+  PRIORITY_BEGINNER_TEXT,
+  maxPriorityMuscles,
+  normalizeCardioPreference,
+  resolveEffectiveLevel,
+  NO_EQUIPMENT,
+  SURVEY_LIMITS,
   CARDIO_FREQUENCY_OPTIONS,
   CARDIO_PREFERENCE_OPTIONS,
   CARDIO_RECOMMENDATION_TEXT,
@@ -53,6 +70,8 @@ import {
   remainingMinutes,
   saveDraft,
   validateStep,
+  missingHint,
+  parseWeight,
   visibleSteps,
   visibleStages,
   type Answers,
@@ -61,21 +80,27 @@ import {
 } from "@/lib/surveyWizard";
 
 const AUTO_ADVANCE_MS = 300;
+/** Cardio screen: no instant advance (the hint under the choice has to be readable); moves on after 20 s of inactivity. */
+const CARDIO_IDLE_ADVANCE_MS = 20_000;
+/** Any of these cancels the pending idle advance — then only "Dalej" moves on. */
+const IDLE_CANCEL_EVENTS = ["pointerdown", "mousedown", "touchstart", "click", "keydown", "wheel", "scroll", "input", "change"] as const;
 
 interface Choice {
   value: string;
   label: string;
   /** One-line description. */
   desc?: string;
-  /** Full description behind the "Więcej" toggle. */
+  /** Full description behind the "Więcej" toggle (or the arrow, see `moreStyle`). */
   more?: string;
+  /** Small pill next to the label, e.g. "Polecane dla Ciebie". */
+  badge?: string;
 }
 
 // ─── Small building blocks ───────────────────────────────────────────────────
 
 function ChoiceList({
-  name, options, value, onChange, columns = 1,
-}: { name: string; options: Choice[]; value: string; onChange: (v: string) => void; columns?: 1 | 2 }) {
+  name, options, value, onChange, columns = 1, moreStyle = "text",
+}: { name: string; options: Choice[]; value: string; onChange: (v: string) => void; columns?: 1 | 2; moreStyle?: "text" | "arrow" }) {
   const refs = useRef<Array<HTMLInputElement | null>>([]);
   const [open, setOpen] = useState<string[]>([]);
   const onKey = (e: React.KeyboardEvent, i: number) => {
@@ -93,7 +118,7 @@ function ChoiceList({
           key={o.value}
           className={cn(
             "relative flex flex-wrap items-start rounded-lg border bg-card transition-colors focus-within:ring-2 focus-within:ring-ring",
-            value === o.value ? "border-primary bg-brand-soft" : "border-input hover:bg-muted",
+            value === o.value ? "border-primary bg-brand-soft" : "border-input hover:border-primary/60",
           )}
         >
           <label className={cn("flex min-w-0 flex-1 cursor-pointer flex-col justify-center px-4", o.more ? "min-h-14 py-2.5" : "min-h-14 py-3")}>
@@ -108,19 +133,34 @@ function ChoiceList({
               onKeyDown={(e) => onKey(e, i)}
               className="sr-only"
             />
-            <span className={cn("font-semibold", o.more && "pr-14", value === o.value && "text-primary")}>{o.label}</span>
+            <span className={cn("font-semibold", o.more && (moreStyle === "arrow" ? "pr-12" : "pr-14"), value === o.value && "text-primary")}>
+              {o.label}
+              {o.badge && <span className="ml-2 inline-block rounded-full bg-primary px-2 py-0.5 align-middle text-xs font-bold text-primary-foreground">{o.badge}</span>}
+            </span>
             {o.desc && <span className="mt-0.5 text-sm text-muted-foreground">{o.desc}</span>}
           </label>
           {o.more && (
             <>
-              <button
-                type="button"
-                aria-expanded={open.includes(o.value)}
-                onClick={() => setOpen((cur) => (cur.includes(o.value) ? cur.filter((v) => v !== o.value) : [...cur, o.value]))}
-                className="absolute right-0 top-0 inline-flex min-h-11 items-center px-3 text-sm font-semibold text-primary hover:underline"
-              >
-                {open.includes(o.value) ? "Mniej" : "Więcej"}
-              </button>
+              {moreStyle === "arrow" ? (
+                <button
+                  type="button"
+                  aria-expanded={open.includes(o.value)}
+                  aria-label={`${open.includes(o.value) ? "Ukryj" : "Pokaż"} opis: ${o.label}`}
+                  onClick={() => setOpen((cur) => (cur.includes(o.value) ? cur.filter((v) => v !== o.value) : [...cur, o.value]))}
+                  className="absolute right-0 top-0 inline-flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-primary"
+                >
+                  <ChevronDown className={cn("h-5 w-5 transition-transform", open.includes(o.value) && "rotate-180")} aria-hidden="true" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  aria-expanded={open.includes(o.value)}
+                  onClick={() => setOpen((cur) => (cur.includes(o.value) ? cur.filter((v) => v !== o.value) : [...cur, o.value]))}
+                  className="absolute right-0 top-0 inline-flex min-h-11 items-center px-3 text-sm font-semibold text-primary hover:underline"
+                >
+                  {open.includes(o.value) ? "Mniej" : "Więcej"}
+                </button>
+              )}
               {open.includes(o.value) && <p className="w-full px-4 pb-3 text-sm text-muted-foreground">{o.more}</p>}
             </>
           )}
@@ -180,9 +220,11 @@ function Note({ children, tone = "info" }: { children: React.ReactNode; tone?: "
   );
 }
 
-function DateInput({ value, onChange, id, invalid }: { value: string; onChange: (iso: string) => void; id: string; invalid?: boolean }) {
+function DateInput({ value, onChange, id }: { value: string; onChange: (iso: string) => void; id: string }) {
+  const bounds = useMemo(() => birthDateBounds(), []);
   const toDisplay = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso.split("-").reverse().join(".") : "");
   const [display, setDisplay] = useState(() => toDisplay(value));
+  const [touched, setTouched] = useState(false);
   const cal = useRef<HTMLInputElement>(null);
   const format = (digits: string) => {
     const d = digits.slice(0, 8);
@@ -197,54 +239,81 @@ function DateInput({ value, onChange, id, invalid }: { value: string; onChange: 
     const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(f);
     onChange(m ? `${m[3]}-${m[2]}-${m[1]}` : "");
   };
+  // Complete date: checked at once (age 16–90). Incomplete text: only after leaving the field.
+  const complete = /^\d{2}\.\d{2}\.\d{4}$/.test(display);
+  const error = complete ? birthDateError(value) : touched ? (display ? BIRTH_INVALID_MESSAGE : BIRTH_REQUIRED_MESSAGE) : null;
   return (
-    <div className="relative w-full">
-      <Input
-        id={id}
-        inputMode="numeric"
-        placeholder="DD.MM.RRRR"
-        value={display}
-        maxLength={10}
-        aria-invalid={invalid}
-        onChange={(e) => apply(e.target.value)}
-        onPaste={(e) => { e.preventDefault(); apply(e.clipboardData.getData("text")); }}
-        className={cn(bigInput, "pr-12")}
-      />
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-label="Otwórz kalendarz"
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
-        onClick={() => cal.current?.showPicker?.()}
-      >
-        <Calendar className="h-5 w-5" />
-      </button>
-      <input
-        ref={cal}
-        type="date"
-        max={getLocalDateString(new Date())}
-        value={value}
-        tabIndex={-1}
-        aria-hidden="true"
-        className="sr-only"
-        onChange={(e) => { if (e.target.value) { setDisplay(toDisplay(e.target.value)); onChange(e.target.value); } }}
-      />
+    <div className="space-y-1.5">
+      <div className="relative w-full">
+        <Input
+          id={id}
+          inputMode="numeric"
+          placeholder="DD.MM.RRRR"
+          value={display}
+          maxLength={10}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-error` : undefined}
+          onChange={(e) => apply(e.target.value)}
+          onBlur={() => setTouched(true)}
+          onPaste={(e) => { e.preventDefault(); apply(e.clipboardData.getData("text")); }}
+          className={cn(bigInput, "pr-12", error && "border-danger")}
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label="Otwórz kalendarz"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+          onClick={() => cal.current?.showPicker?.()}
+        >
+          <Calendar className="h-5 w-5" />
+        </button>
+        {/* The calendar starts empty and opens about 30 years back, never at today. */}
+        <input
+          ref={cal}
+          type="date"
+          min={bounds.min}
+          max={bounds.max}
+          value={value || bounds.opensAt}
+          tabIndex={-1}
+          aria-hidden="true"
+          className="sr-only"
+          onChange={(e) => { if (e.target.value) { setDisplay(toDisplay(e.target.value)); onChange(e.target.value); } }}
+        />
+      </div>
+      {error && <p id={`${id}-error`} role="alert" className="text-sm text-danger">{error}</p>}
     </div>
   );
 }
 
 // ─── Wizard ──────────────────────────────────────────────────────────────────
 
+/** "text (opcjonalnie)" — the old text stays whole, the marker is a separate element. */
+function Opt({ text }: { text: string }) {
+  return <>{text} <span className="whitespace-nowrap">(opcjonalnie)</span></>;
+}
+
 function Section({
-  id, title, lead, headingRef, children,
-}: { id: StepId; title: string; lead: string; headingRef: React.Ref<HTMLHeadingElement>; children: React.ReactNode }) {
+  id, title, lead, more, headingRef, children,
+}: { id: StepId; title: string; lead: React.ReactNode; more?: string; headingRef: React.Ref<HTMLHeadingElement>; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
   return (
     <div className="space-y-3 sm:space-y-4" data-step={id}>
       <div className="space-y-2">
         <h1 ref={headingRef} tabIndex={-1} className="text-[26px] font-extrabold leading-tight tracking-tight outline-none sm:text-[28px]" data-testid="question">
           {title}
         </h1>
-        <p className="text-muted-foreground">{lead}</p>
+        <p className="text-muted-foreground">
+          {lead}
+          {more && (
+            <>
+              {" "}
+              <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="inline-flex min-h-11 items-center font-semibold text-primary hover:underline">
+                {open ? "Mniej" : "Więcej"}
+              </button>
+            </>
+          )}
+        </p>
+        {more && open && <p className="text-sm text-muted-foreground">{more}</p>}
       </div>
       {children}
     </div>
@@ -277,10 +346,19 @@ export default function SurveyWizard({
   const [answers, setAnswers] = useState<Answers>(initial.answers);
   const [stepId, setStepId] = useState<StepId | "summary">(initial.stepId);
   const [showError, setShowError] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const touch = (k: string) => setTouched((t) => (t[k] ? t : { ...t, [k]: true }));
   const [done, setDone] = useState<string | null>(null);
   const [cardioExpanded, setCardioExpanded] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idleCleanup = useRef<(() => void) | null>(null);
+  const idleArmed = useRef(false);
+  const cancelPending = () => {
+    if (timer.current) clearTimeout(timer.current);
+    idleCleanup.current?.();
+    idleCleanup.current = null;
+  };
 
   const steps = visibleSteps(answers, prefill);
   const stages = visibleStages(answers, prefill);
@@ -308,11 +386,13 @@ export default function SurveyWizard({
     heading.current?.focus();
     window.scrollTo({ top: 0 });
     setShowError(false);
+    setTouched({});
+    idleArmed.current = false;
   }, [effectiveStep]);
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); idleCleanup.current?.(); }, []);
 
   const go = (to: StepId | "summary") => {
-    if (timer.current) clearTimeout(timer.current);
+    cancelPending();
     setStepId(to);
   };
   const goNext = (snapshot: Answers = answers) => {
@@ -333,7 +413,24 @@ export default function SurveyWizard({
   const choose = (patch: Partial<Answers>) => {
     const next = normalizeAnswers({ ...answers, ...patch }, prefill);
     setAnswers(next);
-    if (timer.current) clearTimeout(timer.current);
+    cancelPending();
+    if (effectiveStep === "cardioPref") {
+      // The first answer starts a silent 20 s countdown; changing the answer or ANY interaction
+      // (click, key, scroll, touch) cancels it for good — from then on only "Dalej" moves on.
+      if (idleArmed.current) return;
+      idleArmed.current = true;
+      if (validateStep("cardioPref", next)) return;
+      timer.current = setTimeout(() => goNext(next), CARDIO_IDLE_ADVANCE_MS);
+      // Listen only after the gesture that made the choice has finished.
+      const arm = setTimeout(() => {
+        const cancel = () => { if (timer.current) clearTimeout(timer.current); idleCleanup.current?.(); idleCleanup.current = null; };
+        IDLE_CANCEL_EVENTS.forEach((e) => window.addEventListener(e, cancel, { capture: true, passive: true }));
+        idleCleanup.current = () => IDLE_CANCEL_EVENTS.forEach((e) => window.removeEventListener(e, cancel, { capture: true }));
+      }, 250);
+      const prev = idleCleanup.current;
+      idleCleanup.current = () => { clearTimeout(arm); prev?.(); };
+      return;
+    }
     if (!validateStep(effectiveStep as StepId, next)) timer.current = setTimeout(() => goNext(next), AUTO_ADVANCE_MS);
   };
 
@@ -375,6 +472,10 @@ export default function SurveyWizard({
   const stepsLeft = Math.max(0, steps.length - index);
 
   const level = answers.experienceLevel;
+  // Level the plan will really be built for: the choice capped by training time (2-year rule).
+  const effectiveLevel = resolveEffectiveLevel(answers.experienceLevel, answers.trainingDuration).effective;
+  const rec = effectiveLevel ? SESSION_DURATION_RECOMMENDATIONS[effectiveLevel] : undefined;
+  const maxPriority = maxPriorityMuscles(effectiveLevel);
   const age = calculateAge(answers.dateOfBirth);
   const multiCount =
     effectiveStep === "sportNeeds" ? answers.sportPerformanceNeeds.length
@@ -388,7 +489,7 @@ export default function SurveyWizard({
     switch (id) {
       case "name":
         return (
-          <Section id={id} headingRef={heading} title="Jak masz na imię?" lead="Podstawowe informacje pozwalają mi lepiej Cię poznać.">
+          <Section id={id} headingRef={heading} title="Jak masz na imię?" lead={SECTION_TEXT.basic}>
             <Field id="firstName" label="Imię" error={showError && !answers.firstName.trim() ? "Imię jest wymagane" : null}>
               <Input id="firstName" value={answers.firstName} onChange={(e) => set({ firstName: e.target.value })} autoComplete="given-name" className={bigInput} />
             </Field>
@@ -411,10 +512,11 @@ export default function SurveyWizard({
       case "birth":
         return (
           <Section id={id} headingRef={heading} title="Kiedy się urodziłeś/-aś?" lead="Wiek wpływa na dobór obciążeń i tempa progresji.">
-            <Field id="dob" label="Data urodzenia" error={err()}>
-              <DateInput id="dob" value={answers.dateOfBirth} onChange={(v) => set({ dateOfBirth: v })} invalid={!!err() && !answers.dateOfBirth} />
-            </Field>
-            {age !== undefined && age >= 0 && age <= 100 && <p className="text-sm text-muted-foreground">Wiek: {age} lat</p>}
+            <div className="space-y-1.5">
+              <label htmlFor="dob" className="text-sm font-semibold">Data urodzenia</label>
+              <DateInput id="dob" value={answers.dateOfBirth} onChange={(v) => set({ dateOfBirth: v })} />
+            </div>
+            {age !== undefined && !birthDateError(answers.dateOfBirth) && <p className="text-sm text-muted-foreground">Wiek: {age} lat</p>}
             <p className="text-sm font-semibold">Płeć</p>
             <ChoiceList name="Płeć" columns={2} options={["Mężczyzna", "Kobieta"].map((v) => ({ value: v, label: v }))} value={answers.gender} onChange={(v) => set({ gender: v })} />
           </Section>
@@ -422,18 +524,18 @@ export default function SurveyWizard({
       case "body":
         return (
           <Section id={id} headingRef={heading} title="Wzrost i waga" lead="Wzrost i waga pomagają dobrać obciążenia i tempo progresji.">
-            <Field id="height" label="Wzrost" unit="cm" error={showError && (answers.heightCm === undefined || answers.heightCm < 80 || answers.heightCm > 260) ? "Wzrost musi być między 80 a 260 cm" : null}>
-              <Input id="height" type="number" inputMode="numeric" min={80} max={260} value={answers.heightCm ?? ""} onChange={(e) => set({ heightCm: e.target.value === "" ? undefined : parseInt(e.target.value) })} className={bigInput} />
+            <Field id="height" label="Wzrost" unit="cm" error={touched.height || (answers.heightCm !== undefined && String(answers.heightCm).length >= 3) ? heightError(answers.heightCm) : null}>
+              <Input id="height" type="number" inputMode="numeric" min={SURVEY_LIMITS.heightMin} max={SURVEY_LIMITS.heightMax} value={answers.heightCm ?? ""} onBlur={() => touch("height")} aria-describedby="height-error" onChange={(e) => set({ heightCm: e.target.value === "" ? undefined : parseInt(e.target.value) })} className={bigInput} />
             </Field>
-            <Field id="weight" label="Waga" unit="kg" error={showError && validateStep("body", answers)?.startsWith("Waga") ? validateStep("body", answers) : null}>
-              <Input id="weight" inputMode="decimal" placeholder="np. 75,5" value={answers.weightKg} onChange={(e) => set({ weightKg: e.target.value.replace(",", ".") })} className={bigInput} />
+            <Field id="weight" label="Waga" unit="kg" error={touched.weight || answers.weightKg.length >= 2 ? weightError(parseWeight(answers.weightKg)) : null}>
+              <Input id="weight" inputMode="decimal" placeholder="np. 75,5" onBlur={() => touch("weight")} aria-describedby="weight-error" value={answers.weightKg} onChange={(e) => set({ weightKg: e.target.value.replace(",", ".") })} className={bigInput} />
             </Field>
           </Section>
         );
       case "goal":
         return (
-          <Section id={id} headingRef={heading} title="Jaki jest Twój cel treningowy?" lead="Cel wyznacza kierunek całego planu — dobór ćwiczeń, intensywność i proporcje treningu siłowego i cardio.">
-            <ChoiceList name="Cel treningowy" options={TRAINING_GOAL_OPTIONS.map((v) => ({ value: v, label: v }))} value={answers.trainingGoal} onChange={(v) => choose({ trainingGoal: v })} />
+          <Section id={id} headingRef={heading} title="Jaki jest Twój cel treningowy?" lead={SECTION_TEXT.goal}>
+            <ChoiceList name="Cel treningowy" moreStyle="arrow" options={TRAINING_GOAL_OPTIONS.map((v) => ({ value: v, label: v, more: TRAINING_GOAL_DESCRIPTIONS[v] }))} value={answers.trainingGoal} onChange={(v) => choose({ trainingGoal: v })} />
           </Section>
         );
       case "sportStatus":
@@ -444,7 +546,7 @@ export default function SurveyWizard({
         );
       case "sportNeeds":
         return (
-          <Section id={id} headingRef={heading} title="Co jest dla Ciebie najważniejsze w sporcie?" lead="Pytamy o to, bo wybrałeś/-aś cel sportowy. Zaznacz obszary, które są dla Ciebie najważniejsze (opcjonalnie).">
+          <Section id={id} headingRef={heading} title="Co jest dla Ciebie najważniejsze w sporcie?" lead={<>Pytamy o to, bo wybrałeś/-aś cel sportowy. <Opt text={HINT_TEXT.sportNeeds} /></>}>
             <MultiList
               options={SPORT_PERFORMANCE_NEEDS.map((n) => ({ value: n.value, label: n.value, desc: n.desc }))}
               selected={answers.sportPerformanceNeeds}
@@ -454,13 +556,13 @@ export default function SurveyWizard({
         );
       case "motivation":
         return (
-          <Section id={id} headingRef={heading} title="Dlaczego chcesz trenować?" lead="Krótko napisz, po co chcesz trenować i co chcesz poprawić (opcjonalnie).">
+          <Section id={id} headingRef={heading} title="Dlaczego chcesz trenować?" lead={<Opt text={HINT_TEXT.motivation} />}>
             <Input aria-label="Dlaczego chcesz trenować" placeholder="np. Chcę poprawić kondycję i schudnąć przed wakacjami" value={answers.trainingMotivation} onChange={(e) => set({ trainingMotivation: e.target.value })} className={bigInput} />
           </Section>
         );
       case "level":
         return (
-          <Section id={id} headingRef={heading} title="Który poziom najlepiej opisuje Twoje doświadczenie?" lead="Wybierz opis, który najlepiej do Ciebie pasuje. Trener dostosuje plan do Twojego doświadczenia.">
+          <Section id={id} headingRef={heading} title="Który poziom najlepiej opisuje Twoje doświadczenie?" lead="Wybierz opis, który najlepiej do Ciebie pasuje. Trener dostosuje plan do Twojego doświadczenia." more={SECTION_TEXT.level}>
             <ChoiceList
               name="Poziom doświadczenia"
               options={EXPERIENCE_LEVEL_OPTIONS.filter((o) => !(answers.trainingGoal === "Cel sportowy" && o.level === "Brak aktywności fizycznej")).map((o) => ({ value: o.level, label: o.level, desc: LEVEL_SHORT[o.level], more: LEVEL_FULL[o.level] ?? o.desc }))}
@@ -477,21 +579,22 @@ export default function SurveyWizard({
         );
       case "location":
         return (
-          <Section id={id} headingRef={heading} title="Gdzie najczęściej będziesz trenować?" lead="Miejsce decyduje o tym, jakie ćwiczenia będą dla Ciebie realnie wykonalne.">
-            <ChoiceList name="Miejsce treningu" options={TRAINING_LOCATION_OPTIONS.map((o) => ({ value: o.loc, label: o.loc, desc: o.desc }))} value={answers.trainingLocation} onChange={(v) => choose({ trainingLocation: v })} />
+          <Section id={id} headingRef={heading} title="Gdzie najczęściej będziesz trenować?" lead={SECTION_TEXT.place}>
+            <ChoiceList name="Miejsce treningu" options={TRAINING_LOCATION_OPTIONS.map((o) => ({ value: o.loc, label: o.loc, desc: LOCATION_DESC[o.loc] ?? o.desc }))} value={answers.trainingLocation} onChange={(v) => choose({ trainingLocation: v })} />
           </Section>
         );
       case "equipment":
         return (
           <Section id={id} headingRef={heading} title="Jakim sprzętem dysponujesz?" lead="Pytamy o to, bo trenujesz w domu lub na siłowni plenerowej. Zaznacz wszystko, co masz.">
-            <MultiList columns={2} options={EQUIPMENT_OPTIONS.map((v) => ({ value: v, label: v }))} selected={answers.equipmentItems} onToggle={(v) => set({ equipmentItems: toggle(answers.equipmentItems, v) })} />
-            <Input aria-label="Inny sprzęt" placeholder="Inny sprzęt" value={answers.equipmentOther} onChange={(e) => set({ equipmentOther: e.target.value })} className={bigInput} />
+            <MultiList columns={2} options={EQUIPMENT_OPTIONS.map((v) => ({ value: v, label: v }))} selected={answers.equipmentItems} onToggle={(v) => set({ equipmentItems: toggleEquipment(answers.equipmentItems, v) })} />
+            <Input aria-label="Inny sprzęt" placeholder="Inny sprzęt" value={answers.equipmentOther} onChange={(e) => set({ equipmentOther: e.target.value, ...(e.target.value.trim() ? { equipmentItems: answers.equipmentItems.filter((x) => x !== NO_EQUIPMENT) } : {}) })} className={bigInput} />
             {err() && <p className="text-sm text-danger">{err()}</p>}
           </Section>
         );
       case "frequency":
         return (
-          <Section id={id} headingRef={heading} title="Ile treningów tygodniowo chciałbyś wykonywać?" lead="Pozwoli to lepiej dopasować plan do Twoich oczekiwań oraz możliwości.">
+          <Section id={id} headingRef={heading} title="Ile treningów tygodniowo chciałbyś wykonywać?" lead={SECTION_TEXT.time}>
+            <Note>{HINT_TEXT.frequency}</Note>
             {level && TRAINING_FREQUENCY_RECOMMENDATIONS[level] && <Note>{TRAINING_FREQUENCY_RECOMMENDATIONS[level]}</Note>}
             <Field id="freq" label="Liczba treningów w tygodniu" error={err()}>
               <Input id="freq" type="number" inputMode="numeric" min={1} max={7} value={answers.desiredWeeklyFrequency ?? ""} onChange={(e) => set({ desiredWeeklyFrequency: e.target.value === "" ? undefined : Math.min(7, Math.max(1, parseInt(e.target.value))) })} className={bigInput} />
@@ -501,12 +604,12 @@ export default function SurveyWizard({
       case "session":
         return (
           <Section id={id} headingRef={heading} title="Ile czasu realnie możesz poświęcić na jeden trening?" lead="Realny czas pozwala ułożyć plan, który utrzymasz na dłużej.">
-            <ChoiceList name="Czas treningu" columns={2} options={SESSION_DURATION_OPTIONS.map((v) => ({ value: v, label: v }))} value={answers.sessionDuration} onChange={(v) => choose({ sessionDuration: v })} />
+            <ChoiceList name="Czas treningu" options={SESSION_DURATION_OPTIONS.map((v) => ({ value: v, label: v, ...(rec?.option === v ? { badge: SESSION_RECOMMENDED_BADGE, desc: rec.why } : {}) }))} value={answers.sessionDuration} onChange={(v) => choose({ sessionDuration: v })} />
           </Section>
         );
       case "injury":
         return (
-          <Section id={id} headingRef={heading} title="Czy masz kontuzje, dolegliwości bólowe lub ograniczenia ruchowe?" lead="Dzięki temu trener wykluczy ryzykowne ćwiczenia i dobierze bezpieczne alternatywy.">
+          <Section id={id} headingRef={heading} title="Czy masz kontuzje, dolegliwości bólowe lub ograniczenia ruchowe?" lead={SECTION_TEXT.health}>
             <Note tone="health">To nie jest diagnoza. Podaj tylko to, co trener powinien wiedzieć, żeby dobrać bezpieczne ćwiczenia.</Note>
             <ChoiceList name="Kontuzje i ograniczenia" columns={2} options={[{ value: "Tak", label: "Tak" }, { value: "Nie", label: "Nie" }]} value={answers.injuryStatus} onChange={(v) => choose({ injuryStatus: v as Answers["injuryStatus"] })} />
             {showError && error && <p className="text-sm text-danger">{error}</p>}
@@ -514,16 +617,17 @@ export default function SurveyWizard({
         );
       case "healthDesc":
         return (
-          <Section id={id} headingRef={heading} title="Opisz zdrowie i ograniczenia" lead="Pytamy o to, bo wskazałeś/-aś ograniczenia. Przykłady: ból kolan, barków lub odcinka lędźwiowego, problemy z nadgarstkami, przebyte operacje.">
+          <Section id={id} headingRef={heading} title="Opisz zdrowie i ograniczenia" lead="Pytamy o to, bo wskazałeś/-aś ograniczenia.">
+            <Note>{HINT_TEXT.healthExamples}</Note>
             <Note tone="health">To nie jest diagnoza — opisz własnymi słowami, jak potrafisz.</Note>
-            {isBeginnerLevel(level) && <Note>Te informacje są zawsze uwzględniane przy doborze ćwiczeń i nie są traktowane jedynie jako preferencja.</Note>}
+            {isBeginnerLevel(level) && <Note>{HINT_TEXT.beginnerHealth}</Note>}
             <Textarea aria-label="Opis ograniczeń" aria-invalid={!!err()} value={answers.healthLimitations} onChange={(e) => set({ healthLimitations: e.target.value })} placeholder="Opisz krótko swoje kontuzje, dolegliwości lub ograniczenia ruchowe..." className="min-h-[140px] text-base" />
             {err() && <p className="text-sm text-danger">{err()}</p>}
           </Section>
         );
       case "activity":
         return (
-          <Section id={id} headingRef={heading} title="Jak dużo ruszasz się na co dzień poza treningami?" lead="Codzienna aktywność wpływa na regenerację i dobór objętości treningowej.">
+          <Section id={id} headingRef={heading} title="Jak dużo ruszasz się na co dzień poza treningami?" lead={SECTION_TEXT.life}>
             <ChoiceList name="Codzienna aktywność" options={ACTIVITY_LEVEL_OPTIONS.map((o) => ({ value: o.level, label: ACTIVITY_LABEL[o.level] ?? o.level, desc: ACTIVITY_DESC[o.level] ?? o.clientDesc }))} value={answers.activityLevel} onChange={(v) => choose({ activityLevel: v })} />
           </Section>
         );
@@ -535,7 +639,7 @@ export default function SurveyWizard({
         );
       case "stress":
         return (
-          <Section id={id} headingRef={heading} title="Jak oceniasz swój poziom stresu?" lead="1 = bardzo niski, 10 = bardzo wysoki. Możesz pominąć to pytanie.">
+          <Section id={id} headingRef={heading} title="Jak oceniasz swój poziom stresu?" lead={`${HINT_TEXT.stress} Możesz pominąć to pytanie.`}>
             <div className="flex items-center gap-6 pt-4">
               <Slider min={1} max={10} step={1} value={[answers.stressLevel ?? 5]} aria-label="Poziom stresu" onValueChange={(v) => set({ stressLevel: v[0] })} className="flex-1" />
               <span className="w-10 text-center text-3xl font-extrabold text-primary" data-testid="stress-value">{answers.stressLevel ?? "—"}</span>
@@ -549,20 +653,20 @@ export default function SurveyWizard({
         );
       case "cardioPref":
         return (
-          <Section id={id} headingRef={heading} title="Jak uwzględnić cardio w planie?" lead="Cardio pomaga dobrać ilość aktywności wspierającej redukcję, kondycję i wydolność (opcjonalnie).">
+          <Section id={id} headingRef={heading} title="Jak uwzględnić cardio w planie?" lead={<Opt text={SECTION_TEXT.cardio} />}>
             {isCardioRelevant(answers.trainingGoal, answers.activityLevel) && <Note>{CARDIO_RECOMMENDATION_TEXT}</Note>}
             <ChoiceList
               name="Cardio w planie"
-              options={CARDIO_PREFERENCE_OPTIONS.map((v) => ({ value: v, label: CARDIO_PREF_LABEL[v] ?? v }))}
+              options={CARDIO_PREFERENCE_OPTIONS.map((v) => ({ value: v, label: v }))}
               value={answers.cardioPreference}
               onChange={(v) => choose({ cardioPreference: v })}
             />
-            {answers.cardioPreference === "Wolę ograniczyć cardio do niezbędnego minimum" && <Note>{CARDIO_AVOID_REASSURANCE_TEXT}</Note>}
+            {normalizeCardioPreference(answers.cardioPreference) === "minimum" && <Note>{CARDIO_AVOID_REASSURANCE_TEXT}</Note>}
           </Section>
         );
       case "cardioFreq":
         return (
-          <Section id={id} headingRef={heading} title="Jak często wykonujesz cardio?" lead="Ta informacja pomoże dopasować plan. Cardio nie jest obowiązkowym elementem każdego planu (opcjonalnie).">
+          <Section id={id} headingRef={heading} title="Jak często wykonujesz cardio?" lead={<Opt text={HINT_TEXT.cardioFreq} />}>
             <ChoiceList name="Częstotliwość cardio" options={CARDIO_FREQUENCY_OPTIONS.map((v) => ({ value: v, label: v }))} value={answers.cardioFrequency} onChange={(v) => choose({ cardioFrequency: v })} />
           </Section>
         );
@@ -581,13 +685,13 @@ export default function SurveyWizard({
       }
       case "planStyle":
         return (
-          <Section id={id} headingRef={heading} title="Jaki styl planu Ci odpowiada?" lead="Styl planu pomaga dopasować go nie tylko pod cel, ale i pod Twój komfort.">
-            <ChoiceList name="Styl planu" options={PLAN_STYLE_OPTIONS.map((o) => ({ value: o.style, label: o.style, desc: o.desc }))} value={answers.planStylePreference} onChange={(v) => choose({ planStylePreference: v })} />
+          <Section id={id} headingRef={heading} title="Jaki styl planu Ci odpowiada?" lead={SECTION_TEXT.prefs}>
+            <ChoiceList name="Styl planu" options={PLAN_STYLE_OPTIONS.map((o) => ({ value: o.style, label: o.style, desc: PLAN_STYLE_DESC[o.style] ?? o.desc }))} value={answers.planStylePreference} onChange={(v) => choose({ planStylePreference: v })} />
           </Section>
         );
       case "avoided":
         return (
-          <Section id={id} headingRef={heading} title="Ćwiczenia do unikania" lead="Pytamy o to, bo masz większe doświadczenie. Wyszukaj po nazwie lub opisz ćwiczenie, jeśli nie znasz jego nazwy (opcjonalnie).">
+          <Section id={id} headingRef={heading} title="Ćwiczenia do unikania" lead={<>Pytamy o to, bo masz większe doświadczenie. <Opt text={HINT_TEXT.avoided} /></>}>
             <AvoidedExercisesPicker
               selectedExercises={answers.avoidedExercises}
               onSelectedChange={(v) => set({ avoidedExercises: v })}
@@ -604,7 +708,7 @@ export default function SurveyWizard({
             id={id}
             headingRef={heading}
             title={isBeginnerLevel(level) ? "Ćwiczenia preferowane" : "Jakie są Twoje ulubione ćwiczenia?"}
-            lead={isBeginnerLevel(level) ? "Możesz wskazać ćwiczenia, które lubisz, ale trener może wybrać prostsze lub lepiej dopasowane warianty do Twojego poziomu (opcjonalnie)." : "Wyszukaj po nazwie — możesz dodać kilka ćwiczeń (opcjonalnie)."}
+            lead={<Opt text={isBeginnerLevel(level) ? HINT_TEXT.favBeginner : HINT_TEXT.favOther} />}
           >
             <FavoriteExercisesPicker selectedExercises={answers.favoriteExercises} onSelectedChange={(v) => set({ favoriteExercises: v })} />
           </Section>
@@ -615,10 +719,9 @@ export default function SurveyWizard({
             id={id}
             headingRef={heading}
             title="Partie priorytetowe"
-            lead={isBeginnerLevel(level) ? "Na tym etapie nie musisz wybierać konkretnych priorytetów. Najpierw skupimy się na równomiernym rozwoju całego ciała (opcjonalnie)." : "Wybierz do 3 partii mięśniowych, na których zależy Ci najbardziej (opcjonalnie)."}
+            lead={<Opt text={maxPriority === 1 ? PRIORITY_BEGINNER_TEXT : HINT_TEXT.priOther} />}
           >
-            {isBeginnerLevel(level) && <Note>Na początku łatwo pochopnie ocenić, które partie powinny być najważniejsze. Potraktujemy te wybory jako wskazówkę.</Note>}
-            {(["priorityMuscle1", "priorityMuscle2", "priorityMuscle3"] as const).map((k, i) => (
+            {(["priorityMuscle1", "priorityMuscle2", "priorityMuscle3"] as const).slice(0, maxPriority).map((k, i) => (
               <div key={k} className="space-y-1.5">
                 <p className="text-sm font-semibold">Priorytet {i + 1}</p>
                 <MuscleGroupCombobox value={answers[k]} onChange={(v) => set({ [k]: v } as Partial<Answers>)} placeholder={["np. Barki", "np. Pośladki", "np. Plecy"][i]} />
@@ -627,21 +730,15 @@ export default function SurveyWizard({
             <span className="sr-only">{MUSCLE_GROUPS.length} grup mięśniowych do wyboru</span>
           </Section>
         );
-      case "methods":
-        return (
-          <Section id={id} headingRef={heading} title="Czy chcesz, aby w planie były metody intensyfikacji treningu?" lead="Pytamy o to, bo masz większe doświadczenie. Zaznacz tylko te metody, które chcesz stosować (opcjonalnie).">
-            <ChoiceList name="Metody intensyfikacji" columns={2} options={[{ value: "Tak", label: "Tak" }, { value: "Nie", label: "Nie" }]} value={answers.avoidsAdvancedMethods} onChange={(v) => choose({ avoidsAdvancedMethods: v as Answers["avoidsAdvancedMethods"] })} />
-          </Section>
-        );
       case "methodsList":
         return (
-          <Section id={id} headingRef={heading} title="Które metody chcesz stosować?" lead="Pytamy o to, bo chcesz metod intensyfikacji.">
+          <Section id={id} headingRef={heading} title="Metody do unikania" lead={<>Pytamy o to, bo masz większe doświadczenie. <Opt text="Zaznacz metody intensyfikacji, których nie chcesz w planie." /></>}>
             <MultiList options={ADVANCED_METHODS.map((v) => ({ value: v, label: v }))} selected={answers.advancedMethodsToAvoid} onToggle={(v) => set({ advancedMethodsToAvoid: toggle(answers.advancedMethodsToAvoid, v) })} />
           </Section>
         );
       case "additional":
         return (
-          <Section id={id} headingRef={heading} title="Czy jest coś jeszcze, co powinienem wiedzieć?" lead="Krótko dopisz tylko to, co może mieć znaczenie dla planu (opcjonalnie).">
+          <Section id={id} headingRef={heading} title="Czy jest coś jeszcze, co powinienem wiedzieć?" lead={<><Opt text={SECTION_TEXT.additional} /> {HINT_TEXT.additional}</>}>
             <Textarea aria-label="Dodatkowe informacje" value={answers.additionalInfo} onChange={(e) => set({ additionalInfo: e.target.value })} className="min-h-[140px] text-base" />
           </Section>
         );
@@ -739,9 +836,23 @@ export default function SurveyWizard({
               {mutation.isPending ? <><Loader2 className="h-5 w-5 animate-spin" /> Przetwarzanie...</> : "Wyślij trenerowi"}
             </Button>
           ) : (
-            <Button size="lg" className="w-full" onClick={() => goNext()} disabled={!!error} data-testid="next">
-              {isLast ? "Podsumowanie" : multiCount ? `Dalej · zaznaczono ${multiCount}` : "Dalej"}
-            </Button>
+            <>
+              <Button
+                size="lg"
+                className="w-full disabled:border disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
+                onClick={() => goNext()}
+                disabled={!!error}
+                aria-describedby={error ? "next-hint" : undefined}
+                data-testid="next"
+              >
+                {isLast ? "Podsumowanie" : multiCount ? `Dalej · zaznaczono ${multiCount}` : "Dalej"}
+              </Button>
+              {error && (
+                <p id="next-hint" data-testid="next-hint" className="mt-2 text-center text-sm text-muted-foreground">
+                  {missingHint(effectiveStep, answers) ?? error}
+                </p>
+              )}
+            </>
           )}
           {showError && error && effectiveStep !== "summary" && !["injury", "healthDesc", "contact", "frequency", "equipment", "birth", "name", "body"].includes(effectiveStep) && (
             <p role="alert" className="mt-2 text-sm text-danger">{error}</p>
@@ -784,11 +895,6 @@ const ACTIVITY_DESC: Record<string, string> = {
   "Praca fizyczna": "Większość dnia jestem w ruchu lub pracuję fizycznie.",
   "Bardzo aktywny": "Wykonuję ciężką pracę fizyczną albo intensywnie ruszam się przez większość dnia.",
 };
-const CARDIO_PREF_LABEL: Record<string, string> = {
-  "Chętnie uwzględnię cardio w planie": "Uwzględnij w planie",
-  "Cardio może być dodatkiem do planu": "Może być dodatkiem do planu",
-  "Wolę ograniczyć cardio do niezbędnego minimum": "Tylko niezbędne minimum",
-};
 
 /** One-line summary of what the client answered on a screen ("" when nothing). */
 export function summaryText(id: StepId, a: Answers): string {
@@ -812,14 +918,13 @@ export function summaryText(id: StepId, a: Answers): string {
     case "activity": return a.activityLevel;
     case "sleep": return a.sleepHours;
     case "stress": return a.stressLevel !== undefined ? `stres ${a.stressLevel}/10` : "";
-    case "cardioPref": return a.cardioPreference ? (CARDIO_PREF_LABEL[a.cardioPreference] ?? a.cardioPreference) : "";
+    case "cardioPref": return a.cardioPreference;
     case "cardioFreq": return a.cardioFrequency;
     case "cardioType": return a.preferredCardioType;
     case "planStyle": return a.planStylePreference;
     case "avoided": return [...a.avoidedExercises.map((e) => e.name), a.avoidedOtherText].filter(Boolean).join(", ");
     case "favorite": return a.favoriteExercises.map((e) => e.name).join(", ");
     case "priority": return [a.priorityMuscle1, a.priorityMuscle2, a.priorityMuscle3].filter(Boolean).join(", ");
-    case "methods": return a.avoidsAdvancedMethods;
     case "methodsList": return a.advancedMethodsToAvoid.join(", ");
     case "additional": return a.additionalInfo;
   }

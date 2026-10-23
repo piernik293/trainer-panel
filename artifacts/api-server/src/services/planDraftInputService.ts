@@ -8,6 +8,7 @@
  * This service NEVER generates exercises, allocates volume, or saves plans.
  */
 
+import { isBeginnerLevel } from "@workspace/survey-config";
 import { effectiveLevelWarning, resolveEffectiveLevel, withEffectiveLevel } from "../lib/effectiveLevel";
 import { eq, desc } from "drizzle-orm";
 import { db, clientsTable, surveysTable } from "@workspace/db";
@@ -342,11 +343,16 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
   const recoveryQuality = deriveRecoveryQuality(sleepHours, stressLevel, physicalWork);
 
   // ── Priority and exclusions ─────────────────────────────────────────────────
-  const priorityMuscleGroups = extractPriorityMuscles(
+  // Beginners (effective level) focus on one muscle group; an older interview may hold up to three —
+  // only the first is used then (the plan develops the whole body anyway).
+  const allPriorityMuscles = extractPriorityMuscles(
     survey?.priorityMuscle1,
     survey?.priorityMuscle2,
     survey?.priorityMuscle3,
   );
+  const priorityMuscleGroups = isBeginnerLevel(experienceLevel ?? undefined)
+    ? allPriorityMuscles.slice(0, 1)
+    : allPriorityMuscles;
   const excludedMuscleGroups = parseExcludedMuscles(survey?.avoidedMuscles);
 
   // ── Avoided exercises ───────────────────────────────────────────────────────
@@ -490,10 +496,10 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     "Brak aktywności fizycznej",
     "Początkujący",
   ]);
-  const isBeginnerLevel =
+  const isBeginnerPlan =
     experienceLevel != null && BEGINNER_EXPERIENCE_LEVELS.has(experienceLevel);
 
-  const allowedSplitTypes: SplitType[] = isBeginnerLevel
+  const allowedSplitTypes: SplitType[] = isBeginnerPlan
     ? ["full_body", "custom"]
     : getCompatibleSplits(effectiveTrainingDays);
 
@@ -522,6 +528,6 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     athleteRecommendation,
     adaptiveStartDecision: client.adaptiveStartDecision ?? null,
     adaptiveStartMode:
-      client.adaptiveStartDecision === "accepted" && isBeginnerLevel,
+      client.adaptiveStartDecision === "accepted" && isBeginnerPlan,
   };
 }
