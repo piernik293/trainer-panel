@@ -14,6 +14,15 @@ import {
   ACTIVITY_LEVEL_OPTIONS,
   CARDIO_AVOID_REASSURANCE_TEXT,
   CARDIO_FREQUENCY_HELPER_TEXT,
+  birthDateBounds,
+  birthDateError,
+  heightError,
+  BIRTH_INVALID_MESSAGE,
+  BIRTH_REQUIRED_MESSAGE,
+  weightError,
+  toggleEquipment,
+  NO_EQUIPMENT,
+  SURVEY_LIMITS,
   CARDIO_FREQUENCY_OPTIONS,
   CARDIO_PREFERENCE_OPTIONS,
   CARDIO_RECOMMENDATION_TEXT,
@@ -55,6 +64,8 @@ import {
   remainingMinutes,
   saveDraft,
   validateStep,
+  missingHint,
+  parseWeight,
   visibleSteps,
   visibleStages,
   type Answers,
@@ -182,9 +193,11 @@ function Note({ children, tone = "info" }: { children: React.ReactNode; tone?: "
   );
 }
 
-function DateInput({ value, onChange, id, invalid }: { value: string; onChange: (iso: string) => void; id: string; invalid?: boolean }) {
+function DateInput({ value, onChange, id }: { value: string; onChange: (iso: string) => void; id: string }) {
+  const bounds = useMemo(() => birthDateBounds(), []);
   const toDisplay = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso.split("-").reverse().join(".") : "");
   const [display, setDisplay] = useState(() => toDisplay(value));
+  const [touched, setTouched] = useState(false);
   const cal = useRef<HTMLInputElement>(null);
   const format = (digits: string) => {
     const d = digits.slice(0, 8);
@@ -199,38 +212,48 @@ function DateInput({ value, onChange, id, invalid }: { value: string; onChange: 
     const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(f);
     onChange(m ? `${m[3]}-${m[2]}-${m[1]}` : "");
   };
+  // Complete date: checked at once (age 16–90). Incomplete text: only after leaving the field.
+  const complete = /^\d{2}\.\d{2}\.\d{4}$/.test(display);
+  const error = complete ? birthDateError(value) : touched ? (display ? BIRTH_INVALID_MESSAGE : BIRTH_REQUIRED_MESSAGE) : null;
   return (
-    <div className="relative w-full">
-      <Input
-        id={id}
-        inputMode="numeric"
-        placeholder="DD.MM.RRRR"
-        value={display}
-        maxLength={10}
-        aria-invalid={invalid}
-        onChange={(e) => apply(e.target.value)}
-        onPaste={(e) => { e.preventDefault(); apply(e.clipboardData.getData("text")); }}
-        className={cn(bigInput, "pr-12")}
-      />
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-label="Otwórz kalendarz"
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
-        onClick={() => cal.current?.showPicker?.()}
-      >
-        <Calendar className="h-5 w-5" />
-      </button>
-      <input
-        ref={cal}
-        type="date"
-        max={getLocalDateString(new Date())}
-        value={value}
-        tabIndex={-1}
-        aria-hidden="true"
-        className="sr-only"
-        onChange={(e) => { if (e.target.value) { setDisplay(toDisplay(e.target.value)); onChange(e.target.value); } }}
-      />
+    <div className="space-y-1.5">
+      <div className="relative w-full">
+        <Input
+          id={id}
+          inputMode="numeric"
+          placeholder="DD.MM.RRRR"
+          value={display}
+          maxLength={10}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-error` : undefined}
+          onChange={(e) => apply(e.target.value)}
+          onBlur={() => setTouched(true)}
+          onPaste={(e) => { e.preventDefault(); apply(e.clipboardData.getData("text")); }}
+          className={cn(bigInput, "pr-12", error && "border-danger")}
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label="Otwórz kalendarz"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+          onClick={() => cal.current?.showPicker?.()}
+        >
+          <Calendar className="h-5 w-5" />
+        </button>
+        {/* The calendar starts empty and opens about 30 years back, never at today. */}
+        <input
+          ref={cal}
+          type="date"
+          min={bounds.min}
+          max={bounds.max}
+          value={value || bounds.opensAt}
+          tabIndex={-1}
+          aria-hidden="true"
+          className="sr-only"
+          onChange={(e) => { if (e.target.value) { setDisplay(toDisplay(e.target.value)); onChange(e.target.value); } }}
+        />
+      </div>
+      {error && <p id={`${id}-error`} role="alert" className="text-sm text-danger">{error}</p>}
     </div>
   );
 }
@@ -284,6 +307,8 @@ export default function SurveyWizard({
   const [answers, setAnswers] = useState<Answers>(initial.answers);
   const [stepId, setStepId] = useState<StepId | "summary">(initial.stepId);
   const [showError, setShowError] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const touch = (k: string) => setTouched((t) => (t[k] ? t : { ...t, [k]: true }));
   const [done, setDone] = useState<string | null>(null);
   const [cardioExpanded, setCardioExpanded] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -315,6 +340,7 @@ export default function SurveyWizard({
     heading.current?.focus();
     window.scrollTo({ top: 0 });
     setShowError(false);
+    setTouched({});
   }, [effectiveStep]);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
@@ -418,10 +444,11 @@ export default function SurveyWizard({
       case "birth":
         return (
           <Section id={id} headingRef={heading} title="Kiedy się urodziłeś/-aś?" lead="Wiek wpływa na dobór obciążeń i tempa progresji.">
-            <Field id="dob" label="Data urodzenia" error={err()}>
-              <DateInput id="dob" value={answers.dateOfBirth} onChange={(v) => set({ dateOfBirth: v })} invalid={!!err() && !answers.dateOfBirth} />
-            </Field>
-            {age !== undefined && age >= 0 && age <= 100 && <p className="text-sm text-muted-foreground">Wiek: {age} lat</p>}
+            <div className="space-y-1.5">
+              <label htmlFor="dob" className="text-sm font-semibold">Data urodzenia</label>
+              <DateInput id="dob" value={answers.dateOfBirth} onChange={(v) => set({ dateOfBirth: v })} />
+            </div>
+            {age !== undefined && !birthDateError(answers.dateOfBirth) && <p className="text-sm text-muted-foreground">Wiek: {age} lat</p>}
             <p className="text-sm font-semibold">Płeć</p>
             <ChoiceList name="Płeć" columns={2} options={["Mężczyzna", "Kobieta"].map((v) => ({ value: v, label: v }))} value={answers.gender} onChange={(v) => set({ gender: v })} />
           </Section>
@@ -429,11 +456,11 @@ export default function SurveyWizard({
       case "body":
         return (
           <Section id={id} headingRef={heading} title="Wzrost i waga" lead="Wzrost i waga pomagają dobrać obciążenia i tempo progresji.">
-            <Field id="height" label="Wzrost" unit="cm" error={showError && (answers.heightCm === undefined || answers.heightCm < 80 || answers.heightCm > 260) ? "Wzrost musi być między 80 a 260 cm" : null}>
-              <Input id="height" type="number" inputMode="numeric" min={80} max={260} value={answers.heightCm ?? ""} onChange={(e) => set({ heightCm: e.target.value === "" ? undefined : parseInt(e.target.value) })} className={bigInput} />
+            <Field id="height" label="Wzrost" unit="cm" error={touched.height || (answers.heightCm !== undefined && String(answers.heightCm).length >= 3) ? heightError(answers.heightCm) : null}>
+              <Input id="height" type="number" inputMode="numeric" min={SURVEY_LIMITS.heightMin} max={SURVEY_LIMITS.heightMax} value={answers.heightCm ?? ""} onBlur={() => touch("height")} aria-describedby="height-error" onChange={(e) => set({ heightCm: e.target.value === "" ? undefined : parseInt(e.target.value) })} className={bigInput} />
             </Field>
-            <Field id="weight" label="Waga" unit="kg" error={showError && validateStep("body", answers)?.startsWith("Waga") ? validateStep("body", answers) : null}>
-              <Input id="weight" inputMode="decimal" placeholder="np. 75,5" value={answers.weightKg} onChange={(e) => set({ weightKg: e.target.value.replace(",", ".") })} className={bigInput} />
+            <Field id="weight" label="Waga" unit="kg" error={touched.weight || answers.weightKg.length >= 2 ? weightError(parseWeight(answers.weightKg)) : null}>
+              <Input id="weight" inputMode="decimal" placeholder="np. 75,5" onBlur={() => touch("weight")} aria-describedby="weight-error" value={answers.weightKg} onChange={(e) => set({ weightKg: e.target.value.replace(",", ".") })} className={bigInput} />
             </Field>
           </Section>
         );
@@ -491,8 +518,8 @@ export default function SurveyWizard({
       case "equipment":
         return (
           <Section id={id} headingRef={heading} title="Jakim sprzętem dysponujesz?" lead="Pytamy o to, bo trenujesz w domu lub na siłowni plenerowej. Zaznacz wszystko, co masz.">
-            <MultiList columns={2} options={EQUIPMENT_OPTIONS.map((v) => ({ value: v, label: v }))} selected={answers.equipmentItems} onToggle={(v) => set({ equipmentItems: toggle(answers.equipmentItems, v) })} />
-            <Input aria-label="Inny sprzęt" placeholder="Inny sprzęt" value={answers.equipmentOther} onChange={(e) => set({ equipmentOther: e.target.value })} className={bigInput} />
+            <MultiList columns={2} options={EQUIPMENT_OPTIONS.map((v) => ({ value: v, label: v }))} selected={answers.equipmentItems} onToggle={(v) => set({ equipmentItems: toggleEquipment(answers.equipmentItems, v) })} />
+            <Input aria-label="Inny sprzęt" placeholder="Inny sprzęt" value={answers.equipmentOther} onChange={(e) => set({ equipmentOther: e.target.value, ...(e.target.value.trim() ? { equipmentItems: answers.equipmentItems.filter((x) => x !== NO_EQUIPMENT) } : {}) })} className={bigInput} />
             {err() && <p className="text-sm text-danger">{err()}</p>}
           </Section>
         );
@@ -748,9 +775,23 @@ export default function SurveyWizard({
               {mutation.isPending ? <><Loader2 className="h-5 w-5 animate-spin" /> Przetwarzanie...</> : "Wyślij trenerowi"}
             </Button>
           ) : (
-            <Button size="lg" className="w-full" onClick={() => goNext()} disabled={!!error} data-testid="next">
-              {isLast ? "Podsumowanie" : multiCount ? `Dalej · zaznaczono ${multiCount}` : "Dalej"}
-            </Button>
+            <>
+              <Button
+                size="lg"
+                className="w-full disabled:border disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
+                onClick={() => goNext()}
+                disabled={!!error}
+                aria-describedby={error ? "next-hint" : undefined}
+                data-testid="next"
+              >
+                {isLast ? "Podsumowanie" : multiCount ? `Dalej · zaznaczono ${multiCount}` : "Dalej"}
+              </Button>
+              {error && (
+                <p id="next-hint" data-testid="next-hint" className="mt-2 text-center text-sm text-muted-foreground">
+                  {missingHint(effectiveStep, answers) ?? error}
+                </p>
+              )}
+            </>
           )}
           {showError && error && effectiveStep !== "summary" && !["injury", "healthDesc", "contact", "frequency", "equipment", "birth", "name", "body"].includes(effectiveStep) && (
             <p role="alert" className="mt-2 text-sm text-danger">{error}</p>

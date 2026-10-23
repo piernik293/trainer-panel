@@ -11,6 +11,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import SurveyWizard from "@/components/SurveyWizard";
 import { draftKey, EMPTY_ANSWERS, type Answers } from "@/lib/surveyWizard";
+import { birthDateBounds, getLocalDateString } from "@workspace/survey-config";
 
 vi.mock("@/components/AvoidedExercisesPicker", () => ({ AvoidedExercisesPicker: () => <div data-testid="avoided-picker" /> }));
 vi.mock("@/components/FavoriteExercisesPicker", () => ({ FavoriteExercisesPicker: () => <div data-testid="favorite-picker" /> }));
@@ -185,5 +186,85 @@ describe("keyboard", () => {
     first.focus();
     fireEvent.keyDown(first, { key: "ArrowDown" });
     expect((screen.getByLabelText("Zwiększenie siły") as HTMLInputElement).checked).toBe(true);
+  });
+});
+
+describe("validation and equipment in the interface (Task 3–5, 23.10)", () => {
+  const open = (stepId: string, answers: Partial<Answers> = {}) => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, firstName: "M", lastName: "T", email: "m@example.com", ...answers }, stepId }));
+    mount();
+  };
+
+  it("birth date: empty field, calendar limited to 16–90 years and opening ~30 years back (never today)", () => {
+    open("birth");
+    expect((screen.getByLabelText("Data urodzenia") as HTMLInputElement).value).toBe("");
+    const cal = document.querySelector('input[type="date"]') as HTMLInputElement;
+    const b = birthDateBounds();
+    expect(cal.min).toBe(b.min);
+    expect(cal.max).toBe(b.max);
+    expect(cal.value).toBe(b.opensAt);
+    expect(cal.value).not.toBe(getLocalDateString(new Date()));
+    expect(Number(b.opensAt.slice(0, 4))).toBe(new Date().getFullYear() - 30);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("birth date: Polish message under the field for age < 16 or > 90, none for a valid date", () => {
+    open("birth", { gender: "Kobieta" });
+    const field = screen.getByLabelText("Data urodzenia");
+    fireEvent.change(field, { target: { value: "01012020" } });
+    expect(screen.getByRole("alert").textContent).toBe("Wiek musi mieścić się między 16 a 90 lat. Sprawdź datę urodzenia.");
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(field, { target: { value: "01011900" } });
+    expect(screen.getByRole("alert").textContent).toContain("16 a 90 lat");
+    fireEvent.change(field, { target: { value: "31021990" } });
+    expect(screen.getByRole("alert").textContent).toContain("poprawną datę");
+    fireEvent.change(field, { target: { value: "01011990" } });
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByText(/Wiek: \d+ lat/)).toBeTruthy();
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("height 120–230 and weight 35–250: message under the field after leaving it", () => {
+    open("body");
+    const h = screen.getByLabelText("Wzrost"); const w = screen.getByLabelText("Waga");
+    fireEvent.change(h, { target: { value: "119" } }); fireEvent.blur(h);
+    expect(screen.getByText("Wzrost musi być między 120 a 230 cm.")).toBeTruthy();
+    fireEvent.change(h, { target: { value: "175" } });
+    expect(screen.queryByText(/Wzrost musi być/)).toBeNull();
+    fireEvent.change(w, { target: { value: "251" } }); fireEvent.blur(w);
+    expect(screen.getByText("Waga musi być między 35 a 250 kg.")).toBeTruthy();
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(w, { target: { value: "62,5" } });
+    expect(screen.queryByText(/Waga musi być/)).toBeNull();
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("disabled 'Dalej' is grey (not pale orange) and says what to fill in", () => {
+    open("name", { firstName: "", lastName: "" });
+    const next = screen.getByTestId("next") as HTMLButtonElement;
+    expect(next.disabled).toBe(true);
+    expect(next.className).toContain("disabled:bg-muted");
+    expect(next.className).toContain("disabled:opacity-100");
+    expect(screen.getByTestId("next-hint").textContent).toBe("Uzupełnij: imię.");
+    expect(next.getAttribute("aria-describedby")).toBe("next-hint");
+    fireEvent.change(screen.getByLabelText("Imię"), { target: { value: "Ala" } });
+    expect(screen.getByTestId("next-hint").textContent).toBe("Uzupełnij: nazwisko.");
+    fireEvent.change(screen.getByLabelText("Nazwisko"), { target: { value: "K" } });
+    expect(screen.queryByTestId("next-hint")).toBeNull();
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("'Brak sprzętu' unticks the rest and the other way round", () => {
+    open("equipment", { trainingLocation: "Dom" });
+    const box = (name: string) => screen.getByRole("button", { name: new RegExp(`^${name}$`) });
+    const on = (name: string) => box(name).getAttribute("aria-pressed") === "true";
+    fireEvent.click(box("Hantle")); fireEvent.click(box("Gumy oporowe"));
+    expect(on("Hantle") && on("Gumy oporowe")).toBe(true);
+    fireEvent.click(box("Brak sprzętu"));
+    expect(on("Brak sprzętu")).toBe(true);
+    expect(on("Hantle") || on("Gumy oporowe")).toBe(false);
+    fireEvent.click(box("Kettlebell"));
+    expect(on("Kettlebell")).toBe(true);
+    expect(on("Brak sprzętu")).toBe(false);
   });
 });

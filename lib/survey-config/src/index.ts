@@ -341,7 +341,7 @@ export function calculateBmi(
  * Parse YYYY-MM-DD as local calendar date (avoids UTC-midnight shift bug
  * that `new Date(str)` causes on date-only strings).
  */
-export function calculateAge(dateOfBirth: string | undefined): number | undefined {
+export function calculateAge(dateOfBirth: string | undefined, today: Date = new Date()): number | undefined {
   if (!dateOfBirth) return undefined;
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateOfBirth);
   if (!match) return undefined;
@@ -357,7 +357,6 @@ export function calculateAge(dateOfBirth: string | undefined): number | undefine
   ) {
     return undefined;
   }
-  const today = new Date();
   let age = today.getFullYear() - dobYear;
   const monthDiff = today.getMonth() - dobMonth;
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDay)) {
@@ -371,4 +370,69 @@ export function getLocalDateString(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+// ─── Body data limits (one source for the wizard and the API) ────────────────
+
+export const SURVEY_LIMITS = {
+  ageMin: 16,
+  ageMax: 90,
+  heightMin: 120,
+  heightMax: 230,
+  weightMin: 35,
+  weightMax: 250,
+} as const;
+
+export const BIRTH_REQUIRED_MESSAGE = "Data urodzenia jest wymagana";
+export const BIRTH_INVALID_MESSAGE = "Podaj poprawną datę urodzenia w formacie DD.MM.RRRR.";
+export const AGE_RANGE_MESSAGE = `Wiek musi mieścić się między ${SURVEY_LIMITS.ageMin} a ${SURVEY_LIMITS.ageMax} lat. Sprawdź datę urodzenia.`;
+export const HEIGHT_RANGE_MESSAGE = `Wzrost musi być między ${SURVEY_LIMITS.heightMin} a ${SURVEY_LIMITS.heightMax} cm.`;
+export const WEIGHT_RANGE_MESSAGE = `Waga musi być między ${SURVEY_LIMITS.weightMin} a ${SURVEY_LIMITS.weightMax} kg.`;
+
+/** null = valid. `today` is injectable for tests. */
+export function birthDateError(dateOfBirth: string | undefined | null, today: Date = new Date()): string | null {
+  if (!dateOfBirth) return BIRTH_REQUIRED_MESSAGE;
+  const age = calculateAge(dateOfBirth, today);
+  if (age === undefined) return BIRTH_INVALID_MESSAGE;
+  if (age < SURVEY_LIMITS.ageMin || age > SURVEY_LIMITS.ageMax) return AGE_RANGE_MESSAGE;
+  return null;
+}
+
+export function heightError(heightCm: number | undefined | null): string | null {
+  return typeof heightCm === "number" && Number.isFinite(heightCm) && heightCm >= SURVEY_LIMITS.heightMin && heightCm <= SURVEY_LIMITS.heightMax
+    ? null
+    : HEIGHT_RANGE_MESSAGE;
+}
+
+export function weightError(weightKg: number | undefined | null): string | null {
+  return typeof weightKg === "number" && Number.isFinite(weightKg) && weightKg >= SURVEY_LIMITS.weightMin && weightKg <= SURVEY_LIMITS.weightMax
+    ? null
+    : WEIGHT_RANGE_MESSAGE;
+}
+
+/** The calendar opens about this many years back and starts empty. */
+export const DEFAULT_CALENDAR_YEARS_BACK = 30;
+
+/** YYYY-MM-DD bounds of the date picker: oldest and youngest allowed birth date. */
+export function birthDateBounds(today: Date = new Date()): { min: string; max: string; opensAt: string } {
+  const on = (years: number) => getLocalDateString(new Date(today.getFullYear() - years, today.getMonth(), today.getDate()));
+  return { min: on(SURVEY_LIMITS.ageMax + 1), max: on(SURVEY_LIMITS.ageMin), opensAt: on(DEFAULT_CALENDAR_YEARS_BACK) };
+}
+
+// ─── Equipment: "Brak sprzętu" excludes everything else ──────────────────────
+
+export const NO_EQUIPMENT = "Brak sprzętu";
+
+/** Toggling "Brak sprzętu" clears the rest; ticking anything else clears "Brak sprzętu". */
+export function toggleEquipment(current: readonly string[], value: string): string[] {
+  if (value === NO_EQUIPMENT) return current.includes(NO_EQUIPMENT) ? [] : [NO_EQUIPMENT];
+  const without = current.filter((x) => x !== NO_EQUIPMENT);
+  return without.includes(value) ? without.filter((x) => x !== value) : [...without, value];
+}
+
+export const EQUIPMENT_CONFLICT_MESSAGE = "„Brak sprzętu” nie może być zaznaczony razem z innym sprzętem.";
+
+/** Server side: "Brak sprzętu" together with other items is a contradiction. */
+export function equipmentConflict(items: readonly string[], other?: string | null): boolean {
+  return items.includes(NO_EQUIPMENT) && (items.length > 1 || !!(other ?? "").trim());
 }

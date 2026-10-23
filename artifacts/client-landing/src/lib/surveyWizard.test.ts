@@ -213,8 +213,8 @@ describe("validation as in the old form", () => {
     expect(validateStep("injury", EMPTY_ANSWERS)).toBeTruthy(); // health question is mandatory now
     expect(validateStep("injury", { ...base, injuryStatus: "Nie" })).toBeNull();
     expect(validateStep("healthDesc", { ...base, injuryStatus: "Tak", healthLimitations: " " })).toBeTruthy();
-    expect(validateStep("body", { ...base, heightCm: 79 })).toBe("Wzrost musi być między 80 a 260 cm");
-    expect(validateStep("body", { ...base, weightKg: "19" })).toBe("Waga musi być między 20 a 400 kg");
+    expect(validateStep("body", { ...base, heightCm: 119 })).toBe("Wzrost musi być między 120 a 230 cm.");
+    expect(validateStep("body", { ...base, weightKg: "34" })).toBe("Waga musi być między 35 a 250 kg.");
     expect(validateStep("birth", { ...base, dateOfBirth: "2999-01-01" })).toBeTruthy();
     expect(validateStep("contact", { ...base, email: "zly" })).toContain("E-mail jest wymagany");
     expect(validateStep("frequency", { ...base, desiredWeeklyFrequency: 8 })).toBeTruthy();
