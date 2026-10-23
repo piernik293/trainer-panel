@@ -166,3 +166,77 @@ wszystkich propozycji ~3,5–4 min**.
    poziomu albo na ekran wzrostu i wagi.
 7. Generator nie korzysta z #27 (styl planu) ani z #31–32 (metody), choć klient je wypełnia.
 8. #26 (stres) ma domyślnie 5 i zawsze jest wysyłany — nie da się odróżnić „5” od „nie ruszałem suwaka”.
+
+
+---
+
+# Wywiad 2.0 — wdrożenie (kroki 3–4, 23.10.2026)
+
+Decyzje zatwierdzone przez właściciela i ich realizacja:
+
+| Decyzja | Realizacja |
+|---|---|
+| „Czy jest coś jeszcze?” + pole tekstowe → jedno opcjonalne pole | ekran `additional` (pole `additionalInfo`); `hasAdditionalInfo` nie jest już wysyłane (API i tak go nie zapisywało) |
+| Dane osobowe istniejącego klienta → z danych klienta, pominąć | `GET /public/survey/:token` zwraca `existingClient`; ekrany `name` i `contact` pomijane, payload bierze dane z rekordu klienta. Imię z zaproszenia (`clientName`) wypełnia pole „Imię” |
+| Metody intensyfikacji i „Dlaczego chcesz trenować?” zostają, opcjonalne | ekrany `methods`, `methodsList`, `motivation` bez wymagań |
+| Kontuzje wymagane naprawdę | ekran `injury` blokuje „Dalej”; **API odrzuca wywiad bez `injuryStatus`** (400) i „Tak” bez opisu |
+| Czyść ukryte odpowiedzi | `normalizeAnswers()` — lista w tabeli poniżej; test payloadu |
+| BMI na ekran wzrostu i wagi | wartość BMI zawsze, tekst podpowiedzi przy BMI ≥ 25 **niezależnie od poziomu** (poziom pada później) |
+| Sen w generatorze | commit `ccec66a` |
+| Opcja „Cardio może być dodatkiem do planu” dla klienta | dodana na ekranie `cardioPref` (3 opcje jak w formularzu trenera) |
+| Stres bez wartości domyślnej | suwak bez wartości początkowej, „Nie odpowiadam”; brak odpowiedzi → pole nie jest wysyłane (w bazie `NULL`) |
+| „Jak długo trenujesz?” używane | reguła 2 lat (niżej) |
+
+## Reguła 2 lat (STOP-5, zatwierdzona)
+
+Poziom efektywny = **niższy z (wybór klienta, poziom wynikający ze stażu)**; staż < 2 lata → co najwyżej „Początkujący”.
+Kod: `artifacts/api-server/src/lib/effectiveLevel.ts`. Generator (`planDraftInputService`,
+`planDraftGenerateDay`, `planDraftDayRecommendations`, `recommendations`) dostaje ankietę z poziomem efektywnym,
+więc reguły bezpieczeństwa początkującego działają na nim.
+- Staż czytany z tekstu: „2 lata”, „1,5 roku”, „pół roku”, „18 miesięcy”, „1 rok 6 mies.”, samo „5” = lata.
+  Nieczytelny lub pusty staż → **wybór klienta bez zmian** (bez cichych obniżek).
+- Nigdy nie podnosi poziomu; „Brak aktywności fizycznej” i „Początkujący” zostają.
+- Trener widzi ostrzeżenie `EFFECTIVE_LEVEL_ADJUSTED` w danych wejściowych generatora: „Klient wybrał X, staż Y — plan jako Z.”
+  oraz kartę „Poziom używany przez generator planu” w profilu klienta (zakładka Wywiad) z ręcznym nadpisaniem
+  (`PATCH /api/clients/:id/experience-level`, kolumna `clients.experience_level_override`, migracja `0017`, nullable).
+- Plan zapisany wcześniej zachowuje swój `experienceLevelUsed`.
+
+## Ekrany (29) i etapy (9) — pytanie → etap → warunkowe → test
+
+Testy: `src/lib/surveyWizard.test.ts` (payload identyczny jak stary formularz dla 7 ścieżek, warunki, czyszczenie,
+walidacja, autozapis) i `src/components/SurveyWizard.test.tsx` (interfejs: kroki, auto-przejście, ekran warunkowy,
+licznik wielokrotnego wyboru, podsumowanie „Zmień”, wysyłka, wznowienie, klawiatura).
+
+| Etap | Ekran (pytania z inwentarza) | Warunkowy? |
+|---|---|---|
+| O Tobie | `name` (#1,#2) · `contact` (#3,#4) · `birth` (#5,#6) · `body` (#7,#8 + BMI) | `name`, `contact` pomijane dla istniejącego klienta |
+| Cel | `goal` (#9) · `sportStatus` (#10) · `sportNeeds` (#11) · `motivation` (#12) | `sportStatus`, `sportNeeds`: cel = Cel sportowy |
+| Doświadczenie | `level` (#13) · `duration` (#14) | `duration`: poziom ≠ Brak aktywności |
+| Miejsce i sprzęt | `location` (#19) · `equipment` (#20) | `equipment`: Dom / Siłownia plenerowa |
+| Czas i częstotliwość | `frequency` (#17) · `session` (#18) | — |
+| Zdrowie i ograniczenia | `injury` (#15) · `healthDesc` (#16) | `healthDesc`: injury = Tak |
+| Styl życia | `activity` (#24) · `sleep` (#25) · `stress` (#26) | — |
+| Cardio | `cardioPref` (#21) · `cardioFreq` (#22) · `cardioType` (#23) | — |
+| Preferencje planu | `planStyle` (#27) · `avoided` (#28) · `favorite` (#29) · `priority` (#30) · `methods` (#31) · `methodsList` (#32) · `additional` (#33+#34) | `avoided`, `methods`: średnio./zaawansowany; `methodsList`: methods = Tak |
+
+**Liczba pytań:** przed 34, po 33 — różnica to zatwierdzone połączenie #33 z #34 w jedno pole. Pozostałe 33 pytania
+istnieją, z tymi samymi opcjami i walidacją (ekranów jest 29, bo grupy pól są na jednym ekranie).
+
+## Co zmienia się w payloadzie względem starego formularza (wszystko zatwierdzone)
+
+| Przypadek | Wcześniej | Teraz |
+|---|---|---|
+| Sprzęt zaznaczony, potem miejsce „Siłownia” | sprzęt wysyłany | pusty |
+| Staż wpisany, potem poziom „Brak aktywności” | wysyłany | pusty |
+| Opis zdrowia, potem „Nie” | już czyszczony | bez zmian |
+| Ćwiczenia do unikania / metody, potem poziom początkujący | wysyłane | puste |
+| Dane sportowe, potem cel inny niż sportowy | już czyszczone | bez zmian |
+| Stres bez ruszania suwaka | `5` | brak pola (`NULL`) |
+| `hasAdditionalInfo` | wysyłane, odrzucane przez API | nie wysyłane |
+
+## Do decyzji (nie wdrożone)
+
+1. Podpowiedź BMI ≥ 25 pokazuje się teraz każdemu, nie tylko początkującym (poziom jest pytany później).
+2. Opisy poziomów doświadczenia są długie — ekran poziomu wymaga krótkiego przewinięcia na telefonie.
+3. Stary komponent `SurveyForm.tsx` (portal) zostaje w repo nieużywany jako odniesienie; do usunięcia po Twojej zgodzie.
+4. Jak kojarzyć odpowiedzi „Poniżej 5 godzin” / „Powyżej 8 godzin” snu z objętością — wartości 4 h i 9 h przyjęte arbitralnie.
