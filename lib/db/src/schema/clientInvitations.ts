@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, index } from "drizzle-orm/pg-core";
 import { clientsTable } from "./clients";
 import { trainersTable } from "./trainers";
 
@@ -30,6 +30,9 @@ export const clientInvitationsTable = pgTable("client_invitations", {
   revokedAt: timestamp("revoked_at"),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  // Mirrors migration 0008: list invitations of a client.
+  index("idx_client_invitations_client_id").on(table.clientId),
+]);
 
 export type ClientInvitation = typeof clientInvitationsTable.$inferSelect;
