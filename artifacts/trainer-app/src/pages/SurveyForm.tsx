@@ -69,6 +69,7 @@ import {
   ATHLETE_STATUS_TO_API,
   calculateBmi,
   calculateAge,
+  methodsAnswerUsable,
   normalizeCardioPreference,
   birthDateError,
   AGE_RANGE_MESSAGE,
@@ -383,7 +384,9 @@ function SurveyReadonlyPreview({
   const sportsPriorities: string[] = Array.isArray(survey.sportsPriorities)
     ? survey.sportsPriorities
     : [];
-  const advancedMethods: string[] = Array.isArray(survey.advancedMethodsToAvoid)
+  // Answers saved before "Metody do unikania" came from the question asked the other way round: no data.
+  const methodsUsable = methodsAnswerUsable((survey as { createdAt?: string }).createdAt);
+  const advancedMethods: string[] = methodsUsable && Array.isArray(survey.advancedMethodsToAvoid)
     ? survey.advancedMethodsToAvoid
     : [];
 
@@ -415,7 +418,9 @@ function SurveyReadonlyPreview({
 
   // avoidsAdvancedMethods is stored as boolean in DB; map to human-readable label.
   const avoidsAdvancedMethodsLabel =
-    survey.avoidsAdvancedMethods === true
+    !methodsUsable
+      ? null
+      : survey.avoidsAdvancedMethods === true
       ? "Tak"
       : survey.avoidsAdvancedMethods === false
       ? "Nie"
@@ -705,14 +710,17 @@ function SurveyFormBody({
       sleepHours: (survey?.sleepHours as string) ?? "",
       stressLevel: (survey?.stressLevel as number) ?? 5,
       planStylePreference: (survey?.planStylePreference as string) ?? "",
-      avoidsAdvancedMethods:
-        survey?.avoidsAdvancedMethods === true
-          ? "Tak"
-          : survey?.avoidsAdvancedMethods === false
-          ? "Nie"
-          : "",
-      advancedMethodsToAvoid:
-        (survey?.advancedMethodsToAvoid as string[]) ?? [],
+      // Earlier interviews asked the methods question the other way round — ignored (docs/WYWIAD-INWENTARZ.md).
+      avoidsAdvancedMethods: !methodsAnswerUsable((survey as { createdAt?: string } | undefined)?.createdAt)
+        ? ""
+        : survey?.avoidsAdvancedMethods === true
+        ? "Tak"
+        : survey?.avoidsAdvancedMethods === false
+        ? "Nie"
+        : "",
+      advancedMethodsToAvoid: methodsAnswerUsable((survey as { createdAt?: string } | undefined)?.createdAt)
+        ? ((survey?.advancedMethodsToAvoid as string[]) ?? [])
+        : [],
       hasAdditionalInfo: derivedHasAdditionalInfo as "Tak" | "Nie" | undefined,
       additionalInfo: (survey?.additionalInfo as string) ?? "",
       priorityMuscle1: (survey?.priorityMuscle1 as string) ?? "",

@@ -121,3 +121,15 @@ describe("payload: methods to avoid", async () => {
     expect(p["advancedMethodsToAvoid"]).toEqual([]);
   });
 });
+
+describe("earlier wording of the methods question is ignored", async () => {
+  const { methodsAnswerUsable, METHODS_QUESTION_FIXED_AT } = await import("@workspace/survey-config");
+  it("answers saved before the fix are 'no data'; newer ones are used", () => {
+    expect(methodsAnswerUsable("2026-10-01T10:00:00Z")).toBe(false);
+    expect(methodsAnswerUsable(new Date("2026-10-23T12:00:00Z"))).toBe(false);
+    expect(methodsAnswerUsable(METHODS_QUESTION_FIXED_AT)).toBe(true);
+    expect(methodsAnswerUsable("2026-11-02T10:00:00Z")).toBe(true);
+    expect(methodsAnswerUsable(null)).toBe(false);
+    expect(methodsAnswerUsable(undefined)).toBe(false);
+  });
+});

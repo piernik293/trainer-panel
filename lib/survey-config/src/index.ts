@@ -484,3 +484,18 @@ export const SESSION_DURATION_RECOMMENDATIONS: Record<string, { option: string; 
   "Zaawansowany": { option: "60–90 min", why: "Duża objętość i przerwy 3–5 min przy ciężkich seriach." },
 };
 export const SESSION_RECOMMENDED_BADGE = "Polecane dla Ciebie";
+
+// ─── Earlier wording of the "methods" question ───────────────────────────────
+
+/**
+ * Until this moment the interview asked "Czy chcesz, aby w planie były metody intensyfikacji?" (Tak/Nie) and
+ * stored the methods the client WANTED in `advancedMethodsToAvoid` (the meaning was reversed). Since the
+ * "Metody do unikania" screen the list really holds methods to avoid. Answers older than this are treated
+ * as "no data" (docs/WYWIAD-INWENTARZ.md).
+ */
+export const METHODS_QUESTION_FIXED_AT = "2026-10-23T20:55:00Z";
+
+export function methodsAnswerUsable(surveyCreatedAt: string | Date | null | undefined): boolean {
+  if (!surveyCreatedAt) return false;
+  return new Date(surveyCreatedAt).getTime() >= Date.parse(METHODS_QUESTION_FIXED_AT);
+}
