@@ -5,9 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TodayCard } from "@/components/training/TodayCard";
 import { TrainingFlow } from "@/components/training/TrainingFlow";
-import type { TodayResponse, TrainingDay } from "@/lib/training/types";
-import { loadRun } from "@/lib/training/run";
-import { readCachedToday } from "@/lib/training/sync";
+import type { TrainingDay } from "@/lib/training/types";
 import { ClientPortalNav, type PortalNavTarget } from "@/components/ClientPortalNav";
 import { cn } from "@/lib/utils";
 import {
@@ -1250,16 +1248,6 @@ export default function PlanPortal() {
       })
       .finally(() => setPlanLoading(false));
   }, [isLoaded, isSignedIn, planRetry]);
-
-  // Offline with an unfinished workout on the phone: continue from the saved copy of
-  // today's plan without waiting for Clerk (its script cannot load without a network).
-  if (!isLoaded && typeof navigator !== "undefined" && !navigator.onLine) {
-    const cached = readCachedToday<TodayResponse>();
-    const day = cached?.today;
-    if (cached && day && loadRun(day.planDayId)) {
-      return <TrainingFlow day={day} firstName={cached.client.firstName} week={cached.week} onExit={() => window.location.reload()} />;
-    }
-  }
 
   // Clerk is still initializing.
   if (!isLoaded) {

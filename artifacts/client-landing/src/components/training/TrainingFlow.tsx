@@ -158,6 +158,13 @@ export function TrainingFlow({ day, firstName, week, onExit }: {
     queue.enqueue({ id: fresh.sessionUuid, kind: "start", sessionUuid: fresh.sessionUuid, body: { clientUuid: fresh.sessionUuid, planDayId: day.planDayId } });
     return fresh;
   });
+  // A run restored from storage whose `start` is unknown to the queue (cleared storage): send it again — the server answers by UUID, so it is safe.
+  useEffect(() => {
+    if (!queue.knowsSession(run.sessionUuid)) {
+      queue.enqueue({ id: run.sessionUuid, kind: "start", sessionUuid: run.sessionUuid, body: { clientUuid: run.sessionUuid, planDayId: day.planDayId } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => { saveRun(run); void queue.flush(); }, [run, queue]);
   const [list, setList] = useState(false);
   const [pain, setPain] = useState(false);

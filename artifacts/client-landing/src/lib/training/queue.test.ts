@@ -70,6 +70,15 @@ describe("offline queue", () => {
     await q.flush();
     expect(sent).toEqual(["S1"]);
   });
+  it("knowsSession: delivered or still queued", async () => {
+    const q = createQueue({ storage: mem(), send: async () => ({ ok: false, permanent: false }) });
+    expect(q.knowsSession("S1")).toBe(false);
+    q.enqueue(op("start", "S1"));
+    expect(q.knowsSession("S1")).toBe(true);
+    const q2 = createQueue({ storage: mem(), send: async () => ({ ok: true, data: { id: 9 } }) });
+    q2.enqueue(op("start", "S2", { sessionUuid: "S2" })); await q2.flush();
+    expect(q2.knowsSession("S2")).toBe(true);
+  });
   it("works with unavailable storage", async () => {
     const broken = { getItem: () => { throw new Error("x"); }, setItem: () => { throw new Error("x"); } };
     const q = createQueue({ storage: broken, send: async () => ({ ok: true, data: { id: 1 } }) });

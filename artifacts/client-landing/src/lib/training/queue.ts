@@ -94,6 +94,8 @@ export function createQueue(deps: {
       return flushing;
     },
     pending: () => state.ops.length,
+    /** true when the session's `start` was delivered or is still waiting in the queue */
+    knowsSession: (uuid: string) => state.sessionIds[uuid] != null || state.ops.some((o) => o.kind === "start" && o.sessionUuid === uuid),
     rejected: () => state.rejected,
     sessionId: (uuid: string) => state.sessionIds[uuid] ?? null,
     subscribe(l: () => void) { listeners.add(l); return () => { listeners.delete(l); }; },

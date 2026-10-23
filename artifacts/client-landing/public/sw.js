@@ -9,7 +9,16 @@ const CACHE = `optimatren-${VERSION}`;
 const SCOPE = self.registration.scope; // e.g. https://host/client-landing/
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.add(new Request(SCOPE, { cache: "reload" }))).then(() => self.skipWaiting()));
+  // Cache the shell and the build assets it references, so the very first offline start works too.
+  event.waitUntil(
+    caches.open(CACHE).then(async (c) => {
+      const res = await fetch(new Request(SCOPE, { cache: "reload" }));
+      await c.put(SCOPE, res.clone());
+      const html = await res.text();
+      const assets = [...html.matchAll(/(?:src|href)="([^"]*\/assets\/[^"]+)"/g)].map((m) => new URL(m[1], SCOPE).href);
+      await Promise.all(assets.map((u) => c.add(u).catch(() => undefined)));
+    }).then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -29,7 +38,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => { if (res.ok && url.href.startsWith(SCOPE)) caches.open(CACHE).then((c) => c.put(SCOPE, res.clone())); return res; })
-        .catch(() => caches.match(SCOPE).then((r) => r || Response.error())),
+        .catch(() => caches.match(SCOPE, { ignoreVary: true }).then((r) => r || Response.error())),
     );
     return;
   }
@@ -38,7 +47,7 @@ self.addEventListener("fetch", (event) => {
   const font = /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname);
   if (sameOriginAsset || font) {
     event.respondWith(
-      caches.match(req).then((hit) => hit || fetch(req).then((res) => {
+      caches.match(req, { ignoreVary: true }).then((hit) => hit || fetch(req).then((res) => {
         if (res.ok || res.type === "opaque") { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
         return res;
       })),
