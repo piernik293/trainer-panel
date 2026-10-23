@@ -45,7 +45,6 @@ import { cn } from "@/lib/utils";
 import {
   EMPTY_ANSWERS,
   STAGES,
-  bmiOf,
   buildSurveyPayload,
   clearDraft,
   isStepVisible,
@@ -376,7 +375,6 @@ export default function SurveyWizard({
   const stepsLeft = Math.max(0, steps.length - index);
 
   const level = answers.experienceLevel;
-  const bmi = bmiOf(answers);
   const age = calculateAge(answers.dateOfBirth);
   const multiCount =
     effectiveStep === "sportNeeds" ? answers.sportPerformanceNeeds.length
@@ -423,14 +421,13 @@ export default function SurveyWizard({
         );
       case "body":
         return (
-          <Section id={id} headingRef={heading} title="Wzrost i waga" lead="Na tej podstawie wyliczymy BMI — to tylko orientacyjna wartość, nie ocena.">
+          <Section id={id} headingRef={heading} title="Wzrost i waga" lead="Wzrost i waga pomagają dobrać obciążenia i tempo progresji.">
             <Field id="height" label="Wzrost" unit="cm" error={showError && (answers.heightCm === undefined || answers.heightCm < 80 || answers.heightCm > 260) ? "Wzrost musi być między 80 a 260 cm" : null}>
               <Input id="height" type="number" inputMode="numeric" min={80} max={260} value={answers.heightCm ?? ""} onChange={(e) => set({ heightCm: e.target.value === "" ? undefined : parseInt(e.target.value) })} className={bigInput} />
             </Field>
             <Field id="weight" label="Waga" unit="kg" error={showError && validateStep("body", answers)?.startsWith("Waga") ? validateStep("body", answers) : null}>
               <Input id="weight" inputMode="decimal" placeholder="np. 75,5" value={answers.weightKg} onChange={(e) => set({ weightKg: e.target.value.replace(",", ".") })} className={bigInput} />
             </Field>
-            {bmi !== undefined && <p className="text-sm text-muted-foreground" data-testid="bmi">BMI: {bmi.toFixed(1)}</p>}
           </Section>
         );
       case "goal":
@@ -463,7 +460,7 @@ export default function SurveyWizard({
         );
       case "level":
         return (
-          <Section id={id} headingRef={heading} title="Który poziom najlepiej opisuje Twoje doświadczenie?" lead="Nie kieruj się samą liczbą lat treningu — liczy się wiedza i samodzielność.">
+          <Section id={id} headingRef={heading} title="Który poziom najlepiej opisuje Twoje doświadczenie?" lead="Wybierz opis, który najlepiej do Ciebie pasuje. Trener dostosuje plan do Twojego doświadczenia.">
             <ChoiceList
               name="Poziom doświadczenia"
               options={EXPERIENCE_LEVEL_OPTIONS.filter((o) => !(answers.trainingGoal === "Cel sportowy" && o.level === "Brak aktywności fizycznej")).map((o) => ({ value: o.level, label: o.level, desc: LEVEL_SHORT[o.level], more: LEVEL_FULL[o.level] ?? o.desc }))}
