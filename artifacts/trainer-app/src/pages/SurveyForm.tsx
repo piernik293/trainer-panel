@@ -69,6 +69,13 @@ import {
   ATHLETE_STATUS_TO_API,
   calculateBmi,
   calculateAge,
+  methodsAnswerUsable,
+  normalizeCardioPreference,
+  birthDateError,
+  AGE_RANGE_MESSAGE,
+  HEIGHT_RANGE_MESSAGE,
+  WEIGHT_RANGE_MESSAGE,
+  SURVEY_LIMITS,
   buildEquipmentString,
   parseEquipment,
   goalIsSport,
@@ -114,18 +121,20 @@ const surveySchema = z.object({
     .refine(
       (val) => !val || new Date(val) <= new Date(),
       "Data urodzenia nie może być w przyszłości"
-    ),
+    )
+    // Same limits as the client interview and the API (lib/survey-config).
+    .refine((val) => !val || birthDateError(val) === null, { message: AGE_RANGE_MESSAGE }),
   gender: z.enum(["Mężczyzna", "Kobieta"]).optional().or(z.literal("")),
   heightCm: z.coerce
     .number()
-    .min(80, "Wzrost musi być między 80 a 260 cm")
-    .max(260, "Wzrost musi być między 80 a 260 cm")
+    .min(SURVEY_LIMITS.heightMin, HEIGHT_RANGE_MESSAGE)
+    .max(SURVEY_LIMITS.heightMax, HEIGHT_RANGE_MESSAGE)
     .optional()
     .or(z.literal("").transform(() => undefined)),
   weightKg: z.coerce
     .number()
-    .min(20)
-    .max(400)
+    .min(SURVEY_LIMITS.weightMin, WEIGHT_RANGE_MESSAGE)
+    .max(SURVEY_LIMITS.weightMax, WEIGHT_RANGE_MESSAGE)
     .optional()
     .or(z.literal("").transform(() => undefined)),
   activityLevel: z.string().optional(),
@@ -375,7 +384,9 @@ function SurveyReadonlyPreview({
   const sportsPriorities: string[] = Array.isArray(survey.sportsPriorities)
     ? survey.sportsPriorities
     : [];
-  const advancedMethods: string[] = Array.isArray(survey.advancedMethodsToAvoid)
+  // Answers saved before "Metody do unikania" came from the question asked the other way round: no data.
+  const methodsUsable = methodsAnswerUsable((survey as { createdAt?: string }).createdAt);
+  const advancedMethods: string[] = methodsUsable && Array.isArray(survey.advancedMethodsToAvoid)
     ? survey.advancedMethodsToAvoid
     : [];
 
@@ -407,7 +418,9 @@ function SurveyReadonlyPreview({
 
   // avoidsAdvancedMethods is stored as boolean in DB; map to human-readable label.
   const avoidsAdvancedMethodsLabel =
-    survey.avoidsAdvancedMethods === true
+    !methodsUsable
+      ? null
+      : survey.avoidsAdvancedMethods === true
       ? "Tak"
       : survey.avoidsAdvancedMethods === false
       ? "Nie"
@@ -697,14 +710,17 @@ function SurveyFormBody({
       sleepHours: (survey?.sleepHours as string) ?? "",
       stressLevel: (survey?.stressLevel as number) ?? 5,
       planStylePreference: (survey?.planStylePreference as string) ?? "",
-      avoidsAdvancedMethods:
-        survey?.avoidsAdvancedMethods === true
-          ? "Tak"
-          : survey?.avoidsAdvancedMethods === false
-          ? "Nie"
-          : "",
-      advancedMethodsToAvoid:
-        (survey?.advancedMethodsToAvoid as string[]) ?? [],
+      // Earlier interviews asked the methods question the other way round — ignored (docs/WYWIAD-INWENTARZ.md).
+      avoidsAdvancedMethods: !methodsAnswerUsable((survey as { createdAt?: string } | undefined)?.createdAt)
+        ? ""
+        : survey?.avoidsAdvancedMethods === true
+        ? "Tak"
+        : survey?.avoidsAdvancedMethods === false
+        ? "Nie"
+        : "",
+      advancedMethodsToAvoid: methodsAnswerUsable((survey as { createdAt?: string } | undefined)?.createdAt)
+        ? ((survey?.advancedMethodsToAvoid as string[]) ?? [])
+        : [],
       hasAdditionalInfo: derivedHasAdditionalInfo as "Tak" | "Nie" | undefined,
       additionalInfo: (survey?.additionalInfo as string) ?? "",
       priorityMuscle1: (survey?.priorityMuscle1 as string) ?? "",
@@ -712,7 +728,11 @@ function SurveyFormBody({
       priorityMuscle3: (survey?.priorityMuscle3 as string) ?? "",
       trainingLocation: (survey?.trainingLocation as string) ?? "",
       equipment: (survey?.equipment as string) ?? "",
-      cardioPreference: (survey?.cardioPreference as string) ?? "",
+      // An earlier answer ("Cardio może być dodatkiem do planu" etc.) is shown as one of the two current ones.
+      cardioPreference: (() => {
+        const k = normalizeCardioPreference(survey?.cardioPreference as string | undefined);
+        return k === "include" ? CARDIO_PREFERENCE_OPTIONS[0] : k === "minimum" ? CARDIO_PREFERENCE_OPTIONS[1] : "";
+      })(),
       cardioFrequency: (survey?.cardioFrequency as string) ?? "",
       preferredCardioType: (survey?.preferredCardioType as string) ?? "",
     },
@@ -1405,8 +1425,8 @@ function SurveyFormBody({
                       <Input
                         type="number"
                         inputMode="numeric"
-                        min="80"
-                        max="260"
+                        min={SURVEY_LIMITS.heightMin}
+                        max={SURVEY_LIMITS.heightMax}
                         placeholder="np. 178"
                         {...field}
                         value={field.value ?? ""}
@@ -2157,8 +2177,7 @@ function SurveyFormBody({
                           ))}
                         </SelectContent>
                       </Select>
-                      {cardioPreference ===
-                        "Wolę ograniczyć cardio do niezbędnego minimum" && (
+                      {normalizeCardioPreference(cardioPreference) === "minimum" && (
                         <FormDescription className="text-xs text-primary bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
                           {CARDIO_AVOID_REASSURANCE_TEXT}
                         </FormDescription>

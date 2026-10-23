@@ -26,3 +26,8 @@ Czeka na pkt 4 (zapisywanie treningów): kafelki realizacji planu oraz powody uw
 spadek realizacji / rekordy” (TODO w `pages/Dashboard.tsx`). Brak flagi „wywiad przejrzany” w schemacie —
 „nowy wywiad” = ostatni kompletny wywiad z 7 dni bez planu utworzonego po nim.
 
+
+## Dopiski (23.10.2026)
+- Gdy generator zacznie stosować metody intensyfikacji — musi respektować „Metody do unikania” z wywiadu (`advanced_methods_to_avoid`; tylko wywiady z nowego pytania, patrz `docs/WYWIAD-INWENTARZ.md`). Test statyczny `avoidedExercisesEngine.test.ts` przypomni o tym, gdy w kodzie generatora pojawi się nazwa metody.
+- Tryb młodzieżowy (poniżej 16 lat) — dopiero po konsultacji prawnej i po becie.
+- Usunąć konta Clerk `trenerdemo` i `klientdemo` (oraz ich dane testowe) przed betą.

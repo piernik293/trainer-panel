@@ -6,6 +6,8 @@
  * default recommendation when the trainer has not yet saved an override.
  */
 
+import { normalizeCardioPreference } from "@workspace/survey-config";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface CardioSession {
@@ -25,7 +27,7 @@ export interface CardioRecommendationData {
 }
 
 export interface CardioInputs {
-  /** "Tylko niezbędne minimum" | "Uwzględnij w planie" | null */
+  /** "Tak, uwzględnij cardio w planie" | "Tylko niezbędne minimum" | earlier wordings | null */
   cardioPreference: string | null;
   /** "0" | "1-2" | "3-4" | "4+" | null — current weekly cardio frequency */
   cardioFrequency: string | null;
@@ -48,8 +50,10 @@ function isBeginner(level: string | null): boolean {
   return !!level && BEGINNER_LEVELS.has(level);
 }
 
+// The interview stores "Tylko niezbędne minimum" (earlier: "Wolę ograniczyć cardio do niezbędnego
+// minimum"); the former check compared with one wording only, so "minimum" was never honoured.
 function isMinimum(pref: string | null): boolean {
-  return pref === "Tylko niezbędne minimum";
+  return normalizeCardioPreference(pref) === "minimum";
 }
 
 function isAlreadyVeryActive(freq: string | null): boolean {

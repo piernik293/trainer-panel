@@ -13,6 +13,8 @@ import {
 } from "@workspace/api-zod";
 import { z } from "zod";
 import { computeSurveyStatus, fetchLatestSurveyPerClient } from "../lib/survey-status";
+import { buildPublicSurveyUrl, cleanText, sendInviteEmail } from "../services/inviteEmail";
+import { getTrainerIdentity } from "../services/trainerIdentity";
 import { requireAuth } from "../middlewares/requireAuth";
 import { logger } from "../lib/logger";
 import {
@@ -123,67 +125,8 @@ router.post("/clients", requireAuth, async (req, res): Promise<void> => {
 // Returns: { token, url, expiresAt, emailSent, emailError? }
 
 const INVITE_EXPIRY_DAYS = 7;
-const CLIENT_PORTAL_PATH = "/client-landing/survey";
-
 function hashToken(raw: string): string {
   return crypto.createHash("sha256").update(raw).digest("hex");
-}
-
-function buildSurveyUrl(token: string): string {
-  const localOrigin = process.env["LOCAL_CLIENT_PORTAL_ORIGIN"];
-  const devDomain = process.env["REPLIT_DEV_DOMAIN"];
-  const prodOrigin = process.env["CLIENT_PORTAL_ORIGIN"];
-  const base = localOrigin ?? (devDomain ? `https://${devDomain}` : (prodOrigin ?? ""));
-  return `${base}${CLIENT_PORTAL_PATH}/${token}`;
-}
-
-async function sendSurveyInviteEmail(
-  toEmail: string,
-  surveyUrl: string,
-  expiresAt: Date,
-): Promise<{ sent: boolean; error?: string }> {
-  const smtpHost = process.env["SMTP_HOST"];
-  const smtpUser = process.env["SMTP_USER"];
-  const smtpPass = process.env["SMTP_PASS"];
-
-  if (!smtpHost || !smtpUser || !smtpPass) {
-    return { sent: false, error: "SMTP_HOST, SMTP_USER, SMTP_PASS not configured" };
-  }
-
-  const smtpPort = parseInt(process.env["SMTP_PORT"] ?? "587", 10);
-  const expiryStr = expiresAt.toLocaleDateString("pl-PL", {
-    day: "numeric", month: "long", year: "numeric",
-  });
-
-  try {
-    const nodemailer = await import("nodemailer");
-    const transporter = nodemailer.default.createTransport({
-      host: smtpHost, port: smtpPort, secure: smtpPort === 465,
-      auth: { user: smtpUser, pass: smtpPass },
-    });
-
-    await transporter.sendMail({
-      from: smtpUser,
-      to: toEmail,
-      subject: "Twój wywiad treningowy",
-      html: `
-        <p>Twój trener zaprasza Cię do wypełnienia wywiadu treningowego.
-        Odpowiedzi pozwolą przygotować plan dopasowany do Twoich potrzeb,
-        możliwości i celu.</p>
-        <p><a href="${surveyUrl}" style="background:#2563eb;color:#fff;padding:12px 24px;
-          border-radius:6px;text-decoration:none;display:inline-block;">
-          Wypełnij wywiad
-        </a></p>
-        <p><strong>Ważne:</strong> Link jest jednorazowy i wygasa ${expiryStr}.</p>
-        <p>Jeśli link nie działa, skontaktuj się ze swoim trenerem, a wyśle Ci nowy.</p>
-      `,
-    });
-
-    return { sent: true };
-  } catch (err) {
-    logger.error({ err, toEmail }, "Failed to send survey invite email");
-    return { sent: false, error: err instanceof Error ? err.message : String(err) };
-  }
 }
 
 router.post("/clients/:clientId/survey-invite", requireAuth, async (req, res): Promise<void> => {
@@ -197,7 +140,7 @@ router.post("/clients/:clientId/survey-invite", requireAuth, async (req, res): P
 
   // Ownership guard — trainer can only invite their own clients.
   const [client] = await db
-    .select({ id: clientsTable.id, email: clientsTable.email })
+    .select({ id: clientsTable.id, email: clientsTable.email, firstName: clientsTable.firstName, lastName: clientsTable.lastName })
     .from(clientsTable)
     .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, trainerId)))
     .limit(1);
@@ -229,15 +172,26 @@ router.post("/clients/:clientId/survey-invite", requireAuth, async (req, res): P
 
   logger.info({ inviteId: invite.id, clientId, trainerId }, "Survey invite created for existing client");
 
-  const url = buildSurveyUrl(rawToken);
+  const url = buildPublicSurveyUrl(rawToken);
 
   let emailSent = false;
   let emailError: string | undefined;
 
   if (client.email) {
-    const emailResult = await sendSurveyInviteEmail(client.email, url, expiresAt);
+    // The same template as every other invitation (services/inviteEmail.ts).
+    const identity = await getTrainerIdentity(req.trainer!);
+    const emailResult = await sendInviteEmail({
+      to: client.email,
+      trainerName: identity.fullName,
+      replyTo: identity.email,
+      clientName: cleanText(client.firstName, 80),
+      trainerMessage: null,
+      url,
+      expiresAt,
+      kind: "invite",
+    });
     emailSent = emailResult.sent;
-    emailError = emailResult.error;
+    emailError = emailResult.sent ? undefined : emailResult.message;
   }
 
   res.status(201).json({

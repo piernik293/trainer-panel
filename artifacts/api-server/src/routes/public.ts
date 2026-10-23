@@ -13,6 +13,7 @@ import crypto from "crypto";
 import { and, eq, gt, isNull, or } from "drizzle-orm";
 import { db, clientsTable, surveysTable, surveyInvitesTable } from "@workspace/db";
 import { SubmitPublicSurveyBody } from "@workspace/api-zod";
+import { PRIORITY_BEGINNER_MESSAGE, isBeginnerLevel, resolveEffectiveLevel, EQUIPMENT_CONFLICT_MESSAGE, birthDateError, equipmentConflict, heightError, parseEquipment, weightError } from "@workspace/survey-config";
 import { logger } from "../lib/logger";
 import {
   assertSubscriptionLimitInTransaction,
@@ -266,6 +267,22 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
   const dateOfBirthDate = new Date(dateOfBirth);
   if (dateOfBirthDate.getTime() > Date.now()) {
     res.status(400).json({ error: "Data urodzenia nie może być w przyszłości" });
+    return;
+  }
+  // Same limits as the interview screens (lib/survey-config): age 16–90, height 120–230 cm, weight 35–250 kg.
+  const bodyError = birthDateError(dateOfBirthDate.toISOString().slice(0, 10)) ?? heightError(heightCm) ?? weightError(weightKg);
+  if (bodyError) {
+    res.status(400).json({ error: bodyError });
+    return;
+  }
+  // Beginners (effective level, 2-year rule included) pick at most one priority muscle group.
+  const priorities = [priorityMuscle1, priorityMuscle2, priorityMuscle3].filter((m) => !!m && m.trim());
+  if (isBeginnerLevel(resolveEffectiveLevel(experienceLevel, trainingDuration).effective ?? undefined) && priorities.length > 1) {
+    res.status(400).json({ error: PRIORITY_BEGINNER_MESSAGE });
+    return;
+  }
+  if (equipmentConflict(parseEquipment(equipment).items, parseEquipment(equipment).other)) {
+    res.status(400).json({ error: EQUIPMENT_CONFLICT_MESSAGE });
     return;
   }
   const calculatedAge = calculateAge(dateOfBirthDate);

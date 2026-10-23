@@ -10,7 +10,8 @@ import { render, screen, fireEvent, cleanup, within, act } from "@testing-librar
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import SurveyWizard from "@/components/SurveyWizard";
-import { draftKey, EMPTY_ANSWERS, type Answers } from "@/lib/surveyWizard";
+import { draftKey, EMPTY_ANSWERS, buildSurveyPayload, normalizeAnswers, visibleSteps, type Answers } from "@/lib/surveyWizard";
+import { birthDateBounds, getLocalDateString } from "@workspace/survey-config";
 
 vi.mock("@/components/AvoidedExercisesPicker", () => ({ AvoidedExercisesPicker: () => <div data-testid="avoided-picker" /> }));
 vi.mock("@/components/FavoriteExercisesPicker", () => ({ FavoriteExercisesPicker: () => <div data-testid="favorite-picker" /> }));
@@ -93,7 +94,11 @@ describe("steps", () => {
   it("level screen lead matches the 2-year rule (no 'don't go by years' sentence)", () => {
     window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS }, stepId: "level" }));
     mount();
-    expect(screen.getByText("Wybierz opis, który najlepiej do Ciebie pasuje. Trener dostosuje plan do Twojego doświadczenia.")).toBeTruthy();
+    expect(screen.getByText(/Wybierz opis, który najlepiej do Ciebie pasuje\. Trener dostosuje plan do Twojego doświadczenia\./)).toBeTruthy();
+    // the old section description is one tap away
+    expect(screen.queryByText(/Poziom zaawansowania decyduje o tym/)).toBeNull();
+    fireEvent.click(screen.getAllByRole("button", { name: "Więcej" })[0]!);
+    expect(screen.getByText(/Poziom zaawansowania decyduje o tym, jak dobieram technikę/)).toBeTruthy();
     expect(screen.queryByText(/liczbą lat/)).toBeNull();
   });
 
@@ -103,8 +108,8 @@ describe("steps", () => {
     expect(screen.getByText("Uczę się podstaw i techniki.")).toBeTruthy();
     expect(screen.queryByText(/nie czuję się jeszcze pewnie w samodzielnym planowaniu/)).toBeNull();
     const more = screen.getAllByRole("button", { name: "Więcej" });
-    expect(more).toHaveLength(4);
-    fireEvent.click(more[1]);
+    expect(more).toHaveLength(5); // one for the section description + one per level
+    fireEvent.click(more[2]!);
     expect(screen.getByText(/nie czuję się jeszcze pewnie w samodzielnym planowaniu/)).toBeTruthy();
     expect((screen.getByLabelText(/^Początkujący/) as HTMLInputElement).checked).toBe(false); // "Więcej" does not choose
     expect(screen.getByRole("button", { name: "Mniej" }).getAttribute("aria-expanded")).toBe("true");
@@ -185,5 +190,304 @@ describe("keyboard", () => {
     first.focus();
     fireEvent.keyDown(first, { key: "ArrowDown" });
     expect((screen.getByLabelText("Zwiększenie siły") as HTMLInputElement).checked).toBe(true);
+  });
+});
+
+describe("validation and equipment in the interface (Task 3–5, 23.10)", () => {
+  const open = (stepId: string, answers: Partial<Answers> = {}) => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, firstName: "M", lastName: "T", email: "m@example.com", ...answers }, stepId }));
+    mount();
+  };
+
+  it("birth date: empty field, calendar limited to 16–90 years and opening ~30 years back (never today)", () => {
+    open("birth");
+    expect((screen.getByLabelText("Data urodzenia") as HTMLInputElement).value).toBe("");
+    const cal = document.querySelector('input[type="date"]') as HTMLInputElement;
+    const b = birthDateBounds();
+    expect(cal.min).toBe(b.min);
+    expect(cal.max).toBe(b.max);
+    expect(cal.value).toBe(b.opensAt);
+    expect(cal.value).not.toBe(getLocalDateString(new Date()));
+    expect(Number(b.opensAt.slice(0, 4))).toBe(new Date().getFullYear() - 30);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("birth date: Polish message under the field for age < 16 or > 90, none for a valid date", () => {
+    open("birth", { gender: "Kobieta" });
+    const field = screen.getByLabelText("Data urodzenia");
+    fireEvent.change(field, { target: { value: "01012020" } });
+    expect(screen.getByRole("alert").textContent).toBe("Wiek musi mieścić się między 16 a 90 lat. Sprawdź datę urodzenia.");
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(field, { target: { value: "01011900" } });
+    expect(screen.getByRole("alert").textContent).toContain("16 a 90 lat");
+    fireEvent.change(field, { target: { value: "31021990" } });
+    expect(screen.getByRole("alert").textContent).toContain("poprawną datę");
+    fireEvent.change(field, { target: { value: "01011990" } });
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByText(/Wiek: \d+ lat/)).toBeTruthy();
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("height 120–230 and weight 35–250: message under the field after leaving it", () => {
+    open("body");
+    const h = screen.getByLabelText("Wzrost"); const w = screen.getByLabelText("Waga");
+    fireEvent.change(h, { target: { value: "119" } }); fireEvent.blur(h);
+    expect(screen.getByText("Wzrost musi być między 120 a 230 cm.")).toBeTruthy();
+    fireEvent.change(h, { target: { value: "175" } });
+    expect(screen.queryByText(/Wzrost musi być/)).toBeNull();
+    fireEvent.change(w, { target: { value: "251" } }); fireEvent.blur(w);
+    expect(screen.getByText("Waga musi być między 35 a 250 kg.")).toBeTruthy();
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(w, { target: { value: "62,5" } });
+    expect(screen.queryByText(/Waga musi być/)).toBeNull();
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("disabled 'Dalej' is grey (not pale orange) and says what to fill in", () => {
+    open("name", { firstName: "", lastName: "" });
+    const next = screen.getByTestId("next") as HTMLButtonElement;
+    expect(next.disabled).toBe(true);
+    expect(next.className).toContain("disabled:bg-muted");
+    expect(next.className).toContain("disabled:opacity-100");
+    expect(screen.getByTestId("next-hint").textContent).toBe("Uzupełnij: imię.");
+    expect(next.getAttribute("aria-describedby")).toBe("next-hint");
+    fireEvent.change(screen.getByLabelText("Imię"), { target: { value: "Ala" } });
+    expect(screen.getByTestId("next-hint").textContent).toBe("Uzupełnij: nazwisko.");
+    fireEvent.change(screen.getByLabelText("Nazwisko"), { target: { value: "K" } });
+    expect(screen.queryByTestId("next-hint")).toBeNull();
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("'Brak sprzętu' unticks the rest and the other way round", () => {
+    open("equipment", { trainingLocation: "Dom" });
+    const box = (name: string) => screen.getByRole("button", { name: new RegExp(`^${name}$`) });
+    const on = (name: string) => box(name).getAttribute("aria-pressed") === "true";
+    fireEvent.click(box("Hantle")); fireEvent.click(box("Gumy oporowe"));
+    expect(on("Hantle") && on("Gumy oporowe")).toBe(true);
+    fireEvent.click(box("Brak sprzętu"));
+    expect(on("Brak sprzętu")).toBe(true);
+    expect(on("Hantle") || on("Gumy oporowe")).toBe(false);
+    fireEvent.click(box("Kettlebell"));
+    expect(on("Kettlebell")).toBe(true);
+    expect(on("Brak sprzętu")).toBe(false);
+  });
+});
+
+describe("goals with descriptions, recommended session length, priority groups (23.10)", () => {
+  const open = (stepId: string, answers: Partial<Answers> = {}) => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, firstName: "M", lastName: "T", email: "m@example.com", ...answers }, stepId }));
+    mount();
+  };
+  const GOALS: Record<string, string> = {
+    "Budowa sylwetki": "Więcej mięśni i lepsze proporcje ciała.",
+    "Zwiększenie siły": "Podnosić więcej w głównych ćwiczeniach.",
+    "Redukcja tkanki tłuszczowej": "Mniej tkanki tłuszczowej przy zachowaniu mięśni. Duże znaczenie ma też dieta.",
+    "Poprawa kondycji": "Łatwiej znosić wysiłek i szybciej się regenerować.",
+    "Poprawa sprawności": "Swobodniejszy ruch na co dzień — mobilność, stabilizacja, równowaga.",
+    "Cel sportowy": "Przygotowanie do konkretnej dyscypliny lub startu.",
+  };
+
+  it("every goal has its own arrow; opening it shows the description and does not select the goal", () => {
+    open("goal");
+    for (const [goal, text] of Object.entries(GOALS)) {
+      const arrow = screen.getByRole("button", { name: `Pokaż opis: ${goal}` });
+      expect(arrow.getAttribute("aria-expanded")).toBe("false");
+      expect(screen.queryByText(text)).toBeNull();
+      fireEvent.click(arrow);
+      expect(screen.getByText(text)).toBeTruthy();
+      expect(screen.getByRole("button", { name: `Ukryj opis: ${goal}` }).getAttribute("aria-expanded")).toBe("true");
+      expect((screen.getByLabelText(goal) as HTMLInputElement).checked).toBe(false);
+    }
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(true); // still nothing chosen
+  });
+
+  it("'Cel sportowy' looks like the other goals: enabled, same background (no grey)", () => {
+    open("goal");
+    const sport = screen.getByLabelText("Cel sportowy") as HTMLInputElement;
+    expect(sport.disabled).toBe(false);
+    const card = (el: HTMLElement) => el.closest("div.relative") as HTMLElement;
+    expect(card(sport).className).toBe(card(screen.getByLabelText("Budowa sylwetki")).className);
+    expect(card(sport).className).not.toMatch(/bg-muted/);
+    expect(card(sport).className).not.toMatch(/hover:bg-/); // hover must not turn an option grey (looked disabled)
+  });
+
+  it.each([
+    ["Brak aktywności fizycznej", "", "30–45 min", "Krótko na start, żeby zbudować nawyk i nie przeciążyć organizmu."],
+    ["Początkujący", "", "45–60 min", "Wystarczy na rozgrzewkę i kilka ćwiczeń z dobrą techniką."],
+    ["Średniozaawansowany", "3 lata", "60–90 min", "Więcej serii i dłuższe przerwy przy ćwiczeniach głównych."],
+    ["Zaawansowany", "5 lat", "60–90 min", "Duża objętość i przerwy 3–5 min przy ciężkich seriach."],
+    // chosen intermediate, only 1 year of training → effective beginner → the beginner's recommendation
+    ["Średniozaawansowany", "1 rok", "45–60 min", "Wystarczy na rozgrzewkę i kilka ćwiczeń z dobrą techniką."],
+  ])("session length: level %s (%s) → badge on %s", (experienceLevel, trainingDuration, option, why) => {
+    open("session", { experienceLevel, trainingDuration });
+    const badges = screen.getAllByText("Polecane dla Ciebie");
+    expect(badges).toHaveLength(1);
+    expect(badges[0]!.closest("label")!.textContent).toContain(option);
+    expect(screen.getByText(why)).toBeTruthy();
+    // the client may still choose any option
+    const radios = within(screen.getByRole("radiogroup", { name: "Czas treningu" })).getAllByRole("radio") as HTMLInputElement[];
+    expect(radios.map((r) => r.value)).toEqual(["30–45 min", "45–60 min", "60–90 min", "90+ min"]);
+    expect(radios.every((r) => !r.disabled)).toBe(true);
+  });
+
+  it("priority groups: beginners get one with the new text, advanced up to three", () => {
+    open("priority", { experienceLevel: "Początkujący" });
+    expect(screen.getByText(/Wybierz jedną partię, na której chcesz się skupić\. Plan i tak rozwinie całe ciało\./)).toBeTruthy();
+    expect(screen.getAllByText(/^Priorytet \d$/)).toHaveLength(1);
+    cleanup();
+    open("priority", { experienceLevel: "Zaawansowany" });
+    expect(screen.getByText(/Wybierz do 3 partii mięśniowych/)).toBeTruthy();
+    expect(screen.getAllByText(/^Priorytet \d$/)).toHaveLength(3);
+    cleanup();
+    open("priority", { experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok" }); // effective = beginner
+    expect(screen.getAllByText(/^Priorytet \d$/)).toHaveLength(1);
+  });
+
+  it("cardio: two options only", () => {
+    open("cardioPref");
+    const group = screen.getByRole("radiogroup", { name: "Cardio w planie" });
+    expect(within(group).getAllByRole("radio").map((r) => (r as HTMLInputElement).value)).toEqual(["Tak, uwzględnij cardio w planie", "Tylko niezbędne minimum"]);
+    expect(screen.queryByText(/dodatkiem do planu/)).toBeNull();
+  });
+});
+
+describe("cardio: no instant advance, silent 20 s countdown cancelled by any interaction (23.10)", () => {
+  const open = () => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, firstName: "M", lastName: "T", email: "m@example.com", trainingGoal: "Poprawa kondycji" }, stepId: "cardioPref" }));
+    mount();
+  };
+  const choose = (v: string) => fireEvent.click(screen.getByLabelText(v));
+  const idle = (ms: number) => act(() => { vi.advanceTimersByTime(ms); });
+
+  it("does not move on after the choice; the hint stays readable; moves on after 20 s", () => {
+    open();
+    choose("Tylko niezbędne minimum");
+    idle(1000);
+    expect(question()).toBe("Jak uwzględnić cardio w planie?");
+    expect(screen.getByText(/To nie problem/)).toBeTruthy(); // the reassurance under the choice
+    idle(18_000);
+    expect(question()).toBe("Jak uwzględnić cardio w planie?"); // 19 s: still here
+    idle(1500);
+    expect(question()).toBe("Jaki styl planu Ci odpowiada?"); // "minimum": the form-of-activity screen is skipped
+  });
+
+  it("no visible counter", () => {
+    open();
+    choose("Tak, uwzględnij cardio w planie");
+    expect(document.body.textContent).not.toMatch(/\b\d+\s*s\b|za \d+|sekund|odliczani/i);
+  });
+
+  it.each([
+    ["a click", () => fireEvent.click(document.body)],
+    ["a key press", () => fireEvent.keyDown(document.body, { key: "a" })],
+    ["a touch", () => fireEvent.touchStart(document.body)],
+    ["scrolling", () => fireEvent.scroll(window)],
+    ["the pointer", () => fireEvent.pointerDown(document.body)],
+  ])("%s cancels the countdown — then only 'Dalej' moves on", (_n, interact) => {
+    open();
+    choose("Tak, uwzględnij cardio w planie");
+    idle(2000);
+    interact();
+    idle(60_000);
+    expect(question()).toBe("Jak uwzględnić cardio w planie?");
+    fireEvent.click(screen.getByTestId("next"));
+    expect(question()).toBe("Jaka forma aktywności tlenowej najbardziej Ci odpowiada?"); // "Tak": the form screen follows
+  });
+
+  it("changing the answer cancels it too", () => {
+    open();
+    choose("Tak, uwzględnij cardio w planie");
+    idle(500);
+    choose("Tylko niezbędne minimum");
+    idle(60_000);
+    expect(question()).toBe("Jak uwzględnić cardio w planie?");
+  });
+
+  it("other single-choice questions keep the short auto-advance", () => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, firstName: "M", lastName: "T", email: "m@example.com" }, stepId: "goal" }));
+    mount();
+    fireEvent.click(screen.getByLabelText("Budowa sylwetki"));
+    idle(350);
+    expect(question()).toBe("Dlaczego chcesz trenować?");
+  });
+});
+
+describe("preferences stage: exercises and methods to avoid for the EFFECTIVE intermediate / advanced level (23.10)", () => {
+  const open = (stepId: string, answers: Partial<Answers>) => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, firstName: "M", lastName: "T", email: "m@example.com", ...answers }, stepId }));
+    mount();
+  };
+  it("'Metody do unikania': multi-choice of the generator's list, several at once", () => {
+    open("methodsList", { experienceLevel: "Zaawansowany", trainingDuration: "5 lat" });
+    expect(question()).toBe("Metody do unikania");
+    const names = ["Superserie", "Serie złożone (Compound Set)", "Drop sety", "Serie do upadku mięśniowego", "Serie wymuszone", "Rest-Pause"];
+    for (const n of names) expect(screen.getByRole("button", { name: n }).getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "Drop sety" }));
+    fireEvent.click(screen.getByRole("button", { name: "Rest-Pause" }));
+    expect(screen.getByRole("button", { name: "Drop sety" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Rest-Pause" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("next").textContent).toContain("zaznaczono 2");
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(false); // optional
+  });
+  it("both questions are on the existing 9th stage 'Preferencje planu' (stage count unchanged)", () => {
+    open("avoided", { experienceLevel: "Średniozaawansowany", trainingDuration: "3 lata" });
+    expect(screen.getByTestId("stage-name").textContent).toBe("Preferencje planu");
+    expect(screen.getByTestId("stage-count").textContent).toContain("z 9");
+    expect(question()).toBe("Ćwiczenia do unikania");
+    expect(screen.getByTestId("avoided-picker")).toBeTruthy(); // catalogue search + free text
+    cleanup();
+    open("methodsList", { experienceLevel: "Zaawansowany", trainingDuration: "5 lat" });
+    expect(screen.getByTestId("stage-name").textContent).toBe("Preferencje planu");
+    expect(screen.getByTestId("stage-count").textContent).toContain("z 9");
+  });
+  it("a chosen intermediate with < 2 years never sees them (effective = beginner): the draft jumps past", () => {
+    open("avoided", { experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok" });
+    expect(question()).not.toBe("Ćwiczenia do unikania");
+  });
+});
+
+describe("Cardio stage: frequency → inclusion → form (only for 'Tak') (23.10, pkt 9)", () => {
+  const open = (stepId: string, answers: Partial<Answers> = {}) => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, firstName: "M", lastName: "T", email: "m@example.com", trainingGoal: "Poprawa kondycji", ...answers }, stepId }));
+    mount();
+  };
+  const HINT = "Ta informacja pomoże lepiej dopasować plan do celu oraz preferencji. Cardio nie jest obowiązkowym elementem każdego planu.";
+
+  it("order of the screens and the hint only on 'Jak często wykonujesz cardio?'", () => {
+    const ids = visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Tak, uwzględnij cardio w planie" }).filter((i) => i.startsWith("cardio"));
+    expect(ids).toEqual(["cardioFreq", "cardioPref", "cardioType"]);
+    open("cardioFreq");
+    expect(question()).toBe("Jak często wykonujesz cardio?");
+    expect(document.body.textContent!.split(HINT).length - 1).toBe(1); // once
+    cleanup();
+    open("cardioPref");
+    expect(document.body.textContent).not.toContain("Ta informacja pomoże");
+    cleanup();
+    open("cardioType", { cardioPreference: "Tak, uwzględnij cardio w planie" });
+    expect(document.body.textContent).not.toContain("Ta informacja pomoże");
+  });
+
+  it("'Tak' → the form-of-activity screen is shown", () => {
+    const ids = visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Tak, uwzględnij cardio w planie" });
+    expect(ids).toContain("cardioType");
+  });
+  it("'minimum' (or no answer) → the screen is skipped and the answer cleared", () => {
+    expect(visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Tylko niezbędne minimum" })).not.toContain("cardioType");
+    expect(visibleSteps({ ...EMPTY_ANSWERS })).not.toContain("cardioType");
+    expect(normalizeAnswers({ ...EMPTY_ANSWERS, cardioPreference: "Tylko niezbędne minimum", preferredCardioType: "Bieganie" }).preferredCardioType).toBe("");
+    // a legacy "dodatek" answer counts as "Tak"
+    expect(visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Cardio może być dodatkiem do planu" })).toContain("cardioType");
+  });
+  it("payload for 'Tak' keeps the form; for 'minimum' the form is empty", () => {
+    const base: Answers = { ...EMPTY_ANSWERS, firstName: "A", lastName: "B", email: "a@b.pl", cardioFrequency: "1 raz w tygodniu" };
+    const yes = buildSurveyPayload({ ...base, cardioPreference: "Tak, uwzględnij cardio w planie", preferredCardioType: "Rower" });
+    expect(yes).toMatchObject({ cardioPreference: "Tak, uwzględnij cardio w planie", cardioFrequency: "1 raz w tygodniu", preferredCardioType: "Rower" });
+    const min = buildSurveyPayload({ ...base, cardioPreference: "Tylko niezbędne minimum", preferredCardioType: "Rower" });
+    expect(min["cardioPreference"]).toBe("Tylko niezbędne minimum");
+    expect(min["preferredCardioType"] ?? "").toBe("");
+  });
+  it("footer: '© rok Optimatren', no old brand text", () => {
+    const text = document.body.textContent ?? "";
+    expect(text).not.toMatch(/Premium Personal Training|Wszelkie prawa/i);
   });
 });
