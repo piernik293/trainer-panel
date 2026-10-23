@@ -141,7 +141,7 @@ async function main(): Promise<void> {
     firstName: "Smoke",
     lastName: run,
     email,
-    dateOfBirth: "1992-05-10",
+    dateOfBirth: "1992-05-10", injuryStatus: "Brak",
     gender: "Kobieta",
     trainingGoal: "Poprawa sylwetki",
     experienceLevel: "Początkujący",
@@ -159,7 +159,7 @@ async function main(): Promise<void> {
   check("klient: wysłanie ankiety", submit.status === 201 && !!submit.body?.clientId, `HTTP ${submit.status}`);
   const clientId: number = submit.body?.clientId;
 
-  const reuse = await call(null, "POST", `/public/survey/${token}`, { firstName: "X", lastName: "Y", email, dateOfBirth: "1990-01-01", gender: "Kobieta" });
+  const reuse = await call(null, "POST", `/public/survey/${token}`, { firstName: "X", lastName: "Y", email, dateOfBirth: "1990-01-01", gender: "Kobieta", injuryStatus: "Brak" });
   check("ponowne użycie zaproszenia zablokowane", reuse.status === 410 || reuse.status === 409, `HTTP ${reuse.status}`);
 
   const clientsA = await call(A, "GET", "/clients");
