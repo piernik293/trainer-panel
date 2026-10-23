@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { StepHint } from "@/components/dashboard/StepHint";
 import { Link } from "wouter";
+import { useUser } from "@clerk/react";
 import {
   ArrowLeft, Copy, Check, Link2, Plus, Loader2, Mail, ChevronDown, ChevronUp, Archive,
 } from "lucide-react";
@@ -42,6 +44,7 @@ interface Invite {
 
 interface CreatedInvite extends Invite {
   token: string;
+  email?: { requested: boolean; sent: boolean; code?: string; message?: string };
 }
 
 function inviteStatus(invite: Invite): "used" | "revoked" | "expired" | "active" {
@@ -72,6 +75,7 @@ const HISTORY_INITIAL_COUNT = 3;
 
 export default function SurveyInvite() {
   const { toast } = useToast();
+  const { user } = useUser();
   const queryClient = useQueryClient();
   const [intendedEmail, setIntendedEmail] = useState("");
   const [lastCreated, setLastCreated] = useState<CreatedInvite | null>(null);
@@ -84,10 +88,14 @@ export default function SurveyInvite() {
   });
 
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (sendEmail: boolean) =>
       fetchJson<CreatedInvite>("/survey-invites", {
         method: "POST",
-        body: JSON.stringify({ intendedEmail: intendedEmail.trim() || null }),
+        body: JSON.stringify({
+          intendedEmail: intendedEmail.trim() || null,
+          sendEmail,
+          trainerName: user?.fullName ?? user?.firstName ?? null,
+        }),
       }),
     onSuccess: (invite) => {
       setLastCreated(invite);
@@ -164,11 +172,14 @@ export default function SurveyInvite() {
             Nowe zaproszenie
           </CardTitle>
           <CardDescription>
-            Opcjonalnie podaj adres e-mail klienta — zostanie wstępnie wypełniony w formularzu.
+            Opcjonalnie podaj adres e-mail klienta — zostanie wstępnie wypełniony w formularzu. Z adresem możesz też wysłać zaproszenie e-mailem; link zawsze pozostaje do skopiowania.
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-5 space-y-4">
-          <div className="flex gap-3 items-end">
+          <StepHint step={2}>
+            Wpisz e-mail klienta (opcjonalnie) i kliknij „Wygeneruj link” albo „Wyślij e-mailem”. Link wyślij klientowi.
+          </StepHint>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1.5">
               <Label htmlFor="email-hint" className="flex items-center gap-1.5">
                 <Mail size={13} />
@@ -183,9 +194,10 @@ export default function SurveyInvite() {
               />
             </div>
             <Button
-              onClick={() => createMutation.mutate()}
+              onClick={() => createMutation.mutate(false)}
               disabled={createMutation.isPending}
-              className="gap-2"
+              variant={intendedEmail.trim() ? "outline" : "default"}
+              className="gap-2 min-h-11"
             >
               {createMutation.isPending ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -194,7 +206,30 @@ export default function SurveyInvite() {
               )}
               Wygeneruj link
             </Button>
+            {intendedEmail.trim() && (
+              <Button
+                onClick={() => createMutation.mutate(true)}
+                disabled={createMutation.isPending}
+                className="gap-2 min-h-11"
+                data-testid="send-invite-email"
+              >
+                <Mail size={14} />
+                Wyślij e-mailem
+              </Button>
+            )}
           </div>
+
+          {lastCreated?.email?.requested && (
+            lastCreated.email.sent ? (
+              <p role="status" className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-900" data-testid="email-sent">
+                Wysłano zaproszenie na adres {lastCreated.intendedEmail}.
+              </p>
+            ) : (
+              <p role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950" data-testid="email-not-sent">
+                {lastCreated.email.message ?? "Nie udało się wysłać e-maila."}
+              </p>
+            )
+          )}
 
           {lastCreated && (
             <div className="rounded-md border border-green-200 bg-green-50 p-4 space-y-2">

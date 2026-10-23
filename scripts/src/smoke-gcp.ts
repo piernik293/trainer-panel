@@ -260,10 +260,13 @@ async function main(): Promise<void> {
     check(`brak sesji: ${method} ${path}`, anon.status === 401, `HTTP ${anon.status}`);
   }
 
-  for (const path of ["/clients", "/stats", "/survey-invites"]) {
+  for (const path of ["/clients", "/stats", "/survey-invites", "/dashboard/summary"]) {
     const asB = await call(B, "GET", path);
     check(`izolacja trener B: lista ${path} bez danych A`, asB.status === 200 && !leaks(asB, email) && !leaks(asB, run), `HTTP ${asB.status}`);
   }
+
+  const noSession = await call(null, "GET", "/dashboard/summary");
+  check("brak sesji: GET /dashboard/summary", noSession.status === 401, `HTTP ${noSession.status}`);
 
   // A's plan must still be intact after the intrusion attempts.
   const after = await call(A, "GET", `/plans/${planId}`);
@@ -284,6 +287,7 @@ async function main(): Promise<void> {
   const in30 = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
   const ownerGets = [
     "/stats",
+    "/dashboard/summary",
     "/training-goals-distribution",
     "/subscription/summary",
     "/survey-invites",

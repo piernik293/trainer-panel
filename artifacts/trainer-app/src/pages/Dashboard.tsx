@@ -1,45 +1,123 @@
-import { useGetStats, getGetStatsQueryKey } from "@workspace/api-client-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { Users, FileText, Activity, PauseCircle, CheckCircle2, Sparkles, UserPlus } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { SubscriptionSummary } from "@/components/subscription/SubscriptionSummary";
+import { useUser } from "@clerk/react";
+import { AlertTriangle, CalendarCheck, FileText, Users } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { ErrorState } from "@/components/ErrorState";
 import { humanizeError } from "@/lib/userError";
+import { useDashboardSummary, type DashboardSummary } from "@/lib/dashboardApi";
+import { formatPolishDate, headerSentence } from "@/lib/dashboardFormat";
+import { useSubscriptionSummary } from "@/lib/use-subscription-summary";
+import { AttentionList } from "@/components/dashboard/AttentionList";
+import { RecentEventsCard, TodayCard } from "@/components/dashboard/SideColumn";
+import { ExcelCard, FirstStepsCard, WillAppearCard } from "@/components/dashboard/FirstDay";
+
+function Tile({ label, value, icon: Icon }: { label: string; value: number; icon: typeof Users }) {
+  return (
+    <Card className="border-border/50 shadow-sm">
+      <CardContent className="flex items-center justify-between gap-3 p-4">
+        <div>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="font-display text-3xl font-bold">{value}</p>
+        </div>
+        <Icon className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+      </CardContent>
+    </Card>
+  );
+}
+
+function LimitBar() {
+  const { data } = useSubscriptionSummary();
+  const clients = data?.usage.clients;
+  if (!clients?.atLimit) return null;
+  return (
+    <div
+      role="status"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"
+      data-testid="limit-bar"
+    >
+      <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <span className="font-medium">
+        Osiągnąłeś limit klientów w planie {data?.plan.name ?? "Free"} ({clients.used}/{clients.limit}).
+      </span>
+      <Link href="/settings#plan-i-limity" className="inline-flex min-h-11 items-center font-semibold underline">
+        Plan i limity
+      </Link>
+    </div>
+  );
+}
+
+function Greeting({ summary, welcome }: { summary: DashboardSummary; welcome?: boolean }) {
+  const { user } = useUser();
+  const name = user?.firstName ?? summary.trainerName ?? null;
+  const [, navigate] = useLocation();
+  const todayCount = summary.todayBookings.length;
+  return (
+    <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p className="text-sm text-muted-foreground" data-testid="dashboard-date">
+          {formatPolishDate(summary.today)}
+        </p>
+        <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
+          {welcome ? "Witaj" : "Dzień dobry"}
+          {name ? `, ${name}` : ""}
+        </h1>
+        <p className="mt-1 text-muted-foreground" data-testid="dashboard-sentence">
+          {welcome
+            ? "Zacznij od pierwszego klienta. Reszta pulpitu wypełni się sama."
+            : headerSentence(summary.attention.total, todayCount)}
+        </p>
+      </div>
+      {!welcome && (
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            className={cn(buttonVariants({ variant: "outline" }), "min-h-11")}
+            onClick={() => navigate("/clients")}
+            data-testid="action-new-plan"
+          >
+            Nowy plan
+          </button>
+          <button
+            type="button"
+            className={cn(buttonVariants(), "min-h-11")}
+            onClick={() => navigate("/survey-invite")}
+            data-testid="action-invite"
+          >
+            Zaproś klienta
+          </button>
+        </div>
+      )}
+    </header>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Ładowanie pulpitu" data-testid="dashboard-skeleton">
+      <Skeleton className="h-10 w-64" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-20 rounded-xl" />
+        ))}
+      </div>
+      <Skeleton className="h-64 rounded-xl" />
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const [, navigate] = useLocation();
+  const { data, isLoading, isError, error, refetch } = useDashboardSummary();
 
-  const { data: stats, isLoading, isError, error, refetch } = useGetStats({
-    query: {
-      queryKey: getGetStatsQueryKey(),
-      // No background polling after a failure: every refetch of a query that
-      // never succeeded flips back to "pending" and re-shows the skeleton.
-      refetchInterval: (query) => (query.state.status === "error" ? false : 12_000),
-      refetchOnWindowFocus: true,
-      refetchOnReconnect: true,
-    },
-  });
+  if (isLoading) return <DashboardSkeleton />;
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-10 bg-muted rounded w-48 mb-8" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => <div key={i} className="h-32 bg-muted rounded-xl" />)}
-        </div>
-        <div className="h-64 bg-muted rounded-xl mt-8" />
-      </div>
-    );
-  }
-
-  if (isError) {
+  if (isError || !data) {
     return (
       <div className="space-y-8">
-        <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">
-          Pulpit
-        </h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">Pulpit</h1>
         <ErrorState
           title="Nie udało się wczytać pulpitu"
           message={humanizeError(error)}
@@ -49,191 +127,49 @@ export default function Dashboard() {
     );
   }
 
-  // ── Empty state: no clients yet ──────────────────────────────────────────
-  if (!stats || stats.totalClients === 0) {
+  // ── First day: no clients ───────────────────────────────────────────────
+  if (data.counts.totalClients === 0) {
+    const allDone = data.onboarding.completed === data.onboarding.total;
     return (
-      <div className="space-y-8 animate-in fade-in duration-500">
-        <div>
-          <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">
-            Pulpit
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Podsumowanie Twojej działalności trenerskiej
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <Empty
-            className="border border-dashed lg:col-span-2"
-            data-testid="dashboard-empty-state"
-          >
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <UserPlus />
-            </EmptyMedia>
-            <EmptyTitle data-testid="empty-title">
-              Zacznij pracę z pierwszym klientem
-            </EmptyTitle>
-            <EmptyDescription data-testid="empty-description">
-              Wyślij link do Wywiadu treningowego lub dodaj klienta ręcznie, aby
-              rozpocząć tworzenie planu.
-            </EmptyDescription>
-          </EmptyHeader>
-
-          <EmptyContent>
-            <Button
-              className="w-full sm:w-auto"
-              data-testid="empty-action-invite"
-              onClick={() => navigate("/survey-invite")}
-            >
-              <UserPlus className="w-4 h-4 mr-2" />
-              Wyślij zaproszenie
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto"
-              data-testid="empty-action-add-manual"
-              onClick={() => navigate("/clients/new")}
-            >
-              Dodaj klienta ręcznie
-            </Button>
-          </EmptyContent>
-          </Empty>
-          <SubscriptionSummary context="dashboard" />
+      <div className="space-y-6 animate-in fade-in duration-500" data-testid="dashboard-empty-state">
+        <Greeting summary={data} welcome />
+        <LimitBar />
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            {!allDone && <FirstStepsCard onboarding={data.onboarding} />}
+            <ExcelCard onAdd={() => navigate("/clients/new")} />
+          </div>
+          <WillAppearCard />
         </div>
       </div>
     );
   }
 
-  // ── Populated dashboard ──────────────────────────────────────────────────
+  // ── With clients ────────────────────────────────────────────────────────
   return (
-    <div className="space-y-8 animate-in fade-in duration-500" data-testid="dashboard-populated">
-      <div>
-        <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">
-          Pulpit
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Podsumowanie Twojej działalności trenerskiej
-        </p>
+    <div className="space-y-6 animate-in fade-in duration-500" data-testid="dashboard-populated">
+      <Greeting summary={data} />
+      <LimitBar />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3" data-testid="dashboard-tiles">
+        <Tile label="Aktywni klienci" value={data.counts.activeClients} icon={Users} />
+        <Tile label="Nowe wywiady do przejrzenia" value={data.counts.newInterviews} icon={FileText} />
+        <Tile label="Plany kończące się w 7 dni" value={data.counts.plansEndingSoon} icon={CalendarCheck} />
+        {/* TODO(docs/ROADMAP.md pkt 4): kafelki "Na dobrej drodze / Wymaga uwagi / Zagrożeni"
+            według realizacji planu — dopiero gdy klienci zapisują treningi. Nie pokazujemy
+            pustych ani udawanych kafelków. */}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
-        <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Wszyscy Klienci
-            </CardTitle>
-            <Users className="w-4 h-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold font-display">{stats.totalClients}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Aktywni / Wstrzymani
-            </CardTitle>
-            <PauseCircle className="w-4 h-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold font-display">{stats.activeClients} / {stats.pausedClients}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              zakończonych: {stats.finishedClients}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Wypełnione Wywiady Treningowe
-            </CardTitle>
-            <FileText className="w-4 h-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold font-display">{stats.surveysCompleted}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Niekompletne / Brak
-            </CardTitle>
-            <CheckCircle2 className="w-4 h-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold font-display">{stats.incompleteSurveys} / {stats.noSurveyClients}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Nowe wywiady treningowe (7 dni)
-            </CardTitle>
-            <Sparkles className="w-4 h-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold font-display">{stats.newSurveysThisWeek}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Kompletność Danych
-            </CardTitle>
-            <Activity className="w-4 h-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold font-display">{Math.round(stats.surveysPercent)}%</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              klientów posiada wywiad treningowy
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Card className="border-border/50 shadow-sm overflow-hidden h-full">
-            <CardHeader className="bg-muted/30 border-b border-border/50">
-              <CardTitle>Ostatnio dodani klienci</CardTitle>
-              <CardDescription>
-                Lista 5 najnowszych osób, z którymi rozpocząłeś współpracę
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              {stats.recentClients && stats.recentClients.length > 0 ? (
-                <div className="divide-y divide-border/50">
-                  {stats.recentClients.map(client => (
-                    <div key={client.id} className="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors">
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {client.firstName} {client.lastName}
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          {client.email || 'Brak email'}
-                        </span>
-                      </div>
-                      <Link
-                        href={`/clients/${client.id}`}
-                        className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-                      >
-                        Profil →
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          {data.onboarding.completed < data.onboarding.total && <FirstStepsCard onboarding={data.onboarding} />}
+          <AttentionList items={data.attention.items} total={data.attention.total} today={data.today} />
+          {/* TODO(docs/ROADMAP.md pkt 4): powody wymagające zapisanych treningów
+              (zgłoszony ból, przerwa w treningach, spadek realizacji, rekordy). */}
         </div>
-        <div className="lg:col-span-1">
-          <SubscriptionSummary context="dashboard" />
+        <div className="space-y-6">
+          <TodayCard bookings={data.todayBookings} />
+          <RecentEventsCard events={data.recentEvents} today={data.today} />
         </div>
       </div>
     </div>

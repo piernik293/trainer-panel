@@ -16,3 +16,11 @@ Każda nowa funkcja od razu z dopracowanym UX (dla klienta: przede wszystkim tel
 7. **Pełny przegląd UX całej pętli + beta z 3–5 trenerami.**
 8. **Później**: streaki/poziomy, osiągnięcia trenera, OpenGym (jeśli katalog okaże się
    za mały), maskotka-byczek.
+
+## Pulpit (stan 23.10)
+Zbudowany z istniejących danych (`GET /api/dashboard/summary`): wymaga uwagi (nowy wywiad, brak planu,
+koniec planu, niewykorzystane zaproszenie), dziś (rezerwacje), ostatnie zdarzenia, „Pierwsze kroki”.
+Czeka na pkt 4 (zapisywanie treningów): kafelki realizacji planu oraz powody uwagi „ból / przerwa /
+spadek realizacji / rekordy” (TODO w `pages/Dashboard.tsx`). Brak flagi „wywiad przejrzany” w schemacie —
+„nowy wywiad” = ostatni kompletny wywiad z 7 dni bez planu utworzonego po nim.
+

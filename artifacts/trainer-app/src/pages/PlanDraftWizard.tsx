@@ -11,6 +11,7 @@
  * Step 5 — Podgląd szkicu         : (Phase 4C — read-only preview, frontend-only)
  */
 
+import { StepHint } from "@/components/dashboard/StepHint";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { humanizeError } from "@/lib/userError";
 import { useParams, Link, useLocation } from "wouter";
@@ -2073,6 +2074,9 @@ export default function PlanDraftWizard() {
           <ArrowLeft size={16} />
           Powrót do klienta
         </Link>
+        <StepHint step={4}>
+          Przejdź przez kroki kreatora i kliknij „Generuj szkic planu”. Generator zaproponuje szkic — Ty decydujesz, co zostaje.
+        </StepHint>
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
           <div>
             <h1 className="text-3xl font-display font-bold tracking-tight flex items-center gap-3">
