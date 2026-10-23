@@ -181,7 +181,7 @@ Decyzje zatwierdzone przez właściciela i ich realizacja:
 | Metody intensyfikacji i „Dlaczego chcesz trenować?” zostają, opcjonalne | ekrany `methods`, `methodsList`, `motivation` bez wymagań |
 | Kontuzje wymagane naprawdę | ekran `injury` blokuje „Dalej”; **API odrzuca wywiad bez `injuryStatus`** (400) i „Tak” bez opisu |
 | Czyść ukryte odpowiedzi | `normalizeAnswers()` — lista w tabeli poniżej; test payloadu |
-| BMI na ekran wzrostu i wagi | wartość BMI zawsze, tekst podpowiedzi przy BMI ≥ 25 **niezależnie od poziomu** (poziom pada później) |
+| BMI | **klient nie widzi w wywiadzie żadnej wartości BMI ani komentarza**; trener widzi BMI i neutralną wskazówkę w profilu klienta |
 | Sen w generatorze | commit `ccec66a` |
 | Opcja „Cardio może być dodatkiem do planu” dla klienta | dodana na ekranie `cardioPref` (3 opcje jak w formularzu trenera) |
 | Stres bez wartości domyślnej | suwak bez wartości początkowej, „Nie odpowiadam”; brak odpowiedzi → pole nie jest wysyłane (w bazie `NULL`) |
@@ -240,3 +240,8 @@ istnieją, z tymi samymi opcjami i walidacją (ekranów jest 29, bo grupy pól s
 2. Opisy poziomów doświadczenia są długie — ekran poziomu wymaga krótkiego przewinięcia na telefonie.
 3. Stary komponent `SurveyForm.tsx` (portal) zostaje w repo nieużywany jako odniesienie; do usunięcia po Twojej zgodzie.
 4. Jak kojarzyć odpowiedzi „Poniżej 5 godzin” / „Powyżej 8 godzin” snu z objętością — wartości 4 h i 9 h przyjęte arbitralnie.
+
+## Korekta (23.10.2026, po przeglądzie)
+- Ekran poziomu: usunięto zdanie „Nie kieruj się wyłącznie liczbą lat treningu…” (kłóci się z regułą 2 lat). Nowe zdanie:
+  „Wybierz opis, który najlepiej do Ciebie pasuje. Trener dostosuje plan do Twojego doświadczenia.”
+- Ekran wzrostu i wagi: bez BMI; zdanie wprowadzające: „Wzrost i waga pomagają dobrać obciążenia i tempo progresji.”

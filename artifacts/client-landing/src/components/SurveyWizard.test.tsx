@@ -82,11 +82,19 @@ describe("steps", () => {
     expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("BMI value shows on the height and weight screen, but never an assessment text for the client", () => {
+  it("height and weight screen never shows BMI (value or text) to the client", () => {
     window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, heightCm: 170, weightKg: "80" }, stepId: "body" }));
     mount();
-    expect(screen.getByTestId("bmi").textContent).toBe("BMI: 27.7");
-    expect(screen.queryByText(/BMI jest powyżej|podwyższon|redukcj/i)).toBeNull();
+    expect(screen.queryByTestId("bmi")).toBeNull();
+    expect(screen.queryByText(/BMI/i)).toBeNull();
+    expect(screen.queryByText(/27[.,]7/)).toBeNull();
+  });
+
+  it("level screen lead matches the 2-year rule (no 'don't go by years' sentence)", () => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS }, stepId: "level" }));
+    mount();
+    expect(screen.getByText("Wybierz opis, który najlepiej do Ciebie pasuje. Trener dostosuje plan do Twojego doświadczenia.")).toBeTruthy();
+    expect(screen.queryByText(/liczbą lat/)).toBeNull();
   });
 
   it("level screen: one-line descriptions, full text only behind 'Więcej'", () => {
