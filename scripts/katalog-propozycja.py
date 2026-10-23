@@ -18,7 +18,7 @@ MACHINES = [  # zamknięta lista konkretnych urządzeń (equipment_detail)
     "Wyciąg — drążek", "Wyciąg — uchwyt jednorącz", "Maszyna do łydek (stojąc/siedząc)",
 ]
 JOINTS = ["Kolano", "Biodro", "Plecy — dół", "Bark", "Łokieć", "Nadgarstek"]
-PATTERNS = ["Pchanie poziome", "Pchanie pionowe", "Przyciąganie poziome", "Przyciąganie pionowe", "Przysiad", "Zawias biodrowy", "Wykrok",
+PATTERNS = ["Wzruszanie ramion", "Zgięcie/wyprost nadgarstka", "Pchanie poziome", "Pchanie pionowe", "Przyciąganie poziome", "Przyciąganie pionowe", "Przysiad", "Zawias biodrowy", "Wykrok",
             "Zgięcie łokcia", "Wyprost łokcia", "Zgięcie kolana", "Wyprost kolana", "Odwodzenie", "Przywodzenie", "Zgięcie tułowia", "Rotacja",
             "Anti-ekstensja", "Anti-rotacja", "Stabilizacja tułowia", "Wspięcie na palce", "Lokomocja", "Mobilizacja", "Rozciąganie", "Aktywacja", "Inne"]
 LEVELS = ["Brak aktywności fizycznej", "Początkujący", "Średniozaawansowany", "Zaawansowany"]
@@ -57,23 +57,28 @@ def machine_detail(e):
     return out, conf, why
 
 # ---------- sprzęt (zamknięta lista) ----------
+NEW_EQUIPMENT = {  # decyzja właściciela 23.10: „Inny” → nowe wartości zamkniętej listy sprzętu
+    "svend": "Talerz obciążeniowy", "uchwytach": "Uchwyty do pompek", "kółkach": "Kółka gimnastyczne",
+}
 def equipment_proposal(e):
     eq = list(dict.fromkeys(e["equipment"]))
-    n = e["name"].lower(); other = None; conf = "wysoka"; why = []
+    n = e["name"].lower(); conf = "wysoka"; why = []
     if eq == ["Inny"]:
-        if "svend" in n: other = "Talerz"
-        elif "uchwytach" in n: other = "Uchwyty do pompek"
-        elif "kółkach" in n: other = "Kółka gimnastyczne"
-        conf = "niska"; why.append("„Inny” nie jest konkretnym sprzętem — propozycja uzupełnienia pola „sprzęt inny”")
-    return eq, other, conf, why
+        for key, val in NEW_EQUIPMENT.items():
+            if key in n: eq = [val]; break
+        else:
+            conf = "niska"; why.append("„Inny” bez znanego odpowiednika na liście")
+    return eq, None, conf, why
 
 # ---------- miejsce ----------
-def location_proposal(e):
-    eq = set(e["equipment"]); cur = list(dict.fromkeys(e["training_location"]))
+def location_proposal(e, proposed_equipment=None):
+    eq = set(proposed_equipment or e["equipment"]); cur = list(dict.fromkeys(e["training_location"]))
     n = e["name"].lower(); why = []; conf = "wysoka"
     machine = bool(eq & {"Maszyna", "Wyciąg"}) and not (eq & {"Hantle", "Masa własnego ciała", "Gumy oporowe"})
     if machine: prop = ["Siłownia"]
     elif eq & {"Sztanga"} and not (eq & {"Masa własnego ciała", "Gumy oporowe"}): prop = ["Siłownia"] + (["Dom"] if "Dom" in cur and eq == {"Sztanga", "Hantle", "Kettlebell", "Masa własnego ciała"} else [])
+    elif eq & {"Talerz obciążeniowy", "Kółka gimnastyczne", "Uchwyty do pompek"} or "pompki" in n:
+        prop = cur  # miejsce bez zmian — sprzęt jest przenośny
     elif eq <= {"Masa własnego ciała", "Gumy oporowe", "Drążek", "Poręcze", "Inny", "Ławka"} and not (eq & {"Maszyna", "Wyciąg", "Sztanga"}):
         prop = ["Siłownia", "Dom", "Plener"] if eq & {"Masa własnego ciała", "Gumy oporowe", "Drążek", "Poręcze"} else ["Siłownia", "Dom"]
         if eq == {"Poręcze"} or eq == {"Drążek", "Poręcze"}: prop = ["Siłownia", "Plener"]
@@ -90,12 +95,13 @@ def location_proposal(e):
 def pattern_proposal(e):
     n = e["name"].lower(); cur = e["movement_pattern"]; why = []
     prop = cur; conf = "wysoka"
-    if cur == "Inne":
+    if has(n, "szrug") and cur == "Inne": prop = "Wzruszanie ramion"
+    elif cur == "Inne":
         if has(n, "wspięcia na palce"): prop = "Wspięcie na palce"
-        elif has(n, "szrug", "szrugowanie"): prop = "Inne"; conf = "niska"; why.append("szrugsy: brak dedykowanego wzorca na liście — zostaje „Inne” (propozycja nowej wartości „Wzruszanie ramion”)")
+        elif has(n, "szrug", "szrugowanie"): prop = "Wzruszanie ramion"
         elif "skłony boczne" in n: prop = "Anti-rotacja"; conf = "niska"; why.append("skłon boczny z hantlem — najbliższy wzorzec: anty-rotacja/zgięcie boczne tułowia")
         elif "skoki pogo" in n: prop = "Lokomocja"; conf = "niska"; why.append("skok w miejscu o charakterze lokomocji")
-    elif has(n, "nadgarstk"): prop = "Inne"; conf = "niska"; why.append("zgięcie/wyprost nadgarstka nie ma wzorca na liście (obecnie „Zgięcie/Wyprost łokcia”)")
+    elif has(n, "nadgarstk"): prop = "Zgięcie/wyprost nadgarstka"
     elif "wznosy tułowia" in n: prop = "Zawias biodrowy"
     elif has(n, "superman"): prop = "Stabilizacja tułowia"
     elif "jefferson" in n: prop = "Zawias biodrowy"; conf = "niska"; why.append("Jefferson Curl: obecnie „Zgięcie tułowia”; ruch to zawias/zgięcie kręgosłupa pod obciążeniem")
@@ -170,7 +176,7 @@ rows = []
 for e in ex:
     eq, other, c_eq, w_eq = equipment_proposal(e)
     det, c_det, w_det = machine_detail(e)
-    loc, c_loc, w_loc = location_proposal(e)
+    loc, c_loc, w_loc = location_proposal(e, eq)
     pat, c_pat, w_pat = pattern_proposal(e)
     exe, c_exe, w_exe = execution_proposal(e)
     joints, c_j, w_j = joints_proposal(e)
@@ -189,13 +195,13 @@ for e in ex:
     if exe != e["execution"]: changes.append("wykonanie")
     if lvl != e["difficulty_level"]: changes.append("poziom")
     if prop_s is False and cur_s is not False: changes.append("suitableForNoActivity→false")
-    if other: changes.append("sprzęt inny")
+    if eq != list(dict.fromkeys(e["equipment"])): changes.append("sprzęt (nowa wartość listy)")
     changes += ["+stawy" if joints else "stawy: puste", "+urządzenie" if det else ""]
     conf = "niska" if "niska" in confs else "wysoka"
     rows.append({
         "id": e["id"], "nazwa": e["name"], "partia_glowna": e["main_muscle_group"], "partie_dodatkowe": "; ".join(e["secondary_muscle_groups"] or []),
         "rola_obecna": e["role"], "rola_propozycja": e["role"],
-        "sprzet_obecny": "; ".join(e["equipment"]), "sprzet_propozycja": "; ".join(eq), "sprzet_inny_propozycja": other or "", "urzadzenie_szczegolowo_propozycja": "; ".join(det),
+        "sprzet_obecny": "; ".join(e["equipment"]), "sprzet_propozycja": "; ".join(eq), "urzadzenie_szczegolowo_propozycja": "; ".join(det),
         "miejsce_obecne": "; ".join(dict.fromkeys(e["training_location"])), "miejsce_propozycja": "; ".join(loc),
         "wzorzec_obecny": e["movement_pattern"], "wzorzec_propozycja": pat,
         "wykonanie_obecne": e["execution"], "wykonanie_propozycja": exe,
@@ -214,7 +220,7 @@ size = -(-n // packs)
 for i, r in enumerate(order): r["paczka"] = i // size + 1
 rows = sorted(order, key=lambda r: (r["paczka"], r["partia_glowna"], r["id"]))
 cols = ["paczka", "id", "nazwa", "partia_glowna", "partie_dodatkowe", "pewnosc", "uzasadnienie_przy_niskiej", "zmiany",
-        "rola_obecna", "rola_propozycja", "sprzet_obecny", "sprzet_propozycja", "sprzet_inny_propozycja", "urzadzenie_szczegolowo_propozycja",
+        "rola_obecna", "rola_propozycja", "sprzet_obecny", "sprzet_propozycja", "urzadzenie_szczegolowo_propozycja",
         "miejsce_obecne", "miejsce_propozycja", "wzorzec_obecny", "wzorzec_propozycja", "wykonanie_obecne", "wykonanie_propozycja",
         "obciazenie_stawow_obecne", "stawy_propozycja", "poziom_obecny", "poziom_propozycja", "trudnosc_uczenia",
         "suitable_obecnie", "suitable_propozycja", "suitable_czynniki_ryzyka", "suitable_uwaga"]

@@ -1,46 +1,48 @@
 # Propozycja uzupełnienia metadanych 126 starszych ćwiczeń (do przeglądu)
 
-Status: **tylko propozycja** — baza, seed i kod aplikacji niezmienione. Dane w `docs/KATALOG-PROPOZYCJA.csv` (separator `;`, UTF-8 z BOM, otwiera się w Excelu/LibreOffice). Standard: `docs/KATALOG-STANDARD.md`. Generator: `scripts/katalog-propozycja.py` (czyta eksport z SELECT, niczego nie zapisuje).
+Status: **tylko propozycja** — baza, seed i kod aplikacji niezmienione. Dane w `docs/KATALOG-PROPOZYCJA.csv` (separator `;`, UTF-8 z BOM, otwiera się w Excelu/LibreOffice). Standard: `docs/KATALOG-STANDARD.md`. Generatory: `scripts/katalog-propozycja.py` (CSV) i `scripts/katalog-propozycja-md.py` (ten plik); czytają eksport z SELECT i niczego nie zapisują.
+
+## Decyzje właściciela (23.10.2026) — uwzględnione
+1. `false` w `suitableForNoActivity` tylko przy czynnikach ryzyka, reszta pusta do oceny właściciela.
+2. Nowe wzorce ruchu: **„Wzruszanie ramion”** (szrugsy) i **„Zgięcie/wyprost nadgarstka”** (ćwiczenia nadgarstków).
+3. „Inny” w sprzęcie zastąpiony nowymi wartościami zamkniętej listy: **„Talerz obciążeniowy”** (Svend Press), **„Uchwyty do pompek”**, **„Kółka gimnastyczne”**.
 
 ## Zakres
 126 ćwiczeń ze statusem „do_weryfikacji” sprzed listy rozgrzewki: 125 zwykłych (role główne/pomocnicze) + „Band Pull-Apart” (id 209, rola rozgrzewka). We wszystkich 126 `suitableForNoActivity` jest dziś puste („brak”).
 
-## Najważniejsza zasada: suitableForNoActivity
-- **Nigdzie nie proponuję `true`.** Plik ma kolumny `suitable_obecnie` (dziś: brak dla wszystkich) i `suitable_propozycja` (tylko „brak (bez zmian)” albo `false`). Test `katalog-propozycja.test.ts` pilnuje, że `true` się nie pojawi.
-- Zmianę na `false` proponuję dla ćwiczeń z czynnikami ryzyka dla osób nieaktywnych: trudność uczenia ≥ 4, wysokie obciążenie stawów, skoki/lądowanie albo ćwiczenie wymagające techniki i siły (przy trudności ≥ 3 lub średnim/wysokim obciążeniu stawów). Pewność „wysoka” przy ≥ 2 czynnikach lub plyometrii, „niska” przy jednym.
-- Kolumna `suitable_czynniki_ryzyka` wymienia powody, a `suitable_uwaga` podaje neutralne cechy (trudność uczenia, obciążenie stawów). To informacje do Twojej decyzji, **nie** sugestia ustawienia `true`.
+## suitableForNoActivity
+- **Nigdzie nie proponuję `true`.** Kolumny `suitable_obecnie` (dziś: brak dla wszystkich) i `suitable_propozycja` (tylko „brak (bez zmian)” albo `false`). Test `katalog-propozycja.test.ts` pilnuje, że `true` się nie pojawi.
+- `false` dla ćwiczeń z czynnikami ryzyka dla osób nieaktywnych: trudność uczenia ≥ 4, wysokie obciążenie stawów, skoki/lądowanie albo ćwiczenie wymagające techniki i siły (przy trudności ≥ 3 lub średnim/wysokim obciążeniu stawów). Pewność „wysoka” przy ≥ 2 czynnikach lub plyometrii, „niska” przy jednym.
+- `suitable_czynniki_ryzyka` wymienia powody, `suitable_uwaga` — neutralne cechy (informacja do Twojej decyzji, **nie** sugestia `true`).
 - Propozycja: **29 × false**, 97 × bez zmian (brak).
 
 ## Podsumowanie propozycji
 | Pewność | Liczba |
 |---|---|
-| wysoka | 69 |
-| niska (z uzasadnieniem w CSV) | 57 |
+| wysoka | 72 |
+| niska (z uzasadnieniem w CSV) | 54 |
 
-Zmiany względem stanu obecnego (jedno ćwiczenie może mieć kilka):
-
-| Pole | Ćwiczeń |
+| Zmiana | Ćwiczeń |
 |---|---|
 | nowe: stawy obciążane (`joint_stress_areas`) | 109 (pozostałe 17 — bez wyraźnego stawu z listy, do potwierdzenia) |
 | nowe: urządzenie szczegółowo (`equipment_detail`) | 39 |
-| miejsce treningu | 6 |
-| wzorzec ruchu | 7 |
+| miejsce treningu | 3 |
+| wzorzec ruchu (w tym nowe wartości) | 10 |
 | wykonanie (jedno-/obustronne) | 1 |
 | poziom trudności | 22 |
-| sprzęt „Inny” → doprecyzowanie | 3 |
+| sprzęt: nowa wartość listy zamiast „Inny” | 3 |
 | suitableForNoActivity → false | 29 |
 
-Rola (`główne`/`pomocnicze`) pozostaje bez zmian (wynika z typu Złożone/Izolowane); sprzęt z zamkniętej listy jest już poprawny we wszystkich wierszach (poza trzema „Inny”).
+Rola (`główne`/`pomocnicze`) bez zmian (wynika z typu Złożone/Izolowane); sprzęt z zamkniętej listy jest już poprawny we wszystkich wierszach.
 
-## Jak powstały propozycje (reguły)
-- **Stawy:** słowa kluczowe w nazwie (przysiad/wykrok/skoki → kolano; martwy ciąg/hip thrust → biodro i plecy dół; wyciskanie/pompki/dipy/rozpiętki/podciąganie → bark; uginanie/prostowanie ramion, dipy → łokieć; pompki, ćwiczenia nadgarstków → nadgarstek). Lista: Kolano, Biodro, Plecy — dół, Bark, Łokieć, Nadgarstek.
+## Jak powstały propozycje
+- **Stawy:** słowa kluczowe w nazwie (przysiad/wykrok/skoki → kolano; martwy ciąg/hip thrust → biodro i plecy dół; wyciskanie/pompki/dipy/rozpiętki/podciąganie → bark; uginanie/prostowanie ramion, dipy → łokieć; pompki i ćwiczenia nadgarstków → nadgarstek). Lista: Kolano, Biodro, Plecy — dół, Bark, Łokieć, Nadgarstek.
 - **Urządzenia (zamknięta lista):** Suwnica 45° (prasa do nóg), Hack squat, Suwnica Smitha, Maszyna do prostowania nóg, Maszyna do uginania nóg, Maszyna odwodzenia nóg, Maszyna przywodzenia nóg, Maszyna Pec Deck (motylek), Maszyna do wyciskania (klatka), Maszyna wspomagająca (podciąganie/dipy), T-bar, Wyciąg górny, Wyciąg dolny, Brama (crossover), Wyciąg — lina, Wyciąg — drążek, Wyciąg — uchwyt jednorącz, Maszyna do łydek (stojąc/siedząc).
-- **Miejsce:** maszyny i wyciągi tylko Siłownia; sztanga Siłownia; ćwiczenia z masą ciała, gumami, drążkiem, poręczami także Dom/Plener (poręcze i drążek bez Domu).
-- **Poziom:** z trudności uczenia i obciążenia stawów; różnica względem dzisiejszego poziomu zawsze „niska pewność” (to ocena trenera).
-- **Wzorzec ruchu:** wartości z listy w standardzie; dla szrugsów i ćwiczeń nadgarstków lista nie ma właściwej pozycji — zostaje „Inne” (propozycje nowych wartości: „Wzruszanie ramion”, „Zgięcie/wyprost nadgarstka”).
+- **Miejsce:** maszyny i wyciągi tylko Siłownia; sztanga Siłownia; ćwiczenia z masą ciała, gumami, drążkiem, poręczami także Dom/Plener (poręcze i drążek bez Domu); sprzęt przenośny (talerz, uchwyty, kółka) bez zmian.
+- **Poziom:** z trudności uczenia i obciążenia stawów; każda różnica względem dzisiejszego poziomu to „niska pewność” (ocena trenera).
 
 ## Paczki do przeglądu (po ~25)
-Podział wg partii głównej i id. Pełne dane (wszystkie kolumny) w CSV, kolumna `paczka`.
+Podział wg partii głównej i id. Pełne dane w CSV, kolumna `paczka`.
 
 ### Paczka 1 (26 ćwiczeń: id 4–211)
 
@@ -101,7 +103,7 @@ Podział wg partii głównej i id. Pełne dane (wszystkie kolumny) w CSV, kolumn
 | 174 | Pompki z obciążeniem | Klatka piersiowa | niska | poziom, +stawy | brak (bez zmian) |
 | 175 | Dipy na poręczach | Klatka piersiowa | wysoka | suitableForNoActivity→false, +stawy | false |
 | 176 | Dipy wspomagane na maszynie | Klatka piersiowa | wysoka | +stawy, +urządzenie | brak (bez zmian) |
-| 177 | Svend Press | Klatka piersiowa | niska | sprzęt inny, +stawy | brak (bez zmian) |
+| 177 | Svend Press | Klatka piersiowa | wysoka | sprzęt (nowa wartość listy), +stawy | brak (bez zmian) |
 | 178 | Rozpiętki z hantlami leżąc | Klatka piersiowa | niska | poziom, +stawy | brak (bez zmian) |
 
 ### Paczka 3 (26 ćwiczeń: id 3–255)
@@ -113,9 +115,9 @@ Podział wg partii głównej i id. Pełne dane (wszystkie kolumny) w CSV, kolumn
 | 216 | Wyciskanie hantli z dociskiem (Squeeze Press) | Klatka piersiowa | niska | poziom, +stawy | brak (bez zmian) |
 | 217 | Wyciskanie na maszynie zbieżnej | Klatka piersiowa | wysoka | +stawy, +urządzenie | brak (bez zmian) |
 | 218 | Pompki z gumą oporową | Klatka piersiowa | niska | poziom, +stawy | brak (bez zmian) |
-| 219 | Pompki na uchwytach | Klatka piersiowa | niska | miejsce, poziom, sprzęt inny, +stawy | brak (bez zmian) |
-| 220 | Pompki na kółkach gimnastycznych | Klatka piersiowa | niska | miejsce, poziom, suitableForNoActivity→false, sprzęt inny, +stawy | false |
-| 221 | Pompki z nogami na podwyższeniu | Klatka piersiowa | niska | miejsce, poziom, +stawy | brak (bez zmian) |
+| 219 | Pompki na uchwytach | Klatka piersiowa | niska | poziom, sprzęt (nowa wartość listy), +stawy | brak (bez zmian) |
+| 220 | Pompki na kółkach gimnastycznych | Klatka piersiowa | niska | poziom, suitableForNoActivity→false, sprzęt (nowa wartość listy), +stawy | false |
+| 221 | Pompki z nogami na podwyższeniu | Klatka piersiowa | niska | poziom, +stawy | brak (bez zmian) |
 | 3 | Przysiad ze sztangą | Mięśnie czworogłowe uda | niska | poziom, suitableForNoActivity→false, +stawy | false |
 | 89 | Przysiad do skrzyni | Mięśnie czworogłowe uda | wysoka | +stawy | brak (bez zmian) |
 | 91 | Hack squat na maszynie | Mięśnie czworogłowe uda | niska | suitableForNoActivity→false, +stawy, +urządzenie | false |
@@ -160,11 +162,11 @@ Podział wg partii głównej i id. Pełne dane (wszystkie kolumny) w CSV, kolumn
 | 181 | Wiosłowanie podchwytem ze sztangą | Plecy | niska | suitableForNoActivity→false, +stawy | false |
 | 182 | Martwy ciąg konwencjonalny | Plecy | wysoka | suitableForNoActivity→false, +stawy | false |
 | 183 | Wznosy tułowia | Plecy | niska | miejsce, +stawy | brak (bez zmian) |
-| 184 | Szrugowanie ze sztangą | Plecy | niska | stawy: puste | brak (bez zmian) |
+| 184 | Szrugowanie ze sztangą | Plecy | niska | wzorzec, stawy: puste | brak (bez zmian) |
 | 201 | Superman | Plecy | wysoka | +stawy | brak (bez zmian) |
 | 205 | Ściąganie jednorącz wyciągu górnego | Plecy | niska | poziom, +stawy, +urządzenie | brak (bez zmian) |
-| 222 | Szrugsy z hantlami | Plecy | niska | stawy: puste | brak (bez zmian) |
-| 223 | Szrugsy na suwnicy Smitha | Plecy | niska | stawy: puste, +urządzenie | brak (bez zmian) |
+| 222 | Szrugsy z hantlami | Plecy | niska | wzorzec, stawy: puste | brak (bez zmian) |
+| 223 | Szrugsy na suwnicy Smitha | Plecy | niska | wzorzec, stawy: puste, +urządzenie | brak (bez zmian) |
 
 ### Paczka 5 (22 ćwiczeń: id 104–257)
 
@@ -176,8 +178,8 @@ Podział wg partii głównej i id. Pełne dane (wszystkie kolumny) w CSV, kolumn
 | 108 | Pull-through na wyciągu | Pośladki | niska | +stawy, +urządzenie | brak (bez zmian) |
 | 253 | Wskok na podwyższenie | Pośladki | niska | miejsce, suitableForNoActivity→false, +stawy | false |
 | 257 | Skok boczny z zatrzymaniem | Pośladki | wysoka | suitableForNoActivity→false, +stawy | false |
-| 202 | Uginanie nadgarstków ze sztangą | Przedramiona | niska | wzorzec, +stawy | brak (bez zmian) |
-| 203 | Prostowanie nadgarstków ze sztangą | Przedramiona | niska | wzorzec, +stawy | brak (bez zmian) |
+| 202 | Uginanie nadgarstków ze sztangą | Przedramiona | wysoka | wzorzec, +stawy | brak (bez zmian) |
+| 203 | Prostowanie nadgarstków ze sztangą | Przedramiona | wysoka | wzorzec, +stawy | brak (bez zmian) |
 | 112 | Przywodzenie nóg na maszynie | Przywodziciele | wysoka | +stawy, +urządzenie | brak (bez zmian) |
 | 154 | Prostowanie ramion z liną na wyciągu | Triceps | wysoka | +stawy, +urządzenie | brak (bez zmian) |
 | 155 | Prostowanie ramion z drążkiem na wyciągu | Triceps | wysoka | +stawy, +urządzenie | brak (bez zmian) |
@@ -193,8 +195,5 @@ Podział wg partii głównej i id. Pełne dane (wszystkie kolumny) w CSV, kolumn
 | 195 | Wspięcia na palce jednostronne stojąc | Łydki | niska | stawy: puste | brak (bez zmian) |
 | 249 | Skoki pogo | Łydki | niska | wzorzec, suitableForNoActivity→false, +stawy | false |
 
-## Do Twojej decyzji
-1. Czy akceptujesz zasadę „`false` tylko tam, gdzie są czynniki ryzyka, reszta zostaje pusta do ręcznej oceny”? Dla pozostałych ćwiczeń `true` może nadać tylko właściciel, ćwiczenie po ćwiczeniu.
-2. Nowe wartości listy wzorców ruchu: „Wzruszanie ramion”, „Zgięcie/wyprost nadgarstka”.
-3. Uzupełnienie „Inny” w sprzęcie (talerz, uchwyty do pompek, kółka gimnastyczne) — osobne pole `equipment_other` albo nowe wartości listy (np. „Talerz”).
-4. Po zatwierdzeniu paczek zrobię migrację danych (osobne zadanie, `pg_dump` przed) i zaktualizuję seed.
+## Dalej (po zatwierdzeniu paczek)
+Migracja danych (osobne zadanie, `pg_dump` przed, tylko kolumny nullable / uzupełnienie wartości) i aktualizacja seedu. Nowe wartości list (wzorce, sprzęt) dochodzą do `exercise-constants.ts` i standardu razem z migracją. `true` w `suitableForNoActivity` może nadać wyłącznie właściciel, ćwiczenie po ćwiczeniu.

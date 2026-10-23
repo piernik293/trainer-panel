@@ -39,6 +39,16 @@ describe("katalog propozycja (CSV)", () => {
       if (col(r, "pewnosc") === "niska") expect(col(r, "uzasadnienie_przy_niskiej").length, `id ${col(r, "id")}`).toBeGreaterThan(5);
     }
   });
+  it("owner decisions of 23.10: new equipment values replace 'Inny', new movement patterns used", () => {
+    const byName = (needle: string) => body.find((r) => col(r, "nazwa").includes(needle))!;
+    expect(col(byName("Svend"), "sprzet_propozycja")).toBe("Talerz obciążeniowy");
+    expect(col(byName("Pompki na uchwytach"), "sprzet_propozycja")).toBe("Uchwyty do pompek");
+    expect(col(byName("Pompki na kółkach"), "sprzet_propozycja")).toBe("Kółka gimnastyczne");
+    for (const r of body) expect(col(r, "sprzet_propozycja").split("; ")).not.toContain("Inny");
+    expect(col(byName("Szrugsy z hantlami"), "wzorzec_propozycja")).toBe("Wzruszanie ramion");
+    expect(col(byName("Uginanie nadgarstków"), "wzorzec_propozycja")).toBe("Zgięcie/wyprost nadgarstka");
+    expect(head).not.toContain("sprzet_inny_propozycja");
+  });
   it("proposals come from the closed lists", () => {
     const joints = new Set(["Kolano", "Biodro", "Plecy — dół", "Bark", "Łokieć", "Nadgarstek"]);
     const locs = new Set(["Siłownia", "Dom", "Plener"]);
