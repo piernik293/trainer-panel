@@ -10,7 +10,7 @@ import { render, screen, fireEvent, cleanup, within, act } from "@testing-librar
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import SurveyWizard from "@/components/SurveyWizard";
-import { draftKey, EMPTY_ANSWERS, type Answers } from "@/lib/surveyWizard";
+import { draftKey, EMPTY_ANSWERS, buildSurveyPayload, normalizeAnswers, visibleSteps, type Answers } from "@/lib/surveyWizard";
 import { birthDateBounds, getLocalDateString } from "@workspace/survey-config";
 
 vi.mock("@/components/AvoidedExercisesPicker", () => ({ AvoidedExercisesPicker: () => <div data-testid="avoided-picker" /> }));
@@ -368,7 +368,7 @@ describe("cardio: no instant advance, silent 20 s countdown cancelled by any int
     idle(18_000);
     expect(question()).toBe("Jak uwzględnić cardio w planie?"); // 19 s: still here
     idle(1500);
-    expect(question()).toBe("Jak często wykonujesz cardio?");
+    expect(question()).toBe("Jaki styl planu Ci odpowiada?"); // "minimum": the form-of-activity screen is skipped
   });
 
   it("no visible counter", () => {
@@ -391,7 +391,7 @@ describe("cardio: no instant advance, silent 20 s countdown cancelled by any int
     idle(60_000);
     expect(question()).toBe("Jak uwzględnić cardio w planie?");
     fireEvent.click(screen.getByTestId("next"));
-    expect(question()).toBe("Jak często wykonujesz cardio?");
+    expect(question()).toBe("Jaka forma aktywności tlenowej najbardziej Ci odpowiada?"); // "Tak": the form screen follows
   });
 
   it("changing the answer cancels it too", () => {
@@ -443,5 +443,51 @@ describe("preferences stage: exercises and methods to avoid for the EFFECTIVE in
   it("a chosen intermediate with < 2 years never sees them (effective = beginner): the draft jumps past", () => {
     open("avoided", { experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok" });
     expect(question()).not.toBe("Ćwiczenia do unikania");
+  });
+});
+
+describe("Cardio stage: frequency → inclusion → form (only for 'Tak') (23.10, pkt 9)", () => {
+  const open = (stepId: string, answers: Partial<Answers> = {}) => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, firstName: "M", lastName: "T", email: "m@example.com", trainingGoal: "Poprawa kondycji", ...answers }, stepId }));
+    mount();
+  };
+  const HINT = "Ta informacja pomoże lepiej dopasować plan do celu oraz preferencji. Cardio nie jest obowiązkowym elementem każdego planu.";
+
+  it("order of the screens and the hint only on 'Jak często wykonujesz cardio?'", () => {
+    const ids = visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Tak, uwzględnij cardio w planie" }).filter((i) => i.startsWith("cardio"));
+    expect(ids).toEqual(["cardioFreq", "cardioPref", "cardioType"]);
+    open("cardioFreq");
+    expect(question()).toBe("Jak często wykonujesz cardio?");
+    expect(document.body.textContent!.split(HINT).length - 1).toBe(1); // once
+    cleanup();
+    open("cardioPref");
+    expect(document.body.textContent).not.toContain("Ta informacja pomoże");
+    cleanup();
+    open("cardioType", { cardioPreference: "Tak, uwzględnij cardio w planie" });
+    expect(document.body.textContent).not.toContain("Ta informacja pomoże");
+  });
+
+  it("'Tak' → the form-of-activity screen is shown", () => {
+    const ids = visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Tak, uwzględnij cardio w planie" });
+    expect(ids).toContain("cardioType");
+  });
+  it("'minimum' (or no answer) → the screen is skipped and the answer cleared", () => {
+    expect(visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Tylko niezbędne minimum" })).not.toContain("cardioType");
+    expect(visibleSteps({ ...EMPTY_ANSWERS })).not.toContain("cardioType");
+    expect(normalizeAnswers({ ...EMPTY_ANSWERS, cardioPreference: "Tylko niezbędne minimum", preferredCardioType: "Bieganie" }).preferredCardioType).toBe("");
+    // a legacy "dodatek" answer counts as "Tak"
+    expect(visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Cardio może być dodatkiem do planu" })).toContain("cardioType");
+  });
+  it("payload for 'Tak' keeps the form; for 'minimum' the form is empty", () => {
+    const base: Answers = { ...EMPTY_ANSWERS, firstName: "A", lastName: "B", email: "a@b.pl", cardioFrequency: "1 raz w tygodniu" };
+    const yes = buildSurveyPayload({ ...base, cardioPreference: "Tak, uwzględnij cardio w planie", preferredCardioType: "Rower" });
+    expect(yes).toMatchObject({ cardioPreference: "Tak, uwzględnij cardio w planie", cardioFrequency: "1 raz w tygodniu", preferredCardioType: "Rower" });
+    const min = buildSurveyPayload({ ...base, cardioPreference: "Tylko niezbędne minimum", preferredCardioType: "Rower" });
+    expect(min["cardioPreference"]).toBe("Tylko niezbędne minimum");
+    expect(min["preferredCardioType"] ?? "").toBe("");
+  });
+  it("footer: '© rok Optimatren', no old brand text", () => {
+    const text = document.body.textContent ?? "";
+    expect(text).not.toMatch(/Premium Personal Training|Wszelkie prawa/i);
   });
 });

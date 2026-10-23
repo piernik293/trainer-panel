@@ -19,6 +19,7 @@ export const SECTION_TEXT = {
 
 /** Hints under single questions. */
 export const HINT_TEXT = {
+  "cardioFreq": "Ta informacja pomoże lepiej dopasować plan do celu oraz preferencji. Cardio nie jest obowiązkowym elementem każdego planu.",
   "sportNeeds": "Zaznacz obszary, które są dla Ciebie najważniejsze. Pomogą dobrać odpowiednie elementy treningowe.",
   "motivation": "Krótko napisz, po co chcesz trenować i co chcesz poprawić.",
   "healthExamples": "Przykłady: ból kolan, ból barków, ból odcinka lędźwiowego, strzelający łokieć, problemy z nadgarstkami, ograniczona ruchomość, przebyte operacje, inne przewlekłe dolegliwości.",

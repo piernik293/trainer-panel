@@ -37,9 +37,7 @@ export default function Home() {
 
       {/* FOOTER */}
       <footer className="border-t border-border py-12 text-center bg-card">
-        <p className="section-label">
-          © {new Date().getFullYear()} Premium Personal Training. Wszelkie prawa zastrzeżone.
-        </p>
+        <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} Optimatren</p>
       </footer>
     </div>
   );

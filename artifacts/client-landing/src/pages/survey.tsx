@@ -250,9 +250,7 @@ export default function SurveyTokenPage() {
 
       {/* FOOTER */}
       <footer className="border-t border-border py-8 text-center bg-card/50">
-        <p className="text-muted-foreground text-sm uppercase tracking-widest">
-          © {new Date().getFullYear()} Premium Personal Training. Wszelkie prawa zastrzeżone.
-        </p>
+        <p className="text-muted-foreground text-sm">© {new Date().getFullYear()} Optimatren</p>
       </footer>
     </div>
   );

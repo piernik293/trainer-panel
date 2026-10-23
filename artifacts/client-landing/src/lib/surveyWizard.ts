@@ -136,7 +136,7 @@ export const STAGES: Stage[] = [
   { id: "time", name: "Czas i częstotliwość", steps: ["frequency", "session"] },
   { id: "health", name: "Zdrowie i ograniczenia", steps: ["injury", "healthDesc"] },
   { id: "life", name: "Styl życia", steps: ["activity", "sleep", "stress"] },
-  { id: "cardio", name: "Cardio", steps: ["cardioPref", "cardioFreq", "cardioType"] },
+  { id: "cardio", name: "Cardio", steps: ["cardioFreq", "cardioPref", "cardioType"] },
   { id: "prefs", name: "Preferencje planu", steps: ["planStyle", "avoided", "favorite", "priority", "methodsList", "additional"] },
 ];
 
@@ -160,6 +160,9 @@ export function isStepVisible(id: StepId, a: Answers, prefill: Prefill = {}): bo
       return goalIsSport(a.trainingGoal);
     case "duration":
       return showTrainingDurationField(a.experienceLevel);
+    // The cardio form is asked only when the client wants cardio in the plan ("Tak"); "minimum" skips it.
+    case "cardioType":
+      return normalizeCardioPreference(a.cardioPreference) === "include";
     case "equipment":
       return showEquipmentField(a.trainingLocation);
     case "healthDesc":
@@ -198,6 +201,7 @@ export function normalizeAnswers(input: Answers, prefill: Prefill = {}): Answers
   if (a.equipmentItems.includes(NO_EQUIPMENT) && a.equipmentItems.length > 1) a.equipmentItems = [NO_EQUIPMENT];
   if (a.equipmentItems.includes(NO_EQUIPMENT)) a.equipmentOther = "";
   if (!isStepVisible("duration", a, prefill)) a.trainingDuration = "";
+  if (!isStepVisible("cardioType", a, prefill)) a.preferredCardioType = "";
   if (!isStepVisible("equipment", a, prefill)) {
     a.equipmentItems = [];
     a.equipmentOther = "";
