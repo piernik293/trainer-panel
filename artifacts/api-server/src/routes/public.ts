@@ -10,7 +10,7 @@
 
 import { Router, type IRouter } from "express";
 import crypto from "crypto";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, or } from "drizzle-orm";
 import { db, clientsTable, surveysTable, surveyInvitesTable } from "@workspace/db";
 import { SubmitPublicSurveyBody } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
@@ -31,6 +31,11 @@ function calculateAge(dateOfBirth: Date): number {
     age--;
   }
   return age;
+}
+
+/** Current link or the one before the last resend/reminder (see survey_invites.previous_token_hash). */
+function matchesToken(tokenHash: string) {
+  return or(eq(surveyInvitesTable.tokenHash, tokenHash), eq(surveyInvitesTable.previousTokenHash, tokenHash));
 }
 
 function hashToken(rawToken: string): string {
@@ -97,7 +102,7 @@ router.get("/public/survey/:token", async (req, res): Promise<void> => {
   const [invite] = await db
     .select()
     .from(surveyInvitesTable)
-    .where(eq(surveyInvitesTable.tokenHash, tokenHash));
+    .where(matchesToken(tokenHash));
 
   if (!invite) {
     res.status(404).json({ code: "INVITE_NOT_FOUND", error: "Nieprawidłowy link zaproszeniowy" });
@@ -117,6 +122,14 @@ router.get("/public/survey/:token", async (req, res): Promise<void> => {
   if (invite.expiresAt < now) {
     res.status(410).json({ code: "INVITE_EXPIRED", error: "Link zaproszeniowy wygasł" });
     return;
+  }
+
+  // First opening of the link → "Otwarte" on the trainer's list.
+  if (!invite.openedAt) {
+    await db
+      .update(surveyInvitesTable)
+      .set({ openedAt: now })
+      .where(and(eq(surveyInvitesTable.id, invite.id), isNull(surveyInvitesTable.openedAt)));
   }
 
   res.json({
@@ -161,7 +174,7 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
   const [precheck] = await db
     .select()
     .from(surveyInvitesTable)
-    .where(eq(surveyInvitesTable.tokenHash, tokenHash));
+    .where(matchesToken(tokenHash));
 
   if (!precheck) {
     res.status(404).json({ error: "Nieprawidłowy link zaproszeniowy" });
@@ -244,7 +257,7 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
         .set({ usedAt: now })
         .where(
           and(
-            eq(surveyInvitesTable.tokenHash, tokenHash),
+            matchesToken(tokenHash),
             isNull(surveyInvitesTable.usedAt),
             isNull(surveyInvitesTable.revokedAt),
             gt(surveyInvitesTable.expiresAt, now),
@@ -272,6 +285,8 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
           .values({ firstName, lastName, email: trimmedEmail, phone, trainerId })
           .returning();
         clientId = client.id;
+        // Link the invitation to the new client ("Zobacz odpowiedzi" on the list).
+        await tx.update(surveyInvitesTable).set({ clientId }).where(eq(surveyInvitesTable.id, consumed.id));
       }
 
       await tx.insert(surveysTable).values({

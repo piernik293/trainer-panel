@@ -1,20 +1,42 @@
 import { useState } from "react";
-import { StepHint } from "@/components/dashboard/StepHint";
 import { Link } from "wouter";
 import { useUser } from "@clerk/react";
-import {
-  ArrowLeft, Copy, Check, Link2, Plus, Loader2, Mail, ChevronDown, ChevronUp, Archive,
-} from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Check, Copy, Loader2, Mail, MoreHorizontal, Share2, Link2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ErrorState } from "@/components/ErrorState";
+import { StepHint } from "@/components/dashboard/StepHint";
+import { getInitials } from "@/components/layout/AccountMenu";
 import { humanizeError } from "@/lib/userError";
+import { cn } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const NAME_MAX = 80;
+const MESSAGE_MAX = 500;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type ApiError = Error & { status?: number; data?: Record<string, unknown> };
 
 async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}/api${path}`, {
@@ -23,391 +45,557 @@ async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json", ...(options?.headers ?? {}) },
   });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw Object.assign(new Error((body as { error?: string }).error ?? res.statusText), {
+    const body = (await res.json().catch(() => ({ error: res.statusText }))) as Record<string, unknown>;
+    throw Object.assign(new Error((body.error as string | undefined) ?? res.statusText), {
       status: res.status,
-    });
+      data: body,
+    }) as ApiError;
   }
   // 204 No Content — return empty object
   if (res.status === 204) return {} as T;
   return res.json() as Promise<T>;
 }
 
-interface Invite {
+export type InviteStatus = "sent" | "opened" | "completed" | "expired" | "revoked";
+
+export interface Invite {
   id: number;
+  clientName: string | null;
   intendedEmail: string | null;
+  channel: "email" | "link";
+  status: InviteStatus;
+  clientId: number | null;
   expiresAt: string;
-  usedAt: string | null;
-  revokedAt: string | null;
   createdAt: string;
+  lastSentAt: string | null;
+  openedAt: string | null;
 }
 
-interface CreatedInvite extends Invite {
+interface EmailOutcome {
+  requested: boolean;
+  sent: boolean;
+  code?: string;
+  message?: string;
+}
+
+interface CreatedInvite {
+  id: number;
   token: string;
-  email?: { requested: boolean; sent: boolean; code?: string; message?: string };
+  clientName: string | null;
+  intendedEmail: string | null;
+  email: EmailOutcome;
 }
 
-function inviteStatus(invite: Invite): "used" | "revoked" | "expired" | "active" {
-  if (invite.usedAt) return "used";
-  if (invite.revokedAt) return "revoked";
-  if (new Date(invite.expiresAt) < new Date()) return "expired";
-  return "active";
+interface Duplicate {
+  clientName: string | null;
+  createdAt: string;
+  sendEmail: boolean;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  used: "Użyte",
+// Status is always a text pill; colour only reinforces it.
+export const STATUS_LABEL: Record<InviteStatus, string> = {
+  sent: "Wysłane",
+  opened: "Otwarte",
+  completed: "Wypełniony",
+  expired: "Wygasło",
   revoked: "Odwołane",
-  expired: "Wygasłe",
-  active: "Aktywne",
 };
-const STATUS_CLASS: Record<string, string> = {
-  used:    "bg-muted text-muted-foreground",
-  revoked: "bg-red-100 text-red-600",
-  expired: "bg-yellow-100 text-yellow-700",
-  active:  "bg-green-100 text-green-700",
+const STATUS_CLASS: Record<InviteStatus, string> = {
+  sent: "bg-muted text-foreground",
+  opened: "bg-brand-soft text-primary",
+  completed: "bg-success-soft text-success",
+  expired: "bg-warning-soft text-warning",
+  revoked: "bg-muted text-muted-foreground",
 };
 
 function buildInviteUrl(token: string): string {
   return `${window.location.origin}/client-landing/survey/${token}`;
 }
 
-const HISTORY_INITIAL_COUNT = 3;
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("pl-PL", { day: "numeric", month: "long" });
+}
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString("pl-PL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+function canShare(): boolean {
+  return typeof navigator !== "undefined" && typeof navigator.share === "function";
+}
+
+// ─── Result: one message replaces the old two boxes ─────────────────────────
+
+function InviteResult({ name, token, email }: { name: string; token: string; email: EmailOutcome }) {
+  const [copied, setCopied] = useState(false);
+  const url = buildInviteUrl(token);
+  const sent = email.requested && email.sent;
+  const copy = () => {
+    void navigator.clipboard?.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <div role="status" className="space-y-3 rounded-lg border border-success/30 bg-success-soft p-4" data-testid="invite-result">
+      <p className="flex items-center gap-2 font-semibold text-success">
+        <Check className="h-4 w-4" aria-hidden="true" />
+        {sent ? `Zaproszenie wysłane do ${name}` : `Link gotowy dla ${name}`}
+      </p>
+      {email.requested && !email.sent && (
+        <p className="text-sm text-warning" data-testid="email-not-sent">
+          {email.message ?? "Nie udało się wysłać e-maila."}
+        </p>
+      )}
+      <p className="text-sm text-foreground">Wolisz Messengera albo WhatsAppa? Wyślij ten sam link:</p>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={copy} data-testid="copy-link">
+          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copied ? "Skopiowano" : "Kopiuj link"}
+        </Button>
+        {canShare() && (
+          <Button
+            variant="outline"
+            onClick={() => void navigator.share({ title: "Wywiad treningowy", text: `Cześć ${name}, oto link do wywiadu treningowego:`, url }).catch(() => {})}
+          >
+            <Share2 className="h-4 w-4" />
+            Udostępnij…
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Live e-mail preview ─────────────────────────────────────────────────────
+
+function EmailPreview({ trainerName, clientName, message }: { trainerName: string; clientName: string; message: string }) {
+  const expiry = new Date(Date.now() + 7 * 86_400_000).toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" });
+  return (
+    <Card className="border-border/50" data-testid="email-preview">
+      <CardHeader className="pb-2">
+        <p className="section-label">Tak zobaczy to klient</p>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4 rounded-lg border border-border bg-background p-4 text-sm">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted font-bold" aria-hidden="true">
+              {getInitials(trainerName)}
+            </span>
+            <div>
+              <p className="font-bold">{trainerName}</p>
+              <p className="text-muted-foreground">Trener personalny</p>
+            </div>
+          </div>
+          <p className="font-bold">Cześć {clientName.trim() || "…"},</p>
+          {message.trim() && (
+            <p className="whitespace-pre-line border-l-[3px] border-primary pl-3" data-testid="preview-message">
+              {message.trim()}
+            </p>
+          )}
+          <p>
+            Zapraszam Cię do wypełnienia wywiadu treningowego. Na podstawie Twoich odpowiedzi przygotuję plan
+            dopasowany do Ciebie. Wypełnienie zajmuje zwykle kilka minut.
+          </p>
+          <span className="inline-flex min-h-11 items-center rounded-lg bg-primary px-6 font-bold text-primary-foreground" aria-hidden="true">
+            Wypełnij wywiad
+          </span>
+          <p className="text-muted-foreground">Link jest jednorazowy i ważny do {expiry}.</p>
+          <p className="flex items-center gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
+            <span className="flex h-5 w-5 items-center justify-center rounded-sm bg-primary text-[11px] font-extrabold text-primary-foreground" aria-hidden="true">
+              O
+            </span>
+            Wysłano przez Optimatren
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function SurveyInvite() {
   const { toast } = useToast();
   const { user } = useUser();
   const queryClient = useQueryClient();
-  const [intendedEmail, setIntendedEmail] = useState("");
-  const [lastCreated, setLastCreated] = useState<CreatedInvite | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [historyExpanded, setHistoryExpanded] = useState(false);
+  const trainerName = user?.fullName ?? user?.firstName ?? "Twój trener";
+
+  const [clientName, setClientName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [touched, setTouched] = useState(false);
+  const [duplicate, setDuplicate] = useState<Duplicate | null>(null);
+  const [result, setResult] = useState<{ name: string; token: string; email: EmailOutcome } | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<Invite | null>(null);
+
+  const trimmedName = clientName.trim();
+  const trimmedEmail = email.trim();
+  const nameError = touched && !trimmedName ? "Podaj imię klienta." : null;
+  const emailError = trimmedEmail && !EMAIL_RE.test(trimmedEmail) ? "Sprawdź adres e-mail." : null;
+  const canEmail = !!trimmedName && !!trimmedEmail && !emailError;
 
   const { data: invites = [], isLoading, isError, error, refetch } = useQuery<Invite[]>({
     queryKey: ["survey-invites"],
     queryFn: () => fetchJson<Invite[]>("/survey-invites"),
   });
+  const refreshList = () => queryClient.invalidateQueries({ queryKey: ["survey-invites"] });
 
   const createMutation = useMutation({
-    mutationFn: (sendEmail: boolean) =>
+    mutationFn: (v: { sendEmail: boolean; replaceExisting?: boolean; name?: string; email?: string | null; message?: string | null }) =>
       fetchJson<CreatedInvite>("/survey-invites", {
         method: "POST",
         body: JSON.stringify({
-          intendedEmail: intendedEmail.trim() || null,
-          sendEmail,
-          trainerName: user?.fullName ?? user?.firstName ?? null,
+          clientName: v.name ?? trimmedName,
+          intendedEmail: v.email !== undefined ? v.email : trimmedEmail || null,
+          trainerMessage: v.message !== undefined ? v.message : message.trim() || null,
+          sendEmail: v.sendEmail,
+          replaceExisting: v.replaceExisting ?? false,
+          trainerName,
         }),
       }),
     onSuccess: (invite) => {
-      setLastCreated(invite);
-      setIntendedEmail("");
-      queryClient.invalidateQueries({ queryKey: ["survey-invites"] });
+      setDuplicate(null);
+      setResult({ name: invite.clientName ?? trimmedName, token: invite.token, email: invite.email });
+      setClientName("");
+      setEmail("");
+      setMessage("");
+      setTouched(false);
+      refreshList();
     },
-    onError: (err) => {
+    onError: (err: ApiError, v) => {
+      if (err.status === 409 && err.data?.code === "DUPLICATE_ACTIVE_INVITE") {
+        const existing = err.data.existing as { clientName: string | null; createdAt: string };
+        setDuplicate({ clientName: existing.clientName, createdAt: existing.createdAt, sendEmail: v.sendEmail });
+        return;
+      }
       toast({ title: humanizeError(err), variant: "destructive" });
+    },
+  });
+
+  const actionMutation = useMutation({
+    mutationFn: ({ invite, action }: { invite: Invite; action: "resend" | "remind" }) =>
+      fetchJson<{ token: string; email: EmailOutcome }>(`/survey-invites/${invite.id}/${action}`, { method: "POST" }),
+    onSuccess: (res, { invite, action }) => {
+      refreshList();
+      const name = invite.clientName ?? invite.intendedEmail ?? "klienta";
+      if (res.email.sent) {
+        toast({ title: action === "remind" ? `Wysłano przypomnienie do ${name}` : `Wysłano ponownie do ${name}` });
+      } else {
+        setResult({ name, token: res.token, email: res.email });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    },
+    onError: (err: ApiError) => {
+      const msg = (err.data?.error as string | undefined) ?? humanizeError(err);
+      toast({ title: msg, variant: "destructive" });
     },
   });
 
   const revokeMutation = useMutation({
-    mutationFn: (id: number) =>
-      fetchJson(`/survey-invites/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) => fetchJson(`/survey-invites/${id}`, { method: "DELETE" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["survey-invites"] });
+      refreshList();
       toast({ title: "Zaproszenie odwołane" });
     },
-    onError: (err) => {
-      toast({ title: humanizeError(err), variant: "destructive" });
-    },
+    onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
   });
 
   const archiveMutation = useMutation({
-    mutationFn: (id: number) =>
-      fetchJson(`/survey-invites/${id}/archive`, { method: "PATCH" }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["survey-invites"] });
-    },
-    onError: (err) => {
-      toast({ title: humanizeError(err), variant: "destructive" });
-    },
+    mutationFn: (id: number) => fetchJson(`/survey-invites/${id}/archive`, { method: "PATCH" }),
+    onSuccess: refreshList,
+    onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
   });
 
-  const handleCopy = (url: string) => {
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const submit = (sendEmail: boolean) => {
+    setTouched(true);
+    if (!trimmedName || emailError || (sendEmail && !canEmail)) return;
+    setResult(null);
+    createMutation.mutate({ sendEmail });
+  };
+
+  const sendNewFor = (invite: Invite) => {
+    setResult(null);
+    createMutation.mutate({
+      sendEmail: invite.channel === "email" && !!invite.intendedEmail,
+      name: invite.clientName ?? "",
+      email: invite.intendedEmail,
+      message: null,
     });
   };
 
-  // Split into active vs history
-  const activeInvites  = invites.filter((inv) => inviteStatus(inv) === "active");
-  const historyInvites = invites.filter((inv) => inviteStatus(inv) !== "active");
-  const visibleHistory = historyExpanded
-    ? historyInvites
-    : historyInvites.slice(0, HISTORY_INITIAL_COUNT);
+  const busy = createMutation.isPending;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-300">
-      <Link
-        href="/clients"
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
-      >
-        <ArrowLeft size={16} />
-        Powrót do listy klientów
-      </Link>
-
-      <div>
-        <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">
-          Zaproś klienta
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Wygeneruj jednorazowy link zaproszeniowy do wywiadu treningowego.
-          Link jest ważny przez 7 dni i może zostać użyty tylko raz.
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <div className="space-y-2">
+        <Link href="/clients" className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft size={16} aria-hidden="true" />
+          Klienci
+        </Link>
+        <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">Zaproś klienta</h1>
+        <p className="text-muted-foreground">
+          Klient dostanie link do wywiadu. Po wypełnieniu zobaczysz jego odpowiedzi i przygotujesz plan.
         </p>
       </div>
 
-      {/* ── Generate section ─────────────────────────────────────────── */}
-      <Card className="border-border/50 shadow-sm">
-        <CardHeader className="bg-muted/20 border-b border-border/50">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Plus size={16} />
-            Nowe zaproszenie
-          </CardTitle>
-          <CardDescription>
-            Opcjonalnie podaj adres e-mail klienta — zostanie wstępnie wypełniony w formularzu. Z adresem możesz też wysłać zaproszenie e-mailem; link zawsze pozostaje do skopiowania.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-5 space-y-4">
-          <StepHint step={2}>
-            Wpisz e-mail klienta (opcjonalnie) i kliknij „Wygeneruj link” albo „Wyślij e-mailem”. Link wyślij klientowi.
-          </StepHint>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1 space-y-1.5">
-              <Label htmlFor="email-hint" className="flex items-center gap-1.5">
-                <Mail size={13} />
-                E-mail klienta (opcjonalnie)
-              </Label>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)]">
+        {/* ── New invitation ─────────────────────────────────────────── */}
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle className="text-lg">Nowe zaproszenie</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <StepHint step={2}>
+              Wpisz imię klienta i jego e-mail, a potem kliknij „Wyślij e-mailem” albo „Utwórz link do skopiowania”.
+            </StepHint>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-name">Imię klienta</Label>
               <Input
-                id="email-hint"
+                id="invite-name"
+                value={clientName}
+                maxLength={NAME_MAX}
+                onChange={(e) => setClientName(e.target.value)}
+                onBlur={() => setTouched(true)}
+                aria-invalid={!!nameError}
+                aria-describedby={nameError ? "invite-name-error" : undefined}
+                placeholder="np. Marta"
+                autoComplete="off"
+              />
+              {nameError && <p id="invite-name-error" className="text-sm text-danger">{nameError}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-email">E-mail (opcjonalnie)</Label>
+              <Input
+                id="invite-email"
                 type="email"
-                placeholder="jan.kowalski@example.com"
-                value={intendedEmail}
-                onChange={(e) => setIntendedEmail(e.target.value)}
+                inputMode="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                aria-invalid={!!emailError}
+                aria-describedby={emailError ? "invite-email-error" : undefined}
+                placeholder="marta@example.com"
+                autoComplete="off"
+              />
+              {emailError && <p id="invite-email-error" className="text-sm text-danger">{emailError}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-baseline justify-between gap-2">
+                <Label htmlFor="invite-message">Wiadomość dla klienta (opcjonalnie)</Label>
+                <span className="text-xs text-muted-foreground" aria-live="polite" data-testid="message-counter">
+                  {message.length}/{MESSAGE_MAX}
+                </span>
+              </div>
+              <Textarea
+                id="invite-message"
+                value={message}
+                maxLength={MESSAGE_MAX}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="np. Cieszę się, że zaczynamy! Wypełnij wywiad przed naszym pierwszym spotkaniem."
+                className="min-h-[96px]"
               />
             </div>
-            <Button
-              onClick={() => createMutation.mutate(false)}
-              disabled={createMutation.isPending}
-              variant={intendedEmail.trim() ? "outline" : "default"}
-              className="gap-2 min-h-11"
-            >
-              {createMutation.isPending ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Link2 size={14} />
-              )}
-              Wygeneruj link
-            </Button>
-            {intendedEmail.trim() && (
-              <Button
-                onClick={() => createMutation.mutate(true)}
-                disabled={createMutation.isPending}
-                className="gap-2 min-h-11"
-                data-testid="send-invite-email"
-              >
-                <Mail size={14} />
-                Wyślij e-mailem
-              </Button>
+
+            {duplicate && (
+              <div role="alert" className="space-y-3 rounded-lg border border-warning/40 bg-warning-soft p-4 text-sm text-warning" data-testid="duplicate-warning">
+                <p className="font-semibold">
+                  {(duplicate.clientName ?? "Ten klient")} ma już aktywne zaproszenie z {formatDate(duplicate.createdAt)}. Wysłać nowe?
+                  Poprzednie zostanie odwołane.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => createMutation.mutate({ sendEmail: duplicate.sendEmail, replaceExisting: true })} disabled={busy}>
+                    Wyślij nowe
+                  </Button>
+                  <Button variant="outline" onClick={() => setDuplicate(null)}>
+                    Anuluj
+                  </Button>
+                </div>
+              </div>
             )}
-          </div>
 
-          {lastCreated?.email?.requested && (
-            lastCreated.email.sent ? (
-              <p role="status" className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-900" data-testid="email-sent">
-                Wysłano zaproszenie na adres {lastCreated.intendedEmail}.
-              </p>
-            ) : (
-              <p role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950" data-testid="email-not-sent">
-                {lastCreated.email.message ?? "Nie udało się wysłać e-maila."}
-              </p>
-            )
-          )}
-
-          {lastCreated && (
-            <div className="rounded-md border border-green-200 bg-green-50 p-4 space-y-2">
-              <p className="text-sm font-medium text-green-800">
-                Link zaproszeniowy gotowy — skopiuj go teraz, nie będzie wyświetlany ponownie.
-              </p>
-              <div className="flex gap-2 items-center">
-                <Input
-                  readOnly
-                  value={buildInviteUrl(lastCreated.token)}
-                  className="font-mono text-xs bg-white"
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleCopy(buildInviteUrl(lastCreated.token))}
-                  className="gap-1.5 shrink-0"
-                >
-                  {copied ? <Check size={13} /> : <Copy size={13} />}
-                  {copied ? "Skopiowano" : "Kopiuj"}
+            {!duplicate && (
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button onClick={() => submit(true)} disabled={busy || !canEmail} data-testid="send-invite-email">
+                  {busy && createMutation.variables?.sendEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  Wyślij e-mailem
+                </Button>
+                <Button variant="outline" onClick={() => submit(false)} disabled={busy} data-testid="create-link">
+                  {busy && !createMutation.variables?.sendEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                  Utwórz link do skopiowania
                 </Button>
               </div>
-              <p className="text-xs text-green-700">
-                Wygasa: {new Date(lastCreated.expiresAt).toLocaleDateString("pl-PL")}
-                {lastCreated.intendedEmail && ` · ${lastCreated.intendedEmail}`}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+            <p className="text-xs text-muted-foreground">Link jest jednorazowy i ważny 7 dni.</p>
 
-      {/* ── Active invitations ───────────────────────────────────────── */}
-      <Card className="border-border/50 shadow-sm">
-        <CardHeader className="bg-muted/20 border-b border-border/50">
-          <CardTitle className="text-base">Aktywne zaproszenia</CardTitle>
+            {result && <InviteResult name={result.name} token={result.token} email={result.email} />}
+          </CardContent>
+        </Card>
+
+        <EmailPreview trainerName={trainerName} clientName={clientName} message={message} />
+      </div>
+
+      {/* ── Sent invitations ───────────────────────────────────────────── */}
+      <Card className="border-border/50">
+        <CardHeader className="border-b border-border/50">
+          <CardTitle className="text-lg">Wysłane zaproszenia</CardTitle>
+          <p className="text-sm text-muted-foreground">Ostatnie 30 dni.</p>
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="p-6 space-y-2">
+            <div className="space-y-2 p-6">
               {[1, 2].map((i) => (
-                <div key={i} className="h-12 bg-muted animate-pulse rounded" />
+                <div key={i} className="h-12 animate-pulse rounded bg-muted" />
               ))}
             </div>
           ) : isError ? (
             <div className="p-6">
-              <ErrorState
-                title="Nie udało się wczytać zaproszeń"
-                message={humanizeError(error)}
-                onRetry={() => void refetch()}
-              />
+              <ErrorState title="Nie udało się wczytać zaproszeń" message={humanizeError(error)} onRetry={() => void refetch()} />
             </div>
-          ) : activeInvites.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground text-sm">
-              Brak aktywnych zaproszeń.
-            </div>
+          ) : invites.length === 0 ? (
+            <p className="p-6 text-sm text-muted-foreground">Brak zaproszeń z ostatnich 30 dni.</p>
           ) : (
-            <div className="divide-y divide-border/50">
-              {activeInvites.map((invite) => (
-                <div
-                  key={invite.id}
-                  className="flex items-center justify-between p-4 hover:bg-muted/10 transition-colors"
-                >
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CLASS.active}`}>
-                        {STATUS_LABEL.active}
-                      </span>
-                      <span className="text-sm text-foreground">
-                        {invite.intendedEmail ?? (
-                          <span className="text-muted-foreground italic">Bez podanego e-maila</span>
-                        )}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Utworzono: {new Date(invite.createdAt).toLocaleDateString("pl-PL")}
-                      {" · "}
-                      Wygasa: {new Date(invite.expiresAt).toLocaleDateString("pl-PL")}
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-destructive hover:text-destructive text-xs"
-                    onClick={() => revokeMutation.mutate(invite.id)}
-                    disabled={revokeMutation.isPending}
-                  >
-                    Odwołaj
-                  </Button>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] text-sm" data-testid="invite-list">
+                <thead>
+                  <tr className="border-b border-border text-left text-muted-foreground">
+                    <th scope="col" className="px-4 py-3 font-semibold">Klient</th>
+                    <th scope="col" className="px-4 py-3 font-semibold">Status</th>
+                    <th scope="col" className="px-4 py-3 font-semibold">Wysłane</th>
+                    <th scope="col" className="px-4 py-3 text-right font-semibold">Akcje</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invites.map((inv) => (
+                    <InviteRow
+                      key={inv.id}
+                      invite={inv}
+                      busy={actionMutation.isPending || createMutation.isPending}
+                      onResend={() => actionMutation.mutate({ invite: inv, action: "resend" })}
+                      onRemind={() => actionMutation.mutate({ invite: inv, action: "remind" })}
+                      onSendNew={() => sendNewFor(inv)}
+                      onRevoke={() => setRevokeTarget(inv)}
+                      onArchive={() => archiveMutation.mutate(inv.id)}
+                    />
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* ── History ──────────────────────────────────────────────────── */}
-      {(historyInvites.length > 0 || isLoading) && (
-        <Card className="border-border/50 shadow-sm">
-          <CardHeader className="bg-muted/20 border-b border-border/50">
-            <CardTitle className="text-base">Historia zaproszeń</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-6 space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-12 bg-muted animate-pulse rounded" />
-                ))}
-              </div>
-            ) : (
-              <>
-                <div className="divide-y divide-border/50">
-                  {visibleHistory.map((invite) => {
-                    const status = inviteStatus(invite);
-                    return (
-                      <div
-                        key={invite.id}
-                        className="flex items-center justify-between p-4 hover:bg-muted/10 transition-colors"
-                      >
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CLASS[status]}`}>
-                              {STATUS_LABEL[status]}
-                            </span>
-                            <span className="text-sm text-foreground">
-                              {invite.intendedEmail ?? (
-                                <span className="text-muted-foreground italic">Bez podanego e-maila</span>
-                              )}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Utworzono: {new Date(invite.createdAt).toLocaleDateString("pl-PL")}
-                            {invite.usedAt && ` · Użyto: ${new Date(invite.usedAt).toLocaleDateString("pl-PL")}`}
-                            {invite.revokedAt && ` · Odwołano: ${new Date(invite.revokedAt).toLocaleDateString("pl-PL")}`}
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-muted-foreground hover:text-foreground text-xs gap-1.5"
-                          onClick={() => archiveMutation.mutate(invite.id)}
-                          disabled={archiveMutation.isPending}
-                        >
-                          <Archive size={13} />
-                          Usuń z widoku
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Expand / collapse */}
-                {historyInvites.length > HISTORY_INITIAL_COUNT && (
-                  <div className="border-t border-border/50 px-4 py-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs text-muted-foreground gap-1.5 w-full justify-center"
-                      onClick={() => setHistoryExpanded((v) => !v)}
-                    >
-                      {historyExpanded ? (
-                        <>
-                          <ChevronUp size={13} />
-                          Pokaż mniej
-                        </>
-                      ) : (
-                        <>
-                          <ChevronDown size={13} />
-                          Pokaż wszystkie ({historyInvites.length})
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      <AlertDialog open={!!revokeTarget} onOpenChange={(open) => !open && setRevokeTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Odwołać zaproszenie?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Link dla {revokeTarget?.clientName ?? revokeTarget?.intendedEmail ?? "klienta"} przestanie działać. Zaproszenie zostanie na
+              liście jako „Odwołane”.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:opacity-90"
+              onClick={() => {
+                if (revokeTarget) revokeMutation.mutate(revokeTarget.id);
+                setRevokeTarget(null);
+              }}
+            >
+              Odwołaj
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+}
+
+function InviteRow({
+  invite,
+  busy,
+  onResend,
+  onRemind,
+  onSendNew,
+  onRevoke,
+  onArchive,
+}: {
+  invite: Invite;
+  busy: boolean;
+  onResend: () => void;
+  onRemind: () => void;
+  onSendNew: () => void;
+  onRevoke: () => void;
+  onArchive: () => void;
+}) {
+  const name = invite.clientName ?? invite.intendedEmail ?? "Bez imienia";
+  const channel = invite.channel === "email" && invite.intendedEmail ? `e-mail · ${invite.intendedEmail}` : "link";
+  const active = invite.status === "sent" || invite.status === "opened";
+  const byEmail = invite.channel === "email" && !!invite.intendedEmail;
+
+  let primary: React.ReactNode = null;
+  if (invite.status === "sent") {
+    primary = (
+      <Button size="sm" variant="outline" onClick={onResend} disabled={busy}>
+        {byEmail ? "Wyślij ponownie" : "Nowy link"}
+      </Button>
+    );
+  } else if (invite.status === "opened") {
+    primary = (
+      <Button size="sm" variant="outline" onClick={byEmail ? onRemind : onResend} disabled={busy}>
+        {byEmail ? "Przypomnij" : "Nowy link"}
+      </Button>
+    );
+  } else if (invite.status === "completed" && invite.clientId) {
+    primary = (
+      <Button size="sm" variant="outline" asChild>
+        <Link href={`/clients/${invite.clientId}`}>Zobacz odpowiedzi</Link>
+      </Button>
+    );
+  } else if (invite.status === "expired") {
+    primary = (
+      <Button size="sm" variant="outline" onClick={onSendNew} disabled={busy}>
+        Wyślij nowe
+      </Button>
+    );
+  }
+
+  return (
+    <tr className="border-b border-border last:border-0" data-testid="invite-row">
+      <td className="px-4 py-3">
+        <p className="font-semibold">{name}</p>
+        <p className="text-xs text-muted-foreground">{channel}</p>
+      </td>
+      <td className="px-4 py-3">
+        <span className={cn("inline-flex rounded-sm px-2 py-0.5 text-xs font-semibold", STATUS_CLASS[invite.status])}>
+          {STATUS_LABEL[invite.status]}
+        </span>
+      </td>
+      <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{formatDateTime(invite.lastSentAt ?? invite.createdAt)}</td>
+      <td className="px-4 py-3">
+        <div className="flex items-center justify-end gap-1">
+          {primary}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" aria-label={`Więcej akcji — ${name}`}>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {active ? (
+                <DropdownMenuItem onSelect={onRevoke} className="text-danger focus:text-danger">
+                  Odwołaj
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onSelect={onArchive}>Usuń z widoku</DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </td>
+    </tr>
   );
 }

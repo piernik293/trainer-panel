@@ -118,6 +118,7 @@ vi.mock("@workspace/db", () => {
   function matchesCondition(item: Record<string, unknown>, cond: Cond): boolean {
     if (Array.isArray(cond)) return cond.every((c) => matchesCondition(item, c));
     if (!cond || !cond.field) return true;
+    if (cond.op === "or")      return (cond.val as Cond[]).some((c) => matchesCondition(item, c));
     if (cond.op === "eq")      return item[cond.field] === cond.val;
     if (cond.op === "isNull")  return item[cond.field] === null;
     if (cond.op === "gt") {
@@ -290,6 +291,7 @@ vi.mock("drizzle-orm", () => ({
   asc:     (field: string)               => ({ field, dir: "asc" }),
   isNull:  (f: string)                   => ({ field: f, op: "isNull" }),
   gt:      (field: string, val: unknown) => ({ field, val, op: "gt" }),
+  or:      (...args: unknown[])          => ({ field: "_or", val: args, op: "or" }),
 }));
 
 // ─── App builders ─────────────────────────────────────────────────────────────
