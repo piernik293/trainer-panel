@@ -34,6 +34,8 @@ export interface TrainingDay {
   trainerNote: string | null;
   exercises: ExerciseInfo[];
   warmup: RampItem[];
+  /** estimated minutes of the short warm-up (about 7) */
+  warmupMinutes?: number;
   cooldown: RampItem[];
   activeSession: { id: number; sets: { planExerciseId: number | null; setNumber: number; weightKg: number | null; reps: number | null; rir: number | null; skipped: boolean }[]; pain: { id: number; exerciseId: number | null }[] } | null;
 }

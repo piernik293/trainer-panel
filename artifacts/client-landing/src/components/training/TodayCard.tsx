@@ -62,7 +62,7 @@ export function TodayCard({ reloadKey, onStart }: { reloadKey: number; onStart: 
       {day.trainerNote && <p className="mt-3 rounded-lg bg-brand-soft px-3 py-2 text-sm"><b>Od trenera:</b> {day.trainerNote}</p>}
 
       <ol className="mt-4 space-y-1.5 text-sm">
-        <li className="flex items-center gap-2 text-muted-foreground"><Flame className="h-4 w-4 text-primary" aria-hidden /> Rozgrzewka · {day.warmup.length} ćwiczeń · ok. {approxMinutes(day.warmup.length)} min</li>
+        <li className="flex items-center gap-2 text-muted-foreground"><Flame className="h-4 w-4 text-primary" aria-hidden /> Rozgrzewka · {day.warmup.length} ćwiczeń · ok. {day.warmupMinutes ? Math.round(day.warmupMinutes) : approxMinutes(day.warmup.length)} min</li>
         {day.exercises.map((e, i) => (
           <li key={e.planExerciseId} className="flex gap-2">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold">{i + 1}</span>

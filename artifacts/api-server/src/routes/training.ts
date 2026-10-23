@@ -30,7 +30,7 @@ import {
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireClientAuth } from "../middlewares/requireClientAuth";
-import { determineDayType, getRampWarmup } from "../services/rampWarmup";
+import { determineDayType, buildShortWarmup } from "../services/rampWarmup";
 import { getCooldown } from "../services/cooldown";
 import {
   weightStepFor, exerciseRoleFor, restFor, formatRest, recordGain, bestSet, compactHistory, nextDayIndex,
@@ -270,7 +270,8 @@ router.get("/client-portal/training/today", requireClientAuth, async (req, res):
   });
 
   const dayType = determineDayType(exRows.map((e) => e.mainMuscleGroup));
-  const warmup = getRampWarmup(dayType).flatMap((b) => b.items);
+  const shortWarmup = buildShortWarmup(dayType, plan.level);
+  const warmup = shortWarmup.items;
   const cooldown = getCooldown(dayType);
   const equipment = [...new Set(exRows.flatMap((e) => e.equipment))].filter((x) => !["Masa własnego ciała", "Brak sprzętu"].includes(x));
 
@@ -296,6 +297,7 @@ router.get("/client-portal/training/today", requireClientAuth, async (req, res):
     trainerNote: targetDay.description,
     exercises,
     warmup,
+    warmupMinutes: shortWarmup.minutes,
     cooldown,
     activeSession: active,
   };

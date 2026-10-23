@@ -71,3 +71,6 @@ Punkty 1–5 to nowe kolumny nullable (addytywnie), pkt 6 to zmiana danych — w
 
 ## 4. Kryteria dla listy rozgrzewki/rozciągania
 Każda pozycja z `docs/TRENING.md` (sekcja „Propozycja ćwiczeń rozgrzewkowych i rozciągających”) ma wszystkie pola W z tabel wyżej: partia, sprzęt, miejsce, poziom, wzorzec, `learning_difficulty`, `suitable_for_no_activity`, `joint_stress`, ilość, instrukcję. Pozycje bez któregoś pola oznaczono „do weryfikacji”.
+
+## 5. Stan wdrożenia (23.10.2026)
+Pola 1–5 z tabeli w sekcji 3 dodane migracją 0019 (nullable): `role`, `verification_status`, `joint_stress_areas`, `equipment_detail`, `default_reps` / `default_duration_seconds` / `per_side`. `role` i `verification_status` uzupełnione z istniejących danych; pozostałe pola puste do czasu akceptacji listy rozgrzewki i uzupełnienia katalogu. Punkt 6 (ujednolicenie EN/PL i duplikatów) — bez zmian, czeka na zgodę. Reguła „do weryfikacji = niedopuszczone dla początkujących/nieaktywnych” jeszcze nie jest włączona (patrz `docs/TRENING.md`).
