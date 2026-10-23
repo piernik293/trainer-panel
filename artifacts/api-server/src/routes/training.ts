@@ -12,7 +12,7 @@
  * completed from aborted; status NULL = session from the older per-exercise flow.
  */
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, asc, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, ne, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
@@ -26,12 +26,15 @@ import {
   exerciseExecutionLogsTable,
   setLogsTable,
   painReportsTable,
+  surveysTable,
   PAIN_AREAS,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireClientAuth } from "../middlewares/requireClientAuth";
 import { determineDayType, buildShortWarmup } from "../services/rampWarmup";
 import { getCooldown } from "../services/cooldown";
+import { WARMUP_ROLES } from "../lib/exerciseRoles";
+import { estimateMinutes, formatAmount, reportedJoints, selectCooldown, selectWarmup, type CatalogueWarmupItem } from "../services/warmupSelection";
 import {
   weightStepFor, exerciseRoleFor, restFor, formatRest, recordGain, bestSet, compactHistory, nextDayIndex,
   startOfWeek, PL_WEEKDAYS, PAIN_MESSAGE, type PerformedSet,
@@ -150,6 +153,36 @@ const repsText = (e: { repType: string | null; repsExact: number | null; repRang
   if (e.repTimeSeconds != null) return `${e.repTimeSeconds} s`;
   return e.repOpenInstruction ?? "";
 };
+
+/**
+ * Warm-up and cool-down from the catalogue (services/warmupSelection.ts). When the catalogue has no such
+ * exercises (an empty / test database) the static RAMP template is the fallback.
+ */
+async function buildWarmupAndCooldown(opts: { clientId: number; level: string | null; dayType: ReturnType<typeof determineDayType>; dayGroups: string[] }) {
+  const catalogue = (await db.select().from(exercisesTable).where(and(eq(exercisesTable.isActive, true), inArray(exercisesTable.role, [...WARMUP_ROLES])))) as unknown as CatalogueWarmupItem[];
+  const [survey] = await db
+    .select({ equipment: surveysTable.equipment, trainingLocation: surveysTable.trainingLocation, healthLimitations: surveysTable.healthLimitations })
+    .from(surveysTable).where(eq(surveysTable.clientId, opts.clientId)).orderBy(desc(surveysTable.createdAt)).limit(1);
+  const since = new Date(Date.now() - 30 * 86_400_000);
+  const pains = await db.select({ area: painReportsTable.area }).from(painReportsTable)
+    .where(and(eq(painReportsTable.clientId, opts.clientId), gte(painReportsTable.createdAt, since)));
+  const ctx = {
+    dayGroups: opts.dayGroups, level: opts.level,
+    painAreas: reportedJoints(survey?.healthLimitations, pains.map((p) => p.area)),
+    trainingLocation: survey?.trainingLocation ?? null, equipmentText: survey?.equipment ?? null,
+  };
+  const toItem = (it: CatalogueWarmupItem) => ({ name: it.name, detail: formatAmount(it), description: it.executionInstructions ?? "", joints: it.jointStressAreas ?? [] });
+  const w = selectWarmup(catalogue, ctx);
+  const c = selectCooldown(catalogue, ctx);
+  if (w.length === 0 && c.length === 0) {
+    const fallback = buildShortWarmup(opts.dayType, opts.level);
+    return { warmup: fallback.items, warmupMinutes: fallback.minutes, cooldown: getCooldown(opts.dayType), cooldownMinutes: 5 };
+  }
+  return {
+    warmup: w.map(toItem), warmupMinutes: estimateMinutes(w),
+    cooldown: c.map(toItem), cooldownMinutes: estimateMinutes(c),
+  };
+}
 
 // ─── GET /client-portal/training/today ────────────────────────────────────────
 
@@ -270,9 +303,9 @@ router.get("/client-portal/training/today", requireClientAuth, async (req, res):
   });
 
   const dayType = determineDayType(exRows.map((e) => e.mainMuscleGroup));
-  const shortWarmup = buildShortWarmup(dayType, plan.level);
-  const warmup = shortWarmup.items;
-  const cooldown = getCooldown(dayType);
+  const { warmup, warmupMinutes, cooldown, cooldownMinutes } = await buildWarmupAndCooldown({
+    clientId, level: plan.level, dayType, dayGroups: [...new Set(exRows.map((e) => e.mainMuscleGroup))],
+  });
   const equipment = [...new Set(exRows.flatMap((e) => e.equipment))].filter((x) => !["Masa własnego ciała", "Brak sprzętu"].includes(x));
 
   let active: { id: number; sets: unknown[]; pain: unknown[] } | null = null;
@@ -297,7 +330,8 @@ router.get("/client-portal/training/today", requireClientAuth, async (req, res):
     trainerNote: targetDay.description,
     exercises,
     warmup,
-    warmupMinutes: shortWarmup.minutes,
+    warmupMinutes,
+    cooldownMinutes,
     cooldown,
     activeSession: active,
   };

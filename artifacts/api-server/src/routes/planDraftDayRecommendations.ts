@@ -66,6 +66,7 @@ import {
 } from "../services/ExerciseSelectionEngineV0";
 import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
 import { buildGoalProfile } from "../services/goalProfileService";
+import { mainPlanRoleCondition } from "../lib/exerciseRoles";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
@@ -190,7 +191,7 @@ router.get(
     const exercises = await db
       .select()
       .from(exercisesTable)
-      .where(eq(exercisesTable.isActive, true))
+      .where(and(eq(exercisesTable.isActive, true), mainPlanRoleCondition()))
       .orderBy(exercisesTable.name);
 
     // ── Filter to complete exercises ───────────────────────────────────────────

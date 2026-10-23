@@ -22,6 +22,7 @@ import {
   exercisesTable, workoutSessionsTable, painReportsTable, setLogsTable,
 } from "@workspace/db";
 import { provisionTrainer } from "../middlewares/requireAuth";
+import { seedWarmupCatalogue } from "../seeds/warmupCatalogueSeed";
 
 const TA = "train_test_trainer_a", TB = "train_test_trainer_b";
 const CA1 = "train_test_client_a1", CA2 = "train_test_client_a2", CB1 = "train_test_client_b1";
@@ -33,6 +34,7 @@ let day1: number, day2: number, pe1: number, pe2: number, pe3: number, exBarbell
 const as = (u: string | null) => { authUser = u; };
 
 beforeAll(async () => {
+  await seedWarmupCatalogue();
   const tA = (await provisionTrainer(TA))!, tB = (await provisionTrainer(TB))!;
   await db.delete(clientsTable).where(inArray(clientsTable.email, EMAILS));
   await db.delete(exercisesTable).where(inArray(exercisesTable.slug, SLUGS));
@@ -263,5 +265,49 @@ describe("trainer views", () => {
     expect((await request(app).get(`/api/clients/${b1}/training-sessions`)).status).toBe(404);
     as(null);
     expect((await request(app).get(`/api/clients/${a1}/training-sessions`)).status).toBe(401);
+  });
+});
+
+describe("warm-up and cool-down from the catalogue, with joint safety", () => {
+  const KNEE = ["Przysiad powitalny", "Wykroki chodzone (rozgrzewka)", "Pozycja dziecka", "Rozciąganie zginaczy biodra (wykrok klęczny)"];
+  const SHOULDER = ["Krążenia ramion", "Pompki ścienne"];
+  const itemNames = (b: { today?: { warmup: { name: string }[]; cooldown: { name: string }[] }; next?: { warmup: { name: string }[]; cooldown: { name: string }[] } }) => {
+    const d = (b.today ?? b.next)!;
+    return [...d.warmup, ...d.cooldown].map((x) => x.name);
+  };
+  it("comes from the catalogue: 4–5 warm-up items with amounts, 3–4 stretches, only suitable items for a beginner", async () => {
+    as(CA1);
+    const r = await today();
+    const d = (r.body.today ?? r.body.next);
+    expect(d.warmup.length).toBeGreaterThanOrEqual(4);
+    expect(d.warmup.length).toBeLessThanOrEqual(5);
+    expect(d.cooldown.length).toBeGreaterThanOrEqual(3);
+    expect(d.cooldown.length).toBeLessThanOrEqual(4);
+    expect(d.warmup[0].name).toBe("Marsz w miejscu");
+    for (const i of [...d.warmup, ...d.cooldown]) { expect(i.detail, i.name).toMatch(/\d/); expect(i.description, i.name).toBeTruthy(); }
+    expect(typeof d.warmupMinutes).toBe("number");
+    expect(itemNames(r.body)).not.toContain("Wykroki chodzone (rozgrzewka)"); // not confirmed for beginners
+  });
+  it("a pain report in a joint removes the exercises that load it (Bark was reported earlier in this file)", async () => {
+    as(CA1);
+    const r = await today();
+    for (const n of itemNames(r.body)) expect(SHOULDER, n).not.toContain(n);
+  });
+  it("the interview text counts too: 'ból kolan' → no knee exercises", async () => {
+    await db.update(surveysTable).set({ healthLimitations: "Ból kolan przy schodzeniu po schodach" }).where(eq(surveysTable.clientId, a1));
+    as(CA1);
+    const r = await today();
+    for (const n of itemNames(r.body)) expect(KNEE, n).not.toContain(n);
+    await db.update(surveysTable).set({ healthLimitations: null }).where(eq(surveysTable.clientId, a1));
+  });
+  it("a new report 'Kolano' during a workout takes effect at the next 'Dziś'", async () => {
+    as(CA1);
+    const s = await start(day1);
+    const pe = (await today()).body;
+    expect(pe.today?.activeSession?.id ?? s.body.id).toBeTruthy();
+    const rep = await request(app).post(`/api/client-portal/training/sessions/${s.body.id}/pain`).send({ clientUuid: randomUUID(), planExerciseId: pe1, area: "Kolano", severity: 3 });
+    expect(rep.status).toBe(201);
+    const r = await today();
+    for (const n of itemNames(r.body)) { expect(KNEE, n).not.toContain(n); expect(SHOULDER, n).not.toContain(n); }
   });
 });

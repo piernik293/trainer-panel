@@ -20,6 +20,7 @@
  * own exercise pool without going through HTTP — no changes to this file needed.
  */
 
+import { mainPlanRoleCondition } from "../lib/exerciseRoles";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
@@ -99,7 +100,7 @@ router.get("/clients/:clientId/exercise-recommendations", requireAuth, async (re
   const exercises = await db
     .select()
     .from(exercisesTable)
-    .where(and(...conditions))
+    .where(and(...conditions, mainPlanRoleCondition()))
     .orderBy(exercisesTable.name);
 
   // Compute completeness for all exercises in one DB round-trip.

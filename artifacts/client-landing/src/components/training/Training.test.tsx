@@ -190,3 +190,29 @@ describe("TrainingFlow end to end (offline queue)", () => {
     expect(sent[1]).toBe("/api/client-portal/training/sessions/7/sets");
   });
 });
+
+describe("cool-down after a pain report in this workout", () => {
+  it("drops the stretches that load the reported joint", () => {
+    window.localStorage.clear(); resetTrainingQueueForTests();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ id: 1 }), { status: 200 })));
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
+    const d = day();
+    d.cooldown = [
+      { name: "Pozycja dziecka", detail: "40 s", description: "Oddychaj.", joints: ["Kolano"] },
+      { name: "Rozciąganie klatki przy ścianie", detail: "30 s na stronę", description: "Spokojnie.", joints: [] },
+    ];
+    render(<TrainingFlow day={d} firstName="Ala" week={{ done: 0, target: 4 }} onExit={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Dalej" }));                // warm-up
+    fireEvent.click(screen.getByRole("button", { name: /Coś boli\?/ }));           // exercise 1
+    const dlg = within(screen.getByRole("dialog", { name: "Coś boli?" }));
+    fireEvent.click(dlg.getByRole("radio", { name: "Kolano" }));
+    fireEvent.click(dlg.getByRole("radio", { name: "3" }));
+    fireEvent.click(screen.getByRole("button", { name: "Wyślij i pomiń ćwiczenie" }));
+    for (let i = 0; i < 1; i++) fireEvent.click(screen.getByRole("button", { name: "Zapisz serię" })); // exercise 2: one set
+    fireEvent.click(screen.getByRole("button", { name: "Przejdź do schłodzenia" }));
+    expect(screen.queryByText("Pozycja dziecka")).toBeNull();
+    expect(screen.getByText("Rozciąganie klatki przy ścianie")).toBeTruthy();
+    expect(screen.getByText(/Schłodzenie · 1 z 1/)).toBeTruthy();
+    vi.unstubAllGlobals();
+  });
+});

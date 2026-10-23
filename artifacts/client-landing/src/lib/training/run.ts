@@ -20,6 +20,8 @@ export interface RunState {
   sets: Record<number, Record<number, LoggedSet>>;
   /** exercises dropped through "Coś boli?" */
   skippedExercises: number[];
+  /** joints reported in "Coś boli?" during this workout (the cool-down avoids them) */
+  painAreas?: string[];
   rating: Rating | null;
   note: string;
   endedAt: string | null;
@@ -33,7 +35,7 @@ export function newRun(day: TrainingDay, sessionUuid: string, now = new Date()):
   }
   return {
     v: 1, planDayId: day.planDayId, sessionUuid, startedAt: now.toISOString(), stage: "warmup",
-    warmupIndex: 0, exerciseIndex: 0, cooldownIndex: 0, sets, skippedExercises: [], rating: null, note: "", endedAt: null,
+    warmupIndex: 0, exerciseIndex: 0, cooldownIndex: 0, sets, skippedExercises: [], rating: null, note: "", endedAt: null, painAreas: [],
   };
 }
 
@@ -46,6 +48,7 @@ export type RunAction =
   | { type: "nextExercise"; total: number }
   | { type: "prevExercise" }
   | { type: "skipExercise"; planExerciseId: number }
+  | { type: "painArea"; area: string }
   | { type: "feedback"; rating: Rating | null; note: string }
   | { type: "end"; at: string };
 
@@ -64,6 +67,8 @@ export function runReducer(s: RunState, a: RunAction): RunState {
     case "prevExercise": return { ...s, exerciseIndex: Math.max(0, s.exerciseIndex - 1) };
     case "skipExercise":
       return s.skippedExercises.includes(a.planExerciseId) ? s : { ...s, skippedExercises: [...s.skippedExercises, a.planExerciseId] };
+    case "painArea":
+      return (s.painAreas ?? []).includes(a.area) ? s : { ...s, painAreas: [...(s.painAreas ?? []), a.area] };
     case "feedback": return { ...s, rating: a.rating, note: a.note };
     case "end": return { ...s, stage: "done", endedAt: a.at };
   }

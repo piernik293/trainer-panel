@@ -6,6 +6,7 @@ import { normalizeExerciseLocations } from "./seeds/normalizeLocations";
 import { seedExerciseAdaptationFields } from "./seeds/exerciseAdaptation";
 import { seedSubTargetBiases } from "./seeds/subTargetBiasSeed";
 import { seedCatalogue } from "./seeds/catalogueSeed";
+import { seedWarmupCatalogue } from "./seeds/warmupCatalogueSeed";
 import { runSchemaMigrations } from "./seeds/schemaMigrations";
 import { seedUnmappedMuscleVtm, checkUnmappedMuscles } from "./seeds/unmappedMuscleVtm";
 import { runStartupMigration } from "./lib/migration";
@@ -38,6 +39,7 @@ async function startServer() {
   try {
     await seedCatalogue();
     logger.info("Catalogue seed complete");
+    await seedWarmupCatalogue();
   } catch (err) {
     logger.warn({ err }, "Catalogue seed failed (non-fatal, will retry next restart)");
   }
