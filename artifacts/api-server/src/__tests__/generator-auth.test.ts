@@ -157,7 +157,7 @@ vi.mock("@workspace/db", () => {
   const trainersTable              = { id: "id", clerkUserId: "clerkUserId" };
   const clientsTable               = { id: "id", trainerId: "trainerId", firstName: "firstName", lastName: "lastName" };
   const surveysTable               = { id: "id", clientId: "clientId", createdAt: "createdAt", trainingLocation: "trainingLocation", equipment: "equipment", avoidedExerciseIds: "avoidedExerciseIds", experienceLevel: "experienceLevel", trainingGoal: "trainingGoal" };
-  const exercisesTable             = { id: "id", isActive: "isActive", name: "name", exerciseType: "exerciseType", exercisePriority: "exercisePriority", mainMuscleGroup: "mainMuscleGroup", suitableForNoActivity: "suitableForNoActivity" };
+  const exercisesTable             = { id: "id", isActive: "isActive", name: "name", exerciseType: "exerciseType", exercisePriority: "exercisePriority", mainMuscleGroup: "mainMuscleGroup", suitableForNoActivity: "suitableForNoActivity", role: "role" };
   const clientExerciseUsageLogTable = { id: "id", clientId: "clientId", generationId: "generationId", exerciseId: "exerciseId" };
   const volumeTargetsTable         = { id: "id", isActive: "isActive" };
 
@@ -276,6 +276,8 @@ vi.mock("drizzle-orm", () => ({
   desc:    (field: string)               => ({ field, dir: "desc" }),
   inArray: (field: string, val: unknown) => ({ field, val, op: "inArray" }),
   isNull:  (f: string)                   => ({ field: f, op: "isNull" }),
+  or:      (...args: unknown[])          => ({ op: "or", args }),
+  notInArray: (field: string, val: unknown) => ({ field, val, op: "notInArray" }),
   sql:     (_tpl: unknown)               => ({}),
 }));
 
