@@ -26,6 +26,7 @@ const DROPPED: Record<string, string> = {
   "Podpowiedź: BMI wskazuje": "decyzja 23.10: BMI i podpowiedź o BMI widzi tylko trener (profil klienta)",
   "Na tym etapie nie musisz wybierać konkretnych priorytetów": "decyzja 23.10 (pkt 6): początkujący wybiera jedną partię; tekst „Wybierz jedną partię, na której chcesz się skupić. Plan i tak rozwinie całe ciało.”",
   "Na początku łatwo pochopnie ocenić": "decyzja 23.10 (pkt 6): zastąpione tym samym nowym tekstem pod pytaniem",
+  "Zaznacz tylko te metody": "decyzja 23.10 (pkt 8): pytanie odwrócone na „Metody do unikania” (stary tekst opisywał metody, które klient CHCE stosować, a zapisywał je jako unikane)",
   "Nie kieruj się wyłącznie liczbą lat treningu": "decyzja 23.10: kłóci się z regułą 2 lat; zastąpione zdaniem „Wybierz opis, który najlepiej do Ciebie pasuje…”",
 };
 

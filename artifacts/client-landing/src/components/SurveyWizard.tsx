@@ -81,6 +81,10 @@ import {
 } from "@/lib/surveyWizard";
 
 const AUTO_ADVANCE_MS = 300;
+/** Cardio screen: no instant advance (the hint under the choice has to be readable); moves on after 20 s of inactivity. */
+const CARDIO_IDLE_ADVANCE_MS = 20_000;
+/** Any of these cancels the pending idle advance — then only "Dalej" moves on. */
+const IDLE_CANCEL_EVENTS = ["pointerdown", "mousedown", "touchstart", "click", "keydown", "wheel", "scroll", "input", "change"] as const;
 
 interface Choice {
   value: string;
@@ -349,6 +353,13 @@ export default function SurveyWizard({
   const [cardioExpanded, setCardioExpanded] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idleCleanup = useRef<(() => void) | null>(null);
+  const idleArmed = useRef(false);
+  const cancelPending = () => {
+    if (timer.current) clearTimeout(timer.current);
+    idleCleanup.current?.();
+    idleCleanup.current = null;
+  };
 
   const steps = visibleSteps(answers, prefill);
   const stages = visibleStages(answers, prefill);
@@ -377,11 +388,12 @@ export default function SurveyWizard({
     window.scrollTo({ top: 0 });
     setShowError(false);
     setTouched({});
+    idleArmed.current = false;
   }, [effectiveStep]);
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); idleCleanup.current?.(); }, []);
 
   const go = (to: StepId | "summary") => {
-    if (timer.current) clearTimeout(timer.current);
+    cancelPending();
     setStepId(to);
   };
   const goNext = (snapshot: Answers = answers) => {
@@ -402,7 +414,24 @@ export default function SurveyWizard({
   const choose = (patch: Partial<Answers>) => {
     const next = normalizeAnswers({ ...answers, ...patch }, prefill);
     setAnswers(next);
-    if (timer.current) clearTimeout(timer.current);
+    cancelPending();
+    if (effectiveStep === "cardioPref") {
+      // The first answer starts a silent 20 s countdown; changing the answer or ANY interaction
+      // (click, key, scroll, touch) cancels it for good — from then on only "Dalej" moves on.
+      if (idleArmed.current) return;
+      idleArmed.current = true;
+      if (validateStep("cardioPref", next)) return;
+      timer.current = setTimeout(() => goNext(next), CARDIO_IDLE_ADVANCE_MS);
+      // Listen only after the gesture that made the choice has finished.
+      const arm = setTimeout(() => {
+        const cancel = () => { if (timer.current) clearTimeout(timer.current); idleCleanup.current?.(); idleCleanup.current = null; };
+        IDLE_CANCEL_EVENTS.forEach((e) => window.addEventListener(e, cancel, { capture: true, passive: true }));
+        idleCleanup.current = () => IDLE_CANCEL_EVENTS.forEach((e) => window.removeEventListener(e, cancel, { capture: true }));
+      }, 250);
+      const prev = idleCleanup.current;
+      idleCleanup.current = () => { clearTimeout(arm); prev?.(); };
+      return;
+    }
     if (!validateStep(effectiveStep as StepId, next)) timer.current = setTimeout(() => goNext(next), AUTO_ADVANCE_MS);
   };
 
@@ -702,15 +731,9 @@ export default function SurveyWizard({
             <span className="sr-only">{MUSCLE_GROUPS.length} grup mięśniowych do wyboru</span>
           </Section>
         );
-      case "methods":
-        return (
-          <Section id={id} headingRef={heading} title="Czy chcesz, aby w planie były metody intensyfikacji treningu?" lead={<>Pytamy o to, bo masz większe doświadczenie. <Opt text={HINT_TEXT.methods} /></>}>
-            <ChoiceList name="Metody intensyfikacji" columns={2} options={[{ value: "Tak", label: "Tak" }, { value: "Nie", label: "Nie" }]} value={answers.avoidsAdvancedMethods} onChange={(v) => choose({ avoidsAdvancedMethods: v as Answers["avoidsAdvancedMethods"] })} />
-          </Section>
-        );
       case "methodsList":
         return (
-          <Section id={id} headingRef={heading} title="Które metody chcesz stosować?" lead="Pytamy o to, bo chcesz metod intensyfikacji.">
+          <Section id={id} headingRef={heading} title="Metody do unikania" lead={<>Pytamy o to, bo masz większe doświadczenie. <Opt text="Zaznacz metody intensyfikacji, których nie chcesz w planie." /></>}>
             <MultiList options={ADVANCED_METHODS.map((v) => ({ value: v, label: v }))} selected={answers.advancedMethodsToAvoid} onToggle={(v) => set({ advancedMethodsToAvoid: toggle(answers.advancedMethodsToAvoid, v) })} />
           </Section>
         );
@@ -903,7 +926,6 @@ export function summaryText(id: StepId, a: Answers): string {
     case "avoided": return [...a.avoidedExercises.map((e) => e.name), a.avoidedOtherText].filter(Boolean).join(", ");
     case "favorite": return a.favoriteExercises.map((e) => e.name).join(", ");
     case "priority": return [a.priorityMuscle1, a.priorityMuscle2, a.priorityMuscle3].filter(Boolean).join(", ");
-    case "methods": return a.avoidsAdvancedMethods;
     case "methodsList": return a.advancedMethodsToAvoid.join(", ");
     case "additional": return a.additionalInfo;
   }
