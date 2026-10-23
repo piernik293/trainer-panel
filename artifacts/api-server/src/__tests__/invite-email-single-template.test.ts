@@ -88,6 +88,23 @@ describe("POST /clients/:id/survey-invite (profile / new client path)", () => {
     expect(mail.text).toContain("Cześć Marta,");
     expect(res.body.url).toBe(mail.text.match(/https:\/\/\S+/)![0]);
   });
+  it("banner: embedded CID JPEG <= 80 KB, alt text, graphite cell behind it, text independent of the image", async () => {
+    await request(app).post(`/api/clients/${clientId}/survey-invite`).send({});
+    const mail = sendMail.mock.calls[0]![0] as { html: string; text: string; attachments: { cid: string; contentType: string; contentDisposition: string; content: Buffer; filename: string }[] };
+    expect(mail.attachments).toHaveLength(1);
+    const att = mail.attachments[0]!;
+    expect(att).toMatchObject({ cid: "optimatren-banner", contentType: "image/jpeg", contentDisposition: "inline" });
+    expect(att.content.length).toBeLessThanOrEqual(80 * 1024);
+    expect(att.content.subarray(0, 3).toString("hex")).toBe("ffd8ff"); // JPEG
+    expect(mail.html).toContain('src="cid:optimatren-banner"');
+    expect(mail.html).toContain('alt="Optimatren — trening z Twoim trenerem"');
+    expect(mail.html).toMatch(/width="560" height="180"/);
+    expect(mail.html).toMatch(/bgcolor="#1C1917"[^>]*height="180"/); // graphite behind the banner (images off)
+    expect(mail.html).not.toMatch(/src="https?:/); // no remote images
+    // Everything that matters is also in the plain-text part and in HTML text, not in the picture.
+    expect(mail.text).toContain("Wypełnij wywiad:");
+    expect(mail.html).toContain("Wypełnij wywiad</a>");
+  });
   it("SMTP failure is reported with the neutral message, the invitation stays", async () => {
     sendMail.mockRejectedValue(new Error("boom smtp secret"));
     const res = await request(app).post(`/api/clients/${clientId}/survey-invite`).send({});
