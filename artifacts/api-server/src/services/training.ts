@@ -111,6 +111,19 @@ export function recordGain(history: readonly PerformedSet[], set: PerformedSet):
   return set.weightKg > best ? Math.round((set.weightKg - best) * 100) / 100 : null;
 }
 
+/**
+ * Compact history for the phone (offline record check): per number of repetitions
+ * only the heaviest weight is kept, which preserves recordGain() exactly.
+ */
+export function compactHistory(history: readonly PerformedSet[]): { weightKg: number; reps: number }[] {
+  const byReps = new Map<number, number>();
+  for (const h of history) {
+    if (h.weightKg == null || h.reps == null || h.reps <= 0) continue;
+    byReps.set(h.reps, Math.max(byReps.get(h.reps) ?? 0, h.weightKg));
+  }
+  return [...byReps.entries()].map(([reps, weightKg]) => ({ weightKg, reps })).sort((a, b) => a.reps - b.reps);
+}
+
 /** Best result of a list of sets: highest weight, ties broken by reps. */
 export function bestSet(sets: readonly PerformedSet[]): PerformedSet | null {
   let best: PerformedSet | null = null;

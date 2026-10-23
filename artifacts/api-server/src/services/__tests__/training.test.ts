@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  weightStepFor, exerciseRoleFor, restFor, formatRest, recordGain, bestSet, nextDayIndex, startOfWeek,
+  weightStepFor, exerciseRoleFor, restFor, formatRest, recordGain, bestSet, compactHistory, nextDayIndex, startOfWeek,
 } from "../training";
 
 describe("weightStepFor", () => {
@@ -94,5 +94,15 @@ describe("day picking and week", () => {
   it("week starts on Monday", () => {
     expect(startOfWeek(new Date(2026, 9, 23)).getDate()).toBe(19); // Fri 23 Oct 2026 → Mon 19
     expect(startOfWeek(new Date(2026, 9, 25)).getDate()).toBe(19); // Sunday
+  });
+});
+
+describe("compactHistory keeps recordGain unchanged", () => {
+  it("heaviest weight per rep count", () => {
+    const hist = [{ weightKg: 60, reps: 8 }, { weightKg: 55, reps: 8 }, { weightKg: 70, reps: 5 }, { weightKg: null, reps: 3 }];
+    expect(compactHistory(hist)).toEqual([{ weightKg: 70, reps: 5 }, { weightKg: 60, reps: 8 }]);
+    for (const set of [{ weightKg: 62.5, reps: 8 }, { weightKg: 65, reps: 6 }, { weightKg: 72.5, reps: 5 }, { weightKg: 60, reps: 8 }]) {
+      expect(recordGain(compactHistory(hist), set)).toBe(recordGain(hist, set));
+    }
   });
 });

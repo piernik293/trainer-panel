@@ -33,7 +33,7 @@ import { requireClientAuth } from "../middlewares/requireClientAuth";
 import { determineDayType, getRampWarmup } from "../services/rampWarmup";
 import { getCooldown } from "../services/cooldown";
 import {
-  weightStepFor, exerciseRoleFor, restFor, formatRest, recordGain, bestSet, nextDayIndex,
+  weightStepFor, exerciseRoleFor, restFor, formatRest, recordGain, bestSet, compactHistory, nextDayIndex,
   startOfWeek, PL_WEEKDAYS, PAIN_MESSAGE, type PerformedSet,
 } from "../services/training";
 
@@ -265,6 +265,7 @@ router.get("/client-portal/training/today", requireClientAuth, async (req, res):
       imageUrl: e.imageUrl,
       previous: previousSetsFor(history, e.exerciseId),
       record: best ? { weightKg: best.weightKg, reps: best.reps } : null,
+      history: compactHistory(hist),
     };
   });
 
