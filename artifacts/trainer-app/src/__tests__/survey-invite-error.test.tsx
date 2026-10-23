@@ -11,6 +11,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import SurveyInvite from "@/pages/SurveyInvite";
 
+vi.mock("@clerk/react", () => ({ useUser: () => ({ user: { fullName: "Anna Nowak", firstName: "Anna" } }) }));
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(

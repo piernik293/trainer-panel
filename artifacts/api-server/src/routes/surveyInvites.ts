@@ -12,6 +12,7 @@ import { eq, desc, and, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { logger } from "../lib/logger";
+import { buildPublicSurveyUrl, cleanTrainerName, sendInviteEmail } from "../services/inviteEmail";
 
 const router: IRouter = Router();
 
@@ -24,6 +25,10 @@ function hashToken(rawToken: string): string {
 
 const CreateInviteBody = z.object({
   intendedEmail: z.string().email().optional().nullable(),
+  /** Send the invitation by e-mail to intendedEmail (the link stays in the response). */
+  sendEmail: z.boolean().optional(),
+  /** Inviting trainer's name for the e-mail text (falls back to the profile name). */
+  trainerName: z.string().max(200).optional().nullable(),
 });
 
 // ─── POST /survey-invites ─────────────────────────────────────────────────────
@@ -55,9 +60,29 @@ router.post("/survey-invites", requireAuth, async (req, res): Promise<void> => {
 
   logger.info({ inviteId: invite.id, trainerId }, "Survey invite created");
 
+  const url = buildPublicSurveyUrl(rawToken);
+  let email: { requested: boolean; sent: boolean; code?: string; message?: string } = { requested: false, sent: false };
+  if (parsed.data.sendEmail) {
+    if (!parsed.data.intendedEmail) {
+      email = { requested: true, sent: false, code: "NO_RECIPIENT", message: "Podaj adres e-mail klienta, aby wysłać zaproszenie." };
+    } else {
+      const result = await sendInviteEmail({
+        to: parsed.data.intendedEmail,
+        trainerName: cleanTrainerName(parsed.data.trainerName) ?? cleanTrainerName(req.trainer!.displayName),
+        url,
+        expiresAt,
+      });
+      email = result.sent
+        ? { requested: true, sent: true }
+        : { requested: true, sent: false, code: result.code, message: result.message };
+    }
+  }
+
   res.status(201).json({
     id: invite.id,
     token: rawToken,
+    url,
+    email,
     intendedEmail: invite.intendedEmail,
     expiresAt: invite.expiresAt,
     createdAt: invite.createdAt,
