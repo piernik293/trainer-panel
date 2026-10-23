@@ -63,6 +63,29 @@ function deriveRecoveryQuality(
   return "poor";
 }
 
+// ─── Sleep hours parsing ──────────────────────────────────────────────────────
+//
+// Survey answers (lib/survey-config SLEEP_HOURS_OPTIONS) → hours used by the
+// recovery and volume rules:
+//   "Poniżej 5 godzin" → 4   (below the lowest bound)
+//   "5–6 godzin"       → 5   (lower bound of a range, as before)
+//   "7–8 godzin"       → 7
+//   "Powyżej 8 godzin" → 9   (above the highest bound)
+//   "7"                → 7   (plain numbers from older records / trainer form)
+// Previously parseInt() turned "Poniżej…" / "Powyżej…" into NaN → treated as
+// missing data, so the shortest and the longest sleep were ignored.
+
+export function parseSleepHours(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const match = raw.match(/\d+/);
+  if (!match) return null;
+  const n = Number(match[0]);
+  if (!Number.isFinite(n) || n <= 0 || n > 24) return null;
+  if (/poni[żz]ej/i.test(raw)) return n - 1;
+  if (/powy[żz]ej/i.test(raw)) return n + 1;
+  return n;
+}
+
 // ─── Session duration parsing ─────────────────────────────────────────────────
 //
 // Handles range-style values stored by the public form, e.g.:
@@ -291,7 +314,7 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
   // ── Lifestyle ───────────────────────────────────────────────────────────────
   const dailyActivity = survey?.activityLevel ?? null;
   const physicalWork = survey?.activityLevel === "Praca fizyczna";
-  const sleepHours = survey?.sleepHours ? parseInt(survey.sleepHours, 10) || null : null;
+  const sleepHours = parseSleepHours(survey?.sleepHours);
   const stressLevel = clampStress(survey?.stressLevel);
 
   if (!dailyActivity && sleepHours === null && stressLevel === null) {
