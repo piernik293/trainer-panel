@@ -5,6 +5,14 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./tokens.css": "./src/tokens.css"
+    "./tokens.css": "./src/tokens.css",
+    "./hero": "./src/hero/AppHero.tsx"
+  },
+  "peerDependencies": {
+    "react": "catalog:"
+  },
+  "devDependencies": {
+    "react": "catalog:",
+    "@types/react": "catalog:"
   }
 }
