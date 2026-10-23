@@ -28,9 +28,8 @@ export const HINT_TEXT = {
   "avoided": "Wyszukaj po nazwie lub opisz ćwiczenie, jeśli nie znasz jego nazwy.",
   "favBeginner": "Możesz wskazać ćwiczenia, które lubisz, ale trener może wybrać prostsze lub lepiej dopasowane warianty do Twojego poziomu.",
   "favOther": "Wyszukaj po nazwie — możesz dodać kilka ćwiczeń.",
-  "priBeginner": "Na tym etapie nie musisz wybierać konkretnych priorytetów. Najpierw skupimy się na równomiernym rozwoju całego ciała.",
+  "priBeginner": "Wybierz jedną partię, na której chcesz się skupić. Plan i tak rozwinie całe ciało.",
   "priOther": "Wybierz do 3 partii mięśniowych, na których zależy Ci najbardziej.",
-  "priNote": "Na początku łatwo pochopnie ocenić, które partie lub ćwiczenia powinny być najważniejsze. Przy Twoim poziomie doświadczenia potraktujemy te wybory jako wskazówkę, a plan będzie przede wszystkim rozwijał całe ciało i uczył podstawowych wzorców ruchowych.",
   "methods": "Zaznacz tylko te metody, które chcesz stosować w planie.",
   "additional": "Krótko dopisz tylko to, co może mieć znaczenie dla planu."
 } as const;

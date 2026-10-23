@@ -59,7 +59,7 @@ const base: Answers = {
   experienceLevel: "Początkujący", trainingLocation: "Siłownia",
   desiredWeeklyFrequency: 3, sessionDuration: "45–60 min",
   injuryStatus: "Nie", activityLevel: "Siedzący", sleepHours: "7–8 godzin", stressLevel: 4,
-  cardioPreference: "Chętnie uwzględnię cardio w planie", cardioFrequency: "1 raz w tygodniu", preferredCardioType: "Marsz",
+  cardioPreference: "Tak, uwzględnij cardio w planie", cardioFrequency: "1 raz w tygodniu", preferredCardioType: "Marsz",
   planStylePreference: "Balans efektywności i wygody", favoriteExercises: [{ id: 1, name: "Przysiad" }, { id: 2, name: "Wiosłowanie" }],
   priorityMuscle1: "barki", additionalInfo: "Pracuję zmianowo",
 };

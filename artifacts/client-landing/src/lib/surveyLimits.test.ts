@@ -77,3 +77,29 @@ describe("hint next to the disabled 'Dalej' says what to fill in", () => {
     expect(validateStep("body", { ...EMPTY_ANSWERS, heightCm: 175, weightKg: "251" })).toBe(WEIGHT_RANGE_MESSAGE);
   });
 });
+
+describe("cardio preference in drafts and priority muscles by effective level", () => {
+  const A = (over: Partial<Answers>): Answers => ({ ...EMPTY_ANSWERS, ...over });
+  it("an older draft with the removed answer is shown as 'Tak, uwzględnij cardio w planie'", () => {
+    expect(normalizeAnswers(A({ cardioPreference: "Cardio może być dodatkiem do planu" })).cardioPreference).toBe("Tak, uwzględnij cardio w planie");
+    expect(normalizeAnswers(A({ cardioPreference: "Chętnie uwzględnię cardio w planie" })).cardioPreference).toBe("Tak, uwzględnij cardio w planie");
+    expect(normalizeAnswers(A({ cardioPreference: "Wolę ograniczyć cardio do niezbędnego minimum" })).cardioPreference).toBe("Tylko niezbędne minimum");
+    expect(normalizeAnswers(A({ cardioPreference: "" })).cardioPreference).toBe("");
+  });
+  it("beginners keep one priority group, others three", () => {
+    const three = { priorityMuscle1: "Barki", priorityMuscle2: "Plecy", priorityMuscle3: "Pośladki" };
+    for (const experienceLevel of ["Brak aktywności fizycznej", "Początkujący"]) {
+      expect(normalizeAnswers(A({ experienceLevel, ...three }))).toMatchObject({ priorityMuscle1: "Barki", priorityMuscle2: "", priorityMuscle3: "" });
+    }
+    // effective level: intermediate chosen, but only 1 year of training → one group
+    expect(normalizeAnswers(A({ experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok", ...three }))).toMatchObject({ priorityMuscle2: "", priorityMuscle3: "" });
+    expect(normalizeAnswers(A({ experienceLevel: "Średniozaawansowany", trainingDuration: "3 lata", ...three }))).toMatchObject(three);
+    expect(normalizeAnswers(A({ experienceLevel: "Zaawansowany", ...three }))).toMatchObject(three);
+  });
+  it("validation of the priority screen", () => {
+    const base = A({ experienceLevel: "Początkujący", priorityMuscle1: "Barki", priorityMuscle2: "Plecy" });
+    expect(validateStep("priority", base)).toBe("Przy tym poziomie możesz wskazać najwyżej jedną partię priorytetową.");
+    expect(validateStep("priority", { ...base, priorityMuscle2: "" })).toBeNull();
+    expect(validateStep("priority", { ...base, experienceLevel: "Zaawansowany" })).toBeNull();
+  });
+});

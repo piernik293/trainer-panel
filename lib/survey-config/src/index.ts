@@ -11,6 +11,8 @@
 
 // ─── Training goal ────────────────────────────────────────────────────────────
 
+export * from "./effectiveLevel";
+
 export const TRAINING_GOAL_OPTIONS = [
   "Budowa sylwetki",
   "Zwiększenie siły",
@@ -118,11 +120,26 @@ export const EQUIPMENT_OPTIONS = [
 
 // ─── Cardio ───────────────────────────────────────────────────────────────────
 
+/**
+ * Two answers only. Older interviews may hold "Chętnie uwzględnię cardio w planie",
+ * "Cardio może być dodatkiem do planu" (both mean "include") or
+ * "Wolę ograniczyć cardio do niezbędnego minimum" — see normalizeCardioPreference().
+ */
 export const CARDIO_PREFERENCE_OPTIONS = [
-  "Chętnie uwzględnię cardio w planie",
-  "Cardio może być dodatkiem do planu",
-  "Wolę ograniczyć cardio do niezbędnego minimum",
+  "Tak, uwzględnij cardio w planie",
+  "Tylko niezbędne minimum",
 ] as const;
+
+export type CardioPreferenceKind = "include" | "minimum";
+
+/** Maps any stored answer (current or earlier wording) to what the generator needs. */
+export function normalizeCardioPreference(raw: string | null | undefined): CardioPreferenceKind | null {
+  if (!raw) return null;
+  const t = raw.trim().toLowerCase();
+  if (t.includes("niezbędn") || t.includes("ograniczyć")) return "minimum";
+  if (t.includes("uwzględn") || t.includes("dodatk")) return "include";
+  return null;
+}
 
 export const CARDIO_FREQUENCY_OPTIONS = [
   "Nie wykonuję cardio",
@@ -436,3 +453,34 @@ export const EQUIPMENT_CONFLICT_MESSAGE = "„Brak sprzętu” nie może być za
 export function equipmentConflict(items: readonly string[], other?: string | null): boolean {
   return items.includes(NO_EQUIPMENT) && (items.length > 1 || !!(other ?? "").trim());
 }
+
+// ─── Priority muscle groups by effective level ───────────────────────────────
+
+export const PRIORITY_BEGINNER_TEXT = "Wybierz jedną partię, na której chcesz się skupić. Plan i tak rozwinie całe ciało.";
+export const PRIORITY_BEGINNER_MESSAGE = "Przy tym poziomie możesz wskazać najwyżej jedną partię priorytetową.";
+
+/** How many priority muscle groups the client may name at this (effective) level. */
+export function maxPriorityMuscles(effectiveLevel: string | null | undefined): number {
+  return isBeginnerLevel(effectiveLevel ?? undefined) ? 1 : 3;
+}
+
+// ─── Goal descriptions (shown behind an arrow next to each goal) ─────────────
+
+export const TRAINING_GOAL_DESCRIPTIONS: Record<string, string> = {
+  "Budowa sylwetki": "Więcej mięśni i lepsze proporcje ciała.",
+  "Zwiększenie siły": "Podnosić więcej w głównych ćwiczeniach.",
+  "Redukcja tkanki tłuszczowej": "Mniej tkanki tłuszczowej przy zachowaniu mięśni. Duże znaczenie ma też dieta.",
+  "Poprawa kondycji": "Łatwiej znosić wysiłek i szybciej się regenerować.",
+  "Poprawa sprawności": "Swobodniejszy ruch na co dzień — mobilność, stabilizacja, równowaga.",
+  "Cel sportowy": "Przygotowanie do konkretnej dyscypliny lub startu.",
+};
+
+// ─── Recommended session length by EFFECTIVE level ───────────────────────────
+
+export const SESSION_DURATION_RECOMMENDATIONS: Record<string, { option: string; why: string }> = {
+  "Brak aktywności fizycznej": { option: "30–45 min", why: "Krótko na start, żeby zbudować nawyk i nie przeciążyć organizmu." },
+  "Początkujący": { option: "45–60 min", why: "Wystarczy na rozgrzewkę i kilka ćwiczeń z dobrą techniką." },
+  "Średniozaawansowany": { option: "60–90 min", why: "Więcej serii i dłuższe przerwy przy ćwiczeniach głównych." },
+  "Zaawansowany": { option: "60–90 min", why: "Duża objętość i przerwy 3–5 min przy ciężkich seriach." },
+};
+export const SESSION_RECOMMENDED_BADGE = "Polecane dla Ciebie";

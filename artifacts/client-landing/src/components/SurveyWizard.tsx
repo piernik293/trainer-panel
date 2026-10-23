@@ -21,6 +21,13 @@ import {
   BIRTH_REQUIRED_MESSAGE,
   weightError,
   toggleEquipment,
+  TRAINING_GOAL_DESCRIPTIONS,
+  SESSION_DURATION_RECOMMENDATIONS,
+  SESSION_RECOMMENDED_BADGE,
+  PRIORITY_BEGINNER_TEXT,
+  maxPriorityMuscles,
+  normalizeCardioPreference,
+  resolveEffectiveLevel,
   NO_EQUIPMENT,
   SURVEY_LIMITS,
   CARDIO_FREQUENCY_OPTIONS,
@@ -80,15 +87,17 @@ interface Choice {
   label: string;
   /** One-line description. */
   desc?: string;
-  /** Full description behind the "Więcej" toggle. */
+  /** Full description behind the "Więcej" toggle (or the arrow, see `moreStyle`). */
   more?: string;
+  /** Small pill next to the label, e.g. "Polecane dla Ciebie". */
+  badge?: string;
 }
 
 // ─── Small building blocks ───────────────────────────────────────────────────
 
 function ChoiceList({
-  name, options, value, onChange, columns = 1,
-}: { name: string; options: Choice[]; value: string; onChange: (v: string) => void; columns?: 1 | 2 }) {
+  name, options, value, onChange, columns = 1, moreStyle = "text",
+}: { name: string; options: Choice[]; value: string; onChange: (v: string) => void; columns?: 1 | 2; moreStyle?: "text" | "arrow" }) {
   const refs = useRef<Array<HTMLInputElement | null>>([]);
   const [open, setOpen] = useState<string[]>([]);
   const onKey = (e: React.KeyboardEvent, i: number) => {
@@ -106,7 +115,7 @@ function ChoiceList({
           key={o.value}
           className={cn(
             "relative flex flex-wrap items-start rounded-lg border bg-card transition-colors focus-within:ring-2 focus-within:ring-ring",
-            value === o.value ? "border-primary bg-brand-soft" : "border-input hover:bg-muted",
+            value === o.value ? "border-primary bg-brand-soft" : "border-input hover:border-primary/60",
           )}
         >
           <label className={cn("flex min-w-0 flex-1 cursor-pointer flex-col justify-center px-4", o.more ? "min-h-14 py-2.5" : "min-h-14 py-3")}>
@@ -121,19 +130,34 @@ function ChoiceList({
               onKeyDown={(e) => onKey(e, i)}
               className="sr-only"
             />
-            <span className={cn("font-semibold", o.more && "pr-14", value === o.value && "text-primary")}>{o.label}</span>
+            <span className={cn("font-semibold", o.more && (moreStyle === "arrow" ? "pr-12" : "pr-14"), value === o.value && "text-primary")}>
+              {o.label}
+              {o.badge && <span className="ml-2 inline-block rounded-full bg-primary px-2 py-0.5 align-middle text-xs font-bold text-primary-foreground">{o.badge}</span>}
+            </span>
             {o.desc && <span className="mt-0.5 text-sm text-muted-foreground">{o.desc}</span>}
           </label>
           {o.more && (
             <>
-              <button
-                type="button"
-                aria-expanded={open.includes(o.value)}
-                onClick={() => setOpen((cur) => (cur.includes(o.value) ? cur.filter((v) => v !== o.value) : [...cur, o.value]))}
-                className="absolute right-0 top-0 inline-flex min-h-11 items-center px-3 text-sm font-semibold text-primary hover:underline"
-              >
-                {open.includes(o.value) ? "Mniej" : "Więcej"}
-              </button>
+              {moreStyle === "arrow" ? (
+                <button
+                  type="button"
+                  aria-expanded={open.includes(o.value)}
+                  aria-label={`${open.includes(o.value) ? "Ukryj" : "Pokaż"} opis: ${o.label}`}
+                  onClick={() => setOpen((cur) => (cur.includes(o.value) ? cur.filter((v) => v !== o.value) : [...cur, o.value]))}
+                  className="absolute right-0 top-0 inline-flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-primary"
+                >
+                  <ChevronDown className={cn("h-5 w-5 transition-transform", open.includes(o.value) && "rotate-180")} aria-hidden="true" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  aria-expanded={open.includes(o.value)}
+                  onClick={() => setOpen((cur) => (cur.includes(o.value) ? cur.filter((v) => v !== o.value) : [...cur, o.value]))}
+                  className="absolute right-0 top-0 inline-flex min-h-11 items-center px-3 text-sm font-semibold text-primary hover:underline"
+                >
+                  {open.includes(o.value) ? "Mniej" : "Więcej"}
+                </button>
+              )}
               {open.includes(o.value) && <p className="w-full px-4 pb-3 text-sm text-muted-foreground">{o.more}</p>}
             </>
           )}
@@ -420,6 +444,10 @@ export default function SurveyWizard({
   const stepsLeft = Math.max(0, steps.length - index);
 
   const level = answers.experienceLevel;
+  // Level the plan will really be built for: the choice capped by training time (2-year rule).
+  const effectiveLevel = resolveEffectiveLevel(answers.experienceLevel, answers.trainingDuration).effective;
+  const rec = effectiveLevel ? SESSION_DURATION_RECOMMENDATIONS[effectiveLevel] : undefined;
+  const maxPriority = maxPriorityMuscles(effectiveLevel);
   const age = calculateAge(answers.dateOfBirth);
   const multiCount =
     effectiveStep === "sportNeeds" ? answers.sportPerformanceNeeds.length
@@ -479,7 +507,7 @@ export default function SurveyWizard({
       case "goal":
         return (
           <Section id={id} headingRef={heading} title="Jaki jest Twój cel treningowy?" lead={SECTION_TEXT.goal}>
-            <ChoiceList name="Cel treningowy" options={TRAINING_GOAL_OPTIONS.map((v) => ({ value: v, label: v }))} value={answers.trainingGoal} onChange={(v) => choose({ trainingGoal: v })} />
+            <ChoiceList name="Cel treningowy" moreStyle="arrow" options={TRAINING_GOAL_OPTIONS.map((v) => ({ value: v, label: v, more: TRAINING_GOAL_DESCRIPTIONS[v] }))} value={answers.trainingGoal} onChange={(v) => choose({ trainingGoal: v })} />
           </Section>
         );
       case "sportStatus":
@@ -548,7 +576,7 @@ export default function SurveyWizard({
       case "session":
         return (
           <Section id={id} headingRef={heading} title="Ile czasu realnie możesz poświęcić na jeden trening?" lead="Realny czas pozwala ułożyć plan, który utrzymasz na dłużej.">
-            <ChoiceList name="Czas treningu" columns={2} options={SESSION_DURATION_OPTIONS.map((v) => ({ value: v, label: v }))} value={answers.sessionDuration} onChange={(v) => choose({ sessionDuration: v })} />
+            <ChoiceList name="Czas treningu" options={SESSION_DURATION_OPTIONS.map((v) => ({ value: v, label: v, ...(rec?.option === v ? { badge: SESSION_RECOMMENDED_BADGE, desc: rec.why } : {}) }))} value={answers.sessionDuration} onChange={(v) => choose({ sessionDuration: v })} />
           </Section>
         );
       case "injury":
@@ -601,11 +629,11 @@ export default function SurveyWizard({
             {isCardioRelevant(answers.trainingGoal, answers.activityLevel) && <Note>{CARDIO_RECOMMENDATION_TEXT}</Note>}
             <ChoiceList
               name="Cardio w planie"
-              options={CARDIO_PREFERENCE_OPTIONS.map((v) => ({ value: v, label: CARDIO_PREF_LABEL[v] ?? v }))}
+              options={CARDIO_PREFERENCE_OPTIONS.map((v) => ({ value: v, label: v }))}
               value={answers.cardioPreference}
               onChange={(v) => choose({ cardioPreference: v })}
             />
-            {answers.cardioPreference === "Wolę ograniczyć cardio do niezbędnego minimum" && <Note>{CARDIO_AVOID_REASSURANCE_TEXT}</Note>}
+            {normalizeCardioPreference(answers.cardioPreference) === "minimum" && <Note>{CARDIO_AVOID_REASSURANCE_TEXT}</Note>}
           </Section>
         );
       case "cardioFreq":
@@ -663,10 +691,9 @@ export default function SurveyWizard({
             id={id}
             headingRef={heading}
             title="Partie priorytetowe"
-            lead={<Opt text={isBeginnerLevel(level) ? HINT_TEXT.priBeginner : HINT_TEXT.priOther} />}
+            lead={<Opt text={maxPriority === 1 ? PRIORITY_BEGINNER_TEXT : HINT_TEXT.priOther} />}
           >
-            {isBeginnerLevel(level) && <Note>{HINT_TEXT.priNote}</Note>}
-            {(["priorityMuscle1", "priorityMuscle2", "priorityMuscle3"] as const).map((k, i) => (
+            {(["priorityMuscle1", "priorityMuscle2", "priorityMuscle3"] as const).slice(0, maxPriority).map((k, i) => (
               <div key={k} className="space-y-1.5">
                 <p className="text-sm font-semibold">Priorytet {i + 1}</p>
                 <MuscleGroupCombobox value={answers[k]} onChange={(v) => set({ [k]: v } as Partial<Answers>)} placeholder={["np. Barki", "np. Pośladki", "np. Plecy"][i]} />
@@ -846,11 +873,6 @@ const ACTIVITY_DESC: Record<string, string> = {
   "Praca fizyczna": "Większość dnia jestem w ruchu lub pracuję fizycznie.",
   "Bardzo aktywny": "Wykonuję ciężką pracę fizyczną albo intensywnie ruszam się przez większość dnia.",
 };
-const CARDIO_PREF_LABEL: Record<string, string> = {
-  "Chętnie uwzględnię cardio w planie": "Uwzględnij w planie",
-  "Cardio może być dodatkiem do planu": "Może być dodatkiem do planu",
-  "Wolę ograniczyć cardio do niezbędnego minimum": "Tylko niezbędne minimum",
-};
 
 /** One-line summary of what the client answered on a screen ("" when nothing). */
 export function summaryText(id: StepId, a: Answers): string {
@@ -874,7 +896,7 @@ export function summaryText(id: StepId, a: Answers): string {
     case "activity": return a.activityLevel;
     case "sleep": return a.sleepHours;
     case "stress": return a.stressLevel !== undefined ? `stres ${a.stressLevel}/10` : "";
-    case "cardioPref": return a.cardioPreference ? (CARDIO_PREF_LABEL[a.cardioPreference] ?? a.cardioPreference) : "";
+    case "cardioPref": return a.cardioPreference;
     case "cardioFreq": return a.cardioFrequency;
     case "cardioType": return a.preferredCardioType;
     case "planStyle": return a.planStylePreference;

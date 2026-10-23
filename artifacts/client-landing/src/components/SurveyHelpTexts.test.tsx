@@ -24,13 +24,15 @@ const norm = (s: string) => s.replace(/\s+/g, " ").replace(/[’]/g, "'").trim()
 /** Removed on purpose — each with the decision that removed it. */
 const DROPPED: Record<string, string> = {
   "Podpowiedź: BMI wskazuje": "decyzja 23.10: BMI i podpowiedź o BMI widzi tylko trener (profil klienta)",
+  "Na tym etapie nie musisz wybierać konkretnych priorytetów": "decyzja 23.10 (pkt 6): początkujący wybiera jedną partię; tekst „Wybierz jedną partię, na której chcesz się skupić. Plan i tak rozwinie całe ciało.”",
+  "Na początku łatwo pochopnie ocenić": "decyzja 23.10 (pkt 6): zastąpione tym samym nowym tekstem pod pytaniem",
   "Nie kieruj się wyłącznie liczbą lat treningu": "decyzja 23.10: kłóci się z regułą 2 lat; zastąpione zdaniem „Wybierz opis, który najlepiej do Ciebie pasuje…”",
 };
 
 const base: Answers = { ...EMPTY_ANSWERS, firstName: "Ala", lastName: "T", email: "a@example.com", dateOfBirth: "1992-05-10", gender: "Kobieta", heightCm: 168, weightKg: "62", sessionDuration: "45–60 min", desiredWeeklyFrequency: 3 };
 const PROFILES: Answers[] = [
-  { ...base, trainingGoal: "Redukcja tkanki tłuszczowej", experienceLevel: "Początkujący", trainingLocation: "Dom", injuryStatus: "Tak", activityLevel: "Siedzący", cardioPreference: "Wolę ograniczyć cardio do niezbędnego minimum", planStylePreference: "Prosty i łatwy do utrzymania" },
-  { ...base, trainingGoal: "Cel sportowy", athleteStatus: "Hobbystycznie", experienceLevel: "Zaawansowany", trainingLocation: "Siłownia plenerowa", injuryStatus: "Nie", avoidsAdvancedMethods: "Tak", cardioPreference: "Chętnie uwzględnię cardio w planie" },
+  { ...base, trainingGoal: "Redukcja tkanki tłuszczowej", experienceLevel: "Początkujący", trainingLocation: "Dom", injuryStatus: "Tak", activityLevel: "Siedzący", cardioPreference: "Tylko niezbędne minimum", planStylePreference: "Prosty i łatwy do utrzymania" },
+  { ...base, trainingGoal: "Cel sportowy", athleteStatus: "Hobbystycznie", experienceLevel: "Zaawansowany", trainingLocation: "Siłownia plenerowa", injuryStatus: "Nie", avoidsAdvancedMethods: "Tak", cardioPreference: "Tak, uwzględnij cardio w planie" },
   { ...base, trainingGoal: "Budowa sylwetki", experienceLevel: "Średniozaawansowany", trainingLocation: "Siłownia", injuryStatus: "Nie", avoidsAdvancedMethods: "Nie" },
   { ...base, trainingGoal: "Poprawa kondycji", experienceLevel: "Brak aktywności fizycznej", trainingLocation: "Siłownia", injuryStatus: "Nie" },
 ];

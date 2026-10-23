@@ -24,6 +24,11 @@ import {
   calculateAge,
   heightError,
   weightError,
+  maxPriorityMuscles,
+  normalizeCardioPreference,
+  resolveEffectiveLevel,
+  CARDIO_PREFERENCE_OPTIONS,
+  PRIORITY_BEGINNER_MESSAGE,
   calculateBmi,
   goalIsSport,
   isBeginnerLevel,
@@ -204,6 +209,16 @@ export function normalizeAnswers(input: Answers, prefill: Prefill = {}): Answers
     a.avoidedOtherText = "";
     a.avoidedOtherReason = "";
   }
+  // Priority muscle groups: one for beginners (EFFECTIVE level — chosen level capped by training time).
+  const effective = resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective;
+  if (maxPriorityMuscles(effective) === 1) {
+    a.priorityMuscle2 = "";
+    a.priorityMuscle3 = "";
+  }
+  // The removed answer "Cardio może być dodatkiem do planu" (and earlier wordings) map to the two current ones.
+  const cardio = normalizeCardioPreference(a.cardioPreference);
+  if (cardio === "include") a.cardioPreference = CARDIO_PREFERENCE_OPTIONS[0];
+  else if (cardio === "minimum") a.cardioPreference = CARDIO_PREFERENCE_OPTIONS[1];
   if (!isStepVisible("methods", a, prefill)) a.avoidsAdvancedMethods = "";
   if (!isStepVisible("methodsList", a, prefill)) a.advancedMethodsToAvoid = [];
   return a;
@@ -239,6 +254,10 @@ export function validateStep(id: StepId, a: Answers): string | null {
       const hErr = heightError(a.heightCm);
       if (hErr) return hErr;
       return weightError(parseWeight(a.weightKg));
+    }
+    case "priority": {
+      const n = [a.priorityMuscle1, a.priorityMuscle2, a.priorityMuscle3].filter((m) => m.trim()).length;
+      return n > maxPriorityMuscles(resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective) ? PRIORITY_BEGINNER_MESSAGE : null;
     }
     case "goal":
       return a.trainingGoal ? null : "To pole jest wymagane";

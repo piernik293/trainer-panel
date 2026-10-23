@@ -69,6 +69,7 @@ import {
   ATHLETE_STATUS_TO_API,
   calculateBmi,
   calculateAge,
+  normalizeCardioPreference,
   birthDateError,
   AGE_RANGE_MESSAGE,
   HEIGHT_RANGE_MESSAGE,
@@ -719,7 +720,11 @@ function SurveyFormBody({
       priorityMuscle3: (survey?.priorityMuscle3 as string) ?? "",
       trainingLocation: (survey?.trainingLocation as string) ?? "",
       equipment: (survey?.equipment as string) ?? "",
-      cardioPreference: (survey?.cardioPreference as string) ?? "",
+      // An earlier answer ("Cardio może być dodatkiem do planu" etc.) is shown as one of the two current ones.
+      cardioPreference: (() => {
+        const k = normalizeCardioPreference(survey?.cardioPreference as string | undefined);
+        return k === "include" ? CARDIO_PREFERENCE_OPTIONS[0] : k === "minimum" ? CARDIO_PREFERENCE_OPTIONS[1] : "";
+      })(),
       cardioFrequency: (survey?.cardioFrequency as string) ?? "",
       preferredCardioType: (survey?.preferredCardioType as string) ?? "",
     },
@@ -2164,8 +2169,7 @@ function SurveyFormBody({
                           ))}
                         </SelectContent>
                       </Select>
-                      {cardioPreference ===
-                        "Wolę ograniczyć cardio do niezbędnego minimum" && (
+                      {normalizeCardioPreference(cardioPreference) === "minimum" && (
                         <FormDescription className="text-xs text-primary bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
                           {CARDIO_AVOID_REASSURANCE_TEXT}
                         </FormDescription>

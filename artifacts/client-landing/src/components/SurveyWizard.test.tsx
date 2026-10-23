@@ -272,3 +272,81 @@ describe("validation and equipment in the interface (Task 3–5, 23.10)", () => 
     expect(on("Brak sprzętu")).toBe(false);
   });
 });
+
+describe("goals with descriptions, recommended session length, priority groups (23.10)", () => {
+  const open = (stepId: string, answers: Partial<Answers> = {}) => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, firstName: "M", lastName: "T", email: "m@example.com", ...answers }, stepId }));
+    mount();
+  };
+  const GOALS: Record<string, string> = {
+    "Budowa sylwetki": "Więcej mięśni i lepsze proporcje ciała.",
+    "Zwiększenie siły": "Podnosić więcej w głównych ćwiczeniach.",
+    "Redukcja tkanki tłuszczowej": "Mniej tkanki tłuszczowej przy zachowaniu mięśni. Duże znaczenie ma też dieta.",
+    "Poprawa kondycji": "Łatwiej znosić wysiłek i szybciej się regenerować.",
+    "Poprawa sprawności": "Swobodniejszy ruch na co dzień — mobilność, stabilizacja, równowaga.",
+    "Cel sportowy": "Przygotowanie do konkretnej dyscypliny lub startu.",
+  };
+
+  it("every goal has its own arrow; opening it shows the description and does not select the goal", () => {
+    open("goal");
+    for (const [goal, text] of Object.entries(GOALS)) {
+      const arrow = screen.getByRole("button", { name: `Pokaż opis: ${goal}` });
+      expect(arrow.getAttribute("aria-expanded")).toBe("false");
+      expect(screen.queryByText(text)).toBeNull();
+      fireEvent.click(arrow);
+      expect(screen.getByText(text)).toBeTruthy();
+      expect(screen.getByRole("button", { name: `Ukryj opis: ${goal}` }).getAttribute("aria-expanded")).toBe("true");
+      expect((screen.getByLabelText(goal) as HTMLInputElement).checked).toBe(false);
+    }
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(true); // still nothing chosen
+  });
+
+  it("'Cel sportowy' looks like the other goals: enabled, same background (no grey)", () => {
+    open("goal");
+    const sport = screen.getByLabelText("Cel sportowy") as HTMLInputElement;
+    expect(sport.disabled).toBe(false);
+    const card = (el: HTMLElement) => el.closest("div.relative") as HTMLElement;
+    expect(card(sport).className).toBe(card(screen.getByLabelText("Budowa sylwetki")).className);
+    expect(card(sport).className).not.toMatch(/bg-muted/);
+    expect(card(sport).className).not.toMatch(/hover:bg-/); // hover must not turn an option grey (looked disabled)
+  });
+
+  it.each([
+    ["Brak aktywności fizycznej", "", "30–45 min", "Krótko na start, żeby zbudować nawyk i nie przeciążyć organizmu."],
+    ["Początkujący", "", "45–60 min", "Wystarczy na rozgrzewkę i kilka ćwiczeń z dobrą techniką."],
+    ["Średniozaawansowany", "3 lata", "60–90 min", "Więcej serii i dłuższe przerwy przy ćwiczeniach głównych."],
+    ["Zaawansowany", "5 lat", "60–90 min", "Duża objętość i przerwy 3–5 min przy ciężkich seriach."],
+    // chosen intermediate, only 1 year of training → effective beginner → the beginner's recommendation
+    ["Średniozaawansowany", "1 rok", "45–60 min", "Wystarczy na rozgrzewkę i kilka ćwiczeń z dobrą techniką."],
+  ])("session length: level %s (%s) → badge on %s", (experienceLevel, trainingDuration, option, why) => {
+    open("session", { experienceLevel, trainingDuration });
+    const badges = screen.getAllByText("Polecane dla Ciebie");
+    expect(badges).toHaveLength(1);
+    expect(badges[0]!.closest("label")!.textContent).toContain(option);
+    expect(screen.getByText(why)).toBeTruthy();
+    // the client may still choose any option
+    const radios = within(screen.getByRole("radiogroup", { name: "Czas treningu" })).getAllByRole("radio") as HTMLInputElement[];
+    expect(radios.map((r) => r.value)).toEqual(["30–45 min", "45–60 min", "60–90 min", "90+ min"]);
+    expect(radios.every((r) => !r.disabled)).toBe(true);
+  });
+
+  it("priority groups: beginners get one with the new text, advanced up to three", () => {
+    open("priority", { experienceLevel: "Początkujący" });
+    expect(screen.getByText(/Wybierz jedną partię, na której chcesz się skupić\. Plan i tak rozwinie całe ciało\./)).toBeTruthy();
+    expect(screen.getAllByText(/^Priorytet \d$/)).toHaveLength(1);
+    cleanup();
+    open("priority", { experienceLevel: "Zaawansowany" });
+    expect(screen.getByText(/Wybierz do 3 partii mięśniowych/)).toBeTruthy();
+    expect(screen.getAllByText(/^Priorytet \d$/)).toHaveLength(3);
+    cleanup();
+    open("priority", { experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok" }); // effective = beginner
+    expect(screen.getAllByText(/^Priorytet \d$/)).toHaveLength(1);
+  });
+
+  it("cardio: two options only", () => {
+    open("cardioPref");
+    const group = screen.getByRole("radiogroup", { name: "Cardio w planie" });
+    expect(within(group).getAllByRole("radio").map((r) => (r as HTMLInputElement).value)).toEqual(["Tak, uwzględnij cardio w planie", "Tylko niezbędne minimum"]);
+    expect(screen.queryByText(/dodatkiem do planu/)).toBeNull();
+  });
+});

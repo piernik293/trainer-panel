@@ -97,3 +97,20 @@ describe("POST /public/survey/:token — body data limits", () => {
     expect((await submit({ trainingLocation: "Dom", equipment: "Hantle, Gumy oporowe" })).status).toBe(201);
   });
 });
+
+describe("POST /public/survey/:token — priority muscle groups by effective level", () => {
+  const three = { priorityMuscle1: "Barki", priorityMuscle2: "Pośladki", priorityMuscle3: "Plecy" };
+  it("beginners: at most one group (400 with a Polish message), one is fine", async () => {
+    const bad = await submit({ experienceLevel: "Początkujący", ...three });
+    expect(bad.status).toBe(400);
+    expect(bad.body.error).toBe("Przy tym poziomie możesz wskazać najwyżej jedną partię priorytetową.");
+    expect((await submit({ experienceLevel: "Brak aktywności fizycznej", priorityMuscle1: "Barki", priorityMuscle2: "Plecy" })).status).toBe(400);
+    expect((await submit({ experienceLevel: "Początkujący", priorityMuscle1: "Barki" })).status).toBe(201);
+    expect((await submit({ experienceLevel: "Początkujący" })).status).toBe(201);
+  });
+  it("the effective level counts: intermediate with < 2 years is a beginner here too", async () => {
+    expect((await submit({ experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok", ...three })).status).toBe(400);
+    expect((await submit({ experienceLevel: "Średniozaawansowany", trainingDuration: "3 lata", ...three })).status).toBe(201);
+    expect((await submit({ experienceLevel: "Zaawansowany", trainingDuration: "5 lat", ...three })).status).toBe(201);
+  });
+});
