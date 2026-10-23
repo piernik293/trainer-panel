@@ -53,7 +53,7 @@ tras z parametrami klienta/planu dla 4 ról oraz 31 tras GET właściciela).
 
 ## Testy (22.10, po decyzjach 1–5)
 
-- api-server (`scripts/test-api.sh`, baza testowa): 2137 OK / 4 nie (start: 1981 / 129).
+- api-server (`scripts/test-api.sh`, baza testowa): 2141 OK / 0 nie (start: 1981 / 129).
   Pozostałe 4 są poprawne i czekają na decyzje (patrz niżej): 3 × `workout-history`
   (brak indeksu `ws_one_active_per_client_day`), 1 × katalog (ćwiczenia 259/260 bez mięśni).
 - trainer-app: 715/715. client-landing: 9/9. beginner-safety + beginnerBalancingPass: zielone.
@@ -73,18 +73,17 @@ tras z parametrami klienta/planu dla 4 ról oraz 31 tras GET właściciela).
 | brak-aktywnosci-fixes, distributionHelpers | fikstura / test nieaktualny | trudność null (reguła z 22.10), liczba celów nie jest stała |
 | no-activity-fullbody-corrections | test wzmocniony | warunek AND sprzętu był po cichu pomijany |
 
-## Do decyzji
+## Decyzje zrealizowane (23.10)
 
-1. **[STOP-2] Brakujące obiekty z migracji SQL.** Schemat na GCP wgrano przez
-   `drizzle-kit push`, które pomija `lib/db/migrations/*.sql`. Brakuje:
-   `ws_one_active_per_client_day` (częściowy UNIQUE — bez niego klient może mieć
-   kilka aktywnych sesji dnia; kod na nim polega), `eel_exercise_idx`,
-   `idx_client_invitations_client_id` (wydajność). Propozycja: pg_dump, utworzyć
-   3 indeksy (addytywnie) i dopisać je do schematu Drizzle.
-2. **Katalog: ćwiczenia 259 i 260** (`suitableForNoActivity=true`) bez przypisań
-   mięśni → generator ich nie wybiera. Propozycja: 259 łydka brzuchaty 1.0 +
-   płaszczkowaty 0.5; 260 czworogłowy 1.0 + pośladkowy wielki 0.5.
-3. **[STOP-6] Mięsień „X” (id 29, Plecy)** w bazie aplikacji — ślad testu P0
-   sprzed naprawy (`POST /muscles` bez autoryzacji); bez przypisań, widoczny na
-   listach mięśni. Propozycja: usunąć.
-4. mockup-sandbox poza `pnpm run typecheck` / buildem produkcyjnym (makiety Replit).
+1. **Indeksy** `ws_one_active_per_client_day`, `eel_exercise_idx`, `idx_client_invitations_client_id`:
+   pg_dump, brak duplikatów, utworzone w bazie aplikacji i testowej, dopisane do schematu
+   Drizzle (`lib/db/src/schema/plans.ts`, `clientInvitations.ts`). Trzeba je założyć ręcznie
+   (lub `psql -f lib/db/migrations/…`) na każdej nowej bazie, bo `drizzle-kit push` pomija migracje SQL.
+2. **Katalog:** ćwiczenie 259 → łydka brzuchata 1.0 + płaszczkowaty 0.5; 260 → czworogłowy 1.0 +
+   pośladkowy wielki 0.5 (baza + `catalogueSeed.ts`, id przypisań 759–762).
+3. **Mięsień „X” (id 29)** usunięty po sprawdzeniu braku powiązań (pg_dump przed).
+4. **mockup-sandbox** wyłączony z `pnpm run typecheck` i `pnpm run build` (nic nie usunięto).
+   Build wymaga `PORT` i `BASE_PATH` (configi Vite z Replit).
+
+Wynik: api-server 2141/2141, trainer-app 715/715, client-landing 9/9, testy bezpieczeństwa
+generatora 101/101, test dymny 116 OK / 0 BŁĄD.
