@@ -41,3 +41,6 @@ export function trainingQueue(): TrainingQueue {
 const CACHE_KEY = "optimatren-trening-today:v1";
 export function cacheToday(data: unknown): void { try { window.localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch { /* ignore */ } }
 export function readCachedToday<T>(): T | null { try { const r = window.localStorage.getItem(CACHE_KEY); return r ? (JSON.parse(r) as T) : null; } catch { return null; } }
+
+/** Tests only: forget the in-memory queue so the next call re-reads storage. */
+export function resetTrainingQueueForTests(): void { queue = null; }

@@ -40,6 +40,7 @@ export function createQueue(deps: {
   const listeners = new Set<() => void>();
   const emit = () => listeners.forEach((l) => l());
   let flushing: Promise<void> | null = null;
+  let again = false;
 
   function enqueue(op: QueueOp) {
     if (op.kind === "set" && op.slot) {
@@ -78,8 +79,18 @@ export function createQueue(deps: {
 
   return {
     enqueue,
+    /**
+     * Sends what is queued. A call during a running flush makes it go around once more, so
+     * operations added right before it ends are never stranded (flushing is cleared in the same
+     * synchronous step that decides to stop).
+     */
     flush(): Promise<void> {
-      if (!flushing) flushing = run().finally(() => { flushing = null; });
+      if (flushing) { again = true; return flushing; }
+      flushing = (async () => {
+        try {
+          do { again = false; await run(); } while (again);
+        } finally { flushing = null; }
+      })();
       return flushing;
     },
     pending: () => state.ops.length,

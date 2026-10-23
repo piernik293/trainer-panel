@@ -62,6 +62,14 @@ describe("offline queue", () => {
     await q.flush();
     expect(q.pending()).toBe(0); expect(q.rejected()).toBe(1);
   });
+  it("an operation enqueued while a flush is finishing is still sent", async () => {
+    const sent: string[] = [];
+    const q = createQueue({ storage: mem(), send: async (o): Promise<SendResult> => { sent.push(o.id); return { ok: true, data: { id: 1 } }; } });
+    void q.flush(); // empty flush in flight
+    q.enqueue(op("start", "S1"));
+    await q.flush();
+    expect(sent).toEqual(["S1"]);
+  });
   it("works with unavailable storage", async () => {
     const broken = { getItem: () => { throw new Error("x"); }, setItem: () => { throw new Error("x"); } };
     const q = createQueue({ storage: broken, send: async () => ({ ok: true, data: { id: 1 } }) });
