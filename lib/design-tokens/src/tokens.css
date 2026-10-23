@@ -1,0 +1,311 @@
+/*
+ * Design tokens — styl "B — Energia". One source for trainer-app and client-landing.
+ * Import from an app's index.css right after `@import 'tailwindcss'`.
+ * Contrast of every text/background pair is checked (WCAG ≥ 4.5:1) — see
+ * docs/STYL-B.md. Change values here, never in components.
+ *
+ * Dark mode: the `.dark` class on <html>, set by applyTheme() from ./index.ts
+ * (Jasny / Ciemny / Jak w systemie).
+ */
+
+:root {
+  --bg: #fafaf9;
+  --surface: #ffffff;
+  --surface-2: #f0efed;
+  --border: #e7e5e4;
+  --border-strong: #d6d3d1;
+  --text: #1c1917;
+  --text-muted: #57534e;
+
+  --accent: #c2410c;
+  --accent-hover: #9a330a;
+  --accent-soft: #fff1ea;
+  --accent-text: #ffffff;
+
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+  --danger-text: #ffffff; /* text on a solid --danger */
+  --warning: #854d0e;
+  --warning-soft: #fef3c7;
+  --warning-text: #ffffff;
+  /* Spec value #E7F6EC gave 4.49:1 with --success — lightened to pass 4.5:1. */
+  --success: #15803d;
+  --success-soft: #edf8f0;
+  --success-text: #ffffff;
+
+  --font-app: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --radius: 8px;
+  --radius-pill: 4px;
+
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #121212;
+  --surface: #1c1b1a;
+  --surface-2: #262524;
+  --border: #2e2c2a;
+  --border-strong: #3d3a37;
+  --text: #f5f5f4;
+  --text-muted: #a8a29e;
+
+  --accent: #f26b2a;
+  --accent-hover: #ff8a4c;
+  --accent-soft: #3a2116;
+  --accent-text: #1c1917;
+
+  --danger: #f87171;
+  --danger-soft: #3b1614;
+  --danger-text: #1c1917;
+  --warning: #facc15;
+  --warning-soft: #33290a;
+  --warning-text: #1c1917;
+  --success: #4ade80;
+  --success-soft: #0f2a1a;
+  --success-text: #1c1917;
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  /* Token utilities: bg-surface, text-text-muted, bg-success-soft, … */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-brand: var(--accent);
+  --color-brand-hover: var(--accent-hover);
+  --color-brand-soft: var(--accent-soft);
+  --color-brand-text: var(--accent-text);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-text: var(--danger-text);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-text: var(--warning-text);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-text: var(--success-text);
+
+  /* shadcn/ui names used by the existing components → tokens */
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-border: var(--border);
+  --color-input: var(--border-strong);
+  --color-ring: var(--accent);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-card-border: var(--border);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--text);
+  --color-popover-border: var(--border);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-text);
+  --color-primary-border: var(--accent-hover);
+  --color-secondary: var(--surface);
+  --color-secondary-foreground: var(--text);
+  --color-secondary-border: var(--border-strong);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--text-muted);
+  --color-muted-border: var(--border);
+  /* shadcn "accent" = neutral hover background, not the brand colour */
+  --color-accent: var(--surface-2);
+  --color-accent-foreground: var(--text);
+  --color-accent-border: var(--border);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--danger-text);
+  --color-destructive-border: var(--danger);
+  --color-sidebar: var(--surface);
+  --color-sidebar-foreground: var(--text);
+  --color-sidebar-border: var(--border);
+  --color-sidebar-primary: var(--accent-soft);
+  --color-sidebar-primary-foreground: var(--accent);
+  --color-sidebar-primary-border: var(--accent-soft);
+  --color-sidebar-accent: var(--surface-2);
+  --color-sidebar-accent-foreground: var(--text);
+  --color-sidebar-accent-border: var(--border);
+  --color-sidebar-ring: var(--accent);
+  --color-chart-1: var(--accent);
+  --color-chart-2: var(--text-muted);
+  --color-chart-3: var(--success);
+  --color-chart-4: var(--warning);
+  --color-chart-5: var(--border-strong);
+
+  /*
+   * Hard-coded Tailwind palette classes still in the screens (bg-green-100,
+   * text-amber-700, …) resolve to the status tokens, so they follow the style
+   * and dark mode. Light shades → soft background, mid → border, dark → text.
+   * New code should use the token utilities above.
+   */
+  --color-green-50: var(--success-soft); --color-green-100: var(--success-soft); --color-green-200: var(--success-soft);
+  --color-green-300: var(--success); --color-green-400: var(--success); --color-green-500: var(--success);
+  --color-green-600: var(--success); --color-green-700: var(--success); --color-green-800: var(--success);
+  --color-green-900: var(--success); --color-green-950: var(--success-soft);
+  --color-emerald-50: var(--success-soft); --color-emerald-100: var(--success-soft); --color-emerald-200: var(--success-soft);
+  --color-emerald-300: var(--success); --color-emerald-400: var(--success); --color-emerald-500: var(--success);
+  --color-emerald-600: var(--success); --color-emerald-700: var(--success); --color-emerald-800: var(--success);
+  --color-emerald-900: var(--success); --color-emerald-950: var(--success-soft);
+  --color-teal-50: var(--success-soft); --color-teal-100: var(--success-soft); --color-teal-200: var(--success-soft);
+  --color-teal-300: var(--success); --color-teal-400: var(--success); --color-teal-500: var(--success);
+  --color-teal-600: var(--success); --color-teal-700: var(--success); --color-teal-800: var(--success);
+  --color-teal-900: var(--success); --color-teal-950: var(--success-soft);
+  --color-lime-50: var(--success-soft); --color-lime-100: var(--success-soft); --color-lime-200: var(--success-soft);
+  --color-lime-300: var(--success); --color-lime-400: var(--success); --color-lime-500: var(--success);
+  --color-lime-600: var(--success); --color-lime-700: var(--success); --color-lime-800: var(--success);
+  --color-lime-900: var(--success); --color-lime-950: var(--success-soft);
+
+  --color-amber-50: var(--warning-soft); --color-amber-100: var(--warning-soft); --color-amber-200: var(--warning-soft);
+  --color-amber-300: var(--warning); --color-amber-400: var(--warning); --color-amber-500: var(--warning);
+  --color-amber-600: var(--warning); --color-amber-700: var(--warning); --color-amber-800: var(--warning);
+  --color-amber-900: var(--warning); --color-amber-950: var(--warning-soft);
+  --color-yellow-50: var(--warning-soft); --color-yellow-100: var(--warning-soft); --color-yellow-200: var(--warning-soft);
+  --color-yellow-300: var(--warning); --color-yellow-400: var(--warning); --color-yellow-500: var(--warning);
+  --color-yellow-600: var(--warning); --color-yellow-700: var(--warning); --color-yellow-800: var(--warning);
+  --color-yellow-900: var(--warning); --color-yellow-950: var(--warning-soft);
+  /* orange = warning, not the brand accent: the accent stays rare */
+  --color-orange-50: var(--warning-soft); --color-orange-100: var(--warning-soft); --color-orange-200: var(--warning-soft);
+  --color-orange-300: var(--warning); --color-orange-400: var(--warning); --color-orange-500: var(--warning);
+  --color-orange-600: var(--warning); --color-orange-700: var(--warning); --color-orange-800: var(--warning);
+  --color-orange-900: var(--warning); --color-orange-950: var(--warning-soft);
+
+  --color-red-50: var(--danger-soft); --color-red-100: var(--danger-soft); --color-red-200: var(--danger-soft);
+  --color-red-300: var(--danger); --color-red-400: var(--danger); --color-red-500: var(--danger);
+  --color-red-600: var(--danger); --color-red-700: var(--danger); --color-red-800: var(--danger);
+  --color-red-900: var(--danger); --color-red-950: var(--danger-soft);
+  --color-rose-50: var(--danger-soft); --color-rose-100: var(--danger-soft); --color-rose-200: var(--danger-soft);
+  --color-rose-300: var(--danger); --color-rose-400: var(--danger); --color-rose-500: var(--danger);
+  --color-rose-600: var(--danger); --color-rose-700: var(--danger); --color-rose-800: var(--danger);
+  --color-rose-900: var(--danger); --color-rose-950: var(--danger-soft);
+
+  /* blue / violet / sky … (informational) and greys → neutral tokens */
+  --color-blue-50: var(--surface-2); --color-blue-100: var(--surface-2); --color-blue-200: var(--border);
+  --color-blue-300: var(--border-strong); --color-blue-400: var(--text-muted); --color-blue-500: var(--text-muted);
+  --color-blue-600: var(--text); --color-blue-700: var(--text); --color-blue-800: var(--text);
+  --color-blue-900: var(--text); --color-blue-950: var(--surface-2);
+  --color-sky-50: var(--surface-2); --color-sky-100: var(--surface-2); --color-sky-200: var(--border);
+  --color-sky-300: var(--border-strong); --color-sky-400: var(--text-muted); --color-sky-500: var(--text-muted);
+  --color-sky-600: var(--text); --color-sky-700: var(--text); --color-sky-800: var(--text);
+  --color-sky-900: var(--text); --color-sky-950: var(--surface-2);
+  --color-indigo-50: var(--surface-2); --color-indigo-100: var(--surface-2); --color-indigo-200: var(--border);
+  --color-indigo-300: var(--border-strong); --color-indigo-400: var(--text-muted); --color-indigo-500: var(--text-muted);
+  --color-indigo-600: var(--text); --color-indigo-700: var(--text); --color-indigo-800: var(--text);
+  --color-indigo-900: var(--text); --color-indigo-950: var(--surface-2);
+  --color-violet-50: var(--surface-2); --color-violet-100: var(--surface-2); --color-violet-200: var(--border);
+  --color-violet-300: var(--border-strong); --color-violet-400: var(--text-muted); --color-violet-500: var(--text-muted);
+  --color-violet-600: var(--text); --color-violet-700: var(--text); --color-violet-800: var(--text);
+  --color-violet-900: var(--text); --color-violet-950: var(--surface-2);
+  --color-purple-50: var(--surface-2); --color-purple-100: var(--surface-2); --color-purple-200: var(--border);
+  --color-purple-300: var(--border-strong); --color-purple-400: var(--text-muted); --color-purple-500: var(--text-muted);
+  --color-purple-600: var(--text); --color-purple-700: var(--text); --color-purple-800: var(--text);
+  --color-purple-900: var(--text); --color-purple-950: var(--surface-2);
+  --color-cyan-50: var(--surface-2); --color-cyan-100: var(--surface-2); --color-cyan-200: var(--border);
+  --color-cyan-300: var(--border-strong); --color-cyan-400: var(--text-muted); --color-cyan-500: var(--text-muted);
+  --color-cyan-600: var(--text); --color-cyan-700: var(--text); --color-cyan-800: var(--text);
+  --color-cyan-900: var(--text); --color-cyan-950: var(--surface-2);
+  --color-pink-50: var(--surface-2); --color-pink-100: var(--surface-2); --color-pink-200: var(--border);
+  --color-pink-300: var(--border-strong); --color-pink-400: var(--text-muted); --color-pink-500: var(--text-muted);
+  --color-pink-600: var(--text); --color-pink-700: var(--text); --color-pink-800: var(--text);
+  --color-pink-900: var(--text); --color-pink-950: var(--surface-2);
+  --color-slate-50: var(--surface-2); --color-slate-100: var(--surface-2); --color-slate-200: var(--border);
+  --color-slate-300: var(--border-strong); --color-slate-400: var(--text-muted); --color-slate-500: var(--text-muted);
+  --color-slate-600: var(--text-muted); --color-slate-700: var(--text); --color-slate-800: var(--text);
+  --color-slate-900: var(--text); --color-slate-950: var(--text);
+  --color-gray-50: var(--surface-2); --color-gray-100: var(--surface-2); --color-gray-200: var(--border);
+  --color-gray-300: var(--border-strong); --color-gray-400: var(--text-muted); --color-gray-500: var(--text-muted);
+  --color-gray-600: var(--text-muted); --color-gray-700: var(--text); --color-gray-800: var(--text);
+  --color-gray-900: var(--text); --color-gray-950: var(--text);
+  --color-zinc-50: var(--surface-2); --color-zinc-100: var(--surface-2); --color-zinc-200: var(--border);
+  --color-zinc-300: var(--border-strong); --color-zinc-400: var(--text-muted); --color-zinc-500: var(--text-muted);
+  --color-zinc-600: var(--text-muted); --color-zinc-700: var(--text); --color-zinc-800: var(--text);
+  --color-zinc-900: var(--text); --color-zinc-950: var(--text);
+  --color-neutral-50: var(--surface-2); --color-neutral-100: var(--surface-2); --color-neutral-200: var(--border);
+  --color-neutral-300: var(--border-strong); --color-neutral-400: var(--text-muted); --color-neutral-500: var(--text-muted);
+  --color-neutral-600: var(--text-muted); --color-neutral-700: var(--text); --color-neutral-800: var(--text);
+  --color-neutral-900: var(--text); --color-neutral-950: var(--text);
+  --color-stone-50: var(--surface-2); --color-stone-100: var(--surface-2); --color-stone-200: var(--border);
+  --color-stone-300: var(--border-strong); --color-stone-400: var(--text-muted); --color-stone-500: var(--text-muted);
+  --color-stone-600: var(--text-muted); --color-stone-700: var(--text); --color-stone-800: var(--text);
+  --color-stone-900: var(--text); --color-stone-950: var(--text);
+
+  --font-sans: var(--font-app);
+  --font-display: var(--font-app);
+
+  /* 8 px for cards, buttons and inputs; 4 px for status pills */
+  --radius-xs: 4px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
+  --radius-2xl: 8px;
+
+  /* No shadows (cards = surface + 1 px border) */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow: 0 0 #0000;
+  --shadow-md: 0 0 #0000;
+  --shadow-lg: 0 0 #0000;
+  --shadow-xl: 0 0 #0000;
+  --shadow-2xl: 0 0 #0000;
+
+  /* Type scale 12 / 14 / 16 / 20 / 28–32 */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-xl: 20px;
+  --text-2xl: 28px;
+  --text-3xl: 28px;
+  --text-4xl: 32px;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    background: var(--bg);
+  }
+  body {
+    font-family: var(--font-app);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-app);
+  }
+  h1 {
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  h2, h3 {
+    font-weight: 700;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-app);
+  }
+  /* Headings are 800 even when a screen still says font-bold / font-semibold */
+  h1.font-bold, h1.font-semibold, h1.font-display, h2.font-display {
+    font-weight: 800;
+  }
+  /* Section label: 12 px, 700, uppercase, 0.06em */
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+  /* Numbers in stat tiles */
+  .stat-number {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+}

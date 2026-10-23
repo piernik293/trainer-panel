@@ -20,6 +20,9 @@
     },
     {
       "path": "../../lib/survey-config"
+    },
+    {
+      "path": "../../lib/design-tokens"
     }
   ]
 }
