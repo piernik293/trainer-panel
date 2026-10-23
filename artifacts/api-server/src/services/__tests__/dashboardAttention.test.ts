@@ -75,7 +75,7 @@ describe("buildAttention", () => {
     );
     expect(r.items.map((i) => i.clientId)).toEqual([3, 4, 1]); // soonest first
     expect(r.items[0].reasonLabel).toBe("Plan zakończony");
-    expect(r.items[1].description).toBe("Plan kończy się dziś.");
+    expect(r.items[1].description).toBe("Data zakończenia planu: 22.10.");
   });
 
   it("invites: only older than 3 days and not expired", () => {

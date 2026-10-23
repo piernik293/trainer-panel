@@ -134,14 +134,8 @@ export function buildAttention(input: AttentionInput): {
       .sort((a, b) => (a.endDate! < b.endDate! ? -1 : 1))[0];
     if (ending?.endDate) {
       const left = dayNumber(ending.endDate) - todayNo;
-      const description =
-        left < 0
-          ? "Plan już się zakończył."
-          : left === 0
-            ? "Plan kończy się dziś."
-            : left === 1
-              ? "Plan kończy się jutro."
-              : `Plan kończy się za ${left} dni.`;
+      const [, mm, dd] = ending.endDate.split("-");
+      const description = `Data zakończenia planu: ${dd}.${mm}.`;
       consider(c.id, {
         kind: "plan_ending",
         clientId: c.id,
