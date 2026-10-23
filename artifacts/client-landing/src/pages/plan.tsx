@@ -1,17 +1,17 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useUser, SignIn } from "@clerk/react";
-import { Loader2, CheckCircle2, ChevronDown, ChevronRight, ChevronLeft, Dumbbell, Flame, Zap, Activity, Shield, Save, RotateCcw, CalendarDays } from "lucide-react";
+import { Loader2, CheckCircle2, ChevronRight, ChevronLeft, Dumbbell, Activity, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { TodayCard } from "@/components/training/TodayCard";
+import { TrainingFlow } from "@/components/training/TrainingFlow";
+import type { TrainingDay } from "@/lib/training/types";
 import { ClientPortalNav, type PortalNavTarget } from "@/components/ClientPortalNav";
 import { cn } from "@/lib/utils";
 import {
   humanizeError,
   statusMessage,
   NETWORK_ERROR_MESSAGE,
-  SAVE_WORKOUT_ERROR_MESSAGE,
   PLAN_LOAD_ERROR_MESSAGE,
 } from "@/lib/userError";
 import {
@@ -278,18 +278,6 @@ const SUGGESTION_LABELS: Record<ProgressionSuggestion, string> = {
   repeat_or_reduce: "Sugestia: powtórz lub zmniejsz ciężar",
 };
 
-function formatPrevious(prev: PrevResult): string {
-  const parts: string[] = [];
-  if (prev.weightKg != null && prev.weightKg !== "") parts.push(`${parseFloat(prev.weightKg)} kg`);
-  if (prev.repsCompleted != null) {
-    const sets = prev.setsCompleted ?? 1;
-    parts.push(Array.from({ length: Math.max(sets, 1) }, () => `${prev.repsCompleted}`).join(", "));
-  } else if (prev.setsCompleted != null) {
-    parts.push(`${prev.setsCompleted} serii`);
-  }
-  return parts.join(" × ");
-}
-
 function formatDate(iso: string | null): string {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" });
@@ -300,19 +288,6 @@ function formatDateTime(iso: string | null): string {
   const d = new Date(iso);
   return d.toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" }) +
     ", " + d.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
-}
-
-interface RampItem {
-  name: string;
-  detail: string;
-  description: string;
-}
-
-interface RampBlock {
-  phase: string;
-  label: string;
-  goal: string;
-  items: RampItem[];
 }
 
 // ─── Format helpers ───────────────────────────────────────────────────────────
@@ -330,13 +305,6 @@ function formatPrescription(ex: PlanExercise): string {
   return `${sets} serie${reps ? ` × ${reps}` : ""}${rir}${rest}`;
 }
 
-
-const PHASE_ICONS: Record<string, React.ReactNode> = {
-  Raise: <Flame className="w-4 h-4 text-orange-400" />,
-  Activate: <Zap className="w-4 h-4 text-yellow-400" />,
-  Mobilize: <Activity className="w-4 h-4 text-blue-400" />,
-  Potentiate: <Shield className="w-4 h-4 text-green-400" />,
-};
 
 // ─── SignInGate ────────────────────────────────────────────────────────────────
 // Shown when the client is not signed in. Uses Clerk's embedded sign-in
@@ -359,664 +327,33 @@ function SignInGate() {
   );
 }
 
-// ─── RampWarmup ───────────────────────────────────────────────────────────────
+// ─── DayPreview (read-only) ───────────────────────────────────────────────────
+// The plan screen only shows the plan. Results are logged in the "Trening" flow
+// (components/training), never here.
 
-function RampWarmup({ sessionId }: { sessionId: number }) {
-  const [open, setOpen] = useState(false);
-  const [blocks, setBlocks] = useState<RampBlock[] | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const load = async () => {
-    if (blocks) { setOpen(!open); return; }
-    setLoading(true);
-    try {
-      const data = await apiFetch<{ dayType: string; blocks: RampBlock[] }>(`/client-portal/sessions/${sessionId}/warmup`);
-      setBlocks(data.blocks);
-      setOpen(true);
-    } catch {
-      setOpen(!open);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+function DayPreview({ day, onBack }: { day: PlanDay; onBack: () => void }) {
   return (
-    <div className="border border-border bg-card/50 rounded-lg mb-6">
-      <button
-        type="button"
-        onClick={load}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-card transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <Flame className="w-5 h-5 text-orange-400" />
-          <div>
-            <p className="font-semibold text-sm">Rozgrzewka RAMP</p>
-            <p className="text-xs text-muted-foreground">Raise · Activate · Mobilize · Potentiate</p>
-          </div>
+    <div className="min-h-screen bg-background pb-16 text-foreground">
+      <div className="mx-auto max-w-2xl space-y-5 px-4 pt-8">
+        <button type="button" onClick={onBack} className="flex min-h-11 items-center gap-1 text-sm font-semibold text-muted-foreground">
+          <ChevronLeft className="h-4 w-4" aria-hidden /> Plan
+        </button>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{day.dayName ?? `Dzień ${day.dayOrder}`}</h1>
+          {day.subtitle && <p className="text-sm text-muted-foreground">{day.subtitle}</p>}
+          <p className="mt-1 text-xs text-muted-foreground">Podgląd planu. Trening zaczniesz na ekranie „Dziś”.</p>
         </div>
-        {loading ? (
-          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-        ) : open ? (
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-        )}
-      </button>
-
-      {open && blocks && (
-        <div className="px-5 pb-5 space-y-4 border-t border-border pt-4">
-          {blocks.map((block) => (
-            <div key={block.phase}>
-              <div className="flex items-center gap-2 mb-2">
-                {PHASE_ICONS[block.phase]}
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{block.phase} — {block.label}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mb-2 italic">{block.goal}</p>
-              <div className="space-y-1.5">
-                {block.items.map((item, i) => (
-                  <div key={i} className="flex items-start gap-3 text-sm">
-                    <span className="text-primary font-bold text-xs mt-0.5 w-4 shrink-0">{i + 1}.</span>
-                    <div>
-                      <span className="font-medium">{item.name}</span>
-                      <span className="text-muted-foreground ml-2 text-xs">{item.detail}</span>
-                      <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        <ol className="space-y-2">
+          {day.exercises.map((ex, i) => (
+            <li key={ex.id} className="rounded-lg border border-border bg-card px-4 py-3">
+              <p className="font-semibold">{i + 1}. {ex.exerciseName}</p>
+              <p className="text-sm text-muted-foreground">{formatPrescription(ex)}</p>
+              {ex.clientInstructions && <p className="mt-1 text-sm text-foreground/90">{ex.clientInstructions}</p>}
+            </li>
           ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── ExerciseLogRow ───────────────────────────────────────────────────────────
-
-interface LogState {
-  setsCompleted: string;
-  repsCompleted: string;
-  weightKg: string;
-  rir: string;
-  note: string;
-  isCompleted: boolean;
-}
-
-function ExerciseLogRow({
-  ex,
-  sessionId,
-  initialLog,
-  previous,
-  onLogSaved,
-}: {
-  ex: PlanExercise;
-  sessionId: number;
-  initialLog: ExerciseLog | null;
-  previous: PrevResult | null;
-  onLogSaved: (log: ExerciseLog) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [log, setLog] = useState<LogState>({
-    setsCompleted: initialLog?.setsCompleted?.toString() ?? "",
-    repsCompleted: initialLog?.repsCompleted?.toString() ?? "",
-    // Previous load is only a starting suggestion — prefilled in the input,
-    // editable, never auto-saved and never marks anything as completed.
-    weightKg: initialLog?.weightKg ?? (previous?.weightKg != null ? String(parseFloat(previous.weightKg)) : ""),
-    rir: initialLog?.rir?.toString() ?? "",
-    note: initialLog?.note ?? "",
-    isCompleted: initialLog?.isCompleted ?? false,
-  });
-
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const save = useCallback(async (data: LogState) => {
-    setSaving(true);
-    setSaved(false);
-    setSaveError(null);
-    try {
-      const result = await apiFetch<ExerciseLog>(
-        `/client-portal/sessions/${sessionId}/exercises/${ex.id}`,
-        {
-          method: "PUT",
-          body: JSON.stringify({
-            setsCompleted: data.setsCompleted !== "" ? parseInt(data.setsCompleted) : null,
-            repsCompleted: data.repsCompleted !== "" ? parseInt(data.repsCompleted) : null,
-            weightKg: data.weightKg !== "" ? parseFloat(data.weightKg) : null,
-            rir: data.rir !== "" ? parseInt(data.rir) : null,
-            note: data.note || null,
-            isCompleted: data.isCompleted,
-          }),
-        },
-      );
-      onLogSaved(result);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
-      // Entered values stay on screen — state is local; only the save failed.
-      console.error("Workout save failed:", err);
-      setSaveError(SAVE_WORKOUT_ERROR_MESSAGE);
-    } finally {
-      setSaving(false);
-    }
-  }, [sessionId, ex.id, onLogSaved]);
-
-  const scheduleSave = (next: LogState) => {
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => save(next), 800);
-  };
-
-  const update = (field: keyof LogState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const next = { ...log, [field]: e.target.value };
-    setLog(next);
-    scheduleSave(next);
-  };
-
-  const toggleComplete = () => {
-    const next = { ...log, isCompleted: !log.isCompleted };
-    setLog(next);
-    save(next);
-  };
-
-  const isLogged = log.setsCompleted !== "" || log.repsCompleted !== "" || log.weightKg !== "" || log.isCompleted;
-
-  return (
-    <div className={cn("border border-border rounded-lg transition-colors", log.isCompleted && "border-primary/30 bg-primary/5")}>
-      {/* Header row */}
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-card transition-colors"
-      >
-        <div
-          className={cn(
-            "w-5 h-5 shrink-0 rounded-lg border flex items-center justify-center transition-colors",
-            log.isCompleted ? "border-primary bg-primary" : "border-input bg-transparent"
-          )}
-          onClick={(e) => { e.stopPropagation(); toggleComplete(); }}
-        >
-          {log.isCompleted && <CheckCircle2 className="w-3 h-3 text-primary-foreground" />}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className={cn("font-medium text-sm", log.isCompleted && "line-through text-muted-foreground")}>
-            {ex.exerciseName}
-          </p>
-          <p className="text-xs text-muted-foreground">{formatPrescription(ex)}</p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {isLogged && !log.isCompleted && (
-            <Badge variant="outline" className="text-xs px-1.5 py-0 border-yellow-500/30 text-yellow-500">w trakcie</Badge>
-          )}
-          {saving && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
-          {saved && <Save className="w-3.5 h-3.5 text-green-500" />}
-          {open ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-        </div>
-      </button>
-
-      {/* Save failure — entered values are preserved (state is local). */}
-      {saveError && (
-        <p role="alert" className="px-4 pb-2 text-xs text-red-400">{saveError}</p>
-      )}
-
-      {/* Log form */}
-      {open && (
-        <div className="px-4 pb-4 pt-1 border-t border-border space-y-3">
-          {ex.clientInstructions && (
-            <p className="text-xs text-primary bg-primary/5 px-3 py-2 border border-primary/10">{ex.clientInstructions}</p>
-          )}
-          {previous && (
-            <div className="text-xs px-3 py-2 border border-border rounded-lg bg-card space-y-0.5">
-              <p className="text-muted-foreground">Poprzednio: <span className="text-foreground font-medium">{formatPrevious(previous) || "—"}</span></p>
-              {previous.suggestion && (
-                <p className={cn(
-                  previous.suggestion === "increase" && "text-green-400",
-                  previous.suggestion === "maintain" && "text-muted-foreground",
-                  previous.suggestion === "repeat_or_reduce" && "text-yellow-500",
-                )}>
-                  {SUGGESTION_LABELS[previous.suggestion]}
-                </p>
-              )}
-            </div>
-          )}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Serie wykonane</label>
-              <Input
-                type="number"
-                min={0}
-                placeholder={`z ${ex.workingSets}`}
-                value={log.setsCompleted}
-                onChange={update("setsCompleted")}
-                className="h-9 text-sm bg-background/50 border-border focus-visible:border-primary rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Powtórzenia</label>
-              <Input
-                type="number"
-                min={0}
-                placeholder="np. 10"
-                value={log.repsCompleted}
-                onChange={update("repsCompleted")}
-                className="h-9 text-sm bg-background/50 border-border focus-visible:border-primary rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Ciężar (kg)</label>
-              <Input
-                type="number"
-                min={0}
-                step={0.5}
-                placeholder="np. 60"
-                value={log.weightKg}
-                onChange={update("weightKg")}
-                className="h-9 text-sm bg-background/50 border-border focus-visible:border-primary rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">RIR</label>
-              <Input
-                type="number"
-                min={0}
-                max={10}
-                placeholder={ex.rir != null ? String(ex.rir) : "0–5"}
-                value={log.rir}
-                onChange={update("rir")}
-                className="h-9 text-sm bg-background/50 border-border focus-visible:border-primary rounded-lg"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Notatka</label>
-            <Textarea
-              placeholder="np. zmęczony, zmniejszyłem ciężar..."
-              value={log.note}
-              onChange={update("note")}
-              className="min-h-[60px] text-sm bg-background/50 border-border focus-visible:border-primary rounded-lg resize-none"
-            />
-          </div>
-          <Button
-            size="sm"
-            variant={log.isCompleted ? "outline" : "default"}
-            onClick={toggleComplete}
-            className="w-full rounded-lg"
-          >
-            {log.isCompleted ? (
-              <><RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Oznacz jako niewykonane</>
-            ) : (
-              <><CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Oznacz jako wykonane</>
-            )}
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── SessionView ──────────────────────────────────────────────────────────────
-
-function SessionView({
-  day,
-  planId,
-  onBack,
-}: {
-  day: PlanDay;
-  planId: number;
-  onBack: () => void;
-}) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [previous, setPrevious] = useState<Record<number, PrevResult>>({});
-  const [loading, setLoading] = useState(true);
-  const [openError, setOpenError] = useState<string | null>(null);
-  const [completing, setCompleting] = useState(false);
-  const [completeError, setCompleteError] = useState<string | null>(null);
-  const [showSummary, setShowSummary] = useState(false);
-  const [retryCounter, setRetryCounter] = useState(0);
-
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setOpenError(null);
-      try {
-        // Server-side get-or-create: returns the single active (not completed)
-        // session for this day, or creates a fresh one. Completed sessions are
-        // never reopened — they stay in history untouched.
-        const opened = await apiFetch<OpenSessionResponse>("/client-portal/sessions/open", {
-          method: "POST",
-          body: JSON.stringify({ planId, planDayId: day.id }),
-        });
-        setSession(opened.session);
-        setPrevious(opened.previous ?? {});
-      } catch (err) {
-        console.error("Session open failed:", err);
-        setOpenError(humanizeError(err, "Nie udało się załadować sesji. Spróbuj ponownie."));
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [planId, day.id, retryCounter]);
-
-  const handleLogSaved = (log: ExerciseLog) => {
-    setSession((s) => {
-      if (!s) return s;
-      const logs = s.logs.filter((l) => l.planExerciseId !== log.planExerciseId);
-      return { ...s, logs: [...logs, log] };
-    });
-  };
-
-  const handleComplete = async () => {
-    if (!session) return;
-    setCompleting(true);
-    setCompleteError(null);
-    try {
-      const updated = await apiFetch<Session>(`/client-portal/sessions/${session.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ isCompleted: !session.isCompleted }),
-      });
-      setSession((s) => (s ? { ...s, isCompleted: updated.isCompleted, completedAt: updated.completedAt } : s));
-    } catch (err) {
-      console.error("Session complete failed:", err);
-      setCompleteError(humanizeError(err, SAVE_WORKOUT_ERROR_MESSAGE));
-    } finally {
-      setCompleting(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-6">
-        <div className="text-center space-y-4" role="alert">
-          <p className="font-semibold">Nie udało się wykonać tej operacji</p>
-          <p className="text-sm text-muted-foreground">
-            {openError ?? "Nie udało się załadować sesji. Spróbuj ponownie."}
-          </p>
-          <div className="flex gap-2 justify-center">
-            <Button onClick={() => setRetryCounter((c) => c + 1)} className="rounded-lg">
-              Spróbuj ponownie
-            </Button>
-            <Button variant="outline" onClick={onBack} className="rounded-lg">Wróć</Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const completedCount = session.logs.filter((l) => l.isCompleted).length;
-  const completedSets = session.logs.filter((l) => l.isCompleted).reduce((sum, l) => sum + (l.setsCompleted ?? 0), 0);
-  const totalCount = day.exercises.length;
-  const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-
-  return (
-    <div className="min-h-screen bg-background text-foreground pb-16">
-      {/* Header */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
-          <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
-            <ChevronRight className="w-4 h-4 rotate-180" />
-            Powrót
-          </button>
-          <div className="text-center min-w-0 flex-1">
-            <p className="font-semibold text-sm truncate">{day.dayName ?? `Dzień ${day.dayOrder}`}</p>
-            {day.subtitle && <p className="text-xs text-muted-foreground">{day.subtitle}</p>}
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-xs text-muted-foreground">{completedCount}/{totalCount}</p>
-            <p className="text-xs font-bold text-primary">{pct}%</p>
-          </div>
-        </div>
-        {/* Progress bar */}
-        <div className="max-w-2xl mx-auto mt-2">
-          <div className="h-1 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-2xl mx-auto px-4 pt-6 space-y-4">
-        {/* Completion banner */}
-        {session.isCompleted && (
-          <div className="border border-primary/30 bg-primary/5 px-4 py-4 space-y-3">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
-              <div className="min-w-0">
-                <p className="text-sm font-medium">Trening zakończony! Świetna robota.</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Ukończono {completedCount} z {totalCount} ćwiczeń
-                  {completedSets > 0 ? ` · ${completedSets} serii` : ""}
-                </p>
-                {session.completedAt && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{formatDateTime(session.completedAt)}</p>
-                )}
-              </div>
-            </div>
-
-            <SessionFeedbackForm session={session} onSaved={(s) => setSession((cur) => (cur ? { ...cur, ...s } : cur))} />
-
-            <Button
-              onClick={onBack}
-              className="w-full h-11 rounded-lg font-semibold uppercase tracking-wide"
-            >
-              Wróć do planu
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowSummary(true)}
-              className="w-full h-9 rounded-lg text-sm"
-            >
-              Zobacz podsumowanie
-            </Button>
-            <button
-              type="button"
-              onClick={handleComplete}
-              disabled={completing}
-              className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
-            >
-              {completing ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <><RotateCcw className="w-3.5 h-3.5" /> Cofnij zakończenie treningu</>
-              )}
-            </button>
-          </div>
-        )}
-
-        {showSummary && (
-          <SessionDetailReadOnly sessionId={session.id} onClose={() => setShowSummary(false)} />
-        )}
-
-        {/* RAMP Warm-up */}
-        <RampWarmup sessionId={session.id} />
-
-        {/* Exercise list */}
-        <div className="space-y-2">
-          <h2 className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground font-semibold mb-3">Ćwiczenia</h2>
-          {day.exercises.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Brak ćwiczeń w tym dniu.</p>
-          ) : (
-            day.exercises.map((ex) => (
-              <ExerciseLogRow
-                key={`${session.id}-${ex.id}`}
-                ex={ex}
-                sessionId={session.id}
-                initialLog={session.logs.find((l) => l.planExerciseId === ex.id) ?? null}
-                previous={previous[ex.id] ?? null}
-                onLogSaved={handleLogSaved}
-              />
-            ))
-          )}
-        </div>
-
-        {/* Complete session button */}
-        {!session.isCompleted && (
-          <div className="pt-4 space-y-2">
-            {completeError && (
-              <p role="alert" className="text-xs text-red-400 text-center">{completeError}</p>
-            )}
-            <Button
-              onClick={handleComplete}
-              disabled={completing}
-              className="w-full h-12 rounded-lg font-semibold uppercase tracking-wide"
-            >
-              {completing ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <><CheckCircle2 className="w-4 h-4 mr-2" /> Zakończ trening</>
-              )}
-            </Button>
-          </div>
-        )}
+        </ol>
       </div>
     </div>
-  );
-}
-
-// ─── SessionFeedbackForm ──────────────────────────────────────────────────────
-// Optional post-workout feedback — auto-saved, never blocks completion.
-
-function SessionFeedbackForm({
-  session,
-  onSaved,
-}: {
-  session: Session;
-  onSaved: (patch: Partial<Session>) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [feedbackError, setFeedbackError] = useState<string | null>(null);
-
-  const patch = async (body: Record<string, unknown>) => {
-    setSaving(true);
-    try {
-      const updated = await apiFetch<Session>(`/client-portal/sessions/${session.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(body),
-      });
-      onSaved(updated);
-      setFeedbackError(null);
-    } catch (err) {
-      // Entered feedback stays on screen — only the save failed.
-      console.error("Feedback save failed:", err);
-      setFeedbackError(SAVE_WORKOUT_ERROR_MESSAGE);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="border border-border rounded-lg bg-background/40">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <span>Jak poszło? (opcjonalnie)</span>
-        <span className="flex items-center gap-1.5">
-          {saving && <Loader2 className="w-3 h-3 animate-spin" />}
-          {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-        </span>
-      </button>
-      {feedbackError && (
-        <p role="alert" className="px-3 pb-2 text-xs text-red-400">{feedbackError}</p>
-      )}
-      {open && (
-        <div className="px-3 pb-3 space-y-3 border-t border-border pt-3">
-          <div>
-            <p className="text-xs text-muted-foreground mb-1.5">Trudność treningu (1–10)</p>
-            <div className="flex flex-wrap gap-1">
-              {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => patch({ difficultyRating: n })}
-                  className={cn(
-                    "w-7 h-7 text-xs border transition-colors",
-                    session.difficultyRating === n
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border text-muted-foreground hover:border-primary/40",
-                  )}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1.5">Czy pojawił się ból?</p>
-            <div className="flex gap-1">
-              {([["Tak", true], ["Nie", false]] as const).map(([label, val]) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => patch({ hadPain: val })}
-                  className={cn(
-                    "px-3 h-7 text-xs border transition-colors",
-                    session.hadPain === val
-                      ? val
-                        ? "border-yellow-500 bg-yellow-500/15 text-yellow-500"
-                        : "border-primary bg-primary text-primary-foreground"
-                      : "border-border text-muted-foreground hover:border-primary/40",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1.5">Energia</p>
-            <div className="flex gap-1">
-              {([["Niska", "low"], ["Średnia", "medium"], ["Wysoka", "high"]] as const).map(([label, val]) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => patch({ energyLevel: val })}
-                  className={cn(
-                    "px-3 h-7 text-xs border transition-colors",
-                    session.energyLevel === val
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border text-muted-foreground hover:border-primary/40",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1.5">Notatka do sesji</p>
-            <SessionNoteInput initialValue={session.notes ?? ""} onSave={(notes) => patch({ notes: notes || null })} />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SessionNoteInput({ initialValue, onSave }: { initialValue: string; onSave: (v: string) => void }) {
-  const [value, setValue] = useState(initialValue);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  return (
-    <Textarea
-      placeholder="np. dobre tempo, następnym razem więcej przerwy..."
-      value={value}
-      onChange={(e) => {
-        setValue(e.target.value);
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => onSave(e.target.value), 800);
-      }}
-      className="min-h-[52px] text-sm bg-background/50 border-border focus-visible:border-primary rounded-lg resize-none"
-    />
   );
 }
 
@@ -1769,10 +1106,13 @@ export function PlanView({
   client,
   plan,
   onSelectDay,
+  today,
 }: {
   client: ClientInfo;
   plan: Plan;
   onSelectDay: (day: PlanDay) => void;
+  /** "Dziś" card — the start of the portal. */
+  today?: React.ReactNode;
 }) {
   const cardio = parseCardioData(plan.cardioRecommendation);
   return (
@@ -1787,7 +1127,7 @@ export function PlanView({
               Plan w trakcie
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">Cześć, {client.firstName}! Wybierz dzień treningowy, aby rozpocząć sesję.</p>
+          <p className="text-sm text-muted-foreground mt-1">Cześć, {client.firstName}!</p>
           {plan.goal && (
             <p className="text-sm text-primary bg-primary/5 border border-primary/10 px-3 py-2 mt-3">
               Cel: {plan.goal}
@@ -1800,12 +1140,14 @@ export function PlanView({
           )}
         </div>
 
+        {today}
+
         <div id="rezerwacje" className="scroll-mt-20">
           <BookingSection />
         </div>
 
         <div className="space-y-3">
-          <h2 className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground font-semibold">Dni treningowe</h2>
+          <h2 className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground font-semibold">Plan — podgląd dni</h2>
           {plan.days.length === 0 ? (
             <div className="border border-border rounded-lg px-5 py-10 text-center text-sm text-muted-foreground">
               <Dumbbell className="w-8 h-8 mx-auto mb-3 opacity-30" />
@@ -1863,6 +1205,8 @@ export default function PlanPortal() {
   const [planError, setPlanError] = useState<string | null>(null);
   const [planRetry, setPlanRetry] = useState(0);
   const [selectedDay, setSelectedDay] = useState<PlanDay | null>(null);
+  const [training, setTraining] = useState<{ day: TrainingDay; firstName: string; week: { done: number; target: number } } | null>(null);
+  const [todayReload, setTodayReload] = useState(0);
   // Backend-decided calendar eligibility for the nav (in_person/hybrid only).
   const [navBookable, setNavBookable] = useState(false);
 
@@ -1970,15 +1314,22 @@ export default function PlanPortal() {
     />
   );
 
+  if (training) {
+    return (
+      <TrainingFlow
+        day={training.day}
+        firstName={training.firstName}
+        week={training.week}
+        onExit={() => { setTraining(null); setTodayReload((n) => n + 1); window.scrollTo({ top: 0 }); }}
+      />
+    );
+  }
+
   if (selectedDay) {
     return (
       <>
         {nav}
-        <SessionView
-          day={selectedDay}
-          planId={plan.id}
-          onBack={() => setSelectedDay(null)}
-        />
+        <DayPreview day={selectedDay} onBack={() => setSelectedDay(null)} />
       </>
     );
   }
@@ -1990,6 +1341,12 @@ export default function PlanPortal() {
         client={client}
         plan={plan}
         onSelectDay={setSelectedDay}
+        today={
+          <TodayCard
+            reloadKey={todayReload}
+            onStart={(day, ctx) => setTraining({ day, firstName: ctx.client.firstName, week: ctx.week })}
+          />
+        }
       />
     </>
   );

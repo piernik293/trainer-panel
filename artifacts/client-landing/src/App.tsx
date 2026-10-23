@@ -3,6 +3,11 @@ import { plPL } from '@clerk/localizations';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
+import { TrainingFlow } from '@/components/training/TrainingFlow';
+import { loadRun } from '@/lib/training/run';
+import { readCachedToday } from '@/lib/training/sync';
+import type { TodayResponse } from '@/lib/training/types';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
@@ -119,7 +124,30 @@ function ClerkProviderWithRoutes() {
   );
 }
 
+/**
+ * No network and an unfinished workout on the phone: continue it from the saved copy of today's
+ * plan. Clerk (the login widget) cannot load offline and ClerkProvider renders nothing until it
+ * does, so this has to sit outside of it. Results go to the offline queue as usual.
+ */
+function readOfflineResume() {
+  if (typeof navigator === 'undefined' || navigator.onLine) return null;
+  const cached = readCachedToday<TodayResponse>();
+  const day = cached?.today;
+  return cached && day && loadRun(day.planDayId) ? { cached, day } : null;
+}
+
 function App() {
+  const [resume] = useState(readOfflineResume);
+  if (resume) {
+    return (
+      <TrainingFlow
+        day={resume.day}
+        firstName={resume.cached.client.firstName}
+        week={resume.cached.week}
+        onExit={() => window.location.reload()}
+      />
+    );
+  }
   return (
     <WouterRouter base={basePath}>
       <ClerkProviderWithRoutes />
