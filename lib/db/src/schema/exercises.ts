@@ -64,6 +64,20 @@ export const exercisesTable = pgTable("exercises", {
    */
   subTargetBiases: jsonb("sub_target_biases"),
 
+  // ── Catalogue standard (docs/KATALOG-STANDARD.md), migration 0019 — all nullable ──
+  /** 'główne' | 'pomocnicze' | 'rozgrzewka' | 'rozciąganie'. Backfilled from exercise_type. */
+  role: text("role"),
+  /** 'zweryfikowane' | 'do_weryfikacji' — 'do_weryfikacji' when a required field is missing. */
+  verificationStatus: text("verification_status"),
+  /** Joints stressed by the exercise (Kolano, Biodro, Plecy — dół, Bark, Łokieć, Nadgarstek). */
+  jointStressAreas: text("joint_stress_areas").array(),
+  /** Concrete machines / cable attachments (closed list, see the standard). */
+  equipmentDetail: text("equipment_detail").array(),
+  /** Amount shown to the client for warm-up / stretching exercises: repetitions or seconds. */
+  defaultReps: integer("default_reps"),
+  defaultDurationSeconds: integer("default_duration_seconds"),
+  perSide: boolean("per_side"),
+
   isActive: boolean("is_active").notNull().default(true),
   /**
    * FK to trainers.id — set when a trainer creates a custom exercise.

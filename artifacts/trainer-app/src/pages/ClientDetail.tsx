@@ -31,7 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Printer, FileEdit, Phone, Mail, Calendar, ClipboardList, History, StickyNote, Trash2, Pencil, Dumbbell, Sparkles, Link2, Moon, Activity, Copy, Send, UserCheck, ShieldOff, RefreshCw, Eye, Play } from "lucide-react";
 import { CollapsibleSurveySection, DetailRow } from "@/components/CollapsibleSurveySection";
 import ExerciseRecommendationsTab from "./ExerciseRecommendationsTab";
-import WorkoutHistoryTab from "./WorkoutHistoryTab";
+import TrainingSessionsTab, { usePainReports } from "./TrainingSessionsTab";
 import { formatDate } from "@/lib/utils";
 import { clientStatusLabel, surveyStatusLabel } from "@/lib/client-status";
 import { methodsAnswerUsable } from "@workspace/survey-config";
@@ -266,6 +266,7 @@ export default function ClientDetail() {
   const id = Number(params.id);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const unreadPain = (usePainReports(id).data ?? []).filter((r) => !r.readByTrainerAt).length;
   const [selectedSurveyId, setSelectedSurveyId] = useState<number | null>(null);
   const [noteContent, setNoteContent] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
@@ -530,7 +531,7 @@ export default function ClientDetail() {
         Otwórz zakładkę „Wywiad treningowy” poniżej i sprawdź odpowiedzi klienta: cel, doświadczenie, ograniczenia, sprzęt.
       </StepHint>
 
-      <Tabs defaultValue="overview" className="no-print">
+      <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") === "treningi" ? "workout-history" : "overview"} className="no-print">
         <TabsList>
           <TabsTrigger value="overview">Przegląd</TabsTrigger>
           <TabsTrigger value="survey">Wywiad treningowy</TabsTrigger>
@@ -543,7 +544,8 @@ export default function ClientDetail() {
           <TabsTrigger value="plans">Plany treningowe</TabsTrigger>
           <TabsTrigger value="workout-history" className="gap-1.5">
             <Dumbbell size={13} />
-            Historia treningów
+            Treningi
+            {unreadPain > 0 && <Badge variant="destructive" className="ml-1 px-1.5 py-0 text-[10px]">Ból {unreadPain}</Badge>}
           </TabsTrigger>
         </TabsList>
 
@@ -627,7 +629,7 @@ export default function ClientDetail() {
         </TabsContent>
 
         <TabsContent value="workout-history" className="pt-4">
-          <WorkoutHistoryTab clientId={id} />
+          <TrainingSessionsTab clientId={id} />
         </TabsContent>
 
         <TabsContent value="notes" className="pt-4">

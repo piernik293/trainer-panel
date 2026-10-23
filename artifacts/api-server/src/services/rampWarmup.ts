@@ -184,3 +184,105 @@ const TEMPLATES: Record<DayType, RampBlock[]> = {
 export function getRampWarmup(dayType: DayType): RampBlock[] {
   return TEMPLATES[dayType];
 }
+
+// ─── Short warm-up for the training flow (5 exercises, about 7 minutes) ──────
+
+interface ItemMeta {
+  /** 1 = trivial, 2 = simple, 3 = needs technique or balance */
+  learning: 1 | 2 | 3;
+  /** jumping / impact */
+  impact?: boolean;
+}
+
+/** Safety metadata of the template items (the template has none of its own). */
+const ITEM_META: Record<string, ItemMeta> = {
+  "Marsz w miejscu / truchtem": { learning: 1 },
+  "Krążenia ramion": { learning: 1 },
+  "Jumping jacks": { learning: 1, impact: true },
+  "Marsz w miejscu lub rowerek stacjonarny": { learning: 1 },
+  "Krążenia bioder": { learning: 1 },
+  "Skoki na skakance lub jumping jacks": { learning: 2, impact: true },
+  "Marsz w miejscu lub trucht": { learning: 1 },
+  "Krążenia ramion i bioder": { learning: 1 },
+  "Rotacje zewnętrzne z gumą": { learning: 2 },
+  "Ściąganie łopatek z gumą (band pull-apart)": { learning: 2 },
+  "Pompki ścienne": { learning: 1 },
+  "Glute bridge": { learning: 1 },
+  "Clamshell z gumą": { learning: 2 },
+  "Standing hip abduction z gumą": { learning: 2 },
+  "Rotacje ramion z gumą lub bez": { learning: 1 },
+  "Dead bug": { learning: 2 },
+  "Rozciąganie klatki piersiowej przy ścianie": { learning: 1 },
+  "Skręty tułowia w siadzie lub staniu": { learning: 1 },
+  "Krążenia nadgarstków i łokci": { learning: 1 },
+  "Hip flexor stretch (nisko)": { learning: 2 },
+  "Rozciąganie przywodzicieli (lateral squat stretch)": { learning: 2 },
+  "Krążenia w stawie skokowym": { learning: 1 },
+  "Skręty tułowia (thoracic rotations)": { learning: 1 },
+  "Hip flexor stretch": { learning: 1 },
+  "Rozciąganie łydek": { learning: 1 },
+  "Pompki (tempo 2-1-1)": { learning: 3 },
+  "Face pull z gumą": { learning: 2 },
+  "Przysiad z własnym ciężarem (tempo 3-1-1)": { learning: 3 },
+  "Wykrok w miejscu": { learning: 3 },
+  "Przysiad z własnym ciężarem": { learning: 2 },
+  "Pompki": { learning: 2 },
+};
+
+/** Minutes per phase in the short version (Raise 2 + Activate 2 × 1.5 + Mobilize 1 + Potentiate 1 = 7). */
+const SHORT_MINUTES: Record<RampPhase, number> = { Raise: 2, Activate: 1.5, Mobilize: 1, Potentiate: 1 };
+export const SHORT_WARMUP_ITEMS = 5;
+
+export interface ShortWarmup {
+  items: RampItem[];
+  /** estimated minutes (about 7) */
+  minutes: number;
+}
+
+/**
+ * 5 exercises for the day type: 1 raise, 2 activation, 1 mobilisation, 1 potentiation — with the same
+ * safety rules as the generator for beginners:
+ *  - "Brak aktywności fizycznej": only simple (learning <= 2), no impact, no potentiation phase;
+ *  - "Początkujący": only simple (learning <= 2);
+ *  - others: everything.
+ * When a phase has nothing eligible the gap is filled from activation, mobilisation, then raise.
+ */
+export function buildShortWarmup(dayType: DayType, level: string | null | undefined): ShortWarmup {
+  const noActivity = level === "Brak aktywności fizycznej";
+  const beginner = noActivity || level === "Początkujący";
+  const eligible = (phase: RampPhase, it: RampItem): boolean => {
+    const m = ITEM_META[it.name];
+    if (!beginner) return true;
+    if (!m) return false; // unknown item: never offered to beginners
+    if (m.learning > 2) return false;
+    if (noActivity && (m.impact || phase === "Potentiate")) return false;
+    return true;
+  };
+  const byPhase = new Map<RampPhase, RampItem[]>();
+  for (const b of getRampWarmup(dayType)) byPhase.set(b.phase, b.items.filter((it) => eligible(b.phase, it)));
+
+  const picked: { phase: RampPhase; item: RampItem }[] = [];
+  const take = (phase: RampPhase, n: number) => {
+    const pool = byPhase.get(phase) ?? [];
+    for (const it of pool) {
+      if (n <= 0) break;
+      if (picked.some((p) => p.item === it)) continue;
+      picked.push({ phase, item: it });
+      n--;
+    }
+  };
+  take("Raise", 1); take("Activate", 2); take("Mobilize", 1); take("Potentiate", 1);
+  for (const phase of ["Activate", "Mobilize", "Raise"] as RampPhase[]) {
+    while (picked.length < SHORT_WARMUP_ITEMS) {
+      const before = picked.length;
+      take(phase, 1);
+      if (picked.length === before) break;
+    }
+  }
+  // Show in the order of the phases.
+  const order: RampPhase[] = ["Raise", "Activate", "Mobilize", "Potentiate"];
+  picked.sort((a, b) => order.indexOf(a.phase) - order.indexOf(b.phase));
+  const items = picked.map((p) => (p.phase === "Raise" && /min$/.test(p.item.detail) ? { ...p.item, detail: "2 min" } : p.item));
+  const minutes = picked.reduce((sum, p) => sum + SHORT_MINUTES[p.phase], 0);
+  return { items, minutes };
+}

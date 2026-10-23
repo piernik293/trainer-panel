@@ -14,6 +14,8 @@
  * Exit code 0 = all checks OK.
  */
 
+import { randomUUID } from "node:crypto";
+
 const API = process.env.SMOKE_API_URL ?? "http://localhost:8080/api";
 const CLERK_API = "https://api.clerk.com/v1";
 const SECRET = process.env.CLERK_SECRET_KEY ?? "";
@@ -224,6 +226,43 @@ async function main(): Promise<void> {
     check("klient A1: endpoint trenera → 403 CLIENT_ACCOUNT", kClients.status === 403 && kClients.body?.code === "CLIENT_ACCOUNT", why(kClients));
     const kProfile = await call(K, "POST", "/trainer/profile");
     check("klient A1: nie może założyć profilu trenera", kProfile.status === 403, why(kProfile));
+  }
+
+  // ── 3b. Training: client starts → logs a set → reports pain → finishes → trainer sees it ──
+  if (kLinked) {
+    const td = await call(K, "GET", "/client-portal/training/today");
+    const day = td.body?.today ?? td.body?.next;
+    check("klient A1: ekran „Dziś” zwraca dzień z ćwiczeniami", td.status === 200 && day?.exercises?.length > 0, why(td));
+    if (day?.exercises?.length > 0) {
+      const sUuid = randomUUID();
+      const st = await call(K, "POST", "/client-portal/training/sessions", { clientUuid: sUuid, planDayId: day.planDayId });
+      check("klient A1: start treningu", (st.status === 201 || st.status === 200) && !!st.body?.id, why(st));
+      const sid = st.body?.id;
+      const peId = day.exercises[0].planExerciseId;
+      const setUuid = randomUUID();
+      const set1 = await call(K, "PUT", `/client-portal/training/sessions/${sid}/sets`, { clientUuid: setUuid, planExerciseId: peId, setNumber: 1, weightKg: 50, reps: 8, rir: 2 });
+      const set2 = await call(K, "PUT", `/client-portal/training/sessions/${sid}/sets`, { clientUuid: setUuid, planExerciseId: peId, setNumber: 1, weightKg: 50, reps: 8, rir: 2 });
+      check("klient A1: zapis serii (powtórka bez duplikatu)", set1.status === 200 && set2.status === 200 && set2.body?.duplicate === true, `${set1.status}/${set2.status}`);
+      const pain = await call(K, "POST", `/client-portal/training/sessions/${sid}/pain`, { clientUuid: randomUUID(), planExerciseId: peId, area: "Bark", severity: 2, description: "test dymny" });
+      check("klient A1: zgłoszenie bólu", pain.status === 201, why(pain));
+      const fin = await call(K, "POST", `/client-portal/training/sessions/${sid}/finish`, { status: "completed", rating: "just_right", note: "test dymny" });
+      check("klient A1: zakończenie treningu", fin.status === 200 && fin.body?.status === "completed" && fin.body?.sets >= 1, why(fin));
+
+      const tSessions = await call(A, "GET", `/clients/${clientId}/training-sessions`);
+      check("trener A: widzi sesję klienta z oceną", tSessions.status === 200 && tSessions.body?.some((x: { id: number; rating: string }) => x.id === sid && x.rating === "just_right"), why(tSessions));
+      const tPain = await call(A, "GET", `/clients/${clientId}/pain-reports`);
+      check("trener A: widzi zgłoszenie bólu", tPain.status === 200 && tPain.body?.some((x: { area: string }) => x.area === "Bark"), why(tPain));
+      const dash = await call(A, "GET", "/dashboard/summary");
+      check("trener A: ból na Pulpicie („Zgłoszony ból”)", dash.status === 200 && leaks(dash, "Zgłoszony ból"), why(dash));
+      for (const p of ["training-sessions", "pain-reports", "training-records"]) {
+        const asB = await call(B, "GET", `/clients/${clientId}/${p}`);
+        check(`izolacja trener B: /${p}`, asB.status === 404, `HTTP ${asB.status}`);
+      }
+      const kbToday = await call(KB, "GET", "/client-portal/training/today");
+      const kbPut = await call(KB, "PUT", `/client-portal/training/sessions/${sid}/sets`, { clientUuid: randomUUID(), planExerciseId: peId, setNumber: 2, weightKg: 1, reps: 1 });
+      check("izolacja klient B1: dziś bez planu A, zapis do cudzej sesji → 404", !leaks(kbToday, `Plan ${run}`) && kbPut.status === 404, `${kbToday.status}/${kbPut.status}`);
+      // the smoke client is cleaned up with its sessions at the end of the run (cascade)
+    }
   }
 
   // ── 4. Isolation ────────────────────────────────────────────────────────────
