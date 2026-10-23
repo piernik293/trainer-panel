@@ -121,7 +121,7 @@ export function buildAttention(input: AttentionInput): {
             : `${last.area}, siła ${last.severity}/5. Klient pominął to ćwiczenie.`,
         at: last.createdAt.toISOString(),
         actionLabel: "Odpowiedz",
-        actionHref: `/clients/${c.id}`,
+        actionHref: `/clients/${c.id}?tab=treningi`,
         sort: -last.createdAt.getTime(),
       });
     }

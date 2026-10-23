@@ -149,7 +149,7 @@ describe("pain reports in attention", () => {
       surveys: [{ clientId: 1, createdAt: new Date("2026-10-22T10:00:00Z"), completed: true }],
       pains: [{ clientId: 1, createdAt: new Date("2026-10-23T08:00:00Z"), area: "Bark", severity: 4 }],
     });
-    expect(r.items[0]).toMatchObject({ kind: "pain", clientId: 1, reasonLabel: "Zgłoszony ból", actionLabel: "Odpowiedz", actionHref: "/clients/1" });
+    expect(r.items[0]).toMatchObject({ kind: "pain", clientId: 1, reasonLabel: "Zgłoszony ból", actionLabel: "Odpowiedz", actionHref: "/clients/1?tab=treningi" });
     expect(r.items.filter((i) => i.clientId === 1)).toHaveLength(1);
     expect(r.byKind.pain).toBe(1);
   });
