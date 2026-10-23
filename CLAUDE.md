@@ -41,6 +41,7 @@ Szczegółowy plan bieżącego etapu jest w `~/etap-1-uruchomienie-i-stabilizacj
 ## Dane i sekrety
 - Sekrety trzymaj tylko w `.env`. Nigdy nie wypisuj ich wartości w logach, commitach ani raportach.
 - Przed każdą zmianą schematu bazy zrób `pg_dump` do `~/backups/` (z datą w nazwie).
+- Schemat bazy: `scripts/db-setup-gcp.sh` (po `pg_dump`) robi `drizzle-kit push` i stosuje `lib/db/migrations/*.sql`, które push pomija (indeksy częściowe, klucze obce). Idempotentny; na nowej bazie uruchom go zawsze, nie samo `push`. Baza testowa: `DATABASE_URL=…/trainer_panel_test scripts/db-setup-gcp.sh`.
 - Migracje tylko addytywne: nowe tabele i kolumny nullable. Żadnych `DROP`, żadnego `drizzle-kit push --force`.
 
 ## Git
