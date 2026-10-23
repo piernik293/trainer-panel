@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { AppHero } from "@workspace/design-tokens/hero";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
@@ -165,7 +166,9 @@ function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-8">
+    <div className="relative flex min-h-[100dvh] flex-col items-center md:pr-[50%] bg-background">
+      <AppHero variant="login" />
+      <div className="flex w-full flex-1 flex-col items-center justify-center px-4 py-8">
       {/* Optimatren branding above the Clerk card */}
       <div className="flex flex-col items-center text-center mb-6 max-w-full">
         <BrandMark className="h-12 w-12 text-2xl" />
@@ -186,6 +189,7 @@ function AuthShell({
           {switchLink.label}
         </Link>
       </p>
+      </div>
     </div>
   );
 }
@@ -237,7 +241,9 @@ function TrainerSignInPage() {
 
 function SignUpPage() {
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-8">
+    <div className="relative flex min-h-[100dvh] flex-col items-center md:pr-[50%] bg-background">
+      <AppHero variant="login" />
+      <div className="flex w-full flex-1 flex-col items-center justify-center px-4 py-8">
       {/* Optimatren branding above the Clerk card */}
       <div className="flex flex-col items-center text-center mb-6 max-w-full">
         <BrandMark className="h-12 w-12 text-2xl" />
@@ -247,6 +253,7 @@ function SignUpPage() {
         </p>
       </div>
       <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+      </div>
     </div>
   );
 }

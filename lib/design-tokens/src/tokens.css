@@ -309,3 +309,38 @@
     line-height: 1.1;
   }
 }
+
+/* ── AppHero (lib/design-tokens/src/hero) ────────────────────────────────── */
+.app-hero { position: relative; overflow: hidden; background: #1c1917; }
+.app-hero__img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: 75% 52%;   /* focal point: the pillar with the sign */
+}
+.app-hero__scrim { position: absolute; inset: 0; pointer-events: none; }
+.app-hero__mascot { position: absolute; right: 0; bottom: 0; }
+.app-hero__content { position: relative; z-index: 1; }
+
+/* login: strip on phones, right half on desktop */
+.app-hero--login { height: 6rem; width: 100%; }
+.app-hero--login .app-hero__scrim {
+  background: linear-gradient(to bottom, transparent 40%, var(--bg) 100%);
+}
+@media (min-width: 768px) {
+  .app-hero--login { position: absolute; top: 0; right: 0; bottom: 0; height: auto; width: 50%; }
+  .app-hero--login .app-hero__scrim {
+    background: linear-gradient(to right, var(--bg) 0%, color-mix(in srgb, var(--bg) 55%, transparent) 22%, transparent 55%);
+  }
+}
+
+/* portal welcome: header band, text on a dark scrim from the left */
+.app-hero--portal-welcome { display: flex; align-items: center; min-height: 7.5rem; padding: 1rem 1.5rem; }
+.app-hero--portal-welcome .app-hero__scrim {
+  background: linear-gradient(to right, rgba(28,25,23,.94) 0%, rgba(28,25,23,.88) 45%, rgba(28,25,23,.25) 100%);
+}
+.app-hero--portal-welcome .app-hero__content { color: #fff; width: 100%; max-width: 560px; margin: 0 auto; }
+@media (min-width: 768px) { .app-hero--portal-welcome { min-height: 9.5rem; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-hero__img { opacity: 0; transition: opacity .5s ease; }
+  .app-hero__img.is-loaded { opacity: 1; }
+}
