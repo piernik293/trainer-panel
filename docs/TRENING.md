@@ -79,3 +79,30 @@ Stan kodu na `main` (`bae5e39`) przed zmianami toru C. Nic w tym kroku nie zmien
 | 27 | Rozciąganie zginaczy biodra (wykrok klęczny) | Mięśnie czworogłowe uda, Pośladki | 30 s na nogę; `learningDifficulty` 2 |
 
 Reguły doboru (po akceptacji): rozgrzewka = 1 pozycja ogólna (nr 1, 15) + 2–3 pozycje na partie mięśniowe dnia + 1 aktywacja; schłodzenie = 3–4 rozciągania partii dnia. Dla klientów nieaktywnych i początkujących tylko pozycje z `suitableForNoActivity = true` i `learningDifficulty` ≤ 2. Do czasu akceptacji działa statyczny szablon RAMP (rozgrzewka) i krótki statyczny szablon schłodzenia.
+
+## 7. Zrealizowane (C2–C6) — stan na gałęzi `feature/trening`
+
+### Model danych (migracja 0018, tylko addytywna)
+- `workout_sessions` (rozszerzona o nullable): `trainer_id`, `started_at`, `ended_at`, `status` (`in_progress` / `completed` / `aborted`; NULL = starszy zapis), `session_rating` (`too_easy` / `just_right` / `too_hard`), `client_uuid` (unikalny, idempotencja). Notatka dla trenera = istniejące `notes`.
+- Przerwana sesja ma `is_completed = true` i `status = 'aborted'` (indeks częściowy „jedna aktywna sesja na dzień” nie blokuje kolejnej próby). **Do „ukończony” używaj `status`, nie `is_completed`.**
+- `set_logs`: wynik serii (kg `numeric(6,2)`, powtórzenia, RIR 0–4 — 4 = „4+”, `skipped`, `client_uuid` unikalny; unikalność `(sesja, ćwiczenie, nr serii)` — poprawka serii zastępuje wpis).
+- `pain_reports`: miejsce (7 wartości, CHECK w bazie), siła 1–5, opis ≤ 500, `read_by_trainer_at`.
+- Stare `exercise_execution_logs` nietknięte; u trenera widoczne jako „Starszy zapis”. Stary zapis po stronie klienta (`plan.tsx`) usunięty — ekran planu tylko do podglądu.
+
+### Reguły (`api-server/src/services/training.ts`, testy w `__tests__/training.test.ts`)
+- **Skok ciężaru wg sprzętu:** sztanga 2,5 kg; maszyna/wyciąg 2,5 kg; hantle i kettlebell 1 kg; masa ciała (bez sprzętu obciążającego) — pole ciężaru ukryte, „dodatkowe obciążenie” opcjonalne. Przy kilku wartościach sprzętu: Sztanga > Maszyna/Wyciąg > Hantle/Kettlebell.
+- **Rola ćwiczenia (dla przerw):** z `exercise_type` — Złożone = główne, Izolowane = pomocnicze; „moc/siła maks.” = ćwiczenie złożone z planowanymi powtórzeniami ≤ 5 (katalog nie ma osobnego pola; wymaga decyzji, patrz „Do decyzji”).
+- **Przerwy (informacja, bez minutnika)** wg poziomu efektywnego planu (`workout_plans.experience_level_used`, czyli już po regule 2 lat): brak aktywności 60–90 s / 60–90 s; początkujący 60–90 s / 1,5–2 min; średniozaawansowany 1–2 min / 2–3 min / moc 3 min; zaawansowany 1,5–2 min / 3–4 min / moc 3–5 min. Trening ≤ 1 h: pomocnicze maks. 1,5 min, główne 2 min, moc maks. 3 min. **Przerwa wpisana przez trenera w planie (`rest_seconds`) zawsze wygrywa.** Dla poziomów bez wartości „moc” używana jest wartość „główne”.
+- **Rekord:** seria jest rekordem, gdy jej ciężar jest wyższy niż najlepszy ciężar kiedykolwiek podniesiony przy tej samej lub większej liczbie powtórzeń (z poprzednich sesji, także starego zapisu). Pierwsze wykonanie ćwiczenia nie jest rekordem (brak punktu odniesienia). Przyrost = nowy ciężar − poprzedni najlepszy. Telefon liczy to samo z skompresowanej historii (najcięższy ciężar na liczbę powtórzeń), więc działa offline.
+- **Dobór dnia:** następny dzień planu po ostatnio ukończonym (cyklicznie); „trening X z N” = pozycja dnia w planie; „X z Y w tym tygodniu” = ukończone od poniedziałku / liczba dni planu. Po ukończeniu treningu dziś ekran „Dziś” pokazuje najbliższy trening i ostatni wykonany.
+- **Rozgrzewka / schłodzenie:** na razie statyczne szablony (RAMP wg typu dnia; krótki szablon rozciągania `services/cooldown.ts`). Lista do katalogu czeka na akceptację (sekcja 6), a standard opisu ćwiczenia w `docs/KATALOG-STANDARD.md`.
+- **Wartość startowa serii:** poprzednia seria z tego samego treningu → ta sama seria z poprzedniej sesji (lub jej ostatnia) → plan (dolna granica powtórzeń, ciężar pusty).
+
+### Offline i PWA (`client-landing`)
+- Każdy zapis ma UUID z telefonu; kolejka w `localStorage` (`optimatren-trening-queue:v1`) wysyła po kolei, serwer odpowiada `duplicate` przy ponowieniu. Błędy sieci i 5xx/401/408/429 → ponowienie; pozostałe 4xx → odrzucenie bez blokowania reszty. Poprawka nie wysłanej serii zastępuje poprzednią w kolejce.
+- Plan dnia jest kopiowany do pamięci telefonu przy otwarciu „Dziś”; rozpoczęty trening można dokończyć bez sieci, także po zimnym starcie (poza Clerk, który offline się nie ładuje).
+- Manifest + service worker (`public/sw.js`): cache powłoki i zasobów, `/api` nigdy nie cache’owane. **Service worker rejestruje się tylko w buildzie produkcyjnym** — `scripts/dev-gcp.sh` uruchamia Vite w trybie dev, więc tam PWA nie działa (sprawdzone na `vite preview`).
+
+### Widok trenera
+- Profil klienta → zakładka „Treningi” (zastępuje „Historię treningów”; komponent `WorkoutHistoryTab.tsx` zostaje w repo, nieużywany — kandydat do usunięcia za Twoją zgodą): zgłoszenia bólu (Nowe/Przeczytane, „Oznacz jako przeczytane”), rekordy, sesje z ukończeniem/przerwaniem, oceną, notatką i seriami; starszy zapis oznaczony.
+- Pulpit → „Wymaga Twojej uwagi”: „Zgłoszony ból” (najwyższy priorytet) → „Odpowiedz” → zakładka Treningi.
