@@ -39,3 +39,43 @@ Stan kodu na `main` (`bae5e39`) przed zmianami toru C. Nic w tym kroku nie zmien
 | Rekordy | brak |
 | Przerwy wg poziomu | `rest_seconds` w planie jest, bez domyślnych |
 | Offline / PWA | brak |
+
+## 6. Propozycja ćwiczeń rozgrzewkowych i rozciągających (STOP-5 — do Twojej akceptacji)
+**Nie dodano do bazy.** Standard pól: `docs/KATALOG-STANDARD.md` (rola, ilość i status wymagają nowych kolumn — decyzja tamże). Wszystkie pozycje: sprzęt „Masa własnego ciała” (chyba że podano inaczej), miejsce Siłownia/Dom/Plener, `joint_stress` Niskie, bez asekuracji, poziom Brak aktywności fizycznej (dopuszczone dla wszystkich poziomów), `suitableForNoActivity = true` i `learningDifficulty = 1`, o ile nie napisano inaczej. „Ilość” jest informacją, nie minutnikiem.
+
+### Rozgrzewka (rola: rozgrzewka)
+| # | Nazwa | Partie | Wzorzec | Ilość | Uwagi |
+|---|---|---|---|---|---|
+| 1 | Marsz w miejscu | Całe ciało | Lokomocja | 60 s | |
+| 2 | Krążenia ramion | Barki | Mobilizacja | 10 × w każdą stronę | |
+| 3 | Krążenia bioder | Pośladki, Odwodziciele | Mobilizacja | 10 × w każdą stronę | |
+| 4 | Skręty tułowia | Brzuch, Plecy | Mobilizacja | 10 × na stronę | |
+| 5 | Krążenia nadgarstków i łokci | Przedramiona | Mobilizacja | 10 × w każdą stronę | |
+| 6 | Kot–krowa | Plecy | Mobilizacja | 10 × | |
+| 7 | Przysiad powitalny (bez obciążenia) | Mięśnie czworogłowe uda, Pośladki | Przysiad | 10 × | `learningDifficulty` 2 |
+| 8 | Wykroki chodzone (bez obciążenia) | Mięśnie czworogłowe uda, Pośladki | Wykrok | 8 × na nogę | `learningDifficulty` 2; do weryfikacji dla nieaktywnych (równowaga) |
+| 9 | Mostek pośladkowy | Pośladki, Mięśnie dwugłowe uda | Zawias biodrowy | 12 × | |
+| 10 | Ściąganie łopatek z gumą (Band Pull-Apart) | Barki, Plecy | Aktywacja | 15 × | sprzęt: Gumy oporowe; istnieje już w katalogu pod inną nazwą — dopisać rolę, nie dublować |
+| 11 | Rotacje zewnętrzne z gumą | Barki | Aktywacja | 12 × na stronę | sprzęt: Gumy oporowe; `learningDifficulty` 2 |
+| 12 | Pompki ścienne | Klatka piersiowa, Triceps | Pchanie poziome | 10 × | |
+| 13 | Deska na przedramionach | Brzuch | Stabilizacja tułowia | 20 s | `learningDifficulty` 2 |
+| 14 | Wspięcia na palce | Łydki | Wspięcie na palce | 15 × | |
+| 15 | Rowerek stacjonarny (lekki) | Całe ciało | Lokomocja | 3–5 min | sprzęt: Maszyna (rower); tylko Siłownia/Dom z rowerem |
+
+### Rozciąganie / schłodzenie (rola: rozciąganie)
+| # | Nazwa | Partie | Ilość |
+|---|---|---|---|
+| 16 | Rozciąganie klatki przy ścianie | Klatka piersiowa | 30 s na stronę |
+| 17 | Rozciąganie barku (ramię w poprzek) | Barki | 30 s na stronę |
+| 18 | Rozciąganie tricepsa (za głową) | Triceps | 30 s na stronę |
+| 19 | Rozciąganie bicepsa przy ścianie | Biceps | 30 s na stronę |
+| 20 | Pozycja dziecka | Plecy | 40 s |
+| 21 | Rozciąganie czworogłowego (stojąc, przy ścianie) | Mięśnie czworogłowe uda | 30 s na nogę |
+| 22 | Rozciąganie tylnej części uda (siad, noga wyprostowana) | Mięśnie dwugłowe uda | 30 s na nogę |
+| 23 | Rozciąganie pośladka (leżąc, noga „czwórką”) | Pośladki | 30 s na nogę |
+| 24 | Rozciąganie łydki przy ścianie | Łydki | 30 s na nogę |
+| 25 | Rozciąganie przywodzicieli (siad skrzyżny) | Przywodziciele | 30 s |
+| 26 | Skłon boczny stojąc | Brzuch, Plecy | 20 s na stronę |
+| 27 | Rozciąganie zginaczy biodra (wykrok klęczny) | Mięśnie czworogłowe uda, Pośladki | 30 s na nogę; `learningDifficulty` 2 |
+
+Reguły doboru (po akceptacji): rozgrzewka = 1 pozycja ogólna (nr 1, 15) + 2–3 pozycje na partie mięśniowe dnia + 1 aktywacja; schłodzenie = 3–4 rozciągania partii dnia. Dla klientów nieaktywnych i początkujących tylko pozycje z `suitableForNoActivity = true` i `learningDifficulty` ≤ 2. Do czasu akceptacji działa statyczny szablon RAMP (rozgrzewka) i krótki statyczny szablon schłodzenia.
