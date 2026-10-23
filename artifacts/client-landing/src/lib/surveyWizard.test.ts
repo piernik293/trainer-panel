@@ -77,7 +77,8 @@ function toOld(a: Answers): { values: OldValues; extra: Parameters<typeof oldPay
       cardioPreference: a.cardioPreference, cardioFrequency: a.cardioFrequency, preferredCardioType: a.preferredCardioType,
       trainingMotivation: a.trainingMotivation,
       athleteStatus: (a.athleteStatus || undefined) as OldValues["athleteStatus"], sportPerformanceNeeds: a.sportPerformanceNeeds,
-      avoidsAdvancedMethods: (a.avoidsAdvancedMethods || undefined) as OldValues["avoidsAdvancedMethods"], advancedMethodsToAvoid: a.advancedMethodsToAvoid,
+      // "Metody do unikania" (23.10): the list is the answer — non-empty → "Tak", shown but empty → "Nie", not asked → undefined.
+      avoidsAdvancedMethods: (visibleSteps(a).includes("methodsList") ? (a.advancedMethodsToAvoid.length > 0 ? "Tak" : "Nie") : undefined) as OldValues["avoidsAdvancedMethods"], advancedMethodsToAvoid: a.advancedMethodsToAvoid,
     },
     extra: {
       sportsPriorities: a.sportPerformanceNeeds.map((n) => ({ Dynamika: "dynamika", Szybkość: "szybkosc", Stabilizacja: "stabilizacja" })[n]!),
@@ -154,10 +155,13 @@ describe("conditional questions", () => {
     expect(ids({ ...base, trainingLocation: "Siłownia plenerowa" })).toContain("equipment");
     expect(ids(base)).not.toContain("healthDesc");
     expect(ids({ ...base, injuryStatus: "Tak" })).toContain("healthDesc");
-    expect(ids(base)).not.toEqual(expect.arrayContaining(["avoided", "methods"]));
-    expect(ids({ ...base, experienceLevel: "Zaawansowany" })).toEqual(expect.arrayContaining(["avoided", "methods"]));
-    expect(ids({ ...base, experienceLevel: "Zaawansowany" })).not.toContain("methodsList");
-    expect(ids({ ...base, experienceLevel: "Zaawansowany", avoidsAdvancedMethods: "Tak" })).toContain("methodsList");
+    expect(ids(base)).not.toEqual(expect.arrayContaining(["avoided"]));
+    expect(ids(base)).not.toContain("methodsList");
+    expect(ids({ ...base, experienceLevel: "Zaawansowany" })).toEqual(expect.arrayContaining(["avoided", "methodsList"]));
+    expect(ids({ ...base, experienceLevel: "Średniozaawansowany", trainingDuration: "3 lata" })).toEqual(expect.arrayContaining(["avoided", "methodsList"]));
+    // by the EFFECTIVE level: intermediate chosen but only 1 year of training → treated as a beginner
+    expect(ids({ ...base, experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok" })).not.toEqual(expect.arrayContaining(["avoided"]));
+    expect(ids({ ...base, experienceLevel: "Zaawansowany", trainingDuration: "6 miesięcy" })).not.toContain("methodsList");
     expect(ids({ ...base, experienceLevel: "Brak aktywności fizycznej" })).not.toContain("duration");
     expect(ids({ ...base, experienceLevel: "Początkujący" })).toContain("duration");
   });
@@ -166,7 +170,7 @@ describe("conditional questions", () => {
     const all = STAGES.flatMap((s) => s.steps);
     const after = (dep: StepId, on: StepId) => expect(all.indexOf(dep)).toBeGreaterThan(all.indexOf(on));
     after("sportStatus", "goal"); after("sportNeeds", "goal"); after("duration", "level"); after("equipment", "location");
-    after("healthDesc", "injury"); after("avoided", "level"); after("methods", "level"); after("methodsList", "methods");
+    after("healthDesc", "injury"); after("avoided", "level"); after("methodsList", "avoided");
     after("cardioPref", "activity"); // cardio banner depends on daily activity
     after("frequency", "level"); // frequency hint depends on the level
   });
@@ -182,7 +186,7 @@ describe("conditional questions", () => {
 
     const adv = normalizeAnswers({ ...base, experienceLevel: "Zaawansowany", avoidsAdvancedMethods: "Tak", advancedMethodsToAvoid: ["Drop sety"], avoidedExercises: [{ id: 1, name: "x", reason: "" }] });
     expect(normalizeAnswers({ ...adv, experienceLevel: "Początkujący" })).toMatchObject({ avoidsAdvancedMethods: "", advancedMethodsToAvoid: [], avoidedExercises: [] });
-    expect(normalizeAnswers({ ...adv, avoidsAdvancedMethods: "Nie" }).advancedMethodsToAvoid).toEqual([]);
+    expect(normalizeAnswers({ ...adv, experienceLevel: "Zaawansowany", trainingDuration: "6 miesięcy" }).advancedMethodsToAvoid).toEqual([]); // effective level = beginner
 
     expect(normalizeAnswers({ ...base, injuryStatus: "Nie", healthLimitations: "x" }).healthLimitations).toBe("");
   });
@@ -202,9 +206,9 @@ describe("question count (before = after)", () => {
     const all = STAGES.flatMap((s) => s.steps);
     expect(new Set(all).size).toBe(all.length);
     expect(STAGES).toHaveLength(9);
-    // beginner / gym / no injury: 22 of the 29 screens
+    // beginner / gym / no injury: 22 of the 28 screens (the former yes/no "methods" screen is merged into "Metody do unikania")
     expect(visibleSteps(base)).toHaveLength(22);
-    expect(visibleSteps({ ...base, experienceLevel: "Zaawansowany", trainingLocation: "Dom", injuryStatus: "Tak", trainingGoal: "Cel sportowy", avoidsAdvancedMethods: "Tak" })).toHaveLength(29);
+    expect(visibleSteps({ ...base, experienceLevel: "Zaawansowany", trainingLocation: "Dom", injuryStatus: "Tak", trainingGoal: "Cel sportowy", trainingDuration: "5 lat" })).toHaveLength(28);
   });
 });
 
@@ -220,7 +224,7 @@ describe("validation as in the old form", () => {
     expect(validateStep("frequency", { ...base, desiredWeeklyFrequency: 8 })).toBeTruthy();
     expect(validateStep("equipment", { ...base, equipmentItems: [], equipmentOther: "" })).toBeTruthy();
     expect(validateStep("equipment", { ...base, equipmentOther: "Piłka" })).toBeNull();
-    for (const optional of ["motivation", "duration", "stress", "cardioPref", "cardioFreq", "cardioType", "avoided", "favorite", "priority", "methods", "additional"] as StepId[]) {
+    for (const optional of ["motivation", "duration", "stress", "cardioPref", "cardioFreq", "cardioType", "avoided", "favorite", "priority", "methodsList", "additional"] as StepId[]) {
       expect(validateStep(optional, EMPTY_ANSWERS), optional).toBeNull();
     }
   });

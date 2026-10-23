@@ -350,3 +350,98 @@ describe("goals with descriptions, recommended session length, priority groups (
     expect(screen.queryByText(/dodatkiem do planu/)).toBeNull();
   });
 });
+
+describe("cardio: no instant advance, silent 20 s countdown cancelled by any interaction (23.10)", () => {
+  const open = () => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, firstName: "M", lastName: "T", email: "m@example.com", trainingGoal: "Poprawa kondycji" }, stepId: "cardioPref" }));
+    mount();
+  };
+  const choose = (v: string) => fireEvent.click(screen.getByLabelText(v));
+  const idle = (ms: number) => act(() => { vi.advanceTimersByTime(ms); });
+
+  it("does not move on after the choice; the hint stays readable; moves on after 20 s", () => {
+    open();
+    choose("Tylko niezbędne minimum");
+    idle(1000);
+    expect(question()).toBe("Jak uwzględnić cardio w planie?");
+    expect(screen.getByText(/To nie problem/)).toBeTruthy(); // the reassurance under the choice
+    idle(18_000);
+    expect(question()).toBe("Jak uwzględnić cardio w planie?"); // 19 s: still here
+    idle(1500);
+    expect(question()).toBe("Jak często wykonujesz cardio?");
+  });
+
+  it("no visible counter", () => {
+    open();
+    choose("Tak, uwzględnij cardio w planie");
+    expect(document.body.textContent).not.toMatch(/\b\d+\s*s\b|za \d+|sekund|odliczani/i);
+  });
+
+  it.each([
+    ["a click", () => fireEvent.click(document.body)],
+    ["a key press", () => fireEvent.keyDown(document.body, { key: "a" })],
+    ["a touch", () => fireEvent.touchStart(document.body)],
+    ["scrolling", () => fireEvent.scroll(window)],
+    ["the pointer", () => fireEvent.pointerDown(document.body)],
+  ])("%s cancels the countdown — then only 'Dalej' moves on", (_n, interact) => {
+    open();
+    choose("Tak, uwzględnij cardio w planie");
+    idle(2000);
+    interact();
+    idle(60_000);
+    expect(question()).toBe("Jak uwzględnić cardio w planie?");
+    fireEvent.click(screen.getByTestId("next"));
+    expect(question()).toBe("Jak często wykonujesz cardio?");
+  });
+
+  it("changing the answer cancels it too", () => {
+    open();
+    choose("Tak, uwzględnij cardio w planie");
+    idle(500);
+    choose("Tylko niezbędne minimum");
+    idle(60_000);
+    expect(question()).toBe("Jak uwzględnić cardio w planie?");
+  });
+
+  it("other single-choice questions keep the short auto-advance", () => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, firstName: "M", lastName: "T", email: "m@example.com" }, stepId: "goal" }));
+    mount();
+    fireEvent.click(screen.getByLabelText("Budowa sylwetki"));
+    idle(350);
+    expect(question()).toBe("Dlaczego chcesz trenować?");
+  });
+});
+
+describe("preferences stage: exercises and methods to avoid for the EFFECTIVE intermediate / advanced level (23.10)", () => {
+  const open = (stepId: string, answers: Partial<Answers>) => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, firstName: "M", lastName: "T", email: "m@example.com", ...answers }, stepId }));
+    mount();
+  };
+  it("'Metody do unikania': multi-choice of the generator's list, several at once", () => {
+    open("methodsList", { experienceLevel: "Zaawansowany", trainingDuration: "5 lat" });
+    expect(question()).toBe("Metody do unikania");
+    const names = ["Superserie", "Serie złożone (Compound Set)", "Drop sety", "Serie do upadku mięśniowego", "Serie wymuszone", "Rest-Pause"];
+    for (const n of names) expect(screen.getByRole("button", { name: n }).getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "Drop sety" }));
+    fireEvent.click(screen.getByRole("button", { name: "Rest-Pause" }));
+    expect(screen.getByRole("button", { name: "Drop sety" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Rest-Pause" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("next").textContent).toContain("zaznaczono 2");
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(false); // optional
+  });
+  it("both questions are on the existing 9th stage 'Preferencje planu' (stage count unchanged)", () => {
+    open("avoided", { experienceLevel: "Średniozaawansowany", trainingDuration: "3 lata" });
+    expect(screen.getByTestId("stage-name").textContent).toBe("Preferencje planu");
+    expect(screen.getByTestId("stage-count").textContent).toContain("z 9");
+    expect(question()).toBe("Ćwiczenia do unikania");
+    expect(screen.getByTestId("avoided-picker")).toBeTruthy(); // catalogue search + free text
+    cleanup();
+    open("methodsList", { experienceLevel: "Zaawansowany", trainingDuration: "5 lat" });
+    expect(screen.getByTestId("stage-name").textContent).toBe("Preferencje planu");
+    expect(screen.getByTestId("stage-count").textContent).toContain("z 9");
+  });
+  it("a chosen intermediate with < 2 years never sees them (effective = beginner): the draft jumps past", () => {
+    open("avoided", { experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok" });
+    expect(question()).not.toBe("Ćwiczenia do unikania");
+  });
+});

@@ -103,3 +103,21 @@ describe("cardio preference in drafts and priority muscles by effective level", 
     expect(validateStep("priority", { ...base, experienceLevel: "Zaawansowany" })).toBeNull();
   });
 });
+
+describe("payload: methods to avoid", async () => {
+  const { buildSurveyPayload } = await import("./surveyWizard");
+  const full = (over: Partial<Answers>): Answers => ({ ...EMPTY_ANSWERS, firstName: "A", lastName: "B", email: "a@b.pl", ...over });
+  it("the list is the answer", () => {
+    const p = buildSurveyPayload(full({ experienceLevel: "Zaawansowany", trainingDuration: "5 lat", advancedMethodsToAvoid: ["Drop sety", "Rest-Pause"] }));
+    expect(p["avoidsAdvancedMethods"]).toBe(true);
+    expect(p["advancedMethodsToAvoid"]).toEqual(["Drop sety", "Rest-Pause"]);
+    const none = buildSurveyPayload(full({ experienceLevel: "Zaawansowany", trainingDuration: "5 lat" }));
+    expect(none["avoidsAdvancedMethods"]).toBe(false);
+    expect(none["advancedMethodsToAvoid"]).toEqual([]);
+  });
+  it("not asked (effective beginner) → nothing is sent", () => {
+    const p = buildSurveyPayload(full({ experienceLevel: "Zaawansowany", trainingDuration: "6 miesięcy", advancedMethodsToAvoid: ["Drop sety"] }));
+    expect(p["avoidsAdvancedMethods"]).toBeUndefined();
+    expect(p["advancedMethodsToAvoid"]).toEqual([]);
+  });
+});

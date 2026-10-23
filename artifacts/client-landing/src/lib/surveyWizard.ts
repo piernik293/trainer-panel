@@ -119,7 +119,7 @@ export type StepId =
   | "injury" | "healthDesc"
   | "activity" | "sleep" | "stress"
   | "cardioPref" | "cardioFreq" | "cardioType"
-  | "planStyle" | "avoided" | "favorite" | "priority" | "methods" | "methodsList" | "additional";
+  | "planStyle" | "avoided" | "favorite" | "priority" | "methodsList" | "additional";
 
 export interface Stage {
   id: string;
@@ -137,7 +137,7 @@ export const STAGES: Stage[] = [
   { id: "health", name: "Zdrowie i ograniczenia", steps: ["injury", "healthDesc"] },
   { id: "life", name: "Styl życia", steps: ["activity", "sleep", "stress"] },
   { id: "cardio", name: "Cardio", steps: ["cardioPref", "cardioFreq", "cardioType"] },
-  { id: "prefs", name: "Preferencje planu", steps: ["planStyle", "avoided", "favorite", "priority", "methods", "methodsList", "additional"] },
+  { id: "prefs", name: "Preferencje planu", steps: ["planStyle", "avoided", "favorite", "priority", "methodsList", "additional"] },
 ];
 
 export interface Prefill {
@@ -164,11 +164,10 @@ export function isStepVisible(id: StepId, a: Answers, prefill: Prefill = {}): bo
       return showEquipmentField(a.trainingLocation);
     case "healthDesc":
       return a.injuryStatus === "Tak";
+    // Intermediate / advanced by the EFFECTIVE level (the choice capped by training time).
     case "avoided":
-    case "methods":
-      return isIntermediateOrAdvancedLevel(a.experienceLevel);
     case "methodsList":
-      return isIntermediateOrAdvancedLevel(a.experienceLevel) && a.avoidsAdvancedMethods === "Tak";
+      return isIntermediateOrAdvancedLevel(resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective ?? undefined);
     default:
       return true;
   }
@@ -219,7 +218,7 @@ export function normalizeAnswers(input: Answers, prefill: Prefill = {}): Answers
   const cardio = normalizeCardioPreference(a.cardioPreference);
   if (cardio === "include") a.cardioPreference = CARDIO_PREFERENCE_OPTIONS[0];
   else if (cardio === "minimum") a.cardioPreference = CARDIO_PREFERENCE_OPTIONS[1];
-  if (!isStepVisible("methods", a, prefill)) a.avoidsAdvancedMethods = "";
+  a.avoidsAdvancedMethods = ""; // legacy draft field — derived from the methods list in the payload
   if (!isStepVisible("methodsList", a, prefill)) a.advancedMethodsToAvoid = [];
   return a;
 }
@@ -343,7 +342,8 @@ export function missingHint(id: StepId, a: Answers): string | null {
 export function buildSurveyPayload(raw: Answers, prefill: Prefill = {}): Record<string, unknown> {
   const a = normalizeAnswers(raw, prefill);
   const isSport = goalIsSport(a.trainingGoal);
-  const avoids = a.avoidsAdvancedMethods === "Tak" ? true : a.avoidsAdvancedMethods === "Nie" ? false : undefined;
+  // "Metody do unikania": the list IS the answer (non-empty → the client avoids methods); not asked → undefined.
+  const avoids = isStepVisible("methodsList", a, prefill) ? a.advancedMethodsToAvoid.length > 0 : undefined;
   const reasons = Object.fromEntries(
     a.avoidedExercises.filter((e) => e.reason.trim()).map((e) => [String(e.id), e.reason.trim()]),
   );
