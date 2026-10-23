@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  *
  * SurveyInvite — a failed invite-list request must show an error with retry,
- * never "Brak aktywnych zaproszeń." (regression: 401 looked like an empty list).
+ * never "Brak zaproszeń z ostatnich 30 dni." (regression: 401 looked like an empty list).
  */
 
 import { describe, it, expect, vi, afterEach } from "vitest";
@@ -37,7 +37,7 @@ describe("SurveyInvite — failed invite list", () => {
 
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("Twoja sesja wygasła");
-    expect(screen.queryByText("Brak aktywnych zaproszeń.")).toBeNull();
+    expect(screen.queryByText("Brak zaproszeń z ostatnich 30 dni.")).toBeNull();
 
     fireEvent.click(screen.getByText("Spróbuj ponownie"));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
@@ -48,7 +48,7 @@ describe("SurveyInvite — failed invite list", () => {
       new Response("[]", { status: 200, headers: { "Content-Type": "application/json" } }),
     ));
     renderPage();
-    expect(await screen.findByText("Brak aktywnych zaproszeń.")).toBeTruthy();
+    expect(await screen.findByText("Brak zaproszeń z ostatnich 30 dni.")).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
   });
 });
