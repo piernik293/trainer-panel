@@ -94,7 +94,11 @@ describe("steps", () => {
   it("level screen lead matches the 2-year rule (no 'don't go by years' sentence)", () => {
     window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS }, stepId: "level" }));
     mount();
-    expect(screen.getByText(/Poziom zaawansowania decyduje o tym.*Wybierz opis, który najlepiej do Ciebie pasuje\. Trener dostosuje plan do Twojego doświadczenia\./)).toBeTruthy();
+    expect(screen.getByText(/Wybierz opis, który najlepiej do Ciebie pasuje\. Trener dostosuje plan do Twojego doświadczenia\./)).toBeTruthy();
+    // the old section description is one tap away
+    expect(screen.queryByText(/Poziom zaawansowania decyduje o tym/)).toBeNull();
+    fireEvent.click(screen.getAllByRole("button", { name: "Więcej" })[0]!);
+    expect(screen.getByText(/Poziom zaawansowania decyduje o tym, jak dobieram technikę/)).toBeTruthy();
     expect(screen.queryByText(/liczbą lat/)).toBeNull();
   });
 
@@ -104,8 +108,8 @@ describe("steps", () => {
     expect(screen.getByText("Uczę się podstaw i techniki.")).toBeTruthy();
     expect(screen.queryByText(/nie czuję się jeszcze pewnie w samodzielnym planowaniu/)).toBeNull();
     const more = screen.getAllByRole("button", { name: "Więcej" });
-    expect(more).toHaveLength(4);
-    fireEvent.click(more[1]);
+    expect(more).toHaveLength(5); // one for the section description + one per level
+    fireEvent.click(more[2]!);
     expect(screen.getByText(/nie czuję się jeszcze pewnie w samodzielnym planowaniu/)).toBeTruthy();
     expect((screen.getByLabelText(/^Początkujący/) as HTMLInputElement).checked).toBe(false); // "Więcej" does not choose
     expect(screen.getByRole("button", { name: "Mniej" }).getAttribute("aria-expanded")).toBe("true");

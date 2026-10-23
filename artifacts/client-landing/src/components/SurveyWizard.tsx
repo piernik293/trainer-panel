@@ -266,15 +266,27 @@ function Opt({ text }: { text: string }) {
 }
 
 function Section({
-  id, title, lead, headingRef, children,
-}: { id: StepId; title: string; lead: React.ReactNode; headingRef: React.Ref<HTMLHeadingElement>; children: React.ReactNode }) {
+  id, title, lead, more, headingRef, children,
+}: { id: StepId; title: string; lead: React.ReactNode; more?: string; headingRef: React.Ref<HTMLHeadingElement>; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
   return (
     <div className="space-y-3 sm:space-y-4" data-step={id}>
       <div className="space-y-2">
         <h1 ref={headingRef} tabIndex={-1} className="text-[26px] font-extrabold leading-tight tracking-tight outline-none sm:text-[28px]" data-testid="question">
           {title}
         </h1>
-        <p className="text-muted-foreground">{lead}</p>
+        <p className="text-muted-foreground">
+          {lead}
+          {more && (
+            <>
+              {" "}
+              <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="inline-flex min-h-11 items-center font-semibold text-primary hover:underline">
+                {open ? "Mniej" : "Więcej"}
+              </button>
+            </>
+          )}
+        </p>
+        {more && open && <p className="text-sm text-muted-foreground">{more}</p>}
       </div>
       {children}
     </div>
@@ -494,7 +506,7 @@ export default function SurveyWizard({
         );
       case "level":
         return (
-          <Section id={id} headingRef={heading} title="Który poziom najlepiej opisuje Twoje doświadczenie?" lead={`${SECTION_TEXT.level} Wybierz opis, który najlepiej do Ciebie pasuje. Trener dostosuje plan do Twojego doświadczenia.`}>
+          <Section id={id} headingRef={heading} title="Który poziom najlepiej opisuje Twoje doświadczenie?" lead="Wybierz opis, który najlepiej do Ciebie pasuje. Trener dostosuje plan do Twojego doświadczenia." more={SECTION_TEXT.level}>
             <ChoiceList
               name="Poziom doświadczenia"
               options={EXPERIENCE_LEVEL_OPTIONS.filter((o) => !(answers.trainingGoal === "Cel sportowy" && o.level === "Brak aktywności fizycznej")).map((o) => ({ value: o.level, label: o.level, desc: LEVEL_SHORT[o.level], more: LEVEL_FULL[o.level] ?? o.desc }))}

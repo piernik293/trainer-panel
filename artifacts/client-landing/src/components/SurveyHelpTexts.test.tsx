@@ -45,7 +45,7 @@ function screensText(): string {
           <SurveyWizard inviteToken={TOKEN} prefill={{}} />
         </QueryClientProvider>,
       );
-      for (const b of screen.queryAllByRole("button", { name: /^Więcej/ })) fireEvent.click(b);
+      for (const b of screen.queryAllByRole("button", { name: /^Więcej$/ })) fireEvent.click(b);
       all += " " + document.body.textContent;
       unmount();
     }
