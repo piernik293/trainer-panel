@@ -132,9 +132,22 @@ router.get("/public/survey/:token", async (req, res): Promise<void> => {
       .where(and(eq(surveyInvitesTable.id, invite.id), isNull(surveyInvitesTable.openedAt)));
   }
 
+  // Invitation tied to an existing client: personal data comes from the client
+  // record, so the interview skips the name / contact screens.
+  let existingClient: { firstName: string; lastName: string; email: string | null; phone: string | null } | null = null;
+  if (invite.clientId) {
+    const [c] = await db
+      .select({ firstName: clientsTable.firstName, lastName: clientsTable.lastName, email: clientsTable.email, phone: clientsTable.phone })
+      .from(clientsTable)
+      .where(eq(clientsTable.id, invite.clientId));
+    existingClient = c ?? null;
+  }
+
   res.json({
     valid: true,
     intendedEmail: invite.intendedEmail ?? null,
+    clientName: invite.clientName ?? null,
+    existingClient,
     expiresAt: invite.expiresAt,
   });
 });

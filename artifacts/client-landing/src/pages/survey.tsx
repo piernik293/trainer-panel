@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
 import { useParams } from "wouter";
-import SurveyForm from "@/components/SurveyForm";
+import SurveyWizard from "@/components/SurveyWizard";
 import { motion } from "framer-motion";
 import { Loader2, XCircle, Clock, ShieldOff, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,10 @@ import { Button } from "@/components/ui/button";
 interface TokenValidation {
   valid: true;
   intendedEmail: string | null;
+  /** First name typed by the trainer when creating the invitation. */
+  clientName?: string | null;
+  /** Set when the invitation is tied to an existing client (name / contact screens are skipped). */
+  existingClient?: { firstName: string; lastName: string; email: string | null; phone: string | null } | null;
   expiresAt: string;
 }
 
@@ -223,43 +227,25 @@ export default function SurveyTokenPage() {
   }
 
   // ── Valid — render the survey form ─────────────────────────────────────────
-  const { intendedEmail } = state.data;
+  const { intendedEmail, clientName, existingClient } = state.data;
+  const prefill = existingClient
+    ? { existingClient: true, firstName: existingClient.firstName, lastName: existingClient.lastName, email: existingClient.email ?? intendedEmail ?? "", phone: existingClient.phone ?? "" }
+    : { firstName: clientName ?? "", email: intendedEmail ?? "" };
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-brand-soft">
-      {/* HEADER */}
-      <section className="py-16 px-6 md:px-12 bg-card border-b border-border">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="flex items-center justify-center gap-3 mb-5">
-              <BrandMark className="h-12 w-12 text-2xl" />
-              <span className="font-bold text-xl tracking-tight text-foreground">Optimatren</span>
-            </div>
-            <div className="inline-block mb-4 border border-primary/30 bg-primary/5 px-4 py-1.5 backdrop-blur-sm">
-              <span className="text-primary text-sm font-semibold tracking-[0.2em] uppercase">
-                Wywiad treningowy
-              </span>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-foreground">
-              Twój indywidualny plan zaczyna się tutaj
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Wypełnij poniższy wywiad, aby Twój trener mógł przygotować plan treningowy dopasowany
-              do Twoich potrzeb i celu.
-            </p>
-          </motion.div>
+      {/* HEADER — compact: the question itself is the heading of each step */}
+      <header className="border-b border-border bg-card px-6 py-3">
+        <div className="mx-auto flex max-w-[560px] items-center gap-3">
+          <BrandMark />
+          <span className="font-bold tracking-tight">Optimatren</span>
+          <span className="section-label ml-auto">Wywiad treningowy</span>
         </div>
-      </section>
+      </header>
 
       {/* FORM SECTION */}
-      <section className="py-16 px-6 md:px-12 flex-1">
-        <div className="max-w-4xl mx-auto">
-          <SurveyForm inviteToken={token} prefillEmail={intendedEmail ?? undefined} />
-        </div>
+      <section className="flex-1 px-4 py-6 md:py-10">
+        <SurveyWizard inviteToken={token} prefill={prefill} />
       </section>
 
       {/* FOOTER */}
