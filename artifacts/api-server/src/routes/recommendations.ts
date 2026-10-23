@@ -20,6 +20,7 @@
  * own exercise pool without going through HTTP — no changes to this file needed.
  */
 
+import { withEffectiveLevel } from "../lib/effectiveLevel";
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -59,7 +60,7 @@ router.get("/clients/:clientId/exercise-recommendations", requireAuth, async (re
 
   // Verify the client belongs to the authenticated trainer.
   const [client] = await db
-    .select({ id: clientsTable.id })
+    .select({ id: clientsTable.id, experienceLevelOverride: clientsTable.experienceLevelOverride })
     .from(clientsTable)
     .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
 
@@ -69,12 +70,14 @@ router.get("/clients/:clientId/exercise-recommendations", requireAuth, async (re
   }
 
   // Fetch the latest survey.
-  const [survey] = await db
+  const [rawSurvey] = await db
     .select()
     .from(surveysTable)
     .where(eq(surveysTable.clientId, clientId))
     .orderBy(desc(surveysTable.createdAt))
     .limit(1);
+  // The generator works on the effective level (2-year rule, trainer override).
+  const survey = rawSurvey ? withEffectiveLevel(rawSurvey, client.experienceLevelOverride) : undefined;
 
   if (!survey) {
     res.json(

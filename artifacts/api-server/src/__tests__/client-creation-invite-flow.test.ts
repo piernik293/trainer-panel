@@ -660,7 +660,7 @@ describe("14. Trainer-only fields (confirmedRestrictions) do not block public su
       firstName: "Anna",
       lastName: "Nowak",
       email: "anna@example.com",
-      dateOfBirth: "1990-01-01",
+      dateOfBirth: "1990-01-01", injuryStatus: "Brak",
       gender: "Kobieta",
       // confirmedRestrictions intentionally absent
       // adaptiveStartDecision intentionally absent
@@ -743,7 +743,7 @@ describe("16. Completed public survey saved under correct trainer/client", () =>
       .send({
         firstName: "Pre", lastName: "Created",
         email: "pre@example.com",
-        dateOfBirth: "1990-06-15",
+        dateOfBirth: "1990-06-15", injuryStatus: "Brak",
         gender: "Mężczyzna",
         trainingGoal: "Siła",
       });
@@ -811,9 +811,25 @@ describe("18. Used invitation blocks re-submission", () => {
       .post(`/api/public/survey/${rawToken}`)
       .send({
         firstName: "A", lastName: "B", email: "a@b.com",
-        dateOfBirth: "1990-01-01", gender: "Kobieta",
+        dateOfBirth: "1990-01-01", injuryStatus: "Brak", gender: "Kobieta",
       });
 
     expect(res.status).toBe(410);
+  });
+});
+
+describe("Health question is mandatory (Wywiad 2.0 decision)", () => {
+  it("POST /public/survey/:token without injuryStatus → 400; 'Tak' without description → 400", async () => {
+    const { default: publicRouter } = await import("../routes/public");
+    const app = express();
+    app.use(express.json());
+    app.use("/api", publicRouter);
+    const base = { firstName: "A", lastName: "B", email: "a@example.com", trainingGoal: "Budowa sylwetki", experienceLevel: "Początkujący", dateOfBirth: "1990-01-01", gender: "Kobieta", heightCm: 170, weightKg: 60 };
+    const token = "a".repeat(64);
+    const none = await request(app).post(`/api/public/survey/${token}`).send(base);
+    expect(none.status).toBe(400);
+    expect(none.body.error).toContain("kontuzje");
+    const tak = await request(app).post(`/api/public/survey/${token}`).send({ ...base, injuryStatus: "Tak" });
+    expect(tak.status).toBe(400);
   });
 });

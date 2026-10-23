@@ -550,3 +550,36 @@ describe("POST /api/plans/draft-input/validate", () => {
     expect(res.body.blocking).toBe(false);
   });
 });
+
+describe("loadPlanDraftInput() — effective level (2-year rule, trainer override)", () => {
+  let clientId: number;
+
+  beforeAll(async () => {
+    const client = await getOrCreateTestClient("plan-draft-effective-level@example.com");
+    clientId = client.id;
+    await db.update(clientsTable).set({ experienceLevelOverride: null }).where(eq(clientsTable.id, clientId));
+    await insertSurvey(clientId, { experienceLevel: "Zaawansowany", trainingDuration: "1 rok" });
+  });
+
+  it("training under 2 years: generator input uses Początkujący and the trainer sees the warning", async () => {
+    const result = await loadPlanDraftInput(clientId);
+    expect(result!.input.experienceLevel).toBe("Początkujący");
+    const w = result!.warnings.find((x) => x.code === "EFFECTIVE_LEVEL_ADJUSTED");
+    expect(w?.message).toContain("Klient wybrał „Zaawansowany”, staż 1 rok — plan jako „Początkujący”.");
+  });
+
+  it("trainer override restores the chosen level; no automatic warning about capping", async () => {
+    await db.update(clientsTable).set({ experienceLevelOverride: "Zaawansowany" }).where(eq(clientsTable.id, clientId));
+    const result = await loadPlanDraftInput(clientId);
+    expect(result!.input.experienceLevel).toBe("Zaawansowany");
+    expect(result!.warnings.some((x) => x.code === "EFFECTIVE_LEVEL_ADJUSTED")).toBe(false);
+    await db.update(clientsTable).set({ experienceLevelOverride: null }).where(eq(clientsTable.id, clientId));
+  });
+
+  it("2+ years: no change, no warning", async () => {
+    await insertSurvey(clientId, { experienceLevel: "Zaawansowany", trainingDuration: "3 lata" });
+    const result = await loadPlanDraftInput(clientId);
+    expect(result!.input.experienceLevel).toBe("Zaawansowany");
+    expect(result!.warnings.some((x) => x.code === "EFFECTIVE_LEVEL_ADJUSTED")).toBe(false);
+  });
+});

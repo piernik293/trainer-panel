@@ -8,6 +8,7 @@
  * This service NEVER generates exercises, allocates volume, or saves plans.
  */
 
+import { effectiveLevelWarning, resolveEffectiveLevel, withEffectiveLevel } from "../lib/effectiveLevel";
 import { eq, desc } from "drizzle-orm";
 import { db, clientsTable, surveysTable } from "@workspace/db";
 import {
@@ -187,12 +188,23 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
   const warnings: PlanDraftInputWarningType[] = [];
 
   // ── Load latest survey ──────────────────────────────────────────────────────
-  const [survey] = await db
+  const [rawSurvey] = await db
     .select()
     .from(surveysTable)
     .where(eq(surveysTable.clientId, clientId))
     .orderBy(desc(surveysTable.createdAt))
     .limit(1);
+  // The generator works on the effective level (2-year rule, trainer override).
+  const survey = rawSurvey ? withEffectiveLevel(rawSurvey, client.experienceLevelOverride) : undefined;
+
+  if (rawSurvey) {
+    const levelNote = effectiveLevelWarning(
+      resolveEffectiveLevel(rawSurvey.experienceLevel, rawSurvey.trainingDuration, client.experienceLevelOverride),
+    );
+    if (levelNote) {
+      warnings.push({ code: "EFFECTIVE_LEVEL_ADJUSTED", severity: "warning", message: levelNote, blocking: false });
+    }
+  }
 
   if (!survey) {
     warnings.push({

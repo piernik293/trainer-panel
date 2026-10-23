@@ -154,6 +154,16 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
     return;
   }
 
+  // Health question is mandatory (answer "Brak" or "Tak"); "Tak" needs a description.
+  if (!parsed.data.injuryStatus) {
+    res.status(400).json({ error: "Odpowiedz na pytanie o kontuzje i ograniczenia ruchowe." });
+    return;
+  }
+  if (parsed.data.injuryStatus === "Tak" && !parsed.data.healthLimitations?.trim()) {
+    res.status(400).json({ error: "Opisz swoje ograniczenia zdrowotne, kontuzje lub dolegliwości bólowe." });
+    return;
+  }
+
   const trimmedEmail = parsed.data.email.trim();
   if (!EMAIL_REGEX.test(trimmedEmail)) {
     res.status(400).json({ error: "Nieprawidłowy adres e-mail" });

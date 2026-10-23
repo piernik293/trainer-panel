@@ -482,7 +482,7 @@ describe("Public survey invitation regression (Task #81B-1)", () => {
       .send({
         firstName: "Jan", lastName: "Test", email: "jan@example.com",
         phone: "", trainingGoal: "Masa", experienceLevel: "Początkujący",
-        dateOfBirth: "1990-01-01", gender: "Mężczyzna", heightCm: 180, weightKg: 80,
+        dateOfBirth: "1990-01-01", injuryStatus: "Brak", gender: "Mężczyzna", heightCm: 180, weightKg: 80,
       });
 
     expect(res.status).toBe(201);
