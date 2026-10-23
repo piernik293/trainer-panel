@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BrandMark as LogoSquare } from "@/components/BrandMark";
 import { Link, useLocation } from "wouter";
 import { Users, LayoutDashboard, PlusCircle, Dumbbell, Menu, UserPlus, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -9,7 +10,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { AccountMenu } from "./AccountMenu";
-import markUrl from "@/assets/optimatren-mark.png";
 
 const navItems = [
   { href: "/", label: "Pulpit", icon: LayoutDashboard },
@@ -23,7 +23,7 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
   return (
     <>
       <div className="px-4 py-2">
-        <p className="px-2 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2">
+        <p className="px-2 section-label mb-2">
           Menu
         </p>
         <nav className="space-y-1">
@@ -38,16 +38,16 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
                 href={item.href}
                 onClick={onNavigate}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md transition-all text-sm font-medium",
+                  "flex min-h-11 items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium",
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    ? "bg-brand-soft text-primary font-semibold"
+                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 )}
               >
                 <Icon
                   size={18}
                   className={cn(
-                    isActive ? "text-primary-foreground" : "text-sidebar-foreground/50"
+                    isActive ? "text-primary" : "text-muted-foreground"
                   )}
                 />
                 {item.label}
@@ -79,16 +79,12 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
 function BrandMark() {
   return (
     <div className="flex items-center gap-2.5 min-w-0">
-      <img
-        src={markUrl}
-        alt="Optimatren"
-        className="h-9 w-auto object-contain shrink-0"
-      />
+      <LogoSquare />
       <div className="min-w-0 leading-tight">
         <span className="block font-display font-bold text-base tracking-tight text-sidebar-foreground truncate">
           Optimatren
         </span>
-        <span className="block text-[10px] font-semibold tracking-widest uppercase text-sidebar-foreground/60">
+        <span className="block text-xs font-bold tracking-[0.06em] uppercase text-muted-foreground">
           Panel Trenera
         </span>
       </div>
