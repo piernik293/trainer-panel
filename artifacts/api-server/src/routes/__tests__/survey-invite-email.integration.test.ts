@@ -121,7 +121,7 @@ describe("wysyłka e-mailem", () => {
     expect(mail.html).toContain(`href="${expectedUrl}"`);
     expect(mail.html).toContain("Wypełnij wywiad");
     expect(mail.html).toContain("Wysłano przez Optimatren");
-    expect(mail.html).not.toContain("<img");
+    expect((mail.html.match(/<img [^>]*>/g) ?? []).every((t: string) => t.includes(`src="cid:optimatren-banner"`))).toBe(true); // only the embedded banner, no remote images
     expect(mail.html).not.toContain("evil.example");
     expect(mail.text).toContain("Cześć Marta,");
     expect(mail.text).toContain("Do zobaczenia <b>w poniedziałek</b>!");

@@ -108,6 +108,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
+      '@workspace/survey-config':
+        specifier: workspace:*
+        version: link:../../lib/survey-config
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7

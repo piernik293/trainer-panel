@@ -59,7 +59,7 @@ const base: Answers = {
   experienceLevel: "Początkujący", trainingLocation: "Siłownia",
   desiredWeeklyFrequency: 3, sessionDuration: "45–60 min",
   injuryStatus: "Nie", activityLevel: "Siedzący", sleepHours: "7–8 godzin", stressLevel: 4,
-  cardioPreference: "Chętnie uwzględnię cardio w planie", cardioFrequency: "1 raz w tygodniu", preferredCardioType: "Marsz",
+  cardioPreference: "Tak, uwzględnij cardio w planie", cardioFrequency: "1 raz w tygodniu", preferredCardioType: "Marsz",
   planStylePreference: "Balans efektywności i wygody", favoriteExercises: [{ id: 1, name: "Przysiad" }, { id: 2, name: "Wiosłowanie" }],
   priorityMuscle1: "barki", additionalInfo: "Pracuję zmianowo",
 };
@@ -213,8 +213,8 @@ describe("validation as in the old form", () => {
     expect(validateStep("injury", EMPTY_ANSWERS)).toBeTruthy(); // health question is mandatory now
     expect(validateStep("injury", { ...base, injuryStatus: "Nie" })).toBeNull();
     expect(validateStep("healthDesc", { ...base, injuryStatus: "Tak", healthLimitations: " " })).toBeTruthy();
-    expect(validateStep("body", { ...base, heightCm: 79 })).toBe("Wzrost musi być między 80 a 260 cm");
-    expect(validateStep("body", { ...base, weightKg: "19" })).toBe("Waga musi być między 20 a 400 kg");
+    expect(validateStep("body", { ...base, heightCm: 119 })).toBe("Wzrost musi być między 120 a 230 cm.");
+    expect(validateStep("body", { ...base, weightKg: "34" })).toBe("Waga musi być między 35 a 250 kg.");
     expect(validateStep("birth", { ...base, dateOfBirth: "2999-01-01" })).toBeTruthy();
     expect(validateStep("contact", { ...base, email: "zly" })).toContain("E-mail jest wymagany");
     expect(validateStep("frequency", { ...base, desiredWeeklyFrequency: 8 })).toBeTruthy();

@@ -1,3 +1,4 @@
+import { birthDateError, heightError, weightError } from "@workspace/survey-config";
 import { Router, type IRouter } from "express";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { db, surveysTable, exercisesTable, clientsTable } from "@workspace/db";
@@ -292,6 +293,15 @@ router.put("/clients/:clientId/survey", requireAuth, async (req, res): Promise<v
   const dateOfBirthDate = dateOfBirth ? new Date(dateOfBirth) : undefined;
   if (dateOfBirthDate && dateOfBirthDate.getTime() > Date.now()) {
     res.status(400).json({ error: "Data urodzenia nie może być w przyszłości" });
+    return;
+  }
+  // Same limits as the interview (lib/survey-config), only for the values that were sent.
+  const bodyError =
+    (dateOfBirthDate ? birthDateError(dateOfBirthDate.toISOString().slice(0, 10)) : null) ??
+    (rest.heightCm != null ? heightError(rest.heightCm) : null) ??
+    (rest.weightKg != null ? weightError(Number(rest.weightKg)) : null);
+  if (bodyError) {
+    res.status(400).json({ error: bodyError });
     return;
   }
   const { avoidedExerciseIds: _rawIds, avoidedExerciseReasons: _rawReasons, ...rest2 } = rest;

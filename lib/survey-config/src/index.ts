@@ -11,6 +11,8 @@
 
 // ─── Training goal ────────────────────────────────────────────────────────────
 
+export * from "./effectiveLevel";
+
 export const TRAINING_GOAL_OPTIONS = [
   "Budowa sylwetki",
   "Zwiększenie siły",
@@ -118,11 +120,26 @@ export const EQUIPMENT_OPTIONS = [
 
 // ─── Cardio ───────────────────────────────────────────────────────────────────
 
+/**
+ * Two answers only. Older interviews may hold "Chętnie uwzględnię cardio w planie",
+ * "Cardio może być dodatkiem do planu" (both mean "include") or
+ * "Wolę ograniczyć cardio do niezbędnego minimum" — see normalizeCardioPreference().
+ */
 export const CARDIO_PREFERENCE_OPTIONS = [
-  "Chętnie uwzględnię cardio w planie",
-  "Cardio może być dodatkiem do planu",
-  "Wolę ograniczyć cardio do niezbędnego minimum",
+  "Tak, uwzględnij cardio w planie",
+  "Tylko niezbędne minimum",
 ] as const;
+
+export type CardioPreferenceKind = "include" | "minimum";
+
+/** Maps any stored answer (current or earlier wording) to what the generator needs. */
+export function normalizeCardioPreference(raw: string | null | undefined): CardioPreferenceKind | null {
+  if (!raw) return null;
+  const t = raw.trim().toLowerCase();
+  if (t.includes("niezbędn") || t.includes("ograniczyć")) return "minimum";
+  if (t.includes("uwzględn") || t.includes("dodatk")) return "include";
+  return null;
+}
 
 export const CARDIO_FREQUENCY_OPTIONS = [
   "Nie wykonuję cardio",
@@ -341,7 +358,7 @@ export function calculateBmi(
  * Parse YYYY-MM-DD as local calendar date (avoids UTC-midnight shift bug
  * that `new Date(str)` causes on date-only strings).
  */
-export function calculateAge(dateOfBirth: string | undefined): number | undefined {
+export function calculateAge(dateOfBirth: string | undefined, today: Date = new Date()): number | undefined {
   if (!dateOfBirth) return undefined;
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateOfBirth);
   if (!match) return undefined;
@@ -357,7 +374,6 @@ export function calculateAge(dateOfBirth: string | undefined): number | undefine
   ) {
     return undefined;
   }
-  const today = new Date();
   let age = today.getFullYear() - dobYear;
   const monthDiff = today.getMonth() - dobMonth;
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDay)) {
@@ -372,3 +388,99 @@ export function getLocalDateString(date: Date): string {
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
+
+// ─── Body data limits (one source for the wizard and the API) ────────────────
+
+export const SURVEY_LIMITS = {
+  ageMin: 16,
+  ageMax: 90,
+  heightMin: 120,
+  heightMax: 230,
+  weightMin: 35,
+  weightMax: 250,
+} as const;
+
+export const BIRTH_REQUIRED_MESSAGE = "Data urodzenia jest wymagana";
+export const BIRTH_INVALID_MESSAGE = "Podaj poprawną datę urodzenia w formacie DD.MM.RRRR.";
+export const AGE_RANGE_MESSAGE = `Wiek musi mieścić się między ${SURVEY_LIMITS.ageMin} a ${SURVEY_LIMITS.ageMax} lat. Sprawdź datę urodzenia.`;
+export const HEIGHT_RANGE_MESSAGE = `Wzrost musi być między ${SURVEY_LIMITS.heightMin} a ${SURVEY_LIMITS.heightMax} cm.`;
+export const WEIGHT_RANGE_MESSAGE = `Waga musi być między ${SURVEY_LIMITS.weightMin} a ${SURVEY_LIMITS.weightMax} kg.`;
+
+/** null = valid. `today` is injectable for tests. */
+export function birthDateError(dateOfBirth: string | undefined | null, today: Date = new Date()): string | null {
+  if (!dateOfBirth) return BIRTH_REQUIRED_MESSAGE;
+  const age = calculateAge(dateOfBirth, today);
+  if (age === undefined) return BIRTH_INVALID_MESSAGE;
+  if (age < SURVEY_LIMITS.ageMin || age > SURVEY_LIMITS.ageMax) return AGE_RANGE_MESSAGE;
+  return null;
+}
+
+export function heightError(heightCm: number | undefined | null): string | null {
+  return typeof heightCm === "number" && Number.isFinite(heightCm) && heightCm >= SURVEY_LIMITS.heightMin && heightCm <= SURVEY_LIMITS.heightMax
+    ? null
+    : HEIGHT_RANGE_MESSAGE;
+}
+
+export function weightError(weightKg: number | undefined | null): string | null {
+  return typeof weightKg === "number" && Number.isFinite(weightKg) && weightKg >= SURVEY_LIMITS.weightMin && weightKg <= SURVEY_LIMITS.weightMax
+    ? null
+    : WEIGHT_RANGE_MESSAGE;
+}
+
+/** The calendar opens about this many years back and starts empty. */
+export const DEFAULT_CALENDAR_YEARS_BACK = 30;
+
+/** YYYY-MM-DD bounds of the date picker: oldest and youngest allowed birth date. */
+export function birthDateBounds(today: Date = new Date()): { min: string; max: string; opensAt: string } {
+  const on = (years: number) => getLocalDateString(new Date(today.getFullYear() - years, today.getMonth(), today.getDate()));
+  return { min: on(SURVEY_LIMITS.ageMax + 1), max: on(SURVEY_LIMITS.ageMin), opensAt: on(DEFAULT_CALENDAR_YEARS_BACK) };
+}
+
+// ─── Equipment: "Brak sprzętu" excludes everything else ──────────────────────
+
+export const NO_EQUIPMENT = "Brak sprzętu";
+
+/** Toggling "Brak sprzętu" clears the rest; ticking anything else clears "Brak sprzętu". */
+export function toggleEquipment(current: readonly string[], value: string): string[] {
+  if (value === NO_EQUIPMENT) return current.includes(NO_EQUIPMENT) ? [] : [NO_EQUIPMENT];
+  const without = current.filter((x) => x !== NO_EQUIPMENT);
+  return without.includes(value) ? without.filter((x) => x !== value) : [...without, value];
+}
+
+export const EQUIPMENT_CONFLICT_MESSAGE = "„Brak sprzętu” nie może być zaznaczony razem z innym sprzętem.";
+
+/** Server side: "Brak sprzętu" together with other items is a contradiction. */
+export function equipmentConflict(items: readonly string[], other?: string | null): boolean {
+  return items.includes(NO_EQUIPMENT) && (items.length > 1 || !!(other ?? "").trim());
+}
+
+// ─── Priority muscle groups by effective level ───────────────────────────────
+
+export const PRIORITY_BEGINNER_TEXT = "Wybierz jedną partię, na której chcesz się skupić. Plan i tak rozwinie całe ciało.";
+export const PRIORITY_BEGINNER_MESSAGE = "Przy tym poziomie możesz wskazać najwyżej jedną partię priorytetową.";
+
+/** How many priority muscle groups the client may name at this (effective) level. */
+export function maxPriorityMuscles(effectiveLevel: string | null | undefined): number {
+  return isBeginnerLevel(effectiveLevel ?? undefined) ? 1 : 3;
+}
+
+// ─── Goal descriptions (shown behind an arrow next to each goal) ─────────────
+
+export const TRAINING_GOAL_DESCRIPTIONS: Record<string, string> = {
+  "Budowa sylwetki": "Więcej mięśni i lepsze proporcje ciała.",
+  "Zwiększenie siły": "Podnosić więcej w głównych ćwiczeniach.",
+  "Redukcja tkanki tłuszczowej": "Mniej tkanki tłuszczowej przy zachowaniu mięśni. Duże znaczenie ma też dieta.",
+  "Poprawa kondycji": "Łatwiej znosić wysiłek i szybciej się regenerować.",
+  "Poprawa sprawności": "Swobodniejszy ruch na co dzień — mobilność, stabilizacja, równowaga.",
+  "Cel sportowy": "Przygotowanie do konkretnej dyscypliny lub startu.",
+};
+
+// ─── Recommended session length by EFFECTIVE level ───────────────────────────
+
+export const SESSION_DURATION_RECOMMENDATIONS: Record<string, { option: string; why: string }> = {
+  "Brak aktywności fizycznej": { option: "30–45 min", why: "Krótko na start, żeby zbudować nawyk i nie przeciążyć organizmu." },
+  "Początkujący": { option: "45–60 min", why: "Wystarczy na rozgrzewkę i kilka ćwiczeń z dobrą techniką." },
+  "Średniozaawansowany": { option: "60–90 min", why: "Więcej serii i dłuższe przerwy przy ćwiczeniach głównych." },
+  "Zaawansowany": { option: "60–90 min", why: "Duża objętość i przerwy 3–5 min przy ciężkich seriach." },
+};
+export const SESSION_RECOMMENDED_BADGE = "Polecane dla Ciebie";
