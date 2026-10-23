@@ -16,6 +16,8 @@ Każda nowa funkcja od razu z dopracowanym UX (dla klienta: przede wszystkim tel
 7. **Pełny przegląd UX całej pętli + beta z 3–5 trenerami.**
 8. **Później**: streaki/poziomy, osiągnięcia trenera, OpenGym (jeśli katalog okaże się
    za mały), maskotka-byczek.
+   Własne logo trenera w mailu z zaproszeniem i na karcie story — później (wymaga publicznego
+   adresu aplikacji i wgrywania plików).
 
 ## Pulpit (stan 23.10)
 Zbudowany z istniejących danych (`GET /api/dashboard/summary`): wymaga uwagi (nowy wywiad, brak planu,
