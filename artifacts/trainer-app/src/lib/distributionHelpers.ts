@@ -40,7 +40,8 @@ export interface BuildDistributionRequestParams {
  *   - experienceLevel is missing or invalid
  *   - trainingDays is not a finite integer in [1, 6]
  *   - selectedSplitType is empty
- *   - Phase 2 decisions array does not have exactly 11 entries
+ *   - Phase 2 decisions array is empty (the number of volume targets is not
+ *     fixed — 12 since the "Brzuch" target)
  *
  * For weekly volume: uses the trainer override when present, otherwise
  * the Phase 2 engine's selectedValue.

@@ -3,7 +3,7 @@
  *
  * Covers all 26 test items required by the spec:
  *
- *  1.  Import file contains exactly 82 records.
+ *  1.  Import file contains exactly 92 records (82 from 13.07 + 10 added in 94dca7f).
  *  2.  All names are unique within the batch.
  *  3.  No imported name duplicates an existing exercise (original 5).
  *  4.  All records contain required general completeness fields.
@@ -15,7 +15,7 @@
  * 10.  Every exercise has at least one primary muscle assignment.
  * 11.  Every coefficient is > 0 and ≤ 1.
  * 12.  Every muscle name in the import file exists in specific_muscles table.
- * 13.  No new volume target was created.
+ * 13.  Volume targets match the seeds (11 + "Brzuch" from volumeTargetPatch).
  * 14.  Every active imported exercise is Complete (computeCompleteness).
  * 15.  Every active imported exercise is Analysis Ready (computeAnalysisReadiness).
  * 16.  No Activity exercises satisfy conservative metadata rules.
@@ -27,8 +27,9 @@
  * 22.  Phase 3 analysis works with imported exercises.
  * 23.  Existing 5 exercise IDs remain unchanged.
  * 24.  Existing plan references remain valid.
- * 25.  Database data is preserved (row counts and guideline count).
- * 26.  Running the import a second time creates no duplicates.
+ * 25.  Database data is preserved: every import row is in the public catalogue,
+ *      guideline/target counts match the seeds.
+ * 26.  Re-importing the same rows with "skip" creates no duplicates (trainer-owned).
  */
 
 // Trainer endpoints require a session: authenticate as the legacy test
@@ -40,7 +41,7 @@ vi.mock("@clerk/express", () => ({
 vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
 
 import { describe, it, expect, beforeAll, vi } from "vitest";
-import { legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
+import { legacyFixtureClient, legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
 import { readFileSync } from "fs";
 import { join } from "path";
 import supertest from "supertest";
@@ -60,10 +61,14 @@ import {
   volumeTargetsTable,
   volumeGuidelinesTable,
 } from "@workspace/db";
-import { count, eq, gt, inArray } from "drizzle-orm";
+import { and, count, eq, gt, inArray, isNull } from "drizzle-orm";
+
+let fixtureClientId: number;
 
 beforeAll(async () => {
   await legacyTrainerId();
+  // Replaces clientId 1 from the Replit database.
+  ({ clientId: fixtureClientId } = await legacyFixtureClient("batch01-fixture@example.invalid"));
 });
 
 const req = supertest(app);
@@ -163,18 +168,21 @@ function makeSurvey(overrides: Partial<Survey> = {}): Survey {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/** The public catalogue exercises that come from this import file (by name). */
 async function loadImportedExercises(): Promise<Exercise[]> {
-  return db
+  const names = new Set(importRows.map((r) => String(r.name).trim().toLowerCase()));
+  const all = await db
     .select()
     .from(exercisesTable)
-    .where(gt(exercisesTable.id, 5));
+    .where(and(gt(exercisesTable.id, 5), isNull(exercisesTable.createdByTrainerId)));
+  return all.filter((e) => names.has(e.name.trim().toLowerCase()));
 }
 
 // ─── 1. Import file row count ─────────────────────────────────────────────────
 
 describe("1. Import file row count", () => {
-  it("contains exactly 82 records", () => {
-    expect(importRows).toHaveLength(82);
+  it("contains exactly 92 records", () => {
+    expect(importRows).toHaveLength(92);
   });
 });
 
@@ -425,9 +433,9 @@ describe("12. All muscle names exist in DB", () => {
 // ─── 13. No new volume target created ────────────────────────────────────────
 
 describe("13. No new volume target created", () => {
-  it("volume_targets table still has 11 rows", async () => {
+  it("volume_targets has the 12 seeded rows (11 original + Brzuch)", async () => {
     const [{ total }] = await db.select({ total: count() }).from(volumeTargetsTable);
-    expect(total).toBe(11);
+    expect(total).toBe(12);
   });
 });
 
@@ -632,7 +640,7 @@ describe("21. Phase 2 volume calculation with imported exercises", () => {
     const res = await req
       .post("/api/plans/volume-preview")
       .send({
-        clientId: 1,
+        clientId: fixtureClientId,
         days: [
           {
             dayId: 99,
@@ -669,7 +677,7 @@ describe("22. Phase 3 analysis with imported exercises", () => {
     const res = await req
       .post("/api/plans/analysis-preview")
       .send({
-        clientId: 1,
+        clientId: fixtureClientId,
         days: [
           {
             dayId: 99,
@@ -704,7 +712,7 @@ describe("22. Phase 3 analysis with imported exercises", () => {
     const res = await req
       .post("/api/plans/analysis-preview")
       .send({
-        clientId: 1,
+        clientId: fixtureClientId,
         days: [
           {
             dayId: 99,
@@ -753,7 +761,7 @@ describe("24. Existing plan references valid", () => {
     const res = await req
       .post("/api/plans/volume-preview")
       .send({
-        clientId: 1,
+        clientId: fixtureClientId,
         days: [{ dayId: 1, dayName: "Test", exercises: [{ exerciseEntryId: 1, exerciseId: CANONICAL_IDS.benchPress, workingSets: 3 }] }],
       })
       .set("Content-Type", "application/json");
@@ -764,7 +772,7 @@ describe("24. Existing plan references valid", () => {
     const res = await req
       .post("/api/plans/analysis-preview")
       .send({
-        clientId: 1,
+        clientId: fixtureClientId,
         days: [{ dayId: 1, dayName: "Test", dayOrder: 1, exercises: [{ exerciseEntryId: 1, exerciseId: CANONICAL_IDS.pullUp, workingSets: 3 }] }],
       })
       .set("Content-Type", "application/json");
@@ -775,24 +783,26 @@ describe("24. Existing plan references valid", () => {
 // ─── 25. Database data preserved ─────────────────────────────────────────────
 
 describe("25. Database data preserved", () => {
-  it("exercises table has exactly 87 records (5 original + 82 imported)", async () => {
-    const [{ total }] = await db.select({ total: count() }).from(exercisesTable);
-    expect(total).toBe(87);
+  it("every import row exists in the public catalogue", async () => {
+    const exercises = await loadImportedExercises();
+    expect(exercises).toHaveLength(importRows.length);
   });
 
-  it("volume_guidelines table still has exactly 44 rows", async () => {
+  it("volume_guidelines has the 48 seeded rows", async () => {
     const [{ total }] = await db.select({ total: count() }).from(volumeGuidelinesTable);
-    expect(total).toBe(44);
+    expect(total).toBe(48);
   });
 
-  it("imported exercises have 224 muscle assignment rows", async () => {
+  it("imported exercises keep at least the muscle assignments declared in the file", async () => {
+    // The seeded catalogue (catalogueSeed) is richer than the import file.
+    const declared = importRows.reduce((n, r) => n + (r.muscleAssignments?.length ?? 0), 0);
     const exercises = await loadImportedExercises();
     const ids = exercises.map((e) => e.id);
     const rows = await db
       .select({ id: exerciseMuscleAssignmentsTable.id })
       .from(exerciseMuscleAssignmentsTable)
       .where(inArray(exerciseMuscleAssignmentsTable.exerciseId, ids));
-    expect(rows.length).toBe(224);
+    expect(rows.length).toBeGreaterThanOrEqual(declared);
   });
 });
 
@@ -864,25 +874,38 @@ describe("28. All relationship targets reference exercises in the batch or exist
 // ─── 26. Re-import creates no duplicates ─────────────────────────────────────
 
 describe("26. Re-import with skip strategy creates no duplicates", () => {
-  it("running the import a second time results in 0 imported and 82 skipped", async () => {
-    // Use the actual import file but override strategy to 'skip'
-    const importFileRaw = readFileSync(IMPORT_FILE_PATH, "utf8");
-    const payload = JSON.parse(importFileRaw);
-    payload.duplicateStrategy = "skip";
+  // Since multi-tenancy, a trainer's import creates the trainer's own
+  // exercises and detects duplicates among them (FREE plan: max 10 own
+  // exercises). Re-import two file rows under test names, twice.
+  const TEST_PREFIX = "[test batch01 reimport] ";
 
-    const res = await req
-      .post("/api/exercises/import")
-      .send(payload)
-      .set("Content-Type", "application/json");
+  function reimportPayload() {
+    const rows = importRows.slice(0, 2).map((r) => {
+      const { substitutions: _s, progressions: _p, regressions: _r, ...row } = r;
+      return { ...row, name: TEST_PREFIX + r.name };
+    });
+    return { rows, duplicateStrategy: "skip", skipInvalidRows: false };
+  }
 
-    expect(res.status).toBe(200);
-    expect(res.body.imported).toBe(0);
-    expect(res.body.skipped).toBe(82);
-    expect(res.body.failed).toBe(0);
+  it("second import with skip imports nothing and skips both rows", async () => {
+    const first = await req.post("/api/exercises/import").send(reimportPayload());
+    expect(first.status).toBe(200);
+    expect(first.body.imported + first.body.skipped).toBe(2);
+
+    const second = await req.post("/api/exercises/import").send(reimportPayload());
+    expect(second.status).toBe(200);
+    expect(second.body.imported).toBe(0);
+    expect(second.body.skipped).toBe(2);
+    expect(second.body.failed).toBe(0);
   });
 
-  it("exercise count is still 87 after re-import", async () => {
-    const [{ total }] = await db.select({ total: count() }).from(exercisesTable);
-    expect(total).toBe(87);
+  it("exactly one trainer-owned exercise per re-imported row", async () => {
+    const trainerId = await legacyTrainerId();
+    const owned = await db
+      .select({ name: exercisesTable.name })
+      .from(exercisesTable)
+      .where(eq(exercisesTable.createdByTrainerId, trainerId));
+    const reimported = owned.filter((e) => e.name.startsWith(TEST_PREFIX));
+    expect(reimported).toHaveLength(2);
   });
 });

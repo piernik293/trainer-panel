@@ -319,7 +319,7 @@ export interface SingleTargetDecisionInput {
  *   A. ov < preferredMin              → rejected, VOLUME_OVERRIDE_BELOW_MIN
  *   B. preferredMin ≤ ov ≤ preferredMax → accepted, no warning
  *   C. preferredMax < ov ≤ absoluteMax → accepted, VOLUME_OVERRIDE_ABOVE_PREFERRED (non-blocking)
- *   D. ov > absoluteMax               → rejected, VOLUME_OVERRIDE_ABOVE_ABSOLUTE_MAX
+ *   D. ov > absoluteMax               → accepted, VOLUME_OVERRIDE_ABOVE_ABSOLUTE_MAX (non-blocking)
  *
  * Never silently clamps — rejected values keep selectedValue = recommendedValue.
  */

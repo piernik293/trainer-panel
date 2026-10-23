@@ -12,6 +12,7 @@ import {
   runExerciseSelectionEngineV0,
   type V0SessionType,
 } from "../services/ExerciseSelectionEngineV0";
+import { buildGoalProfile } from "../services/goalProfileService";
 import type { ScoredAndFilteredExercise } from "../services/planDraftDayRecommendationsService";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -32,7 +33,9 @@ function makeEx(
     warnReasons: [],
     isAvoided: false,
     exerciseType: partial.exerciseType ?? null,
-    learningDifficulty: partial.learningDifficulty ?? null,
+    // Default 1 like the real safe catalogue: null difficulty is rejected for
+    // inactive/beginner clients (rule since 22.10), which would empty the pool.
+    learningDifficulty: partial.learningDifficulty === undefined ? 1 : partial.learningDifficulty,
     movementPattern: partial.movementPattern ?? null,
     suitableForNoActivity: partial.suitableForNoActivity ?? null,
     exercisePriority: partial.exercisePriority ?? null,
@@ -53,12 +56,7 @@ const noActivityCtx = {
   allowPlyometrics: false,
   preferredExerciseKeywords: [],
   deprioritizePushUps: false,
-  goalProfile: {
-    isCompetitiveAthlete: false,
-    preferHighNeurologicalLoad: false,
-    deprioritizeIsolationInMixedSlots: false,
-    exerciseClassBias: "default" as const,
-  },
+  goalProfile: buildGoalProfile(null), // neutral general profile (complete GoalProfile)
   undercoveredMuscleGroups: [],
   usageHistory: new Map(),
   cooldownIds: new Set<number>(),
@@ -168,7 +166,8 @@ describe("Engine: inactive-client selection rules", () => {
     // but warnings are present
     expect(result.warnings).toBeDefined();
     expect(result.warnings!.length).toBeGreaterThan(0);
-    expect(result.warnings![0]).toContain("gumę oporową");
+    // The thin fixture pool may also emit slot-skip warnings; the pull warning must be among them.
+    expect(result.warnings!.some((w) => w.includes("gumę oporową"))).toBe(true);
   });
 
   it("8. The pull warning does NOT cause equipment restrictions to be bypassed — no Plecy exercise appears", () => {
@@ -197,8 +196,9 @@ describe("Engine: inactive-client selection rules", () => {
 
     const result = runExerciseSelectionEngineV0(pool, "full_body", new Set(), noActivityCtx);
 
-    // Pull slot filled — no warning
-    expect(result.warnings ?? []).toHaveLength(0);
+    // Pull slot filled — no pull warning (slot-skip warnings from the thin
+    // fixture pool are unrelated).
+    expect((result.warnings ?? []).some((w) => w.includes("przyciągającego"))).toBe(false);
     // The band row appears in output
     const pullEx = result.exercises.find((e) => e.id === 200);
     expect(pullEx).toBeDefined();

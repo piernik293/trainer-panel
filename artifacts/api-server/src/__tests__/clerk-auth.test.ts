@@ -29,7 +29,9 @@ vi.mock("@clerk/shared/keys", () => ({
 
 // ─── Mock the DB so tests are self-contained ─────────────────────────────────
 
-const mockTrainerA = { id: 1, clerkUserId: "user_A", displayName: "Trainer A", email: null, createdAt: new Date() };
+/** Trainer row shape (displayName / email are nullable in the schema). */
+type TrainerFixture = { id: number; clerkUserId: string; displayName: string | null; email: string | null; createdAt: Date };
+const mockTrainerA: TrainerFixture = { id: 1, clerkUserId: "user_A", displayName: "Trainer A", email: null, createdAt: new Date() };
 const mockTrainerB = { id: 2, clerkUserId: "user_B", displayName: "Trainer B", email: null, createdAt: new Date() };
 const mockClientA = { id: 10, firstName: "Jan", lastName: "Kowalski", email: null, phone: null, notes: null, status: "active", trainerId: 1, createdAt: new Date(), updatedAt: new Date() };
 

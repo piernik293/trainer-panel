@@ -32,7 +32,7 @@ vi.mock("@clerk/express", () => ({
 vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
 
 import { describe, it, expect, vi, beforeAll } from "vitest";
-import { legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
+import { legacyFixtureClient, legacyFixturePlan, legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
 import supertest from "supertest";
 import app from "../../app";
 import {
@@ -43,8 +43,18 @@ import {
 import { scoreExercise } from "../../lib/recommendation-engine";
 import type { Exercise, Survey } from "@workspace/db";
 
+// Fixtures replacing client IDs from the Replit DB: emptyLevel (was 19),
+// validClient + its plan (was client 1 / plan 1).
+let emptyLevel: number;
+let validClient: number;
+let validPlan: number;
+
 beforeAll(async () => {
   await legacyTrainerId();
+  emptyLevel = (await legacyFixtureClient("levels-fixture-emptylevel@example.invalid", { experienceLevel: null })).clientId;
+  const valid = await legacyFixtureClient("levels-fixture-valid@example.invalid");
+  validClient = valid.clientId;
+  validPlan = await legacyFixturePlan(validClient, valid.surveyId, "Początkujący", 1);
 });
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -176,9 +186,9 @@ describe("Strict level validation (isValidExperienceLevel)", () => {
   });
 
   it("11. Missing level: route returns MISSING_EXPERIENCE_LEVEL, guidelineLevel null, hasGuidelines false", async () => {
-    // Client 19 has a survey with a null experienceLevel
+    // Fixture client whose survey has a null experienceLevel
     const res = await req.post("/api/plans/volume-preview")
-      .send({ clientId: 19, days: [] })
+      .send({ clientId: emptyLevel, days: [] })
       .set("Content-Type", "application/json");
     expect(res.status).toBe(200);
     const codes = res.body.warnings.map((w: { code: string }) => w.code);
@@ -218,9 +228,9 @@ describe("Strict level validation (isValidExperienceLevel)", () => {
   });
 
   it("13d. No guidelines calculated for invalid/missing input (hasGuidelines: false, guidelineLevel: null)", async () => {
-    // Client 19 has null experienceLevel — should get a structured empty response
+    // Fixture client with null experienceLevel — should get a structured empty response
     const res = await req.post("/api/plans/volume-preview")
-      .send({ clientId: 19, days: [] })
+      .send({ clientId: emptyLevel, days: [] })
       .set("Content-Type", "application/json");
     expect(res.status).toBe(200);
     expect(res.body.hasGuidelines).toBe(false);
@@ -253,7 +263,7 @@ describe("Volume guideline mapping", () => {
 // ─── 16–18  DB integration: guideline row counts and values ───────────────────
 
 describe("Volume guideline DB integration", () => {
-  it("16. All four levels return exactly 11 volume targets", async () => {
+  it("16. All four levels return exactly 12 volume targets (11 + Brzuch)", async () => {
     const levels = [...CANONICAL_EXPERIENCE_LEVELS];
     for (const level of levels) {
       const res = await req.get(
@@ -261,11 +271,11 @@ describe("Volume guideline DB integration", () => {
       );
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body).toHaveLength(11);
+      expect(res.body).toHaveLength(12);
     }
   }, 30_000);
 
-  it("17. Total guideline count is 44 (11 targets × 4 levels)", async () => {
+  it("17. Total guideline count is 48 (12 targets × 4 levels)", async () => {
     let total = 0;
     for (const level of CANONICAL_EXPERIENCE_LEVELS) {
       const res = await req.get(
@@ -274,7 +284,7 @@ describe("Volume guideline DB integration", () => {
       expect(res.status).toBe(200);
       total += res.body.length;
     }
-    expect(total).toBe(44);
+    expect(total).toBe(48);
   }, 30_000);
 
   it("18. No Activity weekly preferred ceilings are lower than Beginner ceilings", async () => {
@@ -397,24 +407,20 @@ describe("Recommendation scoring for experience levels", () => {
 
 describe("Regression checks", () => {
   it("24. Workout Builder volume-preview route works for all four levels", async () => {
-    // Client 1 has a valid survey — volume preview should succeed without error
+    // Fixture client with a valid survey — volume preview must succeed
     const res = await req.post("/api/plans/volume-preview")
-      .send({ clientId: 1, days: [] })
+      .send({ clientId: validClient, days: [] })
       .set("Content-Type", "application/json");
-    expect([200, 404]).toContain(res.status);
-    // If 200, must return a weekly array
-    if (res.status === 200) {
-      expect(Array.isArray(res.body.weekly)).toBe(true);
-    }
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.weekly)).toBe(true);
   }, 15_000);
 
   it("25. Phase 3 movement-analysis route still works", async () => {
-    // Client 1, plan 1 — just verify the route responds without 500
+    // Fixture client + its plan — the analysis must run
     const res = await req.post("/api/plans/analysis-preview")
-      .send({ clientId: 1, planId: 1, days: [] })
+      .send({ clientId: validClient, planId: validPlan, days: [] })
       .set("Content-Type", "application/json");
-    // 200 = analysis ran; 403/404 = auth/data mismatch — both prove the route is alive
-    expect([200, 403, 404]).toContain(res.status);
+    expect(res.status).toBe(200);
   }, 15_000);
 
   it("26. Existing database records remain present", async () => {
@@ -425,9 +431,9 @@ describe("Regression checks", () => {
 
     // Clients endpoint must respond
     const clientsRes = await req.get("/api/clients");
-    expect([200, 401]).toContain(clientsRes.status);
+    expect(clientsRes.status).toBe(200);
 
-    // Volume guidelines must still return all 44 rows
+    // Volume guidelines must still return all 48 rows
     let total = 0;
     for (const level of CANONICAL_EXPERIENCE_LEVELS) {
       const res = await req.get(
@@ -437,6 +443,6 @@ describe("Regression checks", () => {
         total += res.body.length;
       }
     }
-    expect(total).toBe(44);
+    expect(total).toBe(48);
   }, 30_000);
 });

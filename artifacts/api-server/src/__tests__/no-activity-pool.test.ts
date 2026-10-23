@@ -48,10 +48,9 @@ const noActivityCtx: V0PriorityContext = {
   isPriorityEligible: false,
   isNoActivityClient: true,
   isBeginnerClient: false,
-  hasBenchGoal: false,
-  hasBarbell: false,
-  isPowerGoal: false,
-  isAthlete: false,
+  tierA: [],
+  tierB: [],
+  benchGoalActive: false,
   allowPlyometrics: false,
   preferredExerciseKeywords: [],
 };

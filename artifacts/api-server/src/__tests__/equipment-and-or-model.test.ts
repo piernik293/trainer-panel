@@ -92,12 +92,12 @@ describe("isEquipmentCompatible — bodyweight does NOT bypass required_equipmen
 
 // ─── B. DB verification ───────────────────────────────────────────────────────
 
-interface ExRow {
+type ExRow = {
   id: number;
   name: string;
   equipment: string[];
   requiredEquipmentAll: string[];
-}
+};
 
 async function getEx(id: number): Promise<ExRow> {
   const res = await db.execute<ExRow>(

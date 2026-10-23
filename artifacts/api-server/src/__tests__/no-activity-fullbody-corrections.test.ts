@@ -21,19 +21,8 @@ import { isEquipmentCompatible } from "../services/planDraftDayRecommendationsSe
 
 // ─── Shared DB fixtures ────────────────────────────────────────────────────
 
-type ExRow = {
-  id: number; name: string; equipment: string[]; requiredEquipmentAll: string[];
-  suitableForNoActivity: boolean | null; suitableExperienceLevels: string[];
-  movementPattern: string; mainMuscleGroup: string; secondaryMuscleGroups: string[];
-  exerciseType: string; exercisePriority: string; difficultyLevel: string;
-  trainingLocation: string[]; learningDifficulty: number | null;
-  neurologicalFatigue: number | null; domsPotential: number | null;
-};
-
-let allRows: ExRow[] = [];
-
-beforeAll(async () => {
-  allRows = await db
+function loadRows() {
+  return db
     .select({
       id: exercisesTable.id,
       name: exercisesTable.name,
@@ -54,6 +43,15 @@ beforeAll(async () => {
     })
     .from(exercisesTable)
     .where(inArray(exercisesTable.id, [89, 90, 95, 96, 98, 105, 195, 160, 256]));
+}
+
+/** Row type follows the schema (nullable columns stay nullable). */
+type ExRow = Awaited<ReturnType<typeof loadRows>>[number];
+
+let allRows: ExRow[] = [];
+
+beforeAll(async () => {
+  allRows = await loadRows();
 });
 
 // ─── DB value assertions ───────────────────────────────────────────────────
@@ -132,10 +130,9 @@ const noActivityCtx: V0PriorityContext = {
   isPriorityEligible: false,
   isNoActivityClient: true,
   isBeginnerClient: false,
-  hasBenchGoal: false,
-  hasBarbell: false,
-  isPowerGoal: false,
-  isAthlete: false,
+  tierA: [],
+  tierB: [],
+  benchGoalActive: false,
   allowPlyometrics: false,
   preferredExerciseKeywords: [],
 };
@@ -197,8 +194,11 @@ describe("10 × two-day Full Body plans — Dom/Brak sprzętu/Brak aktywności",
       }
       // All equipment compatible
       for (const ex of result.exercises) {
+        // Engine output has no requiredEquipmentAll — check the source pool entry
+        // so the AND requirement is verified too (it was silently skipped via ?? []).
+        const src = pool.find((p) => p.id === ex.id)!;
         expect(
-          isEquipmentCompatible(ex.equipment, ex.requiredEquipmentAll ?? [], "Brak sprzętu"),
+          isEquipmentCompatible(src.equipment, src.requiredEquipmentAll ?? [], "Brak sprzętu"),
           `id=${ex.id} "${ex.name}" failed equipment check in plan ${i + 1} day 1`,
         ).toBe(true);
       }
@@ -224,8 +224,11 @@ describe("10 × two-day Full Body plans — Dom/Brak sprzętu/Brak aktywności",
           `"${fname}" must not appear in plan ${i + 1} day 2`).toBe(false);
       }
       for (const ex of result.exercises) {
+        // Engine output has no requiredEquipmentAll — check the source pool entry
+        // so the AND requirement is verified too (it was silently skipped via ?? []).
+        const src = pool.find((p) => p.id === ex.id)!;
         expect(
-          isEquipmentCompatible(ex.equipment, ex.requiredEquipmentAll ?? [], "Brak sprzętu"),
+          isEquipmentCompatible(src.equipment, src.requiredEquipmentAll ?? [], "Brak sprzętu"),
           `id=${ex.id} "${ex.name}" failed equipment check in plan ${i + 1} day 2`,
         ).toBe(true);
       }

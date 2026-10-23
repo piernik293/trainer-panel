@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   serial,
@@ -249,6 +250,10 @@ export const workoutSessionsTable = pgTable("workout_sessions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   index("ws_client_plan_idx").on(table.clientId, table.planId),
+  // Mirrors migration 0011: one active (not completed) session per client per plan day.
+  uniqueIndex("ws_one_active_per_client_day")
+    .on(table.clientId, table.planDayId)
+    .where(sql`${table.isCompleted} = false`),
 ]);
 
 // ─── Exercise execution logs ──────────────────────────────────────────────────
@@ -283,6 +288,8 @@ export const exerciseExecutionLogsTable = pgTable("exercise_execution_logs", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   uniqueIndex("eel_session_exercise_idx").on(table.sessionId, table.planExerciseId),
+  // Mirrors migration 0010.
+  index("eel_exercise_idx").on(table.exerciseId),
 ]);
 
 // ─── Types ────────────────────────────────────────────────────────────────────

@@ -165,7 +165,7 @@ vi.mock("../middlewares/requireAuth", () => ({
     _res: express.Response,
     next: express.NextFunction,
   ) => {
-    (req as express.Request & { trainer?: { id: number } }).trainer = { id: 1 };
+    (req as unknown as { trainer: { id: number } }).trainer = { id: 1 };
     next();
   },
 }));

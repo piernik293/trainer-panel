@@ -21,9 +21,9 @@ vi.mock("@clerk/express", () => ({
 vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
 
 import { describe, it, expect, afterEach, afterAll, vi, beforeAll } from "vitest";
-import { legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
+import { legacyFixtureClient, legacyFixturePlan, legacyTrainerId, ownByLegacyTrainer } from "../../__tests__/helpers/legacyTrainer";
 import request from "supertest";
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, notExists, sql } from "drizzle-orm";
 import app from "../../app";
 import {
   calculateVolumePreview,
@@ -37,10 +37,43 @@ import {
   volumeGuidelinesTable,
   workoutPlanDaysTable,
   workoutPlanExercisesTable,
+  exerciseMuscleAssignmentsTable,
+  volumeTargetMembersTable,
 } from "@workspace/db";
+
+// Fixture clients replacing the client/plan IDs borrowed from the Replit DB:
+// withSurvey (was 20 / 3 / 1), noSurvey (was 4), emptyLevel (was 19), and a
+// plan of withSurvey stored as Zaawansowany + guideline version 1 (was plan 1).
+let withSurvey: number;
+let otherClient: number;
+let noSurvey: number;
+let emptyLevel: number;
+let fixturePlanId: number;
+/** An exercise with a muscle that belongs to no volume target (was exercise 2). */
+let unmappedExerciseId: number;
 
 beforeAll(async () => {
   await legacyTrainerId();
+  const a = await legacyFixtureClient("preview-fixture-a@example.invalid", { experienceLevel: "Zaawansowany" });
+  withSurvey = a.clientId;
+  otherClient = (await legacyFixtureClient("preview-fixture-other@example.invalid")).clientId;
+  noSurvey = (await legacyFixtureClient("preview-fixture-nosurvey@example.invalid", null)).clientId;
+  emptyLevel = (await legacyFixtureClient("preview-fixture-emptylevel@example.invalid", { experienceLevel: "" })).clientId;
+  fixturePlanId = await legacyFixturePlan(withSurvey, a.surveyId, "Zaawansowany", 1);
+
+  const [unmapped] = await db
+    .select({ exerciseId: exerciseMuscleAssignmentsTable.exerciseId })
+    .from(exerciseMuscleAssignmentsTable)
+    .where(
+      notExists(
+        db
+          .select({ one: sql`1` })
+          .from(volumeTargetMembersTable)
+          .where(eq(volumeTargetMembersTable.specificMuscleId, exerciseMuscleAssignmentsTable.specificMuscleId)),
+      ),
+    )
+    .limit(1);
+  unmappedExerciseId = unmapped.exerciseId;
 });
 
 // Close the connection pool after all tests to allow the process to exit cleanly.
@@ -71,7 +104,7 @@ describe("calculateVolumePreview — DB integration", () => {
       .where(eq(exercisesTable.id, 1));
 
     const result = await calculateVolumePreview({
-      clientId: 20,
+      clientId: withSurvey,
       guidelineVersionId: 1,
       experienceLevelUsed: "Zaawansowany",
       days: [{
@@ -90,26 +123,26 @@ describe("calculateVolumePreview — DB integration", () => {
     expect(hasContribution, "Inactive exercise must still contribute effective sets").toBe(true);
   });
 
-  it("MISSING_MUSCLE_TARGET — exercise 2 has muscle assignments not in any volume target", async () => {
+  it("MISSING_MUSCLE_TARGET — an exercise with a muscle outside every volume target", async () => {
     const result = await calculateVolumePreview({
-      clientId: 3,
+      clientId: withSurvey,
       guidelineVersionId: 1,
       experienceLevelUsed: "Zaawansowany",
       days: [{
         dayId: 1,
         dayName: "A",
-        exercises: [{ exerciseEntryId: 1, exerciseId: 2, workingSets: 3 }],
+        exercises: [{ exerciseEntryId: 1, exerciseId: unmappedExerciseId, workingSets: 3 }],
       }],
     });
 
     const warn = result.warnings.find(w => w.code === "MISSING_MUSCLE_TARGET");
-    expect(warn, "MISSING_MUSCLE_TARGET warning must be present for exercise 2").toBeDefined();
-    expect(warn!.exerciseId).toBe(2);
+    expect(warn, `MISSING_MUSCLE_TARGET warning must be present for exercise ${unmappedExerciseId}`).toBeDefined();
+    expect(warn!.exerciseId).toBe(unmappedExerciseId);
   });
 
   it("EXERCISE_ENTRY_WITHOUT_EXERCISE_ID — exerciseId 0 emits warning; valid entry still calculates", async () => {
     const result = await calculateVolumePreview({
-      clientId: 3,
+      clientId: withSurvey,
       guidelineVersionId: 1,
       experienceLevelUsed: "Zaawansowany",
       days: [{
@@ -134,7 +167,7 @@ describe("calculateVolumePreview — DB integration", () => {
 
   it("INVALID_WORKING_SETS — workingSets=0 emits warning; valid entry still calculates", async () => {
     const result = await calculateVolumePreview({
-      clientId: 3,
+      clientId: withSurvey,
       guidelineVersionId: 1,
       experienceLevelUsed: "Zaawansowany",
       days: [{
@@ -245,20 +278,20 @@ describe("calculateVolumePreview — DB integration", () => {
 // ─── Route integration tests (via supertest) ──────────────────────────────────
 
 describe("POST /api/plans/volume-preview — route integration", () => {
-  it("MISSING_CLIENT_SURVEY — client 4 has no survey rows", async () => {
+  it("MISSING_CLIENT_SURVEY — client without survey rows", async () => {
     const res = await request(app)
       .post("/api/plans/volume-preview")
-      .send({ clientId: 4, days: [] })
+      .send({ clientId: noSurvey, days: [] })
       .expect(200);
 
     const codes: string[] = res.body.warnings.map((w: { code: string }) => w.code);
     expect(codes).toContain("MISSING_CLIENT_SURVEY");
   });
 
-  it("MISSING_EXPERIENCE_LEVEL — client 19's most recent survey has an empty level", async () => {
+  it("MISSING_EXPERIENCE_LEVEL — most recent survey has an empty level", async () => {
     const res = await request(app)
       .post("/api/plans/volume-preview")
-      .send({ clientId: 19, days: [] })
+      .send({ clientId: emptyLevel, days: [] })
       .expect(200);
 
     const codes: string[] = res.body.warnings.map((w: { code: string }) => w.code);
@@ -266,13 +299,13 @@ describe("POST /api/plans/volume-preview — route integration", () => {
   });
 
   it("FIX 4 — planId makes backend ignore frontend-supplied level; mismatch warnings returned", async () => {
-    // Plan 1 stores Zaawansowany + versionId 1.
+    // The fixture plan stores Zaawansowany + versionId 1.
     // Frontend sends Początkujący + versionId 999 → both should be rejected.
     const res = await request(app)
       .post("/api/plans/volume-preview")
       .send({
-        clientId:            20,
-        planId:              1,
+        clientId:            withSurvey,
+        planId:              fixturePlanId,
         experienceLevelUsed: "Początkujący",
         guidelineVersionId:  999,
         days:                [],
@@ -287,12 +320,13 @@ describe("POST /api/plans/volume-preview — route integration", () => {
     expect(codes).toContain("MISSING_GUIDELINE_VERSION");
   });
 
-  it("ownership check — planId belonging to a different client is rejected (403)", async () => {
-    // Plan 1 belongs to client 20; presenting it as client 1 must be forbidden.
+  it("ownership check — planId belonging to a different client is rejected (404)", async () => {
+    // The fixture plan belongs to withSurvey; presenting it as another client is
+    // rejected with 404 (no-enumeration convention since 3ea2ea4, 30.07).
     await request(app)
       .post("/api/plans/volume-preview")
-      .send({ clientId: 1, planId: 1, days: [] })
-      .expect(403);
+      .send({ clientId: otherClient, planId: fixturePlanId, days: [] })
+      .expect(404);
   });
 
   it("unknown client returns 404", async () => {

@@ -27,14 +27,14 @@ function makeEx(id: number, overrides: Partial<PartialEx> = {}): PartialEx {
     isAvoided: false,
     exerciseType: "compound",
     equipment: [],
-    trainingLocation: "gym",
+    trainingLocation: ["Siłownia"],
     exercisePriority: "Średni",
     learningDifficulty: 2,
     movementPattern: null,
     movementCategoryKey: null,
-    secondaryMuscleGroups: null,
+    secondaryMuscleGroups: [],
     suitableForNoActivity: false,
-    neurologicalFatigue: "medium",
+    neurologicalFatigue: 3, // medium (scale 1–5)
     ...overrides,
   };
 }

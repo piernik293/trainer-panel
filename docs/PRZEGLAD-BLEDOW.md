@@ -51,33 +51,39 @@ tras z parametrami klienta/planu dla 4 ról oraz 31 tras GET właściciela).
 | P1 | 21 fikstur testów z `trainer_id = NULL` blokowało start API przy ≥ 2 trenerach | dane (pg_dump, przypisanie do `test_fixtures_owner`) + `edd32c5` |
 | P2 | Wieczne ładowanie / cichy błąd na Pulpicie i w zaproszeniach; brak ponowień 4xx | `55512fa`, `2f89d03`, `f1c5c88` |
 
-## Testy (22.10, po naprawach)
+## Testy (22.10, po decyzjach 1–5)
 
-- api-server (`scripts/test-api.sh`, baza testowa): 2073 OK / 64 nie (wcześniej 1981 / 129).
-- trainer-app: 709 OK / 2 nie (`distributionHelpers` — rozjazd testu z kodem, sprzed migracji).
-- client-landing: 9/9. beginner-safety + beginnerBalancingPass: zielone.
-- Test dymny: 116 OK / 0 BŁĄD (~2 s).
+- api-server (`scripts/test-api.sh`, baza testowa): 2141 OK / 0 nie (start: 1981 / 129).
+  Pozostałe 4 są poprawne i czekają na decyzje (patrz niżej): 3 × `workout-history`
+  (brak indeksu `ws_one_active_per_client_day`), 1 × katalog (ćwiczenia 259/260 bez mięśni).
+- trainer-app: 715/715. client-landing: 9/9. beginner-safety + beginnerBalancingPass: zielone.
+- Typecheck: api-server, trainer-app, client-landing, panel-trenera-deck, scripts, lib — 0 błędów.
+  mockup-sandbox: 71 błędów w wygenerowanych szablonach Replit (nie jest produktem).
+- Build: api-server, trainer-app, client-landing — OK. Test dymny: 116 OK / 0 BŁĄD.
 
-### Pozostałe niepowodzenia api-server (klasyfikacja)
+### Ustalenia przy naprawie testów
 
-| Plik | Liczba | Klasa | Uwagi |
-|---|---|---|---|
-| exercise-batch-01 | 13 | fikstura/dane | test z 13.07 (82 rekordy, 87 ćwiczeń, 44 wytyczne); plik ma 92 rekordy od `94dca7f` (20.07), seed: 158/48. Prawdą są dane — trzeba zaktualizować test |
-| client-creation-invite-flow | 12 | fikstura | mock bazy sprzed zmian w zaproszeniach |
-| clientPortal.integration | 9 | fikstura | do ustalenia (wyszukiwanie klienta po e-mailu → 404) |
-| planDraftVolumeDecision | 6 | kod/test | niezweryfikowane |
-| preview.integration, experience-levels | 10 | dane | twarde ID klientów z bazy Replit (3, 4, 19, 20) |
-| exercise-metadata | 5 | dane | liczności katalogu z Replit |
-| workout-history, client-portal-auth, brak-aktywnosci-fixes, multi-tenancy (7) | 9 | niezweryfikowane | multi-tenancy (7) zwracał 500 już przed zmianami |
+| Plik | Klasa | Prawda / rozstrzygnięcie |
+|---|---|---|
+| exercise-batch-01 | dane | plik ma 92 wiersze od `94dca7f`; seedy: 158 ćwiczeń, 12 celów, 48 wytycznych |
+| planDraftVolumeDecision | test nieaktualny | spec 28.07: start od absoluteMax dla wszystkich poziomów, bez obniżek, strefa D przyjmowana z ostrzeżeniem |
+| clientPortal.integration | test nieaktualny | dostęp po `?email=` usunięty w `5711879` — test na sesji klienta |
+| preview / experience-levels / exercise-metadata | dane | ID z bazy Replit → klienci-fikstury |
+| invite-flow, client-portal-auth, multi-tenancy | fikstura | mocki bazy nieobsługujące nowszych zapytań |
+| brak-aktywnosci-fixes, distributionHelpers | fikstura / test nieaktualny | trudność null (reguła z 22.10), liczba celów nie jest stała |
+| no-activity-fullbody-corrections | test wzmocniony | warunek AND sprzętu był po cichu pomijany |
 
-## Do decyzji
+## Decyzje zrealizowane (23.10)
 
-1. Ekrany bez obsługi błędu (pokazują stan pusty lub nic przy błędzie API): `ClientList`,
-   `ExerciseList`, `ExerciseDetail`, `ExerciseRelations`, `ExerciseRecommendationsTab`,
-   `Step5Preview`, `VolumePanel`, `VolumeCoverageSection`, `AvoidedExercisesPicker`,
-   `FavoriteExercisesPicker`, `BulkImportModal` — naprawa wg wzoru z Pulpitu (`ErrorState`).
-2. Konto trenera, które aktywuje zaproszenie do portalu klienta — obecnie dozwolone.
-3. Dom / plener / brak lokalizacji bez sprzętu: zgodność = tylko masa ciała, a szkic
-   planu zakłada sprzęt domowy (`HOME_GYM_EQUIPMENT`).
-4. 401 w panelu pokazuje komunikat „Twoja sesja wygasła…” — automatyczne
-   przekierowanie do logowania nie zostało dodane (ryzyko pętli przy złym kluczu serwera).
+1. **Indeksy** `ws_one_active_per_client_day`, `eel_exercise_idx`, `idx_client_invitations_client_id`:
+   pg_dump, brak duplikatów, utworzone w bazie aplikacji i testowej, dopisane do schematu
+   Drizzle (`lib/db/src/schema/plans.ts`, `clientInvitations.ts`). Trzeba je założyć ręcznie
+   (lub `psql -f lib/db/migrations/…`) na każdej nowej bazie, bo `drizzle-kit push` pomija migracje SQL.
+2. **Katalog:** ćwiczenie 259 → łydka brzuchata 1.0 + płaszczkowaty 0.5; 260 → czworogłowy 1.0 +
+   pośladkowy wielki 0.5 (baza + `catalogueSeed.ts`, id przypisań 759–762).
+3. **Mięsień „X” (id 29)** usunięty po sprawdzeniu braku powiązań (pg_dump przed).
+4. **mockup-sandbox** wyłączony z `pnpm run typecheck` i `pnpm run build` (nic nie usunięto).
+   Build wymaga `PORT` i `BASE_PATH` (configi Vite z Replit).
+
+Wynik: api-server 2141/2141, trainer-app 715/715, client-landing 9/9, testy bezpieczeństwa
+generatora 101/101, test dymny 116 OK / 0 BŁĄD.

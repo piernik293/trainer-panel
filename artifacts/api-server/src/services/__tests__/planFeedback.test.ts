@@ -115,7 +115,6 @@ describe("buildPlanFeedback", () => {
     it("does NOT flag low frequency when volume < 10", () => {
       const result = buildPlanFeedback(
         makeResult({
-          weeklyTargets: { chest: 8, back: 12, legs: 12 },
           days: [
             {
               dayIndex: 0,
