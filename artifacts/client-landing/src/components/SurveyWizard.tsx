@@ -13,7 +13,6 @@ import {
   ADVANCED_METHODS,
   ACTIVITY_LEVEL_OPTIONS,
   CARDIO_AVOID_REASSURANCE_TEXT,
-  CARDIO_FREQUENCY_HELPER_TEXT,
   birthDateBounds,
   birthDateError,
   heightError,
@@ -667,7 +666,7 @@ export default function SurveyWizard({
         );
       case "cardioFreq":
         return (
-          <Section id={id} headingRef={heading} title="Jak często wykonujesz cardio?" lead={<Opt text={CARDIO_FREQUENCY_HELPER_TEXT} />}>
+          <Section id={id} headingRef={heading} title="Jak często wykonujesz cardio?" lead={<Opt text={HINT_TEXT.cardioFreq} />}>
             <ChoiceList name="Częstotliwość cardio" options={CARDIO_FREQUENCY_OPTIONS.map((v) => ({ value: v, label: v }))} value={answers.cardioFrequency} onChange={(v) => choose({ cardioFrequency: v })} />
           </Section>
         );
