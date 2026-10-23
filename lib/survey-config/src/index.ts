@@ -240,7 +240,7 @@ export const TRAINING_FREQUENCY_RECOMMENDATIONS: Record<string, string> = {
 };
 
 export const BMI_RECOMMENDATION_TEXT =
-  "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj jednak, że BMI nie rozróżnia tkanki tłuszczowej od masy mięśniowej. W wielu przypadkach dobrym rozwiązaniem może być redukcja tkanki tłuszczowej lub rekompozycja sylwetki.";
+  "BMI jest powyżej 25. To wartość orientacyjna — nie rozróżnia tkanki tłuszczowej od mięśniowej, więc traktuj ją razem z resztą wywiadu.";
 
 export const CARDIO_RECOMMENDATION_TEXT =
   "💡 Przy tym celu treningi cardio często wspierają osiąganie lepszych efektów. Ostateczna ilość zostanie indywidualnie dopasowana do możliwości, preferencji oraz planu treningowego.";

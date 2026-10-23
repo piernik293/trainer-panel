@@ -141,7 +141,7 @@ async function main(): Promise<void> {
     firstName: "Smoke",
     lastName: run,
     email,
-    dateOfBirth: "1992-05-10", injuryStatus: "Brak",
+    dateOfBirth: "1992-05-10",
     gender: "Kobieta",
     trainingGoal: "Poprawa sylwetki",
     experienceLevel: "Początkujący",

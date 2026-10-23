@@ -11,7 +11,7 @@ import {
   validateStep, visibleSteps, visibleStages, type Answers, type StepId,
 } from "@/lib/surveyWizard";
 
-// ── Frozen copy of the OLD form's onSubmit (components/SurveyForm.tsx) ────────
+// ── Frozen copy of the OLD form's onSubmit (former components/SurveyForm.tsx, removed after Wywiad 2.0) ────────
 interface OldValues {
   firstName: string; lastName: string; email: string; phone: string; dateOfBirth: string; gender: string;
   heightCm: number; weightKg: number; trainingGoal: string; experienceLevel: string; trainingDuration: string;

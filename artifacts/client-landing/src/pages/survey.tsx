@@ -235,7 +235,7 @@ export default function SurveyTokenPage() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-brand-soft">
       {/* HEADER — compact: the question itself is the heading of each step */}
-      <header className="border-b border-border bg-card px-6 py-3">
+      <header className="border-b border-border bg-card px-6 py-2">
         <div className="mx-auto flex max-w-[560px] items-center gap-3">
           <BrandMark />
           <span className="font-bold tracking-tight">Optimatren</span>
@@ -244,7 +244,7 @@ export default function SurveyTokenPage() {
       </header>
 
       {/* FORM SECTION */}
-      <section className="flex-1 px-4 py-6 md:py-10">
+      <section className="flex-1 px-4 py-3 md:py-10">
         <SurveyWizard inviteToken={token} prefill={prefill} />
       </section>
 

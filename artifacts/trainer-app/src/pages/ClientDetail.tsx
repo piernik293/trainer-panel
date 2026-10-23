@@ -74,7 +74,7 @@ function calculateBmi(heightCm: number | null | undefined, weightKg: number | nu
 }
 
 const BMI_RECOMMENDATION_TEXT =
-  "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj jednak, że BMI nie rozróżnia tkanki tłuszczowej od masy mięśniowej. W wielu przypadkach dobrym rozwiązaniem może być redukcja tkanki tłuszczowej lub rekompozycja sylwetki.";
+  "BMI jest powyżej 25. To wartość orientacyjna — nie rozróżnia tkanki tłuszczowej od mięśniowej, więc traktuj ją razem z resztą wywiadu.";
 
 // ─── Recovery quality — client-side derivation (mirrors server logic) ─────────
 
@@ -1285,7 +1285,7 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
         <Card className="border-primary/20 shadow-sm print-break-inside-avoid">
           <CardHeader className="pb-3">
             <CardTitle className="text-base text-primary flex items-center gap-2">
-              Automatyczna podpowiedź
+              Wskazówka dla trenera
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">

@@ -11,7 +11,6 @@ import { ArrowLeft, Calendar, CheckCircle2, ChevronDown, Loader2 } from "lucide-
 import {
   ADVANCED_METHODS,
   ACTIVITY_LEVEL_OPTIONS,
-  BMI_RECOMMENDATION_TEXT,
   CARDIO_AVOID_REASSURANCE_TEXT,
   CARDIO_FREQUENCY_OPTIONS,
   CARDIO_PREFERENCE_OPTIONS,
@@ -67,7 +66,10 @@ const AUTO_ADVANCE_MS = 300;
 interface Choice {
   value: string;
   label: string;
+  /** One-line description. */
   desc?: string;
+  /** Full description behind the "Więcej" toggle. */
+  more?: string;
 }
 
 // ─── Small building blocks ───────────────────────────────────────────────────
@@ -76,6 +78,7 @@ function ChoiceList({
   name, options, value, onChange, columns = 1,
 }: { name: string; options: Choice[]; value: string; onChange: (v: string) => void; columns?: 1 | 2 }) {
   const refs = useRef<Array<HTMLInputElement | null>>([]);
+  const [open, setOpen] = useState<string[]>([]);
   const onKey = (e: React.KeyboardEvent, i: number) => {
     const d = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
     if (!d) return;
@@ -87,28 +90,42 @@ function ChoiceList({
   return (
     <div role="radiogroup" aria-label={name} className={cn("grid gap-3", columns === 2 && "grid-cols-2")}>
       {options.map((o, i) => (
-        <label
+        <div
           key={o.value}
           className={cn(
-            "flex min-h-14 cursor-pointer flex-col justify-center rounded-lg border bg-card px-4 py-3 transition-colors",
-            "focus-within:ring-2 focus-within:ring-ring",
+            "relative flex flex-wrap items-start rounded-lg border bg-card transition-colors focus-within:ring-2 focus-within:ring-ring",
             value === o.value ? "border-primary bg-brand-soft" : "border-input hover:bg-muted",
           )}
         >
-          <input
-            ref={(el) => { refs.current[i] = el; }}
-            type="radio"
-            name={name}
-            value={o.value}
-            checked={value === o.value}
-            tabIndex={value === o.value || (!value && i === 0) ? 0 : -1}
-            onChange={() => onChange(o.value)}
-            onKeyDown={(e) => onKey(e, i)}
-            className="sr-only"
-          />
-          <span className={cn("font-semibold", value === o.value && "text-primary")}>{o.label}</span>
-          {o.desc && <span className="mt-0.5 text-sm text-muted-foreground">{o.desc}</span>}
-        </label>
+          <label className={cn("flex min-w-0 flex-1 cursor-pointer flex-col justify-center px-4", o.more ? "min-h-14 py-2.5" : "min-h-14 py-3")}>
+            <input
+              ref={(el) => { refs.current[i] = el; }}
+              type="radio"
+              name={name}
+              value={o.value}
+              checked={value === o.value}
+              tabIndex={value === o.value || (!value && i === 0) ? 0 : -1}
+              onChange={() => onChange(o.value)}
+              onKeyDown={(e) => onKey(e, i)}
+              className="sr-only"
+            />
+            <span className={cn("font-semibold", o.more && "pr-14", value === o.value && "text-primary")}>{o.label}</span>
+            {o.desc && <span className="mt-0.5 text-sm text-muted-foreground">{o.desc}</span>}
+          </label>
+          {o.more && (
+            <>
+              <button
+                type="button"
+                aria-expanded={open.includes(o.value)}
+                onClick={() => setOpen((cur) => (cur.includes(o.value) ? cur.filter((v) => v !== o.value) : [...cur, o.value]))}
+                className="absolute right-0 top-0 inline-flex min-h-11 items-center px-3 text-sm font-semibold text-primary hover:underline"
+              >
+                {open.includes(o.value) ? "Mniej" : "Więcej"}
+              </button>
+              {open.includes(o.value) && <p className="w-full px-4 pb-3 text-sm text-muted-foreground">{o.more}</p>}
+            </>
+          )}
+        </div>
       ))}
     </div>
   );
@@ -223,7 +240,7 @@ function Section({
   id, title, lead, headingRef, children,
 }: { id: StepId; title: string; lead: string; headingRef: React.Ref<HTMLHeadingElement>; children: React.ReactNode }) {
   return (
-    <div className="space-y-4" data-step={id}>
+    <div className="space-y-3 sm:space-y-4" data-step={id}>
       <div className="space-y-2">
         <h1 ref={headingRef} tabIndex={-1} className="text-[26px] font-extrabold leading-tight tracking-tight outline-none sm:text-[28px]" data-testid="question">
           {title}
@@ -406,7 +423,7 @@ export default function SurveyWizard({
         );
       case "body":
         return (
-          <Section id={id} headingRef={heading} title="Wzrost i waga" lead="Na tej podstawie trener oszacuje BMI — to tylko orientacyjna wartość, nie ocena.">
+          <Section id={id} headingRef={heading} title="Wzrost i waga" lead="Na tej podstawie wyliczymy BMI — to tylko orientacyjna wartość, nie ocena.">
             <Field id="height" label="Wzrost" unit="cm" error={showError && (answers.heightCm === undefined || answers.heightCm < 80 || answers.heightCm > 260) ? "Wzrost musi być między 80 a 260 cm" : null}>
               <Input id="height" type="number" inputMode="numeric" min={80} max={260} value={answers.heightCm ?? ""} onChange={(e) => set({ heightCm: e.target.value === "" ? undefined : parseInt(e.target.value) })} className={bigInput} />
             </Field>
@@ -414,7 +431,6 @@ export default function SurveyWizard({
               <Input id="weight" inputMode="decimal" placeholder="np. 75,5" value={answers.weightKg} onChange={(e) => set({ weightKg: e.target.value.replace(",", ".") })} className={bigInput} />
             </Field>
             {bmi !== undefined && <p className="text-sm text-muted-foreground" data-testid="bmi">BMI: {bmi.toFixed(1)}</p>}
-            {bmi !== undefined && bmi >= 25 && <Note>{BMI_RECOMMENDATION_TEXT}</Note>}
           </Section>
         );
       case "goal":
@@ -447,10 +463,10 @@ export default function SurveyWizard({
         );
       case "level":
         return (
-          <Section id={id} headingRef={heading} title="Który poziom najlepiej opisuje Twoje doświadczenie?" lead="Nie kieruj się wyłącznie liczbą lat treningu. Wybierz poziom, który najlepiej opisuje Twoją wiedzę, umiejętności i samodzielność.">
+          <Section id={id} headingRef={heading} title="Który poziom najlepiej opisuje Twoje doświadczenie?" lead="Nie kieruj się samą liczbą lat treningu — liczy się wiedza i samodzielność.">
             <ChoiceList
               name="Poziom doświadczenia"
-              options={EXPERIENCE_LEVEL_OPTIONS.filter((o) => !(answers.trainingGoal === "Cel sportowy" && o.level === "Brak aktywności fizycznej")).map((o) => ({ value: o.level, label: o.level, desc: o.desc }))}
+              options={EXPERIENCE_LEVEL_OPTIONS.filter((o) => !(answers.trainingGoal === "Cel sportowy" && o.level === "Brak aktywności fizycznej")).map((o) => ({ value: o.level, label: o.level, desc: LEVEL_SHORT[o.level], more: LEVEL_FULL[o.level] ?? o.desc }))}
               value={answers.experienceLevel}
               onChange={(v) => choose({ experienceLevel: v })}
             />
@@ -639,7 +655,7 @@ export default function SurveyWizard({
 
   return (
     <div
-      className="mx-auto w-full max-w-[560px] space-y-5"
+      className="mx-auto w-full max-w-[560px] space-y-3 sm:space-y-5"
       onKeyDown={(e) => {
         if (e.key !== "Enter" || e.shiftKey) return;
         const t = e.target as HTMLElement;
@@ -683,7 +699,7 @@ export default function SurveyWizard({
         </div>
       </header>
 
-      <div className="flex min-h-[420px] flex-col rounded-lg border border-border bg-card p-5">
+      <div className="flex flex-col rounded-lg border border-border bg-card p-4 sm:min-h-[420px] sm:p-5">
         <div className="flex-1" key={effectiveStep}>
           {effectiveStep === "summary" ? (
             <div className="space-y-4" data-step="summary">
@@ -715,7 +731,7 @@ export default function SurveyWizard({
           )}
         </div>
 
-        <div className="mt-6">
+        <div className="mt-4 sm:mt-6">
           {effectiveStep === "summary" ? (
             <Button
               size="lg"
@@ -744,6 +760,20 @@ export default function SurveyWizard({
 function toggle(list: string[], v: string): string[] {
   return list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
 }
+
+const LEVEL_SHORT: Record<string, string> = {
+  "Brak aktywności fizycznej": "Zaczynam lub wracam po przerwie.",
+  Początkujący: "Uczę się podstaw i techniki.",
+  Średniozaawansowany: "Trenuję regularnie, znam podstawy.",
+  Zaawansowany: "Duże doświadczenie, świadome metody.",
+};
+/** Full descriptions (client wording, as in the former form). */
+const LEVEL_FULL: Record<string, string> = {
+  "Brak aktywności fizycznej": "Nie podejmuję regularnej aktywności fizycznej, nigdy wcześniej nie realizowałem/-am uporządkowanego treningu oporowego lub wracam po długiej przerwie. Chcę spokojnie zacząć, nauczyć się podstawowych wzorców ruchowych i stopniowo przygotować organizm do regularnego wysiłku.",
+  Początkujący: "Mam niewielkie doświadczenie treningowe. Nadal uczę się podstawowych ćwiczeń, poprawnej techniki oraz zasad treningowych i nie czuję się jeszcze pewnie w samodzielnym planowaniu treningów.",
+  Średniozaawansowany: "Trenuję regularnie i swobodnie wykonuję większość podstawowych ćwiczeń. Rozumiem podstawowe zasady treningowe, potrafię kontrolować technikę i świadomie realizuję plan treningowy.",
+  Zaawansowany: "Posiadam duże doświadczenie treningowe, bardzo dobrze znam swoje możliwości oraz świadomie wykorzystuję różne metody treningowe do osiągania konkretnych celów.",
+};
 
 const ACTIVITY_LABEL: Record<string, string> = {
   Siedzący: "Siedzący tryb dnia",

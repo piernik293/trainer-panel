@@ -82,11 +82,24 @@ describe("steps", () => {
     expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("BMI shows on the height and weight screen", () => {
+  it("BMI value shows on the height and weight screen, but never an assessment text for the client", () => {
     window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, heightCm: 170, weightKg: "80" }, stepId: "body" }));
     mount();
     expect(screen.getByTestId("bmi").textContent).toBe("BMI: 27.7");
-    expect(screen.getByText(/BMI wskazuje podwyższoną masę ciała/)).toBeTruthy();
+    expect(screen.queryByText(/BMI jest powyżej|podwyższon|redukcj/i)).toBeNull();
+  });
+
+  it("level screen: one-line descriptions, full text only behind 'Więcej'", () => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS }, stepId: "level" }));
+    mount();
+    expect(screen.getByText("Uczę się podstaw i techniki.")).toBeTruthy();
+    expect(screen.queryByText(/nie czuję się jeszcze pewnie w samodzielnym planowaniu/)).toBeNull();
+    const more = screen.getAllByRole("button", { name: "Więcej" });
+    expect(more).toHaveLength(4);
+    fireEvent.click(more[1]);
+    expect(screen.getByText(/nie czuję się jeszcze pewnie w samodzielnym planowaniu/)).toBeTruthy();
+    expect((screen.getByLabelText(/^Początkujący/) as HTMLInputElement).checked).toBe(false); // "Więcej" does not choose
+    expect(screen.getByRole("button", { name: "Mniej" }).getAttribute("aria-expanded")).toBe("true");
   });
 });
 
