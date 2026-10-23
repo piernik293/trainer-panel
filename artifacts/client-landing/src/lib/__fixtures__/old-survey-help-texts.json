@@ -1,0 +1,202 @@
+[
+ {
+  "kind": "section",
+  "text": "Podstawowe informacje pozwalają mi lepiej Cię poznać oraz uwzględnić wiek, wzrost i wagę przy doborze obciążeń i tempa progresji."
+ },
+ {
+  "kind": "section",
+  "text": "Twój cel wyznacza kierunek całego planu — od doboru ćwiczeń, przez intensywność, aż po proporcje treningu siłowego i cardio."
+ },
+ {
+  "kind": "section",
+  "text": "Poziom zaawansowania decyduje o tym, jak dobieram technikę, złożoność ćwiczeń oraz sposób prowadzenia planu."
+ },
+ {
+  "kind": "section",
+  "text": "Informacje o kontuzjach i dolegliwościach są kluczowe dla bezpieczeństwa — pozwalają wykluczyć ryzykowne ćwiczenia i dobrać bezpieczne alternatywy."
+ },
+ {
+  "kind": "section",
+  "text": "Realny czas i częstotliwość treningów pozwalają ułożyć plan, który będzie możliwy do utrzymania na dłuższą metę, a nie tylko przez pierwsze tygodnie."
+ },
+ {
+  "kind": "section",
+  "text": "Miejsce oraz dostępny sprzęt decydują o tym, jakie ćwiczenia i warianty obciążeń będą dla Ciebie realnie wykonalne."
+ },
+ {
+  "kind": "section",
+  "text": "Pomaga dobrać ilość aktywności wspierającej redukcję, kondycję i ogólną wydolność."
+ },
+ {
+  "kind": "section",
+  "text": "Sen, poziom stresu oraz codzienna aktywność wpływają na zdolność organizmu do regeneracji, co bezpośrednio przekłada się na dobór objętości treningowej."
+ },
+ {
+  "kind": "section",
+  "text": "Twoje preferencje dotyczące stylu planu, priorytetowych partii oraz technik treningowych pomagają dopasować plan nie tylko pod cel, ale i pod Twój komfort."
+ },
+ {
+  "kind": "section",
+  "text": "Miejsce na wszystko, co może mieć znaczenie przy przygotowaniu planu."
+ },
+ {
+  "kind": "hint",
+  "text": "Zaznacz obszary, które są dla Ciebie najważniejsze. Pomogą dobrać odpowiednie elementy treningowe."
+ },
+ {
+  "kind": "hint",
+  "text": "Krótko napisz, po co chcesz trenować i co chcesz poprawić."
+ },
+ {
+  "kind": "hint",
+  "text": "Przykłady: ból kolan, ból barków, ból odcinka lędźwiowego, strzelający łokieć, problemy z nadgarstkami, ograniczona ruchomość, przebyte operacje, inne przewlekłe dolegliwości."
+ },
+ {
+  "kind": "note",
+  "text": "Te informacje są zawsze uwzględniane przy doborze ćwiczeń i nie są traktowane jedynie jako preferencja."
+ },
+ {
+  "kind": "hint",
+  "text": "Pozwoli to lepiej dopasować plan do Twoich oczekiwań oraz możliwości."
+ },
+ {
+  "kind": "hint",
+  "text": "1 = bardzo niski poziom stresu, 10 = bardzo wysoki poziom stresu"
+ },
+ {
+  "kind": "hint",
+  "text": "Wyszukaj po nazwie lub opisz ćwiczenie, jeśli nie znasz jego nazwy."
+ },
+ {
+  "kind": "hint",
+  "text": "Możesz wskazać ćwiczenia, które lubisz, ale trener może wybrać prostsze lub lepiej dopasowane warianty do Twojego poziomu."
+ },
+ {
+  "kind": "hint",
+  "text": "Wyszukaj po nazwie — możesz dodać kilka ćwiczeń."
+ },
+ {
+  "kind": "hint",
+  "text": "Na tym etapie nie musisz wybierać konkretnych priorytetów. Najpierw skupimy się na równomiernym rozwoju całego ciała."
+ },
+ {
+  "kind": "hint",
+  "text": "Wybierz do 3 partii mięśniowych, na których zależy Ci najbardziej."
+ },
+ {
+  "kind": "note",
+  "text": "Na początku łatwo pochopnie ocenić, które partie lub ćwiczenia powinny być najważniejsze. Przy Twoim poziomie doświadczenia potraktujemy te wybory jako wskazówkę, a plan będzie przede wszystkim rozwijał całe ciało i uczył podstawowych wzorców ruchowych."
+ },
+ {
+  "kind": "hint",
+  "text": "Zaznacz tylko te metody, które chcesz stosować w planie."
+ },
+ {
+  "kind": "hint",
+  "text": "Krótko dopisz tylko to, co może mieć znaczenie dla planu."
+ },
+ {
+  "kind": "option",
+  "text": "Mam dostęp do pełnego wyposażenia siłowni."
+ },
+ {
+  "kind": "option",
+  "text": "Trenuję w domu."
+ },
+ {
+  "kind": "option",
+  "text": "Trenuję głównie na drążkach, poręczach oraz sprzęcie dostępnym na świeżym powietrzu."
+ },
+ {
+  "kind": "option",
+  "text": "Większość dnia siedzę i mało chodzę."
+ },
+ {
+  "kind": "option",
+  "text": "Regularnie chodzę i wykonuję lekkie codzienne aktywności."
+ },
+ {
+  "kind": "option",
+  "text": "Większość dnia jestem w ruchu lub pracuję fizycznie."
+ },
+ {
+  "kind": "option",
+  "text": "Wykonuję ciężką pracę fizyczną albo intensywnie ruszam się przez większość dnia."
+ },
+ {
+  "kind": "option",
+  "text": "Najważniejsze są dla mnie jak najlepsze efekty."
+ },
+ {
+  "kind": "option",
+  "text": "Chcę osiągać dobre efekty przy zachowaniu komfortu treningów."
+ },
+ {
+  "kind": "option",
+  "text": "Zależy mi na prostym, przejrzystym planie, który będzie łatwy do realizacji nawet w gorsze dni."
+ },
+ {
+  "kind": "option",
+  "text": "Nie podejmuję regularnej aktywności fizycznej, nigdy wcześniej nie realizowałem/-am uporządkowanego treningu oporowego lub wracam po długiej przerwie. Chcę spokojnie zacząć, nauczyć się podstawowych wzorców ruchowych i stopniowo przygotować organizm do regularnego wysiłku."
+ },
+ {
+  "kind": "option",
+  "text": "Mam niewielkie doświadczenie treningowe. Nadal uczę się podstawowych ćwiczeń, poprawnej techniki oraz zasad treningowych i nie czuję się jeszcze pewnie w samodzielnym planowaniu treningów."
+ },
+ {
+  "kind": "option",
+  "text": "Trenuję regularnie i swobodnie wykonuję większość podstawowych ćwiczeń. Rozumiem podstawowe zasady treningowe, potrafię kontrolować technikę i świadomie realizuję plan treningowy."
+ },
+ {
+  "kind": "option",
+  "text": "Posiadam duże doświadczenie treningowe, bardzo dobrze znam swoje możliwości oraz świadomie wykorzystuję różne metody treningowe do osiągania konkretnych celów."
+ },
+ {
+  "kind": "option",
+  "text": "Moc, skoczność, eksplozywność i szybkie generowanie siły."
+ },
+ {
+  "kind": "option",
+  "text": "Przyspieszenie, tempo ruchu i szybkie poruszanie się w akcji sportowej."
+ },
+ {
+  "kind": "option",
+  "text": "Kontrola ruchu, równowaga, lądowanie i utrzymanie pozycji pod obciążeniem."
+ },
+ {
+  "kind": "recommendation",
+  "text": "Najczęściej zaleca się rozpoczęcie od 1–3 treningów tygodniowo, aby organizm mógł stopniowo przyzwyczaić się do regularnej aktywności."
+ },
+ {
+  "kind": "recommendation",
+  "text": "Najczęściej sprawdza się 2–3 treningi tygodniowo, co pozwala rozwijać technikę oraz zapewnia odpowiednią regenerację."
+ },
+ {
+  "kind": "recommendation",
+  "text": "Najczęściej wybierane jest 3–5 treningów tygodniowo. Ostateczna liczba zależy od celu treningowego oraz możliwości regeneracji."
+ },
+ {
+  "kind": "recommendation",
+  "text": "Najczęściej sprawdza się 4–6 treningów tygodniowo. Liczbę treningów należy dopasować do objętości, celu oraz regeneracji."
+ },
+ {
+  "kind": "recommendation",
+  "text": "💡 Przy tym celu treningi cardio często wspierają osiąganie lepszych efektów. Ostateczna ilość zostanie indywidualnie dopasowana do możliwości, preferencji oraz planu treningowego."
+ },
+ {
+  "kind": "recommendation",
+  "text": "👍 To nie problem. W miarę możliwości plan zostanie przygotowany tak, aby ograniczyć ilość cardio lub zastąpić je innymi formami aktywności, jeśli będzie to zgodne z celem treningowym."
+ },
+ {
+  "kind": "recommendation",
+  "text": "💡 Ta informacja pomoże lepiej dopasować plan treningowy do celu oraz preferencji. Cardio nie jest obowiązkowym elementem każdego planu."
+ },
+ {
+  "kind": "bmi",
+  "text": "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj jednak, że BMI nie rozróżnia tkanki tłuszczowej od masy mięśniowej. W wielu przypadkach dobrym rozwiązaniem może być redukcja tkanki tłuszczowej lub rekompozycja sylwetki."
+ },
+ {
+  "kind": "hint",
+  "text": "Nie kieruj się wyłącznie liczbą lat treningu. Wybierz poziom, który najlepiej opisuje Twoją wiedzę, umiejętności oraz samodzielność podczas treningów."
+ }
+]

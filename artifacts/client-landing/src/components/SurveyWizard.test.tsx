@@ -93,7 +93,7 @@ describe("steps", () => {
   it("level screen lead matches the 2-year rule (no 'don't go by years' sentence)", () => {
     window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS }, stepId: "level" }));
     mount();
-    expect(screen.getByText("Wybierz opis, który najlepiej do Ciebie pasuje. Trener dostosuje plan do Twojego doświadczenia.")).toBeTruthy();
+    expect(screen.getByText(/Poziom zaawansowania decyduje o tym.*Wybierz opis, który najlepiej do Ciebie pasuje\. Trener dostosuje plan do Twojego doświadczenia\./)).toBeTruthy();
     expect(screen.queryByText(/liczbą lat/)).toBeNull();
   });
 

@@ -8,10 +8,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, CheckCircle2, ChevronDown, Loader2 } from "lucide-react";
+import { SECTION_TEXT, HINT_TEXT, LOCATION_DESC, PLAN_STYLE_DESC } from "@/lib/surveyHelpTexts";
 import {
   ADVANCED_METHODS,
   ACTIVITY_LEVEL_OPTIONS,
   CARDIO_AVOID_REASSURANCE_TEXT,
+  CARDIO_FREQUENCY_HELPER_TEXT,
   CARDIO_FREQUENCY_OPTIONS,
   CARDIO_PREFERENCE_OPTIONS,
   CARDIO_RECOMMENDATION_TEXT,
@@ -235,9 +237,14 @@ function DateInput({ value, onChange, id, invalid }: { value: string; onChange: 
 
 // ─── Wizard ──────────────────────────────────────────────────────────────────
 
+/** "text (opcjonalnie)" — the old text stays whole, the marker is a separate element. */
+function Opt({ text }: { text: string }) {
+  return <>{text} <span className="whitespace-nowrap">(opcjonalnie)</span></>;
+}
+
 function Section({
   id, title, lead, headingRef, children,
-}: { id: StepId; title: string; lead: string; headingRef: React.Ref<HTMLHeadingElement>; children: React.ReactNode }) {
+}: { id: StepId; title: string; lead: React.ReactNode; headingRef: React.Ref<HTMLHeadingElement>; children: React.ReactNode }) {
   return (
     <div className="space-y-3 sm:space-y-4" data-step={id}>
       <div className="space-y-2">
@@ -388,7 +395,7 @@ export default function SurveyWizard({
     switch (id) {
       case "name":
         return (
-          <Section id={id} headingRef={heading} title="Jak masz na imię?" lead="Podstawowe informacje pozwalają mi lepiej Cię poznać.">
+          <Section id={id} headingRef={heading} title="Jak masz na imię?" lead={SECTION_TEXT.basic}>
             <Field id="firstName" label="Imię" error={showError && !answers.firstName.trim() ? "Imię jest wymagane" : null}>
               <Input id="firstName" value={answers.firstName} onChange={(e) => set({ firstName: e.target.value })} autoComplete="given-name" className={bigInput} />
             </Field>
@@ -432,7 +439,7 @@ export default function SurveyWizard({
         );
       case "goal":
         return (
-          <Section id={id} headingRef={heading} title="Jaki jest Twój cel treningowy?" lead="Cel wyznacza kierunek całego planu — dobór ćwiczeń, intensywność i proporcje treningu siłowego i cardio.">
+          <Section id={id} headingRef={heading} title="Jaki jest Twój cel treningowy?" lead={SECTION_TEXT.goal}>
             <ChoiceList name="Cel treningowy" options={TRAINING_GOAL_OPTIONS.map((v) => ({ value: v, label: v }))} value={answers.trainingGoal} onChange={(v) => choose({ trainingGoal: v })} />
           </Section>
         );
@@ -444,7 +451,7 @@ export default function SurveyWizard({
         );
       case "sportNeeds":
         return (
-          <Section id={id} headingRef={heading} title="Co jest dla Ciebie najważniejsze w sporcie?" lead="Pytamy o to, bo wybrałeś/-aś cel sportowy. Zaznacz obszary, które są dla Ciebie najważniejsze (opcjonalnie).">
+          <Section id={id} headingRef={heading} title="Co jest dla Ciebie najważniejsze w sporcie?" lead={<>Pytamy o to, bo wybrałeś/-aś cel sportowy. <Opt text={HINT_TEXT.sportNeeds} /></>}>
             <MultiList
               options={SPORT_PERFORMANCE_NEEDS.map((n) => ({ value: n.value, label: n.value, desc: n.desc }))}
               selected={answers.sportPerformanceNeeds}
@@ -454,13 +461,13 @@ export default function SurveyWizard({
         );
       case "motivation":
         return (
-          <Section id={id} headingRef={heading} title="Dlaczego chcesz trenować?" lead="Krótko napisz, po co chcesz trenować i co chcesz poprawić (opcjonalnie).">
+          <Section id={id} headingRef={heading} title="Dlaczego chcesz trenować?" lead={<Opt text={HINT_TEXT.motivation} />}>
             <Input aria-label="Dlaczego chcesz trenować" placeholder="np. Chcę poprawić kondycję i schudnąć przed wakacjami" value={answers.trainingMotivation} onChange={(e) => set({ trainingMotivation: e.target.value })} className={bigInput} />
           </Section>
         );
       case "level":
         return (
-          <Section id={id} headingRef={heading} title="Który poziom najlepiej opisuje Twoje doświadczenie?" lead="Wybierz opis, który najlepiej do Ciebie pasuje. Trener dostosuje plan do Twojego doświadczenia.">
+          <Section id={id} headingRef={heading} title="Który poziom najlepiej opisuje Twoje doświadczenie?" lead={`${SECTION_TEXT.level} Wybierz opis, który najlepiej do Ciebie pasuje. Trener dostosuje plan do Twojego doświadczenia.`}>
             <ChoiceList
               name="Poziom doświadczenia"
               options={EXPERIENCE_LEVEL_OPTIONS.filter((o) => !(answers.trainingGoal === "Cel sportowy" && o.level === "Brak aktywności fizycznej")).map((o) => ({ value: o.level, label: o.level, desc: LEVEL_SHORT[o.level], more: LEVEL_FULL[o.level] ?? o.desc }))}
@@ -477,8 +484,8 @@ export default function SurveyWizard({
         );
       case "location":
         return (
-          <Section id={id} headingRef={heading} title="Gdzie najczęściej będziesz trenować?" lead="Miejsce decyduje o tym, jakie ćwiczenia będą dla Ciebie realnie wykonalne.">
-            <ChoiceList name="Miejsce treningu" options={TRAINING_LOCATION_OPTIONS.map((o) => ({ value: o.loc, label: o.loc, desc: o.desc }))} value={answers.trainingLocation} onChange={(v) => choose({ trainingLocation: v })} />
+          <Section id={id} headingRef={heading} title="Gdzie najczęściej będziesz trenować?" lead={SECTION_TEXT.place}>
+            <ChoiceList name="Miejsce treningu" options={TRAINING_LOCATION_OPTIONS.map((o) => ({ value: o.loc, label: o.loc, desc: LOCATION_DESC[o.loc] ?? o.desc }))} value={answers.trainingLocation} onChange={(v) => choose({ trainingLocation: v })} />
           </Section>
         );
       case "equipment":
@@ -491,7 +498,8 @@ export default function SurveyWizard({
         );
       case "frequency":
         return (
-          <Section id={id} headingRef={heading} title="Ile treningów tygodniowo chciałbyś wykonywać?" lead="Pozwoli to lepiej dopasować plan do Twoich oczekiwań oraz możliwości.">
+          <Section id={id} headingRef={heading} title="Ile treningów tygodniowo chciałbyś wykonywać?" lead={SECTION_TEXT.time}>
+            <Note>{HINT_TEXT.frequency}</Note>
             {level && TRAINING_FREQUENCY_RECOMMENDATIONS[level] && <Note>{TRAINING_FREQUENCY_RECOMMENDATIONS[level]}</Note>}
             <Field id="freq" label="Liczba treningów w tygodniu" error={err()}>
               <Input id="freq" type="number" inputMode="numeric" min={1} max={7} value={answers.desiredWeeklyFrequency ?? ""} onChange={(e) => set({ desiredWeeklyFrequency: e.target.value === "" ? undefined : Math.min(7, Math.max(1, parseInt(e.target.value))) })} className={bigInput} />
@@ -506,7 +514,7 @@ export default function SurveyWizard({
         );
       case "injury":
         return (
-          <Section id={id} headingRef={heading} title="Czy masz kontuzje, dolegliwości bólowe lub ograniczenia ruchowe?" lead="Dzięki temu trener wykluczy ryzykowne ćwiczenia i dobierze bezpieczne alternatywy.">
+          <Section id={id} headingRef={heading} title="Czy masz kontuzje, dolegliwości bólowe lub ograniczenia ruchowe?" lead={SECTION_TEXT.health}>
             <Note tone="health">To nie jest diagnoza. Podaj tylko to, co trener powinien wiedzieć, żeby dobrać bezpieczne ćwiczenia.</Note>
             <ChoiceList name="Kontuzje i ograniczenia" columns={2} options={[{ value: "Tak", label: "Tak" }, { value: "Nie", label: "Nie" }]} value={answers.injuryStatus} onChange={(v) => choose({ injuryStatus: v as Answers["injuryStatus"] })} />
             {showError && error && <p className="text-sm text-danger">{error}</p>}
@@ -514,16 +522,17 @@ export default function SurveyWizard({
         );
       case "healthDesc":
         return (
-          <Section id={id} headingRef={heading} title="Opisz zdrowie i ograniczenia" lead="Pytamy o to, bo wskazałeś/-aś ograniczenia. Przykłady: ból kolan, barków lub odcinka lędźwiowego, problemy z nadgarstkami, przebyte operacje.">
+          <Section id={id} headingRef={heading} title="Opisz zdrowie i ograniczenia" lead="Pytamy o to, bo wskazałeś/-aś ograniczenia.">
+            <Note>{HINT_TEXT.healthExamples}</Note>
             <Note tone="health">To nie jest diagnoza — opisz własnymi słowami, jak potrafisz.</Note>
-            {isBeginnerLevel(level) && <Note>Te informacje są zawsze uwzględniane przy doborze ćwiczeń i nie są traktowane jedynie jako preferencja.</Note>}
+            {isBeginnerLevel(level) && <Note>{HINT_TEXT.beginnerHealth}</Note>}
             <Textarea aria-label="Opis ograniczeń" aria-invalid={!!err()} value={answers.healthLimitations} onChange={(e) => set({ healthLimitations: e.target.value })} placeholder="Opisz krótko swoje kontuzje, dolegliwości lub ograniczenia ruchowe..." className="min-h-[140px] text-base" />
             {err() && <p className="text-sm text-danger">{err()}</p>}
           </Section>
         );
       case "activity":
         return (
-          <Section id={id} headingRef={heading} title="Jak dużo ruszasz się na co dzień poza treningami?" lead="Codzienna aktywność wpływa na regenerację i dobór objętości treningowej.">
+          <Section id={id} headingRef={heading} title="Jak dużo ruszasz się na co dzień poza treningami?" lead={SECTION_TEXT.life}>
             <ChoiceList name="Codzienna aktywność" options={ACTIVITY_LEVEL_OPTIONS.map((o) => ({ value: o.level, label: ACTIVITY_LABEL[o.level] ?? o.level, desc: ACTIVITY_DESC[o.level] ?? o.clientDesc }))} value={answers.activityLevel} onChange={(v) => choose({ activityLevel: v })} />
           </Section>
         );
@@ -535,7 +544,7 @@ export default function SurveyWizard({
         );
       case "stress":
         return (
-          <Section id={id} headingRef={heading} title="Jak oceniasz swój poziom stresu?" lead="1 = bardzo niski, 10 = bardzo wysoki. Możesz pominąć to pytanie.">
+          <Section id={id} headingRef={heading} title="Jak oceniasz swój poziom stresu?" lead={`${HINT_TEXT.stress} Możesz pominąć to pytanie.`}>
             <div className="flex items-center gap-6 pt-4">
               <Slider min={1} max={10} step={1} value={[answers.stressLevel ?? 5]} aria-label="Poziom stresu" onValueChange={(v) => set({ stressLevel: v[0] })} className="flex-1" />
               <span className="w-10 text-center text-3xl font-extrabold text-primary" data-testid="stress-value">{answers.stressLevel ?? "—"}</span>
@@ -549,7 +558,7 @@ export default function SurveyWizard({
         );
       case "cardioPref":
         return (
-          <Section id={id} headingRef={heading} title="Jak uwzględnić cardio w planie?" lead="Cardio pomaga dobrać ilość aktywności wspierającej redukcję, kondycję i wydolność (opcjonalnie).">
+          <Section id={id} headingRef={heading} title="Jak uwzględnić cardio w planie?" lead={<Opt text={SECTION_TEXT.cardio} />}>
             {isCardioRelevant(answers.trainingGoal, answers.activityLevel) && <Note>{CARDIO_RECOMMENDATION_TEXT}</Note>}
             <ChoiceList
               name="Cardio w planie"
@@ -562,7 +571,7 @@ export default function SurveyWizard({
         );
       case "cardioFreq":
         return (
-          <Section id={id} headingRef={heading} title="Jak często wykonujesz cardio?" lead="Ta informacja pomoże dopasować plan. Cardio nie jest obowiązkowym elementem każdego planu (opcjonalnie).">
+          <Section id={id} headingRef={heading} title="Jak często wykonujesz cardio?" lead={<Opt text={CARDIO_FREQUENCY_HELPER_TEXT} />}>
             <ChoiceList name="Częstotliwość cardio" options={CARDIO_FREQUENCY_OPTIONS.map((v) => ({ value: v, label: v }))} value={answers.cardioFrequency} onChange={(v) => choose({ cardioFrequency: v })} />
           </Section>
         );
@@ -581,13 +590,13 @@ export default function SurveyWizard({
       }
       case "planStyle":
         return (
-          <Section id={id} headingRef={heading} title="Jaki styl planu Ci odpowiada?" lead="Styl planu pomaga dopasować go nie tylko pod cel, ale i pod Twój komfort.">
-            <ChoiceList name="Styl planu" options={PLAN_STYLE_OPTIONS.map((o) => ({ value: o.style, label: o.style, desc: o.desc }))} value={answers.planStylePreference} onChange={(v) => choose({ planStylePreference: v })} />
+          <Section id={id} headingRef={heading} title="Jaki styl planu Ci odpowiada?" lead={SECTION_TEXT.prefs}>
+            <ChoiceList name="Styl planu" options={PLAN_STYLE_OPTIONS.map((o) => ({ value: o.style, label: o.style, desc: PLAN_STYLE_DESC[o.style] ?? o.desc }))} value={answers.planStylePreference} onChange={(v) => choose({ planStylePreference: v })} />
           </Section>
         );
       case "avoided":
         return (
-          <Section id={id} headingRef={heading} title="Ćwiczenia do unikania" lead="Pytamy o to, bo masz większe doświadczenie. Wyszukaj po nazwie lub opisz ćwiczenie, jeśli nie znasz jego nazwy (opcjonalnie).">
+          <Section id={id} headingRef={heading} title="Ćwiczenia do unikania" lead={<>Pytamy o to, bo masz większe doświadczenie. <Opt text={HINT_TEXT.avoided} /></>}>
             <AvoidedExercisesPicker
               selectedExercises={answers.avoidedExercises}
               onSelectedChange={(v) => set({ avoidedExercises: v })}
@@ -604,7 +613,7 @@ export default function SurveyWizard({
             id={id}
             headingRef={heading}
             title={isBeginnerLevel(level) ? "Ćwiczenia preferowane" : "Jakie są Twoje ulubione ćwiczenia?"}
-            lead={isBeginnerLevel(level) ? "Możesz wskazać ćwiczenia, które lubisz, ale trener może wybrać prostsze lub lepiej dopasowane warianty do Twojego poziomu (opcjonalnie)." : "Wyszukaj po nazwie — możesz dodać kilka ćwiczeń (opcjonalnie)."}
+            lead={<Opt text={isBeginnerLevel(level) ? HINT_TEXT.favBeginner : HINT_TEXT.favOther} />}
           >
             <FavoriteExercisesPicker selectedExercises={answers.favoriteExercises} onSelectedChange={(v) => set({ favoriteExercises: v })} />
           </Section>
@@ -615,9 +624,9 @@ export default function SurveyWizard({
             id={id}
             headingRef={heading}
             title="Partie priorytetowe"
-            lead={isBeginnerLevel(level) ? "Na tym etapie nie musisz wybierać konkretnych priorytetów. Najpierw skupimy się na równomiernym rozwoju całego ciała (opcjonalnie)." : "Wybierz do 3 partii mięśniowych, na których zależy Ci najbardziej (opcjonalnie)."}
+            lead={<Opt text={isBeginnerLevel(level) ? HINT_TEXT.priBeginner : HINT_TEXT.priOther} />}
           >
-            {isBeginnerLevel(level) && <Note>Na początku łatwo pochopnie ocenić, które partie powinny być najważniejsze. Potraktujemy te wybory jako wskazówkę.</Note>}
+            {isBeginnerLevel(level) && <Note>{HINT_TEXT.priNote}</Note>}
             {(["priorityMuscle1", "priorityMuscle2", "priorityMuscle3"] as const).map((k, i) => (
               <div key={k} className="space-y-1.5">
                 <p className="text-sm font-semibold">Priorytet {i + 1}</p>
@@ -629,7 +638,7 @@ export default function SurveyWizard({
         );
       case "methods":
         return (
-          <Section id={id} headingRef={heading} title="Czy chcesz, aby w planie były metody intensyfikacji treningu?" lead="Pytamy o to, bo masz większe doświadczenie. Zaznacz tylko te metody, które chcesz stosować (opcjonalnie).">
+          <Section id={id} headingRef={heading} title="Czy chcesz, aby w planie były metody intensyfikacji treningu?" lead={<>Pytamy o to, bo masz większe doświadczenie. <Opt text={HINT_TEXT.methods} /></>}>
             <ChoiceList name="Metody intensyfikacji" columns={2} options={[{ value: "Tak", label: "Tak" }, { value: "Nie", label: "Nie" }]} value={answers.avoidsAdvancedMethods} onChange={(v) => choose({ avoidsAdvancedMethods: v as Answers["avoidsAdvancedMethods"] })} />
           </Section>
         );
@@ -641,7 +650,7 @@ export default function SurveyWizard({
         );
       case "additional":
         return (
-          <Section id={id} headingRef={heading} title="Czy jest coś jeszcze, co powinienem wiedzieć?" lead="Krótko dopisz tylko to, co może mieć znaczenie dla planu (opcjonalnie).">
+          <Section id={id} headingRef={heading} title="Czy jest coś jeszcze, co powinienem wiedzieć?" lead={<><Opt text={SECTION_TEXT.additional} /> {HINT_TEXT.additional}</>}>
             <Textarea aria-label="Dodatkowe informacje" value={answers.additionalInfo} onChange={(e) => set({ additionalInfo: e.target.value })} className="min-h-[140px] text-base" />
           </Section>
         );
