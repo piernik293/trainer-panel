@@ -3,6 +3,7 @@
  * No database access here: the route loads rows, this module decides.
  *
  * Reasons available today (priority order = array order of ATTENTION_KINDS):
+ *   pain          unread "Coś boli?" report from the client (trainer marks it read)
  *   interview     latest completed interview from the last 7 days and no plan
  *                 created since (there is no "reviewed" flag in the schema)
  *   no_plan       active client with an interview but no draft/active plan
@@ -12,7 +13,7 @@
  * built yet — see docs/ROADMAP.md item 4.
  */
 
-export const ATTENTION_KINDS = ["interview", "no_plan", "plan_ending", "invite_pending"] as const;
+export const ATTENTION_KINDS = ["pain", "interview", "no_plan", "plan_ending", "invite_pending"] as const;
 export type AttentionKind = (typeof ATTENTION_KINDS)[number];
 
 export const MAX_ATTENTION_ITEMS = 5;
@@ -36,6 +37,12 @@ export interface AttentionPlan {
   status: string; // draft | active | archived
   createdAt: Date;
   endDate: string | null; // YYYY-MM-DD
+}
+export interface AttentionPain {
+  clientId: number;
+  createdAt: Date;
+  area: string;
+  severity: number;
 }
 export interface AttentionInvite {
   id: number;
@@ -63,6 +70,8 @@ export interface AttentionInput {
   surveys: AttentionSurvey[];
   plans: AttentionPlan[];
   invites: AttentionInvite[];
+  /** Unread pain reports (optional: older callers/tests pass none). */
+  pains?: AttentionPain[];
   /** Today's calendar day in Europe/Warsaw, YYYY-MM-DD. */
   today: string;
   now: Date;
@@ -78,6 +87,7 @@ export function buildAttention(input: AttentionInput): {
   byKind: Record<AttentionKind, number>;
 } {
   const { clients, surveys, plans, invites, today, now } = input;
+  const pains = input.pains ?? [];
   const surveyOf = new Map(surveys.map((s) => [s.clientId, s]));
   const plansOf = new Map<number, AttentionPlan[]>();
   for (const p of plans) plansOf.set(p.clientId, [...(plansOf.get(p.clientId) ?? []), p]);
@@ -96,6 +106,25 @@ export function buildAttention(input: AttentionInput): {
     const name = `${c.firstName} ${c.lastName}`.trim();
     const survey = surveyOf.get(c.id);
     const clientPlans = (plansOf.get(c.id) ?? []).filter((p) => p.status !== "archived");
+
+    const clientPains = pains.filter((p) => p.clientId === c.id).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    if (clientPains.length > 0) {
+      const last = clientPains[0]!;
+      consider(c.id, {
+        kind: "pain",
+        clientId: c.id,
+        name,
+        reasonLabel: "Zgłoszony ból",
+        description:
+          clientPains.length > 1
+            ? `${clientPains.length} nowe zgłoszenia, ostatnie: ${last.area}, siła ${last.severity}/5.`
+            : `${last.area}, siła ${last.severity}/5. Klient pominął to ćwiczenie.`,
+        at: last.createdAt.toISOString(),
+        actionLabel: "Odpowiedz",
+        actionHref: `/clients/${c.id}`,
+        sort: -last.createdAt.getTime(),
+      });
+    }
 
     if (
       survey?.completed &&
@@ -171,7 +200,7 @@ export function buildAttention(input: AttentionInput): {
   const all = [...perClient.values(), ...inviteItems].sort(
     (a, b) => ATTENTION_KINDS.indexOf(a.kind) - ATTENTION_KINDS.indexOf(b.kind) || a.sort - b.sort,
   );
-  const byKind = { interview: 0, no_plan: 0, plan_ending: 0, invite_pending: 0 } as Record<AttentionKind, number>;
+  const byKind = { pain: 0, interview: 0, no_plan: 0, plan_ending: 0, invite_pending: 0 } as Record<AttentionKind, number>;
   for (const i of all) byKind[i.kind]++;
   return {
     total: all.length,

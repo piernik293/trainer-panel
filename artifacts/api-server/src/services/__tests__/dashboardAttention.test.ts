@@ -28,7 +28,7 @@ describe("buildAttention", () => {
     );
     expect(r.items.map((i) => i.kind)).toEqual(["interview", "no_plan", "plan_ending", "invite_pending"]);
     expect(r.items.map((i) => i.actionLabel)).toEqual(["Przejrzyj", "Przygotuj plan", "Przedłuż plan", "Przypomnij"]);
-    expect(r.byKind).toEqual({ interview: 1, no_plan: 1, plan_ending: 1, invite_pending: 1 });
+    expect(r.byKind).toEqual({ pain: 0, interview: 1, no_plan: 1, plan_ending: 1, invite_pending: 1 });
   });
 
   it("shows one row per client, the most urgent reason", () => {
@@ -135,5 +135,35 @@ describe("onboarding links (each step points to where it is done)", () => {
   });
   it("no draft but an active plan: client page (portal invitation)", () => {
     expect(hrefs({ ...NO_TARGETS, activePlanClientId: 9 })[4]).toBe("/clients/9?krok=5");
+  });
+});
+
+describe("pain reports in attention", () => {
+  const base = {
+    clients: [{ id: 1, firstName: "Ala", lastName: "K", status: "active" }, { id: 2, firstName: "Ola", lastName: "M", status: "active" }],
+    surveys: [], plans: [], invites: [], today: "2026-10-23", now: new Date("2026-10-23T12:00:00Z"),
+  };
+  it("unread pain comes first and replaces other reasons for that client", () => {
+    const r = buildAttention({
+      ...base,
+      surveys: [{ clientId: 1, createdAt: new Date("2026-10-22T10:00:00Z"), completed: true }],
+      pains: [{ clientId: 1, createdAt: new Date("2026-10-23T08:00:00Z"), area: "Bark", severity: 4 }],
+    });
+    expect(r.items[0]).toMatchObject({ kind: "pain", clientId: 1, reasonLabel: "Zgłoszony ból", actionLabel: "Odpowiedz", actionHref: "/clients/1" });
+    expect(r.items.filter((i) => i.clientId === 1)).toHaveLength(1);
+    expect(r.byKind.pain).toBe(1);
+  });
+  it("several reports are summarised; no wording is diagnostic", () => {
+    const r = buildAttention({
+      ...base,
+      pains: [
+        { clientId: 2, createdAt: new Date("2026-10-22T08:00:00Z"), area: "Kolano", severity: 2 },
+        { clientId: 2, createdAt: new Date("2026-10-23T08:00:00Z"), area: "Biodro", severity: 3 },
+      ],
+    });
+    expect(r.items[0]!.description).toBe("2 nowe zgłoszenia, ostatnie: Biodro, siła 3/5.");
+  });
+  it("without the pains input nothing changes", () => {
+    expect(buildAttention(base).total).toBe(0);
   });
 });
