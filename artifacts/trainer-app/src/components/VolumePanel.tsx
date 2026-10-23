@@ -173,10 +173,10 @@ function WeeklyMuscleCard({ muscle }: { muscle: WeeklyMuscleResult }) {
                   </span>
                   {" / "}
                   <span className="tabular-nums">{roundVolumeForDisplay(absolute)}</span>{" "}
-                  <span className="text-muted-foreground/70">serii/tydz.</span>
+                  <span className="text-muted-foreground">serii/tydz.</span>
                 </span>
-                <span className="text-muted-foreground/50">·</span>
-                <span className="text-muted-foreground/70">
+                <span className="text-muted-foreground">·</span>
+                <span className="text-muted-foreground">
                   zakres: {roundVolumeForDisplay(rawRecommendedThreshold)}–{roundVolumeForDisplay(absolute)}
                 </span>
               </div>
@@ -323,13 +323,13 @@ function WeeklyTab({
               <ChevronRight size={12} className="shrink-0" />
             )}
             Szczegóły mniejszych partii
-            <span className="ml-auto font-normal text-muted-foreground/50">
+            <span className="ml-auto font-normal text-muted-foreground">
               {smallerTargets.length}
             </span>
           </button>
 
           {!detailsExpanded && (
-            <p className="text-xs text-muted-foreground/70 px-0.5 pb-1 leading-relaxed">
+            <p className="text-xs text-muted-foreground px-0.5 pb-1 leading-relaxed">
               Mniejsze partie są nadal liczone. Ich niższy wynik na tym poziomie nie zawsze
               wymaga dodawania osobnego ćwiczenia izolowanego.
             </p>
@@ -479,7 +479,7 @@ function SessionMuscleCard({
             </span>{" "}
             eff. serii{" "}
             {muscle.sessionMin > 0 && (
-              <span className="text-muted-foreground/70">
+              <span className="text-muted-foreground">
                 · zakres na jednostkę: {muscle.sessionMin}–{muscle.sessionMax}
               </span>
             )}

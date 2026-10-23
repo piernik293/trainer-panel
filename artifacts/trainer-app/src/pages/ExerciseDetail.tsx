@@ -118,16 +118,16 @@ export default function ExerciseDetail() {
 
       {/* Completeness warning panel */}
       {!exercise.isComplete && (
-        <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900">
+        <Alert className="border-amber-200 bg-amber-50">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription>
-            <p className="font-semibold text-amber-800 dark:text-amber-400 mb-2">
+            <p className="font-semibold text-amber-800 mb-2">
               Ćwiczenie jest niekompletne.
             </p>
-            <p className="text-sm text-amber-700 dark:text-amber-500 mb-2">Brakujące informacje:</p>
+            <p className="text-sm text-amber-700 mb-2">Brakujące informacje:</p>
             <ul className="space-y-1">
               {exercise.missingFields.map((field) => (
-                <li key={field} className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-500">
+                <li key={field} className="flex items-center gap-2 text-sm text-amber-700">
                   <CheckCircle2 size={13} className="flex-shrink-0" />
                   {field}
                 </li>
@@ -136,7 +136,7 @@ export default function ExerciseDetail() {
             <Button
               size="sm"
               variant="outline"
-              className="mt-3 border-amber-300 text-amber-800 hover:bg-amber-100 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-900/30"
+              className="mt-3 border-amber-300 text-amber-800 hover:bg-amber-100"
               onClick={() => setLocation(`/exercises/${exerciseId}/edit`)}
             >
               <Pencil size={13} className="mr-1.5" />

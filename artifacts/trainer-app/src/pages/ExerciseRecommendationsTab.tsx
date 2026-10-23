@@ -71,7 +71,7 @@ function NoProfile() {
   return (
     <div className="flex flex-col items-center py-16 text-center gap-3">
       <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
-        <Info className="w-6 h-6 text-muted-foreground/60" />
+        <Info className="w-6 h-6 text-muted-foreground" />
       </div>
       <p className="font-medium">Brak profilu klienta</p>
       <p className="text-sm text-muted-foreground max-w-xs">
@@ -85,7 +85,7 @@ function NoResults({ onClear }: { onClear: () => void }) {
   return (
     <div className="flex flex-col items-center py-16 text-center gap-3">
       <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
-        <Dumbbell className="w-6 h-6 text-muted-foreground/60" />
+        <Dumbbell className="w-6 h-6 text-muted-foreground" />
       </div>
       <p className="font-medium">Brak wyników</p>
       <p className="text-sm text-muted-foreground">Brak kompletnych ćwiczeń dla tej partii mięśniowej.</p>

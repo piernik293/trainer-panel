@@ -73,7 +73,7 @@ export function FavoriteExercisesPicker({ selectedExercises, onSelectedChange }:
               <button
                 type="button"
                 onClick={() => handleRemove(ex.id)}
-                className="ml-0.5 text-primary/70 hover:text-primary transition-colors"
+                className="ml-0.5 text-primary hover:text-primary transition-colors"
                 aria-label={`Usuń ${ex.name}`}
               >
                 <X size={12} />

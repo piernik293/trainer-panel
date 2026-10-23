@@ -186,9 +186,9 @@ function CategoryCard({ cat, totalPlanSets }: { cat: CategoryAnalysis; totalPlan
                   <span className="font-semibold text-foreground tabular-nums">{cat.workingSets}</span>{" "}
                   serii ({fmt(cat.percentageOfPlanSets, 1)}%)
                 </span>
-                <span className="text-muted-foreground/50">·</span>
+                <span className="text-muted-foreground">·</span>
                 <span>{cat.exerciseEntries} ćwiczeń</span>
-                <span className="text-muted-foreground/50">·</span>
+                <span className="text-muted-foreground">·</span>
                 <span>{cat.daysPresent} {cat.daysPresent === 1 ? "dzień" : "dni"}</span>
               </div>
             </div>
@@ -203,7 +203,7 @@ function CategoryCard({ cat, totalPlanSets }: { cat: CategoryAnalysis; totalPlan
               <span className="shrink-0 tabular-nums text-muted-foreground">
                 {ex.workingSets} serii
                 {ex.subPattern && (
-                  <span className="ml-1 text-muted-foreground/60">({ex.subPattern.replace("_", " ")})</span>
+                  <span className="ml-1 text-muted-foreground">({ex.subPattern.replace("_", " ")})</span>
                 )}
               </span>
             </div>
@@ -231,7 +231,7 @@ function MiniStat({ label, value, sub }: { label: string; value: string | number
     <div className="text-center">
       <div className="text-lg font-bold tabular-nums text-foreground">{value}</div>
       <div className="text-xs text-muted-foreground">{label}</div>
-      {sub && <div className="text-xs text-muted-foreground/70">{sub}</div>}
+      {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
     </div>
   );
 }
@@ -260,7 +260,7 @@ function TwoColBar({
         <span><span className="inline-block w-2 h-2 rounded-sm bg-primary/70 mr-1" />{leftLabel}: <strong>{leftValue}</strong></span>
         <span><span className="inline-block w-2 h-2 rounded-sm bg-primary/30 mr-1" />{rightLabel}: <strong>{rightValue}</strong></span>
         {unknownValue > 0 && (
-          <span className="text-muted-foreground/70">Nieznane: {unknownValue}</span>
+          <span className="text-muted-foreground">Nieznane: {unknownValue}</span>
         )}
       </div>
     </div>
@@ -368,7 +368,7 @@ function WeeklyTab({ analysis }: { analysis: PlanAnalysisResult }) {
                   </span>
                 ))}
                 {day.categoryBreakdown.length > 4 && (
-                  <span className="text-xs text-muted-foreground/60">+{day.categoryBreakdown.length - 4}</span>
+                  <span className="text-xs text-muted-foreground">+{day.categoryBreakdown.length - 4}</span>
                 )}
               </div>
             </div>

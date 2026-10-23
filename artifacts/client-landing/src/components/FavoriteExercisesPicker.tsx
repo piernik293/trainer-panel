@@ -69,7 +69,7 @@ export function FavoriteExercisesPicker({ selectedExercises, onSelectedChange }:
               <button
                 type="button"
                 onClick={() => handleRemove(ex.id)}
-                className="ml-0.5 text-primary/70 hover:text-primary transition-colors"
+                className="ml-0.5 text-primary hover:text-primary transition-colors"
                 aria-label={`Usuń ${ex.name}`}
               >
                 <X size={12} />
@@ -96,12 +96,12 @@ export function FavoriteExercisesPicker({ selectedExercises, onSelectedChange }:
             }}
             onFocus={() => setShowDropdown(true)}
             placeholder="Wpisz nazwę ćwiczenia..."
-            className="w-full pl-8 pr-3 py-2.5 text-sm bg-background/50 border border-white/10 focus:border-primary/50 focus:outline-none text-foreground placeholder:text-muted-foreground/60"
+            className="w-full pl-8 pr-3 py-2.5 text-sm bg-background/50 border border-border rounded-lg focus:border-primary/50 focus:outline-none text-foreground placeholder:text-muted-foreground"
           />
         </div>
 
         {showDropdown && query.trim().length >= 1 && (
-          <div className="absolute z-50 w-full mt-px bg-background border border-white/10 max-h-52 overflow-y-auto shadow-xl">
+          <div className="absolute z-50 w-full mt-px bg-background border border-border rounded-lg max-h-52 overflow-y-auto shadow-xl">
             {isLoading || isPending ? (
               <div className="px-3 py-2 text-xs text-muted-foreground">Szukam...</div>
             ) : isError ? (
@@ -121,7 +121,7 @@ export function FavoriteExercisesPicker({ selectedExercises, onSelectedChange }:
                     e.preventDefault();
                     handleSelect(ex);
                   }}
-                  className="w-full text-left px-3 py-2 hover:bg-white/5 transition-colors"
+                  className="w-full text-left px-3 py-2 hover:bg-card transition-colors"
                 >
                   <span className="text-sm text-foreground">{ex.name}</span>
                   <span className="ml-2 text-xs text-muted-foreground">{ex.mainMuscleGroup}</span>

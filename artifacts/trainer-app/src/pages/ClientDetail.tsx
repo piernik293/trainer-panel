@@ -485,7 +485,7 @@ export default function ClientDetail() {
                 COOPERATION_EXPLANATION.online}
             </p>
             {(client.cooperationMode === "in_person" || client.cooperationMode === "hybrid") && (
-              <p className="text-xs text-muted-foreground/70 italic flex items-center gap-1.5">
+              <p className="text-xs text-muted-foreground italic flex items-center gap-1.5">
                 <Calendar size={12} />
                 Rezerwacje treningów — wkrótce
               </p>
@@ -817,7 +817,7 @@ function SurveyTab({ client, survey, surveyLoading, id, bmi, showBmiRecommendati
         <Card className="border-border/50 shadow-sm border-dashed">
           <CardContent className="p-12 flex flex-col items-center justify-center text-center">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-              <FileEdit className="w-8 h-8 text-muted-foreground/50" />
+              <FileEdit className="w-8 h-8 text-muted-foreground" />
             </div>
             <h3 className="text-lg font-medium text-foreground mb-2">Brak wywiadu startowego</h3>
             <p className="text-muted-foreground max-w-md mb-6">
@@ -1380,14 +1380,14 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
                   onChange={(e) => setEditedOtherText(e.target.value)}
                   placeholder="Opisz ćwiczenia, których klient ma unikać (np. wyciskanie nad głowę)..."
                   rows={2}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 />
                 <textarea
                   value={editedOtherReason}
                   onChange={(e) => setEditedOtherReason(e.target.value)}
                   placeholder="Powód unikania tych ćwiczeń (opcjonalne)..."
                   rows={1}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs resize-y placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs resize-y placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 />
               </div>
               <div className="flex justify-end gap-2">

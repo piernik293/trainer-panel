@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
+import { BrandMark } from "@/components/BrandMark";
 import { useParams } from "wouter";
 import SurveyForm from "@/components/SurveyForm";
 import { motion } from "framer-motion";
 import { Loader2, XCircle, Clock, ShieldOff, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import markUrl from "@/assets/optimatren-mark.png";
 
 /**
  * The survey verification endpoint is public and unauthenticated.
@@ -226,9 +226,9 @@ export default function SurveyTokenPage() {
   const { intendedEmail } = state.data;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-primary/30 selection:text-white">
+    <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-brand-soft">
       {/* HEADER */}
-      <section className="py-16 px-6 md:px-12 bg-gradient-to-b from-card/50 to-background border-b border-white/5">
+      <section className="py-16 px-6 md:px-12 bg-card border-b border-border">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -236,7 +236,7 @@ export default function SurveyTokenPage() {
             transition={{ duration: 0.6 }}
           >
             <div className="flex items-center justify-center gap-3 mb-5">
-              <img src={markUrl} alt="Optimatren" className="h-12 w-auto object-contain" />
+              <BrandMark className="h-12 w-12 text-2xl" />
               <span className="font-bold text-xl tracking-tight text-foreground">Optimatren</span>
             </div>
             <div className="inline-block mb-4 border border-primary/30 bg-primary/5 px-4 py-1.5 backdrop-blur-sm">
@@ -263,7 +263,7 @@ export default function SurveyTokenPage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-white/5 py-8 text-center bg-card/50">
+      <footer className="border-t border-border py-8 text-center bg-card/50">
         <p className="text-muted-foreground text-sm uppercase tracking-widest">
           © {new Date().getFullYear()} Premium Personal Training. Wszelkie prawa zastrzeżone.
         </p>

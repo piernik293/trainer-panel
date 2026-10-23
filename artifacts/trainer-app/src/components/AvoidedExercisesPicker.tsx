@@ -96,7 +96,7 @@ export function AvoidedExercisesPicker({ selectedExercises, onSelectedChange }: 
                 rows={2}
                 className={cn(
                   "w-full rounded-sm border border-input bg-background px-2 py-1.5 text-xs resize-y",
-                  "placeholder:text-muted-foreground/60",
+                  "placeholder:text-muted-foreground",
                   "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                 )}
               />

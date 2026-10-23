@@ -80,7 +80,7 @@ export function MuscleGroupCombobox({ value, onChange, placeholder = "np. Barki"
           }}
           onFocus={() => setOpen(true)}
           placeholder={placeholder}
-          className="w-full pl-4 pr-8 py-3 text-sm bg-background/50 border border-white/10 focus:border-primary/50 focus:outline-none text-foreground placeholder:text-muted-foreground/60 h-12"
+          className="w-full pl-4 pr-8 py-3 text-sm bg-background/50 border border-border rounded-lg focus:border-primary/50 focus:outline-none text-foreground placeholder:text-muted-foreground h-12"
         />
         {value ? (
           <button
@@ -103,7 +103,7 @@ export function MuscleGroupCombobox({ value, onChange, placeholder = "np. Barki"
       </div>
 
       {open && filtered.length > 0 && (
-        <div className="absolute z-50 w-full mt-px bg-background border border-white/10 max-h-52 overflow-y-auto shadow-xl">
+        <div className="absolute z-50 w-full mt-px bg-background border border-border rounded-lg max-h-52 overflow-y-auto shadow-xl">
           {filtered.map((option) => (
             <button
               key={option}
@@ -113,7 +113,7 @@ export function MuscleGroupCombobox({ value, onChange, placeholder = "np. Barki"
                 handleSelect(option);
               }}
               className={cn(
-                "w-full text-left px-3 py-2 text-sm hover:bg-white/5 transition-colors",
+                "w-full text-left px-3 py-2 text-sm hover:bg-card transition-colors",
                 value === option ? "text-primary bg-primary/5" : "text-foreground"
               )}
             >

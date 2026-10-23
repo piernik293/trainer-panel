@@ -1280,7 +1280,7 @@ function SortableDraftExerciseCard({
         <button
           {...attributes}
           {...listeners}
-          className="mt-0.5 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing shrink-0"
+          className="mt-0.5 text-muted-foreground hover:text-muted-foreground cursor-grab active:cursor-grabbing shrink-0"
           tabIndex={-1}
           aria-label="Przeciągnij, aby zmienić kolejność"
         >
@@ -1332,7 +1332,7 @@ function SortableDraftExerciseCard({
 
         <button
           onClick={onRemove}
-          className="text-muted-foreground/50 hover:text-destructive transition-colors shrink-0"
+          className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
           aria-label="Usuń ćwiczenie"
         >
           <Trash2 size={14} />

@@ -195,7 +195,7 @@ function SessionDetailPanel({
                     <span
                       className={cn(
                         "text-sm text-right whitespace-nowrap",
-                        ex.actual ? "text-foreground" : "text-muted-foreground/40",
+                        ex.actual ? "text-foreground" : "text-muted-foreground",
                       )}
                     >
                       {formatActual(ex)}

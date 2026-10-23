@@ -134,7 +134,7 @@ const Section = ({ title, description, children }: { step: number, title: string
     <div className="mb-10">
       <h3 className="text-2xl font-bold text-foreground tracking-tight">{title}</h3>
       <div className="h-[1px] w-12 bg-primary/40 my-4"></div>
-      <p className="text-sm text-muted-foreground/80 leading-relaxed max-w-2xl">{description}</p>
+      <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">{description}</p>
     </div>
     {children}
   </div>
@@ -211,7 +211,7 @@ function DateOfBirthInput({
         onBlur={onBlur}
         maxLength={10}
         className={cn(
-          "bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none pr-12",
+          "bg-background/50 border-border focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-lg pr-12",
           error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive"
         )}
       />
@@ -458,9 +458,8 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="flex flex-col items-center justify-center py-24 px-6 text-center bg-card/30 backdrop-blur-sm border border-white/5 shadow-2xl relative overflow-hidden"
+        className="flex flex-col items-center justify-center py-24 px-6 text-center bg-card/30 backdrop-blur-sm border border-border rounded-lg shadow-2xl relative overflow-hidden"
       >
-        <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-transparent pointer-events-none"></div>
         <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-8">
           <CheckCircle2 className="w-12 h-12 text-primary" />
         </div>
@@ -491,7 +490,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
               <FormItem>
                 <FormLabel className="text-muted-foreground">Imię *</FormLabel>
                 <FormControl>
-                  <Input {...field} className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
+                  <Input {...field} className={cn("bg-background/50 border-border focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-lg", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -500,7 +499,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
               <FormItem>
                 <FormLabel className="text-muted-foreground">Nazwisko *</FormLabel>
                 <FormControl>
-                  <Input {...field} className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
+                  <Input {...field} className={cn("bg-background/50 border-border focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-lg", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -509,7 +508,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
               <FormItem>
                 <FormLabel className="text-muted-foreground">E-mail *</FormLabel>
                 <FormControl>
-                  <Input {...field} type="email" className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
+                  <Input {...field} type="email" className={cn("bg-background/50 border-border focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-lg", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -518,7 +517,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
               <FormItem>
                 <FormLabel className="text-muted-foreground">Telefon</FormLabel>
                 <FormControl>
-                  <Input {...field} type="tel" className="bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none" />
+                  <Input {...field} type="tel" className="bg-background/50 border-border focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-lg" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -553,7 +552,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                         <FormControl>
                           <RadioGroupItem value={g} className="peer sr-only" />
                         </FormControl>
-                        <FormLabel className="w-full flex items-center justify-center px-4 py-3 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium text-sm">
+                        <FormLabel className="w-full flex items-center justify-center px-4 py-3 border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium text-sm">
                           {g}
                         </FormLabel>
                       </FormItem>
@@ -567,7 +566,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
               <FormItem>
                 <FormLabel className="text-muted-foreground">Wzrost (cm) *</FormLabel>
                 <FormControl>
-                  <Input type="number" inputMode="numeric" min={80} max={260} {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
+                  <Input type="number" inputMode="numeric" min={80} max={260} {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} className={cn("bg-background/50 border-border focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-lg", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -576,10 +575,10 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
               <FormItem>
                 <FormLabel className="text-muted-foreground">Waga (kg) *</FormLabel>
                 <FormControl>
-                  <Input type="text" inputMode="decimal" placeholder="np. 75,5" {...field} value={field.value ?? ''} onChange={(e) => { const normalized = e.target.value.replace(",", "."); field.onChange(normalized || undefined); }} className={cn("bg-background/50 border-white/10 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
+                  <Input type="text" inputMode="decimal" placeholder="np. 75,5" {...field} value={field.value ?? ''} onChange={(e) => { const normalized = e.target.value.replace(",", "."); field.onChange(normalized || undefined); }} className={cn("bg-background/50 border-border focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary h-12 px-4 text-base rounded-lg", fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive")} />
                 </FormControl>
                 {bmi !== undefined && (
-                  <p className="text-xs text-muted-foreground/70">BMI: {bmi.toFixed(1)}</p>
+                  <p className="text-xs text-muted-foreground">BMI: {bmi.toFixed(1)}</p>
                 )}
                 <FormMessage />
               </FormItem>
@@ -596,7 +595,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
             <FormItem className="space-y-4">
               <FormLabel className="text-muted-foreground">Cel treningowy *</FormLabel>
               {showBmiRecommendation && (
-                <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
+                <p className="text-xs text-primary bg-primary/5 border border-primary/10 px-3 py-2">
                   {BMI_RECOMMENDATION_TEXT}
                 </p>
               )}
@@ -623,7 +622,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                       <FormControl>
                         <RadioGroupItem value={goal} className="peer sr-only" />
                       </FormControl>
-                      <FormLabel className="w-full flex items-center justify-center px-6 py-5 min-h-[72px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                      <FormLabel className="w-full flex items-center justify-center px-6 py-5 min-h-[72px] border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
                         {goal}
                       </FormLabel>
                     </FormItem>
@@ -644,7 +643,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                 transition={{ duration: 0.35, ease: "easeInOut" }}
                 className="overflow-hidden"
               >
-                <div className="space-y-8 pt-6 border-t border-white/10">
+                <div className="space-y-8 pt-6 border-t border-border">
                   {/* Sport level */}
                   <FormField control={form.control} name="athleteStatus" render={({field, fieldState}) => (
                     <FormItem className="space-y-4">
@@ -666,7 +665,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                               <FormControl>
                                 <RadioGroupItem value={opt} className="peer sr-only" />
                               </FormControl>
-                              <FormLabel className="w-full flex items-center justify-center px-6 py-5 min-h-[72px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium text-sm">
+                              <FormLabel className="w-full flex items-center justify-center px-6 py-5 min-h-[72px] border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium text-sm">
                                 {opt}
                               </FormLabel>
                             </FormItem>
@@ -681,14 +680,14 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                   <FormField control={form.control} name="sportPerformanceNeeds" render={() => (
                     <FormItem>
                       <FormLabel className="text-muted-foreground">Główne priorytety sportowe (opcjonalne)</FormLabel>
-                      <FormDescription className="text-xs text-muted-foreground/70">
+                      <FormDescription className="text-xs text-muted-foreground">
                         Zaznacz obszary, które są dla Ciebie najważniejsze. Pomogą dobrać odpowiednie elementy treningowe.
                       </FormDescription>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
                         {SPORT_PERFORMANCE_NEEDS.map(({ value: need, desc }) => {
                           const spVal = need === "Dynamika" ? "dynamika" : need === "Szybkość" ? "szybkosc" : "stabilizacja";
                           return (
-                            <FormItem key={need} className="flex flex-row items-start space-x-4 space-y-0 p-4 border border-white/5 bg-card/50 rounded-none hover:bg-card/80 transition-colors">
+                            <FormItem key={need} className="flex flex-row items-start space-x-4 space-y-0 p-4 border border-border bg-card/50 rounded-lg hover:bg-card/80 transition-colors">
                               <FormControl>
                                 <Checkbox
                                   checked={sportsPriorities.includes(spVal)}
@@ -708,12 +707,12 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                                         : currentNeeds.filter((v: string) => v !== need),
                                     );
                                   }}
-                                  className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-white/20 h-5 w-5 rounded-none mt-0.5"
+                                  className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-input h-5 w-5 rounded-lg mt-0.5"
                                 />
                               </FormControl>
                               <div className="flex flex-col gap-0.5 flex-1">
                                 <FormLabel className="font-medium cursor-pointer text-sm leading-snug">{need}</FormLabel>
-                                <span className="text-xs text-muted-foreground/70 leading-snug">{desc}</span>
+                                <span className="text-xs text-muted-foreground leading-snug">{desc}</span>
                               </div>
                             </FormItem>
                           );
@@ -730,14 +729,14 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
           <FormField control={form.control} name="trainingMotivation" render={({field}) => (
             <FormItem className="mt-8">
               <FormLabel className="text-muted-foreground">Dlaczego chcesz trenować?</FormLabel>
-              <FormDescription className="text-xs text-muted-foreground/70">
+              <FormDescription className="text-xs text-muted-foreground">
                 Krótko napisz, po co chcesz trenować i co chcesz poprawić.
               </FormDescription>
               <FormControl>
                 <Input
                   placeholder="np. Chcę poprawić kondycję i schudnąć przed wakacjami"
                   {...field}
-                  className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none"
+                  className="bg-background/50 border-border focus-visible:border-primary h-12 px-4 rounded-lg"
                 />
               </FormControl>
             </FormItem>
@@ -767,7 +766,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                       <FormControl>
                         <RadioGroupItem value={level} className="peer sr-only" />
                       </FormControl>
-                      <FormLabel className="w-full h-full flex flex-col items-center justify-center gap-2 px-6 py-5 min-h-[140px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                      <FormLabel className="w-full h-full flex flex-col items-center justify-center gap-2 px-6 py-5 min-h-[140px] border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
                         <span>{level}</span>
                         <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
                       </FormLabel>
@@ -775,7 +774,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                   ))}
                 </RadioGroup>
               </FormControl>
-              <FormDescription className="text-xs text-muted-foreground/70">
+              <FormDescription className="text-xs text-muted-foreground">
                 Nie kieruj się wyłącznie liczbą lat treningu. Wybierz poziom, który najlepiej opisuje Twoją wiedzę, umiejętności oraz samodzielność podczas treningów.
               </FormDescription>
               <FormMessage />
@@ -788,7 +787,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                 <FormItem>
                   <FormLabel className="text-muted-foreground">Jak długo trenujesz?</FormLabel>
                   <FormControl>
-                    <Input placeholder="np. 2 lata" {...field} className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none" />
+                    <Input placeholder="np. 2 lata" {...field} className="bg-background/50 border-border focus-visible:border-primary h-12 px-4 rounded-lg" />
                   </FormControl>
                 </FormItem>
               )} />
@@ -819,7 +818,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                       <FormControl>
                         <RadioGroupItem value={opt} className="peer sr-only" />
                       </FormControl>
-                      <FormLabel className="w-full flex items-center justify-center px-6 py-5 min-h-[64px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                      <FormLabel className="w-full flex items-center justify-center px-6 py-5 min-h-[64px] border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
                         {opt}
                       </FormLabel>
                     </FormItem>
@@ -835,11 +834,11 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
             <FormField control={form.control} name="healthLimitations" render={({field, fieldState}) => (
               <FormItem className="mt-6">
                 <FormLabel className="text-muted-foreground">Opisz zdrowie i ograniczenia *</FormLabel>
-                <FormDescription className="text-xs text-muted-foreground/70">
+                <FormDescription className="text-xs text-muted-foreground">
                   Przykłady: ból kolan, ból barków, ból odcinka lędźwiowego, strzelający łokieć, problemy z nadgarstkami, ograniczona ruchomość, przebyte operacje, inne przewlekłe dolegliwości.
                 </FormDescription>
                 {isBeginner && (
-                  <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
+                  <p className="text-xs text-primary bg-primary/5 border border-primary/10 px-3 py-2">
                     Te informacje są zawsze uwzględniane przy doborze ćwiczeń i nie są traktowane jedynie jako preferencja.
                   </p>
                 )}
@@ -848,7 +847,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                     {...field}
                     placeholder="Opisz krótko swoje kontuzje, dolegliwości lub ograniczenia ruchowe..."
                     className={cn(
-                      "bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y",
+                      "bg-background/50 border-border focus-visible:border-primary min-h-[100px] p-4 rounded-lg resize-y",
                       fieldState.error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive"
                     )}
                   />
@@ -868,11 +867,11 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
             <FormField control={form.control} name="desiredWeeklyFrequency" render={({field, fieldState}) => (
               <FormItem>
                 <FormLabel className="text-muted-foreground">Ile treningów tygodniowo chciałbyś wykonywać? *</FormLabel>
-                <FormDescription className="text-xs text-muted-foreground/70">
+                <FormDescription className="text-xs text-muted-foreground">
                   Pozwoli to lepiej dopasować plan do Twoich oczekiwań oraz możliwości.
                 </FormDescription>
                 {trainingFrequencyRecommendation && (
-                  <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
+                  <p className="text-xs text-primary bg-primary/5 border border-primary/10 px-3 py-2">
                     {trainingFrequencyRecommendation}
                   </p>
                 )}
@@ -887,7 +886,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                       const val = e.target.value === '' ? undefined : Math.min(7, Math.max(1, parseInt(e.target.value)));
                       field.onChange(val);
                     }}
-                    className={cn("bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none", fieldState.error && "border-destructive focus-visible:border-destructive")}
+                    className={cn("bg-background/50 border-border focus-visible:border-primary h-12 px-4 rounded-lg", fieldState.error && "border-destructive focus-visible:border-destructive")}
                   />
                 </FormControl>
                 <FormMessage />
@@ -907,7 +906,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                         <FormControl>
                           <RadioGroupItem value={opt} className="peer sr-only" />
                         </FormControl>
-                        <FormLabel className="w-full flex items-center justify-center px-4 py-4 min-h-[56px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium text-sm">
+                        <FormLabel className="w-full flex items-center justify-center px-4 py-4 min-h-[56px] border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium text-sm">
                           {opt}
                         </FormLabel>
                       </FormItem>
@@ -947,7 +946,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                         <FormControl>
                           <RadioGroupItem value={loc} className="peer sr-only" />
                         </FormControl>
-                        <FormLabel className="w-full flex flex-col items-start gap-1 px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                        <FormLabel className="w-full flex flex-col items-start gap-1 px-6 py-4 border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
                           <span>{loc}</span>
                           <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
                         </FormLabel>
@@ -969,7 +968,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                         onCheckedChange={(checked) =>
                           setEquipmentItems((prev) => (checked ? [...prev, opt] : prev.filter((i) => i !== opt)))
                         }
-                        className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-white/20 h-4 w-4 rounded-none"
+                        className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-input h-4 w-4 rounded-lg"
                       />
                       {opt}
                     </label>
@@ -979,7 +978,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                   placeholder="Inny sprzęt"
                   value={equipmentOther}
                   onChange={(e) => setEquipmentOther(e.target.value)}
-                  className="bg-background/50 border-white/10 focus-visible:border-primary h-12 px-4 rounded-none mt-2"
+                  className="bg-background/50 border-border focus-visible:border-primary h-12 px-4 rounded-lg mt-2"
                 />
                 {form.formState.errors.equipment && (
                   <p className="text-sm font-medium text-destructive">{form.formState.errors.equipment.message as string}</p>
@@ -995,7 +994,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
           description="Pomaga dobrać ilość aktywności wspierającej redukcję, kondycję i ogólną wydolność."
         >
           {isCardioRelevant && (
-            <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 mb-6 -mt-4">
+            <p className="text-xs text-primary bg-primary/5 border border-primary/10 px-3 py-2 mb-6 -mt-4">
               {CARDIO_RECOMMENDATION_TEXT}
             </p>
           )}
@@ -1015,7 +1014,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                         <FormControl>
                           <RadioGroupItem value={value} className="peer sr-only" />
                         </FormControl>
-                        <FormLabel className="w-full flex items-center px-4 py-3 min-h-[46px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-sm leading-snug">
+                        <FormLabel className="w-full flex items-center px-4 py-3 min-h-[46px] border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-sm leading-snug">
                           {label}
                         </FormLabel>
                       </FormItem>
@@ -1023,7 +1022,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                   </RadioGroup>
                 </FormControl>
                 {field.value === "Wolę ograniczyć cardio do niezbędnego minimum" && (
-                  <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2">
+                  <p className="text-xs text-primary bg-primary/5 border border-primary/10 px-3 py-2">
                     {CARDIO_AVOID_REASSURANCE_TEXT}
                   </p>
                 )}
@@ -1046,7 +1045,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                         <FormControl>
                           <RadioGroupItem value={value} className="peer sr-only" />
                         </FormControl>
-                        <FormLabel className="w-full min-h-[46px] flex items-center justify-center text-sm border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
+                        <FormLabel className="w-full min-h-[46px] flex items-center justify-center text-sm border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
                           {label}
                         </FormLabel>
                       </FormItem>
@@ -1075,7 +1074,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                       return (
                         <div key={value} className="flex items-center">
                           <RadioGroupItem id={id} value={value} className="peer sr-only" />
-                          <label htmlFor={id} className="w-full min-h-[46px] flex items-center justify-center text-sm border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
+                          <label htmlFor={id} className="w-full min-h-[46px] flex items-center justify-center text-sm border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
                             {label}
                           </label>
                         </div>
@@ -1107,7 +1106,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                             return (
                               <div key={value} className="flex items-center">
                                 <RadioGroupItem id={id} value={value} className="peer sr-only" />
-                                <label htmlFor={id} className="w-full min-h-[46px] flex items-center justify-center text-sm border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
+                                <label htmlFor={id} className="w-full min-h-[46px] flex items-center justify-center text-sm border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium text-center">
                                   {label}
                                 </label>
                               </div>
@@ -1156,7 +1155,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                         <FormControl>
                           <RadioGroupItem value={value} className="peer sr-only" />
                         </FormControl>
-                        <FormLabel className="w-full flex flex-col items-start gap-0.5 px-5 py-3 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                        <FormLabel className="w-full flex flex-col items-start gap-0.5 px-5 py-3 border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
                           <span className="text-sm">{label}</span>
                           <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
                         </FormLabel>
@@ -1178,7 +1177,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                         <FormControl>
                           <RadioGroupItem value={hours} className="peer sr-only" />
                         </FormControl>
-                        <FormLabel className="w-full flex items-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
+                        <FormLabel className="w-full flex items-center px-6 py-4 border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all font-medium">
                           {hours}
                         </FormLabel>
                       </FormItem>
@@ -1193,7 +1192,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
           <FormField control={form.control} name="stressLevel" render={({field}) => (
             <FormItem>
               <FormLabel className="text-muted-foreground">Jak oceniasz swój poziom stresu?</FormLabel>
-              <FormDescription className="text-xs text-muted-foreground/70">
+              <FormDescription className="text-xs text-muted-foreground">
                 1 = bardzo niski poziom stresu, 10 = bardzo wysoki poziom stresu
               </FormDescription>
               <FormControl>
@@ -1225,7 +1224,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                       <FormControl>
                         <RadioGroupItem value={style} className="peer sr-only" />
                       </FormControl>
-                      <FormLabel className="w-full h-full flex flex-col items-center justify-center gap-2 px-6 py-5 min-h-[120px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                      <FormLabel className="w-full h-full flex flex-col items-center justify-center gap-2 px-6 py-5 min-h-[120px] border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
                         <span>{style}</span>
                         <span className="text-xs font-normal text-muted-foreground leading-snug">{desc}</span>
                       </FormLabel>
@@ -1238,7 +1237,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
           )} />
 
           {isBeginner && (
-            <div className="mt-12 text-sm text-muted-foreground/90 bg-muted/20 border border-white/10 px-4 py-3 leading-relaxed">
+            <div className="mt-12 text-sm text-muted-foreground bg-muted/20 border border-border rounded-lg px-4 py-3 leading-relaxed">
               Na początku łatwo pochopnie ocenić, które partie lub ćwiczenia powinny być najważniejsze. Przy Twoim poziomie doświadczenia potraktujemy te wybory jako wskazówkę, a plan będzie przede wszystkim rozwijał całe ciało i uczył podstawowych wzorców ruchowych.
             </div>
           )}
@@ -1248,7 +1247,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
             {isIntermediateOrAdvanced && (
               <div className="space-y-3">
                 <label className="text-sm font-medium text-muted-foreground">Ćwiczenia do unikania</label>
-                <p className="text-xs text-muted-foreground/70">
+                <p className="text-xs text-muted-foreground">
                   Wyszukaj po nazwie lub opisz ćwiczenie, jeśli nie znasz jego nazwy.
                 </p>
                 <AvoidedExercisesPicker
@@ -1266,7 +1265,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
               <label className="text-sm font-medium text-muted-foreground">
                 {isBeginner ? "Ćwiczenia preferowane" : "Jakie są Twoje ulubione ćwiczenia?"}
               </label>
-              <p className="text-xs text-muted-foreground/70">
+              <p className="text-xs text-muted-foreground">
                 {isBeginner
                   ? "Możesz wskazać ćwiczenia, które lubisz, ale trener może wybrać prostsze lub lepiej dopasowane warianty do Twojego poziomu."
                   : "Wyszukaj po nazwie — możesz dodać kilka ćwiczeń."}
@@ -1280,14 +1279,14 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
 
           <div className="space-y-3 mt-12">
             <p className="text-sm font-medium text-muted-foreground">Partie priorytetowe</p>
-            <p className="text-xs text-muted-foreground/70">
+            <p className="text-xs text-muted-foreground">
               {isBeginner
                 ? "Na tym etapie nie musisz wybierać konkretnych priorytetów. Najpierw skupimy się na równomiernym rozwoju całego ciała."
                 : "Wybierz do 3 partii mięśniowych, na których zależy Ci najbardziej."}</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField control={form.control} name="priorityMuscle1" render={({field}) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-muted-foreground/80">Priorytet 1</FormLabel>
+                    <FormLabel className="text-xs text-muted-foreground">Priorytet 1</FormLabel>
                     <FormControl>
                       <MuscleGroupCombobox
                         value={field.value ?? ""}
@@ -1299,7 +1298,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                 )} />
                 <FormField control={form.control} name="priorityMuscle2" render={({field}) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-muted-foreground/80">Priorytet 2</FormLabel>
+                    <FormLabel className="text-xs text-muted-foreground">Priorytet 2</FormLabel>
                     <FormControl>
                       <MuscleGroupCombobox
                         value={field.value ?? ""}
@@ -1311,7 +1310,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                 )} />
                 <FormField control={form.control} name="priorityMuscle3" render={({field}) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-muted-foreground/80">Priorytet 3</FormLabel>
+                    <FormLabel className="text-xs text-muted-foreground">Priorytet 3</FormLabel>
                     <FormControl>
                       <MuscleGroupCombobox
                         value={field.value ?? ""}
@@ -1337,7 +1336,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                   <FormField control={form.control} name="avoidsAdvancedMethods" render={({field}) => (
                     <FormItem className="space-y-4 mb-8">
                       <FormLabel className="text-muted-foreground">Czy chcesz, aby w planie były uwzględniane metody intensyfikacji treningu?</FormLabel>
-                      <FormDescription className="text-xs text-muted-foreground/70">
+                      <FormDescription className="text-xs text-muted-foreground">
                         Zaznacz tylko te metody, które chcesz stosować w planie.
                       </FormDescription>
                       <FormControl>
@@ -1347,7 +1346,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                               <FormControl>
                                 <RadioGroupItem value={opt} className="peer sr-only" />
                               </FormControl>
-                              <FormLabel className="w-full flex items-center justify-center px-6 py-4 border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                              <FormLabel className="w-full flex items-center justify-center px-6 py-4 border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
                                 {opt}
                               </FormLabel>
                             </FormItem>
@@ -1371,7 +1370,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                               {ADVANCED_METHODS.map(method => (
                                 <FormField key={method} control={form.control} name="advancedMethodsToAvoid" render={({field}) => (
-                                  <FormItem className="flex flex-row items-center space-x-4 space-y-0 p-5 border border-white/5 bg-card/50 rounded-none hover:bg-card/80 transition-colors">
+                                  <FormItem className="flex flex-row items-center space-x-4 space-y-0 p-5 border border-border bg-card/50 rounded-lg hover:bg-card/80 transition-colors">
                                     <FormControl>
                                       <Checkbox
                                         checked={field.value?.includes(method)}
@@ -1380,7 +1379,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                                             ? field.onChange([...(field.value || []), method])
                                             : field.onChange((field.value || []).filter(val => val !== method))
                                         }}
-                                        className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-white/20 h-5 w-5 rounded-none"
+                                        className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-input h-5 w-5 rounded-lg"
                                       />
                                     </FormControl>
                                     <FormLabel className="font-normal cursor-pointer text-sm leading-snug flex-1">{method}</FormLabel>
@@ -1418,7 +1417,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
                       <FormControl>
                         <RadioGroupItem value={opt} className="peer sr-only" />
                       </FormControl>
-                      <FormLabel className="w-full flex items-center justify-center px-6 py-4 min-h-[56px] border border-white/10 bg-card rounded-none cursor-pointer hover:bg-white/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
+                      <FormLabel className="w-full flex items-center justify-center px-6 py-4 min-h-[56px] border border-border bg-card rounded-lg cursor-pointer hover:bg-card peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:text-primary transition-all text-center font-medium">
                         {opt}
                       </FormLabel>
                     </FormItem>
@@ -1430,11 +1429,11 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
           {hasAdditionalInfoVal === "Tak" && (
             <FormField control={form.control} name="additionalInfo" render={({field}) => (
               <FormItem className="mt-6">
-                <FormDescription className="text-xs text-muted-foreground/70 mb-2">
+                <FormDescription className="text-xs text-muted-foreground mb-2">
                   Krótko dopisz tylko to, co może mieć znaczenie dla planu.
                 </FormDescription>
                 <FormControl>
-                  <Textarea {...field} className="bg-background/50 border-white/10 focus-visible:border-primary min-h-[100px] p-4 rounded-none resize-y" />
+                  <Textarea {...field} className="bg-background/50 border-border focus-visible:border-primary min-h-[100px] p-4 rounded-lg resize-y" />
                 </FormControl>
               </FormItem>
             )} />
@@ -1445,7 +1444,7 @@ export default function SurveyForm({ inviteToken, prefillEmail }: { inviteToken?
           <Button 
             type="submit" 
             disabled={isSubmitting}
-            className="w-full md:w-auto min-w-[280px] h-14 bg-primary text-primary-foreground font-semibold text-lg uppercase tracking-wide hover:bg-primary/90 transition-all rounded-none"
+            className="w-full md:w-auto min-w-[280px] h-14 bg-primary text-primary-foreground font-semibold text-lg uppercase tracking-wide hover:bg-primary/90 transition-all rounded-lg"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Przetwarzanie...</span>

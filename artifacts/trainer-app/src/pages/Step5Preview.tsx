@@ -837,7 +837,7 @@ function DayPreviewCard({
                       className={`flex items-center gap-2 ${groupIdx > 0 ? "mt-3" : "mt-2"} mb-1`}
                     >
                       <div className="h-px flex-1 bg-border/40" />
-                      <span className="text-[10px] text-muted-foreground/70 uppercase tracking-wider font-medium px-1">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium px-1">
                         {group.sectionLabel}
                       </span>
                       <div className="h-px flex-1 bg-border/40" />

@@ -1324,7 +1324,7 @@ function MonthSection() {
                           bulkMode && !selectable ? "cursor-not-allowed" : "",
                           isDetailsOpen ? "ring-2 ring-primary border-primary" : "",
                           // Selection state is independent of the status color.
-                          isBulkSelected ? "ring-2 ring-primary border-primary shadow-[inset_0_0_0_2px_hsl(var(--primary))]" : "",
+                          isBulkSelected ? "ring-2 ring-primary border-primary shadow-[inset_0_0_0_2px_var(--accent)]" : "",
                         ].join(" ")}
                       >
                         <span className="flex items-center gap-1 self-start">
