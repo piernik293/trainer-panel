@@ -172,6 +172,8 @@ export function TrainingFlow({ day, firstName, week, onExit }: {
   useEffect(() => { topRef.current?.scrollIntoView({ block: "start" }); }, [run.stage, run.exerciseIndex, run.warmupIndex, run.cooldownIndex]);
 
   const ex = day.exercises[run.exerciseIndex];
+  // After a pain report the cool-down drops stretches that load that joint.
+  const cooldown = useMemo(() => day.cooldown.filter((c) => !(c.joints ?? []).some((j) => (run.painAreas ?? []).includes(j))), [day.cooldown, run.painAreas]);
   const dayOf = useCallback((a: Parameters<typeof dispatch>[0]) => dispatch(a), []);
 
   const saveSet = (planExerciseId: number, setNumber: number, value: { weightKg: number | null; reps: number | null; rir: number | null }) => {
@@ -186,6 +188,7 @@ export function TrainingFlow({ day, firstName, week, onExit }: {
     const id = newUuid();
     queue.enqueue({ id, kind: "pain", sessionUuid: run.sessionUuid, body: { clientUuid: id, planExerciseId: ex.planExerciseId, area: p.area, severity: p.severity, description: p.description || null } });
     dayOf({ type: "skipExercise", planExerciseId: ex.planExerciseId });
+    dayOf({ type: "painArea", area: p.area });
     for (let n = 1; n <= ex.sets; n++) if (!run.sets[ex.planExerciseId]?.[n]) dayOf({ type: "saveSet", planExerciseId: ex.planExerciseId, setNumber: n, value: { weightKg: null, reps: null, rir: null, skipped: true } });
     setPain(false);
     dayOf({ type: "nextExercise", total: day.exercises.length });
@@ -227,11 +230,11 @@ export function TrainingFlow({ day, firstName, week, onExit }: {
             onPrev={() => dayOf({ type: "prevExercise" })} onNext={() => dayOf({ type: "nextExercise", total: day.exercises.length })}
             onOpenList={() => setList(true)} onPain={() => setPain(true)} />
         )}
-        {run.stage === "cooldown" && day.cooldown.length > 0 && (
-          <StepScreen title="Schłodzenie" items={day.cooldown} index={Math.min(run.cooldownIndex, day.cooldown.length - 1)} nextLabel="Podsumowanie"
-            onSkip={() => dayOf({ type: "cooldownNext", total: day.cooldown.length })} onNext={() => dayOf({ type: "cooldownNext", total: day.cooldown.length })} />
+        {run.stage === "cooldown" && cooldown.length > 0 && (
+          <StepScreen title="Schłodzenie" items={cooldown} index={Math.min(run.cooldownIndex, cooldown.length - 1)} nextLabel="Podsumowanie"
+            onSkip={() => dayOf({ type: "cooldownNext", total: cooldown.length })} onNext={() => dayOf({ type: "cooldownNext", total: cooldown.length })} />
         )}
-        {run.stage === "cooldown" && day.cooldown.length === 0 && (
+        {run.stage === "cooldown" && cooldown.length === 0 && (
           <button type="button" onClick={() => dayOf({ type: "stage", stage: "finish" })} className="h-14 w-full rounded-xl bg-primary font-bold text-primary-foreground">Przejdź do podsumowania</button>
         )}
         {run.stage === "finish" && (

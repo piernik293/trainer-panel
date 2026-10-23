@@ -69,7 +69,7 @@ export function TodayCard({ reloadKey, onStart }: { reloadKey: number; onStart: 
             <span><b>{e.name}</b><br /><span className="text-muted-foreground">{formatTarget(e).split(" · przerwa")[0]}</span></span>
           </li>
         ))}
-        <li className="flex items-center gap-2 text-muted-foreground"><Wind className="h-4 w-4 text-primary" aria-hidden /> Schłodzenie · {day.cooldown.length} ćwiczeń · ok. {approxMinutes(day.cooldown.length)} min</li>
+        <li className="flex items-center gap-2 text-muted-foreground"><Wind className="h-4 w-4 text-primary" aria-hidden /> Schłodzenie · {day.cooldown.length} ćwiczeń · ok. {day.cooldownMinutes ? Math.round(day.cooldownMinutes) : approxMinutes(day.cooldown.length)} min</li>
       </ol>
 
       <button type="button" onClick={() => onStart(day, { client: data.client, week: data.week })} className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary text-base font-bold text-primary-foreground">

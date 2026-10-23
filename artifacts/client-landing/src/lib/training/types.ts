@@ -22,7 +22,8 @@ export interface ExerciseInfo {
   /** heaviest weight per number of repetitions in earlier sessions (offline record check) */
   history: { weightKg: number; reps: number }[];
 }
-export interface RampItem { name: string; detail: string; description: string }
+/** `joints`: joints the exercise stresses — skipped for the rest of the workout after a pain report there */
+export interface RampItem { name: string; detail: string; description: string; joints?: string[] }
 export interface TrainingDay {
   planDayId: number;
   weekday: string;
@@ -36,6 +37,7 @@ export interface TrainingDay {
   warmup: RampItem[];
   /** estimated minutes of the short warm-up (about 7) */
   warmupMinutes?: number;
+  cooldownMinutes?: number;
   cooldown: RampItem[];
   activeSession: { id: number; sets: { planExerciseId: number | null; setNumber: number; weightKg: number | null; reps: number | null; rir: number | null; skipped: boolean }[]; pain: { id: number; exerciseId: number | null }[] } | null;
 }

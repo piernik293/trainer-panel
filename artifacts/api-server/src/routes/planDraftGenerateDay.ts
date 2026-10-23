@@ -56,6 +56,7 @@ import {
   prescribeExercise,
 } from "../services/exercisePrescriptionService.js";
 import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
+import { mainPlanRoleCondition } from "../lib/exerciseRoles";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   authorizeGeneratedDay,
@@ -259,7 +260,7 @@ router.post(
     const exercises = await db
       .select()
       .from(exercisesTable)
-      .where(eq(exercisesTable.isActive, true))
+      .where(and(eq(exercisesTable.isActive, true), mainPlanRoleCondition()))
       .orderBy(exercisesTable.name);
 
     // ── Filter to complete exercises ───────────────────────────────────────────
