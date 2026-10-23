@@ -6,12 +6,12 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { DashboardSummary } from "@/lib/dashboardApi";
 
-const STEP_HINT: Partial<Record<string, string>> = {
-  plan: "Generator zaproponuje szkic. Ty decydujesz, co zostaje.",
-};
-
-const STEP_ACTION: Partial<Record<string, { label: string; href: string }>> = {
-  invite: { label: "Wygeneruj link", href: "/survey-invite" },
+/** One sentence "how to do it" + action label, shown for the next step. */
+const STEP_HELP: Partial<Record<string, { how: string; action: string }>> = {
+  invite: { how: "Wpisz e-mail klienta (opcjonalnie), wygeneruj link i wyślij go klientowi.", action: "Wygeneruj link" },
+  interview: { how: "Otwórz profil klienta i zakładkę „Wywiad treningowy”.", action: "Przejrzyj wywiad" },
+  plan: { how: "Generator zaproponuje szkic. Ty decydujesz, co zostaje.", action: "Przygotuj plan" },
+  share: { how: "Aktywuj plan, a potem zaproś klienta do portalu — zobaczy tam swój plan.", action: "Udostępnij plan" },
 };
 
 export function FirstStepsCard({ onboarding }: { onboarding: DashboardSummary["onboarding"] }) {
@@ -30,19 +30,22 @@ export function FirstStepsCard({ onboarding }: { onboarding: DashboardSummary["o
         />
       </CardHeader>
       <CardContent>
-        <ol className="space-y-4">
+        <ol className="space-y-3">
           {onboarding.steps.map((step, i) => {
             const isNext = onboarding.next === step.key;
-            const action = isNext ? STEP_ACTION[step.key] : undefined;
+            const help = isNext ? STEP_HELP[step.key] : undefined;
+            const title = (
+              <>
+                {step.title}
+                {step.done && <span className="sr-only"> — ukończone</span>}
+                {isNext && <span className="sr-only"> — następny krok</span>}
+              </>
+            );
             return (
               <li
                 key={step.key}
                 aria-current={isNext ? "step" : undefined}
-                className={cn(
-                  "flex items-start gap-3 rounded-lg p-2",
-                  isNext && "bg-primary/5 ring-1 ring-primary/30",
-                  step.done && "text-muted-foreground",
-                )}
+                className={cn("flex items-start gap-3 rounded-lg p-2", isNext && "bg-primary/5 ring-1 ring-primary/30")}
                 data-testid={`first-step-${step.key}`}
               >
                 <span
@@ -55,21 +58,29 @@ export function FirstStepsCard({ onboarding }: { onboarding: DashboardSummary["o
                   {step.done ? <Check className="h-3.5 w-3.5" /> : i + 1}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className={cn("font-medium", step.done && "line-through decoration-1")}>
-                    {step.title}
-                    {step.done && <span className="sr-only"> — ukończone</span>}
-                    {isNext && <span className="sr-only"> — następny krok</span>}
-                  </p>
-                  {STEP_HINT[step.key] && !step.done && (
-                    <p className="mt-1 text-sm text-muted-foreground">{STEP_HINT[step.key]}</p>
-                  )}
-                  {action && (
+                  {step.href ? (
                     <Link
-                      href={action.href}
-                      className={cn(buttonVariants({ size: "sm" }), "mt-2 min-h-11 w-full sm:w-auto")}
+                      href={step.href}
+                      className={cn(
+                        "inline-flex min-h-11 items-center font-medium hover:underline sm:min-h-0",
+                        step.done && "text-muted-foreground",
+                      )}
                     >
-                      {action.label}
+                      {title}
                     </Link>
+                  ) : (
+                    <p className={cn("font-medium", step.done && "text-muted-foreground")}>{title}</p>
+                  )}
+                  {help && step.href && (
+                    <>
+                      <p className="text-sm text-muted-foreground" data-testid="first-step-how">{help.how}</p>
+                      <Link
+                        href={step.href}
+                        className={cn(buttonVariants({ size: "sm" }), "mt-2 min-h-11 w-full sm:w-auto")}
+                      >
+                        {help.action}
+                      </Link>
+                    </>
                   )}
                 </div>
               </li>

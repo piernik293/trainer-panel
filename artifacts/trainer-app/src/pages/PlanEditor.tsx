@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, createContext, useMemo } from "react";
+import { StepHint } from "@/components/dashboard/StepHint";
 import { humanizeError } from "@/lib/userError";
 import { useParams, Link } from "wouter";
 import {
@@ -1774,6 +1775,10 @@ export default function PlanEditor() {
           <ArrowLeft size={16} />
           Powrót do klienta
         </Link>
+
+        <StepHint step={5}>
+          Sprawdź plan i kliknij „Aktywuj plan” (przycisk po prawej). Aktywny plan klient zobaczy w portalu.
+        </StepHint>
 
         <div className="flex flex-col sm:flex-row sm:items-start gap-3">
           <div className="flex-1 min-w-0">

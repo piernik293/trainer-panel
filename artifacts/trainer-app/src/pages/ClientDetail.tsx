@@ -1,4 +1,5 @@
 import { useState, useId } from "react";
+import { StepHint } from "@/components/dashboard/StepHint";
 import { humanizeError } from "@/lib/userError";
 import { useParams, Link } from "wouter";
 import {
@@ -524,6 +525,10 @@ export default function ClientDetail() {
         </div>
       </div>
 
+      <StepHint step={3}>
+        Otwórz zakładkę „Wywiad treningowy” poniżej i sprawdź odpowiedzi klienta: cel, doświadczenie, ograniczenia, sprzęt.
+      </StepHint>
+
       <Tabs defaultValue="overview" className="no-print">
         <TabsList>
           <TabsTrigger value="overview">Przegląd</TabsTrigger>
@@ -951,6 +956,11 @@ function InvitationCard({ clientId }: { clientId: number }) {
         </div>
       </CardHeader>
       <CardContent className="pt-0">
+        <div className="mb-3">
+          <StepHint step={5}>
+            Kliknij „Wyślij dostęp”, żeby zaprosić klienta do portalu. Po aktywacji zobaczy tam swój plan (plan musi być aktywny).
+          </StepHint>
+        </div>
         {status === "none" && (
           <div className="flex items-center gap-3">
             <p className="text-sm text-muted-foreground flex-1">

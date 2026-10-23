@@ -27,7 +27,7 @@ export interface DashboardSummary {
     at: string;
   }[];
   onboarding: {
-    steps: { key: "account" | "invite" | "interview" | "plan" | "share"; title: string; done: boolean }[];
+    steps: { key: "account" | "invite" | "interview" | "plan" | "share"; title: string; done: boolean; href: string | null }[];
     completed: number;
     total: number;
     next: string | null;

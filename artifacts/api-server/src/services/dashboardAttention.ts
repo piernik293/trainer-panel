@@ -197,7 +197,36 @@ export interface OnboardingFacts {
   anyActivePlan: boolean;
 }
 
-export function buildOnboarding(f: OnboardingFacts) {
+/** Where each step is done. Ids come from the trainer's own rows (caller-scoped). */
+export interface OnboardingTargets {
+  /** Client with the newest interview. */
+  interviewClientId: number | null;
+  /** Client to build a plan for: interview but no plan yet, else any client with an interview. */
+  planClientId: number | null;
+  /** A draft plan waiting for activation. */
+  draftPlanId: number | null;
+  /** Client with an active plan (portal invitation card). */
+  activePlanClientId: number | null;
+}
+
+/** ?krok=N makes the target screen show a short, dismissible tip. */
+export function onboardingHref(key: (typeof ONBOARDING_STEPS)[number]["key"], t: OnboardingTargets): string | null {
+  switch (key) {
+    case "account":
+      return null;
+    case "invite":
+      return "/survey-invite?krok=2";
+    case "interview":
+      return t.interviewClientId ? `/clients/${t.interviewClientId}?krok=3` : "/clients?krok=3";
+    case "plan":
+      return t.planClientId ? `/clients/${t.planClientId}/plans/generate?krok=4` : "/clients?krok=4";
+    case "share":
+      if (t.draftPlanId) return `/plans/${t.draftPlanId}?krok=5`;
+      return t.activePlanClientId ? `/clients/${t.activePlanClientId}?krok=5` : "/clients?krok=5";
+  }
+}
+
+export function buildOnboarding(f: OnboardingFacts, targets: OnboardingTargets) {
   const done: Record<(typeof ONBOARDING_STEPS)[number]["key"], boolean> = {
     account: true,
     invite: f.anyInvitation,
@@ -205,7 +234,12 @@ export function buildOnboarding(f: OnboardingFacts) {
     plan: f.anyPlan,
     share: f.anyActivePlan,
   };
-  const steps = ONBOARDING_STEPS.map((s) => ({ key: s.key, title: s.title, done: done[s.key] }));
+  const steps = ONBOARDING_STEPS.map((s) => ({
+    key: s.key,
+    title: s.title,
+    done: done[s.key],
+    href: onboardingHref(s.key, targets),
+  }));
   const completed = steps.filter((s) => s.done).length;
   const next = steps.find((s) => !s.done)?.key ?? null;
   return { steps, completed, total: steps.length, next };

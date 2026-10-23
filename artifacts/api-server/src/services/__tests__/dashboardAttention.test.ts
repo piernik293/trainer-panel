@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildAttention, buildOnboarding, type AttentionInput } from "../dashboardAttention";
+import { buildAttention, buildOnboarding, type AttentionInput, type OnboardingTargets } from "../dashboardAttention";
 
 const NOW = new Date("2026-10-22T10:00:00Z");
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
@@ -101,20 +101,39 @@ describe("buildAttention", () => {
   });
 });
 
+const NO_TARGETS: OnboardingTargets = { interviewClientId: null, planClientId: null, draftPlanId: null, activePlanClientId: null };
+
 describe("buildOnboarding", () => {
   it("only the account step is done for a brand new trainer; next is the invite", () => {
-    const o = buildOnboarding({ anyInvitation: false, anyInterview: false, anyPlan: false, anyActivePlan: false });
+    const o = buildOnboarding({ anyInvitation: false, anyInterview: false, anyPlan: false, anyActivePlan: false }, NO_TARGETS);
     expect(o.completed).toBe(1);
     expect(o.total).toBe(5);
     expect(o.next).toBe("invite");
   });
   it("derives each step from facts", () => {
-    const o = buildOnboarding({ anyInvitation: true, anyInterview: true, anyPlan: true, anyActivePlan: false });
+    const o = buildOnboarding({ anyInvitation: true, anyInterview: true, anyPlan: true, anyActivePlan: false }, NO_TARGETS);
     expect(o.steps.map((s) => s.done)).toEqual([true, true, true, true, false]);
     expect(o.next).toBe("share");
   });
   it("all done → no next step", () => {
-    const o = buildOnboarding({ anyInvitation: true, anyInterview: true, anyPlan: true, anyActivePlan: true });
+    const o = buildOnboarding({ anyInvitation: true, anyInterview: true, anyPlan: true, anyActivePlan: true }, NO_TARGETS);
     expect(o).toMatchObject({ completed: 5, next: null });
+  });
+});
+
+describe("onboarding links (each step points to where it is done)", () => {
+  const facts = { anyInvitation: false, anyInterview: false, anyPlan: false, anyActivePlan: false };
+  const hrefs = (t: OnboardingTargets) => buildOnboarding(facts, t).steps.map((s) => s.href);
+
+  it("without clients: invite screen, then the client list", () => {
+    expect(hrefs(NO_TARGETS)).toEqual([null, "/survey-invite?krok=2", "/clients?krok=3", "/clients?krok=4", "/clients?krok=5"]);
+  });
+  it("with data: client profile, generator for that client, plan to activate", () => {
+    expect(hrefs({ interviewClientId: 7, planClientId: 8, draftPlanId: 31, activePlanClientId: null })).toEqual([
+      null, "/survey-invite?krok=2", "/clients/7?krok=3", "/clients/8/plans/generate?krok=4", "/plans/31?krok=5",
+    ]);
+  });
+  it("no draft but an active plan: client page (portal invitation)", () => {
+    expect(hrefs({ ...NO_TARGETS, activePlanClientId: 9 })[4]).toBe("/clients/9?krok=5");
   });
 });

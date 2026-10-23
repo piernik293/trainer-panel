@@ -166,12 +166,25 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
     .where(eq(clientInvitationsTable.trainerId, trainerId))
     .limit(1);
 
-  const onboarding = buildOnboarding({
-    anyInvitation: invites.length > 0 || !!anyPortalInvitation,
-    anyInterview: latestSurveys.length > 0,
-    anyPlan: plans.some((p) => p.status !== "archived"),
-    anyActivePlan: plans.some((p) => p.status === "active"),
-  });
+  const livePlans = plans.filter((p) => p.status !== "archived");
+  const withPlan = new Set(livePlans.map((p) => p.clientId));
+  const byNewestSurvey = [...latestSurveys].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+  const onboarding = buildOnboarding(
+    {
+      anyInvitation: invites.length > 0 || !!anyPortalInvitation,
+      anyInterview: latestSurveys.length > 0,
+      anyPlan: livePlans.length > 0,
+      anyActivePlan: plans.some((p) => p.status === "active"),
+    },
+    {
+      interviewClientId: byNewestSurvey[0]?.clientId ?? null,
+      planClientId: (byNewestSurvey.find((s) => !withPlan.has(s.clientId)) ?? byNewestSurvey[0])?.clientId ?? null,
+      draftPlanId: plans.find((p) => p.status === "draft")?.id ?? null,
+      activePlanClientId: plans.find((p) => p.status === "active")?.clientId ?? null,
+    },
+  );
 
   res.json({
     today,

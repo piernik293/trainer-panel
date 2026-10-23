@@ -48,11 +48,11 @@ const base: DashboardSummary = {
   recentEvents: [],
   onboarding: {
     steps: [
-      { key: "account", title: "Załóż konto trenera", done: true },
-      { key: "invite", title: "Zaproś pierwszego klienta", done: false },
-      { key: "interview", title: "Przejrzyj odpowiedzi z wywiadu", done: false },
-      { key: "plan", title: "Przygotuj plan", done: false },
-      { key: "share", title: "Udostępnij plan klientowi", done: false },
+      { key: "account", title: "Załóż konto trenera", done: true, href: null },
+      { key: "invite", title: "Zaproś pierwszego klienta", done: false, href: "/survey-invite?krok=2" },
+      { key: "interview", title: "Przejrzyj odpowiedzi z wywiadu", done: false, href: "/clients?krok=3" },
+      { key: "plan", title: "Przygotuj plan", done: false, href: "/clients?krok=4" },
+      { key: "share", title: "Udostępnij plan klientowi", done: false, href: "/clients?krok=5" },
     ],
     completed: 1, total: 5, next: "invite",
   },
@@ -122,6 +122,16 @@ describe("Pulpit z klientami", () => {
     expect(screen.queryByTestId("subscription-summary-dashboard")).toBeNull();
   });
 
+  it("with clients, the first-steps card stays until all 5 steps are done", () => {
+    mockData = base;
+    const { unmount } = render(<Dashboard />);
+    expect(screen.getByTestId("first-steps")).toBeTruthy();
+    unmount();
+    mockData = { ...base, onboarding: { ...base.onboarding, completed: 5, next: null, steps: base.onboarding.steps.map((s) => ({ ...s, done: true })) } };
+    render(<Dashboard />);
+    expect(screen.queryByTestId("first-steps")).toBeNull();
+  });
+
   it("recent events section is omitted when there are none", () => {
     mockData = base;
     render(<Dashboard />);
@@ -145,11 +155,42 @@ describe("Pulpit: pierwszy dzień (bez klientów)", () => {
     expect(screen.getByTestId("first-steps-count").textContent).toBe("1 z 5");
     expect(screen.getByTestId("first-step-invite").getAttribute("aria-current")).toBe("step");
     expect(screen.getByTestId("first-step-account").getAttribute("aria-current")).toBeNull();
-    expect(screen.getByRole("link", { name: "Wygeneruj link" }).getAttribute("href")).toBe("/survey-invite");
-    expect(screen.getByText("Generator zaproponuje szkic. Ty decydujesz, co zostaje.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Wygeneruj link" }).getAttribute("href")).toBe("/survey-invite?krok=2");
+    expect(screen.getByTestId("first-step-how").textContent).toContain("wygeneruj link");
     expect(screen.getByTestId("will-appear")).toBeTruthy();
     expect(screen.queryByTestId("attention-list")).toBeNull();
     expect(screen.queryByTestId("dashboard-tiles")).toBeNull();
+  });
+
+  it("every step except the account is a link to where it is done; no strikethrough", () => {
+    mockData = empty;
+    render(<Dashboard />);
+    const step = (k: string) => screen.getByTestId(`first-step-${k}`);
+    expect(within(step("invite")).getAllByRole("link")[0].getAttribute("href")).toBe("/survey-invite?krok=2");
+    expect(within(step("interview")).getByRole("link").getAttribute("href")).toBe("/clients?krok=3");
+    expect(within(step("plan")).getByRole("link").getAttribute("href")).toBe("/clients?krok=4");
+    expect(within(step("share")).getByRole("link").getAttribute("href")).toBe("/clients?krok=5");
+    expect(within(step("account")).queryByRole("link")).toBeNull();
+    expect(document.querySelector(".line-through")).toBeNull();
+    // only the next step carries the button and the "how to" sentence
+    expect(screen.getAllByTestId("first-step-how")).toHaveLength(1);
+  });
+
+  it("done steps: green mark, secondary text colour, still a link", () => {
+    mockData = {
+      ...empty,
+      onboarding: {
+        ...empty.onboarding,
+        steps: empty.onboarding.steps.map((s) => (s.key === "invite" ? { ...s, done: true } : s)),
+        completed: 2,
+        next: "interview",
+      },
+    };
+    render(<Dashboard />);
+    const done = within(screen.getByTestId("first-step-invite")).getByRole("link");
+    expect(done.className).toContain("text-muted-foreground");
+    expect(done.textContent).toContain("ukończone");
+    expect(screen.getByTestId("first-step-interview").getAttribute("aria-current")).toBe("step");
   });
 
   it("'Dodaj klienta ręcznie' goes to the existing client form", () => {

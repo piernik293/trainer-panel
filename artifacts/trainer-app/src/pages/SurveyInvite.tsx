@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { StepHint } from "@/components/dashboard/StepHint";
 import { Link } from "wouter";
 import { useUser } from "@clerk/react";
 import {
@@ -175,6 +176,9 @@ export default function SurveyInvite() {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-5 space-y-4">
+          <StepHint step={2}>
+            Wpisz e-mail klienta (opcjonalnie) i kliknij „Wygeneruj link” albo „Wyślij e-mailem”. Link wyślij klientowi.
+          </StepHint>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1.5">
               <Label htmlFor="email-hint" className="flex items-center gap-1.5">
