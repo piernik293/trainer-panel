@@ -10,6 +10,8 @@ import {
   date,
   uniqueIndex,
   index,
+  uuid,
+  check,
 } from "drizzle-orm/pg-core";
 import { clientsTable } from "./clients";
 import { trainersTable } from "./trainers";
@@ -246,9 +248,22 @@ export const workoutSessionsTable = pgTable("workout_sessions", {
     () => trainersTable.id,
     { onDelete: "set null" },
   ),
+  // ── Tor C (trening podopiecznego), migration 0018 — all nullable ──────────
+  /** Denormalised owner trainer (the client's trainer at session start); for isolation checks. */
+  trainerId: integer("trainer_id").references(() => trainersTable.id, { onDelete: "set null" }),
+  startedAt: timestamp("started_at"),
+  endedAt: timestamp("ended_at"),
+  /** 'in_progress' | 'completed' | 'aborted'. NULL on rows created before 0018 (read via isCompleted). */
+  status: text("status"),
+  /** 'too_easy' | 'just_right' | 'too_hard' ("Jak było?"). Whole-session note for the trainer = `notes`. */
+  sessionRating: text("session_rating"),
+  /** Offline-sync idempotency key generated on the phone. */
+  clientUuid: uuid("client_uuid"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
+  uniqueIndex("ws_client_uuid_idx").on(table.clientUuid).where(sql`${table.clientUuid} is not null`),
+  index("ws_trainer_idx").on(table.trainerId),
   index("ws_client_plan_idx").on(table.clientId, table.planId),
   // Mirrors migration 0011: one active (not completed) session per client per plan day.
   uniqueIndex("ws_one_active_per_client_day")
@@ -292,6 +307,71 @@ export const exerciseExecutionLogsTable = pgTable("exercise_execution_logs", {
   index("eel_exercise_idx").on(table.exerciseId),
 ]);
 
+// ─── Set logs (one row per performed set) ─────────────────────────────────────
+// Per-set results from the "Trening" flow. exercise_execution_logs keeps the
+// per-exercise aggregate used by the older plan screen.
+
+export const setLogsTable = pgTable("set_logs", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id")
+    .notNull()
+    .references(() => workoutSessionsTable.id, { onDelete: "cascade" }),
+  planExerciseId: integer("plan_exercise_id")
+    .references(() => workoutPlanExercisesTable.id, { onDelete: "set null" }),
+  exerciseId: integer("exercise_id").notNull(),
+  exerciseNameSnapshot: text("exercise_name_snapshot"),
+  setNumber: integer("set_number").notNull(),
+  /** kg; NULL for bodyweight exercises (extra load optional) */
+  weightKg: numeric("weight_kg", { precision: 6, scale: 2 }),
+  reps: integer("reps"),
+  /** 0–4, where 4 means "4+" */
+  rir: integer("rir"),
+  skipped: boolean("skipped").notNull().default(false),
+  /** Idempotency key from the phone (offline queue retries never duplicate). */
+  clientUuid: uuid("client_uuid").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("set_logs_client_uuid_idx").on(table.clientUuid),
+  uniqueIndex("set_logs_session_exercise_set_idx").on(table.sessionId, table.exerciseId, table.setNumber),
+  index("set_logs_exercise_idx").on(table.exerciseId),
+  check("set_logs_rir_range", sql`${table.rir} is null or ${table.rir} between 0 and 4`),
+  check("set_logs_values_nonneg", sql`(${table.weightKg} is null or ${table.weightKg} >= 0) and (${table.reps} is null or ${table.reps} >= 0)`),
+]);
+
+// ─── Pain reports ("Coś boli?") ───────────────────────────────────────────────
+
+export const PAIN_AREAS = ["Kolano", "Biodro", "Plecy — dół", "Bark", "Łokieć", "Nadgarstek", "Inne"] as const;
+
+export const painReportsTable = pgTable("pain_reports", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id")
+    .notNull()
+    .references(() => workoutSessionsTable.id, { onDelete: "cascade" }),
+  /** Denormalised so the trainer's inbox can filter without joining sessions. */
+  clientId: integer("client_id")
+    .notNull()
+    .references(() => clientsTable.id, { onDelete: "cascade" }),
+  exerciseId: integer("exercise_id"),
+  exerciseNameSnapshot: text("exercise_name_snapshot"),
+  /** One of PAIN_AREAS */
+  area: text("area").notNull(),
+  /** 1–5 */
+  severity: integer("severity").notNull(),
+  /** optional, max 500 characters */
+  description: text("description"),
+  clientUuid: uuid("client_uuid").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  /** NULL = not yet read by the trainer */
+  readByTrainerAt: timestamp("read_by_trainer_at"),
+}, (table) => [
+  uniqueIndex("pain_reports_client_uuid_idx").on(table.clientUuid),
+  index("pain_reports_client_idx").on(table.clientId, table.createdAt),
+  check("pain_reports_severity_range", sql`${table.severity} between 1 and 5`),
+  check("pain_reports_description_len", sql`${table.description} is null or char_length(${table.description}) <= 500`),
+  check("pain_reports_area", sql`${table.area} in ('Kolano','Biodro','Plecy — dół','Bark','Łokieć','Nadgarstek','Inne')`),
+]);
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type VolumeGuidelineVersion = typeof volumeGuidelineVersionsTable.$inferSelect;
@@ -303,3 +383,5 @@ export type WorkoutPlanDay = typeof workoutPlanDaysTable.$inferSelect;
 export type WorkoutPlanExercise = typeof workoutPlanExercisesTable.$inferSelect;
 export type WorkoutSession = typeof workoutSessionsTable.$inferSelect;
 export type ExerciseExecutionLog = typeof exerciseExecutionLogsTable.$inferSelect;
+export type SetLog = typeof setLogsTable.$inferSelect;
+export type PainReport = typeof painReportsTable.$inferSelect;

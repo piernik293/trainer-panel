@@ -21,6 +21,7 @@ import clientInvitationsRouter from "./clientInvitations";
 import bookingsRouter from "./bookings";
 import subscriptionRouter from "./subscription";
 import trainerProfileRouter from "./trainerProfile";
+import trainingRouter from "./training";
 
 const router: IRouter = Router();
 
@@ -46,6 +47,7 @@ router.use(clientInvitationsRouter);
 router.use(bookingsRouter);
 router.use(subscriptionRouter);
 router.use(trainerProfileRouter);
+router.use(trainingRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────

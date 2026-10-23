@@ -8,6 +8,7 @@ import {
   surveyInvitesTable,
   surveysTable,
   workoutPlansTable,
+  painReportsTable,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { computeSurveyStatus, fetchLatestSurveyPerClient } from "../lib/survey-status";
@@ -81,7 +82,16 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
     );
   const pendingIds = new Set(pendingInvites.map((i) => i.id));
 
+  const unreadPains =
+    clientIds.length > 0
+      ? await db
+          .select({ clientId: painReportsTable.clientId, createdAt: painReportsTable.createdAt, area: painReportsTable.area, severity: painReportsTable.severity })
+          .from(painReportsTable)
+          .where(and(inArray(painReportsTable.clientId, clientIds), isNull(painReportsTable.readByTrainerAt)))
+      : [];
+
   const attention = buildAttention({
+    pains: unreadPains.map((p) => ({ ...p, createdAt: new Date(p.createdAt) })),
     clients,
     surveys: latestSurveys.map((s) => ({
       clientId: s.clientId,
