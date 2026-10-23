@@ -302,6 +302,9 @@ importers:
       '@workspace/api-client-react':
         specifier: workspace:*
         version: link:../../lib/api-client-react
+      '@workspace/design-tokens':
+        specifier: workspace:*
+        version: link:../../lib/design-tokens
       '@workspace/survey-config':
         specifier: workspace:*
         version: link:../../lib/survey-config
@@ -762,6 +765,9 @@ importers:
       '@workspace/api-zod':
         specifier: workspace:*
         version: link:../../lib/api-zod
+      '@workspace/design-tokens':
+        specifier: workspace:*
+        version: link:../../lib/design-tokens
       '@workspace/survey-config':
         specifier: workspace:*
         version: link:../../lib/survey-config
@@ -889,6 +895,8 @@ importers:
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
+
+  lib/design-tokens: {}
 
   lib/survey-config: {}
 

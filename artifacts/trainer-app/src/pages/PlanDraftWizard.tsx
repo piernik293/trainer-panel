@@ -232,7 +232,7 @@ function LockedStepPlaceholder({ step }: { step: number }) {
   return (
     <Card className="border-dashed border-border/60 shadow-sm">
       <CardContent className="py-16 text-center">
-        <Lock className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
+        <Lock className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
         <h3 className="text-lg font-semibold text-muted-foreground mb-1">{labels[idx]}</h3>
         <p className="text-sm text-muted-foreground">
           Dostępne w kolejnych etapach ({phases[idx]}).
@@ -916,14 +916,14 @@ function Step2Preferences({
                   </span>
                   {value === "upper_lower_full_body" && showPlyoBanner ? (
                     <span className={`block text-[10px] font-normal leading-snug ${
-                      prefs.splitType === value ? "text-primary/70" : "text-indigo-600"
+                      prefs.splitType === value ? "text-primary" : "text-indigo-600"
                     }`}>
                       Ostatni dzień jako sesja FBW z akcentem plyometrycznym — dla profilu sportowego z priorytetem dynamiki / szybkości.
                     </span>
                   ) : SPLIT_SUBTEXTS[value as SplitType] ? (
                     <span className={`block text-[10px] font-normal leading-snug ${
                       prefs.splitType === value
-                        ? "text-primary/70"
+                        ? "text-primary"
                         : "text-muted-foreground"
                     }`}>
                       {SPLIT_SUBTEXTS[value as SplitType]}
@@ -1523,7 +1523,7 @@ function TargetDecisionCard({
           <ul className="mt-2 pt-2 border-t border-border/30 space-y-0.5">
             {decision.reasons.map((r, i) => (
               <li key={i} className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
-                <span className="mt-px shrink-0 text-muted-foreground/40">·</span>
+                <span className="mt-px shrink-0 text-muted-foreground">·</span>
                 <span>{r}</span>
               </li>
             ))}

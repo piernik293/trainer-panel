@@ -39,10 +39,15 @@ if (!clerkPubKey) {
 const clerkAppearance = {
   theme: shadcn,
   cssLayerName: 'clerk',
+  // Clerk needs concrete colours: the light-theme tokens (lib/design-tokens).
   variables: {
-    colorPrimary: '#FF3C00',
-    colorBackground: 'hsl(0 0% 100%)',
-    borderRadius: '0rem',
+    colorPrimary: '#C2410C',
+    colorForeground: '#1C1917',
+    colorMutedForeground: '#57534E',
+    colorDanger: '#B42318',
+    colorBackground: '#FFFFFF',
+    fontFamily: 'Manrope, sans-serif',
+    borderRadius: '8px',
   },
 };
 

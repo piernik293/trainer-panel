@@ -5,6 +5,8 @@
  * Pure frontend UX: eligibility for "Kalendarz" comes in via `showCalendar`
  * (backend-decided `bookable` flag); no backend or Clerk config changes.
  */
+import { ThemeSelect } from "@/components/ThemeSelect";
+import { BrandMark } from "@/components/BrandMark";
 import { useState } from "react";
 import { useUser, useClerk } from "@clerk/react";
 import { Menu, LogOut, UserRound, CalendarDays, History, Dumbbell } from "lucide-react";
@@ -26,7 +28,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import optimatrenMark from "@/assets/optimatren-mark.png";
 
 export type PortalNavTarget = "plan" | "history" | "booking";
 
@@ -76,7 +77,7 @@ export function ClientPortalNav({ firstName, lastName, showCalendar, onNavigate 
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center gap-3">
         {/* Brand */}
         <button
@@ -85,9 +86,9 @@ export function ClientPortalNav({ firstName, lastName, showCalendar, onNavigate 
           className="flex items-center gap-2 min-w-0 shrink-0"
           aria-label="Optimatren — wróć do planu"
         >
-          <img src={optimatrenMark} alt="" aria-hidden="true" className="w-6 h-6 shrink-0" />
+          <BrandMark />
           <span className="text-sm font-semibold tracking-tight hidden sm:inline">Optimatren</span>
-          <span className="text-xs uppercase tracking-widest text-muted-foreground truncate">
+          <span className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground truncate">
             Portal klienta
           </span>
         </button>
@@ -145,7 +146,7 @@ export function ClientPortalNav({ firstName, lastName, showCalendar, onNavigate 
             </SheetTrigger>
             <SheetContent side="right" className="w-72 p-0 flex flex-col">
               <SheetTitle className="sr-only">Menu portalu klienta</SheetTitle>
-              <div className="px-4 pt-6 pb-4 border-b border-white/10">
+              <div className="px-4 pt-6 pb-4 border-b border-border">
                 <p className="text-sm font-semibold truncate">{fullName}</p>
                 {email && <p className="text-xs text-muted-foreground truncate">{email}</p>}
               </div>
@@ -199,24 +200,25 @@ export function ClientPortalNav({ firstName, lastName, showCalendar, onNavigate 
           </DialogHeader>
           <dl className="space-y-3 text-sm">
             <div>
-              <dt className="text-xs uppercase tracking-widest text-muted-foreground">Imię i nazwisko</dt>
+              <dt className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground">Imię i nazwisko</dt>
               <dd className="mt-0.5 font-medium">{fullName}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-widest text-muted-foreground">E-mail</dt>
+              <dt className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground">E-mail</dt>
               <dd className="mt-0.5 font-medium break-all">{email || "—"}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-widest text-muted-foreground">Status konta</dt>
+              <dt className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground">Status konta</dt>
               <dd className="mt-0.5 font-medium">Aktywne</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-widest text-muted-foreground">Forma współpracy</dt>
+              <dt className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground">Forma współpracy</dt>
               <dd className="mt-0.5 font-medium">
                 {showCalendar ? "Treningi z trenerem (rezerwacje dostępne)" : "Współpraca online"}
               </dd>
             </div>
           </dl>
+          <ThemeSelect />
           <p className="text-xs text-muted-foreground">
             Logowanie odbywa się przez konto Google — zarządzanie hasłem nie jest tu potrzebne.
           </p>

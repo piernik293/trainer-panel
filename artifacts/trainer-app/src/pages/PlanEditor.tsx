@@ -804,7 +804,7 @@ function ExerciseRow({
         <div className="flex items-start gap-1.5">
           {/* Drag handle */}
           <button
-            className="mt-0.5 p-0.5 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing shrink-0 touch-none"
+            className="mt-0.5 p-0.5 text-muted-foreground hover:text-muted-foreground cursor-grab active:cursor-grabbing shrink-0 touch-none"
             aria-label="Przeciągnij aby zmienić kolejność"
             {...(dragHandleListeners as React.HTMLAttributes<HTMLButtonElement>)}
             {...(dragHandleAttributes as React.HTMLAttributes<HTMLButtonElement>)}
@@ -842,7 +842,7 @@ function ExerciseRow({
                 {showImpact ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
                 <span>Wpływ na objętość</span>
                 {hasImpact && !showImpact && (
-                  <span className="text-muted-foreground/60">
+                  <span className="text-muted-foreground">
                     ({volumeImpact.map((m) => `${m.muscleName.split(" ").slice(-1)[0]}: ${m.effectiveSets.toFixed(1)}`).join(", ")})
                   </span>
                 )}
@@ -1094,7 +1094,7 @@ function DaySection({
       <CardHeader className="pb-3 flex flex-row items-start gap-2 bg-muted/20 border-b border-border/50">
         {/* Drag handle for day */}
         <button
-          className="mt-1 p-0.5 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing shrink-0 touch-none"
+          className="mt-1 p-0.5 text-muted-foreground hover:text-muted-foreground cursor-grab active:cursor-grabbing shrink-0 touch-none"
           aria-label="Przeciągnij aby zmienić kolejność dnia"
           {...(dragHandleListeners as React.HTMLAttributes<HTMLButtonElement>)}
           {...(dragHandleAttributes as React.HTMLAttributes<HTMLButtonElement>)}
@@ -1794,33 +1794,33 @@ export default function PlanEditor() {
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-muted-foreground">
               {plan.splitType && (
                 <span className="flex items-center gap-1.5">
-                  <Layers size={13} className="text-primary/70" />
+                  <Layers size={13} className="text-primary" />
                   {SPLIT_TYPE_LABELS[plan.splitType] ?? plan.splitType}
                 </span>
               )}
               <span className="flex items-center gap-1.5">
-                <Dumbbell size={13} className="text-primary/70" />
+                <Dumbbell size={13} className="text-primary" />
                 {plan.days.length} {plan.days.length === 1 ? "dzień" : "dni"}/tydz.
               </span>
               {plan.blockDurationWeeks != null && (
                 <span className="flex items-center gap-1.5">
-                  <CalendarDays size={13} className="text-primary/70" />
+                  <CalendarDays size={13} className="text-primary" />
                   {plan.blockDurationWeeks} tyg.
                 </span>
               )}
               {(plan.startDate || plan.endDate) && (
                 <span className="flex items-center gap-1.5">
-                  <Clock size={13} className="text-primary/70" />
+                  <Clock size={13} className="text-primary" />
                   {formatDate(plan.startDate)}{plan.startDate && plan.endDate ? " – " : ""}{formatDate(plan.endDate)}
                 </span>
               )}
               {plan.goal && (
-                <span className="font-medium text-foreground/70">
+                <span className="font-medium text-muted-foreground">
                   {plan.goal}
                 </span>
               )}
-              <span className="text-muted-foreground/60">
-                poziom: <span className="font-medium text-foreground/60">{plan.experienceLevelUsed}</span>
+              <span className="text-muted-foreground">
+                poziom: <span className="font-medium text-muted-foreground">{plan.experienceLevelUsed}</span>
               </span>
             </div>
           </div>

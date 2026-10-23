@@ -471,7 +471,7 @@ function SurveyReadonlyPreview({
       {showBmiRec && (
         <Card className="border-primary/20 shadow-sm">
           <CardContent className="pt-4 pb-4">
-            <p className="text-sm text-primary/90">{BMI_RECOMMENDATION_TEXT}</p>
+            <p className="text-sm text-primary">{BMI_RECOMMENDATION_TEXT}</p>
           </CardContent>
         </Card>
       )}
@@ -1020,7 +1020,7 @@ function SurveyFormBody({
                     <FormItem>
                       <FormLabel>Cel treningowy</FormLabel>
                       {showBmiRecommendation && (
-                        <FormDescription className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
+                        <FormDescription className="text-xs text-primary bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
                           {BMI_RECOMMENDATION_TEXT}
                         </FormDescription>
                       )}
@@ -1181,7 +1181,7 @@ function SurveyFormBody({
                                             <FormLabel className="font-medium cursor-pointer text-sm leading-snug">
                                               {need}
                                             </FormLabel>
-                                            <span className="text-xs text-muted-foreground/70 leading-snug">
+                                            <span className="text-xs text-muted-foreground leading-snug">
                                               {desc}
                                             </span>
                                           </div>
@@ -1282,7 +1282,7 @@ function SurveyFormBody({
                       Pozwoli to lepiej dopasować plan do oczekiwań klienta.
                     </FormDescription>
                     {trainingFrequencyRecommendation && (
-                      <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
+                      <p className="text-xs text-primary bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
                         {trainingFrequencyRecommendation}
                       </p>
                     )}
@@ -1506,7 +1506,7 @@ function SurveyFormBody({
                             operacje, inne przewlekłe dolegliwości.
                           </FormDescription>
                           {isBeginner && (
-                            <p className="text-xs text-primary/80 bg-primary/5 border border-primary/20 px-3 py-2">
+                            <p className="text-xs text-primary bg-primary/5 border border-primary/20 px-3 py-2">
                               Te informacje są zawsze uwzględniane przy doborze ćwiczeń i nie są traktowane jedynie jako preferencja.
                             </p>
                           )}
@@ -1655,7 +1655,7 @@ function SurveyFormBody({
                     name="priorityMuscle1"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs text-muted-foreground/80">
+                        <FormLabel className="text-xs text-muted-foreground">
                           Priorytet 1
                         </FormLabel>
                         <FormControl>
@@ -1692,7 +1692,7 @@ function SurveyFormBody({
                             name={name}
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-xs text-muted-foreground/80">
+                                <FormLabel className="text-xs text-muted-foreground">
                                   Priorytet {i + 1}
                                 </FormLabel>
                                 <FormControl>
@@ -1721,7 +1721,7 @@ function SurveyFormBody({
                           name={name}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs text-muted-foreground/80">
+                              <FormLabel className="text-xs text-muted-foreground">
                                 Priorytet {i + 1}
                               </FormLabel>
                               <FormControl>
@@ -2125,7 +2125,7 @@ function SurveyFormBody({
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
               {cardioRelevant && (
-                <p className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm -mt-2">
+                <p className="text-xs text-primary bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm -mt-2">
                   {CARDIO_RECOMMENDATION_TEXT}
                 </p>
               )}
@@ -2159,7 +2159,7 @@ function SurveyFormBody({
                       </Select>
                       {cardioPreference ===
                         "Wolę ograniczyć cardio do niezbędnego minimum" && (
-                        <FormDescription className="text-xs text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
+                        <FormDescription className="text-xs text-primary bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
                           {CARDIO_AVOID_REASSURANCE_TEXT}
                         </FormDescription>
                       )}

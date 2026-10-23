@@ -57,6 +57,7 @@
     "@vitest/browser": "^4.1.10",
     "@workspace/api-client-react": "workspace:*",
     "@workspace/api-zod": "workspace:*",
+    "@workspace/design-tokens": "workspace:*",
     "@workspace/survey-config": "workspace:*",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",

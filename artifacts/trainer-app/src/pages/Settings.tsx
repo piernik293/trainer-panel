@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getInitials } from "@/components/layout/AccountMenu";
 import { SubscriptionSummary } from "@/components/subscription/SubscriptionSummary";
+import { ThemeSelect } from "@/components/ThemeSelect";
 
 export default function Settings() {
   const { user, isLoaded } = useUser();
@@ -150,9 +151,7 @@ export default function Settings() {
           <CardTitle className="text-base">Ustawienia aplikacji</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Więcej ustawień trenera pojawi się w kolejnych wersjach.
-          </p>
+          <ThemeSelect />
         </CardContent>
       </Card>
     </div>

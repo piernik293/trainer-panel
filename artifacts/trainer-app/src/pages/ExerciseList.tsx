@@ -218,7 +218,7 @@ export default function ExerciseList() {
         ) : exercises?.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-              <Dumbbell className="h-8 w-8 text-muted-foreground/50" />
+              <Dumbbell className="h-8 w-8 text-muted-foreground" />
             </div>
             <h3 className="text-lg font-medium">Brak wyników</h3>
             <p className="text-muted-foreground mt-1 mb-6">

@@ -12,6 +12,7 @@
  *  5. On success → explicit "Przejdź do planu" button (no auto-redirect).
  */
 
+import { BrandMark } from "@/components/BrandMark";
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { useUser, SignIn, SignUp } from "@clerk/react";
@@ -26,7 +27,6 @@ import {
   Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import markUrl from "@/assets/optimatren-mark.png";
 import { cn } from "@/lib/utils";
 import { NETWORK_ERROR_MESSAGE, statusMessage } from "@/lib/userError";
 
@@ -103,7 +103,7 @@ function StatusScreen({
   return (
     <PageShell>
       <div className="flex-1 flex flex-col items-center justify-center text-center gap-4 px-2">
-        <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-1">
+        <div className="w-16 h-16 rounded-full bg-card border border-border flex items-center justify-center mb-1">
           {icon}
         </div>
         <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
@@ -220,7 +220,7 @@ export default function ActivatePage() {
     return (
       <StatusScreen icon={c.icon} title={c.title} body={c.body}>
         {state.reason === "used" && (
-          <Button onClick={() => setLocation("/plan")} className="w-full h-12 rounded-none font-semibold uppercase tracking-wide">
+          <Button onClick={() => setLocation("/plan")} className="w-full h-12 rounded-lg font-semibold uppercase tracking-wide">
             Przejdź do planu
           </Button>
         )}
@@ -247,7 +247,7 @@ export default function ActivatePage() {
       >
         <Button
           onClick={() => setLocation("/plan")}
-          className="w-full h-12 rounded-none font-semibold uppercase tracking-wide"
+          className="w-full h-12 rounded-lg font-semibold uppercase tracking-wide"
         >
           Przejdź do planu
         </Button>
@@ -262,7 +262,7 @@ export default function ActivatePage() {
         title="Błąd aktywacji"
         body={state.message}
       >
-        <Button variant="outline" onClick={() => setLocation("/")} className="w-full h-12 rounded-none">
+        <Button variant="outline" onClick={() => setLocation("/")} className="w-full h-12 rounded-lg">
           Wróć na stronę główną
         </Button>
       </StatusScreen>
@@ -277,7 +277,7 @@ export default function ActivatePage() {
         {/* Context header */}
         <div className="space-y-3">
           <div className="flex items-center gap-2.5">
-            <img src={markUrl} alt="Optimatren" className="h-11 w-auto object-contain" />
+            <BrandMark className="h-11 w-11 text-xl" />
             <span className="font-bold text-lg tracking-tight">Optimatren</span>
           </div>
           <h1 className="text-3xl font-bold tracking-tight leading-tight">
@@ -291,7 +291,7 @@ export default function ActivatePage() {
 
         {/* Invite details */}
         {(state.clientName || state.clientEmail || state.trainerName) && (
-          <div className="border border-white/10 bg-card divide-y divide-white/10">
+          <div className="border border-border rounded-lg bg-card divide-y divide-border">
             {state.clientName && (
               <div className="flex items-center gap-3 px-4 py-3">
                 <User className="w-4 h-4 text-primary shrink-0" />
@@ -332,7 +332,7 @@ export default function ActivatePage() {
                 "w-full min-h-12 px-4 py-3 text-sm font-semibold border transition-colors text-left",
                 mode === "signup"
                   ? "border-primary bg-primary/10 text-foreground"
-                  : "border-white/15 text-muted-foreground hover:border-primary/40",
+                  : "border-border text-muted-foreground hover:border-primary/40",
               )}
             >
               Nie mam konta — Utwórz konto
@@ -344,7 +344,7 @@ export default function ActivatePage() {
                 "w-full min-h-12 px-4 py-3 text-sm font-semibold border transition-colors text-left",
                 mode === "signin"
                   ? "border-primary bg-primary/10 text-foreground"
-                  : "border-white/15 text-muted-foreground hover:border-primary/40",
+                  : "border-border text-muted-foreground hover:border-primary/40",
               )}
             >
               Mam już konto — Zaloguj się

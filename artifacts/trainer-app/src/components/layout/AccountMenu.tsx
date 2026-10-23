@@ -89,7 +89,7 @@ export function AccountMenu({ compact = false }: AccountMenuProps) {
               </p>
               {email && (
                 <p
-                  className="text-xs text-sidebar-foreground/60 truncate"
+                  className="text-xs text-muted-foreground truncate"
                   data-testid="account-email"
                 >
                   {email}

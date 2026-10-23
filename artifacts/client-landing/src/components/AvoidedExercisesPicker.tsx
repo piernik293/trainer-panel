@@ -78,7 +78,7 @@ export function AvoidedExercisesPicker({
           {selectedExercises.map((ex) => (
             <div
               key={ex.id}
-              className="border border-white/10 p-3 space-y-2 bg-background/30"
+              className="border border-border rounded-lg p-3 space-y-2 bg-background/30"
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-medium text-foreground">{ex.name}</span>
@@ -96,7 +96,7 @@ export function AvoidedExercisesPicker({
                 onChange={(e) => handleReasonChange(ex.id, e.target.value)}
                 placeholder="Podaj powód unikania (opcjonalne)..."
                 rows={2}
-                className="w-full text-xs bg-background/50 border border-white/10 p-2 resize-y text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50"
+                className="w-full text-xs bg-background/50 border border-border rounded-lg p-2 resize-y text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
               />
             </div>
           ))}
@@ -120,12 +120,12 @@ export function AvoidedExercisesPicker({
             }}
             onFocus={() => setShowDropdown(true)}
             placeholder="Wpisz nazwę ćwiczenia..."
-            className="w-full pl-8 pr-3 py-2.5 text-sm bg-background/50 border border-white/10 focus:border-primary/50 focus:outline-none text-foreground placeholder:text-muted-foreground/60"
+            className="w-full pl-8 pr-3 py-2.5 text-sm bg-background/50 border border-border rounded-lg focus:border-primary/50 focus:outline-none text-foreground placeholder:text-muted-foreground"
           />
         </div>
 
         {showDropdown && query.trim().length >= 1 && (
-          <div className="absolute z-50 w-full mt-px bg-background border border-white/10 max-h-52 overflow-y-auto shadow-xl">
+          <div className="absolute z-50 w-full mt-px bg-background border border-border rounded-lg max-h-52 overflow-y-auto shadow-xl">
             {isLoading ? (
               <div className="px-3 py-2 text-xs text-muted-foreground">Szukam...</div>
             ) : filtered.length === 0 ? (
@@ -141,7 +141,7 @@ export function AvoidedExercisesPicker({
                     e.preventDefault();
                     handleSelect(ex);
                   }}
-                  className="w-full text-left px-3 py-2 hover:bg-white/5 transition-colors"
+                  className="w-full text-left px-3 py-2 hover:bg-card transition-colors"
                 >
                   <span className="text-sm text-foreground">{ex.name}</span>
                   <span className="ml-2 text-xs text-muted-foreground">
@@ -159,7 +159,7 @@ export function AvoidedExercisesPicker({
         <button
           type="button"
           onClick={() => setShowOther((v) => !v)}
-          className="text-xs text-muted-foreground/70 hover:text-muted-foreground transition-colors underline-offset-2 hover:underline"
+          className="text-xs text-muted-foreground hover:text-muted-foreground transition-colors underline-offset-2 hover:underline"
         >
           {showOther
             ? "Ukryj pole opisu"
@@ -173,14 +173,14 @@ export function AvoidedExercisesPicker({
               onChange={(e) => onOtherTextChange(e.target.value)}
               placeholder="Opisz ćwiczenie, którego chcesz unikać (np. wyciskanie nad głowę, klasyczne przysiady)..."
               rows={3}
-              className="w-full text-sm bg-background/50 border border-white/10 focus:border-primary/50 focus:outline-none p-3 resize-y text-foreground placeholder:text-muted-foreground/60"
+              className="w-full text-sm bg-background/50 border border-border rounded-lg focus:border-primary/50 focus:outline-none p-3 resize-y text-foreground placeholder:text-muted-foreground"
             />
             <textarea
               value={otherReason}
               onChange={(e) => onOtherReasonChange(e.target.value)}
               placeholder="Powód unikania tych ćwiczeń (opcjonalne)..."
               rows={2}
-              className="w-full text-xs bg-background/50 border border-white/10 focus:border-primary/50 focus:outline-none p-2 resize-y text-foreground placeholder:text-muted-foreground/60"
+              className="w-full text-xs bg-background/50 border border-border rounded-lg focus:border-primary/50 focus:outline-none p-2 resize-y text-foreground placeholder:text-muted-foreground"
             />
           </div>
         )}

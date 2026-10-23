@@ -11,7 +11,7 @@ import { Route, Switch, Router as WouterRouter, useLocation, Redirect, Link } fr
 import { AppLayout } from "@/components/layout/AppLayout";
 import { TrainerProfileGate } from "@/components/TrainerProfileGate";
 import { SessionProblemGuard } from "@/components/SessionProblemGuard";
-import markUrl from "@/assets/optimatren-mark.png";
+import { BrandMark } from "@/components/BrandMark";
 import Dashboard from "@/pages/Dashboard";
 import ClientList from "@/pages/ClientList";
 import ClientNew from "@/pages/ClientNew";
@@ -66,45 +66,46 @@ const clerkAppearance = {
     logoPlacement: "none" as const,
     logoLinkUrl: basePath || "/",
   },
+  // Clerk needs concrete colours: the light-theme tokens (lib/design-tokens).
   variables: {
-    colorPrimary: "#FF3C00",
-    colorForeground: "hsl(222.2 84% 4.9%)",
-    colorMutedForeground: "hsl(215.4 16.3% 46.9%)",
-    colorDanger: "hsl(0 72.2% 50.6%)",
-    colorBackground: "hsl(0 0% 100%)",
-    colorInput: "hsl(214.3 31.8% 91.4%)",
-    colorInputForeground: "hsl(222.2 84% 4.9%)",
-    colorNeutral: "hsl(214.3 31.8% 91.4%)",
-    fontFamily: "DM Sans, sans-serif",
-    borderRadius: "0.5rem",
+    colorPrimary: "#C2410C",
+    colorForeground: "#1C1917",
+    colorMutedForeground: "#57534E",
+    colorDanger: "#B42318",
+    colorBackground: "#FFFFFF",
+    colorInput: "#FFFFFF",
+    colorInputForeground: "#1C1917",
+    colorNeutral: "#1C1917",
+    fontFamily: "Manrope, sans-serif",
+    borderRadius: "8px",
   },
   elements: {
     rootBox: "w-full flex justify-center",
-    cardBox: "bg-white rounded-2xl w-[440px] max-w-full overflow-hidden shadow-lg",
+    cardBox: "bg-card border border-border rounded-lg w-[440px] max-w-full overflow-hidden",
     card: "!shadow-none !border-0 !bg-transparent !rounded-none",
     footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
-    headerTitle: "text-gray-900 font-semibold",
-    headerSubtitle: "text-gray-500",
-    socialButtonsBlockButtonText: "!text-gray-800 !font-medium",
-    formFieldLabel: "text-gray-700",
-    footerActionLink: "text-orange-600 hover:text-orange-700",
-    footerActionText: "text-gray-500",
-    dividerText: "text-gray-400",
-    identityPreviewEditButton: "text-orange-600",
-    formFieldSuccessText: "text-green-600",
-    alertText: "text-gray-700",
+    headerTitle: "text-foreground font-extrabold",
+    headerSubtitle: "text-muted-foreground",
+    socialButtonsBlockButtonText: "!text-foreground !font-semibold",
+    formFieldLabel: "text-foreground",
+    footerActionLink: "text-primary hover:text-brand-hover",
+    footerActionText: "text-muted-foreground",
+    dividerText: "text-muted-foreground",
+    identityPreviewEditButton: "text-primary",
+    formFieldSuccessText: "text-success",
+    alertText: "text-foreground",
     logoBox: "flex justify-center",
     logoImage: "h-10 w-auto",
     socialButtonsBlockButton:
-      "!border !border-slate-300 !bg-slate-50 !shadow-sm hover:!bg-slate-100 hover:!border-slate-400 " +
-      "focus-visible:!ring-2 focus-visible:!ring-orange-500 focus-visible:!ring-offset-2 !opacity-100",
+      "!border !border-input !bg-card !shadow-none hover:!bg-muted min-h-11 " +
+      "focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 !opacity-100",
     socialButtonsProviderIcon: "!opacity-100 !brightness-100 !saturate-100",
-    formButtonPrimary: "bg-orange-600 hover:bg-orange-700 text-white",
-    formFieldInput: "border-gray-300 focus:ring-orange-500",
-    footerAction: "bg-gray-50",
-    dividerLine: "bg-gray-200",
-    alert: "border border-gray-200",
-    otpCodeFieldInput: "border-gray-300",
+    formButtonPrimary: "bg-primary hover:bg-brand-hover text-primary-foreground min-h-11",
+    formFieldInput: "border-input focus:ring-ring min-h-11",
+    footerAction: "bg-muted",
+    dividerLine: "bg-border",
+    alert: "border border-border",
+    otpCodeFieldInput: "border-input",
     formFieldRow: "",
     main: "",
   },
@@ -167,11 +168,7 @@ function AuthShell({
     <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-8">
       {/* Optimatren branding above the Clerk card */}
       <div className="flex flex-col items-center text-center mb-6 max-w-full">
-        <img
-          src={markUrl}
-          alt="Optimatren"
-          className="w-[100px] md:w-[130px] h-auto object-contain"
-        />
+        <BrandMark className="h-12 w-12 text-2xl" />
         <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">Optimatren</p>
         <p className="mt-1 text-base font-semibold text-foreground">{title}</p>
         <p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>
@@ -184,7 +181,7 @@ function AuthShell({
         {switchLink.text}{" "}
         <Link
           href={switchLink.href}
-          className="inline-block py-2 font-medium text-orange-600 underline underline-offset-2 hover:text-orange-700"
+          className="inline-block py-2 font-medium text-primary underline underline-offset-2 hover:text-brand-hover"
         >
           {switchLink.label}
         </Link>
@@ -243,11 +240,7 @@ function SignUpPage() {
     <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-8">
       {/* Optimatren branding above the Clerk card */}
       <div className="flex flex-col items-center text-center mb-6 max-w-full">
-        <img
-          src={markUrl}
-          alt="Optimatren"
-          className="w-[100px] md:w-[130px] h-auto object-contain"
-        />
+        <BrandMark className="h-12 w-12 text-2xl" />
         <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">Optimatren</p>
         <p className="mt-1 text-sm text-muted-foreground">
           Zarządzaj klientami, planami i postępami

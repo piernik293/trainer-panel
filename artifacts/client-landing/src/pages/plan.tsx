@@ -381,11 +381,11 @@ function RampWarmup({ sessionId }: { sessionId: number }) {
   };
 
   return (
-    <div className="border border-white/10 bg-card/50 rounded-none mb-6">
+    <div className="border border-border bg-card/50 rounded-lg mb-6">
       <button
         type="button"
         onClick={load}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-colors"
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-card transition-colors"
       >
         <div className="flex items-center gap-3">
           <Flame className="w-5 h-5 text-orange-400" />
@@ -404,14 +404,14 @@ function RampWarmup({ sessionId }: { sessionId: number }) {
       </button>
 
       {open && blocks && (
-        <div className="px-5 pb-5 space-y-4 border-t border-white/10 pt-4">
+        <div className="px-5 pb-5 space-y-4 border-t border-border pt-4">
           {blocks.map((block) => (
             <div key={block.phase}>
               <div className="flex items-center gap-2 mb-2">
                 {PHASE_ICONS[block.phase]}
                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{block.phase} — {block.label}</span>
               </div>
-              <p className="text-xs text-muted-foreground/70 mb-2 italic">{block.goal}</p>
+              <p className="text-xs text-muted-foreground mb-2 italic">{block.goal}</p>
               <div className="space-y-1.5">
                 {block.items.map((item, i) => (
                   <div key={i} className="flex items-start gap-3 text-sm">
@@ -419,7 +419,7 @@ function RampWarmup({ sessionId }: { sessionId: number }) {
                     <div>
                       <span className="font-medium">{item.name}</span>
                       <span className="text-muted-foreground ml-2 text-xs">{item.detail}</span>
-                      <p className="text-xs text-muted-foreground/60 mt-0.5">{item.description}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
                     </div>
                   </div>
                 ))}
@@ -524,17 +524,17 @@ function ExerciseLogRow({
   const isLogged = log.setsCompleted !== "" || log.repsCompleted !== "" || log.weightKg !== "" || log.isCompleted;
 
   return (
-    <div className={cn("border border-white/10 rounded-none transition-colors", log.isCompleted && "border-primary/30 bg-primary/5")}>
+    <div className={cn("border border-border rounded-lg transition-colors", log.isCompleted && "border-primary/30 bg-primary/5")}>
       {/* Header row */}
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors"
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-card transition-colors"
       >
         <div
           className={cn(
-            "w-5 h-5 shrink-0 rounded-none border flex items-center justify-center transition-colors",
-            log.isCompleted ? "border-primary bg-primary" : "border-white/20 bg-transparent"
+            "w-5 h-5 shrink-0 rounded-lg border flex items-center justify-center transition-colors",
+            log.isCompleted ? "border-primary bg-primary" : "border-input bg-transparent"
           )}
           onClick={(e) => { e.stopPropagation(); toggleComplete(); }}
         >
@@ -563,12 +563,12 @@ function ExerciseLogRow({
 
       {/* Log form */}
       {open && (
-        <div className="px-4 pb-4 pt-1 border-t border-white/10 space-y-3">
+        <div className="px-4 pb-4 pt-1 border-t border-border space-y-3">
           {ex.clientInstructions && (
-            <p className="text-xs text-primary/80 bg-primary/5 px-3 py-2 border border-primary/10">{ex.clientInstructions}</p>
+            <p className="text-xs text-primary bg-primary/5 px-3 py-2 border border-primary/10">{ex.clientInstructions}</p>
           )}
           {previous && (
-            <div className="text-xs px-3 py-2 border border-white/10 bg-white/5 space-y-0.5">
+            <div className="text-xs px-3 py-2 border border-border rounded-lg bg-card space-y-0.5">
               <p className="text-muted-foreground">Poprzednio: <span className="text-foreground font-medium">{formatPrevious(previous) || "—"}</span></p>
               {previous.suggestion && (
                 <p className={cn(
@@ -590,7 +590,7 @@ function ExerciseLogRow({
                 placeholder={`z ${ex.workingSets}`}
                 value={log.setsCompleted}
                 onChange={update("setsCompleted")}
-                className="h-9 text-sm bg-background/50 border-white/10 focus-visible:border-primary rounded-none"
+                className="h-9 text-sm bg-background/50 border-border focus-visible:border-primary rounded-lg"
               />
             </div>
             <div>
@@ -601,7 +601,7 @@ function ExerciseLogRow({
                 placeholder="np. 10"
                 value={log.repsCompleted}
                 onChange={update("repsCompleted")}
-                className="h-9 text-sm bg-background/50 border-white/10 focus-visible:border-primary rounded-none"
+                className="h-9 text-sm bg-background/50 border-border focus-visible:border-primary rounded-lg"
               />
             </div>
             <div>
@@ -613,7 +613,7 @@ function ExerciseLogRow({
                 placeholder="np. 60"
                 value={log.weightKg}
                 onChange={update("weightKg")}
-                className="h-9 text-sm bg-background/50 border-white/10 focus-visible:border-primary rounded-none"
+                className="h-9 text-sm bg-background/50 border-border focus-visible:border-primary rounded-lg"
               />
             </div>
             <div>
@@ -625,7 +625,7 @@ function ExerciseLogRow({
                 placeholder={ex.rir != null ? String(ex.rir) : "0–5"}
                 value={log.rir}
                 onChange={update("rir")}
-                className="h-9 text-sm bg-background/50 border-white/10 focus-visible:border-primary rounded-none"
+                className="h-9 text-sm bg-background/50 border-border focus-visible:border-primary rounded-lg"
               />
             </div>
           </div>
@@ -635,14 +635,14 @@ function ExerciseLogRow({
               placeholder="np. zmęczony, zmniejszyłem ciężar..."
               value={log.note}
               onChange={update("note")}
-              className="min-h-[60px] text-sm bg-background/50 border-white/10 focus-visible:border-primary rounded-none resize-none"
+              className="min-h-[60px] text-sm bg-background/50 border-border focus-visible:border-primary rounded-lg resize-none"
             />
           </div>
           <Button
             size="sm"
             variant={log.isCompleted ? "outline" : "default"}
             onClick={toggleComplete}
-            className="w-full rounded-none"
+            className="w-full rounded-lg"
           >
             {log.isCompleted ? (
               <><RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Oznacz jako niewykonane</>
@@ -742,10 +742,10 @@ function SessionView({
             {openError ?? "Nie udało się załadować sesji. Spróbuj ponownie."}
           </p>
           <div className="flex gap-2 justify-center">
-            <Button onClick={() => setRetryCounter((c) => c + 1)} className="rounded-none">
+            <Button onClick={() => setRetryCounter((c) => c + 1)} className="rounded-lg">
               Spróbuj ponownie
             </Button>
-            <Button variant="outline" onClick={onBack} className="rounded-none">Wróć</Button>
+            <Button variant="outline" onClick={onBack} className="rounded-lg">Wróć</Button>
           </div>
         </div>
       </div>
@@ -760,7 +760,7 @@ function SessionView({
   return (
     <div className="min-h-screen bg-background text-foreground pb-16">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-white/10 px-4 py-3">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
           <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
             <ChevronRight className="w-4 h-4 rotate-180" />
@@ -777,7 +777,7 @@ function SessionView({
         </div>
         {/* Progress bar */}
         <div className="max-w-2xl mx-auto mt-2">
-          <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+          <div className="h-1 bg-muted rounded-full overflow-hidden">
             <div className="h-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
           </div>
         </div>
@@ -805,14 +805,14 @@ function SessionView({
 
             <Button
               onClick={onBack}
-              className="w-full h-11 rounded-none font-semibold uppercase tracking-wide"
+              className="w-full h-11 rounded-lg font-semibold uppercase tracking-wide"
             >
               Wróć do planu
             </Button>
             <Button
               variant="outline"
               onClick={() => setShowSummary(true)}
-              className="w-full h-9 rounded-none text-sm"
+              className="w-full h-9 rounded-lg text-sm"
             >
               Zobacz podsumowanie
             </Button>
@@ -840,7 +840,7 @@ function SessionView({
 
         {/* Exercise list */}
         <div className="space-y-2">
-          <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-3">Ćwiczenia</h2>
+          <h2 className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground font-semibold mb-3">Ćwiczenia</h2>
           {day.exercises.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">Brak ćwiczeń w tym dniu.</p>
           ) : (
@@ -866,7 +866,7 @@ function SessionView({
             <Button
               onClick={handleComplete}
               disabled={completing}
-              className="w-full h-12 rounded-none font-semibold uppercase tracking-wide"
+              className="w-full h-12 rounded-lg font-semibold uppercase tracking-wide"
             >
               {completing ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -914,7 +914,7 @@ function SessionFeedbackForm({
   };
 
   return (
-    <div className="border border-white/10 bg-background/40">
+    <div className="border border-border rounded-lg bg-background/40">
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -930,7 +930,7 @@ function SessionFeedbackForm({
         <p role="alert" className="px-3 pb-2 text-xs text-red-400">{feedbackError}</p>
       )}
       {open && (
-        <div className="px-3 pb-3 space-y-3 border-t border-white/10 pt-3">
+        <div className="px-3 pb-3 space-y-3 border-t border-border pt-3">
           <div>
             <p className="text-xs text-muted-foreground mb-1.5">Trudność treningu (1–10)</p>
             <div className="flex flex-wrap gap-1">
@@ -943,7 +943,7 @@ function SessionFeedbackForm({
                     "w-7 h-7 text-xs border transition-colors",
                     session.difficultyRating === n
                       ? "border-primary bg-primary text-primary-foreground"
-                      : "border-white/15 text-muted-foreground hover:border-primary/40",
+                      : "border-border text-muted-foreground hover:border-primary/40",
                   )}
                 >
                   {n}
@@ -965,7 +965,7 @@ function SessionFeedbackForm({
                       ? val
                         ? "border-yellow-500 bg-yellow-500/15 text-yellow-500"
                         : "border-primary bg-primary text-primary-foreground"
-                      : "border-white/15 text-muted-foreground hover:border-primary/40",
+                      : "border-border text-muted-foreground hover:border-primary/40",
                   )}
                 >
                   {label}
@@ -985,7 +985,7 @@ function SessionFeedbackForm({
                     "px-3 h-7 text-xs border transition-colors",
                     session.energyLevel === val
                       ? "border-primary bg-primary text-primary-foreground"
-                      : "border-white/15 text-muted-foreground hover:border-primary/40",
+                      : "border-border text-muted-foreground hover:border-primary/40",
                   )}
                 >
                   {label}
@@ -1015,7 +1015,7 @@ function SessionNoteInput({ initialValue, onSave }: { initialValue: string; onSa
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         timeoutRef.current = setTimeout(() => onSave(e.target.value), 800);
       }}
-      className="min-h-[52px] text-sm bg-background/50 border-white/10 focus-visible:border-primary rounded-none resize-none"
+      className="min-h-[52px] text-sm bg-background/50 border-border focus-visible:border-primary rounded-lg resize-none"
     />
   );
 }
@@ -1043,9 +1043,9 @@ function SessionDetailReadOnly({ sessionId, onClose }: { sessionId: number; onCl
   }, [sessionId]);
 
   return (
-    <div className="border border-white/10 bg-card">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-        <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Podsumowanie treningu</p>
+    <div className="border border-border rounded-lg bg-card">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <p className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground font-semibold">Podsumowanie treningu</p>
         <button type="button" onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
           Zamknij
         </button>
@@ -1069,7 +1069,7 @@ function SessionDetailReadOnly({ sessionId, onClose }: { sessionId: number; onCl
           ) : (
             <div className="space-y-2">
               {detail.logs.map((log) => (
-                <div key={log.id} className="border border-white/10 px-3 py-2.5">
+                <div key={log.id} className="border border-border rounded-lg px-3 py-2.5">
                   <div className="flex items-center justify-between gap-2">
                     <p className={cn("text-sm font-medium", log.isCompleted && "text-foreground")}>
                       {log.exerciseName ?? "Ćwiczenie"}
@@ -1086,13 +1086,13 @@ function SessionDetailReadOnly({ sessionId, onClose }: { sessionId: number; onCl
                       log.rir != null ? `RIR ${log.rir}` : null,
                     ].filter(Boolean).join(" × ") || "Brak danych"}
                   </p>
-                  {log.note && <p className="text-xs text-muted-foreground/70 mt-1 italic">{log.note}</p>}
+                  {log.note && <p className="text-xs text-muted-foreground mt-1 italic">{log.note}</p>}
                 </div>
               ))}
             </div>
           )}
           {detail.notes && (
-            <p className="text-xs text-muted-foreground border border-white/10 px-3 py-2">Notatka: {detail.notes}</p>
+            <p className="text-xs text-muted-foreground border border-border rounded-lg px-3 py-2">Notatka: {detail.notes}</p>
           )}
         </div>
       )}
@@ -1322,14 +1322,14 @@ function BookingScreen({ onClose, onBooked }: { onClose: () => void; onBooked: (
           <div className="text-center space-y-4 pt-10" role="status">
             <CheckCircle2 className="w-12 h-12 mx-auto text-primary" />
             <p className="text-lg font-semibold">Trening został zarezerwowany.</p>
-            <Button className="rounded-none w-full h-12" onClick={onClose}>
+            <Button className="rounded-lg w-full h-12" onClick={onClose}>
               Wróć do planu
             </Button>
           </div>
         ) : loadError ? (
           <div role="alert" className="space-y-3 pt-6 text-center">
             <p className="text-sm text-muted-foreground">{loadError}</p>
-            <Button variant="outline" className="rounded-none" onClick={() => setRetry((c) => c + 1)}>
+            <Button variant="outline" className="rounded-lg" onClick={() => setRetry((c) => c + 1)}>
               Spróbuj ponownie
             </Button>
           </div>
@@ -1344,8 +1344,8 @@ function BookingScreen({ onClose, onBooked }: { onClose: () => void; onBooked: (
         ) : selectedSlot ? (
           /* Step 3: confirmation summary */
           <div className="space-y-5">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">Podsumowanie</p>
-            <div className="border border-white/10 bg-card px-5 py-4 space-y-1">
+            <p className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground">Podsumowanie</p>
+            <div className="border border-border rounded-lg bg-card px-5 py-4 space-y-1">
               <p className="font-semibold capitalize">{formatSlotDate(selectedSlot.startsAt)}</p>
               <p className="text-2xl font-bold">
                 {formatSlotTime(selectedSlot.startsAt)}
@@ -1362,7 +1362,7 @@ function BookingScreen({ onClose, onBooked }: { onClose: () => void; onBooked: (
                 {bookError}
               </p>
             )}
-            <Button className="rounded-none w-full h-12 text-base" onClick={() => void confirmBooking()} disabled={confirming}>
+            <Button className="rounded-lg w-full h-12 text-base" onClick={() => void confirmBooking()} disabled={confirming}>
               {confirming ? <Loader2 className="w-5 h-5 animate-spin" /> : "Potwierdź rezerwację"}
             </Button>
           </div>
@@ -1382,7 +1382,7 @@ function BookingScreen({ onClose, onBooked }: { onClose: () => void; onBooked: (
                   type="button"
                   onClick={() => setSelectedSlot(s)}
                   aria-selected={selectedSlot != null && (selectedSlot as BookingSlot).startsAt === s.startsAt}
-                  className="border border-white/15 bg-card hover:border-primary/50 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary py-3.5 px-2 transition-colors"
+                  className="border border-border rounded-lg bg-card hover:border-primary/50 hover:bg-card focus:outline-none focus-visible:ring-2 focus-visible:ring-primary py-3.5 px-2 transition-colors"
                 >
                   <span className="block text-base font-semibold">
                     {formatSlotTime(s.startsAt)}–{formatSlotTime(new Date(new Date(s.startsAt).getTime() + s.durationMinutes * 60_000).toISOString())}
@@ -1395,14 +1395,14 @@ function BookingScreen({ onClose, onBooked }: { onClose: () => void; onBooked: (
         ) : (
           /* Step 1: choose date — monthly grid over the backend's free slots */
           <div className="space-y-3">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">Wybierz datę</p>
+            <p className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground">Wybierz datę</p>
             <div className="flex items-center justify-between gap-2">
               <button
                 type="button"
                 aria-label="Poprzedni miesiąc"
                 onClick={() => setMonthIdx((i) => Math.max(0, i - 1))}
                 disabled={monthIdx === 0}
-                className="p-2.5 border border-white/15 disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="p-2.5 border border-border rounded-lg disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -1421,7 +1421,7 @@ function BookingScreen({ onClose, onBooked }: { onClose: () => void; onBooked: (
                 aria-label="Następny miesiąc"
                 onClick={() => setMonthIdx((i) => Math.min(months.length - 1, i + 1))}
                 disabled={monthIdx >= months.length - 1}
-                className="p-2.5 border border-white/15 disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="p-2.5 border border-border rounded-lg disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -1453,8 +1453,8 @@ function BookingScreen({ onClose, onBooked }: { onClose: () => void; onBooked: (
                       "min-h-14 border p-1 flex flex-col items-center justify-center gap-0.5 transition-colors",
                       "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                       enabled
-                        ? "border-white/15 bg-card hover:border-primary/50 hover:bg-white/5"
-                        : "border-white/5 text-muted-foreground/50",
+                        ? "border-border bg-card hover:border-primary/50 hover:bg-card"
+                        : "border-border text-muted-foreground",
                       !inWindow && "opacity-35",
                       isToday && "border-primary/60",
                     )}
@@ -1526,10 +1526,10 @@ export function BookingSection() {
 
   return (
     <>
-      <div className="border border-white/10 bg-card px-5 py-4 space-y-3">
+      <div className="border border-border rounded-lg bg-card px-5 py-4 space-y-3">
         <div className="flex items-center gap-2">
           <CalendarDays className="w-4 h-4 text-primary" />
-          <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+          <h2 className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground font-semibold">
             Nadchodzący trening
           </h2>
         </div>
@@ -1547,7 +1547,7 @@ export function BookingSection() {
             )}
             <Button
               variant="outline"
-              className="rounded-none"
+              className="rounded-lg"
               onClick={() => void cancelBooking()}
               disabled={cancelling}
             >
@@ -1557,7 +1557,7 @@ export function BookingSection() {
         ) : (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">Nie masz zaplanowanego treningu.</p>
-            <Button className="rounded-none w-full sm:w-auto h-11" onClick={() => setShowBooking(true)}>
+            <Button className="rounded-lg w-full sm:w-auto h-11" onClick={() => setShowBooking(true)}>
               Umów trening
             </Button>
           </div>
@@ -1596,7 +1596,7 @@ function HistorySection() {
   if (loading) {
     return (
       <div className="space-y-3">
-        <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Historia treningów</h2>
+        <h2 className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground font-semibold">Historia treningów</h2>
         <div className="py-6 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
       </div>
     );
@@ -1607,8 +1607,8 @@ function HistorySection() {
   if (items.length === 0) {
     return (
       <div className="space-y-3">
-        <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Historia treningów</h2>
-        <div className="border border-white/10 px-5 py-6 text-center text-sm text-muted-foreground">
+        <h2 className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground font-semibold">Historia treningów</h2>
+        <div className="border border-border rounded-lg px-5 py-6 text-center text-sm text-muted-foreground">
           Brak zapisanych treningów — historia pojawi się po ukończeniu pierwszej sesji.
         </div>
       </div>
@@ -1617,7 +1617,7 @@ function HistorySection() {
 
   return (
     <div className="space-y-3">
-      <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Historia treningów</h2>
+      <h2 className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground font-semibold">Historia treningów</h2>
       {selectedId != null && (
         <SessionDetailReadOnly sessionId={selectedId} onClose={() => setSelectedId(null)} />
       )}
@@ -1628,8 +1628,8 @@ function HistorySection() {
             type="button"
             onClick={() => setSelectedId(item.id === selectedId ? null : item.id)}
             className={cn(
-              "w-full text-left border bg-card hover:bg-white/5 transition-all px-4 py-3",
-              item.id === selectedId ? "border-primary/40" : "border-white/10 hover:border-primary/30",
+              "w-full text-left border bg-card hover:bg-card transition-all px-4 py-3",
+              item.id === selectedId ? "border-primary/40" : "border-border hover:border-primary/30",
             )}
           >
             <div className="flex items-center justify-between gap-3">
@@ -1645,7 +1645,7 @@ function HistorySection() {
                       "text-xs px-1.5 py-0",
                       item.performedBy === "trainer"
                         ? "border-blue-400/40 text-blue-400"
-                        : "border-white/20 text-muted-foreground",
+                        : "border-input text-muted-foreground",
                     )}
                   >
                     {item.performedBy === "trainer" ? "Trening stacjonarny z trenerem" : "Trening samodzielny"}
@@ -1670,7 +1670,7 @@ function HistorySection() {
             setLoadingMore(true);
             try { await load(items.length); } catch { /* empty */ } finally { setLoadingMore(false); }
           }}
-          className="w-full h-9 rounded-none text-sm"
+          className="w-full h-9 rounded-lg text-sm"
         >
           {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : "Pokaż starsze"}
         </Button>
@@ -1686,15 +1686,15 @@ function HistorySection() {
 function CardioCard({ cardio }: { cardio: CardioData | null }) {
   return (
     <div className="space-y-3">
-      <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+      <h2 className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground font-semibold">
         Cardio / aktywność dodatkowa
       </h2>
       {!cardio ? (
-        <div className="border border-white/10 bg-card px-5 py-4 text-sm text-muted-foreground">
+        <div className="border border-border rounded-lg bg-card px-5 py-4 text-sm text-muted-foreground">
           Brak dodatkowego cardio w planie.
         </div>
       ) : (
-        <div className="border border-white/10 bg-card px-5 py-4 space-y-4">
+        <div className="border border-border rounded-lg bg-card px-5 py-4 space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
             <Activity className="w-4 h-4 text-primary shrink-0" />
             <span className="font-semibold text-sm">{cardio.activity}</span>
@@ -1710,7 +1710,7 @@ function CardioCard({ cardio }: { cardio: CardioData | null }) {
 
           <div className="space-y-2">
             {cardio.sessions.map((s, i) => (
-              <div key={i} className="border border-white/10 bg-white/[0.02] px-4 py-3">
+              <div key={i} className="border border-border rounded-lg bg-white/[0.02] px-4 py-3">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1">
                   Sesja {i + 1}
                 </p>
@@ -1746,10 +1746,10 @@ function CardioCard({ cardio }: { cardio: CardioData | null }) {
 function StrengthProgressionCard() {
   return (
     <div className="space-y-3">
-      <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+      <h2 className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground font-semibold">
         Jak progresować w treningu siłowym
       </h2>
-      <div className="border border-white/10 bg-card px-5 py-4 space-y-3">
+      <div className="border border-border rounded-lg bg-card px-5 py-4 space-y-3">
         <ul className="space-y-2 text-sm text-foreground/90 list-disc pl-4">
           <li>Gdy wykonasz wszystkie zaplanowane serie w górnym zakresie powtórzeń, zachowując założony zapas (RIR), zwiększ lekko ciężar na kolejnym treningu.</li>
           <li>Jeśli nie osiągasz dolnego zakresu powtórzeń, zostań przy obecnym ciężarze lub delikatnie go zmniejsz.</li>
@@ -1779,17 +1779,17 @@ export function PlanView({
     <div className="min-h-screen bg-background text-foreground pb-16">
       <div className="max-w-2xl mx-auto px-4 pt-10 space-y-8">
         <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Plan treningowy</p>
+          <p className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground mb-2">Plan treningowy</p>
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl font-bold tracking-tight">{plan.title}</h1>
             {/* Informational only — never touches session state. */}
-            <Badge variant="outline" className="border-white/20 text-muted-foreground shrink-0">
+            <Badge variant="outline" className="border-input text-muted-foreground shrink-0">
               Plan w trakcie
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">Cześć, {client.firstName}! Wybierz dzień treningowy, aby rozpocząć sesję.</p>
           {plan.goal && (
-            <p className="text-sm text-primary/80 bg-primary/5 border border-primary/10 px-3 py-2 mt-3">
+            <p className="text-sm text-primary bg-primary/5 border border-primary/10 px-3 py-2 mt-3">
               Cel: {plan.goal}
             </p>
           )}
@@ -1805,9 +1805,9 @@ export function PlanView({
         </div>
 
         <div className="space-y-3">
-          <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Dni treningowe</h2>
+          <h2 className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground font-semibold">Dni treningowe</h2>
           {plan.days.length === 0 ? (
-            <div className="border border-white/10 px-5 py-10 text-center text-sm text-muted-foreground">
+            <div className="border border-border rounded-lg px-5 py-10 text-center text-sm text-muted-foreground">
               <Dumbbell className="w-8 h-8 mx-auto mb-3 opacity-30" />
               Trener jeszcze nie dodał ćwiczeń do planu.
             </div>
@@ -1817,14 +1817,14 @@ export function PlanView({
                 key={day.id}
                 type="button"
                 onClick={() => onSelectDay(day)}
-                className="w-full text-left border border-white/10 bg-card hover:bg-white/5 hover:border-primary/30 transition-all px-5 py-4 group"
+                className="w-full text-left border border-border rounded-lg bg-card hover:bg-card hover:border-primary/30 transition-all px-5 py-4 group"
               >
                 <div className="flex items-center justify-between">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-semibold text-sm">{day.dayName ?? `Dzień ${day.dayOrder}`}</span>
                       {day.subtitle && (
-                        <Badge variant="outline" className="text-xs px-1.5 py-0 border-white/20 text-muted-foreground">
+                        <Badge variant="outline" className="text-xs px-1.5 py-0 border-input text-muted-foreground">
                           {day.subtitle}
                         </Badge>
                       )}
@@ -1933,13 +1933,13 @@ export default function PlanPortal() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-6">
         <div className="text-center space-y-2 max-w-sm" role="alert">
-          <Dumbbell className="w-10 h-10 mx-auto text-muted-foreground/30 mb-4" />
+          <Dumbbell className="w-10 h-10 mx-auto text-muted-foreground mb-4" />
           <p className="font-semibold">{planError ?? "Brak aktywnego planu"}</p>
           <p className="text-sm text-muted-foreground">
             Skontaktuj się ze swoim trenerem — musi aktywować Twój plan i powiązać konto z Twoim profilem.
           </p>
           {planError && (
-            <Button onClick={() => setPlanRetry((c) => c + 1)} className="rounded-none mt-2">
+            <Button onClick={() => setPlanRetry((c) => c + 1)} className="rounded-lg mt-2">
               Spróbuj ponownie
             </Button>
           )}

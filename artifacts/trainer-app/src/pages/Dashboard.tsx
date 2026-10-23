@@ -19,8 +19,8 @@ function Tile({ label, value, icon: Icon }: { label: string; value: number; icon
     <Card className="border-border/50 shadow-sm">
       <CardContent className="flex items-center justify-between gap-3 p-4">
         <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="font-display text-3xl font-bold">{value}</p>
+          <p className="section-label">{label}</p>
+          <p className="stat-number">{value}</p>
         </div>
         <Icon className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
       </CardContent>
@@ -35,7 +35,7 @@ function LimitBar() {
   return (
     <div
       role="status"
-      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3 text-sm text-warning"
       data-testid="limit-bar"
     >
       <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
