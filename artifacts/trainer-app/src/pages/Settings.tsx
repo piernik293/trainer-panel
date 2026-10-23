@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useUser, useClerk } from "@clerk/react";
 import { UserCog, LogOut, User, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,13 @@ import { SubscriptionSummary } from "@/components/subscription/SubscriptionSumma
 export default function Settings() {
   const { user, isLoaded } = useUser();
   const { signOut, openUserProfile } = useClerk();
+
+  // Links like /settings#plan-i-limity: the router does not scroll to anchors itself.
+  useEffect(() => {
+    if (isLoaded && window.location.hash) {
+      document.getElementById(window.location.hash.slice(1))?.scrollIntoView();
+    }
+  }, [isLoaded]);
 
   if (!isLoaded) {
     return (
@@ -128,10 +136,10 @@ export default function Settings() {
       </Card>
 
       {/* ── Subskrypcja i Limity ────────────────────────────────────── */}
-      <div>
+      <div id="plan-i-limity" className="scroll-mt-4">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Zap className="w-5 h-5" />
-          Subskrypcja i Limity
+          Plan i limity
         </h2>
         <SubscriptionSummary context="settings" />
       </div>
