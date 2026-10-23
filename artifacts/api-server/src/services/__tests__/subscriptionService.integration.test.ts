@@ -134,7 +134,7 @@ describe("subscription service integration", () => {
         lastName: "Invite",
         email: "blocked@example.com",
         phone: "",
-        dateOfBirth: "1990-01-01",
+        dateOfBirth: "1990-01-01", injuryStatus: "Brak",
         gender: "Mężczyzna",
         heightCm: 180,
         weightKg: 80,

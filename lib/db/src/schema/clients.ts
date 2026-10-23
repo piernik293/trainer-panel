@@ -33,6 +33,12 @@ export const clientsTable = pgTable("clients", {
    * (current behavior: client executes the plan alone in the portal).
    */
   cooperationMode: text("cooperation_mode").notNull().default("online"),
+  /**
+   * Migration 0017: trainer's manual override of the experience level used by
+   * the generator. NULL = effective level (client's choice, capped at
+   * "Początkujący" when training experience is under 2 years).
+   */
+  experienceLevelOverride: text("experience_level_override"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

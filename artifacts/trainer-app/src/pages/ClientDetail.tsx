@@ -74,7 +74,7 @@ function calculateBmi(heightCm: number | null | undefined, weightKg: number | nu
 }
 
 const BMI_RECOMMENDATION_TEXT =
-  "Podpowiedź: BMI wskazuje podwyższoną masę ciała. Pamiętaj jednak, że BMI nie rozróżnia tkanki tłuszczowej od masy mięśniowej. W wielu przypadkach dobrym rozwiązaniem może być redukcja tkanki tłuszczowej lub rekompozycja sylwetki.";
+  "BMI jest powyżej 25. To wartość orientacyjna — nie rozróżnia tkanki tłuszczowej od mięśniowej, więc traktuj ją razem z resztą wywiadu.";
 
 // ─── Recovery quality — client-side derivation (mirrors server logic) ─────────
 
@@ -846,6 +846,12 @@ function SurveyTab({ client, survey, surveyLoading, id, bmi, showBmiRecommendati
   return (
     <div className="space-y-6">
       <InvitationCard clientId={client.id} />
+      <EffectiveLevelCard
+        clientId={client.id}
+        chosen={survey.experienceLevel ?? null}
+        trainingDuration={survey.trainingDuration ?? null}
+        override={(client as any).experienceLevelOverride ?? null}
+      />
       {isAdaptiveEligible && (
         <AdaptiveStartCard
           decision={adaptiveDecision}
@@ -1010,6 +1016,50 @@ function InvitationCard({ clientId }: { clientId: number }) {
 }
 
 // ─── Adaptive-start recommendation card ───────────────────────────────────────
+
+const LEVELS = ["Brak aktywności fizycznej", "Początkujący", "Średniozaawansowany", "Zaawansowany"] as const;
+const AUTO = "__auto__";
+
+/** Level used by the plan generator: client's choice capped by training time (< 2 years → Początkujący); the trainer can override. */
+function EffectiveLevelCard({ clientId, chosen, trainingDuration, override }: { clientId: number; chosen: string | null; trainingDuration: string | null; override: string | null }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [pending, setPending] = useState(false);
+  const save = async (value: string) => {
+    setPending(true);
+    try {
+      await customFetch(`/api/clients/${clientId}/experience-level`, {
+        method: "PATCH",
+        body: JSON.stringify({ level: value === AUTO ? null : value }),
+      });
+      queryClient.invalidateQueries({ queryKey: getGetClientQueryKey(clientId) });
+      toast({ title: value === AUTO ? "Poziom dla generatora: automatyczny" : `Poziom dla generatora: ${value}` });
+    } catch {
+      toast({ title: "Nie udało się zapisać poziomu. Spróbuj ponownie.", variant: "destructive" });
+    } finally {
+      setPending(false);
+    }
+  };
+  return (
+    <Card className="border-border/50" data-testid="effective-level-card">
+      <CardContent className="space-y-2 p-4">
+        <p className="text-sm font-semibold">Poziom używany przez generator planu</p>
+        <p className="text-sm text-muted-foreground">
+          Klient wybrał: <span className="font-medium text-foreground">{chosen ?? "—"}</span>
+          {trainingDuration ? <> · staż: <span className="font-medium text-foreground">{trainingDuration}</span></> : null}.
+          Przy stażu poniżej 2 lat generator przyjmuje najwyżej „Początkujący”. Możesz to zmienić.
+        </p>
+        <Select value={override ?? AUTO} onValueChange={(v) => void save(v)} disabled={pending}>
+          <SelectTrigger className="max-w-xs" aria-label="Poziom dla generatora"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={AUTO}>Automatycznie (reguła 2 lat)</SelectItem>
+            {LEVELS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </CardContent>
+    </Card>
+  );
+}
 
 function AdaptiveStartCard({
   decision,
@@ -1235,7 +1285,7 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
         <Card className="border-primary/20 shadow-sm print-break-inside-avoid">
           <CardHeader className="pb-3">
             <CardTitle className="text-base text-primary flex items-center gap-2">
-              Automatyczna podpowiedź
+              Wskazówka dla trenera
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">

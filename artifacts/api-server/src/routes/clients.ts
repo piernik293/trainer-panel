@@ -364,6 +364,36 @@ router.patch("/clients/:id/adaptive-start", requireAuth, async (req, res): Promi
   res.json({ adaptiveStartDecision: updated.adaptiveStartDecision });
 });
 
+// ─── PATCH /clients/:id/experience-level ──────────────────────────────────────
+//
+// Trainer's manual override of the level the generator uses (null = automatic:
+// the client's choice capped by training experience, see lib/effectiveLevel).
+
+const ExperienceLevelOverrideBody = z.object({
+  level: z
+    .enum(["Brak aktywności fizycznej", "Początkujący", "Średniozaawansowany", "Zaawansowany"])
+    .nullable(),
+});
+
+router.patch("/clients/:id/experience-level", requireAuth, async (req, res): Promise<void> => {
+  const id = Number(req.params["id"]);
+  const parsed = ExperienceLevelOverrideBody.safeParse(req.body);
+  if (!Number.isInteger(id) || id <= 0 || !parsed.success) {
+    res.status(400).json({ error: "Nieprawidłowe dane żądania." });
+    return;
+  }
+  const [updated] = await db
+    .update(clientsTable)
+    .set({ experienceLevelOverride: parsed.data.level, updatedAt: new Date() })
+    .where(and(eq(clientsTable.id, id), eq(clientsTable.trainerId, req.trainer!.id)))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "Klient nie znaleziony" });
+    return;
+  }
+  res.json({ experienceLevelOverride: updated.experienceLevelOverride });
+});
+
 // ─── DELETE /clients/:id ──────────────────────────────────────────────────────
 
 router.delete("/clients/:id", requireAuth, async (req, res): Promise<void> => {

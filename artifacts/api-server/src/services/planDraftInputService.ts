@@ -8,6 +8,7 @@
  * This service NEVER generates exercises, allocates volume, or saves plans.
  */
 
+import { effectiveLevelWarning, resolveEffectiveLevel, withEffectiveLevel } from "../lib/effectiveLevel";
 import { eq, desc } from "drizzle-orm";
 import { db, clientsTable, surveysTable } from "@workspace/db";
 import {
@@ -61,6 +62,29 @@ function deriveRecoveryQuality(
   if (sleep >= 7 && stress <= 5) return "good";
   if (sleep >= 6 && stress <= 7) return "standard";
   return "poor";
+}
+
+// ─── Sleep hours parsing ──────────────────────────────────────────────────────
+//
+// Survey answers (lib/survey-config SLEEP_HOURS_OPTIONS) → hours used by the
+// recovery and volume rules:
+//   "Poniżej 5 godzin" → 4   (below the lowest bound)
+//   "5–6 godzin"       → 5   (lower bound of a range, as before)
+//   "7–8 godzin"       → 7
+//   "Powyżej 8 godzin" → 9   (above the highest bound)
+//   "7"                → 7   (plain numbers from older records / trainer form)
+// Previously parseInt() turned "Poniżej…" / "Powyżej…" into NaN → treated as
+// missing data, so the shortest and the longest sleep were ignored.
+
+export function parseSleepHours(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const match = raw.match(/\d+/);
+  if (!match) return null;
+  const n = Number(match[0]);
+  if (!Number.isFinite(n) || n <= 0 || n > 24) return null;
+  if (/poni[żz]ej/i.test(raw)) return n - 1;
+  if (/powy[żz]ej/i.test(raw)) return n + 1;
+  return n;
 }
 
 // ─── Session duration parsing ─────────────────────────────────────────────────
@@ -164,12 +188,23 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
   const warnings: PlanDraftInputWarningType[] = [];
 
   // ── Load latest survey ──────────────────────────────────────────────────────
-  const [survey] = await db
+  const [rawSurvey] = await db
     .select()
     .from(surveysTable)
     .where(eq(surveysTable.clientId, clientId))
     .orderBy(desc(surveysTable.createdAt))
     .limit(1);
+  // The generator works on the effective level (2-year rule, trainer override).
+  const survey = rawSurvey ? withEffectiveLevel(rawSurvey, client.experienceLevelOverride) : undefined;
+
+  if (rawSurvey) {
+    const levelNote = effectiveLevelWarning(
+      resolveEffectiveLevel(rawSurvey.experienceLevel, rawSurvey.trainingDuration, client.experienceLevelOverride),
+    );
+    if (levelNote) {
+      warnings.push({ code: "EFFECTIVE_LEVEL_ADJUSTED", severity: "warning", message: levelNote, blocking: false });
+    }
+  }
 
   if (!survey) {
     warnings.push({
@@ -291,7 +326,7 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
   // ── Lifestyle ───────────────────────────────────────────────────────────────
   const dailyActivity = survey?.activityLevel ?? null;
   const physicalWork = survey?.activityLevel === "Praca fizyczna";
-  const sleepHours = survey?.sleepHours ? parseInt(survey.sleepHours, 10) || null : null;
+  const sleepHours = parseSleepHours(survey?.sleepHours);
   const stressLevel = clampStress(survey?.stressLevel);
 
   if (!dailyActivity && sleepHours === null && stressLevel === null) {

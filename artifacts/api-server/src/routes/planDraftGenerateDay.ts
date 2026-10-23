@@ -25,6 +25,7 @@
  *   { hasProfile, hasLocationData, sessionType, exercises: DayRecommendationExercise[] }
  */
 
+import { withEffectiveLevel } from "../lib/effectiveLevel";
 import { Router, type IRouter } from "express";
 import { eq, sql, and, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -196,7 +197,7 @@ router.post(
 
     // ── Verify client belongs to the authenticated trainer ────────────────────
     const [client] = await db
-      .select({ id: clientsTable.id, adaptiveStartDecision: clientsTable.adaptiveStartDecision })
+      .select({ id: clientsTable.id, adaptiveStartDecision: clientsTable.adaptiveStartDecision, experienceLevelOverride: clientsTable.experienceLevelOverride })
       .from(clientsTable)
       .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
 
@@ -206,12 +207,14 @@ router.post(
     }
 
     // ── Fetch latest survey ────────────────────────────────────────────────────
-    const [survey] = await db
+    const [rawSurvey] = await db
       .select()
       .from(surveysTable)
       .where(eq(surveysTable.clientId, clientId))
       .orderBy(desc(surveysTable.createdAt))
       .limit(1);
+    // The generator works on the effective level (2-year rule, trainer override).
+    const survey = rawSurvey ? withEffectiveLevel(rawSurvey, client.experienceLevelOverride) : undefined;
 
     if (!survey) {
       res.json({ hasProfile: false, hasLocationData: false, exercises: [] });

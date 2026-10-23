@@ -1,0 +1,391 @@
+/**
+ * Wywiad 2.0 — pure logic of the step-by-step interview (no React).
+ *
+ * The questions, option lists, validation and conditional rules are the ones of
+ * the former single-page form (lib/survey-config is still the source of truth);
+ * only the way they are presented changed. docs/WYWIAD-INWENTARZ.md lists every
+ * question and where it lands.
+ *
+ * Differences from the old payload (approved 23.10.2026):
+ *   • answers of questions that are hidden by the current answers are cleared,
+ *     not sent (equipment at "Siłownia", training time at "Brak aktywności",
+ *     avoided exercises / methods below intermediate, health description at "Nie",
+ *     sport answers without sport goal);
+ *   • "Czy jest coś jeszcze?" + text are one optional text field (`additionalInfo`);
+ *   • stress has no default — unanswered means the field is not sent (stored as null);
+ *   • `hasAdditionalInfo` is no longer sent (the API never stored it).
+ */
+
+import {
+  EQUIPMENT_OPTIONS,
+  buildEquipmentString,
+  calculateAge,
+  calculateBmi,
+  goalIsSport,
+  isBeginnerLevel,
+  isIntermediateOrAdvancedLevel,
+  showEquipmentField,
+  showTrainingDurationField,
+} from "@workspace/survey-config";
+
+export interface PickedExercise {
+  id: number;
+  name: string;
+  reason: string;
+}
+export interface FavoriteExercise {
+  id: number;
+  name: string;
+}
+
+export interface Answers {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  /** ISO YYYY-MM-DD ("" until a full valid date is typed). */
+  dateOfBirth: string;
+  gender: string;
+  heightCm?: number;
+  /** Dot-normalised text while typing ("75.5"). */
+  weightKg: string;
+  trainingGoal: string;
+  athleteStatus: string;
+  sportPerformanceNeeds: string[];
+  trainingMotivation: string;
+  experienceLevel: string;
+  trainingDuration: string;
+  trainingLocation: string;
+  equipmentItems: string[];
+  equipmentOther: string;
+  desiredWeeklyFrequency?: number;
+  sessionDuration: string;
+  injuryStatus: "" | "Tak" | "Nie";
+  healthLimitations: string;
+  activityLevel: string;
+  sleepHours: string;
+  stressLevel?: number;
+  cardioPreference: string;
+  cardioFrequency: string;
+  preferredCardioType: string;
+  planStylePreference: string;
+  avoidedExercises: PickedExercise[];
+  avoidedOtherText: string;
+  avoidedOtherReason: string;
+  favoriteExercises: FavoriteExercise[];
+  priorityMuscle1: string;
+  priorityMuscle2: string;
+  priorityMuscle3: string;
+  avoidsAdvancedMethods: "" | "Tak" | "Nie";
+  advancedMethodsToAvoid: string[];
+  additionalInfo: string;
+}
+
+export const EMPTY_ANSWERS: Answers = {
+  firstName: "", lastName: "", email: "", phone: "", dateOfBirth: "", gender: "",
+  heightCm: undefined, weightKg: "",
+  trainingGoal: "", athleteStatus: "", sportPerformanceNeeds: [], trainingMotivation: "",
+  experienceLevel: "", trainingDuration: "",
+  trainingLocation: "", equipmentItems: [], equipmentOther: "",
+  desiredWeeklyFrequency: undefined, sessionDuration: "",
+  injuryStatus: "", healthLimitations: "",
+  activityLevel: "", sleepHours: "", stressLevel: undefined,
+  cardioPreference: "", cardioFrequency: "", preferredCardioType: "",
+  planStylePreference: "",
+  avoidedExercises: [], avoidedOtherText: "", avoidedOtherReason: "",
+  favoriteExercises: [],
+  priorityMuscle1: "", priorityMuscle2: "", priorityMuscle3: "",
+  avoidsAdvancedMethods: "", advancedMethodsToAvoid: [],
+  additionalInfo: "",
+};
+
+// ─── Steps ────────────────────────────────────────────────────────────────────
+
+export type StepId =
+  | "name" | "contact" | "birth" | "body"
+  | "goal" | "sportStatus" | "sportNeeds" | "motivation"
+  | "level" | "duration"
+  | "location" | "equipment"
+  | "frequency" | "session"
+  | "injury" | "healthDesc"
+  | "activity" | "sleep" | "stress"
+  | "cardioPref" | "cardioFreq" | "cardioType"
+  | "planStyle" | "avoided" | "favorite" | "priority" | "methods" | "methodsList" | "additional";
+
+export interface Stage {
+  id: string;
+  name: string;
+  steps: StepId[];
+}
+
+/** Order matters: a dependent question always comes after the one it depends on. */
+export const STAGES: Stage[] = [
+  { id: "about", name: "O Tobie", steps: ["name", "contact", "birth", "body"] },
+  { id: "goal", name: "Cel", steps: ["goal", "sportStatus", "sportNeeds", "motivation"] },
+  { id: "experience", name: "Doświadczenie", steps: ["level", "duration"] },
+  { id: "place", name: "Miejsce i sprzęt", steps: ["location", "equipment"] },
+  { id: "time", name: "Czas i częstotliwość", steps: ["frequency", "session"] },
+  { id: "health", name: "Zdrowie i ograniczenia", steps: ["injury", "healthDesc"] },
+  { id: "life", name: "Styl życia", steps: ["activity", "sleep", "stress"] },
+  { id: "cardio", name: "Cardio", steps: ["cardioPref", "cardioFreq", "cardioType"] },
+  { id: "prefs", name: "Preferencje planu", steps: ["planStyle", "avoided", "favorite", "priority", "methods", "methodsList", "additional"] },
+];
+
+export interface Prefill {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  /** Existing client: personal data comes from the client record and the screens are skipped. */
+  existingClient?: boolean;
+}
+
+/** Whether a screen is shown for the current answers (the old form's conditions, verbatim). */
+export function isStepVisible(id: StepId, a: Answers, prefill: Prefill = {}): boolean {
+  switch (id) {
+    case "name":
+    case "contact":
+      return !prefill.existingClient;
+    case "sportStatus":
+    case "sportNeeds":
+      return goalIsSport(a.trainingGoal);
+    case "duration":
+      return showTrainingDurationField(a.experienceLevel);
+    case "equipment":
+      return showEquipmentField(a.trainingLocation);
+    case "healthDesc":
+      return a.injuryStatus === "Tak";
+    case "avoided":
+    case "methods":
+      return isIntermediateOrAdvancedLevel(a.experienceLevel);
+    case "methodsList":
+      return isIntermediateOrAdvancedLevel(a.experienceLevel) && a.avoidsAdvancedMethods === "Tak";
+    default:
+      return true;
+  }
+}
+
+export function visibleSteps(a: Answers, prefill: Prefill = {}): StepId[] {
+  return STAGES.flatMap((s) => s.steps).filter((id) => isStepVisible(id, a, prefill));
+}
+
+export function visibleStages(a: Answers, prefill: Prefill = {}): Array<Stage & { visible: StepId[] }> {
+  return STAGES.map((s) => ({ ...s, visible: s.steps.filter((id) => isStepVisible(id, a, prefill)) })).filter(
+    (s) => s.visible.length > 0,
+  );
+}
+
+/**
+ * Clears answers of questions that are not shown any more (and resets the
+ * "Brak aktywności" level when the sport goal is chosen — the old form did the same).
+ */
+export function normalizeAnswers(input: Answers, prefill: Prefill = {}): Answers {
+  const a: Answers = { ...input };
+  if (goalIsSport(a.trainingGoal) && a.experienceLevel === "Brak aktywności fizycznej") a.experienceLevel = "";
+  if (!isStepVisible("sportStatus", a, prefill)) {
+    a.athleteStatus = "";
+    a.sportPerformanceNeeds = [];
+  }
+  if (!isStepVisible("duration", a, prefill)) a.trainingDuration = "";
+  if (!isStepVisible("equipment", a, prefill)) {
+    a.equipmentItems = [];
+    a.equipmentOther = "";
+  }
+  if (!isStepVisible("healthDesc", a, prefill)) a.healthLimitations = "";
+  if (!isStepVisible("avoided", a, prefill)) {
+    a.avoidedExercises = [];
+    a.avoidedOtherText = "";
+    a.avoidedOtherReason = "";
+  }
+  if (!isStepVisible("methods", a, prefill)) a.avoidsAdvancedMethods = "";
+  if (!isStepVisible("methodsList", a, prefill)) a.advancedMethodsToAvoid = [];
+  return a;
+}
+
+// ─── Validation (messages and limits as in the old zod schema) ───────────────
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_MSG =
+  "E-mail jest wymagany, aby trener mógł skontaktować się z Tobą oraz przesłać plan treningowy.";
+
+export function parseWeight(raw: string): number | undefined {
+  const n = parseFloat(String(raw ?? "").replace(",", "."));
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/** Error message for a screen, or null when the answer is acceptable. */
+export function validateStep(id: StepId, a: Answers): string | null {
+  switch (id) {
+    case "name":
+      if (!a.firstName.trim()) return "Imię jest wymagane";
+      if (!a.lastName.trim()) return "Nazwisko jest wymagane";
+      return null;
+    case "contact":
+      return EMAIL_RE.test(a.email.trim()) ? null : EMAIL_MSG;
+    case "birth": {
+      if (!a.dateOfBirth) return "Data urodzenia jest wymagana";
+      const age = calculateAge(a.dateOfBirth);
+      if (age === undefined || age < 0 || age > 100) return "Wprowadzona data urodzenia jest nieprawidłowa. Sprawdź i popraw datę.";
+      if (!a.gender) return "Płeć jest wymagana";
+      return null;
+    }
+    case "body": {
+      if (a.heightCm === undefined || a.heightCm < 80 || a.heightCm > 260) return "Wzrost musi być między 80 a 260 cm";
+      const w = parseWeight(a.weightKg);
+      if (w === undefined || w < 20 || w > 400) return "Waga musi być między 20 a 400 kg";
+      return null;
+    }
+    case "goal":
+      return a.trainingGoal ? null : "To pole jest wymagane";
+    case "sportStatus":
+      return a.athleteStatus ? null : "Wybierz poziom sportowy.";
+    case "level":
+      return a.experienceLevel ? null : "Poziom doświadczenia jest wymagany";
+    case "location":
+      return a.trainingLocation ? null : "To pole jest wymagane";
+    case "equipment":
+      return buildEquipmentString(a.equipmentItems, a.equipmentOther).trim() ? null : "To pole jest wymagane.";
+    case "frequency":
+      return a.desiredWeeklyFrequency && a.desiredWeeklyFrequency >= 1 && a.desiredWeeklyFrequency <= 7
+        ? null
+        : "Podaj liczbę treningów od 1 do 7";
+    case "session":
+      return a.sessionDuration ? null : "To pole jest wymagane";
+    case "injury":
+      return a.injuryStatus ? null : "Odpowiedz na to pytanie — jest ważne dla Twojego bezpieczeństwa.";
+    case "healthDesc":
+      return a.healthLimitations.trim() ? null : "Opisz swoje ograniczenia zdrowotne, kontuzje lub dolegliwości bólowe.";
+    case "activity":
+      return a.activityLevel ? null : "Poziom aktywności jest wymagany";
+    case "sleep":
+      return a.sleepHours ? null : "To pole jest wymagane";
+    case "planStyle":
+      return a.planStylePreference ? null : "Wybierz styl planu";
+    default:
+      return null; // optional screens
+  }
+}
+
+// ─── Payload ──────────────────────────────────────────────────────────────────
+
+const SPORT_NEED_KEY: Record<string, string> = {
+  Dynamika: "dynamika",
+  Szybkość: "szybkosc",
+  Stabilizacja: "stabilizacja",
+};
+const ATHLETE_TO_API: Record<string, string> = {
+  Hobbystycznie: "Tak — amatorsko",
+  Zawodowo: "Tak — zawodowo",
+};
+
+/**
+ * Body of POST /api/public/survey/:token. For the same answers it equals the old
+ * form's payload (tested against a frozen copy of the old builder), apart from the
+ * documented differences at the top of this file.
+ */
+export function buildSurveyPayload(raw: Answers, prefill: Prefill = {}): Record<string, unknown> {
+  const a = normalizeAnswers(raw, prefill);
+  const isSport = goalIsSport(a.trainingGoal);
+  const avoids = a.avoidsAdvancedMethods === "Tak" ? true : a.avoidsAdvancedMethods === "Nie" ? false : undefined;
+  const reasons = Object.fromEntries(
+    a.avoidedExercises.filter((e) => e.reason.trim()).map((e) => [String(e.id), e.reason.trim()]),
+  );
+  return {
+    firstName: (prefill.existingClient ? prefill.firstName : a.firstName) ?? a.firstName,
+    lastName: (prefill.existingClient ? prefill.lastName : a.lastName) ?? a.lastName,
+    email: ((prefill.existingClient ? prefill.email : a.email) ?? a.email).trim(),
+    phone: (prefill.existingClient ? prefill.phone : a.phone) ?? a.phone,
+    dateOfBirth: a.dateOfBirth,
+    gender: a.gender,
+    heightCm: a.heightCm,
+    weightKg: parseWeight(a.weightKg),
+    trainingGoal: a.trainingGoal,
+    experienceLevel: a.experienceLevel,
+    trainingDuration: a.trainingDuration,
+    healthLimitations: a.injuryStatus === "Nie" ? "" : a.healthLimitations,
+    sessionDuration: a.sessionDuration,
+    avoidedExercises: "",
+    desiredWeeklyFrequency: a.desiredWeeklyFrequency,
+    activityLevel: a.activityLevel,
+    sleepHours: a.sleepHours,
+    ...(a.stressLevel !== undefined ? { stressLevel: a.stressLevel } : {}),
+    planStylePreference: a.planStylePreference,
+    additionalInfo: a.additionalInfo,
+    priorityMuscle1: a.priorityMuscle1,
+    priorityMuscle2: a.priorityMuscle2,
+    priorityMuscle3: a.priorityMuscle3,
+    trainingLocation: a.trainingLocation,
+    equipment: buildEquipmentString(a.equipmentItems, a.equipmentOther),
+    cardioPreference: a.cardioPreference,
+    cardioFrequency: a.cardioFrequency,
+    preferredCardioType: a.preferredCardioType,
+    trainingMotivation: a.trainingMotivation,
+    age: calculateAge(a.dateOfBirth) ?? undefined,
+    injuryStatus: a.injuryStatus === "Nie" ? "Brak" : a.injuryStatus || undefined,
+    favoriteExercises: a.favoriteExercises.length > 0 ? a.favoriteExercises.map((e) => e.name).join(", ") : undefined,
+    athleteStatus: isSport && a.athleteStatus ? (ATHLETE_TO_API[a.athleteStatus] ?? "Nie") : "Nie",
+    sportDiscipline: undefined,
+    sportPerformanceNeeds: isSport ? a.sportPerformanceNeeds : [],
+    sportsPriorities: isSport ? a.sportPerformanceNeeds.map((n) => SPORT_NEED_KEY[n]).filter(Boolean) : [],
+    avoidsAdvancedMethods: avoids,
+    advancedMethodsToAvoid: avoids === true ? a.advancedMethodsToAvoid : [],
+    avoidedExerciseIds: a.avoidedExercises.map((e) => e.id),
+    avoidedExerciseReasons: reasons,
+    avoidedExerciseOtherText: a.avoidedOtherText.trim() || undefined,
+    avoidedExerciseOtherReason: a.avoidedOtherReason.trim() || undefined,
+  };
+}
+
+// ─── Misc helpers ─────────────────────────────────────────────────────────────
+
+export function bmiOf(a: Answers): number | undefined {
+  return calculateBmi(a.heightCm, parseWeight(a.weightKg));
+}
+
+/** Rough remaining time, ~10 s per screen. */
+export function remainingMinutes(stepsLeft: number): number {
+  return Math.max(1, Math.round((stepsLeft * 10) / 60));
+}
+
+export const KNOWN_EQUIPMENT: readonly string[] = EQUIPMENT_OPTIONS;
+export { isBeginnerLevel };
+
+// ─── Draft (autosave) ─────────────────────────────────────────────────────────
+
+export interface Draft {
+  v: 1;
+  answers: Answers;
+  stepId: StepId | "summary";
+}
+
+export function draftKey(token: string): string {
+  return `optimatren-wywiad:${token.slice(0, 16)}`;
+}
+
+export function loadDraft(token: string): Draft | null {
+  try {
+    const raw = window.localStorage.getItem(draftKey(token));
+    if (!raw) return null;
+    const d = JSON.parse(raw) as Draft;
+    if (d?.v !== 1 || typeof d.answers !== "object" || !d.answers) return null;
+    return { v: 1, answers: { ...EMPTY_ANSWERS, ...d.answers }, stepId: d.stepId };
+  } catch {
+    return null;
+  }
+}
+
+export function saveDraft(token: string, draft: Draft): void {
+  try {
+    window.localStorage.setItem(draftKey(token), JSON.stringify(draft));
+  } catch {
+    // storage unavailable (private mode, quota) — the interview still works
+  }
+}
+
+export function clearDraft(token: string): void {
+  try {
+    window.localStorage.removeItem(draftKey(token));
+  } catch {
+    // ignore
+  }
+}

@@ -66,6 +66,7 @@ export const DRAFT_INPUT_WARNING_CODES = [
   "MISSING_RECOVERY_DATA",
   "INCOMPLETE_CLIENT_PROFILE",
   "MISSING_CLIENT_SURVEY",
+  "EFFECTIVE_LEVEL_ADJUSTED",
 ] as const;
 
 export type DraftInputWarningCode = typeof DRAFT_INPUT_WARNING_CODES[number];
