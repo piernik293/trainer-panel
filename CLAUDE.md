@@ -41,8 +41,12 @@ Szczegółowy plan bieżącego etapu jest w `~/etap-1-uruchomienie-i-stabilizacj
 ## Dane i sekrety
 - Sekrety trzymaj tylko w `.env`. Nigdy nie wypisuj ich wartości w logach, commitach ani raportach.
 - Przed każdą zmianą schematu bazy zrób `pg_dump` do `~/backups/` (z datą w nazwie).
-- Schemat bazy: `scripts/db-setup-gcp.sh` (po `pg_dump`) robi `drizzle-kit push` i stosuje `lib/db/migrations/*.sql`, które push pomija (indeksy częściowe, klucze obce). Idempotentny; na nowej bazie uruchom go zawsze, nie samo `push`. Baza testowa: `DATABASE_URL=…/trainer_panel_test scripts/db-setup-gcp.sh`.
-- Migracje tylko addytywne: nowe tabele i kolumny nullable. Żadnych `DROP`, żadnego `drizzle-kit push --force`.
+- **STAŁA ZASADA — schemat bazy zmienia się tylko addytywnie; żaden skrypt nie usuwa ani nie zmienia nazw tabel, kolumn, indeksów, ograniczeń.**
+  - `scripts/db-setup-gcp.sh` (po `pg_dump`): na **pustej** bazie `drizzle-kit push` tworzy tabele bazowe, ale tylko jeśli jego plan nie ma nic niszczącego (DROP, RENAME, TRUNCATE, DELETE, zmiana typu) — inaczej przerywa z błędem. Na **istniejącej** bazie `push` NIE jest uruchamiany (usuwałby indeksy/klucze z migracji SQL i tabele innych gałęzi). Potem migracje `lib/db/migrations/*.sql`; migracja z instrukcją niszczącą jest odrzucana (wyjątek historyczny: 0011).
+  - `scripts/db-setup-gcp.sh --check` — tylko pokazuje plan drizzle-kit (kod 1 przy zmianach niszczących), nic nie wykonuje. `pnpm --filter @workspace/db run push` uruchamia ten sam bezpieczny skrypt.
+  - Test zabezpieczenia: `scripts/test-db-setup.sh` (tymczasowa baza; tabela/kolumna/indeks spoza schematu zostają nietknięte). Uruchom po każdej zmianie `db-setup-gcp.sh`.
+  - Każda zmiana schematu = nowa migracja SQL w `lib/db/migrations/` (nowe tabele, kolumny nullable, indeksy) + zmiana w schemacie Drizzle. Nigdy `drizzle-kit push` bezpośrednio, nigdy `push --force` / `push-force`, nigdy ręczny `DROP`.
+  - Baza testowa: `DATABASE_URL=…/trainer_panel_test scripts/db-setup-gcp.sh`.
 
 ## Git
 - Pracujesz na gałęzi `migracja-gcp`. Jeden commit to jedna logiczna zmiana, opis po polsku.
