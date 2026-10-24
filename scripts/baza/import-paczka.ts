@@ -30,7 +30,7 @@ const list = (title: string, items: PlanItem[]) => {
 function printPlan(p: ImportPlan) {
   if (p.missingColumns.length) console.log(`UWAGA: brak kolumn w pliku: ${p.missingColumns.join(", ")}`);
   console.log(`\nZAIMPORTUJĘ: ${p.toImport.length}`);
-  for (const i of p.toImport) console.log(`  + wiersz ${i.line}: ${i.name} [${i.value.level}, ${i.value.role}, ${i.value.equipment.join("/")}, trudność ${i.value.learningDifficulty}, nieaktywni: ${i.value.suitableForNoActivity ? "TAK" : "nie"}]`);
+  for (const i of p.toImport) console.log(`  + wiersz ${i.line}: ${i.name} [${i.value.level}, ${i.value.role}, ${i.value.equipment.join("/")}, trudność ${i.value.learningDifficulty}, nieaktywni: ${i.value.suitableForNoActivity ? "TAK" : "nie"}; mięśnie: ${i.value.primaryMuscles.join("/")}${i.value.secondaryMuscles.length ? " + " + i.value.secondaryMuscles.join("/") : ""}]`);
   list("POMINĘ (decyzja „nie”)", p.skippedNo);
   list("POMINĘ (pusta decyzja)", p.skippedEmpty);
   list("DO POPRAWY (uwaga trenera)", p.toFix);
