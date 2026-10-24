@@ -33,7 +33,18 @@ BLEDY = {
  "Lokomocja": ("Twarde lądowanie, nierówny rytm, zbyt szybkie tempo kosztem techniki.", "Krótkie serie, miękkie lądowanie; tylko dla średniozaawansowanych i wyżej; przy bólu przerwij."),
 }
 DEF = ("Pośpiech, utrata napięcia w tułowiu, zbyt duże obciążenie kosztem techniki.", "Zacznij od lekkiego obciążenia; przy bólu przerwij ćwiczenie.")
-cols = ["nazwa_PL","nazwa_EN","poziom","rola","sprzęt","wzorzec","mięśnie","stawy","cele","opis","wskazówki","typowe_błędy","uwaga_bezpieczeństwa","suitableForNoActivity","decyzja_trenera"]
+def trudnosc(r):
+    """Propozycja learningDifficulty (1–5) do korekty przez trenera. Rozciąganie/rozgrzewka 1; poziom początkujący 1, średni 2, zaawansowany 4;
+    sztanga min. 3; hantle/kettlebell/wyciąg min. 2; lokomocja/skoki powyżej poziomu początkującego min. 3."""
+    rola, sp, lvl, wz = r["rola"], r["sprzet"], r["poziom"], r["wzorzec"]
+    if rola in ("rozciąganie", "rozgrzewka"): return 1
+    base = {"Początkujący": 1, "Średniozaawansowany": 2, "Zaawansowany": 4}.get(lvl, 2)
+    if "Sztanga" in sp: base = max(base, 3)
+    elif any(e in sp for e in ("Hantle", "Kettlebell", "Wyciąg")): base = max(base, 2)
+    if wz == "Lokomocja" and lvl != "Początkujący": base = max(base, 3)
+    return min(base, 5)
+
+cols = ["zrodlo_id", "nazwa_PL","nazwa_EN","poziom","rola","sprzęt","wzorzec","mięśnie","stawy","cele","opis","wskazówki","typowe_błędy","uwaga_bezpieczeństwa","learningDifficulty", "suitableForNoActivity","decyzja_trenera"]
 for n in range(0, len(order), 20):
     with open(os.path.join(sys.argv[2], "BAZA-PACZKA-%02d.csv" % (n // 20 + 1)), "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f, delimiter=";"); w.writerow(cols)
@@ -41,7 +52,7 @@ for n in range(0, len(order), 20):
             r = cand[sid]; opis, wsk = op[sid][0], op[sid][1]
             bl, uw = BLEDY.get(r["wzorzec"], DEF)
             if r["rola"] == "rozgrzewka" and r["wzorzec"] != "Mobilizacja": bl, uw = BLEDY["Mobilizacja"]
-            w.writerow([r["nazwa_PL"], r["nazwa_EN"], r["poziom"], r["rola"], r["sprzet"], r["wzorzec"], r["miesnie"], r["stawy"], r["cele"], opis, wsk, bl, uw, "", ""])
+            w.writerow([r["zrodlo_id"], r["nazwa_PL"], r["nazwa_EN"], r["poziom"], r["rola"], r["sprzet"], r["wzorzec"], r["miesnie"], r["stawy"], r["cele"], opis, wsk, bl, uw, trudnosc(r), "", ""])
 print(len(order), "pozycji,", (len(order) + 19) // 20, "paczek")
 
 # paczka 06: warianty-zamienniki + wiersze „do potwierdzenia” (One Arm Against Wall, Dumbbell Raise)
@@ -54,5 +65,5 @@ with open(os.path.join(sys.argv[2], "BAZA-PACZKA-06.csv"), "w", encoding="utf-8-
     for r in rows6:
         opis, wsk = op6[r["zrodlo_id"]]
         bl, uw = BLEDY.get(r["wzorzec"], DEF)
-        w.writerow([r["nazwa_PL"], r["nazwa_EN"], r["poziom"], r["rola"], r["sprzet"], r["wzorzec"], r["miesnie"], r["stawy"], r["cele"], opis, wsk, bl, uw, "", ""])
+        w.writerow([r["zrodlo_id"], r["nazwa_PL"], r["nazwa_EN"], r["poziom"], r["rola"], r["sprzet"], r["wzorzec"], r["miesnie"], r["stawy"], r["cele"], opis, wsk, bl, uw, trudnosc(r), "", ""])
 print("paczka 06:", len(rows6), "wierszy")
