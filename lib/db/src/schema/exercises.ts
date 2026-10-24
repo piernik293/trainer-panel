@@ -78,6 +78,15 @@ export const exercisesTable = pgTable("exercises", {
   defaultDurationSeconds: integer("default_duration_seconds"),
   perSide: boolean("per_side"),
 
+  // ── Origin (migration 0021) — nullable; existing exercises are 'own' ──
+  /** 'own' | 'free-exercise-db' (list of moves used only as a cheat-sheet; texts are our own). */
+  source: text("source").default("own"),
+  /** Id of the exercise in the source (unique together with source). */
+  sourceId: text("source_id"),
+  importedAt: timestamp("imported_at"),
+  /** Review batch (paczka) the exercise came from; used to roll an import back. */
+  reviewBatch: text("review_batch"),
+
   isActive: boolean("is_active").notNull().default(true),
   /**
    * FK to trainers.id — set when a trainer creates a custom exercise.
@@ -89,6 +98,7 @@ export const exercisesTable = pgTable("exercises", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   uniqueIndex("exercises_slug_idx").on(table.slug),
+  // Mirrors migration 0021 (partial unique index is created by the SQL migration; push skips WHERE).
 ]);
 
 export const insertExerciseSchema = createInsertSchema(exercisesTable).omit({
