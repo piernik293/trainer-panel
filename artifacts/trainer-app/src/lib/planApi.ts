@@ -193,7 +193,22 @@ export interface ExercisePrescription {
 export const planKeys = {
   list: (clientId: number) => ["plans", "list", clientId] as const,
   detail: (planId: number) => ["plans", "detail", planId] as const,
+  jointWarnings: (planId: number) => ["plans", "joint-warnings", planId] as const,
 };
+
+/** Exercise in the plan that loads a joint the client reported; trainer-only. */
+export interface PlanJointWarning {
+  planExerciseId: number;
+  dayId: number;
+  exerciseId: number;
+  exerciseName: string;
+  joints: string[];
+  message: string;
+  /** proposal from the lower steps of the same ladder; null = pick by hand */
+  replacement: { exerciseId: number; name: string } | null;
+  /** the trainer confirmed "Dodaj mimo to" for this slot */
+  trainerDecisionAt: string | null;
+}
 
 // ─── Fetch helper ─────────────────────────────────────────────────────────────
 
@@ -237,6 +252,7 @@ function usePlanInvalidator(planId: number, clientId?: number) {
   const queryClient = useQueryClient();
   return (updatedPlan: WorkoutPlan) => {
     queryClient.setQueryData(planKeys.detail(planId), updatedPlan);
+    queryClient.invalidateQueries({ queryKey: planKeys.jointWarnings(planId) });
     const cid = clientId ?? updatedPlan.clientId;
     if (cid) {
       queryClient.invalidateQueries({ queryKey: planKeys.list(cid) });
@@ -263,7 +279,25 @@ export function useGetPlan(planId: number) {
   });
 }
 
+export function usePlanJointWarnings(planId: number) {
+  return useQuery<{ warnings: PlanJointWarning[] }>({
+    queryKey: planKeys.jointWarnings(planId),
+    queryFn: ({ signal }) => apiFetch<{ warnings: PlanJointWarning[] }>(`/plans/${planId}/joint-warnings`, { signal }),
+    enabled: Number.isFinite(planId) && planId > 0,
+  });
+}
+
 // ─── Mutation hooks ───────────────────────────────────────────────────────────
+
+/** One click: swap the slot to the server's ladder proposal (prescription unchanged). */
+export function useReplaceJointExercise(planId: number) {
+  const invalidate = usePlanInvalidator(planId);
+  return useMutation<WorkoutPlan, Error, { planExerciseId: number }>({
+    mutationFn: ({ planExerciseId }) =>
+      apiFetch<WorkoutPlan>(`/plans/${planId}/exercises/${planExerciseId}/joint-replacement`, { method: "POST", body: "{}" }),
+    onSuccess: invalidate,
+  });
+}
 
 export function useCreatePlan(clientId: number) {
   const queryClient = useQueryClient();

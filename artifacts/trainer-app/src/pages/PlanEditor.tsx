@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, createContext, useMemo } from "react";
-import { jointWarningFromError } from "@/lib/jointWarning";
+import { jointWarningFromError, planJointWarningText } from "@/lib/jointWarning";
 import { StepHint } from "@/components/dashboard/StepHint";
 import { humanizeError } from "@/lib/userError";
 import { useParams, Link } from "wouter";
@@ -36,6 +36,9 @@ import {
   useClearPlanDay,
   useReorderPlanDays,
   useAddPlanExercise,
+  usePlanJointWarnings,
+  useReplaceJointExercise,
+  type PlanJointWarning,
   useUpdatePlanExercise,
   useDeletePlanExercise,
   useDuplicatePlanExercise,
@@ -122,6 +125,12 @@ interface AvoidedExercisesContextValue {
   otherText: string | null;
   otherReason: string | null;
 }
+
+/** Plan slots loading a joint the client reported (planExerciseId → warning); canReplace = plan not archived. */
+const JointWarningsContext = createContext<{ byPlanExercise: ReadonlyMap<number, PlanJointWarning>; canReplace: boolean }>({
+  byPlanExercise: new Map(),
+  canReplace: false,
+});
 
 const AvoidedExercisesContext = createContext<AvoidedExercisesContextValue>({
   avoidedMap: new Map(),
@@ -748,6 +757,9 @@ function ExerciseRow({
   const { avoidedMap } = useContext(AvoidedExercisesContext);
   const isAvoided = avoidedMap.has(ex.exerciseId);
   const avoidedReason = avoidedMap.get(ex.exerciseId) ?? null;
+  const { byPlanExercise, canReplace } = useContext(JointWarningsContext);
+  const jointWarning = byPlanExercise.get(ex.id) ?? null;
+  const replaceJoint = useReplaceJointExercise(planId);
 
   const [editing, setEditing] = useState(false);
   const [moving, setMoving] = useState(false);
@@ -824,6 +836,42 @@ function ExerciseRow({
                   <span className="text-muted-foreground">— {avoidedReason}</span>
                 )}
               </p>
+            )}
+            {jointWarning && (
+              <div className="text-xs text-amber-600 mt-0.5 space-y-0.5" data-testid="plan-joint-warning">
+                <p className="flex items-center gap-1">
+                  <AlertCircle size={10} />
+                  {planJointWarningText(jointWarning.joints)}
+                  {jointWarning.trainerDecisionAt && (
+                    <span className="text-muted-foreground">
+                      — dodane świadomie {new Date(jointWarning.trainerDecisionAt).toLocaleDateString("pl-PL")}
+                    </span>
+                  )}
+                </p>
+                {jointWarning.replacement ? (
+                  canReplace && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      disabled={replaceJoint.isPending}
+                      onClick={() =>
+                        replaceJoint.mutate(
+                          { planExerciseId: ex.id },
+                          {
+                            onSuccess: () => toast({ title: `Zamieniono na: ${jointWarning.replacement!.name}` }),
+                            onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
+                          },
+                        )
+                      }
+                    >
+                      Zamień na: {jointWarning.replacement.name}
+                    </Button>
+                  )
+                ) : (
+                  <p className="text-muted-foreground">Brak zamiennika z drabinki — wybierz ćwiczenie ręcznie.</p>
+                )}
+              </div>
             )}
             <p className="text-muted-foreground text-xs mt-0.5 leading-snug">
               {summaryParts.join(" · ")}
@@ -1660,6 +1708,14 @@ export default function PlanEditor() {
   const updatePlan = useUpdatePlan(planId, plan?.clientId);
   const addDay = useAddPlanDay(planId, plan?.clientId);
   const addExercise = useAddPlanExercise(planId);
+  const { data: jointWarningsData } = usePlanJointWarnings(planId);
+  const jointCtxValue = useMemo(
+    () => ({
+      byPlanExercise: new Map((jointWarningsData?.warnings ?? []).map((w) => [w.planExerciseId, w])),
+      canReplace: plan?.status !== "archived",
+    }),
+    [jointWarningsData, plan?.status],
+  );
   const activatePlan = useActivatePlan(planId, plan?.clientId);
   const reorderDays = useReorderPlanDays(planId);
 
@@ -1777,6 +1833,7 @@ export default function PlanEditor() {
   };
 
   return (
+    <JointWarningsContext.Provider value={jointCtxValue}>
     <AvoidedExercisesContext.Provider value={avoidedCtxValue}>
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">
       {/* Header */}
@@ -1999,5 +2056,6 @@ export default function PlanEditor() {
       </AlertDialog>
     </div>
     </AvoidedExercisesContext.Provider>
+    </JointWarningsContext.Provider>
   );
 }
