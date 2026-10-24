@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, createContext, useMemo } from "react";
-import { jointWarningFromError, planJointWarningText, jointReplaceConfirmText } from "@/lib/jointWarning";
+import { jointWarningFromError, planJointWarningText, jointReplaceConfirmText, activationConfirmText } from "@/lib/jointWarning";
 import { rirTargetLabel } from "@/lib/exerciseDraftHelpers";
 import { StepHint } from "@/components/dashboard/StepHint";
 import { humanizeError } from "@/lib/userError";
@@ -38,6 +38,7 @@ import {
   useReorderPlanDays,
   useAddPlanExercise,
   usePlanJointWarnings,
+  useListClientPlans,
   usePlanHistory,
   useReplaceJointExercise,
   type PlanJointWarning,
@@ -1746,6 +1747,10 @@ export default function PlanEditor() {
     [jointWarningsData, plan?.status, plan?.clientName],
   );
   const { data: historyData } = usePlanHistory(planId);
+  // Activation archives the client's other active plan — the confirmation names it.
+  const { data: clientPlans } = useListClientPlans(plan?.clientId ?? 0);
+  const otherActivePlan = clientPlans?.find((p) => p.status === "active" && p.id !== planId) ?? null;
+  const [confirmActivate, setConfirmActivate] = useState(false);
   const activatePlan = useActivatePlan(planId, plan?.clientId);
   const reorderDays = useReorderPlanDays(planId);
 
@@ -1767,8 +1772,9 @@ export default function PlanEditor() {
   const canActivate = plan.status === "draft" && !hasAbsoluteViolation && !hasUnassignedExercises;
   const canEdit = plan.status === "draft";
 
-  const handleActivate = () => {
-    if (!window.confirm("Aktywować plan? Po aktywacji nie będzie można zmieniać jego struktury.")) return;
+  const handleActivate = () => setConfirmActivate(true);
+
+  const doActivate = () => {
     activatePlan.mutate(undefined, {
       onSuccess: () => toast({ title: "Plan aktywowany!" }),
       onError: (err) => {
@@ -2055,6 +2061,21 @@ export default function PlanEditor() {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={confirmActivate} onOpenChange={setConfirmActivate}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aktywacja planu</AlertDialogTitle>
+            <AlertDialogDescription data-testid="activate-confirm">
+              {activationConfirmText(otherActivePlan?.title)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction onClick={doActivate}>Aktywuj</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Plan history (who, when, what → what) */}
       {(historyData?.entries.length ?? 0) > 0 && (

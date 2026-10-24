@@ -124,6 +124,8 @@ export const workoutPlansTable = pgTable("workout_plans", {
   cardioRecommendation: text("cardio_recommendation"),
 }, (table) => [
   index("workout_plans_client_id_idx").on(table.clientId),
+  // A client has at most one active plan (activation archives the previous one) — migration 0027.
+  uniqueIndex("workout_plans_one_active_per_client").on(table.clientId).where(sql`status = 'active'`),
 ]);
 
 // ─── Workout plan days ────────────────────────────────────────────────────────
