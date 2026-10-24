@@ -35,3 +35,14 @@ export async function loadBlockedJoints(clientId: number, healthText: string | n
 export function hitsBlockedJoint(areas: readonly string[] | null | undefined, blocked: ReadonlySet<string>): boolean {
   return blocked.size > 0 && (areas ?? []).some((a) => blocked.has(a));
 }
+
+/** Reported joints the exercise loads, in catalogue order (empty = no warning). */
+export function reportedJointsLoaded(areas: readonly string[] | null | undefined, blocked: ReadonlySet<string>): string[] {
+  return [...new Set((areas ?? []).filter((a) => blocked.has(a)))];
+}
+
+/** Trainer-facing warning text for a manual add; never shown to the client. */
+export function jointWarningMessage(joints: readonly string[]): string {
+  const list = joints.map((j) => j.toLowerCase()).join(", ");
+  return `Klient zgłosił ból: ${list}. To ćwiczenie obciąża ${list}. Dodać mimo to?`;
+}

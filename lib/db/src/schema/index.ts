@@ -12,3 +12,4 @@ export * from "./clientInvitations";
 export * from "./bookings";
 export * from "./subscriptions";
 export * from "./ladders";
+export * from "./jointWarnings";
