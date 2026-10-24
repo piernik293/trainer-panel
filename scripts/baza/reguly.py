@@ -180,3 +180,4 @@ WARIANTY_ZAMIENNIKI = {
 SPRZET_RECZNY = {"Chair_Squat":"Masa własnego ciała"}
 
 WZORZEC_RECZNY.update({"Glute_Kickback":"Zawias biodrowy","One-Legged_Cable_Kickback":"Zawias biodrowy","Smith_Machine_Close-Grip_Bench_Press":"Pchanie poziome","Ring_Dips":"Pchanie poziome"})
+WZORZEC_RECZNY["Dumbbell_Raise"] = "Odwodzenie"

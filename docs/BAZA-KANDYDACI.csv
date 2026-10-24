@@ -159,7 +159,7 @@ Dumbbell_Bench_Press;Dumbbell Bench Press;;duplikat;170;wysoka;ta sama nazwa po 
 Dumbbell_Bicep_Curl;Dumbbell Bicep Curl;;duplikat;149;wysoka;to samo ćwiczenie pod inną nazwą;Początkujący;pomocnicze;Hantle;Zgięcie łokcia;Biceps;Łokieć;sylwetka;
 Dumbbell_Flyes;Dumbbell Flyes;;duplikat;178;wysoka;ta sama nazwa po normalizacji i synonimach;Początkujący;pomocnicze;Hantle;Przywodzenie;Klatka piersiowa;Bark;sylwetka;
 Dumbbell_One-Arm_Triceps_Extension;Dumbbell One-Arm Triceps Extension;;duplikat;190;średnia;druga kontrola: ten sam wzorzec, mięsień, sprzęt i ustawienie;Średniozaawansowany;pomocnicze;Hantle;Wyprost łokcia;Triceps;Łokieć;sylwetka;
-Dumbbell_Raise;Dumbbell Raise;Unoszenie hantli w przód;duplikat;146;średnia;"A4: źródło podaje barki + biceps (typowe dla unoszenia w przód); pole mięśni nie odróżnia przodu od boku — do potwierdzenia przy przeglądzie";Początkujący;główne;Hantle;;Barki;;siła, sylwetka;
+Dumbbell_Raise;Dumbbell Raise;Unoszenie hantli w przód;duplikat;146;średnia;"A4: źródło podaje barki + biceps (typowe dla unoszenia w przód); pole mięśni nie odróżnia przodu od boku — do potwierdzenia przy przeglądzie";Początkujący;główne;Hantle;Odwodzenie;Barki;Bark;siła, sylwetka;
 Dumbbell_Rear_Lunge;Dumbbell Rear Lunge;;duplikat;96;średnia;wykrok w tył z hantlami;Średniozaawansowany;główne;Hantle;Wykrok;Mięśnie czworogłowe uda;Kolano, Biodro;siła, sylwetka, redukcja;
 Dumbbell_Shoulder_Press;Dumbbell Shoulder Press;;duplikat;4;średnia;to samo ćwiczenie pod inną nazwą;Średniozaawansowany;główne;Hantle;Pchanie pionowe;Barki;Bark, Łokieć;siła, sylwetka, redukcja;
 Dumbbell_Shrug;Dumbbell Shrug;;duplikat;222;wysoka;ta sama nazwa po normalizacji i synonimach;Początkujący;pomocnicze;Hantle;Wzruszanie ramion;Plecy;Bark;sylwetka;
