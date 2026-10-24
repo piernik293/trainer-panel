@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { defaultRirForLevel, rirLevelHint, rirTargetLabel, RIR_BY_LEVEL, DRAFT_EXERCISE_DEFAULTS } from "../exerciseDraftHelpers";
+import { defaultRirForLevel, rirLevelHint, rirTargetLabel, weekBalanceResidualWarnings, RIR_BY_LEVEL, DRAFT_EXERCISE_DEFAULTS } from "../exerciseDraftHelpers";
 
 describe("RIR by level (block 7)", () => {
   it("brak aktywności 3–4, początkujący 2–3", () => {
@@ -29,5 +29,13 @@ describe("rirTargetLabel — neutralna podpowiedź przy polu RIR", () => {
     expect(rirTargetLabel("Średniozaawansowany")).toBeNull();
     expect(rirTargetLabel("Zaawansowany")).toBeNull();
     expect(rirTargetLabel(null)).toBeNull();
+  });
+});
+
+describe("weekBalanceResidualWarnings — komunikat, gdy po wyrównaniu zostaje nadwyżka", () => {
+  it("jedna linia na partię, zaokrąglenie do 0,1", () => {
+    expect(weekBalanceResidualWarnings([{ targetName: "Brzuch", weeklyEffectiveSets: 6.75, weeklyAbsoluteCeiling: 6 }]))
+      .toEqual(["Brzuch: 6.8 serii przy limicie 6 — zmniejsz serie przed aktywacją."]);
+    expect(weekBalanceResidualWarnings([])).toEqual([]);
   });
 });

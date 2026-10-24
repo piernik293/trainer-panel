@@ -156,6 +156,18 @@ export function rirTargetLabel(level: string | null | undefined): string | null 
   return r ? `Cel: RIR ${r.min}–${r.max}` : null;
 }
 
+export const WEEK_BALANCE_FAILED_WARNING =
+  "Nie udało się wyrównać objętości tygodnia. Przed aktywacją sprawdź limity serii w podsumowaniu objętości.";
+
+/** Targets still above the weekly ceiling after balance-week (normally none) → trainer-facing text. */
+export function weekBalanceResidualWarnings(
+  residual: ReadonlyArray<{ targetName: string; weeklyEffectiveSets: number; weeklyAbsoluteCeiling: number }>,
+): string[] {
+  return residual.map((r) =>
+    `${r.targetName}: ${Math.round(r.weeklyEffectiveSets * 10) / 10} serii przy limicie ${r.weeklyAbsoluteCeiling} — zmniejsz serie przed aktywacją.`,
+  );
+}
+
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 export interface ExerciseStepValidationResult {
