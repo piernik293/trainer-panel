@@ -24,7 +24,7 @@ Klatka piersiowa, Plecy, Barki, Biceps, Triceps, Przedramiona, Brzuch, Pośladki
 - `secondary_muscle_groups` — **O**, tablica z tej samej listy (dziś: Barki 39, Pośladki 34, Triceps 26 …).
 
 ### Sprzęt
-Dziś `equipment` (tablica) z listy `EQUIPMENT_OPTIONS`: Sztanga, Hantle, Kettlebell, Maszyna, Wyciąg, Drążek, Poręcze, Ławka, Gumy oporowe, TRX, Masa własnego ciała, Piłka, Brak sprzętu, Inny. Wartość „Inny” + `equipment_other` (wolny tekst) — jedno ćwiczenie.
+Dziś `equipment` (tablica) z listy `EQUIPMENT_OPTIONS`: Sztanga, Hantle, Kettlebell, Maszyna, Wyciąg, Drążek, Poręcze, Ławka, Gumy oporowe, TRX, Masa własnego ciała, Piłka, Brak sprzętu, Inny. **Decyzja 23.10.2026: dochodzą trzy wartości zamkniętej listy — „Talerz obciążeniowy”, „Uchwyty do pompek”, „Kółka gimnastyczne”** (zastępują „Inny” przy ćwiczeniach Svend Press, pompki na uchwytach, pompki na kółkach). „Inny” + `equipment_other` zostaje tylko dla sprzętu, którego lista nie zna.
 - `equipment` — **W**, co najmniej jedna wartość. `required_equipment_all` — **O** (wszystko wymagane naraz).
 - **Propozycja:** rozbić „Maszyna” i „Wyciąg” na konkretne urządzenia (zamknięta lista), bo sam ogólny sprzęt nie wystarcza do dopasowania do siłowni klienta ani do skoku ciężaru: Maszyna — prasa do nóg, wyprost nóg, uginanie nóg leżąc/siedząc, wypychanie klatki, wyciskanie barków, wiosłowanie siedząc, motylek/„pec deck”, suwnica Smitha, hack-przysiad, łydki stojąc/siedząc, brzuch; Wyciąg — wyciąg górny, dolny, bramy (crossover), linka z uchwytem. Pole: `equipment_detail text[]` (nullable, addytywnie).
 - Skok ciężaru (tor C): sztanga 2,5 kg, hantle/kettlebell 1 kg, maszyna/wyciąg 2,5 kg, masa ciała — bez ciężaru. Wynika z `equipment`; przy kilku wartościach obowiązuje pierwsza w kolejności: Sztanga > Maszyna/Wyciąg > Hantle/Kettlebell.
@@ -33,7 +33,7 @@ Dziś `equipment` (tablica) z listy `EQUIPMENT_OPTIONS`: Sztanga, Hantle, Kettle
 `training_location` — **W**, tablica: Siłownia / Dom / Plener (w UI „Siłownia plenerowa”). Dziś: Siłownia 158, Dom 68, Plener 48.
 
 ### Wzorzec ruchu i klasyfikacja
-- `movement_pattern` — **W**, zamknięta lista (21 wartości w bazie): Pchanie poziome, Pchanie pionowe, Przyciąganie poziome, Przyciąganie pionowe, Przysiad, Zawias biodrowy, Wykrok, Zgięcie/Wyprost łokcia, Zgięcie/Wyprost kolana, Odwodzenie, Przywodzenie, Zgięcie tułowia, Rotacja, Anti-ekstensja, Anti-rotacja, Stabilizacja tułowia, Wspięcie na palce, Lokomocja, Inne. Dla rozgrzewki/rozciągania dodać: **Mobilizacja**, **Rozciąganie**, **Aktywacja**.
+- `movement_pattern` — **W**, zamknięta lista (21 wartości w bazie): Pchanie poziome, Pchanie pionowe, Przyciąganie poziome, Przyciąganie pionowe, Przysiad, Zawias biodrowy, Wykrok, Zgięcie/Wyprost łokcia, Zgięcie/Wyprost kolana, Odwodzenie, Przywodzenie, Zgięcie tułowia, Rotacja, Anti-ekstensja, Anti-rotacja, Stabilizacja tułowia, Wspięcie na palce, Lokomocja, Inne. Dla rozgrzewki/rozciągania dodać: **Mobilizacja**, **Rozciąganie**, **Aktywacja**. **Decyzja 23.10.2026: dochodzą „Wzruszanie ramion” (szrugsy) i „Zgięcie/wyprost nadgarstka”** (ćwiczenia nadgarstków, dziś błędnie jako zgięcie/wyprost łokcia).
 - `movement_category` — O, **do uporządkowania**: wartości mieszane PL/EN (Pchanie 51 / Push 2, Ciągnięcie 47 / Pull 1, Przysiad 15 / Squat 1). Propozycja: zostawić polskie, zmigrować angielskie (osobna zgoda — to zmiana danych).
 - `plane_of_motion` — O: Strzałkowa / Poprzeczna / Czołowa. `execution` — W: Obustronne / Jednostronne.
 - `resistance_type` — O: dziś „Masa własnego ciała” (41) i „Ciężar własnego ciała” (2) — duplikat do ujednolicenia; reszta jak sprzęt.
@@ -77,3 +77,9 @@ Pola 1–5 z tabeli w sekcji 3 dodane migracją 0019 (nullable): `role`, `verifi
 
 ## 7. Propozycja: pole „przydatne do celu” (24.10.2026)
 Szczegóły i reguły: `docs/BAZA-ANALIZA.md` (sekcja 6), dane: `docs/BAZA-CELE-NASZE.csv`. Lista zamknięta: siła, sylwetka, redukcja, kondycja, sprawność, sport. **Propozycja do decyzji, nic nie wdrożono.**
+## 6. Decyzje właściciela do propozycji uzupełnienia 126 ćwiczeń (23.10.2026)
+Szczegóły i dane: `docs/KATALOG-PROPOZYCJA.md` / `.csv`.
+1. `suitableForNoActivity = false` tylko przy czynnikach ryzyka; dla pozostałych pole zostaje puste do oceny właściciela (nigdy automatyczne `true`).
+2. Nowe wzorce ruchu: „Wzruszanie ramion”, „Zgięcie/wyprost nadgarstka” (patrz sekcja 2).
+3. Nowe wartości zamkniętej listy sprzętu: „Talerz obciążeniowy”, „Uchwyty do pompek”, „Kółka gimnastyczne” (patrz sekcja 2).
+Wdrożenie (migracja danych, `exercise-constants.ts`, seed) — osobne zadanie po zatwierdzeniu paczek; do tego czasu w bazie nic się nie zmienia.

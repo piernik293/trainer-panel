@@ -20,6 +20,7 @@
  * own exercise pool without going through HTTP — no changes to this file needed.
  */
 
+import { loadBlockedJoints } from "../services/jointExclusion";
 import { mainPlanRoleCondition } from "../lib/exerciseRoles";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
 import { Router, type IRouter } from "express";
@@ -118,10 +119,12 @@ router.get("/clients/:clientId/exercise-recommendations", requireAuth, async (re
   // Missing equipment is deliberately handled as bodyweight-only by the shared
   // compatibility filter. Recommendations must never imply that an undeclared
   // barbell, machine, or bench is available.
+  const blockedJoints = await loadBlockedJoints(clientId, survey.healthLimitations);
   const isCompatible = buildCompatibilityFilter(
     survey.trainingLocation,
     survey.equipment,
     new Set<number>(),
+    blockedJoints,
   );
   const compatibleExercises = completeExercises.filter((ex) =>
     isCompatible({
@@ -129,6 +132,7 @@ router.get("/clients/:clientId/exercise-recommendations", requireAuth, async (re
       trainingLocation: ex.trainingLocation ?? [],
       equipment: ex.equipment ?? [],
       requiredEquipmentAll: ex.requiredEquipmentAll ?? [],
+      jointStressAreas: ex.jointStressAreas,
     }),
   );
 
