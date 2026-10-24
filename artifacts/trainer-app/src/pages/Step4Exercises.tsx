@@ -46,6 +46,8 @@ import {
   DRAFT_EXERCISE_DEFAULTS,
   defaultRirForLevel,
   rirTargetLabel,
+  weekBalanceResidualWarnings,
+  WEEK_BALANCE_FAILED_WARNING,
   addExerciseToDay,
   removeExerciseFromDay,
   updateDraftExerciseField,
@@ -482,6 +484,7 @@ export default function Step4Exercises({
     // Required for the complete-success commit condition (§10).
     let balanceWeekSucceeded = false;
     const weekBalancedSets = new Map<string, number>();
+    const balanceWarnings: string[] = [];
     try {
       const balResp = await fetch(`/api/clients/${clientId}/plan-draft/balance-week`, {
         method: "POST",
@@ -502,7 +505,9 @@ export default function Step4Exercises({
         balanceWeekSucceeded = true;
         const balData = await balResp.json() as {
           days: Array<{ exercises: Array<{ id: number; sets: number }> }>;
+          residual?: Array<{ targetName: string; weeklyEffectiveSets: number; weeklyAbsoluteCeiling: number }>;
         };
+        balanceWarnings.push(...weekBalanceResidualWarnings(balData.residual ?? []));
         balData.days.forEach((bd, di) => {
           bd.exercises.forEach((be, ei) => {
             weekBalancedSets.set(`${di}-${ei}`, be.sets);
@@ -511,9 +516,11 @@ export default function Step4Exercises({
         console.log(`[WeekBalance] Applied ${weekBalancedSets.size} set overrides across ${dayResults.length} days`);
       } else {
         console.warn(`[WeekBalance] Endpoint returned HTTP ${balResp.status} — using unbalanced sets`);
+        balanceWarnings.push(WEEK_BALANCE_FAILED_WARNING);
       }
     } catch (err) {
       console.error("[WeekBalance] Error calling balance-week — proceeding with unbalanced sets:", err);
+      balanceWarnings.push(WEEK_BALANCE_FAILED_WARNING);
     }
 
     // Apply all generated exercises atomically, using balanced set counts where available.
@@ -600,7 +607,7 @@ export default function Step4Exercises({
         (sum, r) => sum + r.exercises.filter((e) => e.mainMuscleGroup === "Brzuch").length,
         0,
       ),
-      limitWarnings: errors.length > 0 ? errors : [],
+      limitWarnings: [...errors, ...balanceWarnings],
     });
   }, [distributionResult, exerciseDraft, clientId, onDraftChange]);
 

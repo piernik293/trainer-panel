@@ -13,12 +13,9 @@
  * endpoint sees the full week and solves the problem globally, one
  * set-reduction at a time, using the same reduction-tier priority ordering.
  *
- * Key difference from the per-day pass:
- *   Uses SUM of all coefficients per exercise-target pair (not MAX) so the
- *   computation matches the activation check exactly.  For example, an
- *   exercise that trains both "lats" and "teres major" (both mapped to the
- *   Lats volume target) contributes coefficient₁ + coefficient₂ per set —
- *   the same amount the activation endpoint counts.
+ * Counting: exactly like plan activation (computeVolumeCore, max-coefficient rule, same guideline version
+ * and level mapping) — a draft balanced here is never rejected by activation for a volume ceiling,
+ * including indirect load (e.g. triceps from push-ups / presses). Algorithm: services/weekBalance.ts.
  *
  * Body:
  *   {
@@ -37,21 +34,24 @@
  *     days: Array<{
  *       exercises: Array<{ id: number; sets: number }>;
  *     }>;
+ *     residual: Array<{ targetName; weeklyEffectiveSets; weeklyAbsoluteCeiling }>; // over-ceiling after balancing (normally empty)
  *   }
  *
  * Guarantees:
  *   - Never returns more sets than the input.
- *   - Never returns below minimum (2 for main_compound, 1 for all others).
+ *   - Keeps 2 sets for main_compound and 1 for others; only if that cannot meet the ceiling, goes down to 1 set.
  *   - Response day/exercise order matches input exactly.
  *   - Non-fatal: errors return original sets unchanged.
  */
 
 import { Router, type IRouter } from "express";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod/v4";
-import { db, clientsTable, surveysTable } from "@workspace/db";
+import { db, clientsTable, surveysTable, volumeGuidelineVersionsTable } from "@workspace/db";
 import { desc } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth";
+import { loadExerciseAssignments, loadGuidelineMap, loadTargetMap, mapToGuidelineLevel } from "../services/volumeCalculator";
+import { balanceWeek } from "../services/weekBalance";
 import {
   isGenerationSessionError,
   runWithActiveGenerationSession,
@@ -158,174 +158,54 @@ router.post(
     });
 
     if (allEntries.length === 0) {
-      res.json(originalResponse());
+      res.json({ ...originalResponse(), residual: [] });
       return;
     }
 
     try {
-      const expLevel = survey?.experienceLevel ?? "Początkujący";
-      const allExIds = [...new Set(allEntries.map((e) => e.id))];
-
-      // 1. Load weekly absolute ceilings for this experience level.
-      const guidelinesResult = await db.execute(sql`
-        SELECT vg.volume_target_id::int          AS target_id,
-               vg.weekly_absolute_ceiling::numeric AS ceiling
-        FROM volume_guidelines vg
-        JOIN volume_targets vt ON vt.id = vg.volume_target_id
-        WHERE vg.experience_level = ${expLevel}
-          AND vt.is_active = true
-      `);
-
-      const ceilingMap = new Map<number, number>();
-      for (const row of guidelinesResult.rows as Array<Record<string, unknown>>) {
-        ceilingMap.set(Number(row.target_id), Number(row.ceiling));
-      }
-
-      if (ceilingMap.size === 0) {
-        res.json(originalResponse());
+      // Same inputs as saving + activating the plan: the survey level (plans/draft stores it as
+      // experienceLevelUsed), mapped like calculatePlanVolume, and the active guideline version.
+      const level = mapToGuidelineLevel(survey?.experienceLevel ?? "");
+      const [activeVersion] = await db
+        .select({ id: volumeGuidelineVersionsTable.id })
+        .from(volumeGuidelineVersionsTable)
+        .where(eq(volumeGuidelineVersionsTable.isActive, true))
+        .orderBy(volumeGuidelineVersionsTable.id)
+        .limit(1);
+      if (!level || !activeVersion) {
+        res.json({ ...originalResponse(), residual: [] });
         return;
       }
-
-      // 2. Load SUM of coefficients per exercise-target pair.
-      //    SUM (not MAX) so that exercises contributing via multiple specific
-      //    muscles to the same target (e.g. lats + teres major → Lats target)
-      //    are counted the same way the activation endpoint counts them.
-      const coeffResult = await db.execute(sql`
-        SELECT ema.exercise_id::int          AS exercise_id,
-               vtm.volume_target_id::int     AS target_id,
-               SUM(ema.coefficient)::numeric AS total_coeff
-        FROM exercise_muscle_assignments ema
-        JOIN volume_target_members vtm
-          ON vtm.specific_muscle_id = ema.specific_muscle_id
-        JOIN volume_targets vt ON vt.id = vtm.volume_target_id
-        WHERE vt.is_active = true
-          AND ema.exercise_id = ANY(
-                ARRAY[${sql.raw(allExIds.join(","))}]::int[]
-              )
-        GROUP BY ema.exercise_id, vtm.volume_target_id
-      `);
-
-      // exerciseId → Map<targetId, totalCoeff>
-      const exCoeffMap = new Map<number, Map<number, number>>();
-      for (const row of coeffResult.rows as Array<Record<string, unknown>>) {
-        const exId = Number(row.exercise_id);
-        const tId  = Number(row.target_id);
-        const coef = Number(row.total_coeff);
-        if (!exCoeffMap.has(exId)) exCoeffMap.set(exId, new Map());
-        exCoeffMap.get(exId)!.set(tId, coef);
+      const [targets, guidelines, assignments] = await Promise.all([
+        loadTargetMap(),
+        loadGuidelineMap(activeVersion.id, level),
+        loadExerciseAssignments([...new Set(allEntries.map((e) => e.id))]),
+      ]);
+      const { sets, residual } = balanceWeek(
+        allEntries.map((e) => ({ exerciseId: e.id, sets: days[e.dayIdx].exercises[e.exIdx].sets, exerciseClass: e.exerciseClass, dayIndex: e.dayIdx })),
+        assignments, targets, guidelines,
+      );
+      for (const e of allEntries) {
+        const before = days[e.dayIdx].exercises[e.exIdx].sets;
+        if (sets[e.flatIdx] !== before) req.log?.info(`[WeekBalance] "${e.name}" day${e.dayIdx + 1} ${before}→${sets[e.flatIdx]} sets`);
+      }
+      for (const r of residual) {
+        req.log?.warn(`[WeekBalance] Residual overage ${r.targetName}: ${r.weeklyEffectiveSets.toFixed(2)} vs ceiling ${r.weeklyAbsoluteCeiling}`);
       }
 
-      // 3. Mutable set-count array (indexed by flatIdx).
-      const setCounts = days.flatMap((d) => d.exercises.map((e) => e.sets));
-
-      // Helper: compute current total effective sets per target across all days.
-      const computeWeeklyTotals = (): Map<number, number> => {
-        const totals = new Map<number, number>();
-        for (const entry of allEntries) {
-          const coeffs = exCoeffMap.get(entry.id);
-          if (!coeffs) continue;
-          for (const [tId, coef] of coeffs) {
-            totals.set(tId, (totals.get(tId) ?? 0) + setCounts[entry.flatIdx] * coef);
-          }
-        }
-        return totals;
-      };
-
-      // Reduction tier: 0 = reduce first, 3 = reduce last.
-      //   0 — core / regression_beginner  (reduce first — most optional)
-      //   1 — isolation
-      //   2 — secondary_compound
-      //   3 — main_compound               (reduce last)
-      const getReductionTier = (entry: ExEntry): number => {
-        const ec = entry.exerciseClass;
-        if (ec === "core" || ec === "regression_beginner") return 0;
-        if (ec === "isolation")                            return 1;
-        if (ec === "secondary_compound")                   return 2;
-        return 3; // main_compound
-      };
-
-      // Minimum allowed sets per class.
-      const minSets = (entry: ExEntry): number =>
-        entry.exerciseClass === "main_compound" ? 2 : 1;
-
-      // Pre-sort indices by (tier ASC, flatIdx ASC) so that within the same tier
-      // the algorithm reduces Day 1 exercises before Day 2, Day 2 before Day 3 —
-      // spreading reductions evenly across the week rather than gutting Day 3.
-      const sortedIndices = allEntries
-        .map((ex) => ({ fi: ex.flatIdx, tier: getReductionTier(ex) }))
-        .sort((a, b) => a.tier - b.tier || a.fi - b.fi)
-        .map(({ fi }) => fi);
-
-      // 4. Balance loop — one set reduction per iteration.
-      const MAX_ITER = 300;
-      for (let iter = 0; iter < MAX_ITER; iter++) {
-        const weeklyTotals = computeWeeklyTotals();
-
-        // Find the target with the largest absolute overage.
-        let worstTargetId = -1;
-        let worstDeficit  = 0;
-        for (const [tId, ceiling] of ceilingMap) {
-          const total   = weeklyTotals.get(tId) ?? 0;
-          const deficit = total - ceiling;
-          if (deficit > worstDeficit) {
-            worstDeficit  = deficit;
-            worstTargetId = tId;
-          }
-        }
-
-        if (worstDeficit <= 0) break; // All targets within ceiling.
-
-        // Reduce the first exercise (lowest tier, earliest day) contributing
-        // to the worst target that still has sets above its minimum.
-        let reduced = false;
-        for (const fi of sortedIndices) {
-          if (setCounts[fi] <= minSets(allEntries[fi])) continue;
-          const contrib = exCoeffMap.get(allEntries[fi].id)?.get(worstTargetId) ?? 0;
-          if (contrib > 0) {
-            const prev = setCounts[fi];
-            setCounts[fi]--;
-            reduced = true;
-            console.log(
-              `[WeekBalance] "${allEntries[fi].name}" ` +
-              `day${allEntries[fi].dayIdx + 1} ` +
-              `${prev}→${setCounts[fi]} sets ` +
-              `(target=${worstTargetId} deficit=${worstDeficit.toFixed(2)})`,
-            );
-            break;
-          }
-        }
-
-        if (!reduced) break; // Structural minimum reached on every contributor.
-      }
-
-      // 5. Log any remaining overages after the pass.
-      const finalTotals = computeWeeklyTotals();
-      for (const [tId, ceiling] of ceilingMap) {
-        const total = finalTotals.get(tId) ?? 0;
-        if (total > ceiling) {
-          console.log(
-            `[WeekBalance] Residual overage target ${tId}: ` +
-            `${total.toFixed(2)} vs ceiling ${ceiling} ` +
-            `(structural minimum hit — review guidelines or session count)`,
-          );
-        }
-      }
-
-      // 6. Rebuild response preserving day/exercise order exactly.
+      // Rebuild response preserving day/exercise order exactly.
       const result = days.map((day, dIdx) => ({
         exercises: day.exercises.map((ex, eIdx) => {
-          const entry = allEntries.find(
-            (e) => e.dayIdx === dIdx && e.exIdx === eIdx,
-          )!;
-          return { id: ex.id, sets: setCounts[entry.flatIdx] };
+          const entry = allEntries.find((e) => e.dayIdx === dIdx && e.exIdx === eIdx)!;
+          return { id: ex.id, sets: sets[entry.flatIdx] };
         }),
       }));
 
-        res.json({ days: result });
+        res.json({ days: result, residual });
       } catch (err) {
         req.log?.warn({ err }, "Week balance failed; returning original sets");
         // Return original sets unchanged so the generate flow is never blocked.
-        res.json(originalResponse());
+        res.json({ ...originalResponse(), residual: [] });
       }
       });
     } catch (error) {

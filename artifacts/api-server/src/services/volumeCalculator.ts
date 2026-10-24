@@ -383,7 +383,7 @@ export function computeVolumeCore(
 // ─── Shared DB loaders ────────────────────────────────────────────────────────
 
 /** Load all active volume targets with their member muscle IDs. */
-async function loadTargetMap(): Promise<
+export async function loadTargetMap(): Promise<
   Map<number, { name: string; type: string; memberMuscleIds: Set<number> }>
 > {
   const rows = await db
@@ -413,7 +413,7 @@ async function loadTargetMap(): Promise<
 }
 
 /** Load guidelines for a specific version + mapped experience level. */
-async function loadGuidelineMap(
+export async function loadGuidelineMap(
   guidelineVersionId: number,
   guidelineLevel: string,
 ): Promise<
@@ -454,7 +454,7 @@ async function loadGuidelineMap(
 }
 
 /** Load muscle assignments for a set of exercise IDs. */
-async function loadExerciseAssignments(
+export async function loadExerciseAssignments(
   exerciseIds: number[],
 ): Promise<Map<number, Map<number, number>>> {
   if (exerciseIds.length === 0) return new Map();
