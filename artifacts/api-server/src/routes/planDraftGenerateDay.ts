@@ -25,6 +25,7 @@
  *   { hasProfile, hasLocationData, sessionType, exercises: DayRecommendationExercise[] }
  */
 
+import { loadBlockedJoints } from "../services/jointExclusion";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
 import { Router, type IRouter } from "express";
 import { eq, sql, and, inArray } from "drizzle-orm";
@@ -276,10 +277,12 @@ router.post(
     // so the already-added set is intentionally empty. Every V0 path below
     // (slots, fallbacks, thin-pool retry, safe reuse and beginner balancing)
     // receives only this compatible subset.
+    const blockedJoints = await loadBlockedJoints(clientId, survey.healthLimitations);
     const compatibilityFilter = buildCompatibilityFilter(
       survey.trainingLocation,
       survey.equipment,
       new Set<number>(),
+      blockedJoints,
     );
     const compatibleExercises = completeExercises.filter((ex) =>
       compatibilityFilter({
@@ -287,6 +290,7 @@ router.post(
         trainingLocation: ex.trainingLocation ?? [],
         equipment: ex.equipment ?? [],
         requiredEquipmentAll: ex.requiredEquipmentAll ?? [],
+        jointStressAreas: ex.jointStressAreas,
       }),
     );
 

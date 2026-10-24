@@ -27,6 +27,7 @@
  *   { hasProfile, hasLocationData, exercises: DayRecommendationExercise[] }
  */
 
+import { hitsBlockedJoint, loadBlockedJoints } from "../services/jointExclusion";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
 import { Router, type IRouter } from "express";
 import { eq, and, inArray } from "drizzle-orm";
@@ -221,9 +222,11 @@ router.get(
 
     // ── Score + apply hard exclusions ──────────────────────────────────────────
     const pool: ScoredAndFilteredExercise[] = [];
+    const blockedJoints = await loadBlockedJoints(clientId, survey.healthLimitations);
 
     for (const ex of completeExercises) {
       if (alreadyAddedIds.has(ex.id)) continue;
+      if (hitsBlockedJoint(ex.jointStressAreas, blockedJoints)) continue;
       if (!isLocationCompatible(ex.trainingLocation ?? [], survey.trainingLocation)) continue;
       if (!isEquipmentCompatible(ex.equipment ?? [], ex.requiredEquipmentAll ?? [], clientEquipment)) continue;
 

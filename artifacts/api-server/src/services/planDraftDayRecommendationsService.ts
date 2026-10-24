@@ -11,6 +11,7 @@
  *          →  selectByUncoveredTargets           (exact-targetId path, Phase 4B3)
  */
 
+import { hitsBlockedJoint } from "./jointExclusion";
 import { FULL_GYM_EQUIPMENT, normalizeEquipmentList } from "./equipmentNormalizer";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
@@ -579,10 +580,13 @@ export function buildCompatibilityFilter(
   surveyLocation: string | null | undefined,
   surveyEquipment: string | null | undefined,
   alreadyAddedIds: ReadonlySet<number>,
-): (ex: { id: number; trainingLocation: string[]; equipment: string[]; requiredEquipmentAll?: string[] }) => boolean {
+  blockedJoints: ReadonlySet<string> = new Set<string>(),
+): (ex: { id: number; trainingLocation: string[]; equipment: string[]; requiredEquipmentAll?: string[]; jointStressAreas?: string[] | null }) => boolean {
   const equipment = effectiveClientEquipment(surveyEquipment, surveyLocation);
   return (ex) => {
     if (alreadyAddedIds.has(ex.id)) return false;
+    // A joint the client reported as painful (interview / pain reports, 30 days) is a hard exclusion.
+    if (hitsBlockedJoint(ex.jointStressAreas, blockedJoints)) return false;
     if (!isLocationCompatible(ex.trainingLocation, surveyLocation)) return false;
     if (!isEquipmentCompatible(ex.equipment, ex.requiredEquipmentAll ?? [], equipment)) return false;
     return true;

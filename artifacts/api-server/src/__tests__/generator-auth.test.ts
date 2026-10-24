@@ -265,7 +265,7 @@ vi.mock("@workspace/db", () => {
     insertClientSchema: {},
   };
 
-  return { db, trainersTable, clientsTable, surveysTable, exercisesTable, clientExerciseUsageLogTable, volumeTargetsTable, insertClientSchema: {} };
+  return { db, trainersTable, clientsTable, surveysTable, exercisesTable, clientExerciseUsageLogTable, volumeTargetsTable, painReportsTable: { id: "id", clientId: "clientId", area: "area", createdAt: "createdAt" }, insertClientSchema: {} };
 });
 
 // ─── DB operators mock ────────────────────────────────────────────────────────
@@ -279,6 +279,7 @@ vi.mock("drizzle-orm", () => ({
   or:      (...args: unknown[])          => ({ op: "or", args }),
   notInArray: (field: string, val: unknown) => ({ field, val, op: "notInArray" }),
   sql:     (_tpl: unknown)               => ({}),
+  gte:     (field: string, val: unknown) => ({ field, val, op: "gte" }),
 }));
 
 // ─── App ──────────────────────────────────────────────────────────────────────
