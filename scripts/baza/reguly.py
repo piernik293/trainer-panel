@@ -171,10 +171,12 @@ WARIANTY_ZAMIENNIKI = {
  "Calf_Press":"maszyna do łydek na suwnicy zamiast stania (109)", "Standing_Barbell_Calf_Raise":"sztanga zamiast maszyny/hantli (109)",
  "Barbell_Seated_Calf_Raise":"sztanga zamiast maszyny (110)", "Barbell_Step_Ups":"sztanga zamiast hantli/masy ciała (98)",
  "Barbell_Walking_Lunge":"sztanga zamiast hantli (97)", "Hyperextensions_Back_Extensions":"ławka rzymska zamiast masy ciała (183)",
- "One-Legged_Cable_Kickback":"wyciąg zamiast hantla (189)", "Standing_Overhead_Barbell_Triceps_Extension":"sztanga zamiast wyciągu (156)",
+ "One-Legged_Cable_Kickback":"wyciąg, ruch biodra jak w odwodzeniu nogi w tył (194)", "Standing_Overhead_Barbell_Triceps_Extension":"sztanga zamiast wyciągu (156)",
  "Smith_Machine_Close-Grip_Bench_Press":"suwnica Smitha zamiast sztangi (158)", "One-Arm_Kettlebell_Row":"kettlebell zamiast hantla (131)",
  "Kettlebell_One-Legged_Deadlift":"jednonóż — kolejny szczebel po 103", "Natural_Glute_Ham_Raise":"masa ciała zamiast maszyny (141)",
  "Glute_Kickback":"masa ciała zamiast wyciągu (194)", "Barbell_Ab_Rollout":"sztanga zamiast kółka do brzucha (166)",
 }
 
 SPRZET_RECZNY = {"Chair_Squat":"Masa własnego ciała"}
+
+WZORZEC_RECZNY.update({"Glute_Kickback":"Zawias biodrowy","One-Legged_Cable_Kickback":"Zawias biodrowy","Smith_Machine_Close-Grip_Bench_Press":"Pchanie poziome","Ring_Dips":"Pchanie poziome"})

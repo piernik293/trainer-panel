@@ -104,3 +104,9 @@ Liczba wystąpień wartości (jedno ćwiczenie może mieć kilka). Mapowanie „
 1. „Piłka lekarska” jako nowa wartość listy sprzętu (4 ćwiczenia).
 2. Mapowanie starych wartości celów (tabela A5).
 3. Czy 29 wariantów-zamienników ma wejść do osobnej paczki?
+
+### Aktualizacja (24.10.2026, faza 1, blok 3)
+- **`docs/BAZA-PACZKA-06.csv`** — 29 wariantów-zamienników + 2 wiersze „DO POTWIERDZENIA PRZEZ TRENERA”, opis własny, format jak paczki 1–5 (`suitableForNoActivity` i `decyzja_trenera` puste).
+- **One Arm Against Wall** — rozstrzygnięte jako **nowe** (rozciąganie ramienia i barku przy ścianie; źródło wskazuje plecy, a nasze 326 to rozciąganie klatki); wiersz w paczce 06 do potwierdzenia przez trenera.
+- **Dumbbell Raise** — dalej duplikat naszego 146 (unoszenie hantli w przód); wiersz w paczce 06 „do potwierdzenia”.
+- Poprawiono wzorzec ruchu 4 wariantów (kickback na wyciągu = odwodzenie nogi w tył, nie wyprost łokcia; wąskie wyciskanie na suwnicy Smitha i dipy na kółkach = pchanie poziome). Liczby: nowe 92, duplikaty 142, warianty 29, pominięte 613.

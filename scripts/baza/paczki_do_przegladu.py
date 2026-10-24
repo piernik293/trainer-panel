@@ -43,3 +43,16 @@ for n in range(0, len(order), 20):
             if r["rola"] == "rozgrzewka" and r["wzorzec"] != "Mobilizacja": bl, uw = BLEDY["Mobilizacja"]
             w.writerow([r["nazwa_PL"], r["nazwa_EN"], r["poziom"], r["rola"], r["sprzet"], r["wzorzec"], r["miesnie"], r["stawy"], r["cele"], opis, wsk, bl, uw, "", ""])
 print(len(order), "pozycji,", (len(order) + 19) // 20, "paczek")
+
+# paczka 06: warianty-zamienniki + wiersze „do potwierdzenia” (One Arm Against Wall, Dumbbell Raise)
+op6 = {}
+for l in open(os.path.join(here, "opisy_wariantow.tsv"), encoding="utf-8"):
+    p = l.rstrip("\n").split("|"); op6[p[0]] = p[1:]
+rows6 = [r for r in cand.values() if r["decyzja"] == "wariant"] + [cand["One_Arm_Against_Wall"], cand["Dumbbell_Raise"]]
+with open(os.path.join(sys.argv[2], "BAZA-PACZKA-06.csv"), "w", encoding="utf-8-sig", newline="") as f:
+    w = csv.writer(f, delimiter=";"); w.writerow(cols)
+    for r in rows6:
+        opis, wsk = op6[r["zrodlo_id"]]
+        bl, uw = BLEDY.get(r["wzorzec"], DEF)
+        w.writerow([r["nazwa_PL"], r["nazwa_EN"], r["poziom"], r["rola"], r["sprzet"], r["wzorzec"], r["miesnie"], r["stawy"], r["cele"], opis, wsk, bl, uw, "", ""])
+print("paczka 06:", len(rows6), "wierszy")
