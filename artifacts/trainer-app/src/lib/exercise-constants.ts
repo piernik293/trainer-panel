@@ -33,6 +33,9 @@ export const EQUIPMENT_OPTIONS = [
   "Masa własnego ciała",
   "Piłka",
   "Piłka lekarska",
+  "Talerz obciążeniowy",
+  "Uchwyty do pompek",
+  "Kółka gimnastyczne",
   "Brak sprzętu",
   "Inny",
 ] as const;

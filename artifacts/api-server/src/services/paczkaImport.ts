@@ -111,7 +111,7 @@ export const IMPORT_MUSCLES = new Set([
 ]);
 export const IMPORT_EQUIPMENT = new Set([
   "Sztanga", "Hantle", "Kettlebell", "Maszyna", "Wyciąg", "Drążek", "Poręcze", "Ławka", "Gumy oporowe", "TRX",
-  "Masa własnego ciała", "Piłka", "Piłka lekarska", "Brak sprzętu", "Inny",
+  "Masa własnego ciała", "Piłka", "Piłka lekarska", "Talerz obciążeniowy", "Uchwyty do pompek", "Kółka gimnastyczne", "Brak sprzętu", "Inny",
 ]);
 export const IMPORT_PATTERNS = new Set([
   "Pchanie poziome", "Pchanie pionowe", "Przyciąganie poziome", "Przyciąganie pionowe", "Przysiad", "Zawias biodrowy", "Wykrok",
@@ -153,7 +153,7 @@ export function slugify(name: string): string {
 function locationFor(equipment: string[]): string[] {
   const heavy = equipment.some((e) => ["Sztanga", "Maszyna", "Wyciąg", "Poręcze"].includes(e));
   if (heavy) return ["Siłownia"];
-  if (equipment.some((e) => ["Drążek", "Ławka", "TRX", "Piłka lekarska"].includes(e))) return ["Siłownia", "Dom"];
+  if (equipment.some((e) => ["Drążek", "Ławka", "TRX", "Piłka lekarska", "Talerz obciążeniowy"].includes(e))) return ["Siłownia", "Dom"];
   return ["Siłownia", "Dom", "Plener"];
 }
 

@@ -31,6 +31,8 @@ export const CANONICAL_EQUIPMENT = [
   "Rower stacjonarny / orbitrek",
   "Piłka lekarska",
   "Piłka stabilizacyjna (bosu/fit)",
+  "Uchwyty do pompek",
+  "Kółka gimnastyczne",
   "Brak sprzętu",
   "Masa własnego ciała",
 ] as const;
@@ -122,6 +124,22 @@ const ALIAS_MAP: Record<string, string> = {
   "rower stacjonarny": "Rower stacjonarny / orbitrek",
   "rower stacjonarny / orbitrek": "Rower stacjonarny / orbitrek",
   "cardio machine": "Rower stacjonarny / orbitrek",
+
+  // Talerz obciążeniowy — talerze są częścią „Sztanga i talerze” z wywiadu
+  "talerz": "Sztanga i talerze",
+  "talerze": "Sztanga i talerze",
+  "talerz obciążeniowy": "Sztanga i talerze",
+  "weight plate": "Sztanga i talerze",
+
+  // Uchwyty do pompek
+  "uchwyty do pompek": "Uchwyty do pompek",
+  "push-up handles": "Uchwyty do pompek",
+
+  // Kółka gimnastyczne
+  "kółka gimnastyczne": "Kółka gimnastyczne",
+  "kółka": "Kółka gimnastyczne",
+  "gymnastic rings": "Kółka gimnastyczne",
+  "rings": "Kółka gimnastyczne",
 
   // Piłka lekarska
   "piłka lekarska": "Piłka lekarska",

@@ -13,7 +13,7 @@ export interface WeightStep {
 }
 
 const BODYWEIGHT_ONLY = new Set([
-  "Masa własnego ciała", "Brak sprzętu", "Drążek", "Poręcze", "TRX", "Gumy oporowe", "Piłka", "Piłka lekarska", "Ławka",
+  "Masa własnego ciała", "Brak sprzętu", "Drążek", "Poręcze", "TRX", "Gumy oporowe", "Piłka", "Piłka lekarska", "Uchwyty do pompek", "Kółka gimnastyczne", "Ławka",
 ]);
 
 /**
