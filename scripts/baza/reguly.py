@@ -133,3 +133,48 @@ MANUAL = {
 WZORZEC_RECZNY = {"Alternate_Heel_Touchers":"Zgięcie tułowia","Bent-Knee_Hip_Raise":"Zgięcie tułowia","Cross_Over_-_With_Bands":"Przywodzenie",
  "Dumbbell_Scaption":"Odwodzenie","Elbow_to_Knee":"Rotacja","Flutter_Kicks":"Zgięcie tułowia","Hip_Extension_with_Bands":"Zawias biodrowy",
  "Hip_Lift_with_Band":"Zawias biodrowy","Kettlebell_Halo":"Mobilizacja","Rack_Pulls":"Zawias biodrowy","Standing_Cable_Lift":"Rotacja"}
+
+# poprawki roli/wzorca po drugiej kontroli (źródło klasyfikuje część ćwiczeń jako stretching)
+ROLA_RECZNA = {"Ankle_Circles":"rozgrzewka","Knee_Circles":"rozgrzewka","Inchworm":"rozgrzewka","Worlds_Greatest_Stretch":"rozgrzewka",
+ "Dynamic_Back_Stretch":"rozgrzewka","Dynamic_Chest_Stretch":"rozgrzewka","Kettlebell_Halo":"rozgrzewka","Side_Leg_Raises":"pomocnicze","Split_Squats":"główne"}
+WZORZEC_RECZNY.update({"Side_Leg_Raises":"Odwodzenie","Split_Squats":"Wykrok","Ankle_Circles":"Mobilizacja","Knee_Circles":"Mobilizacja","Inchworm":"Mobilizacja",
+ "Worlds_Greatest_Stretch":"Mobilizacja","Dynamic_Back_Stretch":"Mobilizacja","Dynamic_Chest_Stretch":"Mobilizacja"})
+
+# A2: bezpieczne podstawy pliometrii — tylko poziom średniozaawansowany/zaawansowany, cele sport/kondycja, nigdy początkujący/brak aktywności
+# id źródła → (nazwa PL, wzorzec, sprzęt, stawy, uwaga)
+PLIO = {
+ "Fast_Skipping":("Skip A (szybki bieg z wysokim kolanem)","Lokomocja","Masa własnego ciała","Kolano, Biodro","niski wpływ, nauka rytmu"),
+ "Box_Skip":("Skip na niskie podwyższenie","Lokomocja","Masa własnego ciała","Kolano, Biodro","niski podest, kontrola lądowania"),
+ "Split_Jump":("Wypad skokowy (zmiana nóg w powietrzu)","Wykrok","Masa własnego ciała","Kolano, Biodro","po opanowaniu wykroku"),
+ "Freehand_Jump_Squat":("Przysiad z wyskokiem","Przysiad","Masa własnego ciała","Kolano, Biodro","po opanowaniu przysiadu i lądowania"),
+ "Star_Jump":("Skok „gwiazda”","Lokomocja","Masa własnego ciała","Kolano","niski, kondycyjny"),
+ "Double_Leg_Butt_Kick":("Skoki z piętami do pośladków","Lokomocja","Masa własnego ciała","Kolano","niski, kondycyjny"),
+ "Carioca_Quick_Step":("Kroki bokiem z krzyżowaniem (carioca)","Lokomocja","Masa własnego ciała","Kolano, Biodro","zwinność"),
+ "Mountain_Climbers":("Wspinaczka w podporze (mountain climbers)","Lokomocja","Masa własnego ciała","Bark, Nadgarstek","kondycja, podpór — uwaga na nadgarstki"),
+ "Overhead_Slam":("Rzut piłką lekarską o ziemię znad głowy","Zgięcie tułowia","Piłka lekarska","Bark, Plecy — dół","wymaga nowej wartości sprzętu"),
+ "Medicine_Ball_Chest_Pass":("Podanie piłki lekarskiej z klatki","Pchanie poziome","Piłka lekarska","Bark, Łokieć","wymaga nowej wartości sprzętu"),
+ "Medicine_Ball_Scoop_Throw":("Wyrzut piłki lekarskiej z dołu do przodu","Zawias biodrowy","Piłka lekarska","Biodro, Plecy — dół","wymaga nowej wartości sprzętu"),
+ "Backward_Medicine_Ball_Throw":("Wyrzut piłki lekarskiej za siebie","Zawias biodrowy","Piłka lekarska","Biodro, Plecy — dół","wymaga nowej wartości sprzętu"),
+}
+PLIO_DUP = {"Front_Box_Jump":253,"Bench_Jump":253,"Standing_Long_Jump":251,"Lateral_Bound":257,"Single-Leg_Hop_Progression":255,"Single-Leg_Lateral_Hop":254,"Linear_Depth_Jump":252}
+
+# A3: maks. 30 wariantów jako zamienniki (id źródła → powód wyboru); pozostałe warianty = „pomiń (wariant kosmetyczny)”
+WARIANTY_ZAMIENNIKI = {
+ "Band_Assisted_Pull-Up":"guma zamiast maszyny wspomagającej (126) — zamiennik i szczebel do podciągania",
+ "Standing_Leg_Curl":"maszyna zamiast wyciągu (193)", "Seated_Cable_Shoulder_Press":"wyciąg zamiast maszyny (137)",
+ "Machine_Preacher_Curls":"maszyna zamiast sztangi/hantli (152)", "Kettlebell_Pistol_Squat":"kettlebell jako przeciwwaga ułatwiająca przysiad jednonóż (225)",
+ "Kettlebell_Overhead_Triceps_Extension":"kettlebell zamiast hantla (190)", "Reverse_Cable_Curl":"wyciąg zamiast sztangi (204)",
+ "Standing_Dumbbell_Reverse_Curl":"hantle zamiast sztangi (204)", "Cable_Russian_Twists":"wyciąg zamiast masy ciała (198)",
+ "Cable_Reverse_Crunch":"wyciąg zamiast ławki (164)", "Cable_Lying_Triceps_Extension":"wyciąg zamiast sztangi EZ (157)",
+ "Chair_Squat":"przysiad do krzesła — szczebel dla brak aktywności (90)", "Single_Leg_Glute_Bridge":"mostek jednonóż — kolejny szczebel po 105",
+ "Ring_Dips":"kółka gimnastyczne zamiast poręczy (175), zaawansowany", "Smith_Machine_Calf_Raise":"suwnica Smitha zamiast maszyny/hantli (109)",
+ "Calf_Press":"maszyna do łydek na suwnicy zamiast stania (109)", "Standing_Barbell_Calf_Raise":"sztanga zamiast maszyny/hantli (109)",
+ "Barbell_Seated_Calf_Raise":"sztanga zamiast maszyny (110)", "Barbell_Step_Ups":"sztanga zamiast hantli/masy ciała (98)",
+ "Barbell_Walking_Lunge":"sztanga zamiast hantli (97)", "Hyperextensions_Back_Extensions":"ławka rzymska zamiast masy ciała (183)",
+ "One-Legged_Cable_Kickback":"wyciąg zamiast hantla (189)", "Standing_Overhead_Barbell_Triceps_Extension":"sztanga zamiast wyciągu (156)",
+ "Smith_Machine_Close-Grip_Bench_Press":"suwnica Smitha zamiast sztangi (158)", "One-Arm_Kettlebell_Row":"kettlebell zamiast hantla (131)",
+ "Kettlebell_One-Legged_Deadlift":"jednonóż — kolejny szczebel po 103", "Natural_Glute_Ham_Raise":"masa ciała zamiast maszyny (141)",
+ "Glute_Kickback":"masa ciała zamiast wyciągu (194)", "Barbell_Ab_Rollout":"sztanga zamiast kółka do brzucha (166)",
+}
+
+SPRZET_RECZNY = {"Chair_Squat":"Masa własnego ciała"}

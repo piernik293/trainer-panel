@@ -83,9 +83,9 @@ seen = {}
 for x in src:
     sid = x["id"]; k = key(x["name"])
     rec = dict(zrodlo_id=sid, nazwa_EN=x["name"], kat=x["category"])
-    rec["sprzet"] = eq_pl(x) or ""; rec["miesnie"] = muscle_pl(x)
+    rec["sprzet"] = SPRZET_RECZNY.get(sid) or eq_pl(x) or ""; rec["miesnie"] = muscle_pl(x)
     rec["poziom"] = POZIOM.get(x["level"], ""); rec["wzorzec"] = pattern_pl(x)
-    rec["rola"] = rola(x); rec["stawy"] = stawy(rec["wzorzec"], x); rec["cele"] = cele(x, rec)
+    rec["rola"] = ROLA_RECZNA.get(sid, rola(x)); rec["stawy"] = stawy(rec["wzorzec"], x); rec["cele"] = cele(x, rec)
     sc, oid = best_match(x)
     rec["najblizsze_id"] = oid; rec["wynik"] = round(sc, 2)
     powod = pomin_powod(x)
@@ -108,6 +108,16 @@ for x in src:
         if pl: rec["nazwa_PL"] = pl
     if rec.get("pewnosc") == "niska" and rec["decyzja"] in ("duplikat", "wariant"):
         rec["powod"] = "NISKA PEWNOŚĆ (%s): %s" % (rec["decyzja"], rec["powod"]); rec["decyzja"] = "do decyzji"
+    if sid in PLIO:                         # A2: wybrane podstawy pliometrii
+        pl, wz, sp, st, uw = PLIO[sid]
+        rec.update(decyzja="nowe", nasze_id="", pewnosc="", powod="pliometria, tylko poziom średniozaawansowany/zaawansowany i cel sport/kondycja — nigdy początkujący ani brak aktywności; %s" % uw,
+                   nazwa_PL=pl, wzorzec=wz, sprzet=sp, stawy=st, poziom="Średniozaawansowany", rola="pomocnicze", cele="sport, kondycja")
+    elif sid in PLIO_DUP:
+        rec.update(decyzja="duplikat", nasze_id=PLIO_DUP[sid], pewnosc="wysoka", powod="pliometria — mamy to ćwiczenie w katalogu")
+    if rec["decyzja"] == "wariant":         # A3: zostaje max 30 wariantów-zamienników
+        if sid in WARIANTY_ZAMIENNIKI: rec["powod"] = "zamiennik: " + WARIANTY_ZAMIENNIKI[sid]
+        else: rec["powod"] = "wariant kosmetyczny (pominięty)"; rec["decyzja"] = "pomiń"; rec["pewnosc"] = ""
+    if rec["rola"] in ("rozciąganie", "rozgrzewka") and rec["decyzja"] in ("nowe", "wariant", "do decyzji"): rec["poziom"] = "Początkujący"  # poziom źródła nie ma tu znaczenia
     rec.setdefault("nazwa_PL", NAZWY_PL.get(sid, ""))
     out.append(rec)
 json.dump(out, open(os.path.join(out_dir, "kandydaci.json"), "w"), ensure_ascii=False, indent=1)
@@ -127,3 +137,5 @@ stat = collections.Counter(r["decyzja"] for r in out)
 print(dict(stat))
 pw = collections.Counter(r["powod"].split(" (")[0].split(" — ")[0] for r in out if r["decyzja"] == "pomiń")
 print(pw.most_common(40))
+
+json.dump(out, open(os.path.join(out_dir, "kandydaci.json"), "w"), ensure_ascii=False, indent=1)
