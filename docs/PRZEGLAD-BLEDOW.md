@@ -87,3 +87,17 @@ tras z parametrami klienta/planu dla 4 ról oraz 31 tras GET właściciela).
 
 Wynik: api-server 2141/2141, trainer-app 715/715, client-landing 9/9, testy bezpieczeństwa
 generatora 101/101, test dymny 116 OK / 0 BŁĄD.
+
+## Flagi stawów w doborze ćwiczeń głównych (24.10.2026, gałąź `fix/flagi-stawow-generator`)
+
+**Ustalenie (1a): była dziura.** Reguła: ćwiczenie obciążające staw, który klient zgłosił jako bolesny (wywiad lub zgłoszenie bólu z ostatnich 30 dni), nie może trafić do planu, także jako zamiennik. Generator **tego nie robił**. Dowód z kodu:
+- `joint_stress_areas` czytał tylko dobór rozgrzewki/schłodzenia (`warmupSelection.ts`, `routes/training.ts`).
+- Silnik `ExerciseSelectionEngineV0` filtruje: `isAvoided` (lista „unikaj” z wywiadu), blokadę nazw, pliometrię oraz `suitableForNoActivity`/trudność uczenia. Żadnego filtra stawów.
+- Ból z wywiadu (`healthLimitations`, `injuryStatus`) wpływał tylko na kardio i ostrzeżenia (`safetyAndCardioRules.ts`); zatwierdzone ograniczenia trenera (`confirmedRestrictions`) działają jako **kara punktowa** (−30), nie wykluczenie. Zgłoszenia bólu (`pain_reports`) nie były w ogóle czytane przez dobór ćwiczeń głównych.
+- Ścieżki doboru, które budują pulę: `POST …/plan-draft/generate-day` (sloty, fallbacki, ponowne użycie, balansowanie początkujących), `GET …/plan-draft/day-recommendations` (ścieżka podstawowa i V0), `GET …/exercise-recommendations`. Wszystkie dostają pulę przed wyborem; ręczne dodanie przez trenera (`POST /plans/:id/days/:dayId/exercises`) omija dobór i sprawdza tylko sprzęt/lokalizację.
+
+**Naprawa (1c):** wspólne twarde wykluczenie puli przed jakimkolwiek wyborem — `services/jointExclusion.ts` (staw z tekstu wywiadu + zgłoszenia bólu ≤ 30 dni; `Inne` bez stawu nic nie blokuje) wpięte w `buildCompatibilityFilter` (4. parametr) oraz w pętlę puli `day-recommendations`. Skoro pula jest przycięta raz na wejściu, dziedziczą to wszystkie dalsze ścieżki (sloty, zamienniki, bezpieczne ponowne użycie, balansowanie). Ćwiczenia bez znacznika stawu nie są wykluczane (brak informacji w katalogu — dlatego znaczniki trzeba uzupełniać, patrz krok A katalogu). Nic nie poluzowano; generator może dla trudnej kombinacji zwrócić 422 („nie da się zbudować dnia”) zamiast niebezpiecznego ćwiczenia.
+
+**Testy:** `__tests__/joint-exclusion.test.ts` (21, źródła, okno 30 dni, filtr) oraz `routes/__tests__/joint-exclusion.integration.test.ts` (27, baza testowa): każdy z 6 stawów × 4 poziomy (brak aktywności, początkujący, średnio-, zaawansowany) × wszystkie ścieżki (rekomendacje, dzień — podstawowa i V0, generate-day dla 6 typów sesji × 3 warianty, rosnący zbiór „użyte” wymuszający fallbacki), źródło: wywiad dla połowy stawów, zgłoszenie bólu dla pozostałych, plus test kontrolny (bez bólu te same ćwiczenia SĄ proponowane), zgłoszenie starsze niż 30 dni, oba źródła razem. Bez poprawki 25 z 27 testów integracyjnych jest czerwonych.
+
+**Do decyzji:** ręczne dodanie ćwiczenia przez trenera (omija dobór) — czy ostrzegać/blokować przy zgłoszonym stawie; obecnie bez zmian.
