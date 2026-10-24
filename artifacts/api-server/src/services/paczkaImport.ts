@@ -12,10 +12,12 @@
  *  - empty learningDifficulty → row rejected (no difficulty = not allowed);
  *  - a second duplicate check against the CURRENT database at import time; a suspected duplicate is not imported;
  *  - existing exercises are never overwritten; the import is idempotent (source, source_id);
- *  - rollback removes only rows of one review batch that no plan/session/log uses.
+ *  - rollback removes only rows of one review batch that no plan/session/log uses;
+ *  - every imported exercise is complete for the generator (computeCompleteness): specific muscles from
+ *    mięśnie_główne / mięśnie_pomocnicze (our 28 muscles; primary 1.0, secondary 0.5), description, tips, mistakes.
  */
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { db, pool, exercisesTable } from "@workspace/db";
+import { db, pool, exercisesTable, exerciseMuscleAssignmentsTable, specificMusclesTable } from "@workspace/db";
 
 export { pool };
 
@@ -72,14 +74,14 @@ const headerKey = (s: string) => stripDiacritics(s).toLowerCase().replace(/[^a-z
 
 export type RawRow = { line: number; cells: Record<string, string> };
 
-/** Header → canonical keys: nazwapl, nazwaen, poziom, rola, sprzet, wzorzec, miesnie, stawy, cele, opis, wskazowki, typowebledy, uwagabezpieczenstwa, suitablefornoactivity, learningdifficulty, decyzjatrenera, zrodloid. */
+/** Header → canonical keys: nazwapl, nazwaen, poziom, rola, sprzet, wzorzec, miesnie, miesnieglowne, miesniepomocnicze, stawy, cele, opis, wskazowki, typowebledy, uwagabezpieczenstwa, suitablefornoactivity, learningdifficulty, decyzjatrenera, zrodloid. */
 export function readPaczka(buf: Buffer): { delimiter: string; rows: RawRow[]; missingColumns: string[] } {
   const text = decodePaczka(buf);
   const delimiter = detectDelimiter(text);
   const table = parseCsv(text, delimiter);
   if (table.length === 0) return { delimiter, rows: [], missingColumns: ["nazwapl", "decyzjatrenera"] };
   const keys = table[0].map(headerKey);
-  const need = ["nazwapl", "decyzjatrenera", "learningdifficulty"];
+  const need = ["nazwapl", "decyzjatrenera", "learningdifficulty", "miesnieglowne"];
   const missingColumns = need.filter((k) => !keys.includes(k));
   const rows: RawRow[] = table.slice(1).map((r, i) => ({
     line: i + 2,
@@ -121,6 +123,24 @@ export const IMPORT_PATTERNS = new Set([
 ]);
 export const IMPORT_JOINTS = new Set(["Kolano", "Biodro", "Plecy — dół", "Bark", "Łokieć", "Nadgarstek"]);
 
+/** Our 28 specific muscles (specific_muscles.name → broad category), exactly as in catalogueSeed.ts. */
+export const SPECIFIC_MUSCLES: ReadonlyMap<string, string> = new Map([
+  ["Mięsień piersiowy większy", "Klatka piersiowa"], ["Mięsień piersiowy mniejszy", "Klatka piersiowa"],
+  ["Mięsień najszerszy grzbietu", "Plecy"], ["Mięsień czworoboczny grzbietu", "Plecy"], ["Mięśnie równoległoboczne", "Plecy"],
+  ["Mięsień obły większy", "Plecy"], ["Prostowniki grzbietu", "Plecy"],
+  ["Mięsień naramienny (głowa przednia)", "Barki"], ["Mięsień naramienny (głowa boczna)", "Barki"],
+  ["Mięsień naramienny (głowa tylna)", "Barki"], ["Mięśnie stożka rotatorów", "Barki"],
+  ["Mięsień dwugłowy ramienia", "Biceps"], ["Mięsień ramienny", "Biceps"], ["Mięsień trójgłowy ramienia", "Triceps"],
+  ["Zginacze nadgarstka i palców", "Przedramiona"], ["Prostowniki nadgarstka i palców", "Przedramiona"],
+  ["Mięsień prosty brzucha", "Brzuch"], ["Mięśnie skośne brzucha", "Brzuch"], ["Mięsień poprzeczny brzucha", "Brzuch"],
+  ["Mięsień pośladkowy wielki", "Pośladki"], ["Mięsień pośladkowy średni", "Pośladki"], ["Mięsień pośladkowy mały", "Pośladki"],
+  ["Mięsień czworogłowy uda", "Mięśnie czworogłowe uda"], ["Mięśnie kulszowo-goleniowe", "Mięśnie dwugłowe uda"],
+  ["Mięśnie przywodziciele uda", "Przywodziciele"], ["Mięśnie odwodziciele uda", "Odwodziciele"],
+  ["Mięsień brzuchaty łydki", "Łydki"], ["Mięsień płaszczkowaty", "Łydki"],
+]);
+export const PRIMARY_COEFFICIENT = 1;
+export const SECONDARY_COEFFICIENT = 0.5;
+
 const splitList = (v: string | undefined) => (v ?? "").split(/[;,]/).map((s) => s.trim()).filter(Boolean);
 
 export interface ImportExercise {
@@ -134,6 +154,11 @@ export interface ImportExercise {
   pattern: string;
   mainMuscle: string;
   joints: string[];
+  /** specific muscles (names from SPECIFIC_MUSCLES) */
+  primaryMuscles: string[];
+  secondaryMuscles: string[];
+  /** broad categories of the secondary muscles, other than the main one */
+  secondaryMuscleGroups: string[];
   description: string;
   coachingTips: string | null;
   commonMistakes: string | null;
@@ -183,8 +208,19 @@ export function validateRow(c: Record<string, string>): Validation {
   if (!IMPORT_MUSCLES.has(mainMuscle)) reasons.push(`nieznana partia mięśniowa: „${mainMuscle}”`);
   const joints = splitList(c.stawy);
   for (const j of joints) if (!IMPORT_JOINTS.has(j)) reasons.push(`nieznany staw: „${j}”`);
+  const primaryMuscles = splitList(c.miesnieglowne);
+  const secondaryMuscles = splitList(c.miesniepomocnicze);
+  if (primaryMuscles.length === 0) reasons.push("brak mięśni głównych (mięśnie_główne)");
+  for (const m of [...primaryMuscles, ...secondaryMuscles]) if (!SPECIFIC_MUSCLES.has(m)) reasons.push(`nieznany mięsień szczegółowy: „${m}”`);
+  for (const m of primaryMuscles) if (secondaryMuscles.includes(m)) reasons.push(`mięsień „${m}” jednocześnie główny i pomocniczy`);
+  if (
+    IMPORT_MUSCLES.has(mainMuscle) && mainMuscle !== "Całe ciało" && mainMuscle !== "Inne" &&
+    primaryMuscles.length > 0 && !primaryMuscles.some((m) => SPECIFIC_MUSCLES.get(m) === mainMuscle)
+  ) reasons.push(`żaden mięsień główny nie należy do partii „${mainMuscle}”`);
   const description = (c.opis ?? "").trim();
   if (!description) reasons.push("brak opisu");
+  if (!(c.wskazowki ?? "").trim()) reasons.push("brak wskazówek (wymagane, by ćwiczenie było kompletne)");
+  if (!(c.typowebledy ?? "").trim()) reasons.push("brak typowych błędów (wymagane, by ćwiczenie było kompletne)");
   const ldRaw = (c.learningdifficulty ?? "").trim();
   let ld = NaN;
   if (ldRaw === "") reasons.push("brak learningDifficulty (brak trudności = niedopuszczone)");
@@ -202,6 +238,9 @@ export function validateRow(c: Record<string, string>): Validation {
     ok: true,
     value: {
       name, nameEn, slug: slugify(name), sourceId, level, role, equipment, pattern, mainMuscle, joints, description,
+      primaryMuscles: [...new Set(primaryMuscles)],
+      secondaryMuscles: [...new Set(secondaryMuscles)],
+      secondaryMuscleGroups: [...new Set(secondaryMuscles.map((m) => SPECIFIC_MUSCLES.get(m)!))].filter((g) => g !== mainMuscle),
       coachingTips: (c.wskazowki ?? "").trim() || null,
       commonMistakes: (c.typowebledy ?? "").trim() || null,
       safetyNotes: (c.uwagabezpieczenstwa ?? "").trim() || null,
@@ -293,24 +332,37 @@ export async function planImport(buf: Buffer, source: string): Promise<ImportPla
   return buildPlan(rows, await loadExisting(), source, missingColumns);
 }
 
-/** Inserts the "toImport" items. Never updates or deletes anything. Returns the ids created. */
+/** Inserts the "toImport" items with their muscle assignments. Never updates or deletes anything. Returns the ids created. */
 export async function applyImport(plan: ImportPlan, source: string, batch: string): Promise<number[]> {
   const ids: number[] = [];
   const usedSlugs = new Set((await db.select({ slug: exercisesTable.slug }).from(exercisesTable)).map((r) => r.slug));
+  const muscleIds = new Map((await db.select({ id: specificMusclesTable.id, name: specificMusclesTable.name }).from(specificMusclesTable)).map((m) => [m.name, m.id]));
+  const missing = [...SPECIFIC_MUSCLES.keys()].filter((n) => !muscleIds.has(n));
+  if (missing.length) throw new Error(`W bazie brakuje mięśni szczegółowych: ${missing.join(", ")} — import przerwany, nic nie zapisano`);
   for (const item of plan.toImport) {
     const v = item.value;
     let slug = v.slug, n = 2;
     while (usedSlugs.has(slug)) slug = `${v.slug}-${n++}`;
     usedSlugs.add(slug);
-    const inserted = await db.insert(exercisesTable).values({
-      name: v.name, slug, mainMuscleGroup: v.mainMuscle, equipment: v.equipment, trainingLocation: v.trainingLocation,
-      difficultyLevel: v.level, movementPattern: v.pattern,
-      executionInstructions: v.description, coachingTips: v.coachingTips, commonMistakes: v.commonMistakes, safetyNotes: v.safetyNotes,
-      exerciseType: v.exerciseType, suitableExperienceLevels: v.suitableExperienceLevels, learningDifficulty: v.learningDifficulty,
-      suitableForNoActivity: v.suitableForNoActivity, role: v.role, verificationStatus: v.verificationStatus, jointStressAreas: v.joints,
-      isActive: true, source, sourceId: v.sourceId, importedAt: new Date(), reviewBatch: batch,
-    } as never).onConflictDoNothing().returning({ id: exercisesTable.id });
-    if (inserted[0]) ids.push(inserted[0].id);
+    // exercise + its muscle assignments together: an exercise without muscles never reaches the catalogue
+    const id = await db.transaction(async (tx) => {
+      const inserted = await tx.insert(exercisesTable).values({
+        name: v.name, slug, mainMuscleGroup: v.mainMuscle, secondaryMuscleGroups: v.secondaryMuscleGroups,
+        equipment: v.equipment, trainingLocation: v.trainingLocation, difficultyLevel: v.level, movementPattern: v.pattern,
+        description: v.description, executionInstructions: v.description,
+        coachingTips: v.coachingTips, commonMistakes: v.commonMistakes, safetyNotes: v.safetyNotes,
+        exerciseType: v.exerciseType, suitableExperienceLevels: v.suitableExperienceLevels, learningDifficulty: v.learningDifficulty,
+        suitableForNoActivity: v.suitableForNoActivity, role: v.role, verificationStatus: v.verificationStatus, jointStressAreas: v.joints,
+        isActive: true, source, sourceId: v.sourceId, importedAt: new Date(), reviewBatch: batch,
+      } as never).onConflictDoNothing().returning({ id: exercisesTable.id });
+      if (!inserted[0]) return null;
+      await tx.insert(exerciseMuscleAssignmentsTable).values([
+        ...v.primaryMuscles.map((m) => ({ exerciseId: inserted[0].id, specificMuscleId: muscleIds.get(m)!, isPrimary: true, coefficient: PRIMARY_COEFFICIENT })),
+        ...v.secondaryMuscles.map((m) => ({ exerciseId: inserted[0].id, specificMuscleId: muscleIds.get(m)!, isPrimary: false, coefficient: SECONDARY_COEFFICIENT })),
+      ]);
+      return inserted[0].id;
+    });
+    if (id !== null) ids.push(id);
   }
   return ids;
 }

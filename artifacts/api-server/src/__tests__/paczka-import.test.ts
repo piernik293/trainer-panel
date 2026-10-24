@@ -7,15 +7,19 @@ import { randomUUID } from "node:crypto";
 import { eq, inArray } from "drizzle-orm";
 import {
   decodePaczka, detectDelimiter, parseCsv, readPaczka, interpretDecision, validateRow, buildPlan, findDuplicate,
-  planImport, applyImport, rollbackBatch, type ExistingExercise,
+  planImport, applyImport, rollbackBatch, SPECIFIC_MUSCLES, type ExistingExercise,
 } from "../services/paczkaImport";
-import { db, pool, exercisesTable, trainersTable, clientsTable, clientExerciseUsageLogTable } from "@workspace/db";
+import { computeCompleteness, fetchMuscleStats } from "../lib/exercise-completeness";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { db, pool, exercisesTable, trainersTable, clientsTable, clientExerciseUsageLogTable, exerciseMuscleAssignmentsTable, specificMusclesTable } from "@workspace/db";
 
-const HEAD = ["zrodlo_id", "nazwa_PL", "nazwa_EN", "poziom", "rola", "sprzęt", "wzorzec", "mięśnie", "stawy", "cele", "opis", "wskazówki", "typowe_błędy", "uwaga_bezpieczeństwa", "learningDifficulty", "suitableForNoActivity", "decyzja_trenera"];
+const HEAD = ["zrodlo_id", "nazwa_PL", "nazwa_EN", "poziom", "rola", "sprzęt", "wzorzec", "mięśnie", "mięśnie_główne", "mięśnie_pomocnicze", "stawy", "cele", "opis", "wskazówki", "typowe_błędy", "uwaga_bezpieczeństwa", "learningDifficulty", "suitableForNoActivity", "decyzja_trenera"];
 type Row = Partial<Record<(typeof HEAD)[number], string>>;
 const base: Record<string, string> = {
   zrodlo_id: "Test_Ex_1", nazwa_PL: "Testowe ćwiczenie imp1", nazwa_EN: "Test Ex 1", poziom: "Początkujący", rola: "główne", "sprzęt": "Hantle",
-  wzorzec: "Przysiad", "mięśnie": "Mięśnie czworogłowe uda", stawy: "Kolano, Biodro", cele: "siła", opis: "Własny opis ćwiczenia testowego.",
+  wzorzec: "Przysiad", "mięśnie": "Mięśnie czworogłowe uda",
+  "mięśnie_główne": "Mięsień czworogłowy uda", "mięśnie_pomocnicze": "Mięsień pośladkowy wielki, Mięśnie przywodziciele uda", stawy: "Kolano, Biodro", cele: "siła", opis: "Własny opis ćwiczenia testowego.",
   "wskazówki": "Plecy proste.", "typowe_błędy": "Pośpiech.", "uwaga_bezpieczeństwa": "Przy bólu przerwij.", learningDifficulty: "2", suitableForNoActivity: "", decyzja_trenera: "tak",
 };
 const csv = (rows: Row[], delim = ";") =>
@@ -88,6 +92,42 @@ describe("validation", () => {
   it.each([[""], ["  "], ["0"], ["6"], ["2,5"], ["abc"]])("learningDifficulty %j → rejected", (ld) => {
     const r = v({ learningDifficulty: ld }); expect(r.ok).toBe(false);
   });
+  it("mięśnie szczegółowe: główne i pomocnicze z pliku, partie pomocnicze bez partii głównej", () => {
+    const r = v({});
+    expect(r.ok && r.value.primaryMuscles).toEqual(["Mięsień czworogłowy uda"]);
+    expect(r.ok && r.value.secondaryMuscles).toEqual(["Mięsień pośladkowy wielki", "Mięśnie przywodziciele uda"]);
+    expect(r.ok && r.value.secondaryMuscleGroups).toEqual(["Pośladki", "Przywodziciele"]);
+  });
+  it.each([
+    [{ "mięśnie_główne": "" }, "brak mięśni głównych"],
+    [{ "mięśnie_główne": "Mięsień czworogłowy" }, "nieznany mięsień szczegółowy"],
+    [{ "mięśnie_pomocnicze": "Skrzydło" }, "nieznany mięsień szczegółowy"],
+    [{ "mięśnie_pomocnicze": "Mięsień czworogłowy uda" }, "jednocześnie główny i pomocniczy"],
+    [{ "mięśnie_główne": "Mięsień dwugłowy ramienia" }, "żaden mięsień główny nie należy do partii"],
+    [{ "wskazówki": "" }, "brak wskazówek"],
+    [{ "typowe_błędy": "" }, "brak typowych błędów"],
+  ])("mięśnie i kompletność: %j → odrzucone", (o, frag) => {
+    const r = v(o); expect(r.ok).toBe(false);
+    expect(!r.ok && r.reasons.join(" ")).toContain(frag);
+  });
+  it("partia „Całe ciało” nie wymaga zgodności partii mięśnia głównego", () => {
+    expect(v({ "mięśnie": "Całe ciało", "mięśnie_główne": "Mięsień dwugłowy ramienia" }).ok).toBe(true);
+  });
+  it("brak kolumny mięśnie_główne jest zgłaszany", () => {
+    const text = ["nazwa_PL;decyzja_trenera;learningDifficulty", "X;tak;2"].join("\r\n");
+    expect(readPaczka(Buffer.from(text, "utf8")).missingColumns).toEqual(["miesnieglowne"]);
+  });
+  it("paczki 1–6 w docs/: każdy wiersz ma poprawne mięśnie szczegółowe", () => {
+    for (const n of [1, 2, 3, 4, 5, 6]) {
+      const { rows, missingColumns } = readPaczka(readFileSync(join(__dirname, "..", "..", "..", "..", "docs", `BAZA-PACZKA-0${n}.csv`)));
+      expect(missingColumns).toEqual([]);
+      for (const r of rows) {
+        const res = validateRow(r.cells);
+        const muscleProblems = res.ok ? [] : res.reasons.filter((x) => /mięś/.test(x));
+        expect({ paczka: n, wiersz: r.line, problemy: muscleProblems }).toEqual({ paczka: n, wiersz: r.line, problemy: [] });
+      }
+    }
+  });
   it("a rejected row does not stop the rest", () => {
     const rows = readPaczka(Buffer.from(csv([{ zrodlo_id: "X1", nazwa_PL: "Dobre jedno ćwiczenie", decyzja_trenera: "tak" }, { zrodlo_id: "X2", nazwa_PL: "Złe drugie zadanie", learningDifficulty: "", decyzja_trenera: "tak" }]), "utf8")).rows;
     const p = buildPlan(rows, [], "s");
@@ -124,6 +164,14 @@ describe("duplicate detection at import time", () => {
   });
 });
 
+describe("lista mięśni szczegółowych", () => {
+  it("SPECIFIC_MUSCLES = 28 mięśni z katalogu", () => {
+    const seed = readFileSync(join(__dirname, "..", "seeds", "catalogueSeed.ts"), "utf8");
+    const names = [...seed.matchAll(/\((\d+),'([^']+)','([^']+)'\)/g)].filter((m) => Number(m[1]) <= 28).slice(0, 28);
+    expect(new Map(names.map((m) => [m[2], m[3]]))).toEqual(SPECIFIC_MUSCLES);
+  });
+});
+
 describe("database: idempotence, no overwrite, rollback", () => {
   const BATCH = "test-paczka-import";
   const SRC = "free-exercise-db";
@@ -154,6 +202,19 @@ describe("database: idempotence, no overwrite, rollback", () => {
     expect(a.source).toBe(SRC); expect(a.importedAt).not.toBeNull();
     expect(a.suitableForNoActivity).toBe(true); expect(b.suitableForNoActivity).toBe(false);
     expect(a.learningDifficulty).toBe(2); expect(a.createdByTrainerId).toBeNull();
+    // muscle assignments: primary 1.0, secondary 0.5 — and the exercise is complete for the generator
+    const asg = await db.select({ name: specificMusclesTable.name, isPrimary: exerciseMuscleAssignmentsTable.isPrimary, coefficient: exerciseMuscleAssignmentsTable.coefficient })
+      .from(exerciseMuscleAssignmentsTable).innerJoin(specificMusclesTable, eq(specificMusclesTable.id, exerciseMuscleAssignmentsTable.specificMuscleId))
+      .where(eq(exerciseMuscleAssignmentsTable.exerciseId, a.id));
+    expect(asg.sort((x, y) => x.name.localeCompare(y.name))).toEqual([
+      { name: "Mięsień czworogłowy uda", isPrimary: true, coefficient: 1 },
+      { name: "Mięsień pośladkowy wielki", isPrimary: false, coefficient: 0.5 },
+      { name: "Mięśnie przywodziciele uda", isPrimary: false, coefficient: 0.5 },
+    ]);
+    expect(a.secondaryMuscleGroups).toEqual(["Pośladki", "Przywodziciele"]);
+    const stats = await fetchMuscleStats([a.id, b.id]);
+    expect(computeCompleteness(a, stats.get(a.id))).toEqual({ isComplete: true, missingFields: [] });
+    expect(computeCompleteness(b, stats.get(b.id)).isComplete).toBe(true);
     // second run: nothing to import, nothing inserted
     const p2 = await planImport(file, SRC);
     expect(p2.toImport).toHaveLength(0); expect(p2.alreadyImported).toHaveLength(2);
