@@ -265,7 +265,7 @@ vi.mock("@workspace/db", () => {
     insertClientSchema: {},
   };
 
-  return { db, trainersTable, clientsTable, surveysTable, exercisesTable, clientExerciseUsageLogTable, volumeTargetsTable, painReportsTable: { id: "id", clientId: "clientId", area: "area", createdAt: "createdAt" }, insertClientSchema: {} };
+  return { db, trainersTable, clientsTable, surveysTable, exercisesTable, clientExerciseUsageLogTable, volumeTargetsTable, painReportsTable: { id: "id", clientId: "clientId", area: "area", createdAt: "createdAt" }, PAIN_AREAS: ["Kolano","Biodro","Plecy — dół","Bark","Łokieć","Nadgarstek","Inne"], insertClientSchema: {} };
 });
 
 // ─── DB operators mock ────────────────────────────────────────────────────────
