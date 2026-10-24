@@ -35,4 +35,4 @@ Import (`paczkaImport.ts`) odrzuca wiersz, gdy: brak mięśni głównych; nazwa 
 | calves | Mięsień brzuchaty łydki | gdy łydki są mięśniem głównym, dochodzi „Mięsień płaszczkowaty” jako pomocniczy (jak w katalogu) |
 | neck | — | brak w naszym modelu; pomijane (1 wiersz, jako pomocniczy) |
 
-Stan paczek 1–6 (122 wiersze): mięśnie poprawne we wszystkich; 121 wierszy przechodzi pełną walidację, 1 („Dipy na kółkach gimnastycznych”) czeka na „Kółka gimnastyczne” na zamkniętej liście sprzętu (gałąź `feature/sprzet-talerz-uchwyty-kolka`).
+Stan paczek 1–6 (122 wiersze, 24.10.2026 po scaleniu sprzętu): 122/122 przechodzi pełną walidację (w tym mięśnie). Import czeka na decyzje trenera w kolumnie `decyzja_trenera`.
