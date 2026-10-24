@@ -67,6 +67,12 @@ describe("balanceWeek — plan po wyrównaniu zawsze przechodzi aktywację", () 
     expect(sets).toEqual([3, 3]); // suma współczynników (1,5) dałaby 9 > 6 i obcięłaby serie bez potrzeby
   });
 
+  it("redukcje rozłożone na dni: to samo ćwiczenie 3 × 4 serie, limit wymaga −3 serii → po jednej z każdego dnia", () => {
+    const entries: BalanceEntry[] = [0, 1, 2].map((d) => ({ exerciseId: PUSHUP, sets: 4, exerciseClass: "main_compound", dayIndex: d }));
+    const { sets } = balanceWeek(entries, assignments, targets, new Map([[12, g(9)], [7, g(10)], [11, g(6)]])); // klatka 12 > 9
+    expect(sets).toEqual([3, 3, 3]);
+  });
+
   it("najpierw ćwiczenia pomocnicze, potem główne; nigdy nie dodaje serii", () => {
     const entries: BalanceEntry[] = [
       { exerciseId: PUSHUP, sets: 3, exerciseClass: "main_compound", dayIndex: 0 },

@@ -10,7 +10,8 @@
  * Algorithm — one set at a time:
  *  - pick the target with the largest overage that still has a reducible contributor (a target stuck at its
  *    minimum no longer stops the loop — the old version broke out and left e.g. triceps over the ceiling);
- *  - reduce its contributor in tier order (core → isolation → secondary compound → main compound), earlier day first;
+ *  - reduce its contributor in tier order (core → isolation → secondary compound → main compound); within a tier
+ *    the one with the most sets, then the earlier day (cuts spread across the week);
  *  - phase 1 keeps the structural minimum (2 sets for main compounds, 1 otherwise); only if that is not enough,
  *    phase 2 allows every exercise down to 1 set. Never removes an exercise, never adds sets.
  * Residual overages (only possible when every contributor is already at 1 set) are returned for the caller to show.
@@ -47,7 +48,10 @@ export function balanceWeek(
   guidelines: Map<number, Guideline>,
 ): { sets: number[]; residual: Residual[] } {
   const sets = entries.map((e) => e.sets);
-  const order = entries.map((e, i) => i).sort((a, b) => tier(entries[a].exerciseClass) - tier(entries[b].exerciseClass) || a - b);
+  // Lowest tier first; within a tier the exercise with the most sets first (spreads cuts across days
+  // instead of gutting day 1), then the earlier one.
+  const pick = (cands: number[]) =>
+    cands.sort((a, b) => tier(entries[a].exerciseClass) - tier(entries[b].exerciseClass) || sets[b] - sets[a] || a - b)[0];
   const contributes = (i: number, targetId: number) => {
     const muscles = assignments.get(entries[i].exerciseId);
     const members = targets.get(targetId)?.memberMuscleIds;
@@ -60,7 +64,7 @@ export function balanceWeek(
       if (over.length === 0) return { sets, residual: [] };
       let reduced = false;
       for (const t of over) {
-        const i = order.find((k) => sets[k] > min(k) && contributes(k, t.targetId));
+        const i = pick(entries.map((_, k) => k).filter((k) => sets[k] > min(k) && contributes(k, t.targetId)));
         if (i !== undefined) { sets[i]--; reduced = true; break; }
       }
       if (!reduced) break; // every over-ceiling target is at this phase's minimum
