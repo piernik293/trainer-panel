@@ -33,8 +33,9 @@ function sumSets(allocs: Array<{ dayIndex: number; sets: number }>): number {
 // ─── recommendWeeklyCoreSets ──────────────────────────────────────────────────
 
 describe("recommendWeeklyCoreSets", () => {
-  it("No Activity → 4 sets", () => {
-    expect(recommendWeeklyCoreSets("Brak aktywności fizycznej", false)).toBe(4);
+  it("No Activity → 6 sets (equal to Beginner; was 4 before the decision of 24.10.2026)", () => {
+    expect(recommendWeeklyCoreSets("Brak aktywności fizycznej", false)).toBe(6);
+    expect(recommendWeeklyCoreSets("Brak aktywności fizycznej", false)).toBe(recommendWeeklyCoreSets("Początkujący", false));
   });
 
   it("Beginner → 6 sets", () => {
@@ -49,8 +50,8 @@ describe("recommendWeeklyCoreSets", () => {
     expect(recommendWeeklyCoreSets("Zaawansowany", false)).toBe(8);
   });
 
-  it("No Activity + priority → 4 + 2 = 6", () => {
-    expect(recommendWeeklyCoreSets("Brak aktywności fizycznej", true)).toBe(6);
+  it("No Activity + priority → 6 + 2 = 8 (equal to Beginner + priority)", () => {
+    expect(recommendWeeklyCoreSets("Brak aktywności fizycznej", true)).toBe(8);
   });
 
   it("Beginner + priority → 6 + 2 = 8", () => {

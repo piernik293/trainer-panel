@@ -29,6 +29,7 @@
  *   - Sum of allocations per target === selectedWeeklyVolume exactly.
  */
 
+import { volumeRowsLevel } from "./volumeCalculator";
 import { eq, and } from "drizzle-orm";
 import {
   db,
@@ -577,7 +578,7 @@ export async function calculateVolumeDistribution(
     .where(
       and(
         eq(volumeGuidelinesTable.versionId, versionId),
-        eq(volumeGuidelinesTable.experienceLevel, experienceLevel!),
+        eq(volumeGuidelinesTable.experienceLevel, volumeRowsLevel(experienceLevel!)),
         eq(volumeTargetsTable.isActive, true),
       ),
     );

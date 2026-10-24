@@ -287,7 +287,7 @@ describe("Volume guideline DB integration", () => {
     expect(total).toBe(48);
   }, 30_000);
 
-  it("18. No Activity weekly preferred ceilings are lower than Beginner ceilings", async () => {
+  it("18. No Activity weekly volume ceilings are EQUAL to Beginner ceilings (decision 24.10.2026; before: lower)", async () => {
     const [noActRes, begRes] = await Promise.all([
       req.get(`/api/volume-guidelines?versionId=1&experienceLevel=${encodeURIComponent("Brak aktywności fizycznej")}`),
       req.get(`/api/volume-guidelines?versionId=1&experienceLevel=${encodeURIComponent("Początkujący")}`),
@@ -296,18 +296,21 @@ describe("Volume guideline DB integration", () => {
     expect(begRes.status).toBe(200);
 
     // API returns numeric columns as strings (Postgres numeric → JSON string)
-    type GuideRow = { targetId: number; weeklyPreferredCeiling: string | number };
+    type GuideRow = { volumeTargetId: number; weeklyPreferredCeiling: string | number };
     const noActRows: GuideRow[] = noActRes.body;
     const begRows: GuideRow[]   = begRes.body;
 
     // Match by targetId and verify No Activity ≤ Beginner for every target
     let comparedCount = 0;
     for (const noActRow of noActRows) {
-      const begRow = begRows.find((b) => b.targetId === noActRow.targetId);
+      const begRow = begRows.find((b) => b.volumeTargetId === noActRow.volumeTargetId);
       if (!begRow) continue;
       const noActVal = Number(noActRow.weeklyPreferredCeiling);
       const begVal   = Number(begRow.weeklyPreferredCeiling);
-      expect(noActVal).toBeLessThanOrEqual(begVal);
+      expect(noActVal).toBe(begVal);
+      for (const f of ["sessionMin", "sessionMax", "weeklyAbsoluteCeiling"] as const) {
+        expect(Number((noActRow as Record<string, unknown>)[f])).toBe(Number((begRow as Record<string, unknown>)[f]));
+      }
       comparedCount++;
     }
     // At least half the targets must be comparable (partial metadata is acceptable)

@@ -130,6 +130,26 @@ export const DRAFT_EXERCISE_DEFAULTS = {
   restSeconds: 90,
 } as const;
 
+/**
+ * Target RIR by effective level (phase 1, block 7): "Brak aktywności fizycznej" 3–4, "Początkujący" 2–3, others as before (2).
+ * The default is the bottom of the range; the trainer can still change it by hand (a manual override).
+ */
+export const RIR_BY_LEVEL: Record<string, { min: number; max: number; default: number }> = {
+  "Brak aktywności fizycznej": { min: 3, max: 4, default: 3 },
+  "Początkujący": { min: 2, max: 3, default: 2 },
+};
+
+export function defaultRirForLevel(level: string | null | undefined): number {
+  return (level && RIR_BY_LEVEL[level]?.default) ?? DRAFT_EXERCISE_DEFAULTS.rir;
+}
+
+/** Soft check (not a blocker): returns a hint when the RIR is outside the level's recommended range. */
+export function rirLevelHint(rir: number, level: string | null | undefined): string | null {
+  const r = level ? RIR_BY_LEVEL[level] : undefined;
+  if (!r || (rir >= r.min && rir <= r.max)) return null;
+  return `Zalecany RIR dla poziomu „${level}”: ${r.min}–${r.max}.`;
+}
+
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 export interface ExerciseStepValidationResult {

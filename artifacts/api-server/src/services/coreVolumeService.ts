@@ -19,7 +19,7 @@ const ADVANCED = "Zaawansowany";
 
 /** Base weekly core sets per experience level. All integers. */
 const BASE_SETS: Record<string, number> = {
-  [NO_ACTIVITY]: 4,
+  [NO_ACTIVITY]: 6, // = Początkujący (decyzja 24.10.2026; było 4)
   [BEGINNER]: 6,
   [INTERMEDIATE]: 6,
   [ADVANCED]: 8,
