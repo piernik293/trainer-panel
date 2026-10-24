@@ -25,10 +25,11 @@
  *   { hasProfile, hasLocationData, sessionType, exercises: DayRecommendationExercise[] }
  */
 
+import { buildLadderRules, loadLadderRows } from "../services/ladderSelection";
 import { loadBlockedJoints } from "../services/jointExclusion";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
 import { Router, type IRouter } from "express";
-import { eq, sql, and, inArray } from "drizzle-orm";
+import { eq, sql, and, or, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   db,
@@ -257,11 +258,18 @@ router.post(
 
     const avoidedExerciseIds = new Set<number>(survey.avoidedExerciseIds ?? []);
 
+    // Progression ladders (docs/DRABINKI.md): automatic selection never goes above the client's step; the step of the
+    // client's own level is preferred; warm-up-role exercises on a "Brak aktywności" step are allowed for such clients only.
+    const ladder = buildLadderRules( await loadLadderRows(), survey.experienceLevel);
+    const roleCondition = ladder.warmupRoleAllowed.size > 0
+      ? or(mainPlanRoleCondition(), and(inArray(exercisesTable.id, [...ladder.warmupRoleAllowed]), eq(exercisesTable.suitableForNoActivity, true)))!
+      : mainPlanRoleCondition();
+
     // ── Fetch all active exercises ─────────────────────────────────────────────
     const exercises = await db
       .select()
       .from(exercisesTable)
-      .where(and(eq(exercisesTable.isActive, true), mainPlanRoleCondition()))
+      .where(and(eq(exercisesTable.isActive, true), roleCondition))
       .orderBy(exercisesTable.name);
 
     // ── Filter to complete exercises ───────────────────────────────────────────
@@ -285,7 +293,7 @@ router.post(
       blockedJoints,
     );
     const compatibleExercises = completeExercises.filter((ex) =>
-      compatibilityFilter({
+      ladder.allowed(ex.id) && compatibilityFilter({
         id: ex.id,
         trainingLocation: ex.trainingLocation ?? [],
         equipment: ex.equipment ?? [],
@@ -343,7 +351,7 @@ router.post(
         equipment: ex.equipment ?? [],
         requiredEquipmentAll: ex.requiredEquipmentAll ?? [],
         trainingLocation: ex.trainingLocation ?? [],
-        score,
+        score: score + ladder.bonus(ex.id),
         matchReasons,
         warnReasons,
         isAvoided: avoidedExerciseIds.has(ex.id),

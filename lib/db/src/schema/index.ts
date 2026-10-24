@@ -11,3 +11,4 @@ export * from "./surveyInvites";
 export * from "./clientInvitations";
 export * from "./bookings";
 export * from "./subscriptions";
+export * from "./ladders";
