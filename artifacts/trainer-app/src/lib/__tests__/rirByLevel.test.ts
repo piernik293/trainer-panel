@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { defaultRirForLevel, rirLevelHint, RIR_BY_LEVEL, DRAFT_EXERCISE_DEFAULTS } from "../exerciseDraftHelpers";
+import { defaultRirForLevel, rirLevelHint, rirTargetLabel, RIR_BY_LEVEL, DRAFT_EXERCISE_DEFAULTS } from "../exerciseDraftHelpers";
 
 describe("RIR by level (block 7)", () => {
   it("brak aktywności 3–4, początkujący 2–3", () => {
@@ -17,5 +17,17 @@ describe("RIR by level (block 7)", () => {
     expect(rirLevelHint(2, "Brak aktywności fizycznej")).toContain("3–4");
     expect(rirLevelHint(1, "Początkujący")).toContain("2–3");
     expect(rirLevelHint(0, "Zaawansowany")).toBeNull();
+  });
+});
+
+describe("rirTargetLabel — neutralna podpowiedź przy polu RIR", () => {
+  it("pokazuje zakres celu dla poziomów z zakresem", () => {
+    expect(rirTargetLabel("Brak aktywności fizycznej")).toBe("Cel: RIR 3–4");
+    expect(rirTargetLabel("Początkujący")).toBe("Cel: RIR 2–3");
+  });
+  it("brak podpowiedzi dla pozostałych poziomów i braku poziomu", () => {
+    expect(rirTargetLabel("Średniozaawansowany")).toBeNull();
+    expect(rirTargetLabel("Zaawansowany")).toBeNull();
+    expect(rirTargetLabel(null)).toBeNull();
   });
 });

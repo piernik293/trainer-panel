@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, createContext, useMemo } from "react";
+import { rirTargetLabel } from "@/lib/exerciseDraftHelpers";
 import { StepHint } from "@/components/dashboard/StepHint";
 import { humanizeError } from "@/lib/userError";
 import { useParams, Link } from "wouter";
@@ -121,6 +122,9 @@ interface AvoidedExercisesContextValue {
   otherText: string | null;
   otherReason: string | null;
 }
+
+/** Effective level of the plan (experienceLevelUsed) — for the neutral RIR target hint. */
+const PlanLevelContext = createContext<string | null>(null);
 
 const AvoidedExercisesContext = createContext<AvoidedExercisesContextValue>({
   avoidedMap: new Map(),
@@ -404,6 +408,7 @@ function ExerciseEditForm({
 }) {
   const { toast } = useToast();
   const updateExercise = useUpdatePlanExercise(planId);
+  const rirTarget = rirTargetLabel(useContext(PlanLevelContext));
 
   const [form, setForm] = useState({
     workingSets: String(ex.workingSets),
@@ -586,6 +591,7 @@ function ExerciseEditForm({
                 ))}
               </SelectContent>
             </Select>
+            {rirTarget && <p className="text-xs text-muted-foreground">{rirTarget}</p>}
           </div>
           <div className="space-y-1">
             <Label className="text-xs">RPE (1–10)</Label>
@@ -1764,6 +1770,7 @@ export default function PlanEditor() {
   };
 
   return (
+    <PlanLevelContext.Provider value={plan.experienceLevelUsed ?? null}>
     <AvoidedExercisesContext.Provider value={avoidedCtxValue}>
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">
       {/* Header */}
@@ -1964,5 +1971,6 @@ export default function PlanEditor() {
       />
     </div>
     </AvoidedExercisesContext.Provider>
+    </PlanLevelContext.Provider>
   );
 }

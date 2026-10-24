@@ -150,6 +150,12 @@ export function rirLevelHint(rir: number, level: string | null | undefined): str
   return `Zalecany RIR dla poziomu „${level}”: ${r.min}–${r.max}.`;
 }
 
+/** Neutral UI hint next to the RIR field, e.g. "Cel: RIR 2–3"; null when the level has no target range. */
+export function rirTargetLabel(level: string | null | undefined): string | null {
+  const r = level ? RIR_BY_LEVEL[level] : undefined;
+  return r ? `Cel: RIR ${r.min}–${r.max}` : null;
+}
+
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 export interface ExerciseStepValidationResult {
