@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { jointWarningFromError } from "../jointWarning";
+import { jointWarningFromError, planJointWarningText, jointReplaceConfirmText } from "../jointWarning";
 
 describe("jointWarningFromError", () => {
   it("zwraca treść ostrzeżenia z odpowiedzi 409 EXERCISE_LOADS_REPORTED_JOINT", () => {
@@ -18,5 +18,24 @@ describe("jointWarningFromError", () => {
 
   it("brak tekstu z serwera → neutralny tekst zastępczy", () => {
     expect(jointWarningFromError({ data: { code: "EXERCISE_LOADS_REPORTED_JOINT" } })).toMatch(/Dodać mimo to\?$/);
+  });
+});
+
+describe("planJointWarningText", () => {
+  it("lista stawów małymi literami", () => {
+    expect(planJointWarningText(["Bark", "Plecy — dół"])).toBe("To ćwiczenie obciąża zgłoszony staw: bark, plecy — dół");
+  });
+  it("bez listy — sama treść ostrzeżenia", () => {
+    expect(planJointWarningText([])).toBe("To ćwiczenie obciąża zgłoszony staw");
+  });
+});
+
+describe("jointReplaceConfirmText", () => {
+  it("treść potwierdzenia zamiany", () => {
+    expect(jointReplaceConfirmText("Arnold press", "Wyciskanie na maszynie nad głowę", "Ala Demo"))
+      .toBe("Zamienić Arnold press na Wyciskanie na maszynie nad głowę w planie Ala Demo? Serie i powtórzenia zostaną.");
+  });
+  it("brak nazwy klienta → „klienta”", () => {
+    expect(jointReplaceConfirmText("A", "B", null)).toBe("Zamienić A na B w planie klienta? Serie i powtórzenia zostaną.");
   });
 });

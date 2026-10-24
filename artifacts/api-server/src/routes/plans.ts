@@ -23,6 +23,8 @@ import {
   volumeTargetsTable,
   volumeTargetMembersTable,
   jointWarningDecisionsTable,
+  planChangeLogTable,
+  trainersTable,
 } from "@workspace/db";
 import {
   calculatePlanVolume,
@@ -39,6 +41,7 @@ import {
 } from "../services/planDraftDayRecommendationsService";
 import { requireAuth } from "../middlewares/requireAuth";
 import { jointWarningMessage, loadBlockedJoints, reportedJointsLoaded } from "../services/jointExclusion";
+import { findJointConflicts, replaceWithProposal } from "../services/jointPlanAudit";
 
 const router: IRouter = Router();
 
@@ -2116,6 +2119,76 @@ router.get("/volume-guidelines", async (req, res): Promise<void> => {
     .orderBy(volumeTargetsTable.name);
 
   res.json(rows);
+});
+
+// ─── Joint warnings in an existing plan ───────────────────────────────────────
+// Exercises loading a joint the client reported (interview / pain ≤ 30 days), with a replacement proposal from the
+// lower steps of the same ladder. Trainer-only: the client portal never calls these.
+
+router.get("/plans/:id/joint-warnings", requireAuth, async (req, res): Promise<void> => {
+  const planId = Number(req.params.id);
+  if (!Number.isFinite(planId)) {
+    res.status(400).json({ error: "Nieprawidłowe ID" });
+    return;
+  }
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
+  const conflicts = await findJointConflicts([planId]);
+  res.json({
+    warnings: conflicts.map((c) => ({
+      planExerciseId: c.planExerciseId,
+      dayId: c.dayId,
+      exerciseId: c.exerciseId,
+      exerciseName: c.exerciseName,
+      joints: c.joints,
+      message: "To ćwiczenie obciąża zgłoszony staw",
+      replacement: c.replacement ? { exerciseId: c.replacement.id, name: c.replacement.name } : null,
+      trainerDecisionAt: c.trainerDecisionAt,
+    })),
+  });
+});
+
+router.get("/plans/:id/history", requireAuth, async (req, res): Promise<void> => {
+  const planId = Number(req.params.id);
+  if (!Number.isFinite(planId)) {
+    res.status(400).json({ error: "Nieprawidłowe ID" });
+    return;
+  }
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
+  const rows = await db
+    .select({
+      id: planChangeLogTable.id, kind: planChangeLogTable.kind, createdAt: planChangeLogTable.createdAt,
+      fromExerciseName: planChangeLogTable.fromExerciseName, toExerciseName: planChangeLogTable.toExerciseName,
+      details: planChangeLogTable.details, trainerName: trainersTable.displayName, trainerEmail: trainersTable.email,
+    })
+    .from(planChangeLogTable)
+    .leftJoin(trainersTable, eq(trainersTable.id, planChangeLogTable.trainerId))
+    .where(eq(planChangeLogTable.planId, planId))
+    .orderBy(desc(planChangeLogTable.createdAt), desc(planChangeLogTable.id));
+  res.json({
+    entries: rows.map(({ trainerName, trainerEmail, ...r }) => ({ ...r, trainer: trainerName ?? trainerEmail ?? "Trener" })),
+  });
+});
+
+router.post("/plans/:id/exercises/:planExerciseId/joint-replacement", requireAuth, async (req, res): Promise<void> => {
+  const planId = Number(req.params.id);
+  const planExerciseId = Number(req.params.planExerciseId);
+  if (!Number.isFinite(planId) || !Number.isFinite(planExerciseId)) {
+    res.status(400).json({ error: "Nieprawidłowe ID" });
+    return;
+  }
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
+  const result = await replaceWithProposal(planId, planExerciseId, req.trainer!.id);
+  if (!result.ok) {
+    res.status(409).json({
+      code: result.code,
+      error: result.code === "NO_WARNING"
+        ? "To ćwiczenie nie obciąża zgłoszonego stawu — nic nie zmieniono."
+        : "Brak zamiennika z drabinki — wybierz ćwiczenie ręcznie.",
+    });
+    return;
+  }
+  const full = await getPlanFull(planId);
+  res.json(full);
 });
 
 export default router;
