@@ -32,6 +32,7 @@ export const EQUIPMENT_OPTIONS = [
   "TRX",
   "Masa własnego ciała",
   "Piłka",
+  "Piłka lekarska",
   "Brak sprzętu",
   "Inny",
 ] as const;

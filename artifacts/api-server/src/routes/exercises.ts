@@ -435,10 +435,10 @@ const VALID_MUSCLE_GROUPS = new Set([
   "Brzuch", "Pośladki", "Mięśnie czworogłowe uda", "Mięśnie dwugłowe uda",
   "Przywodziciele", "Odwodziciele", "Łydki", "Całe ciało", "Inne",
 ]);
-const VALID_EQUIPMENT = new Set([
+export const VALID_EQUIPMENT = new Set([
   "Sztanga", "Hantle", "Kettlebell", "Maszyna", "Wyciąg", "Drążek",
   "Poręcze", "Ławka", "Gumy oporowe", "TRX", "Masa własnego ciała",
-  "Piłka", "Brak sprzętu", "Inny",
+  "Piłka", "Piłka lekarska", "Brak sprzętu", "Inny",
 ]);
 const VALID_LOCATION = new Set(["Siłownia", "Dom", "Plener"]);
 
