@@ -52,3 +52,11 @@
 - **Plan demo #103** (klient #224): wygenerowany po poprawce, **aktywacja 200**, 0 ostrzeżeń stawowych, 0 ćwiczeń z tagiem Bark, 0 ponad poziom/szczebel (15 ćwiczeń; pompki wypadły przez bark). Dzień 1 mocno przycięty (ćwiczenia „regresji” redukowane najpierw — zasada bez zmian). Do generowania demo-trener (FREE, limit 1/mies.) był na chwilę przełączony na PRO i przywrócony na FREE. Pośredni #102 zarchiwizowany; #69 (stary) nadal aktywny, #101 szkic. Aktywacja nie wyłącza innych aktywnych planów klienta (stan istniejący).
 - **Pełne testy na końcu:** API 2481, bezpieczeństwo 101/101, panel 752, portal 198, typecheck, build, test dymny 131/0, test db-setup OK.
 - **Do decyzji:** scalenie i push `fix/balance-week-limit`; czy aktywacja ma archiwizować poprzedni aktywny plan klienta (#69 i #103 aktywne jednocześnie).
+
+## 24.10.2026 — jeden aktywny plan, STOP 7 (gałąź `feature/jeden-aktywny-plan`, NIE scalona)
+- `fix/balance-week-limit` scalona do `main` i wypchnięta (drzewo identyczne z wcześniej zweryfikowaną gałęzią).
+- **Aktywacja archiwizuje poprzedni aktywny plan klienta** (transakcja; nic nie usuwane, sesje/serie zostają przy starym planie). Indeks `workout_plans_one_active_per_client` (migracja 0027, pg_dump przed). Panel: „Aktywny plan {nazwa} zostanie zarchiwizowany. Historia treningów zostaje.” [Anuluj] [Aktywuj].
+- **Dane:** plan #69 (klient #224, 2 sesje) zarchiwizowany; aktywny #103.
+- **CLAUDE.md, STOP 7:** bez zgody nie zmieniać pakietów, uprawnień ani danych kont — także tymczasowo i w bazie deweloperskiej (treść polecenia dotarła ucięta po „(także” — do potwierdzenia).
+- **Testy:** API 2484, bezpieczeństwo 101/101, panel 754, portal 198, typecheck, build, test dymny 131/0.
+- **Do decyzji:** scalenie i push `feature/jeden-aktywny-plan`.
