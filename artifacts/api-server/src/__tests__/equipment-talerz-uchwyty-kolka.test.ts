@@ -34,6 +34,12 @@ describe("zamknięta lista sprzętu — talerz, uchwyty do pompek, kółka gimna
     expect(isEquipmentCompatible(["Talerz obciążeniowy"], [], "Hantle, Gumy oporowe")).toBe(false);
   });
 
+  it("wartości z wywiadu (lista sprzętu) pasują do ćwiczeń z kółkami / uchwytami", () => {
+    expect(isEquipmentCompatible(["Kółka gimnastyczne"], [], "Hantle, Kółka gimnastyczne")).toBe(true);
+    expect(isEquipmentCompatible(["Uchwyty do pompek"], [], "Uchwyty do pompek")).toBe(true);
+    expect(isEquipmentCompatible(["Kółka gimnastyczne"], [], "Hantle, Uchwyty do pompek")).toBe(false);
+  });
+
   it("kółka i uchwyty wymagają zadeklarowanego sprzętu (klient bez sprzętu ich nie dostanie)", () => {
     expect(isEquipmentCompatible(["Kółka gimnastyczne"], [], "Brak sprzętu")).toBe(false);
     expect(isEquipmentCompatible(["Uchwyty do pompek"], [], "Brak sprzętu")).toBe(false);

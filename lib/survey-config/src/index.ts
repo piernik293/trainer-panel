@@ -115,6 +115,8 @@ export const EQUIPMENT_OPTIONS = [
   "Drążek do podciągania",
   "TRX / pasy treningowe",
   "Rower stacjonarny / orbitrek",
+  "Kółka gimnastyczne",
+  "Uchwyty do pompek",
   "Brak sprzętu",
 ] as const;
 

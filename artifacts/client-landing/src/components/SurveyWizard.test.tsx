@@ -271,6 +271,22 @@ describe("validation and equipment in the interface (Task 3–5, 23.10)", () => 
     expect(on("Kettlebell")).toBe(true);
     expect(on("Brak sprzętu")).toBe(false);
   });
+
+  it("lista sprzętu: Kółka gimnastyczne i Uchwyty do pompek (24.10), przed „Brak sprzętu”", () => {
+    open("equipment", { trainingLocation: "Dom" });
+    const labels = screen.getAllByRole("button").map((b) => b.textContent?.trim() ?? "");
+    const at = (n: string) => labels.findIndex((l) => l === n);
+    expect(at("Kółka gimnastyczne")).toBeGreaterThan(-1);
+    expect(at("Uchwyty do pompek")).toBeGreaterThan(-1);
+    expect(at("Kółka gimnastyczne")).toBeLessThan(at("Brak sprzętu"));
+    expect(at("Uchwyty do pompek")).toBeLessThan(at("Brak sprzętu"));
+    const box = (name: string) => screen.getByRole("button", { name: new RegExp(`^${name}$`) });
+    fireEvent.click(box("Kółka gimnastyczne")); fireEvent.click(box("Uchwyty do pompek"));
+    expect(box("Kółka gimnastyczne").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("next").textContent).toBe("Dalej · zaznaczono 2");
+    fireEvent.click(box("Brak sprzętu"));
+    expect(box("Uchwyty do pompek").getAttribute("aria-pressed")).toBe("false");
+  });
 });
 
 describe("goals with descriptions, recommended session length, priority groups (23.10)", () => {
