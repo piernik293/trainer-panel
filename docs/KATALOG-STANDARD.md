@@ -75,6 +75,8 @@ Każda pozycja z `docs/TRENING.md` (sekcja „Propozycja ćwiczeń rozgrzewkowyc
 ## 5. Stan wdrożenia (23.10.2026)
 Pola 1–5 z tabeli w sekcji 3 dodane migracją 0019 (nullable): `role`, `verification_status`, `joint_stress_areas`, `equipment_detail`, `default_reps` / `default_duration_seconds` / `per_side`. `role` i `verification_status` uzupełnione z istniejących danych; pozostałe pola puste do czasu akceptacji listy rozgrzewki i uzupełnienia katalogu. Punkt 6 (ujednolicenie EN/PL i duplikatów) — bez zmian, czeka na zgodę. Reguła „do weryfikacji = niedopuszczone dla początkujących/nieaktywnych” jeszcze nie jest włączona (patrz `docs/TRENING.md`).
 
+## 7. Propozycja: pole „przydatne do celu” (24.10.2026)
+Szczegóły i reguły: `docs/BAZA-ANALIZA.md` (sekcja 6), dane: `docs/BAZA-CELE-NASZE.csv`. Lista zamknięta: siła, sylwetka, redukcja, kondycja, sprawność, sport. **Propozycja do decyzji, nic nie wdrożono.**
 ## 6. Decyzje właściciela do propozycji uzupełnienia 126 ćwiczeń (23.10.2026)
 Szczegóły i dane: `docs/KATALOG-PROPOZYCJA.md` / `.csv`.
 1. `suitableForNoActivity = false` tylko przy czynnikach ryzyka; dla pozostałych pole zostaje puste do oceny właściciela (nigdy automatyczne `true`).
