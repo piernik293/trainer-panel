@@ -451,7 +451,7 @@ export function useReorderPlanDays(planId: number) {
 
 export function useAddPlanExercise(planId: number) {
   const invalidate = usePlanInvalidator(planId);
-  return useMutation<WorkoutPlan, Error, { dayId: number; exerciseId: number; workingSets?: number }>({
+  return useMutation<WorkoutPlan, Error, { dayId: number; exerciseId: number; workingSets?: number; acknowledgeJointWarning?: boolean }>({
     mutationFn: ({ dayId, ...body }) =>
       apiFetch<WorkoutPlan>(`/plans/${planId}/days/${dayId}/exercises`, {
         method: "POST",

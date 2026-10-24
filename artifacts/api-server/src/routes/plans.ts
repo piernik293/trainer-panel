@@ -22,6 +22,7 @@ import {
   volumeGuidelinesTable,
   volumeTargetsTable,
   volumeTargetMembersTable,
+  jointWarningDecisionsTable,
 } from "@workspace/db";
 import {
   calculatePlanVolume,
@@ -37,6 +38,7 @@ import {
   getExerciseCompatibilityError,
 } from "../services/planDraftDayRecommendationsService";
 import { requireAuth } from "../middlewares/requireAuth";
+import { jointWarningMessage, loadBlockedJoints, reportedJointsLoaded } from "../services/jointExclusion";
 
 const router: IRouter = Router();
 
@@ -100,6 +102,7 @@ async function verifyClientOwner(
 type CompatibilityProfile = {
   trainingLocation: string | null;
   equipment: string | null;
+  healthLimitations?: string | null;
 };
 
 type CompatibilityExercise = {
@@ -163,6 +166,7 @@ async function loadPlanCompatibilityProfile(planId: number): Promise<Compatibili
     .select({
       trainingLocation: surveysTable.trainingLocation,
       equipment: surveysTable.equipment,
+      healthLimitations: surveysTable.healthLimitations,
     })
     .from(workoutPlansTable)
     .innerJoin(surveysTable, eq(surveysTable.id, workoutPlansTable.surveyId))
@@ -246,6 +250,8 @@ const ExercisePrescriptionFields = z.object({
 
 const CreatePlanExerciseBody = ExercisePrescriptionFields.extend({
   exerciseId: z.number().int().positive(),
+  /** Trainer confirmed "Dodaj mimo to" for an exercise loading a reported joint */
+  acknowledgeJointWarning: z.boolean().optional(),
 });
 
 const UpdatePlanExerciseBody = ExercisePrescriptionFields.partial().extend({
@@ -1433,6 +1439,7 @@ router.post("/plans/:id/days/:dayId/exercises", requireAuth, async (req, res): P
       trainingLocation: exercisesTable.trainingLocation,
       equipment: exercisesTable.equipment,
       requiredEquipmentAll: exercisesTable.requiredEquipmentAll,
+      jointStressAreas: exercisesTable.jointStressAreas,
     })
     .from(exercisesTable)
     .where(eq(exercisesTable.id, parsed.data.exerciseId));
@@ -1453,6 +1460,22 @@ router.post("/plans/:id/days/:dayId/exercises", requireAuth, async (req, res): P
     rejectIncompatibleExercise(res, incompatible, profile);
     return;
   }
+
+  // A reported joint (interview or pain ≤ 30 days) is a warning on a manual add, not a block:
+  // the trainer must confirm, and the confirmation is recorded.
+  const blockedJoints = await loadBlockedJoints(plan.clientId, profile.healthLimitations);
+  const loadedJoints = reportedJointsLoaded(exercise.jointStressAreas, blockedJoints);
+  if (loadedJoints.length > 0 && parsed.data.acknowledgeJointWarning !== true) {
+    res.status(409).json({
+      error: jointWarningMessage(loadedJoints),
+      code: "EXERCISE_LOADS_REPORTED_JOINT",
+      joints: loadedJoints,
+      exerciseId: exercise.id,
+      exerciseName: exercise.name,
+    });
+    return;
+  }
+
   // Next order_in_day.
   const [maxRow] = await db
     .select({ maxOrder: max(workoutPlanExercisesTable.orderInDay) })
@@ -1462,29 +1485,44 @@ router.post("/plans/:id/days/:dayId/exercises", requireAuth, async (req, res): P
   const nextOrder = (maxRow?.maxOrder ?? 0) + 1;
   const d = parsed.data;
 
-  await db.insert(workoutPlanExercisesTable).values({
-    dayId,
-    exerciseId: d.exerciseId,
-    orderInDay: nextOrder,
-    workingSets: d.workingSets,
-    warmUpSets: d.warmUpSets ?? 0,
-    repType: d.repType ?? null,
-    repsExact: d.repsExact ?? null,
-    repRangeMin: d.repRangeMin ?? null,
-    repRangeMax: d.repRangeMax ?? null,
-    repTimeSeconds: d.repTimeSeconds ?? null,
-    repDistanceMeters: d.repDistanceMeters ?? null,
-    repOpenInstruction: d.repOpenInstruction ?? null,
-    loadType: d.loadType ?? null,
-    loadValue: d.loadValue ?? null,
-    loadInstruction: d.loadInstruction ?? null,
-    rir: d.rir ?? null,
-    rpe: d.rpe ?? null,
-    rirOrRpe: d.rirOrRpe ?? null,
-    tempo: d.tempo ?? null,
-    restSeconds: d.restSeconds ?? null,
-    notes: d.notes ?? null,
-    clientInstructions: d.clientInstructions ?? null,
+  await db.transaction(async (tx) => {
+    const [inserted] = await tx.insert(workoutPlanExercisesTable).values({
+      dayId,
+      exerciseId: d.exerciseId,
+      orderInDay: nextOrder,
+      workingSets: d.workingSets,
+      warmUpSets: d.warmUpSets ?? 0,
+      repType: d.repType ?? null,
+      repsExact: d.repsExact ?? null,
+      repRangeMin: d.repRangeMin ?? null,
+      repRangeMax: d.repRangeMax ?? null,
+      repTimeSeconds: d.repTimeSeconds ?? null,
+      repDistanceMeters: d.repDistanceMeters ?? null,
+      repOpenInstruction: d.repOpenInstruction ?? null,
+      loadType: d.loadType ?? null,
+      loadValue: d.loadValue ?? null,
+      loadInstruction: d.loadInstruction ?? null,
+      rir: d.rir ?? null,
+      rpe: d.rpe ?? null,
+      rirOrRpe: d.rirOrRpe ?? null,
+      tempo: d.tempo ?? null,
+      restSeconds: d.restSeconds ?? null,
+      notes: d.notes ?? null,
+      clientInstructions: d.clientInstructions ?? null,
+    }).returning({ id: workoutPlanExercisesTable.id });
+
+    if (loadedJoints.length > 0) {
+      await tx.insert(jointWarningDecisionsTable).values({
+        trainerId: req.trainer!.id,
+        clientId: plan.clientId,
+        planId,
+        planExerciseId: inserted.id,
+        exerciseId: exercise.id,
+        exerciseNameSnapshot: exercise.name,
+        joints: loadedJoints,
+        decision: "dodaj_mimo_to",
+      });
+    }
   });
 
   await db

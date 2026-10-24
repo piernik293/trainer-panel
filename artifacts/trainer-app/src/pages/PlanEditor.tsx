@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, createContext, useMemo } from "react";
+import { jointWarningFromError } from "@/lib/jointWarning";
 import { StepHint } from "@/components/dashboard/StepHint";
 import { humanizeError } from "@/lib/userError";
 import { useParams, Link } from "wouter";
@@ -1632,6 +1633,8 @@ export default function PlanEditor() {
   const { toast } = useToast();
 
   const [pickerDayId, setPickerDayId] = useState<number | null>(null);
+  // Manual add of an exercise that loads a joint the client reported: warn, let the trainer decide.
+  const [jointWarning, setJointWarning] = useState<{ dayId: number; exerciseId: number; message: string } | null>(null);
 
   const { data: plan, isLoading, error } = useGetPlan(planId);
   const { preview, isLoadingPreview, previewFailed } = useVolumePreview(plan);
@@ -1721,19 +1724,29 @@ export default function PlanEditor() {
     );
   };
 
-  const handleExerciseSelected = (exerciseId: number) => {
-    if (!pickerDayId) return;
+  const submitExercise = (dayId: number, exerciseId: number, acknowledgeJointWarning?: boolean) => {
     addExercise.mutate(
-      { dayId: pickerDayId, exerciseId, workingSets: 3 },
+      { dayId, exerciseId, workingSets: 3, ...(acknowledgeJointWarning ? { acknowledgeJointWarning: true } : {}) },
       {
-        onError: (err) =>
+        onError: (err) => {
+          const warning = acknowledgeJointWarning ? null : jointWarningFromError(err);
+          if (warning) {
+            setJointWarning({ dayId, exerciseId, message: warning });
+            return;
+          }
           toast({
             title: "Nie dodano ćwiczenia",
             description: humanizeError(err),
             variant: "destructive",
-          }),
+          });
+        },
       },
     );
+  };
+
+  const handleExerciseSelected = (exerciseId: number) => {
+    if (!pickerDayId) return;
+    submitExercise(pickerDayId, exerciseId);
   };
 
   const handleDayDragEnd = (event: DragEndEvent) => {
@@ -1962,6 +1975,28 @@ export default function PlanEditor() {
         onSelect={handleExerciseSelected}
         clientId={plan?.clientId}
       />
+
+      <AlertDialog open={jointWarning !== null} onOpenChange={(open) => { if (!open) setJointWarning(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Zgłoszony ból</AlertDialogTitle>
+            <AlertDialogDescription data-testid="joint-warning-message">
+              {jointWarning?.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (jointWarning) submitExercise(jointWarning.dayId, jointWarning.exerciseId, true);
+                setJointWarning(null);
+              }}
+            >
+              Dodaj mimo to
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
     </AvoidedExercisesContext.Provider>
   );
