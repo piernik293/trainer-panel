@@ -45,6 +45,7 @@ import {
   type GeneratedDayExplanation,
   DRAFT_EXERCISE_DEFAULTS,
   defaultRirForLevel,
+  rirTargetLabel,
   addExerciseToDay,
   removeExerciseFromDay,
   updateDraftExerciseField,
@@ -975,6 +976,7 @@ export default function Step4Exercises({
                 onTempoChange={handleTempoChange}
                 onRirManualChange={handleRirManualChange}
                 onWeightChange={handleWeightChange}
+                rirTarget={rirTargetLabel(experienceLevel)}
               />
 
               {/* Workout day duration estimate — shown once exercises are present */}
@@ -1064,6 +1066,8 @@ interface DayExerciseListProps {
   onTempoChange: (dayIndex: number, localId: string, tempo: string | undefined) => void;
   onRirManualChange: (dayIndex: number, localId: string, rir: number) => void;
   onWeightChange: (dayIndex: number, localId: string, weight: number | undefined) => void;
+  /** Neutral target hint under the RIR field ("Cel: RIR 2–3"), null = none */
+  rirTarget?: string | null;
 }
 
 function DayExerciseList({
@@ -1076,6 +1080,7 @@ function DayExerciseList({
   onTempoChange,
   onRirManualChange,
   onWeightChange,
+  rirTarget = null,
 }: DayExerciseListProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -1119,6 +1124,7 @@ function DayExerciseList({
                 onTempoChange={(tempo) => onTempoChange(dayIndex, ex.localId, tempo)}
                 onRirManualChange={(rir) => onRirManualChange(dayIndex, ex.localId, rir)}
                 onWeightChange={(weight) => onWeightChange(dayIndex, ex.localId, weight)}
+                rirTarget={rirTarget}
               />
             );
           })}
@@ -1139,6 +1145,7 @@ interface SortableDraftExerciseCardProps {
   onTempoChange: (tempo: string | undefined) => void;
   onRirManualChange: (rir: number) => void;
   onWeightChange: (weight: number | undefined) => void;
+  rirTarget?: string | null;
 }
 
 function SortableDraftExerciseCard({
@@ -1150,6 +1157,7 @@ function SortableDraftExerciseCard({
   onTempoChange,
   onRirManualChange,
   onWeightChange,
+  rirTarget = null,
 }: SortableDraftExerciseCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: exercise.localId });
@@ -1397,6 +1405,7 @@ function SortableDraftExerciseCard({
             className="h-7 text-xs"
             onBlur={(e) => handleRirBlur(e.target.value)}
           />
+          {rirTarget && <p className="text-[10px] text-muted-foreground">{rirTarget}</p>}
         </div>
 
         {/* Rest */}
