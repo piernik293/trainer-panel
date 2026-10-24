@@ -1,19 +1,19 @@
 ﻿id;nazwa;potrzebne_do_drabinki;pole;obecnie;propozycja;powód;decyzja_trenera
-4;Wyciskanie hantli nad głowę;Pchanie pionowe — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole; true tylko decyzją trenera. nie jest to propozycja ustawienia true; cechy: trudność uczenia 2; obciążenie stawów średnie";
-139;Wyciskanie hantli siedząc;Pchanie pionowe — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole; true tylko decyzją trenera. nie jest to propozycja ustawienia true; cechy: trudność uczenia 2; obciążenie stawów średnie";
-117;Pompki klasyczne;Pchanie poziome — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole; true tylko decyzją trenera. nie jest to propozycja ustawienia true; cechy: trudność uczenia 2; obciążenie stawów niskie";
-92;Wypychanie nóg na suwnicy 45°;Przysiad — P;urządzenie szczegółowo (equipment_detail);puste;Suwnica 45° (prasa do nóg);brakujące pole;
-92;Wypychanie nóg na suwnicy 45°;Przysiad — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole; true tylko decyzją trenera. nie jest to propozycja ustawienia true; cechy: trudność uczenia 2; obciążenie stawów średnie";
-96;Wykrok w tył;Wykrok — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole; true tylko decyzją trenera. nie jest to propozycja ustawienia true; cechy: trudność uczenia 2; obciążenie stawów średnie";
-101;Martwy ciąg rumuński z hantlami;Zawias biodrowy — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole; true tylko decyzją trenera. nie jest to propozycja ustawienia true; cechy: trudność uczenia 2; obciążenie stawów niskie";
-126;Podciąganie na maszynie wspomagającej;Przyciąganie pionowe — P;urządzenie szczegółowo (equipment_detail);puste;Maszyna wspomagająca (podciąganie/dipy);brakujące pole;
-126;Podciąganie na maszynie wspomagającej;Przyciąganie pionowe — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole; true tylko decyzją trenera. nie jest to propozycja ustawienia true; cechy: trudność uczenia 2; obciążenie stawów niskie";
-129;Wiosłowanie hantlami z podparciem klatki;Przyciąganie poziome — P;stawy obciążane;puste;(bez wyraźnego stawu z listy);brakujące pole — do potwierdzenia przez trenera;
-129;Wiosłowanie hantlami z podparciem klatki;Przyciąganie poziome — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole; true tylko decyzją trenera. nie jest to propozycja ustawienia true; cechy: trudność uczenia 2; obciążenie stawów niskie";
-131;Wiosłowanie jednorącz hantlem;Przyciąganie poziome — P;stawy obciążane;puste;(bez wyraźnego stawu z listy);brakujące pole — do potwierdzenia przez trenera;
-131;Wiosłowanie jednorącz hantlem;Przyciąganie poziome — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole; true tylko decyzją trenera. nie jest to propozycja ustawienia true; cechy: trudność uczenia 2; obciążenie stawów niskie";
-195;Wspięcia na palce jednostronne stojąc;Łydki — P;stawy obciążane;puste;(bez wyraźnego stawu z listy);brakujące pole — do potwierdzenia przez trenera;
-195;Wspięcia na palce jednostronne stojąc;Łydki — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole; true tylko decyzją trenera. nie jest to propozycja ustawienia true; cechy: trudność uczenia 1; obciążenie stawów niskie";
+4;Wyciskanie hantli nad głowę;Pchanie pionowe — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole;tak (24.10.2026); cechy: trudność uczenia 2; obciążenie stawów średnie";
+139;Wyciskanie hantli siedząc;Pchanie pionowe — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole;tak (24.10.2026); cechy: trudność uczenia 2; obciążenie stawów średnie";
+117;Pompki klasyczne;Pchanie poziome — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole;tak (24.10.2026); cechy: trudność uczenia 2; obciążenie stawów niskie";
+92;Wypychanie nóg na suwnicy 45°;Przysiad — P;urządzenie szczegółowo (equipment_detail);puste;Suwnica 45° (prasa do nóg);brakujące pole;tak (24.10.2026)
+92;Wypychanie nóg na suwnicy 45°;Przysiad — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole;tak (24.10.2026); cechy: trudność uczenia 2; obciążenie stawów średnie";
+96;Wykrok w tył;Wykrok — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole;tak (24.10.2026); cechy: trudność uczenia 2; obciążenie stawów średnie";
+101;Martwy ciąg rumuński z hantlami;Zawias biodrowy — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole;tak (24.10.2026); cechy: trudność uczenia 2; obciążenie stawów niskie";
+126;Podciąganie na maszynie wspomagającej;Przyciąganie pionowe — P;urządzenie szczegółowo (equipment_detail);puste;Maszyna wspomagająca (podciąganie/dipy);brakujące pole;tak (24.10.2026)
+126;Podciąganie na maszynie wspomagającej;Przyciąganie pionowe — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole;tak (24.10.2026); cechy: trudność uczenia 2; obciążenie stawów niskie";
+129;Wiosłowanie hantlami z podparciem klatki;Przyciąganie poziome — P;stawy obciążane;puste;(bez wyraźnego stawu z listy);brakujące pole — do potwierdzenia przez trenera;tak (24.10.2026)
+129;Wiosłowanie hantlami z podparciem klatki;Przyciąganie poziome — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole;tak (24.10.2026); cechy: trudność uczenia 2; obciążenie stawów niskie";
+131;Wiosłowanie jednorącz hantlem;Przyciąganie poziome — P;stawy obciążane;puste;(bez wyraźnego stawu z listy);brakujące pole — do potwierdzenia przez trenera;tak (24.10.2026)
+131;Wiosłowanie jednorącz hantlem;Przyciąganie poziome — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole;tak (24.10.2026); cechy: trudność uczenia 2; obciążenie stawów niskie";
+195;Wspięcia na palce jednostronne stojąc;Łydki — P;stawy obciążane;puste;(bez wyraźnego stawu z listy);brakujące pole — do potwierdzenia przez trenera;tak (24.10.2026)
+195;Wspięcia na palce jednostronne stojąc;Łydki — P;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole;tak (24.10.2026); cechy: trudność uczenia 1; obciążenie stawów niskie";
 138;Arnold press;;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole; true tylko decyzją trenera. nie jest to propozycja ustawienia true; cechy: obciążenie stawów średnie";
 140;Unoszenie hantli bokiem;;suitableForNoActivity;brak;(do oceny trenera);"brakujące pole; true tylko decyzją trenera. nie jest to propozycja ustawienia true; cechy: trudność uczenia 1; obciążenie stawów niskie";
 141;Unoszenie ramienia bokiem na wyciągu;;urządzenie szczegółowo (equipment_detail);puste;Wyciąg — uchwyt jednorącz;brakujące pole;
