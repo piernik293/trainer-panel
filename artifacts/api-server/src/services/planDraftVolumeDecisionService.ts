@@ -51,7 +51,7 @@ import {
   type WeeklyVolumeDecisionResponseType,
   type RecoveryProfile,
 } from "@workspace/api-zod";
-import { mapToGuidelineLevel } from "./volumeCalculator";
+import { mapToGuidelineLevel, volumeRowsLevel } from "./volumeCalculator";
 
 // ─── Target display order ─────────────────────────────────────────────────────
 
@@ -655,7 +655,7 @@ async function loadGuidelines(
     .where(
       and(
         eq(volumeGuidelinesTable.versionId, guidelineVersionId),
-        eq(volumeGuidelinesTable.experienceLevel, guidelineLevel),
+        eq(volumeGuidelinesTable.experienceLevel, volumeRowsLevel(guidelineLevel)),
       ),
     );
 

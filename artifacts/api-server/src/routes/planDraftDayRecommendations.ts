@@ -27,10 +27,11 @@
  *   { hasProfile, hasLocationData, exercises: DayRecommendationExercise[] }
  */
 
+import { buildLadderRules, loadLadderRows } from "../services/ladderSelection";
 import { hitsBlockedJoint, loadBlockedJoints } from "../services/jointExclusion";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
 import { Router, type IRouter } from "express";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, or, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   db,
@@ -188,11 +189,19 @@ router.get(
 
     const avoidedExerciseIds = new Set<number>(survey.avoidedExerciseIds ?? []);
 
+    // Progression ladders (docs/DRABINKI.md): automatic selection never goes above the client's step; the step of the
+    // client's own level is preferred; warm-up-role exercises on a "Brak aktywności" step are allowed for such clients only.
+    const ladderOn = query.data.useV0Selector === "true";
+    const ladder = buildLadderRules(ladderOn ?  await loadLadderRows() : [], survey.experienceLevel);
+    const roleCondition = ladder.warmupRoleAllowed.size > 0
+      ? or(mainPlanRoleCondition(), and(inArray(exercisesTable.id, [...ladder.warmupRoleAllowed]), eq(exercisesTable.suitableForNoActivity, true)))!
+      : mainPlanRoleCondition();
+
     // ── Fetch active exercises (DB hard filter for isActive) ───────────────────
     const exercises = await db
       .select()
       .from(exercisesTable)
-      .where(and(eq(exercisesTable.isActive, true), mainPlanRoleCondition()))
+      .where(and(eq(exercisesTable.isActive, true), roleCondition))
       .orderBy(exercisesTable.name);
 
     // ── Filter to complete exercises ───────────────────────────────────────────
@@ -227,6 +236,7 @@ router.get(
     for (const ex of completeExercises) {
       if (alreadyAddedIds.has(ex.id)) continue;
       if (hitsBlockedJoint(ex.jointStressAreas, blockedJoints)) continue;
+      if (!ladder.allowed(ex.id)) continue;
       if (!isLocationCompatible(ex.trainingLocation ?? [], survey.trainingLocation)) continue;
       if (!isEquipmentCompatible(ex.equipment ?? [], ex.requiredEquipmentAll ?? [], clientEquipment)) continue;
 
@@ -244,7 +254,7 @@ router.get(
         equipment: ex.equipment ?? [],
         requiredEquipmentAll: ex.requiredEquipmentAll ?? [],
         trainingLocation: ex.trainingLocation ?? [],
-        score,
+        score: score + ladder.bonus(ex.id),
         matchReasons,
         warnReasons,
         isAvoided: avoidedExerciseIds.has(ex.id),

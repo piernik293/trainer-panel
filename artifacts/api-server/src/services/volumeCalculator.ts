@@ -145,6 +145,16 @@ export function mapToGuidelineLevel(experienceLevelUsed: string): ExperienceLeve
   }
 }
 
+/**
+ * Level whose volume rows (volume_guidelines) apply to a client of the given level.
+ * Decision of 24.10.2026: weekly volume per muscle for "Brak aktywności fizycznej" equals "Początkujący"
+ * (the difference between the two is the difficulty of exercises and the intensity: RIR, ladder step). The stored
+ * "Brak aktywności fizycznej" rows stay in the table but are not read.
+ */
+export function volumeRowsLevel<T extends string>(level: T): T | "Początkujący" {
+  return level === "Brak aktywności fizycznej" ? "Początkujący" : level;
+}
+
 /** Returns true when experienceLevelUsed is one of the four canonical values. */
 export function isValidExperienceLevel(level: string): boolean {
   return (CANONICAL_EXPERIENCE_LEVELS as readonly string[]).includes(level);
@@ -424,7 +434,7 @@ async function loadGuidelineMap(
     .where(
       and(
         eq(volumeGuidelinesTable.versionId, guidelineVersionId),
-        eq(volumeGuidelinesTable.experienceLevel, guidelineLevel),
+        eq(volumeGuidelinesTable.experienceLevel, volumeRowsLevel(guidelineLevel)),
       ),
     );
 

@@ -27,6 +27,7 @@ import {
   calculatePlanVolume,
   calculateVolumePreview,
   mapToGuidelineLevel,
+  volumeRowsLevel,
   isValidExperienceLevel,
   type VolumePreviewWarning,
 } from "../services/volumeCalculator";
@@ -2071,7 +2072,7 @@ router.get("/volume-guidelines", async (req, res): Promise<void> => {
     .where(
       and(
         eq(volumeGuidelinesTable.versionId, versionId),
-        eq(volumeGuidelinesTable.experienceLevel, guidelineLevel),
+        eq(volumeGuidelinesTable.experienceLevel, volumeRowsLevel(guidelineLevel)),
       ),
     )
     .orderBy(volumeTargetsTable.name);
