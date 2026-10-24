@@ -18,3 +18,13 @@ export function planJointWarningText(joints: readonly string[]): string {
 export function jointReplaceConfirmText(from: string, to: string, clientName: string | null | undefined): string {
   return `Zamienić ${from} na ${to} w planie ${clientName?.trim() || "klienta"}? Serie i powtórzenia zostaną.`;
 }
+
+/**
+ * Confirmation before activating a plan. With another active plan of the client: it will be archived
+ * (training history stays). Without one: the original text about the locked structure.
+ */
+export function activationConfirmText(otherActivePlanTitle: string | null | undefined): string {
+  return otherActivePlanTitle
+    ? `Aktywny plan ${otherActivePlanTitle} zostanie zarchiwizowany. Historia treningów zostaje.`
+    : "Aktywować plan? Po aktywacji nie będzie można zmieniać jego struktury.";
+}

@@ -2061,14 +2061,28 @@ router.post("/plans/:id/activate", requireAuth, async (req, res): Promise<void> 
     return;
   }
 
-  // Activate.
-  await db
-    .update(workoutPlansTable)
-    .set({ status: "active", activatedAt: new Date(), updatedAt: new Date() })
-    .where(eq(workoutPlansTable.id, planId));
+  // Activate — and archive the client's previous active plan in the same transaction (at most one active plan
+  // per client, enforced by a partial unique index). The old plan is only archived: its sessions and logged sets
+  // keep pointing at it, nothing is deleted or moved.
+  const archivedPlans = await db.transaction(async (tx) => {
+    const archived = await tx
+      .update(workoutPlansTable)
+      .set({ status: "archived", updatedAt: new Date() })
+      .where(and(
+        eq(workoutPlansTable.clientId, plan.clientId),
+        eq(workoutPlansTable.status, "active"),
+        sql`${workoutPlansTable.id} <> ${planId}`,
+      ))
+      .returning({ id: workoutPlansTable.id, title: workoutPlansTable.title });
+    await tx
+      .update(workoutPlansTable)
+      .set({ status: "active", activatedAt: new Date(), updatedAt: new Date() })
+      .where(eq(workoutPlansTable.id, planId));
+    return archived;
+  });
 
   const full = await getPlanFull(planId);
-  res.json(full);
+  res.json({ ...full, archivedPlans });
 });
 
 // ─── GET /volume-guidelines ───────────────────────────────────────────────────

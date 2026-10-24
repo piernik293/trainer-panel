@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { jointWarningFromError, planJointWarningText, jointReplaceConfirmText } from "../jointWarning";
+import { jointWarningFromError, planJointWarningText, jointReplaceConfirmText, activationConfirmText } from "../jointWarning";
 
 describe("jointWarningFromError", () => {
   it("zwraca treść ostrzeżenia z odpowiedzi 409 EXERCISE_LOADS_REPORTED_JOINT", () => {
@@ -37,5 +37,14 @@ describe("jointReplaceConfirmText", () => {
   });
   it("brak nazwy klienta → „klienta”", () => {
     expect(jointReplaceConfirmText("A", "B", null)).toBe("Zamienić A na B w planie klienta? Serie i powtórzenia zostaną.");
+  });
+});
+
+describe("activationConfirmText", () => {
+  it("inny aktywny plan klienta → informacja o archiwizacji", () => {
+    expect(activationConfirmText("Plan demo — siła")).toBe("Aktywny plan Plan demo — siła zostanie zarchiwizowany. Historia treningów zostaje.");
+  });
+  it("brak innego aktywnego planu → dotychczasowa treść", () => {
+    expect(activationConfirmText(null)).toBe("Aktywować plan? Po aktywacji nie będzie można zmieniać jego struktury.");
   });
 });
