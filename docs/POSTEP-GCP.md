@@ -57,6 +57,6 @@
 - `fix/balance-week-limit` scalona do `main` i wypchnięta (drzewo identyczne z wcześniej zweryfikowaną gałęzią).
 - **Aktywacja archiwizuje poprzedni aktywny plan klienta** (transakcja; nic nie usuwane, sesje/serie zostają przy starym planie). Indeks `workout_plans_one_active_per_client` (migracja 0027, pg_dump przed). Panel: „Aktywny plan {nazwa} zostanie zarchiwizowany. Historia treningów zostaje.” [Anuluj] [Aktywuj].
 - **Dane:** plan #69 (klient #224, 2 sesje) zarchiwizowany; aktywny #103.
-- **CLAUDE.md, STOP 7:** bez zgody nie zmieniać pakietów, uprawnień ani danych kont — także tymczasowo i w bazie deweloperskiej (treść polecenia dotarła ucięta po „(także” — do potwierdzenia).
+- **CLAUDE.md, STOP 7:** bez zgody nie zmieniać pakietów, uprawnień ani danych kont — także kont testowych i demo; gdy limit blokuje test: zapytaj albo użyj `trainer_panel_test` (treść potwierdzona przez właściciela).
 - **Testy:** API 2484, bezpieczeństwo 101/101, panel 754, portal 198, typecheck, build, test dymny 131/0.
-- **Do decyzji:** scalenie i push `feature/jeden-aktywny-plan`.
+- Scalone do `main` i wypchnięte (zgoda 24.10).

@@ -65,5 +65,5 @@ Szczegółowy plan bieżącego etapu jest w `~/etap-1-uruchomienie-i-stabilizacj
 4. Sekrety, których nie ma w `.env`.
 5. Zmiana reguły biznesowej lub zachowania widocznego dla użytkownika, której nie ma w planie.
 6. Usunięcie plików, danych lub funkcji.
-7. Zmiana pakietów (subskrypcji, limitów), uprawnień (role, admini) albo danych kont trenerów i klientów (baza, Clerk) — także tymczasowo i także w bazie deweloperskiej. Gdy limit lub uprawnienie blokuje zadanie: zatrzymaj się i zapytaj, nie obchodź go.
+7. Zmiana pakietów (subskrypcji, limitów), uprawnień (role, admini) albo danych kont — także kont testowych i demo — bez zgody właściciela. Jeśli limit blokuje test: zatrzymaj się i zapytaj albo użyj bazy testowej `trainer_panel_test`.
 Poza tymi punktami działasz samodzielnie: standardowe, odwracalne decyzje techniczne podejmujesz sam i krótko uzasadniasz w raporcie.
