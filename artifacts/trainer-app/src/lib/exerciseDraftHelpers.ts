@@ -140,7 +140,7 @@ export const RIR_BY_LEVEL: Record<string, { min: number; max: number; default: n
 };
 
 export function defaultRirForLevel(level: string | null | undefined): number {
-  return (level && RIR_BY_LEVEL[level]?.default) ?? DRAFT_EXERCISE_DEFAULTS.rir;
+  return (level ? RIR_BY_LEVEL[level]?.default : undefined) ?? DRAFT_EXERCISE_DEFAULTS.rir;
 }
 
 /** Soft check (not a blocker): returns a hint when the RIR is outside the level's recommended range. */
