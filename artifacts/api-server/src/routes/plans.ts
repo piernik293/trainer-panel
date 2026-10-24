@@ -23,6 +23,8 @@ import {
   volumeTargetsTable,
   volumeTargetMembersTable,
   jointWarningDecisionsTable,
+  planChangeLogTable,
+  trainersTable,
 } from "@workspace/db";
 import {
   calculatePlanVolume,
@@ -2145,6 +2147,28 @@ router.get("/plans/:id/joint-warnings", requireAuth, async (req, res): Promise<v
   });
 });
 
+router.get("/plans/:id/history", requireAuth, async (req, res): Promise<void> => {
+  const planId = Number(req.params.id);
+  if (!Number.isFinite(planId)) {
+    res.status(400).json({ error: "Nieprawidłowe ID" });
+    return;
+  }
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
+  const rows = await db
+    .select({
+      id: planChangeLogTable.id, kind: planChangeLogTable.kind, createdAt: planChangeLogTable.createdAt,
+      fromExerciseName: planChangeLogTable.fromExerciseName, toExerciseName: planChangeLogTable.toExerciseName,
+      details: planChangeLogTable.details, trainerName: trainersTable.displayName, trainerEmail: trainersTable.email,
+    })
+    .from(planChangeLogTable)
+    .leftJoin(trainersTable, eq(trainersTable.id, planChangeLogTable.trainerId))
+    .where(eq(planChangeLogTable.planId, planId))
+    .orderBy(desc(planChangeLogTable.createdAt), desc(planChangeLogTable.id));
+  res.json({
+    entries: rows.map(({ trainerName, trainerEmail, ...r }) => ({ ...r, trainer: trainerName ?? trainerEmail ?? "Trener" })),
+  });
+});
+
 router.post("/plans/:id/exercises/:planExerciseId/joint-replacement", requireAuth, async (req, res): Promise<void> => {
   const planId = Number(req.params.id);
   const planExerciseId = Number(req.params.planExerciseId);
@@ -2153,7 +2177,7 @@ router.post("/plans/:id/exercises/:planExerciseId/joint-replacement", requireAut
     return;
   }
   if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
-  const result = await replaceWithProposal(planId, planExerciseId);
+  const result = await replaceWithProposal(planId, planExerciseId, req.trainer!.id);
   if (!result.ok) {
     res.status(409).json({
       code: result.code,

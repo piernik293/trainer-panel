@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, createContext, useMemo } from "react";
-import { jointWarningFromError, planJointWarningText } from "@/lib/jointWarning";
+import { jointWarningFromError, planJointWarningText, jointReplaceConfirmText } from "@/lib/jointWarning";
 import { StepHint } from "@/components/dashboard/StepHint";
 import { humanizeError } from "@/lib/userError";
 import { useParams, Link } from "wouter";
@@ -37,6 +37,7 @@ import {
   useReorderPlanDays,
   useAddPlanExercise,
   usePlanJointWarnings,
+  usePlanHistory,
   useReplaceJointExercise,
   type PlanJointWarning,
   useUpdatePlanExercise,
@@ -127,9 +128,10 @@ interface AvoidedExercisesContextValue {
 }
 
 /** Plan slots loading a joint the client reported (planExerciseId → warning); canReplace = plan not archived. */
-const JointWarningsContext = createContext<{ byPlanExercise: ReadonlyMap<number, PlanJointWarning>; canReplace: boolean }>({
+const JointWarningsContext = createContext<{ byPlanExercise: ReadonlyMap<number, PlanJointWarning>; canReplace: boolean; clientName: string | null }>({
   byPlanExercise: new Map(),
   canReplace: false,
+  clientName: null,
 });
 
 const AvoidedExercisesContext = createContext<AvoidedExercisesContextValue>({
@@ -757,9 +759,10 @@ function ExerciseRow({
   const { avoidedMap } = useContext(AvoidedExercisesContext);
   const isAvoided = avoidedMap.has(ex.exerciseId);
   const avoidedReason = avoidedMap.get(ex.exerciseId) ?? null;
-  const { byPlanExercise, canReplace } = useContext(JointWarningsContext);
+  const { byPlanExercise, canReplace, clientName } = useContext(JointWarningsContext);
   const jointWarning = byPlanExercise.get(ex.id) ?? null;
   const replaceJoint = useReplaceJointExercise(planId);
+  const [confirmReplace, setConfirmReplace] = useState(false);
 
   const [editing, setEditing] = useState(false);
   const [moving, setMoving] = useState(false);
@@ -855,21 +858,41 @@ function ExerciseRow({
                       size="sm"
                       className="h-6 px-2 text-xs"
                       disabled={replaceJoint.isPending}
-                      onClick={() =>
-                        replaceJoint.mutate(
-                          { planExerciseId: ex.id },
-                          {
-                            onSuccess: () => toast({ title: `Zamieniono na: ${jointWarning.replacement!.name}` }),
-                            onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
-                          },
-                        )
-                      }
+                      onClick={() => setConfirmReplace(true)}
                     >
                       Zamień na: {jointWarning.replacement.name}
                     </Button>
                   )
                 ) : (
                   <p className="text-muted-foreground">Brak zamiennika z drabinki — wybierz ćwiczenie ręcznie.</p>
+                )}
+                {jointWarning.replacement && (
+                  <AlertDialog open={confirmReplace} onOpenChange={setConfirmReplace}>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Zamiana ćwiczenia</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {jointReplaceConfirmText(ex.exerciseName, jointWarning.replacement.name, clientName)}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Anuluj</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() =>
+                            replaceJoint.mutate(
+                              { planExerciseId: ex.id },
+                              {
+                                onSuccess: () => toast({ title: `Zamieniono na: ${jointWarning.replacement!.name}` }),
+                                onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
+                              },
+                            )
+                          }
+                        >
+                          Zamień
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
               </div>
             )}
@@ -1713,9 +1736,11 @@ export default function PlanEditor() {
     () => ({
       byPlanExercise: new Map((jointWarningsData?.warnings ?? []).map((w) => [w.planExerciseId, w])),
       canReplace: plan?.status !== "archived",
+      clientName: plan?.clientName ?? null,
     }),
-    [jointWarningsData, plan?.status],
+    [jointWarningsData, plan?.status, plan?.clientName],
   );
+  const { data: historyData } = usePlanHistory(planId);
   const activatePlan = useActivatePlan(planId, plan?.clientId);
   const reorderDays = useReorderPlanDays(planId);
 
@@ -2024,6 +2049,26 @@ export default function PlanEditor() {
           </div>
         </div>
       </div>
+
+      {/* Plan history (who, when, what → what) */}
+      {(historyData?.entries.length ?? 0) > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Historia zmian planu</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-1 text-sm" data-testid="plan-history">
+              {historyData!.entries.map((h) => (
+                <li key={h.id} className="text-muted-foreground">
+                  <span className="text-foreground">{new Date(h.createdAt).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" })}</span>
+                  {" — "}{h.trainer}: {h.fromExerciseName} → {h.toExerciseName}
+                  {h.details && <span> ({h.details})</span>}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Exercise picker dialog */}
       <ExercisePicker

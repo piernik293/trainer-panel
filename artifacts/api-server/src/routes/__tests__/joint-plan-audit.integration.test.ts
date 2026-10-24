@@ -16,7 +16,7 @@ vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mo
 import app from "../../app";
 import {
   db, pool, trainersTable, clientsTable, surveysTable, exercisesTable, exerciseLadderStepsTable,
-  workoutPlanExercisesTable, workoutPlansTable, jointWarningDecisionsTable,
+  workoutPlanExercisesTable, workoutPlansTable, jointWarningDecisionsTable, planChangeLogTable,
 } from "@workspace/db";
 import { proposeLadderReplacement, type CandidateInfo, type ReplacementContext } from "../../services/jointPlanAudit";
 import type { LadderRow } from "../../services/ladderSelection";
@@ -165,9 +165,22 @@ describe("ostrzeżenie w planie i zamiana jednym kliknięciem", () => {
       .toEqual({ sets: slot.workingSets, min: slot.repRangeMin, max: slot.repRangeMax, rir: slot.rir, order: slot.orderInDay });
     const w = await request(app).get(`/api/plans/${planId}/joint-warnings`);
     expect((w.body.warnings as Array<{ exerciseId: number }>).map((x) => x.exerciseId)).toEqual([IDS.offLadder]);
+    // historia planu: kto, kiedy, co na co
+    const [log] = await db.select().from(planChangeLogTable).where(eq(planChangeLogTable.planId, planId));
+    expect(log).toMatchObject({
+      trainerId, kind: "zamiana_staw", planExerciseId: slot.id,
+      fromExerciseId: IDS.shoulderPlan, fromExerciseName: "Fixture audyt — szczebel 4 bark",
+      toExerciseId: IDS.easy, toExerciseName: "Fixture audyt — szczebel 1 bez stawu", details: "zgłoszony staw: Bark",
+    });
+    const hist = await request(app).get(`/api/plans/${planId}/history`);
+    expect(hist.status).toBe(200);
+    expect(hist.body.entries).toHaveLength(1);
+    expect(hist.body.entries[0]).toMatchObject({ trainer: "Trener", fromExerciseName: "Fixture audyt — szczebel 4 bark", toExerciseName: "Fixture audyt — szczebel 1 bez stawu" });
+    expect(Date.parse(hist.body.entries[0].createdAt)).not.toBeNaN();
     // drugi raz ten sam slot: już bez ostrzeżenia
     const again = await request(app).post(`/api/plans/${planId}/exercises/${slot.id}/joint-replacement`);
     expect(again.status).toBe(409); expect(again.body.code).toBe("NO_WARNING");
+    expect(await db.select().from(planChangeLogTable).where(eq(planChangeLogTable.planId, planId))).toHaveLength(1);
     // poza drabinką: brak zamiennika, nic nie zmienione
     const off = rows!.find((r) => r.exerciseId === IDS.offLadder)!;
     const none = await request(app).post(`/api/plans/${planId}/exercises/${off.id}/joint-replacement`);
@@ -191,6 +204,7 @@ describe("ostrzeżenie w planie i zamiana jednym kliknięciem", () => {
       const anyPlan = (await db.select({ id: workoutPlanExercisesTable.id }).from(workoutPlanExercisesTable).limit(1))[0];
       expect((await request(app).get(`/api/plans/${planId}/joint-warnings`)).status).toBe(404);
       expect((await request(app).post(`/api/plans/${planId}/exercises/${anyPlan.id}/joint-replacement`)).status).toBe(404);
+      expect((await request(app).get(`/api/plans/${planId}/history`)).status).toBe(404);
     } finally {
       await db.update(clientsTable).set({ trainerId }).where(eq(clientsTable.id, c.id));
     }

@@ -194,7 +194,19 @@ export const planKeys = {
   list: (clientId: number) => ["plans", "list", clientId] as const,
   detail: (planId: number) => ["plans", "detail", planId] as const,
   jointWarnings: (planId: number) => ["plans", "joint-warnings", planId] as const,
+  history: (planId: number) => ["plans", "history", planId] as const,
 };
+
+/** Plan history entry (who, when, what → what). */
+export interface PlanHistoryEntry {
+  id: number;
+  kind: string;
+  createdAt: string;
+  trainer: string;
+  fromExerciseName: string | null;
+  toExerciseName: string | null;
+  details: string | null;
+}
 
 /** Exercise in the plan that loads a joint the client reported; trainer-only. */
 export interface PlanJointWarning {
@@ -279,6 +291,14 @@ export function useGetPlan(planId: number) {
   });
 }
 
+export function usePlanHistory(planId: number) {
+  return useQuery<{ entries: PlanHistoryEntry[] }>({
+    queryKey: planKeys.history(planId),
+    queryFn: ({ signal }) => apiFetch<{ entries: PlanHistoryEntry[] }>(`/plans/${planId}/history`, { signal }),
+    enabled: Number.isFinite(planId) && planId > 0,
+  });
+}
+
 export function usePlanJointWarnings(planId: number) {
   return useQuery<{ warnings: PlanJointWarning[] }>({
     queryKey: planKeys.jointWarnings(planId),
@@ -292,10 +312,14 @@ export function usePlanJointWarnings(planId: number) {
 /** One click: swap the slot to the server's ladder proposal (prescription unchanged). */
 export function useReplaceJointExercise(planId: number) {
   const invalidate = usePlanInvalidator(planId);
+  const queryClient = useQueryClient();
   return useMutation<WorkoutPlan, Error, { planExerciseId: number }>({
     mutationFn: ({ planExerciseId }) =>
       apiFetch<WorkoutPlan>(`/plans/${planId}/exercises/${planExerciseId}/joint-replacement`, { method: "POST", body: "{}" }),
-    onSuccess: invalidate,
+    onSuccess: (plan) => {
+      invalidate(plan);
+      queryClient.invalidateQueries({ queryKey: planKeys.history(planId) });
+    },
   });
 }
 

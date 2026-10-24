@@ -13,3 +13,8 @@ export function planJointWarningText(joints: readonly string[]): string {
   const list = joints.map((j) => j.toLowerCase()).join(", ");
   return list ? `To ćwiczenie obciąża zgłoszony staw: ${list}` : "To ćwiczenie obciąża zgłoszony staw";
 }
+
+/** Confirmation before the one-click swap. */
+export function jointReplaceConfirmText(from: string, to: string, clientName: string | null | undefined): string {
+  return `Zamienić ${from} na ${to} w planie ${clientName?.trim() || "klienta"}? Serie i powtórzenia zostaną.`;
+}

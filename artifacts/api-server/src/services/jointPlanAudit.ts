@@ -22,6 +22,7 @@ import {
   workoutPlanDaysTable,
   workoutPlanExercisesTable,
   jointWarningDecisionsTable,
+  planChangeLogTable,
 } from "@workspace/db";
 import { loadBlockedJoints, reportedJointsLoaded } from "./jointExclusion";
 import { LADDER_RANK, loadLadderRows, type LadderRow } from "./ladderSelection";
@@ -177,17 +178,26 @@ export async function findJointConflicts(planIds: readonly number[], now: Date =
 }
 
 /**
- * Swaps one plan slot to the server-side proposal (the client cannot choose an arbitrary exercise here).
- * Returns the proposal used, or an error code.
+ * Swaps one plan slot to the server-side proposal (the client cannot choose an arbitrary exercise here) and records
+ * the change in the plan history (who, when, what → what). Returns the proposal used, or an error code.
  */
-export async function replaceWithProposal(planId: number, planExerciseId: number):
+export async function replaceWithProposal(planId: number, planExerciseId: number, trainerId: number):
   Promise<{ ok: true; replacement: ReplacementProposal } | { ok: false; code: "NO_WARNING" | "NO_REPLACEMENT" }> {
   const conflict = (await findJointConflicts([planId])).find((c) => c.planExerciseId === planExerciseId);
   if (!conflict) return { ok: false, code: "NO_WARNING" };
   if (!conflict.replacement) return { ok: false, code: "NO_REPLACEMENT" };
-  await db.update(workoutPlanExercisesTable)
-    .set({ exerciseId: conflict.replacement.id })
-    .where(eq(workoutPlanExercisesTable.id, planExerciseId));
-  await db.update(workoutPlansTable).set({ updatedAt: new Date() }).where(eq(workoutPlansTable.id, planId));
-  return { ok: true, replacement: conflict.replacement };
+  const replacement = conflict.replacement;
+  await db.transaction(async (tx) => {
+    await tx.update(workoutPlanExercisesTable)
+      .set({ exerciseId: replacement.id })
+      .where(eq(workoutPlanExercisesTable.id, planExerciseId));
+    await tx.insert(planChangeLogTable).values({
+      planId, trainerId, kind: "zamiana_staw", planExerciseId,
+      fromExerciseId: conflict.exerciseId, fromExerciseName: conflict.exerciseName,
+      toExerciseId: replacement.id, toExerciseName: replacement.name,
+      details: `zgłoszony staw: ${conflict.joints.join(", ")}`,
+    });
+    await tx.update(workoutPlansTable).set({ updatedAt: new Date() }).where(eq(workoutPlansTable.id, planId));
+  });
+  return { ok: true, replacement };
 }
