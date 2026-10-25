@@ -12,6 +12,11 @@ const catalogue: CatalogueWarmupItem[] = WARMUP_CATALOGUE.map((e) => ({
   jointStressAreas: e.joints, equipment: e.equipment, equipmentDetail: e.nr === 15 ? ["Rower stacjonarny"] : [],
   trainingLocation: e.location, defaultReps: e.reps, defaultDurationSeconds: e.secs, perSide: e.perSide, executionInstructions: e.instr,
 }));
+const extra = (over: Partial<CatalogueWarmupItem>): CatalogueWarmupItem => ({
+  id: id++, name: "Dodatkowe", role: "rozciąganie", mainMuscleGroup: "Mięśnie czworogłowe uda", secondaryMuscleGroups: [], movementPattern: "Mobilizacja", learningDifficulty: 1,
+  suitableForNoActivity: true, verificationStatus: "zweryfikowane", jointStressAreas: [], equipment: ["Masa własnego ciała"], equipmentDetail: [], trainingLocation: ["Siłownia", "Dom", "Plener"],
+  defaultReps: null, defaultDurationSeconds: 30, perSide: false, executionInstructions: "", ...over,
+});
 const byNr = (nr: number) => catalogue[WARMUP_CATALOGUE.findIndex((e) => e.nr === nr)]!;
 const names = (items: CatalogueWarmupItem[]) => items.map((i) => i.name);
 
@@ -144,5 +149,39 @@ describe("amount shown as information", () => {
     const m = estimateMinutes(selectWarmup(catalogue, ctx()));
     expect(m).toBeGreaterThanOrEqual(3);
     expect(m).toBeLessThanOrEqual(9);
+  });
+});
+
+
+describe("cool-down: roller, breathing, hidden and unreviewed items (blok 5)", () => {
+  const roller = extra({ name: "Rolowanie przodu uda", equipment: ["Roller"], mainMuscleGroup: "Mięśnie czworogłowe uda" });
+  const roller2 = extra({ name: "Rolowanie tyłu uda", equipment: ["Roller"], mainMuscleGroup: "Mięśnie czworogłowe uda" });
+  const breath = extra({ name: "Oddech pudełkowy", movementPattern: "Oddychanie", mainMuscleGroup: "Brzuch" });
+  const breath2 = extra({ name: "Wydłużony wydech", movementPattern: "Oddychanie", mainMuscleGroup: "Brzuch" });
+  const lower = ["Mięśnie czworogłowe uda", "Pośladki"];
+  it("roller only when the client ticked it or trains at a gym", () => {
+    const withRoller = [...catalogue, roller];
+    expect(names(selectCooldown(withRoller, ctx({ dayGroups: lower, trainingLocation: "Dom", equipmentText: "Hantle" })))).not.toContain("Rolowanie przodu uda");
+    expect(names(selectCooldown(withRoller, ctx({ dayGroups: lower, trainingLocation: "Dom", equipmentText: "Hantle, Roller" })))).toContain("Rolowanie przodu uda");
+    expect(names(selectCooldown(withRoller, ctx({ dayGroups: lower, trainingLocation: "Siłownia", equipmentText: "" })))).toContain("Rolowanie przodu uda");
+  });
+  it("at most one roller exercise per cool-down", () => {
+    const c = selectCooldown([...catalogue, roller, roller2], ctx({ dayGroups: lower }));
+    expect(c.filter((i) => i.equipment.includes("Roller")).length).toBeLessThanOrEqual(1);
+  });
+  it("a breathing exercise closes the cool-down (3 stretches + 1) and is skipped when none is eligible", () => {
+    const c = selectCooldown([...catalogue, breath, breath2], ctx({ dayGroups: lower }));
+    expect(c.length).toBeLessThanOrEqual(4);
+    expect(c[c.length - 1]!.movementPattern).toBe("Oddychanie");
+    expect(c.filter((i) => i.movementPattern === "Oddychanie")).toHaveLength(1);
+    expect(selectCooldown(catalogue, ctx({ dayGroups: lower })).some((i) => i.movementPattern === "Oddychanie")).toBe(false);
+  });
+  it("hidden items never; unreviewed items only for intermediate / advanced", () => {
+    const hidden = extra({ name: "Ukryte", hidden: true });
+    const unreviewed = extra({ name: "Niezweryfikowane", reviewedByTrainer: false, suitableForNoActivity: false });
+    expect(names(selectCooldown([hidden], ctx({ dayGroups: lower })))).toEqual([]);
+    expect(names(selectCooldown([unreviewed], ctx({ dayGroups: lower, level: "Zaawansowany" })))).toEqual(["Niezweryfikowane"]);
+    expect(names(selectCooldown([unreviewed], ctx({ dayGroups: lower, level: "Początkujący" })))).toEqual([]);
+    expect(names(selectCooldown([unreviewed], ctx({ dayGroups: lower, level: "Brak aktywności fizycznej" })))).toEqual([]);
   });
 });

@@ -8,7 +8,10 @@
  *  - an exercise whose joint tag matches a joint the client reported pain in is never offered
  *    (interview text or a "Coś boli?" report during a workout);
  *  - exercises "do weryfikacji" are not offered to beginners (their suitableForNoActivity is not confirmed);
- *  - equipment the client does not have (bands, bike) and a wrong training place are skipped.
+ *  - equipment the client does not have (bands, bike, roller) and a wrong training place are skipped; a roller counts as
+ *    available when the client ticked it or trains at a gym;
+ *  - hidden exercises are never offered; exercises not yet reviewed by the trainer only for intermediate / advanced.
+ * Cool-down: up to 3–4 stretches / rolling (at most one roller exercise) for the day's groups, plus one calm breathing exercise at the end.
  */
 import { PAIN_AREAS } from "@workspace/db";
 
@@ -30,6 +33,9 @@ export interface CatalogueWarmupItem {
   defaultDurationSeconds: number | null;
   perSide: boolean | null;
   executionInstructions: string | null;
+  /** Variants / review status (migration 0028); absent in fixtures = visible and reviewed. */
+  hidden?: boolean | null;
+  reviewedByTrainer?: boolean | null;
 }
 
 export interface SelectionContext {
@@ -74,7 +80,11 @@ export function reportedJoints(healthText: string | null | undefined, painReport
 
 const isBeginnerLevel = (level: string | null | undefined) => level === "Brak aktywności fizycznej" || level === "Początkujący";
 
+const isAdvancedLevel = (level: string | null | undefined) => level === "Średniozaawansowany" || level === "Zaawansowany";
+
 function eligible(it: CatalogueWarmupItem, ctx: SelectionContext): boolean {
+  if (it.hidden) return false;
+  if (it.reviewedByTrainer === false && !isAdvancedLevel(ctx.level)) return false;
   if (isBeginnerLevel(ctx.level)) {
     if (it.suitableForNoActivity !== true) return false;
     if (it.learningDifficulty == null || it.learningDifficulty > 2) return false;
@@ -87,6 +97,9 @@ function eligible(it: CatalogueWarmupItem, ctx: SelectionContext): boolean {
   const needsBike = (it.equipmentDetail ?? []).some((d) => /rower/i.test(d));
   if (needsBands && !/gum/.test(eq)) return false;
   if (needsBike && !/rower|orbitrek/.test(eq)) return false;
+  // Roller only when the client has one or trains at a gym (the gym has rollers).
+  const atGym = (ctx.trainingLocation ?? "").trim().toLowerCase() === "siłownia";
+  if (it.equipment.includes("Roller") && !atGym && !/roller|wałek/.test(eq)) return false;
   return true;
 }
 
@@ -126,12 +139,30 @@ export function selectWarmup(catalogue: readonly CatalogueWarmupItem[], ctx: Sel
   return chosen;
 }
 
+const BREATHING = "Oddychanie";
+const isRoller = (i: CatalogueWarmupItem) => i.equipment.includes("Roller");
+
 export function selectCooldown(catalogue: readonly CatalogueWarmupItem[], ctx: SelectionContext): CatalogueWarmupItem[] {
-  const pool = catalogue.filter((i) => i.role === "rozciąganie" && eligible(i, ctx)).sort(byRelevance(ctx.dayGroups));
-  const relevant = pool.filter((i) => overlap(i, ctx.dayGroups) > 0).slice(0, 4);
-  if (relevant.length >= 3) return relevant;
-  const rest = pool.filter((i) => !relevant.includes(i)).slice(0, 3 - relevant.length);
-  return [...relevant, ...rest];
+  const all = catalogue.filter((i) => i.role === "rozciąganie" && eligible(i, ctx)).sort(byRelevance(ctx.dayGroups));
+  const breathing = all.filter((i) => i.movementPattern === BREATHING).sort((a, b) => a.id - b.id);
+  const pool = all.filter((i) => i.movementPattern !== BREATHING);
+  // Rotate the breathing exercise with the day's groups so consecutive days differ; none when there is no eligible one.
+  const calm = breathing.length ? breathing[ctx.dayGroups.join("|").length % breathing.length] : undefined;
+  const limit = calm ? 3 : 4;
+  let rollers = 0;
+  const take = (list: CatalogueWarmupItem[], n: number) => {
+    const out: CatalogueWarmupItem[] = [];
+    for (const i of list) {
+      if (out.length >= n) break;
+      if (isRoller(i)) { if (rollers >= 1) continue; rollers++; }
+      out.push(i);
+    }
+    return out;
+  };
+  const relevant = take(pool.filter((i) => overlap(i, ctx.dayGroups) > 0), limit);
+  const minimum = Math.min(3, limit);
+  const chosen = relevant.length >= minimum ? relevant : [...relevant, ...take(pool.filter((i) => !relevant.includes(i)), minimum - relevant.length)];
+  return calm ? [...chosen, calm] : chosen;
 }
 
 // ─── Display ──────────────────────────────────────────────────────────────────

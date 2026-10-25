@@ -123,7 +123,7 @@ export const IMPORT_PATTERNS = new Set([
   "Pchanie poziome", "Pchanie pionowe", "Przyciąganie poziome", "Przyciąganie pionowe", "Przysiad", "Zawias biodrowy", "Wykrok",
   "Zgięcie kolana", "Wyprost kolana", "Odwodzenie", "Przywodzenie", "Zgięcie łokcia", "Wyprost łokcia", "Zgięcie/wyprost nadgarstka",
   "Wzruszanie ramion", "Wspięcie na palce", "Stabilizacja tułowia", "Zgięcie tułowia", "Rotacja", "Lokomocja", "Anti-ekstensja",
-  "Anti-rotacja", "Mobilizacja", "Rozciąganie", "Aktywacja", "Inne",
+  "Anti-rotacja", "Mobilizacja", "Rozciąganie", "Aktywacja", "Oddychanie", "Inne",
 ]);
 export const IMPORT_JOINTS = new Set(["Kolano", "Biodro", "Plecy — dół", "Bark", "Łokieć", "Nadgarstek"]);
 
@@ -180,6 +180,9 @@ export interface ImportExercise {
   unilateral: boolean | null;
   intensity: string | null;
   trainingGoals: string[];
+  /** Amount shown for stretching / breathing / rolling (information only): seconds and whether it is per side. */
+  durationSeconds: number | null;
+  perSide: boolean | null;
   /** Variant of a main exercise, or a row checked by hand as "not a duplicate": only an identical slug / name blocks it (no fuzzy match). */
   exactDuplicateOnly: boolean;
   /** false for imports in "odmiany" mode (owner's decision 25.10.2026): the generator uses it only for intermediate / advanced. */
@@ -259,6 +262,9 @@ export function validateRow(c: Record<string, string>, opts: ImportOptions = {})
     else if (!["Średniozaawansowany", "Zaawansowany"].includes(level)) reasons.push("pliometria (intensywność) tylko od poziomu średniozaawansowanego");
     else if (intensity === "wysoka" && level !== "Zaawansowany") reasons.push("pliometria o wysokiej intensywności tylko dla zaawansowanych");
   }
+  const durRaw = (c.czass ?? "").trim();
+  const duration = durRaw === "" ? null : Number(durRaw);
+  if (duration !== null && (!Number.isInteger(duration) || duration < 5 || duration > 600)) reasons.push(`czas_s musi być liczbą całkowitą 5–600, jest „${durRaw}”`);
   const parentRef = (c.odmianaid ?? "").trim();
   if (parentRef && !/^\d+$/.test(parentRef) && !/^=\S+$/.test(parentRef)) reasons.push(`odmiana_id: oczekiwano numeru ćwiczenia lub „=źródło_id”, jest „${parentRef}”`);
   if (reasons.length > 0) return { ok: false, reasons };
@@ -288,6 +294,8 @@ export function validateRow(c: Record<string, string>, opts: ImportOptions = {})
       position: (c.pozycja ?? "").trim() || null,
       unilateral: (c.jednostronne ?? "").trim().toLowerCase() === "tak" ? true : null,
       intensity: intensity || null,
+      durationSeconds: duration,
+      perSide: (c.nastrone ?? "").trim().toLowerCase() === "tak" ? true : null,
       trainingGoals: [...new Set(splitList(c.cele).map((g) => GOAL_MAP[g.toLowerCase()]).filter((g): g is string => !!g))],
       reviewedByTrainer: !opts.unreviewed,
       exactDuplicateOnly: !!parentRef || (c.nieduplikat ?? "").trim().toLowerCase() === "tak",
@@ -410,7 +418,7 @@ export async function applyImport(plan: ImportPlan, source: string, batch: strin
         coachingTips: v.coachingTips, commonMistakes: v.commonMistakes, safetyNotes: v.safetyNotes,
         exerciseType: v.exerciseType, suitableExperienceLevels: v.suitableExperienceLevels, learningDifficulty: v.learningDifficulty,
         suitableForNoActivity: v.suitableForNoActivity, role: v.role, verificationStatus: v.verificationStatus, jointStressAreas: v.joints,
-        parentExerciseId: parentId, variantGrip: v.grip, variantPosition: v.position, unilateral: v.unilateral, intensity: v.intensity, trainingGoals: v.trainingGoals,
+        parentExerciseId: parentId, variantGrip: v.grip, variantPosition: v.position, unilateral: v.unilateral, intensity: v.intensity, trainingGoals: v.trainingGoals, defaultDurationSeconds: v.durationSeconds, perSide: v.perSide,
         reviewedByTrainer: v.reviewedByTrainer,
         isActive: true, source, sourceId: v.sourceId, importedAt: new Date(), reviewBatch: batch,
       } as never).onConflictDoNothing().returning({ id: exercisesTable.id });
