@@ -58,7 +58,7 @@ import {
   prescribeExercise,
 } from "../services/exercisePrescriptionService.js";
 import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
-import { mainPlanRoleCondition } from "../lib/exerciseRoles";
+import { mainPlanRoleCondition, isGeneratorSafe } from "../lib/exerciseRoles";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   authorizeGeneratedDay,
@@ -275,6 +275,7 @@ router.post(
     // ── Filter to complete exercises ───────────────────────────────────────────
     const statsMap = await fetchMuscleStats(exercises.map((e) => e.id));
     const completeExercises = exercises.filter((ex) => {
+      if (!isGeneratorSafe(ex, survey.experienceLevel)) return false;
       const stats = statsMap.get(ex.id);
       const { isComplete } = computeCompleteness(ex, stats);
       return isComplete;

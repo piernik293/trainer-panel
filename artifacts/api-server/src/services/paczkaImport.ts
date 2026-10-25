@@ -113,7 +113,7 @@ export const IMPORT_MUSCLES = new Set([
 ]);
 export const IMPORT_EQUIPMENT = new Set([
   "Sztanga", "Hantle", "Kettlebell", "Maszyna", "Wyciąg", "Drążek", "Poręcze", "Ławka", "Gumy oporowe", "TRX",
-  "Masa własnego ciała", "Piłka", "Piłka lekarska", "Talerz obciążeniowy", "Uchwyty do pompek", "Kółka gimnastyczne", "Brak sprzętu", "Inny",
+  "Masa własnego ciała", "Piłka", "Piłka lekarska", "Talerz obciążeniowy", "Uchwyty do pompek", "Kółka gimnastyczne", "Roller", "Landmine", "Brak sprzętu", "Inny",
 ]);
 export const IMPORT_PATTERNS = new Set([
   "Pchanie poziome", "Pchanie pionowe", "Przyciąganie poziome", "Przyciąganie pionowe", "Przysiad", "Zawias biodrowy", "Wykrok",
@@ -169,14 +169,33 @@ export interface ImportExercise {
   suitableExperienceLevels: string[];
   trainingLocation: string[];
   verificationStatus: "zweryfikowane" | "do_weryfikacji";
+  /** Variant of: our exercise id ("157"), or "=<źródło_id>" of another row of the same file; null for main exercises. */
+  parentRef: string | null;
+  grip: string | null;
+  position: string | null;
+  unilateral: boolean | null;
+  intensity: string | null;
+  /** Variant of a main exercise, or a row checked by hand as "not a duplicate": only an identical slug / name blocks it (no fuzzy match). */
+  exactDuplicateOnly: boolean;
+  /** false for imports in "odmiany" mode (owner's decision 25.10.2026): the generator uses it only for intermediate / advanced. */
+  reviewedByTrainer: boolean;
 }
+
+export interface ImportOptions {
+  /** Empty decision_trenera counts as "tak" (owner's blanket approval of a vetted file). */
+  acceptEmpty?: boolean;
+  /** suitableForNoActivity is always false, reviewed_by_trainer = false, status do_weryfikacji. */
+  unreviewed?: boolean;
+}
+
+export const IMPORT_INTENSITIES = new Set(["niska", "średnia", "wysoka"]);
 
 export function slugify(name: string): string {
   return stripDiacritics(name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
 function locationFor(equipment: string[]): string[] {
-  const heavy = equipment.some((e) => ["Sztanga", "Maszyna", "Wyciąg", "Poręcze"].includes(e));
+  const heavy = equipment.some((e) => ["Sztanga", "Maszyna", "Wyciąg", "Poręcze", "Landmine"].includes(e));
   if (heavy) return ["Siłownia"];
   if (equipment.some((e) => ["Drążek", "Ławka", "TRX", "Piłka lekarska", "Talerz obciążeniowy"].includes(e))) return ["Siłownia", "Dom"];
   return ["Siłownia", "Dom", "Plener"];
@@ -191,7 +210,7 @@ function levelsFrom(level: string, suitable: boolean): string[] {
 
 export type Validation = { ok: true; value: ImportExercise } | { ok: false; reasons: string[] };
 
-export function validateRow(c: Record<string, string>): Validation {
+export function validateRow(c: Record<string, string>, opts: ImportOptions = {}): Validation {
   const reasons: string[] = [];
   const name = (c.nazwapl ?? "").trim();
   if (!name) reasons.push("brak nazwy (nazwa_PL)");
@@ -228,10 +247,18 @@ export function validateRow(c: Record<string, string>): Validation {
     ld = Number(ldRaw.replace(",", "."));
     if (!Number.isInteger(ld) || ld < 1 || ld > 5) reasons.push(`learningDifficulty musi być liczbą całkowitą 1–5, jest „${ldRaw}”`);
   }
+  const intensity = (c.intensywnosc ?? "").trim();
+  if (intensity) {
+    if (!IMPORT_INTENSITIES.has(intensity)) reasons.push(`nieznana intensywność: „${intensity}”`);
+    else if (!["Średniozaawansowany", "Zaawansowany"].includes(level)) reasons.push("pliometria (intensywność) tylko od poziomu średniozaawansowanego");
+    else if (intensity === "wysoka" && level !== "Zaawansowany") reasons.push("pliometria o wysokiej intensywności tylko dla zaawansowanych");
+  }
+  const parentRef = (c.odmianaid ?? "").trim();
+  if (parentRef && !/^\d+$/.test(parentRef) && !/^=\S+$/.test(parentRef)) reasons.push(`odmiana_id: oczekiwano numeru ćwiczenia lub „=źródło_id”, jest „${parentRef}”`);
   if (reasons.length > 0) return { ok: false, reasons };
 
-  // suitableForNoActivity: true ONLY with exactly "tak" in this column.
-  const suitable = (c.suitablefornoactivity ?? "").trim().toLowerCase() === "tak";
+  // suitableForNoActivity: true ONLY with exactly "tak" in this column — and never in "unreviewed" mode (all imports false).
+  const suitable = !opts.unreviewed && (c.suitablefornoactivity ?? "").trim().toLowerCase() === "tak";
   const nameEn = (c.nazwaen ?? "").trim();
   const sourceId = ((c.zrodloid ?? "").trim() || nameEn.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "")) || slugify(name);
   return {
@@ -250,6 +277,13 @@ export function validateRow(c: Record<string, string>): Validation {
       suitableExperienceLevels: levelsFrom(level, suitable),
       trainingLocation: locationFor(equipment),
       verificationStatus: suitable ? "zweryfikowane" : "do_weryfikacji",
+      parentRef: parentRef || null,
+      grip: (c.chwyt ?? "").trim() || null,
+      position: (c.pozycja ?? "").trim() || null,
+      unilateral: (c.jednostronne ?? "").trim().toLowerCase() === "tak" ? true : null,
+      intensity: intensity || null,
+      reviewedByTrainer: !opts.unreviewed,
+      exactDuplicateOnly: !!parentRef || (c.nieduplikat ?? "").trim().toLowerCase() === "tak",
     },
   };
 }
@@ -267,7 +301,7 @@ export function nameTokens(name: string): Set<string> {
 
 export interface ExistingExercise { id: number; name: string; slug: string; mainMuscleGroup: string; movementPattern: string | null; equipment: string[]; source?: string | null; sourceId?: string | null }
 
-export function findDuplicate(c: Pick<ImportExercise, "name" | "slug" | "pattern" | "mainMuscle" | "equipment">, existing: readonly ExistingExercise[]): { id: number; name: string; why: string } | null {
+export function findDuplicate(c: Pick<ImportExercise, "name" | "slug" | "pattern" | "mainMuscle" | "equipment">, existing: readonly ExistingExercise[], exactOnly = false): { id: number; name: string; why: string } | null {
   const ct = nameTokens(c.name);
   for (const e of existing) {
     if (e.slug === c.slug) return { id: e.id, name: e.name, why: "ten sam slug" };
@@ -275,6 +309,7 @@ export function findDuplicate(c: Pick<ImportExercise, "name" | "slug" | "pattern
     const inter = [...ct].filter((t) => et.has(t)).length;
     const union = new Set([...ct, ...et]).size;
     if (union > 0 && inter === ct.size && inter === et.size) return { id: e.id, name: e.name, why: "ta sama nazwa po normalizacji" };
+    if (exactOnly) continue;
     const jac = union === 0 ? 0 : inter / union;
     const sameShape = e.mainMuscleGroup === c.mainMuscle && (e.movementPattern ?? "") === c.pattern && e.equipment.some((q) => c.equipment.includes(q));
     if (sameShape && jac >= 0.75) return { id: e.id, name: e.name, why: `bardzo podobna nazwa (${Math.round(jac * 100)}%) i ten sam wzorzec, mięsień, sprzęt` };
@@ -297,19 +332,23 @@ export interface ImportPlan {
 }
 
 /** Pure given the existing catalogue — used by the dry-run and by the tests. */
-export function buildPlan(rows: readonly RawRow[], existing: readonly ExistingExercise[], source: string, missingColumns: string[] = []): ImportPlan {
+export function buildPlan(rows: readonly RawRow[], existing: readonly ExistingExercise[], source: string, missingColumns: string[] = [], opts: ImportOptions = {}): ImportPlan {
   const plan: ImportPlan = { toImport: [], skippedNo: [], skippedEmpty: [], toFix: [], rejected: [], duplicates: [], alreadyImported: [], missingColumns };
   const taken: ExistingExercise[] = [...existing];
   for (const r of rows) {
     const name = r.cells.nazwapl || "(bez nazwy)";
-    const d = interpretDecision(r.cells.decyzjatrenera);
+    let d = interpretDecision(r.cells.decyzjatrenera);
+    if (opts.acceptEmpty && d.kind === "pusta") d = { kind: "tak" };
     if (d.kind === "nie") { plan.skippedNo.push({ line: r.line, name }); continue; }
     if (d.kind === "pusta") { plan.skippedEmpty.push({ line: r.line, name, detail: "pusta decyzja — pominięte" }); continue; }
     if (d.kind === "poprawa") { plan.toFix.push({ line: r.line, name, detail: d.note }); continue; }
-    const v = validateRow(r.cells);
+    const v = validateRow(r.cells, opts);
     if (!v.ok) { plan.rejected.push({ line: r.line, name, detail: v.reasons.join("; ") }); continue; }
     if (taken.some((e) => e.source === source && e.sourceId === v.value.sourceId)) { plan.alreadyImported.push({ line: r.line, name, detail: `źródło ${source}/${v.value.sourceId}` }); continue; }
-    const dup = findDuplicate(v.value, taken);
+    // A variant legitimately looks like its main exercise: do not compare it with its own parent.
+    const parentNumeric = v.value.parentRef && /^\d+$/.test(v.value.parentRef) ? Number(v.value.parentRef) : null;
+    const parentSource = v.value.parentRef?.startsWith("=") ? v.value.parentRef.slice(1) : null;
+    const dup = findDuplicate(v.value, taken.filter((e) => e.id !== parentNumeric && !(parentSource && e.sourceId === parentSource)), v.value.exactDuplicateOnly);
     if (dup) { plan.duplicates.push({ line: r.line, name, detail: `podejrzenie duplikatu id ${dup.id} „${dup.name}” (${dup.why})` }); continue; }
     plan.toImport.push({ line: r.line, name, value: v.value });
     taken.push({ id: -plan.toImport.length, name: v.value.name, slug: v.value.slug, mainMuscleGroup: v.value.mainMuscle, movementPattern: v.value.pattern, equipment: v.value.equipment, source, sourceId: v.value.sourceId });
@@ -327,9 +366,9 @@ export async function loadExisting(): Promise<ExistingExercise[]> {
   return rows;
 }
 
-export async function planImport(buf: Buffer, source: string): Promise<ImportPlan> {
+export async function planImport(buf: Buffer, source: string, opts: ImportOptions = {}): Promise<ImportPlan> {
   const { rows, missingColumns } = readPaczka(buf);
-  return buildPlan(rows, await loadExisting(), source, missingColumns);
+  return buildPlan(rows, await loadExisting(), source, missingColumns, opts);
 }
 
 /** Inserts the "toImport" items with their muscle assignments. Never updates or deletes anything. Returns the ids created. */
@@ -339,8 +378,19 @@ export async function applyImport(plan: ImportPlan, source: string, batch: strin
   const muscleIds = new Map((await db.select({ id: specificMusclesTable.id, name: specificMusclesTable.name }).from(specificMusclesTable)).map((m) => [m.name, m.id]));
   const missing = [...SPECIFIC_MUSCLES.keys()].filter((n) => !muscleIds.has(n));
   if (missing.length) throw new Error(`W bazie brakuje mięśni szczegółowych: ${missing.join(", ")} — import przerwany, nic nie zapisano`);
-  for (const item of plan.toImport) {
+  // Parents first: a variant referring to another row of the file ("=źródło_id") is inserted after it.
+  const ordered = [...plan.toImport].sort((a, b) => Number(!!a.value.parentRef?.startsWith("=")) - Number(!!b.value.parentRef?.startsWith("=")));
+  const existingIds = new Set((await db.select({ id: exercisesTable.id }).from(exercisesTable)).map((r) => r.id));
+  for (const item of ordered) {
     const v = item.value;
+    let parentId: number | null = null;
+    if (v.parentRef) {
+      if (v.parentRef.startsWith("=")) {
+        const [p] = await db.select({ id: exercisesTable.id }).from(exercisesTable).where(and(eq(exercisesTable.source, source), eq(exercisesTable.sourceId, v.parentRef.slice(1))));
+        parentId = p?.id ?? null;
+      } else if (existingIds.has(Number(v.parentRef))) parentId = Number(v.parentRef);
+      if (parentId === null) { console.warn(`Pominięto „${v.name}”: nie ma ćwiczenia głównego „${v.parentRef}”`); continue; }
+    }
     let slug = v.slug, n = 2;
     while (usedSlugs.has(slug)) slug = `${v.slug}-${n++}`;
     usedSlugs.add(slug);
@@ -353,6 +403,8 @@ export async function applyImport(plan: ImportPlan, source: string, batch: strin
         coachingTips: v.coachingTips, commonMistakes: v.commonMistakes, safetyNotes: v.safetyNotes,
         exerciseType: v.exerciseType, suitableExperienceLevels: v.suitableExperienceLevels, learningDifficulty: v.learningDifficulty,
         suitableForNoActivity: v.suitableForNoActivity, role: v.role, verificationStatus: v.verificationStatus, jointStressAreas: v.joints,
+        parentExerciseId: parentId, variantGrip: v.grip, variantPosition: v.position, unilateral: v.unilateral, intensity: v.intensity,
+        reviewedByTrainer: v.reviewedByTrainer,
         isActive: true, source, sourceId: v.sourceId, importedAt: new Date(), reviewBatch: batch,
       } as never).onConflictDoNothing().returning({ id: exercisesTable.id });
       if (!inserted[0]) return null;

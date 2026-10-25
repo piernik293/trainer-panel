@@ -21,7 +21,7 @@
  */
 
 import { loadBlockedJoints } from "../services/jointExclusion";
-import { mainPlanRoleCondition } from "../lib/exerciseRoles";
+import { mainPlanRoleCondition, isGeneratorSafe } from "../lib/exerciseRoles";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
@@ -111,6 +111,7 @@ router.get("/clients/:clientId/exercise-recommendations", requireAuth, async (re
   // FUTURE: AI plan generation engine should use the same filter before
   // building its exercise pool to ensure only ready exercises are used.
   const completeExercises = exercises.filter((ex) => {
+    if (!isGeneratorSafe(ex, survey.experienceLevel)) return false;
     const stats = statsMap.get(ex.id);
     const { isComplete } = computeCompleteness(ex, stats);
     return isComplete;

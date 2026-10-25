@@ -3,6 +3,7 @@
  *   pnpm --filter @workspace/api-server exec tsx ../../scripts/baza/import-paczka.ts <plik> [--apply] [--batch NAZWA] [--source free-exercise-db]
  *   pnpm --filter @workspace/api-server exec tsx ../../scripts/baza/import-paczka.ts --rollback NAZWA
  * <plik>: ścieżka, albo nazwa pliku szukana w ~/ i w docs/. Baza z DATABASE_URL (.env: `set -a; . ./.env; set +a`).
+ * --odmiany: tryb importu odmian (pusta decyzja = tak, suitableForNoActivity zawsze false, reviewed_by_trainer = false, kolumny odmiana_id/chwyt/pozycja/jednostronne/intensywnosc).
  * --apply robi najpierw pg_dump do ~/backups/ i dopisuje raport do docs/IMPORT-LOG.md.
  * Logika: artifacts/api-server/src/services/paczkaImport.ts (testy: src/__tests__/paczka-import*.test.ts).
  */
@@ -52,7 +53,8 @@ async function main() {
   if (!file) throw new Error("Podaj plik paczki (np. BAZA-PACZKA-01.csv)");
   const path = findFile(file);
   const batch = opt("--batch") ?? basename(path).replace(/\.csv$/i, "");
-  const plan = await planImport(readFileSync(path), source);
+  const opts = flag("--odmiany") ? { acceptEmpty: true, unreviewed: true } : {};
+  const plan = await planImport(readFileSync(path), source, opts);
   console.log(`Plik: ${path}\nPaczka: ${batch} | źródło: ${source} | tryb: ${flag("--apply") ? "ZAPIS (--apply)" : "dry-run (nic nie zapisuję)"}`);
   printPlan(plan);
   if (!flag("--apply")) { console.log("\nDry-run zakończony. Zapis: dodaj --apply (po zgodzie właściciela)."); return; }

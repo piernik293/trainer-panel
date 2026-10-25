@@ -33,6 +33,8 @@ export const CANONICAL_EQUIPMENT = [
   "Piłka stabilizacyjna (bosu/fit)",
   "Uchwyty do pompek",
   "Kółka gimnastyczne",
+  "Roller",
+  "Landmine",
   "Brak sprzętu",
   "Masa własnego ciała",
 ] as const;
@@ -140,6 +142,15 @@ const ALIAS_MAP: Record<string, string> = {
   "kółka": "Kółka gimnastyczne",
   "gymnastic rings": "Kółka gimnastyczne",
   "rings": "Kółka gimnastyczne",
+
+  // Roller (wałek do rolowania) — opcja w wywiadzie
+  "roller": "Roller",
+  "wałek": "Roller",
+  "wałek do rolowania": "Roller",
+  "foam roller": "Roller",
+
+  // Landmine — tylko siłownia (uchwyt na sztangę), brak opcji w wywiadzie
+  "landmine": "Landmine",
 
   // Piłka lekarska
   "piłka lekarska": "Piłka lekarska",
