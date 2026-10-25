@@ -54,3 +54,9 @@ Stan paczek 1–6 (122 wiersze, 24.10.2026 po scaleniu sprzętu): 122/122 przech
 - pominięto „nie”: 0, pusta decyzja: 0, do poprawy: 0, odrzucone: 0, duplikaty: 0, już były: 1
 - kopia bazy: /home/andrzejwysocki769/backups/trainer_panel_przed_importem_import-grupy-2c_202610251800.sql
 
+
+## 2026-10-25T18:05 — import paczki „uzupelnienie-4d” (BAZA-IMPORT-4D.csv)
+- zaimportowano: 6 (id: 1401, 1402, 1403, 1404, 1405, 1406)
+- pominięto „nie”: 0, pusta decyzja: 0, do poprawy: 0, odrzucone: 0, duplikaty: 0, już były: 0
+- kopia bazy: /home/andrzejwysocki769/backups/trainer_panel_przed_importem_uzupelnienie-4d_202610251805.sql
+

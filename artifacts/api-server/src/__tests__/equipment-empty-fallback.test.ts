@@ -130,14 +130,27 @@ describe("Siłownia + empty equipment → standard gym", () => {
     expect(getExerciseCompatibilityError(benchPress, { trainingLocation: "Siłownia", equipment: null })).toBeNull();
   });
 
-  it("listed equipment is never overridden", () => {
-    expect(effectiveClientEquipment("Hantle", "Siłownia")).toBe("Hantle");
-    expect(buildCompatibilityFilter("Siłownia", "Hantle", new Set())(cableRow)).toBe(false);
+  it("Siłownia = pełny katalog sprzętu także przy zaznaczonych pozycjach (decyzja 25.10.2026), zaznaczone zostają", () => {
+    const eq = effectiveClientEquipment("Hantle, Kółka gimnastyczne", "Siłownia")!;
+    expect(eq).toContain("Hantle");
+    expect(eq).toContain("Kółka gimnastyczne");
+    for (const e of ["Wyciąg", "Maszyna", "Landmine", "Roller", "Piłka lekarska"]) expect(eq).toContain(e);
+    expect(buildCompatibilityFilter("Siłownia", "Hantle", new Set())(cableRow)).toBe(true);
+  });
+
+  it("Dom: tylko zaznaczone (plus masa ciała); Siłownia plenerowa: zaznaczone plus guma", () => {
+    expect(effectiveClientEquipment("Hantle", "Dom")).toBe("Hantle");
+    expect(buildCompatibilityFilter("Dom", "Hantle", new Set())(cableRow)).toBe(false);
+    expect(effectiveClientEquipment("Drążek do podciągania", "Siłownia plenerowa")).toBe("Drążek do podciągania, Gumy oporowe");
+    expect(effectiveClientEquipment("", "Siłownia plenerowa")).toBe("Gumy oporowe");
+    const band = { id: 9, name: "Odwodzenie z gumą", trainingLocation: ["Plener"], equipment: ["Gumy oporowe"], requiredEquipmentAll: [] };
+    expect(buildCompatibilityFilter("Siłownia plenerowa", "", new Set())(band)).toBe(true);
+    expect(buildCompatibilityFilter("Dom", "", new Set())({ ...band, trainingLocation: ["Dom"] })).toBe(false);
   });
 
   it("Dom / Siłownia plenerowa / no location without equipment stay bodyweight-only", () => {
     for (const loc of ["Dom", "Siłownia plenerowa", null]) {
-      expect(effectiveClientEquipment("", loc)).toBe("");
+      expect(effectiveClientEquipment("", loc)).toBe(loc === "Siłownia plenerowa" ? "Gumy oporowe" : "");
       const keep = buildCompatibilityFilter(loc, "", new Set());
       expect(keep({ ...cableRow, trainingLocation: [] }), String(loc)).toBe(false);
       expect(keep({ ...pushUp, trainingLocation: [] }), String(loc)).toBe(true);
