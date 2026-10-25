@@ -106,7 +106,11 @@ export function interpretDecision(v: string | undefined): Decision {
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 export const IMPORT_LEVELS = new Set(["Brak aktywności fizycznej", "Początkujący", "Średniozaawansowany", "Zaawansowany"]);
-export const IMPORT_ROLES = new Set(["główne", "pomocnicze", "rozgrzewka", "rozciąganie"]);
+export const IMPORT_ROLES = new Set(["główne", "pomocnicze", "rozgrzewka", "rozciąganie", "technika biegu"]);
+/** `cele` column (owner's short list) → the client goal names used by the recommendation engine. Unknown values are ignored. */
+export const GOAL_MAP: Readonly<Record<string, string>> = {
+  siła: "Zwiększenie siły", sylwetka: "Budowa sylwetki", redukcja: "Redukcja tkanki tłuszczowej", kondycja: "Poprawa kondycji", sprawność: "Poprawa sprawności", sport: "Cel sportowy",
+};
 export const IMPORT_MUSCLES = new Set([
   "Klatka piersiowa", "Plecy", "Barki", "Biceps", "Triceps", "Przedramiona", "Brzuch", "Pośladki", "Mięśnie czworogłowe uda",
   "Mięśnie dwugłowe uda", "Przywodziciele", "Odwodziciele", "Łydki", "Całe ciało", "Inne",
@@ -175,6 +179,7 @@ export interface ImportExercise {
   position: string | null;
   unilateral: boolean | null;
   intensity: string | null;
+  trainingGoals: string[];
   /** Variant of a main exercise, or a row checked by hand as "not a duplicate": only an identical slug / name blocks it (no fuzzy match). */
   exactDuplicateOnly: boolean;
   /** false for imports in "odmiany" mode (owner's decision 25.10.2026): the generator uses it only for intermediate / advanced. */
@@ -196,7 +201,7 @@ export function slugify(name: string): string {
 
 function locationFor(equipment: string[]): string[] {
   const heavy = equipment.some((e) => ["Sztanga", "Maszyna", "Wyciąg", "Poręcze", "Landmine"].includes(e));
-  if (heavy) return ["Siłownia"];
+  if (heavy || equipment.includes("Inny")) return ["Siłownia"];
   if (equipment.some((e) => ["Drążek", "Ławka", "TRX", "Piłka lekarska", "Talerz obciążeniowy"].includes(e))) return ["Siłownia", "Dom"];
   return ["Siłownia", "Dom", "Plener"];
 }
@@ -230,6 +235,7 @@ export function validateRow(c: Record<string, string>, opts: ImportOptions = {})
   const primaryMuscles = splitList(c.miesnieglowne);
   const secondaryMuscles = splitList(c.miesniepomocnicze);
   if (primaryMuscles.length === 0) reasons.push("brak mięśni głównych (mięśnie_główne)");
+  if (new Set(primaryMuscles).size > 1) reasons.push("więcej niż jeden mięsień główny (baza dopuszcza jeden; resztę wpisz jako pomocnicze)");
   for (const m of [...primaryMuscles, ...secondaryMuscles]) if (!SPECIFIC_MUSCLES.has(m)) reasons.push(`nieznany mięsień szczegółowy: „${m}”`);
   for (const m of primaryMuscles) if (secondaryMuscles.includes(m)) reasons.push(`mięsień „${m}” jednocześnie główny i pomocniczy`);
   if (
@@ -282,6 +288,7 @@ export function validateRow(c: Record<string, string>, opts: ImportOptions = {})
       position: (c.pozycja ?? "").trim() || null,
       unilateral: (c.jednostronne ?? "").trim().toLowerCase() === "tak" ? true : null,
       intensity: intensity || null,
+      trainingGoals: [...new Set(splitList(c.cele).map((g) => GOAL_MAP[g.toLowerCase()]).filter((g): g is string => !!g))],
       reviewedByTrainer: !opts.unreviewed,
       exactDuplicateOnly: !!parentRef || (c.nieduplikat ?? "").trim().toLowerCase() === "tak",
     },
@@ -403,7 +410,7 @@ export async function applyImport(plan: ImportPlan, source: string, batch: strin
         coachingTips: v.coachingTips, commonMistakes: v.commonMistakes, safetyNotes: v.safetyNotes,
         exerciseType: v.exerciseType, suitableExperienceLevels: v.suitableExperienceLevels, learningDifficulty: v.learningDifficulty,
         suitableForNoActivity: v.suitableForNoActivity, role: v.role, verificationStatus: v.verificationStatus, jointStressAreas: v.joints,
-        parentExerciseId: parentId, variantGrip: v.grip, variantPosition: v.position, unilateral: v.unilateral, intensity: v.intensity,
+        parentExerciseId: parentId, variantGrip: v.grip, variantPosition: v.position, unilateral: v.unilateral, intensity: v.intensity, trainingGoals: v.trainingGoals,
         reviewedByTrainer: v.reviewedByTrainer,
         isActive: true, source, sourceId: v.sourceId, importedAt: new Date(), reviewBatch: batch,
       } as never).onConflictDoNothing().returning({ id: exercisesTable.id });

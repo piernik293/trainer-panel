@@ -56,6 +56,26 @@ describe("tryb odmiany (unreviewed)", () => {
   });
 });
 
+describe("reguły z importu grup (2C)", () => {
+  it("więcej niż jeden mięsień główny jest odrzucany (baza dopuszcza jeden)", () => {
+    const v = validateRow({ ...base, miesnieglowne: "Mięsień czworogłowy uda, Mięsień pośladkowy wielki", miesniepomocnicze: "" });
+    expect(v.ok).toBe(false);
+  });
+  it("rola „technika biegu” jest dozwolona, nieznana rola nie", () => {
+    expect(validateRow({ ...base, rola: "technika biegu" }).ok).toBe(true);
+    expect(validateRow({ ...base, rola: "schłodzenie" }).ok).toBe(false);
+  });
+  it("cele z pliku mapują się na nazwy celów klienta, nieznane są pomijane", () => {
+    const v = validateRow({ ...base, cele: "sport, siła, coś innego" });
+    expect(v.ok && v.value.trainingGoals).toEqual(["Cel sportowy", "Zwiększenie siły"]);
+  });
+  it("technika biegu nie trafia do puli planu głównego", async () => {
+    const { isMainPlanExercise } = await import("../lib/exerciseRoles");
+    expect(isMainPlanExercise({ role: "technika biegu" })).toBe(false);
+    expect(isMainPlanExercise({ role: "główne" })).toBe(true);
+  });
+});
+
 describe("zapis odmian (baza testowa)", () => {
   const batch = `test-odm-${randomUUID().slice(0, 8)}`;
   afterAll(async () => {

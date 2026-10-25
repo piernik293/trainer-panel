@@ -4,13 +4,16 @@ import { exercisesTable } from "@workspace/db";
 /** Warm-up and stretching exercises are offered only in the warm-up / cool-down of the training flow, never as main plan exercises. */
 export const WARMUP_ROLES = ["rozgrzewka", "rozciąganie"] as const;
 
+/** Roles kept out of the main plan: warm-up / stretching and running-technique drills (used by the sport module later). */
+export const NON_MAIN_ROLES = [...WARMUP_ROLES, "technika biegu"] as const;
+
 export function isMainPlanExercise(ex: { role?: string | null }): boolean {
-  return !ex.role || !(WARMUP_ROLES as readonly string[]).includes(ex.role);
+  return !ex.role || !(NON_MAIN_ROLES as readonly string[]).includes(ex.role);
 }
 
 /** SQL condition for generator / recommendation pools. */
 export function mainPlanRoleCondition(): SQL {
-  return or(isNull(exercisesTable.role), notInArray(exercisesTable.role, [...WARMUP_ROLES]))!;
+  return or(isNull(exercisesTable.role), notInArray(exercisesTable.role, [...NON_MAIN_ROLES]))!;
 }
 
 const ADVANCED_LEVELS = ["Średniozaawansowany", "Zaawansowany"];

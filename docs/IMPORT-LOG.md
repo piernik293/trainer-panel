@@ -48,3 +48,9 @@ Stan paczek 1–6 (122 wiersze, 24.10.2026 po scaleniu sprzętu): 122/122 przech
 - pominięto „nie”: 0, pusta decyzja: 0, do poprawy: 0, odrzucone: 0, duplikaty: 0, już były: 0
 - kopia bazy: /home/andrzejwysocki769/backups/trainer_panel_przed_importem_import-odmiany-2b_202610251755.sql
 
+
+## 2026-10-25T18:01 — import paczki „import-grupy-2c” (BAZA-IMPORT-2C.csv)
+- zaimportowano: 63 (id: 1338, 1339, 1340, 1341, 1342, 1343, 1344, 1345, 1346, 1347, 1348, 1349, 1350, 1351, 1352, 1353, 1354, 1355, 1356, 1357, 1358, 1359, 1360, 1361, 1362, 1363, 1364, 1365, 1366, 1367, 1368, 1369, 1370, 1371, 1372, 1373, 1374, 1375, 1376, 1377, 1378, 1379, 1380, 1381, 1382, 1383, 1384, 1385, 1386, 1387, 1388, 1389, 1390, 1391, 1392, 1393, 1394, 1395, 1396, 1397, 1398, 1399, 1400)
+- pominięto „nie”: 0, pusta decyzja: 0, do poprawy: 0, odrzucone: 0, duplikaty: 0, już były: 1
+- kopia bazy: /home/andrzejwysocki769/backups/trainer_panel_przed_importem_import-grupy-2c_202610251800.sql
+
