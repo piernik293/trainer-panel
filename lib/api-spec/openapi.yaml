@@ -1448,6 +1448,32 @@ components:
           type: ["integer", "null"]
         exercisePriority:
           type: ["string", "null"]
+        suitableForNoActivity:
+          type: ["boolean", "null"]
+        role:
+          type: ["string", "null"]
+        verificationStatus:
+          type: ["string", "null"]
+        jointStressAreas:
+          type: ["array", "null"]
+          items:
+            type: string
+        source:
+          type: ["string", "null"]
+        parentExerciseId:
+          type: ["integer", "null"]
+        variantGrip:
+          type: ["string", "null"]
+        variantPosition:
+          type: ["string", "null"]
+        unilateral:
+          type: ["boolean", "null"]
+        reviewedByTrainer:
+          type: boolean
+        hidden:
+          type: boolean
+        intensity:
+          type: ["string", "null"]
         isActive:
           type: boolean
         isComplete:

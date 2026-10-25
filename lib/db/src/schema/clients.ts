@@ -19,6 +19,8 @@ export const clientsTable = pgTable("clients", {
    * Set when the client first authenticates through the client portal.
    */
   clerkUserId: text("clerk_user_id").unique(),
+  /** Daily steps goal (migration 0029); null = no goal. Set by the client or the trainer. */
+  stepsGoal: integer("steps_goal"),
   /**
    * Trainer's explicit decision on the adaptive-start recommendation.
    * null    = no decision yet (recommendation pending for eligible clients)

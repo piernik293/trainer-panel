@@ -4,6 +4,7 @@ import { Loader2, CheckCircle2, ChevronRight, ChevronLeft, Dumbbell, Activity, C
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TodayCard } from "@/components/training/TodayCard";
+import { StepsTile } from "@/components/StepsTile";
 import { TrainingFlow } from "@/components/training/TrainingFlow";
 import type { TrainingDay } from "@/lib/training/types";
 import { ClientPortalNav, type PortalNavTarget } from "@/components/ClientPortalNav";
@@ -1342,10 +1343,13 @@ export default function PlanPortal() {
         plan={plan}
         onSelectDay={setSelectedDay}
         today={
-          <TodayCard
-            reloadKey={todayReload}
-            onStart={(day, ctx) => setTraining({ day, firstName: ctx.client.firstName, week: ctx.week })}
-          />
+          <>
+            <TodayCard
+              reloadKey={todayReload}
+              onStart={(day, ctx) => setTraining({ day, firstName: ctx.client.firstName, week: ctx.week })}
+            />
+            <StepsTile />
+          </>
         }
       />
     </>

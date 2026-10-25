@@ -323,6 +323,35 @@ export function useReplaceJointExercise(planId: number) {
   });
 }
 
+export interface ExerciseVariant {
+  id: number; name: string; equipment: string[]; variantGrip: string | null; variantPosition: string | null; unilateral: boolean | null;
+  difficultyLevel: string | null; reviewedByTrainer: boolean;
+}
+
+/** Variants of an exercise (with their equipment) for the plan editor dropdown. */
+export function useExerciseVariants(exerciseId: number, enabled: boolean) {
+  return useQuery<ExerciseVariant[]>({
+    queryKey: ["exercise-variants", exerciseId],
+    queryFn: ({ signal }) => apiFetch<ExerciseVariant[]>(`/exercises/${exerciseId}/variants`, { signal }),
+    enabled: enabled && Number.isFinite(exerciseId) && exerciseId > 0,
+    staleTime: 60_000,
+  });
+}
+
+/** Swap one slot to a variant of the same exercise (prescription unchanged; recorded in the plan history). */
+export function useReplaceWithVariant(planId: number) {
+  const invalidate = usePlanInvalidator(planId);
+  const queryClient = useQueryClient();
+  return useMutation<WorkoutPlan, Error, { planExerciseId: number; exerciseId: number }>({
+    mutationFn: ({ planExerciseId, exerciseId }) =>
+      apiFetch<WorkoutPlan>(`/plans/${planId}/exercises/${planExerciseId}/variant-replacement`, { method: "POST", body: JSON.stringify({ exerciseId }) }),
+    onSuccess: (plan) => {
+      invalidate(plan);
+      queryClient.invalidateQueries({ queryKey: planKeys.history(planId) });
+    },
+  });
+}
+
 export function useCreatePlan(clientId: number) {
   const queryClient = useQueryClient();
   return useMutation<WorkoutPlan, Error, { title: string; surveyId: number; goal?: string; description?: string }>({

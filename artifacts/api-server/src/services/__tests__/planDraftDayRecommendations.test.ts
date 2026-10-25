@@ -154,9 +154,10 @@ describe("getExerciseCompatibilityError()", () => {
         name: "Wyciskanie na ławce",
         equipment: ["Sztanga"],
         requiredEquipmentAll: ["Ławka"],
-        trainingLocation: ["Siłownia"],
+        trainingLocation: ["Siłownia", "Dom"],
       },
-      { trainingLocation: "Siłownia", equipment: "Sztanga" },
+      // Dom: tylko zaznaczony sprzęt (na siłowni jest pełny katalog od 25.10.2026).
+      { trainingLocation: "Dom", equipment: "Sztanga" },
     );
 
     expect(error).toContain("Wyciskanie na ławce");

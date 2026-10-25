@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, boolean, uniqueIndex, integer, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, boolean, uniqueIndex, integer, jsonb, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { trainersTable } from "./trainers";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -86,6 +86,19 @@ export const exercisesTable = pgTable("exercises", {
   importedAt: timestamp("imported_at"),
   /** Review batch (paczka) the exercise came from; used to roll an import back. */
   reviewBatch: text("review_batch"),
+
+  // ── Variants and review status (migration 0028) ──
+  /** Variant → main exercise (NULL for main exercises). */
+  parentExerciseId: integer("parent_exercise_id").references((): AnyPgColumn => exercisesTable.id),
+  variantGrip: text("variant_grip"),
+  variantPosition: text("variant_position"),
+  unilateral: boolean("unilateral"),
+  /** false = imported and not yet reviewed: the generator uses it only for effective level intermediate/advanced. */
+  reviewedByTrainer: boolean("reviewed_by_trainer").notNull().default(true),
+  /** true = hidden from the generator and pickers (never deleted). */
+  hidden: boolean("hidden").notNull().default(false),
+  /** 'niska' | 'średnia' | 'wysoka' — plyometrics for now. */
+  intensity: text("intensity"),
 
   isActive: boolean("is_active").notNull().default(true),
   /**

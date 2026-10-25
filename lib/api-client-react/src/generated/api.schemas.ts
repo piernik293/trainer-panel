@@ -386,6 +386,17 @@ export interface Exercise {
   suitableForNoActivity?: boolean | null;
   /** @nullable */
   movementComplexity?: string | null;
+  role?: string | null;
+  verificationStatus?: string | null;
+  jointStressAreas?: string[] | null;
+  source?: string | null;
+  parentExerciseId?: number | null;
+  variantGrip?: string | null;
+  variantPosition?: string | null;
+  unilateral?: boolean | null;
+  reviewedByTrainer?: boolean;
+  hidden?: boolean;
+  intensity?: string | null;
   isActive: boolean;
   isComplete: boolean;
   missingFields: string[];

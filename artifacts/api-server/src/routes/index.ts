@@ -6,6 +6,7 @@ import statsRouter from "./stats";
 import dashboardRouter from "./dashboard";
 import publicRouter from "./public";
 import notesRouter from "./notes";
+import exerciseReviewRouter from "./exerciseReview";
 import exercisesRouter from "./exercises";
 import musclesRouter from "./muscles";
 import plansRouter from "./plans";
@@ -22,6 +23,7 @@ import bookingsRouter from "./bookings";
 import subscriptionRouter from "./subscription";
 import trainerProfileRouter from "./trainerProfile";
 import trainingRouter from "./training";
+import stepsRouter from "./steps";
 
 const router: IRouter = Router();
 
@@ -33,6 +35,7 @@ router.use(dashboardRouter);
 router.use(publicRouter);
 router.use(surveyInvitesRouter);
 router.use(notesRouter);
+router.use(exerciseReviewRouter);
 router.use(exercisesRouter);
 router.use(musclesRouter);
 router.use(plansRouter);
@@ -48,6 +51,7 @@ router.use(bookingsRouter);
 router.use(subscriptionRouter);
 router.use(trainerProfileRouter);
 router.use(trainingRouter);
+router.use(stepsRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────

@@ -78,6 +78,7 @@ export default function ExerciseList() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button asChild variant="outline"><Link href="/exercises/review" data-testid="link-review">Do weryfikacji</Link></Button>
           <Button asChild={!customExerciseLimitReached} disabled={customExerciseLimitReached}>
             {customExerciseLimitReached ? (
               <span className="flex items-center gap-2" title="Osiągnięto limit własnych ćwiczeń">

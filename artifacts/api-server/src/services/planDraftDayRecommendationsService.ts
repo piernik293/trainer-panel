@@ -12,7 +12,7 @@
  */
 
 import { hitsBlockedJoint } from "./jointExclusion";
-import { FULL_GYM_EQUIPMENT, normalizeEquipmentList } from "./equipmentNormalizer";
+import { expandEquipmentForLocation, locationKind, normalizeEquipmentList } from "./equipmentNormalizer";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -408,18 +408,20 @@ const BODYWEIGHT_EQUIPMENT = new Set(["brak sprzętu", "masa własnego ciała"])
 /**
  * The equipment to use for compatibility checks and the generator.
  *
- * A client training at "Siłownia" who did not list equipment (the survey makes
- * the field optional there) has a standard gym: FULL_GYM_EQUIPMENT, the same
- * default planDraftInput uses. Anything else is returned unchanged, so home /
- * outdoor / unknown-location clients without equipment stay bodyweight-only.
+ * Siłownia → the full gym catalogue plus anything ticked (owner's decision 25.10.2026;
+ * before, only the ticked items counted when the list was not empty).
+ * Siłownia plenerowa → ticked items plus resistance bands. Anything else is returned
+ * unchanged, so home / unknown-location clients without equipment stay bodyweight-only.
  * The trainer is warned about the missing data (MISSING_EQUIPMENT).
  */
 export function effectiveClientEquipment(
   equipment: string | null | undefined,
   location: string | null | undefined,
 ): string | null | undefined {
-  if (equipment?.trim()) return equipment;
-  if (location && canonicalLocation(location) === "siłownia") return FULL_GYM_EQUIPMENT.join(", ");
+  const kind = locationKind(location);
+  if (kind === "siłownia" || kind === "plener") {
+    return expandEquipmentForLocation(parseList(equipment), location).join(", ");
+  }
   return equipment;
 }
 

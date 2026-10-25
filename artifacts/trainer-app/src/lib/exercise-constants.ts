@@ -36,6 +36,8 @@ export const EQUIPMENT_OPTIONS = [
   "Talerz obciążeniowy",
   "Uchwyty do pompek",
   "Kółka gimnastyczne",
+  "Roller",
+  "Landmine",
   "Brak sprzętu",
   "Inny",
 ] as const;

@@ -106,7 +106,8 @@ beforeAll(async () => {
       name: "Fixture — ćwiczenie z niedostępnym sprzętem",
       slug: INCOMPATIBLE_EQUIPMENT_SLUG,
       mainMuscleGroup: "Klatka piersiowa",
-      equipment: ["Kettlebell"],
+      // Nie ma go w pełnym katalogu siłowni (osobiste akcesorium) i klient go nie zaznaczył → nadal niedostępny (decyzja 25.10.2026: siłownia = pełny katalog).
+      equipment: ["Kółka gimnastyczne"],
       trainingLocation: ["Siłownia"],
     })
     .returning({ id: exercisesTable.id });

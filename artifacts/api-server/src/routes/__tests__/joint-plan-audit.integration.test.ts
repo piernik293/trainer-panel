@@ -117,7 +117,7 @@ beforeAll(async () => {
   });
   await db.insert(exercisesTable).values([
     ex(IDS.easy, "Fixture audyt — szczebel 1 bez stawu", ["Masa własnego ciała"], []),
-    ex(IDS.kettle, "Fixture audyt — szczebel 2 kettlebell", ["Kettlebell"], []),
+    ex(IDS.kettle, "Fixture audyt — szczebel 2 kettlebell", ["Kółka gimnastyczne"], []), // sprzęt spoza pełnego katalogu siłowni, którego klient nie zaznaczył
     ex(IDS.shoulderLow, "Fixture audyt — szczebel 3 bark", ["Hantle"], ["Bark"]),
     ex(IDS.shoulderPlan, "Fixture audyt — szczebel 4 bark", ["Hantle"], ["Bark"]),
     ex(IDS.offLadder, "Fixture audyt — poza drabinką bark", ["Hantle"], ["Bark"]),

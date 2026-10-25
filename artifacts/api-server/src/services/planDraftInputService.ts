@@ -15,6 +15,7 @@ import { db, clientsTable, surveysTable } from "@workspace/db";
 import {
   normalizeEquipmentList,
   defaultEquipmentForLocation,
+  expandEquipmentForLocation,
 } from "./equipmentNormalizer";
 import { recommendSplit } from "./splitRecommendationService";
 import {
@@ -323,6 +324,8 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
       blocking: false,
     });
   }
+  // Gym = full catalogue, outdoor gym = ticked + bands (owner's decision 25.10.2026).
+  availableEquipment = expandEquipmentForLocation(availableEquipment, trainingLocation);
 
   // ── Lifestyle ───────────────────────────────────────────────────────────────
   const dailyActivity = survey?.activityLevel ?? null;

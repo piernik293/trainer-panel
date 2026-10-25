@@ -33,6 +33,8 @@ export const CANONICAL_EQUIPMENT = [
   "Piłka stabilizacyjna (bosu/fit)",
   "Uchwyty do pompek",
   "Kółka gimnastyczne",
+  "Roller",
+  "Landmine",
   "Brak sprzętu",
   "Masa własnego ciała",
 ] as const;
@@ -141,6 +143,15 @@ const ALIAS_MAP: Record<string, string> = {
   "gymnastic rings": "Kółka gimnastyczne",
   "rings": "Kółka gimnastyczne",
 
+  // Roller (wałek do rolowania) — opcja w wywiadzie
+  "roller": "Roller",
+  "wałek": "Roller",
+  "wałek do rolowania": "Roller",
+  "foam roller": "Roller",
+
+  // Landmine — tylko siłownia (uchwyt na sztangę), brak opcji w wywiadzie
+  "landmine": "Landmine",
+
   // Piłka lekarska
   "piłka lekarska": "Piłka lekarska",
   "med ball": "Piłka lekarska",
@@ -176,6 +187,13 @@ export const FULL_GYM_EQUIPMENT: string[] = [
   "Drążek do podciągania",
   "Poręcze",
   "TRX / pasy treningowe",
+  // Decyzja właściciela 25.10.2026: siłownia = pełny katalog sprzętu (nie tylko pozycje zaznaczone w wywiadzie).
+  "Sztanga łamana (EZ)",
+  "Piłka lekarska",
+  "Piłka stabilizacyjna (bosu/fit)",
+  "Roller",
+  "Landmine",
+  "Rower stacjonarny / orbitrek",
 ];
 
 // ─── Home gym equipment (Siłownia plenerowa or Dom fallback) ──────────────────
@@ -243,4 +261,26 @@ export function defaultEquipmentForLocation(location: string | null | undefined)
   const loc = location.toLowerCase();
   if (loc.includes("dom") || loc.includes("plener")) return ["Masa własnego ciała"];
   return FULL_GYM_EQUIPMENT;
+}
+
+/** Lowercased location → 'siłownia' | 'plener' | 'dom' | null (same rules as the compatibility check). */
+export function locationKind(location: string | null | undefined): "siłownia" | "plener" | "dom" | null {
+  const l = location?.trim().toLowerCase();
+  if (!l) return null;
+  if (l === "siłownia") return "siłownia";
+  if (l === "siłownia plenerowa" || l.includes("plener")) return "plener";
+  if (l.includes("dom")) return "dom";
+  return null;
+}
+
+/**
+ * Equipment the generator may use (owner's decision 25.10.2026):
+ *  - Siłownia: the FULL gym catalogue plus anything ticked in the interview (e.g. rings, push-up handles, roller);
+ *  - Siłownia plenerowa: what is ticked, plus resistance bands (portable);
+ *  - Dom and unknown location: what is ticked (bodyweight is always allowed by the compatibility check).
+ */
+export function expandEquipmentForLocation(listed: readonly string[], location: string | null | undefined): string[] {
+  const kind = locationKind(location);
+  const extra = kind === "siłownia" ? FULL_GYM_EQUIPMENT : kind === "plener" ? ["Gumy oporowe"] : [];
+  return [...new Set([...listed, ...extra])];
 }

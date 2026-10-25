@@ -1,3 +1,4 @@
+import { VariantPicker } from "@/components/VariantPicker";
 import { useState, useEffect, useContext, createContext, useMemo } from "react";
 import { jointWarningFromError, planJointWarningText, jointReplaceConfirmText, activationConfirmText } from "@/lib/jointWarning";
 import { rirTargetLabel } from "@/lib/exerciseDraftHelpers";
@@ -905,6 +906,7 @@ function ExerciseRow({
             <p className="text-muted-foreground text-xs mt-0.5 leading-snug">
               {summaryParts.join(" · ")}
             </p>
+            <VariantPicker planId={planId} planExerciseId={ex.id} exerciseId={ex.exerciseId} readOnly={!canReplace} />
             {ex.notes && (
               <p className="text-xs text-muted-foreground italic mt-0.5">🔒 {ex.notes}</p>
             )}

@@ -21,6 +21,7 @@ import ClientPortalPreview from "@/pages/ClientPortalPreview";
 import TrainerLedSession from "@/pages/TrainerLedSession";
 import SurveyForm from "@/pages/SurveyForm";
 import ExerciseList from "@/pages/ExerciseList";
+import ExerciseReview from "@/pages/ExerciseReview";
 import { ExerciseNew, ExerciseEdit } from "@/pages/ExerciseForm";
 import ExerciseDetail from "@/pages/ExerciseDetail";
 import PlanCreate from "@/pages/PlanCreate";
@@ -284,6 +285,7 @@ function Router() {
         <Route path="/clients/:id/portal-preview" component={ClientPortalPreview} />
         <Route path="/clients/:id/trainer-session" component={TrainerLedSession} />
         <Route path="/clients/:id" component={ClientDetail} />
+        <Route path="/exercises/review" component={ExerciseReview} />
         <Route path="/exercises/new" component={ExerciseNew} />
         <Route path="/exercises/:id/edit" component={ExerciseEdit} />
         <Route path="/exercises/:id" component={ExerciseDetail} />

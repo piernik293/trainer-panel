@@ -68,7 +68,7 @@ import {
 } from "../services/ExerciseSelectionEngineV0";
 import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
 import { buildGoalProfile } from "../services/goalProfileService";
-import { mainPlanRoleCondition } from "../lib/exerciseRoles";
+import { mainPlanRoleCondition, isGeneratorSafe } from "../lib/exerciseRoles";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
@@ -207,6 +207,7 @@ router.get(
     // ── Filter to complete exercises ───────────────────────────────────────────
     const statsMap = await fetchMuscleStats(exercises.map((e) => e.id));
     const completeExercises = exercises.filter((ex) => {
+      if (!isGeneratorSafe(ex, survey.experienceLevel)) return false;
       const stats = statsMap.get(ex.id);
       const { isComplete } = computeCompleteness(ex, stats);
       return isComplete;
@@ -278,6 +279,15 @@ router.get(
         // safest exercises first (matches generate-day behaviour).
         suitableForNoActivity: ex.suitableForNoActivity ?? null,
       });
+    }
+
+    // Main exercise by default; a variant only when its main exercise did not make it into the pool.
+    {
+      const parentOf = new Map(completeExercises.map((e) => [e.id, e.parentExerciseId]));
+      const inPool = new Set(pool.map((p) => p.id));
+      const kept = pool.filter((p) => { const par = parentOf.get(p.id); return par == null || !inPool.has(par); });
+      pool.length = 0;
+      pool.push(...kept);
     }
 
     // Sort pool by score descending, then name ascending (deterministic).

@@ -117,6 +117,7 @@ export const EQUIPMENT_OPTIONS = [
   "Rower stacjonarny / orbitrek",
   "Kółka gimnastyczne",
   "Uchwyty do pompek",
+  "Roller",
   "Brak sprzętu",
 ] as const;
 
