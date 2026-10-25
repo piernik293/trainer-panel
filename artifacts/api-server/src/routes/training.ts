@@ -34,7 +34,7 @@ import { requireClientAuth } from "../middlewares/requireClientAuth";
 import { determineDayType, buildShortWarmup } from "../services/rampWarmup";
 import { getCooldown } from "../services/cooldown";
 import { WARMUP_ROLES } from "../lib/exerciseRoles";
-import { estimateMinutes, formatAmount, reportedJoints, selectCooldown, selectWarmup, type CatalogueWarmupItem } from "../services/warmupSelection";
+import { estimateMinutes, formatAmount, isRollerDay, reportedJoints, selectCooldown, selectWarmup, type CatalogueWarmupItem } from "../services/warmupSelection";
 import {
   weightStepFor, exerciseRoleFor, restFor, formatRest, recordGain, bestSet, compactHistory, nextDayIndex,
   startOfWeek, PL_WEEKDAYS, PAIN_MESSAGE, type PerformedSet,
@@ -158,11 +158,12 @@ const repsText = (e: { repType: string | null; repsExact: number | null; repRang
  * Warm-up and cool-down from the catalogue (services/warmupSelection.ts). When the catalogue has no such
  * exercises (an empty / test database) the static RAMP template is the fallback.
  */
-async function buildWarmupAndCooldown(opts: { clientId: number; level: string | null; dayType: ReturnType<typeof determineDayType>; dayGroups: string[] }) {
+async function buildWarmupAndCooldown(opts: { clientId: number; level: string | null; dayType: ReturnType<typeof determineDayType>; dayGroups: string[]; dayIndex: number; totalDays: number }) {
   const catalogue = (await db.select().from(exercisesTable).where(and(eq(exercisesTable.isActive, true), inArray(exercisesTable.role, [...WARMUP_ROLES])))) as unknown as CatalogueWarmupItem[];
   const [survey] = await db
     .select({ equipment: surveysTable.equipment, trainingLocation: surveysTable.trainingLocation, healthLimitations: surveysTable.healthLimitations })
     .from(surveysTable).where(eq(surveysTable.clientId, opts.clientId)).orderBy(desc(surveysTable.createdAt)).limit(1);
+  const [setting] = await db.select({ breathing: clientsTable.breathingCooldown }).from(clientsTable).where(eq(clientsTable.id, opts.clientId));
   const since = new Date(Date.now() - 30 * 86_400_000);
   const pains = await db.select({ area: painReportsTable.area }).from(painReportsTable)
     .where(and(eq(painReportsTable.clientId, opts.clientId), gte(painReportsTable.createdAt, since)));
@@ -170,6 +171,7 @@ async function buildWarmupAndCooldown(opts: { clientId: number; level: string | 
     dayGroups: opts.dayGroups, level: opts.level,
     painAreas: reportedJoints(survey?.healthLimitations, pains.map((p) => p.area)),
     trainingLocation: survey?.trainingLocation ?? null, equipmentText: survey?.equipment ?? null,
+    breathing: setting?.breathing === true, rollerAllowed: isRollerDay(opts.dayIndex, opts.totalDays),
   };
   const toItem = (it: CatalogueWarmupItem) => ({ name: it.name, detail: formatAmount(it), description: it.executionInstructions ?? "", joints: it.jointStressAreas ?? [] });
   const w = selectWarmup(catalogue, ctx);
@@ -305,6 +307,7 @@ router.get("/client-portal/training/today", requireClientAuth, async (req, res):
   const dayType = determineDayType(exRows.map((e) => e.mainMuscleGroup));
   const { warmup, warmupMinutes, cooldown, cooldownMinutes } = await buildWarmupAndCooldown({
     clientId, level: plan.level, dayType, dayGroups: [...new Set(exRows.map((e) => e.mainMuscleGroup))],
+    dayIndex: days.findIndex((d) => d.id === targetDay.id), totalDays: days.length,
   });
   const equipment = [...new Set(exRows.flatMap((e) => e.equipment))].filter((x) => !["Masa własnego ciała", "Brak sprzętu"].includes(x));
 

@@ -4,6 +4,9 @@ import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-li
 import { SetScreen } from "./SetScreen";
 import { PainSheet, PAIN_NOTICE } from "./PainSheet";
 import { TrainingFlow } from "./TrainingFlow";
+import { RampFlow } from "./RampFlow";
+import { loadRamp, localDate } from "@/lib/training/ramp";
+import { TodayCard } from "./TodayCard";
 import { resetTrainingQueueForTests } from "@/lib/training/sync";
 import type { ExerciseInfo, TrainingDay } from "@/lib/training/types";
 
@@ -135,13 +138,10 @@ describe("TrainingFlow end to end (offline queue)", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("warm-up → sets → pain skip → cool-down → rating → finish; every write is sent once with its UUID", async () => {
+  it("sets → pain skip → rating → finish (no warm-up or cool-down inside); every write is sent once with its UUID", async () => {
     const onExit = vi.fn();
     render(<TrainingFlow day={day()} firstName="Ala" week={{ done: 1, target: 4 }} onExit={onExit} />);
-    // warm-up (no timer, the amount is information)
-    expect(screen.getByText("10 × w każdą stronę")).toBeTruthy();
-    expect(screen.getByText(/Następne:/)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Dalej" }));
+    expect(screen.queryByText("10 × w każdą stronę")).toBeNull(); // the warm-up has its own tile on "Dziś"
     // exercise 1: three sets
     for (let i = 0; i < 3; i++) fireEvent.click(screen.getByRole("button", { name: "Zapisz serię" }));
     fireEvent.click(screen.getByRole("button", { name: "Następne ćwiczenie" }));
@@ -150,10 +150,9 @@ describe("TrainingFlow end to end (offline queue)", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Bark" }));
     fireEvent.click(screen.getByRole("radio", { name: "4" }));
     fireEvent.click(screen.getByRole("button", { name: "Wyślij i pomiń ćwiczenie" }));
-    // cool-down
-    expect(screen.getByText("Pozycja dziecka")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Dalej" }));
-    // finish
+    // finish (the cool-down is not part of the workout)
+    expect(screen.queryByText("Pozycja dziecka")).toBeNull();
+    expect(screen.getByText(/Schłodzenie znajdziesz potem na ekranie „Dziś”/)).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Trening ukończony" })).toBeTruthy();
     expect(screen.getByText("Dobra robota, Ala!")).toBeTruthy();
     expect(screen.getByText("3")).toBeTruthy(); // sets
@@ -178,7 +177,6 @@ describe("TrainingFlow end to end (offline queue)", () => {
     const fail = vi.fn(async () => { throw new TypeError("offline"); });
     vi.stubGlobal("fetch", fail);
     render(<TrainingFlow day={day()} firstName="Ala" week={{ done: 0, target: 4 }} onExit={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Dalej" }));
     fireEvent.click(screen.getByRole("button", { name: "Zapisz serię" }));
     await waitFor(() => expect(fail).toHaveBeenCalled());
     const stored = JSON.parse(window.localStorage.getItem("optimatren-trening-queue:v1")!);
@@ -192,7 +190,7 @@ describe("TrainingFlow end to end (offline queue)", () => {
 });
 
 describe("cool-down after a pain report in this workout", () => {
-  it("drops the stretches that load the reported joint", () => {
+  it("is kept for the Dziś screen without the stretches that load the reported joint", async () => {
     window.localStorage.clear(); resetTrainingQueueForTests();
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ id: 1 }), { status: 200 })));
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -202,17 +200,85 @@ describe("cool-down after a pain report in this workout", () => {
       { name: "Rozciąganie klatki przy ścianie", detail: "30 s na stronę", description: "Spokojnie.", joints: [] },
     ];
     render(<TrainingFlow day={d} firstName="Ala" week={{ done: 0, target: 4 }} onExit={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Dalej" }));                // warm-up
     fireEvent.click(screen.getByRole("button", { name: /Coś boli\?/ }));           // exercise 1
     const dlg = within(screen.getByRole("dialog", { name: "Coś boli?" }));
     fireEvent.click(dlg.getByRole("radio", { name: "Kolano" }));
     fireEvent.click(dlg.getByRole("radio", { name: "3" }));
     fireEvent.click(screen.getByRole("button", { name: "Wyślij i pomiń ćwiczenie" }));
-    for (let i = 0; i < 1; i++) fireEvent.click(screen.getByRole("button", { name: "Zapisz serię" })); // exercise 2: one set
-    fireEvent.click(screen.getByRole("button", { name: "Przejdź do schłodzenia" }));
-    expect(screen.queryByText("Pozycja dziecka")).toBeNull();
-    expect(screen.getByText("Rozciąganie klatki przy ścianie")).toBeTruthy();
-    expect(screen.getByText(/Schłodzenie · 1 z 1/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz serię" }));          // exercise 2: one set
+    fireEvent.click(screen.getByRole("button", { name: "Przejdź do podsumowania" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zakończ" }));
+    const ramp = loadRamp()!;
+    expect(ramp.cooldownItems!.map((c) => c.name)).toEqual(["Rozciąganie klatki przy ścianie"]);
+    expect(ramp.painAreas).toEqual(["Kolano"]);
     vi.unstubAllGlobals();
   });
 });
+
+describe("RampFlow: warm-up and cool-down on their own", () => {
+  beforeEach(() => { window.localStorage.clear(); window.HTMLElement.prototype.scrollIntoView = vi.fn(); });
+  const items = [
+    { name: "Krążenia ramion", detail: "10 ×", description: "Duże koła." },
+    { name: "Marsz w miejscu", detail: "1 min", description: "Spokojnie." },
+  ];
+  it("walks through the items, marks the warm-up as done and leaves", () => {
+    const onExit = vi.fn();
+    render(<RampFlow kind="warmup" planDayId={7} items={items} onExit={onExit} />);
+    expect(screen.getByText("Rozgrzewka · 1 z 2")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Dalej" }));
+    expect(screen.getByText("Rozgrzewka · 2 z 2")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Pomiń" }));
+    expect(onExit).toHaveBeenCalledWith(true);
+    expect(loadRamp()).toMatchObject({ planDayId: 7, warmupDone: true, cooldownDone: false });
+  });
+  it("leaving halfway does not mark it as done", () => {
+    const onExit = vi.fn();
+    render(<RampFlow kind="cooldown" planDayId={7} items={items} onExit={onExit} />);
+    fireEvent.click(screen.getByRole("button", { name: /Wyjdź/ }));
+    expect(onExit).toHaveBeenCalledWith(false);
+    expect(loadRamp()).toBeNull();
+  });
+});
+
+describe("TodayCard: Rozgrzewka, Trening i Schłodzenie to trzy osobne kafelki", () => {
+  const mount = async (todayDay: TrainingDay | null, props: { onStart?: () => void; onRamp?: () => void } = {}) => {
+    window.localStorage.clear();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      client: { firstName: "Ala" }, plan: { id: 1, title: "Plan" }, week: { done: 0, target: 4 }, lastSession: null, today: todayDay, next: null,
+    }), { status: 200, headers: { "Content-Type": "application/json" } })));
+    const onStart = props.onStart ?? vi.fn(); const onRamp = props.onRamp ?? vi.fn();
+    render(<TodayCard reloadKey={0} onStart={onStart} onRamp={onRamp} />);
+    await waitFor(() => expect(document.body.textContent).toContain("Dzień B"));
+    return { onStart, onRamp };
+  };
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("each section has its own region and button; the cool-down is marked as skippable", async () => {
+    const { onStart, onRamp } = await mount(day());
+    expect(screen.getByRole("region", { name: "Rozgrzewka" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Trening" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Schłodzenie" }).textContent).toContain("można pominąć");
+    fireEvent.click(screen.getByRole("button", { name: "Zacznij rozgrzewkę" }));
+    expect(onRamp).toHaveBeenCalledWith("warmup", 9, expect.any(Array));
+    fireEvent.click(screen.getByRole("button", { name: "Zacznij schłodzenie" }));
+    expect(onRamp).toHaveBeenLastCalledWith("cooldown", 9, expect.any(Array));
+    expect(onStart).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Zacznij trening" }));
+    expect(onStart).toHaveBeenCalledTimes(1);
+  });
+  it("done sections show it; no cool-down tile when there is nothing to do", async () => {
+    window.localStorage.setItem("optimatren-ramp:v1", JSON.stringify({ v: 1, date: localDate(), planDayId: 9, warmupDone: true, cooldownDone: false, cooldownItems: null, painAreas: [] }));
+    const d = day(); d.cooldown = [];
+    await mountKeep(d);
+    expect(within(screen.getByRole("region", { name: "Rozgrzewka" })).getByText("Zrobione")).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Schłodzenie" })).toBeNull();
+  });
+});
+
+async function mountKeep(todayDay: TrainingDay) {
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+    client: { firstName: "Ala" }, plan: { id: 1, title: "Plan" }, week: { done: 0, target: 4 }, lastSession: null, today: todayDay, next: null,
+  }), { status: 200, headers: { "Content-Type": "application/json" } })));
+  render(<TodayCard reloadKey={0} onStart={vi.fn()} onRamp={vi.fn()} />);
+  await waitFor(() => expect(document.body.textContent).toContain("Dzień B"));
+}

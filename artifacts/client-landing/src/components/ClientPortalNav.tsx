@@ -6,6 +6,7 @@
  * (backend-decided `bookable` flag); no backend or Clerk config changes.
  */
 import { ThemeSelect } from "@/components/ThemeSelect";
+import { BreathingSetting } from "@/components/BreathingSetting";
 import { BrandMark } from "@/components/BrandMark";
 import { useState } from "react";
 import { useUser, useClerk } from "@clerk/react";
@@ -219,6 +220,7 @@ export function ClientPortalNav({ firstName, lastName, showCalendar, onNavigate 
             </div>
           </dl>
           <ThemeSelect />
+          <BreathingSetting />
           <p className="text-xs text-muted-foreground">
             Logowanie odbywa się przez konto Google — zarządzanie hasłem nie jest tu potrzebne.
           </p>

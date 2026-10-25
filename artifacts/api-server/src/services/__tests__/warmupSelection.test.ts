@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { WARMUP_CATALOGUE } from "../../seeds/warmupCatalogueData";
 import {
-  selectWarmup, selectCooldown, jointsFromText, reportedJoints, formatAmount, estimateMinutes,
+  selectWarmup, selectCooldown, rollerDayIndexes, isRollerDay, jointsFromText, reportedJoints, formatAmount, estimateMinutes,
   type CatalogueWarmupItem, type SelectionContext,
 } from "../warmupSelection";
 
@@ -159,22 +159,43 @@ describe("cool-down: roller, breathing, hidden and unreviewed items (blok 5)", (
   const breath = extra({ name: "Oddech pudełkowy", movementPattern: "Oddychanie", mainMuscleGroup: "Brzuch" });
   const breath2 = extra({ name: "Wydłużony wydech", movementPattern: "Oddychanie", mainMuscleGroup: "Brzuch" });
   const lower = ["Mięśnie czworogłowe uda", "Pośladki"];
+  const rolling = { rollerAllowed: true };
   it("roller only when the client ticked it or trains at a gym", () => {
     const withRoller = [...catalogue, roller];
-    expect(names(selectCooldown(withRoller, ctx({ dayGroups: lower, trainingLocation: "Dom", equipmentText: "Hantle" })))).not.toContain("Rolowanie przodu uda");
-    expect(names(selectCooldown(withRoller, ctx({ dayGroups: lower, trainingLocation: "Dom", equipmentText: "Hantle, Roller" })))).toContain("Rolowanie przodu uda");
-    expect(names(selectCooldown(withRoller, ctx({ dayGroups: lower, trainingLocation: "Siłownia", equipmentText: "" })))).toContain("Rolowanie przodu uda");
+    expect(names(selectCooldown(withRoller, ctx({ ...rolling, dayGroups: lower, trainingLocation: "Dom", equipmentText: "Hantle" })))).not.toContain("Rolowanie przodu uda");
+    expect(names(selectCooldown(withRoller, ctx({ ...rolling, dayGroups: lower, trainingLocation: "Dom", equipmentText: "Hantle, Roller" })))).toContain("Rolowanie przodu uda");
+    expect(names(selectCooldown(withRoller, ctx({ ...rolling, dayGroups: lower, trainingLocation: "Siłownia", equipmentText: "" })))).toContain("Rolowanie przodu uda");
   });
   it("at most one roller exercise per cool-down", () => {
-    const c = selectCooldown([...catalogue, roller, roller2], ctx({ dayGroups: lower }));
+    const c = selectCooldown([...catalogue, roller, roller2], ctx({ ...rolling, dayGroups: lower }));
     expect(c.filter((i) => i.equipment.includes("Roller")).length).toBeLessThanOrEqual(1);
   });
-  it("a breathing exercise closes the cool-down (3 stretches + 1) and is skipped when none is eligible", () => {
-    const c = selectCooldown([...catalogue, breath, breath2], ctx({ dayGroups: lower }));
-    expect(c.length).toBeLessThanOrEqual(4);
-    expect(c[c.length - 1]!.movementPattern).toBe("Oddychanie");
-    expect(c.filter((i) => i.movementPattern === "Oddychanie")).toHaveLength(1);
-    expect(selectCooldown(catalogue, ctx({ dayGroups: lower })).some((i) => i.movementPattern === "Oddychanie")).toBe(false);
+  it("rolling only on rolling days: never by default, at most 2 days of any week", () => {
+    const withRoller = [...catalogue, roller, roller2];
+    expect(names(selectCooldown(withRoller, ctx({ dayGroups: lower })))).not.toContain("Rolowanie przodu uda"); // default: no
+    for (let total = 1; total <= 7; total++) {
+      expect(rollerDayIndexes(total).length).toBeLessThanOrEqual(2);
+      const days = Array.from({ length: total }, (_, d) =>
+        selectCooldown(withRoller, ctx({ dayGroups: lower, rollerAllowed: isRollerDay(d, total) })).some((i) => i.equipment.includes("Roller")));
+      expect(days.filter(Boolean).length).toBeGreaterThanOrEqual(1);
+      expect(days.filter(Boolean).length).toBeLessThanOrEqual(2);
+    }
+  });
+  it("no rolling for 'Brak aktywności fizycznej' (rollers are not marked suitable for them)", () => {
+    const r = extra({ name: "Rolowanie", equipment: ["Roller"], suitableForNoActivity: false, mainMuscleGroup: "Mięśnie czworogłowe uda" });
+    expect(names(selectCooldown([r], ctx({ ...rolling, dayGroups: lower, level: "Brak aktywności fizycznej" })))).toEqual([]);
+  });
+  it("breathing: none by default; with the setting on it is the last item (3 stretches + 1); skipped when none is eligible", () => {
+    const pool = [...catalogue, breath, breath2];
+    expect(selectCooldown(pool, ctx({ dayGroups: lower })).some((i) => i.movementPattern === "Oddychanie")).toBe(false);
+    expect(selectCooldown(pool, ctx({ dayGroups: lower, breathing: false })).some((i) => i.movementPattern === "Oddychanie")).toBe(false);
+    for (const level of ["Brak aktywności fizycznej", "Początkujący", "Średniozaawansowany", "Zaawansowany"]) {
+      const c = selectCooldown(pool, ctx({ dayGroups: lower, breathing: true, level }));
+      expect(c.length).toBeLessThanOrEqual(4);
+      expect(c[c.length - 1]!.movementPattern).toBe("Oddychanie");
+      expect(c.filter((i) => i.movementPattern === "Oddychanie")).toHaveLength(1);
+    }
+    expect(selectCooldown(catalogue, ctx({ dayGroups: lower, breathing: true })).some((i) => i.movementPattern === "Oddychanie")).toBe(false);
   });
   it("hidden items never; unreviewed items only for intermediate / advanced", () => {
     const hidden = extra({ name: "Ukryte", hidden: true });

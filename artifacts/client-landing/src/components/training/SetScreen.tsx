@@ -132,7 +132,7 @@ export function SetScreen({
 
       {(allDone || skipped) && (
         <button type="button" onClick={onNext} className="h-14 w-full rounded-xl bg-primary text-base font-bold text-primary-foreground">
-          {index + 1 >= total ? "Przejdź do schłodzenia" : "Następne ćwiczenie"}
+          {index + 1 >= total ? "Przejdź do podsumowania" : "Następne ćwiczenie"}
         </button>
       )}
 

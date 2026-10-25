@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { ArrowLeft, Trophy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { RATING_LABELS, type Rating, type RampItem, type TrainingDay } from "@/lib/training/types";
-import { countDoneSets, loadRun, newRun, runReducer, saveRun, clearRun, type RunState, type Stage } from "@/lib/training/run";
+import { RATING_LABELS, type Rating, type TrainingDay } from "@/lib/training/types";
+import { countDoneSets, loadRun, newRun, runReducer, saveRun, clearRun, type RunState } from "@/lib/training/run";
+import { updateRamp, withoutPainJoints } from "@/lib/training/ramp";
 import { recordGain } from "@/lib/training/logic";
 import { trainingQueue } from "@/lib/training/sync";
 import { SetScreen } from "./SetScreen";
@@ -10,50 +11,6 @@ import { PainSheet, type PainInput } from "./PainSheet";
 import { MediaPlaceholder, SyncBadge } from "./TrainingUi";
 
 const newUuid = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`.padEnd(36, "0").replace(/^(.{8})(.{4})(.{4})(.{4})(.{12}).*$/, "$1-$2-$3-$4-$5"));
-
-const STAGES: { id: Stage; label: string }[] = [
-  { id: "warmup", label: "Rozgrzewka" },
-  { id: "exercises", label: "Ćwiczenia" },
-  { id: "cooldown", label: "Schłodzenie" },
-];
-
-function StageBar({ stage }: { stage: Stage }) {
-  const idx = stage === "finish" || stage === "done" ? 3 : STAGES.findIndex((s) => s.id === stage);
-  return (
-    <ol className="flex gap-1.5" aria-label="Etapy treningu">
-      {STAGES.map((s, i) => (
-        <li key={s.id} aria-current={i === idx ? "step" : undefined} className="flex-1">
-          <div className={cn("h-1.5 rounded-full", i <= idx ? "bg-primary" : "bg-muted")} />
-          <span className={cn("mt-1 block text-center text-[11px] font-semibold uppercase tracking-[0.04em]", i === idx ? "text-foreground" : "text-muted-foreground")}>{s.label}</span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-/** Warm-up / cool-down: one item at a time, amount shown as information (no timer). */
-function StepScreen({ title, items, index, nextLabel, onSkip, onNext }: {
-  title: string; items: RampItem[]; index: number; nextLabel: string; onSkip: () => void; onNext: () => void;
-}) {
-  const it = items[index]!;
-  const upcoming = items[index + 1]?.name ?? nextLabel;
-  return (
-    <div className="space-y-4">
-      <p className="text-sm font-semibold text-muted-foreground">{title} · {index + 1} z {items.length}</p>
-      <MediaPlaceholder label="Animacja pojawi się tutaj" />
-      <div>
-        <h2 className="text-2xl font-bold leading-tight tracking-tight">{it.name}</h2>
-        <p className="mt-1 text-sm text-foreground/90">{it.description}</p>
-        <p className="mt-3 inline-block rounded-lg bg-brand-soft px-3 py-2 text-lg font-bold text-primary">{it.detail}</p>
-      </div>
-      <p className="text-sm text-muted-foreground">Następne: <b className="text-foreground">{upcoming}</b></p>
-      <div className="grid grid-cols-[1fr_2fr] gap-3">
-        <button type="button" onClick={onSkip} className="h-14 rounded-xl border border-border bg-card font-semibold">Pomiń</button>
-        <button type="button" onClick={onNext} className="h-14 rounded-xl bg-primary text-base font-bold text-primary-foreground">Dalej</button>
-      </div>
-    </div>
-  );
-}
 
 function ExerciseList({ day, run, onPick, onClose }: { day: TrainingDay; run: RunState; onPick: (i: number) => void; onClose: () => void }) {
   return (
@@ -142,6 +99,7 @@ function FinishScreen({ firstName, day, run, week, onFeedback, onFinish }: {
         <label htmlFor="session-note" className="mb-1 mt-3 block text-xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">Notatka dla trenera (opcjonalnie)</label>
         <textarea id="session-note" rows={3} maxLength={1000} value={note} onChange={(e) => { setNote(e.target.value); onFeedback(rating, e.target.value); }} className="w-full rounded-lg border border-input bg-background p-3 text-base" />
       </fieldset>
+      {day.cooldown.length > 0 && <p className="text-center text-sm text-muted-foreground">Schłodzenie znajdziesz potem na ekranie „Dziś”. Możesz je zrobić albo pominąć.</p>}
       <button type="button" onClick={onFinish} className="h-14 w-full rounded-xl bg-primary text-base font-bold text-primary-foreground">Zakończ</button>
     </div>
   );
@@ -169,11 +127,9 @@ export function TrainingFlow({ day, firstName, week, onExit }: {
   const [list, setList] = useState(false);
   const [pain, setPain] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { topRef.current?.scrollIntoView({ block: "start" }); }, [run.stage, run.exerciseIndex, run.warmupIndex, run.cooldownIndex]);
+  useEffect(() => { topRef.current?.scrollIntoView({ block: "start" }); }, [run.stage, run.exerciseIndex]);
 
   const ex = day.exercises[run.exerciseIndex];
-  // After a pain report the cool-down drops stretches that load that joint.
-  const cooldown = useMemo(() => day.cooldown.filter((c) => !(c.joints ?? []).some((j) => (run.painAreas ?? []).includes(j))), [day.cooldown, run.painAreas]);
   const dayOf = useCallback((a: Parameters<typeof dispatch>[0]) => dispatch(a), []);
 
   const saveSet = (planExerciseId: number, setNumber: number, value: { weightKg: number | null; reps: number | null; rir: number | null }) => {
@@ -199,6 +155,8 @@ export function TrainingFlow({ day, firstName, week, onExit }: {
     const id = newUuid();
     queue.enqueue({ id, kind: "finish", sessionUuid: run.sessionUuid, body: { status, rating: run.rating, note: run.note || null, endedAt } });
     dayOf({ type: "end", at: endedAt });
+    // The cool-down is a separate, optional step: keep it (without stretches that load a reported joint) for the "Dziś" screen.
+    updateRamp(day.planDayId, { cooldownItems: withoutPainJoints(day.cooldown, run.painAreas ?? []), painAreas: run.painAreas ?? [] });
     clearRun(day.planDayId);
     onExit(status === "completed");
   };
@@ -212,30 +170,16 @@ export function TrainingFlow({ day, firstName, week, onExit }: {
             <ArrowLeft className="h-4 w-4" aria-hidden /> Wyjdź (trening zostaje zapisany)
           </button>
         </div>
-        <div className="mx-auto max-w-lg space-y-2"><StageBar stage={run.stage} /><div className="min-h-6"><SyncBadge /></div></div>
+        <div className="mx-auto flex max-w-lg items-center justify-between"><p className="text-xs font-bold uppercase tracking-[0.06em] text-primary">Trening</p><div className="min-h-6"><SyncBadge /></div></div>
       </header>
 
       <main className="mx-auto max-w-lg px-4 pt-4">
-        {run.stage === "warmup" && day.warmup.length > 0 && (
-          <StepScreen title="Rozgrzewka" items={day.warmup} index={Math.min(run.warmupIndex, day.warmup.length - 1)} nextLabel="Pierwsze ćwiczenie"
-            onSkip={() => dayOf({ type: "warmupNext", total: day.warmup.length })} onNext={() => dayOf({ type: "warmupNext", total: day.warmup.length })} />
-        )}
-        {run.stage === "warmup" && day.warmup.length === 0 && (
-          <button type="button" onClick={() => dayOf({ type: "stage", stage: "exercises" })} className="h-14 w-full rounded-xl bg-primary font-bold text-primary-foreground">Zacznij ćwiczenia</button>
-        )}
         {run.stage === "exercises" && ex && (
           <SetScreen key={ex.planExerciseId} ex={ex} index={run.exerciseIndex} total={day.exercises.length}
             sets={run.sets[ex.planExerciseId]} skipped={run.skippedExercises.includes(ex.planExerciseId)}
             onSave={(n, v) => saveSet(ex.planExerciseId, n, v)}
             onPrev={() => dayOf({ type: "prevExercise" })} onNext={() => dayOf({ type: "nextExercise", total: day.exercises.length })}
             onOpenList={() => setList(true)} onPain={() => setPain(true)} />
-        )}
-        {run.stage === "cooldown" && cooldown.length > 0 && (
-          <StepScreen title="Schłodzenie" items={cooldown} index={Math.min(run.cooldownIndex, cooldown.length - 1)} nextLabel="Podsumowanie"
-            onSkip={() => dayOf({ type: "cooldownNext", total: cooldown.length })} onNext={() => dayOf({ type: "cooldownNext", total: cooldown.length })} />
-        )}
-        {run.stage === "cooldown" && cooldown.length === 0 && (
-          <button type="button" onClick={() => dayOf({ type: "stage", stage: "finish" })} className="h-14 w-full rounded-xl bg-primary font-bold text-primary-foreground">Przejdź do podsumowania</button>
         )}
         {run.stage === "finish" && (
           <FinishScreen firstName={firstName} day={day} run={run} week={week} onFeedback={(rating, note) => dayOf({ type: "feedback", rating, note })} onFinish={() => finish("completed")} />

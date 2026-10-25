@@ -1,9 +1,9 @@
 -- 0030: decyzje właściciela po imporcie (25.10.2026). Tylko UPDATE danych, bez zmian schematu; bezpieczne przy ponownym uruchomieniu.
 -- 2a) rolowanie: zweryfikowane, nie dla brak aktywności
-UPDATE exercises SET reviewed_by_trainer = true, suitable_for_no_activity = false
+UPDATE exercises SET reviewed_by_trainer = true, verification_status = 'zweryfikowane', suitable_for_no_activity = false
  WHERE equipment = ARRAY['Roller']::text[] AND name LIKE 'Rolowanie%';
 -- 2b) ćwiczenia oddechowe: zweryfikowane, dla brak aktywności; generator ich sam nie dodaje (przełącznik klienta)
-UPDATE exercises SET reviewed_by_trainer = true, suitable_for_no_activity = true
+UPDATE exercises SET reviewed_by_trainer = true, verification_status = 'zweryfikowane', suitable_for_no_activity = true
  WHERE movement_pattern = 'Oddychanie';
 -- 2c) pliometria 249–258: intensywność; 256 = przygotowanie do skoków, bez intensywności
 UPDATE exercises SET intensity = v.i FROM (VALUES

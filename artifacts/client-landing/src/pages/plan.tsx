@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { TodayCard } from "@/components/training/TodayCard";
 import { StepsTile } from "@/components/StepsTile";
 import { TrainingFlow } from "@/components/training/TrainingFlow";
-import type { TrainingDay } from "@/lib/training/types";
+import { RampFlow } from "@/components/training/RampFlow";
+import type { RampKind } from "@/lib/training/ramp";
+import type { RampItem, TrainingDay } from "@/lib/training/types";
 import { ClientPortalNav, type PortalNavTarget } from "@/components/ClientPortalNav";
 import { cn } from "@/lib/utils";
 import {
@@ -1207,6 +1209,7 @@ export default function PlanPortal() {
   const [planRetry, setPlanRetry] = useState(0);
   const [selectedDay, setSelectedDay] = useState<PlanDay | null>(null);
   const [training, setTraining] = useState<{ day: TrainingDay; firstName: string; week: { done: number; target: number } } | null>(null);
+  const [ramp, setRamp] = useState<{ kind: RampKind; planDayId: number; items: RampItem[] } | null>(null);
   const [todayReload, setTodayReload] = useState(0);
   // Backend-decided calendar eligibility for the nav (in_person/hybrid only).
   const [navBookable, setNavBookable] = useState(false);
@@ -1315,6 +1318,17 @@ export default function PlanPortal() {
     />
   );
 
+  if (ramp) {
+    return (
+      <RampFlow
+        kind={ramp.kind}
+        planDayId={ramp.planDayId}
+        items={ramp.items}
+        onExit={() => { setRamp(null); setTodayReload((n) => n + 1); window.scrollTo({ top: 0 }); }}
+      />
+    );
+  }
+
   if (training) {
     return (
       <TrainingFlow
@@ -1347,6 +1361,7 @@ export default function PlanPortal() {
             <TodayCard
               reloadKey={todayReload}
               onStart={(day, ctx) => setTraining({ day, firstName: ctx.client.firstName, week: ctx.week })}
+              onRamp={(kind, planDayId, items) => setRamp({ kind, planDayId, items })}
             />
             <StepsTile />
           </>
