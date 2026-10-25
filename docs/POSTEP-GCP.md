@@ -144,3 +144,7 @@
 ### Blok 8 — konta i role
 - **Audyt (8a): była luka.** Każdy zalogowany użytkownik Clerk, który otworzył panel trenera, sam stawał się trenerem (`POST /trainer/profile`). **Łatka wdrożona (ZGODA):** nowy profil trenera tylko dla kont na liście `TRAINER_CLERK_IDS` (`.env`), administratorów aplikacji albo przy `TRAINER_SIGNUP_OPEN=1` (dev/test dymny). Domyślnie zamknięte; istniejący trenerzy bez zmian; ekran „To konto nie ma jeszcze dostępu trenera”. Test dymny wymaga API z `TRAINER_SIGNUP_OPEN=1`. Testy: 4 nowe w `trainer-profile.integration`.
 - **Projekt (8b):** `docs/KONTA.md` — konto Solo, połączenie z trenerem (zaproszenie / kod → prośba), wniosek „Prowadzę podopiecznych”, panel administratora, przełącznik Mój trening / Podopieczni, model danych, ekrany, testy izolacji, 5 pytań. Nic nie zbudowano.
+
+### Weryfikacja końcowa gałęzi `feature/dom-kondycja` (NIE scalona do `main`)
+- API (baza testowa, `scripts/test-api.sh`): 2567 testów zielonych (po wzmocnieniu kruchego testu `avoided-exercises` nr 4: szukał po 3 literach pierwszego ćwiczenia bez sortowania, limit 20; teraz pełna nazwa wielkimi literami). Bezpieczeństwo generatora 101/101, panel 765, portal 228, typecheck 0 błędów, build OK, test dymny 131 OK / 0 błędów (API z `TRAINER_SIGNUP_OPEN=1` tylko na czas testu; po teście usługi zrestartowane w trybie zamkniętym).
+- Migracje na bazie aplikacji: 0030 (dane), 0031 (`clients.breathing_cooldown`), 0032 (`surveys.jump_experience`); pg_dump przed 0030, 0031, 0032 w `~/backups/`.
