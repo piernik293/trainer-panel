@@ -14,3 +14,4 @@ export * from "./subscriptions";
 export * from "./ladders";
 export * from "./jointWarnings";
 export * from "./planChangeLog";
+export * from "./dailySteps";

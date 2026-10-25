@@ -32,6 +32,7 @@ import { ArrowLeft, Printer, FileEdit, Phone, Mail, Calendar, ClipboardList, His
 import { CollapsibleSurveySection, DetailRow } from "@/components/CollapsibleSurveySection";
 import ExerciseRecommendationsTab from "./ExerciseRecommendationsTab";
 import TrainingSessionsTab, { usePainReports } from "./TrainingSessionsTab";
+import { StepsCard } from "@/components/StepsCard";
 import { formatDate } from "@/lib/utils";
 import { clientStatusLabel, surveyStatusLabel } from "@/lib/client-status";
 import { methodsAnswerUsable } from "@workspace/survey-config";
@@ -628,7 +629,8 @@ export default function ClientDetail() {
           />
         </TabsContent>
 
-        <TabsContent value="workout-history" className="pt-4">
+        <TabsContent value="workout-history" className="pt-4 space-y-4">
+          <StepsCard clientId={id} />
           <TrainingSessionsTab clientId={id} />
         </TabsContent>
 

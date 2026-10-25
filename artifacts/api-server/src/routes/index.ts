@@ -22,6 +22,7 @@ import bookingsRouter from "./bookings";
 import subscriptionRouter from "./subscription";
 import trainerProfileRouter from "./trainerProfile";
 import trainingRouter from "./training";
+import stepsRouter from "./steps";
 
 const router: IRouter = Router();
 
@@ -48,6 +49,7 @@ router.use(bookingsRouter);
 router.use(subscriptionRouter);
 router.use(trainerProfileRouter);
 router.use(trainingRouter);
+router.use(stepsRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────

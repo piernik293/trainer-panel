@@ -50,3 +50,6 @@ spadek realizacji / rekordy” (TODO w `pages/Dashboard.tsx`). Brak flagi „wyw
 - Gdy generator zacznie stosować metody intensyfikacji — musi respektować „Metody do unikania” z wywiadu (`advanced_methods_to_avoid`; tylko wywiady z nowego pytania, patrz `docs/WYWIAD-INWENTARZ.md`). Test statyczny `avoidedExercisesEngine.test.ts` przypomni o tym, gdy w kodzie generatora pojawi się nazwa metody.
 - Tryb młodzieżowy (poniżej 16 lat) — dopiero po konsultacji prawnej i po becie.
 - Usunąć konta Clerk `trenerdemo` i `klientdemo` (oraz ich dane testowe) przed betą.
+
+## Kroki — integracja z telefonem (25.10.2026)
+Kroki są dziś wpisywane ręcznie (tabela `daily_steps`, kafelek „Kroki dziś” w portalu, karta w profilu klienta). **Później:** automatyczny import z Apple Health / Google Health Connect — wymaga aplikacji natywnej (PWA nie ma dostępu do tych danych), więc dopiero po decyzji o aplikacji. Kolumna `source` (domyślnie „ręcznie”) jest przygotowana na inne źródła. Nie obiecujemy efektów zdrowotnych; kroki to informacja o aktywności.
