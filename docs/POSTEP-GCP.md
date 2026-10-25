@@ -94,3 +94,8 @@
 - **Edytor planu:** przy ćwiczeniu rozwijana lista „Odmiany (N)” ze sprzętem (rodzina: dla głównego jego odmiany, dla odmiany — ćwiczenie główne i rodzeństwo), „Zamień” zachowuje dawkowanie i zapisuje się w historii planu (`POST /plans/:id/exercises/:planExerciseId/variant-replacement`, rodzaj `zamiana_odmiana`).
 - **Generator:** domyślnie ćwiczenie główne; odmiana tylko gdy główne nie przechodzi filtrów (sprzęt miejsca, staw, poziom, ukryte) — `preferMainOverVariants` w trzech trasach puli. Wszystkie filtry (sprzęt/miejsce/staw/poziom/ukryte/niezweryfikowane) działają na odmianach jak na zwykłych ćwiczeniach, bo to wiersze katalogu.
 - Testy: API `exercise-review` 7, `plan-variant-replacement` 3, `isGeneratorSafe` +3; panel `exercise-review` 5, `variant-picker` 3.
+
+### 25.10.2026 — weryfikacja końcowa gałęzi `feature/import-odmiany` (NIE scalona do `main`)
+- Pełne testy: API 2530 (po dostosowaniu 3 fikstur do nowej reguły „siłownia = pełny katalog”: sprzęt spoza katalogu siłowni, np. kółka gimnastyczne, albo miejsce Dom — asercje bez osłabienia), bezpieczeństwo generatora 101/101, panel 765, portal 208, typecheck OK, build OK, test dymny 131 OK / 0 błędów.
+- Baza aplikacji: migracje 0028 i 0029 (pg_dump przed każdą w `~/backups/`); import: 121 + 146 + 64 ćwiczeń z plików + 6 własnych na dziury + 3 oddechowe; wszystkie importowane `suitableForNoActivity = false`, `reviewed_by_trainer = false`; ćwiczenia „own” (185) bez zmian.
+- Do decyzji właściciela: patrz raport (lista na końcu sesji) — m.in. merge do `main`, zatwierdzanie ćwiczeń BA/P (`docs/POKRYCIE-DZIURY-BA-P.md`), intensywność istniejących 249–258, KONDYCJA.md.
