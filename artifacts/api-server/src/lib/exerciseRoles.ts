@@ -4,8 +4,8 @@ import { exercisesTable } from "@workspace/db";
 /** Warm-up and stretching exercises are offered only in the warm-up / cool-down of the training flow, never as main plan exercises. */
 export const WARMUP_ROLES = ["rozgrzewka", "rozciąganie"] as const;
 
-/** Roles kept out of the main plan: warm-up / stretching and running-technique drills (used by the sport module later). */
-export const NON_MAIN_ROLES = [...WARMUP_ROLES, "technika biegu"] as const;
+/** Roles kept out of the main plan: warm-up / stretching, running-technique drills (sport module) and jump preparation (used only by the plyometric block). */
+export const NON_MAIN_ROLES = [...WARMUP_ROLES, "technika biegu", "przygotowanie do skoków"] as const;
 
 export function isMainPlanExercise(ex: { role?: string | null }): boolean {
   return !ex.role || !(NON_MAIN_ROLES as readonly string[]).includes(ex.role);

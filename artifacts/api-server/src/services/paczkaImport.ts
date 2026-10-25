@@ -106,7 +106,7 @@ export function interpretDecision(v: string | undefined): Decision {
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 export const IMPORT_LEVELS = new Set(["Brak aktywności fizycznej", "Początkujący", "Średniozaawansowany", "Zaawansowany"]);
-export const IMPORT_ROLES = new Set(["główne", "pomocnicze", "rozgrzewka", "rozciąganie", "technika biegu"]);
+export const IMPORT_ROLES = new Set(["główne", "pomocnicze", "rozgrzewka", "rozciąganie", "technika biegu", "przygotowanie do skoków"]);
 /** `cele` column (owner's short list) → the client goal names used by the recommendation engine. Unknown values are ignored. */
 export const GOAL_MAP: Readonly<Record<string, string>> = {
   siła: "Zwiększenie siły", sylwetka: "Budowa sylwetki", redukcja: "Redukcja tkanki tłuszczowej", kondycja: "Poprawa kondycji", sprawność: "Poprawa sprawności", sport: "Cel sportowy",
@@ -117,7 +117,7 @@ export const IMPORT_MUSCLES = new Set([
 ]);
 export const IMPORT_EQUIPMENT = new Set([
   "Sztanga", "Hantle", "Kettlebell", "Maszyna", "Wyciąg", "Drążek", "Poręcze", "Ławka", "Gumy oporowe", "TRX",
-  "Masa własnego ciała", "Piłka", "Piłka lekarska", "Talerz obciążeniowy", "Uchwyty do pompek", "Kółka gimnastyczne", "Roller", "Landmine", "Brak sprzętu", "Inny",
+  "Masa własnego ciała", "Piłka", "Piłka lekarska", "Talerz obciążeniowy", "Uchwyty do pompek", "Kółka gimnastyczne", "Roller", "Landmine", "Worek bokserski", "Młot i opona", "Brak sprzętu", "Inny",
 ]);
 export const IMPORT_PATTERNS = new Set([
   "Pchanie poziome", "Pchanie pionowe", "Przyciąganie poziome", "Przyciąganie pionowe", "Przysiad", "Zawias biodrowy", "Wykrok",

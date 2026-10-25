@@ -35,6 +35,8 @@ export const CANONICAL_EQUIPMENT = [
   "Kółka gimnastyczne",
   "Roller",
   "Landmine",
+  "Worek bokserski",
+  "Młot i opona",
   "Brak sprzętu",
   "Masa własnego ciała",
 ] as const;
@@ -149,6 +151,12 @@ const ALIAS_MAP: Record<string, string> = {
   "wałek do rolowania": "Roller",
   "foam roller": "Roller",
 
+  // Worek bokserski i młot z oponą — tylko przy celach Poprawa sprawności / Cel sportowy
+  "worek bokserski": "Worek bokserski",
+  "worek": "Worek bokserski",
+  "młot i opona": "Młot i opona",
+  "młot z oponą": "Młot i opona",
+
   // Landmine — tylko siłownia (uchwyt na sztangę), brak opcji w wywiadzie
   "landmine": "Landmine",
 
@@ -193,6 +201,7 @@ export const FULL_GYM_EQUIPMENT: string[] = [
   "Piłka stabilizacyjna (bosu/fit)",
   "Roller",
   "Landmine",
+  "Worek bokserski",
   "Rower stacjonarny / orbitrek",
 ];
 

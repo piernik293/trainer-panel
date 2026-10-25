@@ -99,3 +99,14 @@
 - Pełne testy: API 2530 (po dostosowaniu 3 fikstur do nowej reguły „siłownia = pełny katalog”: sprzęt spoza katalogu siłowni, np. kółka gimnastyczne, albo miejsce Dom — asercje bez osłabienia), bezpieczeństwo generatora 101/101, panel 765, portal 208, typecheck OK, build OK, test dymny 131 OK / 0 błędów.
 - Baza aplikacji: migracje 0028 i 0029 (pg_dump przed każdą w `~/backups/`); import: 121 + 146 + 64 ćwiczeń z plików + 6 własnych na dziury + 3 oddechowe; wszystkie importowane `suitableForNoActivity = false`, `reviewed_by_trainer = false`; ćwiczenia „own” (185) bez zmian.
 - Do decyzji właściciela: patrz raport (lista na końcu sesji) — m.in. merge do `main`, zatwierdzanie ćwiczeń BA/P (`docs/POKRYCIE-DZIURY-BA-P.md`), intensywność istniejących 249–258, KONDYCJA.md.
+
+## 25.10.2026 — gałąź `feature/dom-kondycja` (decyzje po imporcie)
+
+### Blok 1 — scalenie
+- `feature/import-odmiany` scalona do `main` (commit 4e9600a, bez force) i wypchnięta. Nowa gałąź robocza: `feature/dom-kondycja`.
+
+### Blok 2 — dane katalogu (migracja danych 0030, pg_dump `przed-0030-20261025-1952.dump`)
+- Tylko UPDATE-y, bez zmian schematu; powtarzalne. Zastosowana na bazie aplikacji i testowej.
+- 2a) rolowanie (6): zweryfikowane, `suitableForNoActivity = false`. 2b) oddechowe (3): zweryfikowane, `suitableForNoActivity = true` (generator ich sam nie dodaje — blok 3b).
+- 2c) pliometria: Skoki pogo i Przeskoki boczne — niska; Skok z zamachem, Skok w dal z miejsca, Wskok na podwyższenie, Skok boczny z zatrzymaniem — średnia; Zeskok z wybiciem, Skoki boczne jednonóż, Skok jednonóż — wysoka. 256 „Nauka lądowania”: rola „przygotowanie do skoków” (poza pulą zwykłego planu), bez intensywności, poziom od Początkującego, nie dla brak aktywności.
+- 2d) Heavy_Bag_Thrust → sprzęt „Worek bokserski”, Sledgehammer_Swings → „Młot i opona” (nie ukryte, cele i poziom bez zmian: sprawność, cel sportowy, od Ś). Nowy sprzęt dodany do zamkniętych list (importer, normalizator, walidacja ćwiczeń, panel); „Worek bokserski” wchodzi do pełnego wyposażenia siłowni.
