@@ -1,5 +1,5 @@
 import { defineConfig } from "vitest/config";
-import { assertTestDatabase } from "./test-guard";
+import { assertTestDatabase } from "./src/lib/testGuard";
 
 // Safety: API tests only ever run against a database named *_test (see test-guard.ts).
 assertTestDatabase(process.env.DATABASE_URL);

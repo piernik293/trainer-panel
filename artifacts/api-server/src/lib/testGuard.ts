@@ -1,6 +1,6 @@
 /**
  * Testy API tworzą i zmieniają rekordy, więc mogą działać wyłącznie na bazie testowej (nazwa kończy się na `_test`).
- * Używane w vitest.config.ts: przy innej bazie (np. bazie aplikacji z .env) vitest odmawia startu.
+ * Używane w vitest.config.ts (plik musi leżeć w src/ — rootDir typecheck): przy innej bazie (np. bazie aplikacji z .env) vitest odmawia startu.
  * Prawidłowe uruchomienie: scripts/test-api.sh.
  */
 export function databaseNameOf(url: string | undefined): string | null {

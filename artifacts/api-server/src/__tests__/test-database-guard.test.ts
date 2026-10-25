@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { assertTestDatabase, databaseNameOf, isTestDatabaseUrl } from "../../test-guard";
+import { assertTestDatabase, databaseNameOf, isTestDatabaseUrl } from "../lib/testGuard";
 
 describe("zabezpieczenie: testy API tylko na bazie *_test", () => {
   it("baza testowa jest dozwolona", () => {
