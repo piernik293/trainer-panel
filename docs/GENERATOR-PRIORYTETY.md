@@ -87,3 +87,24 @@ Dziś: rozgrzewka (osobno, portal) → [blok pliometryczny, klasa „plyometric_
 3. **Długość bloku BA: dziś 4 tygodnie twardo; hierarchia mówi 8–12. Czy zmieniać?** Rekomendacja: tak, ale z domyślnymi 8 i zakresem 8–12, bo dłuższy blok daje więcej czasu na naukę techniki; trener może skrócić.
 4. **Czy uzupełnić `cele` w katalogu (294 ćwiczenia bez celów, 0 dla redukcji)?** Rekomendacja: tak — najpierw mapowanie starych nazw (automat), potem lista ~60 ćwiczeń głównych do Twojej akceptacji.
 5. **Czy wykluczenie ma dotyczyć tylko wybranej pozycji także dla bardzo zbliżonych odmian tego samego ruchu (np. ten sam chwyt, inny uchwyt)?** Rekomendacja: tak — dokładna pozycja, zgodnie z hierarchią; wywiad pokazuje odmiany, więc klient może zaznaczyć kilka.
+
+
+---
+
+## Cele w katalogu — mapowanie i reguły przypisania (wdrożone 25.10.2026, migracja 0033)
+
+**Mapowanie starych nazw na 6 celów z bazy** (dotyczy ćwiczeń, które już miały cele): Masa mięśniowa, Hipertrofia → Budowa sylwetki; Siła → Zwiększenie siły; Kondycja, Wytrzymałość siłowa → Poprawa kondycji; Zdrowie ogólne, Stabilizacja → Poprawa sprawności.
+
+**Reguły dla ćwiczeń głównych i pomocniczych bez celów** (rozgrzewki, rozciąganie, technika biegu — bez celów, bo nie są ćwiczeniami planu głównego):
+| Cel | Reguła |
+|---|---|
+| Budowa sylwetki | każde ćwiczenie główne i pomocnicze |
+| Zwiększenie siły | wielostawowe + priorytet „Wysoki”/„Bardzo wysoki” + obciążenie zewnętrzne (sztanga, hantle, kettlebell, maszyna, wyciąg, landmine, talerz) |
+| Redukcja tkanki tłuszczowej | wielostawowe (dużo mięśni naraz) |
+| Poprawa kondycji | wielostawowe i (całe ciało albo masa ciała/kettlebell/TRX/piłka lekarska/guma we wzorcach przysiad, wykrok, zawias, pchanie/przyciąganie poziome, lokomocja) |
+| Poprawa sprawności | wielostawowe jednonóż lub we wzorcach wykrok, stabilizacja, anty-ekstensja, anty-rotacja, rotacja, lokomocja; oraz stabilizacja/anty-/rotacja także izolowane |
+| Cel sportowy | ma intensywność (skoki/moc) albo wielostawowe z obciążeniem nerwowym ≥ 4 |
+
+**Liczba aktywnych ćwiczeń na cel po zmianie** (ćwiczenie może mieć kilka celów): Budowa sylwetki 375 · Poprawa sprawności 121 · Redukcja tkanki tłuszczowej 104 · Zwiększenie siły 94 · Cel sportowy 47 · Poprawa kondycji 42. Wcześniej: Redukcja 0, Budowa sylwetki 10, Zwiększenie siły 23, Poprawa kondycji 15. Ćwiczenia główne i pomocnicze bez celów: 0 (zostały tylko rozgrzewki/rozciąganie).
+
+Uwagi: (1) to zmienia punktację dopasowania do celu (+20), czyli może zmienić wybory generatora — przed szerszym użyciem warto porównać plany przed/po; (2) skrypt zasilający świeżą bazę (`seeds/catalogueSeed.ts`) nadal zawiera stare nazwy — po jego użyciu trzeba powtórzyć migrację 0033.

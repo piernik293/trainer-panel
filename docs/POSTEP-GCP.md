@@ -148,3 +148,14 @@
 ### Weryfikacja końcowa gałęzi `feature/dom-kondycja` (NIE scalona do `main`)
 - API (baza testowa, `scripts/test-api.sh`): 2567 testów zielonych (po wzmocnieniu kruchego testu `avoided-exercises` nr 4: szukał po 3 literach pierwszego ćwiczenia bez sortowania, limit 20; teraz pełna nazwa wielkimi literami). Bezpieczeństwo generatora 101/101, panel 765, portal 228, typecheck 0 błędów, build OK, test dymny 131 OK / 0 błędów (API z `TRAINER_SIGNUP_OPEN=1` tylko na czas testu; po teście usługi zrestartowane w trybie zamkniętym).
 - Migracje na bazie aplikacji: 0030 (dane), 0031 (`clients.breathing_cooldown`), 0032 (`surveys.jump_experience`); pg_dump przed 0030, 0031, 0032 w `~/backups/`.
+
+## 25.10.2026 — decyzje właściciela po raporcie (gałąź `feature/dom-kondycja`)
+
+- **Migracja danych 0033** (`pg_dump przed-0033-*`; bazy: aplikacji i testowa), same UPDATE-y:
+  - **Cele (pkt 3):** stare nazwy → 6 celów, ćwiczenia główne/pomocnicze bez celów dostały cele wg reguł (opis w `docs/GENERATOR-PRIORYTETY.md`). Aktywne ćwiczenia na cel: Budowa sylwetki 375, Poprawa sprawności 121, Redukcja 104, Zwiększenie siły 94, Cel sportowy 47, Poprawa kondycji 42; bez celów zostały tylko rozgrzewki i rozciąganie.
+  - **Skoki dla Początkujących (pkt 4):** tylko Skoki pogo (249) i Skip A (#1098): poziom Początkujący, intensywność niska, zweryfikowane.
+  - **Ćwiczenia BA/P (pkt 5):** zweryfikowane #1101, 1402, 1403, 1091, 1107, 1113, 1136, 1405, 1156, 1146, 1185 (BA: też `suitableForNoActivity = true`) oraz tylko dla P: 1404 (deska z dotknięciem barku), 1108 (brzuszki), 1102 (łopatkowe) — bez zgody na BA. **Konflikt decyzji:** #1403 (uginanie z ręcznikiem) jest w pkt 5 (BA) i w pkt 9C (ukryć). Obowiązuje późniejszy pkt 9: ukryte, ale zweryfikowane i oznaczone dla BA, więc odkrycie go w panelu od razu je przywraca.
+  - **Ukrycie (pkt 9):** 26 ćwiczeń `hidden = true` (25 z listy po nazwach źródłowych + #1403); wszystkie znalezione, żadne nie zostało usunięte. Ćwiczenia z listy „zostają” nie były ruszane.
+- **Zabezpieczenie testów (pkt 1):** `artifacts/api-server/test-guard.ts` + `vitest.config.ts` — vitest odmawia startu, gdy `DATABASE_URL` nie kończy się na `_test`; test `test-database-guard` (4); zasada w `CLAUDE.md`.
+- **Sprzątanie fikstur (pkt 1): NIEWYKONANE** — polecenie usunięcia zostało zablokowane przez system uprawnień (kopia `przed-sprzataniem-fikstur-*.dump` jest zrobiona). Przy okazji ustalono, że mój wcześniejszy test przepiął 21 starszych fikstur (klienci 84–104, pierwotnie trener 702) pod testowego trenera 1273; sprzątanie musi je najpierw przywrócić do 702 (klucz obcy bez kaskady blokuje usunięcie trenera 1273).
+- `TRAINER_CLERK_IDS` (pkt 2): zgoda; nowych trenerów zgłasza właściciel.
