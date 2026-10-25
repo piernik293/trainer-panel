@@ -210,7 +210,7 @@ licznik wielokrotnego wyboru, podsumowanie „Zmień”, wysyłka, wznowienie, k
 | Etap | Ekran (pytania z inwentarza) | Warunkowy? |
 |---|---|---|
 | O Tobie | `name` (#1,#2) · `contact` (#3,#4) · `birth` (#5,#6) · `body` (#7,#8 + BMI) | `name`, `contact` pomijane dla istniejącego klienta |
-| Cel | `goal` (#9) · `sportStatus` (#10) · `sportNeeds` (#11) · `motivation` (#12) | `sportStatus`, `sportNeeds`: cel = Cel sportowy |
+| Cel | `goal` (#9) · `sportStatus` (#10) · `sportNeeds` (#11) · `jumps` (nowe, 25.10.2026) · `motivation` (#12) | `sportStatus`, `sportNeeds`, `jumps`: cel = Cel sportowy. `jumps`: „Czy masz doświadczenie ze skokami (np. skakanie na skrzynię, przeskoki)?” — Nie / Trochę / Tak; zapis `surveys.jump_experience` |
 | Doświadczenie | `level` (#13) · `duration` (#14) | `duration`: poziom ≠ Brak aktywności |
 | Miejsce i sprzęt | `location` (#19) · `equipment` (#20) | `equipment`: Dom / Siłownia plenerowa |
 | Czas i częstotliwość | `frequency` (#17) · `session` (#18) | — |

@@ -58,5 +58,6 @@ export interface SurveyInput {
   cardioPreference?: string;
   cardioFrequency?: string;
   preferredCardioType?: string;
+  jumpExperience?: string;
   avoidsAdvancedMethods?: boolean;
 }

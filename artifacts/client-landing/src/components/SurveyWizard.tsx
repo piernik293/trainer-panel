@@ -33,6 +33,8 @@ import {
   CARDIO_PREFERENCE_OPTIONS,
   CARDIO_RECOMMENDATION_TEXT,
   equipmentOptionsFor,
+  JUMP_EXPERIENCE_OPTIONS,
+  JUMP_EXPERIENCE_QUESTION,
   equipmentHint,
   EXPERIENCE_LEVEL_OPTIONS,
   MUSCLE_GROUPS,
@@ -555,6 +557,12 @@ export default function SurveyWizard({
             />
           </Section>
         );
+      case "jumps":
+        return (
+          <Section id={id} headingRef={heading} title={JUMP_EXPERIENCE_QUESTION} lead="Pytamy o to, bo wybrałeś/-aś cel sportowy. Od tego zależy, od jakich skoków zaczniemy.">
+            <ChoiceList name="Doświadczenie ze skokami" options={JUMP_EXPERIENCE_OPTIONS.map((v) => ({ value: v, label: v }))} value={answers.jumpExperience} onChange={(v) => choose({ jumpExperience: v })} />
+          </Section>
+        );
       case "motivation":
         return (
           <Section id={id} headingRef={heading} title="Dlaczego chcesz trenować?" lead={<Opt text={HINT_TEXT.motivation} />}>
@@ -908,6 +916,7 @@ export function summaryText(id: StepId, a: Answers): string {
     case "goal": return a.trainingGoal;
     case "sportStatus": return a.athleteStatus;
     case "sportNeeds": return a.sportPerformanceNeeds.join(", ");
+    case "jumps": return a.jumpExperience;
     case "motivation": return a.trainingMotivation;
     case "level": return a.experienceLevel;
     case "duration": return a.trainingDuration;

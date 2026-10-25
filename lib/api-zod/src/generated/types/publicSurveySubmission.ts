@@ -65,5 +65,6 @@ export interface PublicSurveySubmission {
   cardioPreference?: string;
   cardioFrequency?: string;
   preferredCardioType?: string;
+  jumpExperience?: string;
   avoidsAdvancedMethods?: boolean;
 }

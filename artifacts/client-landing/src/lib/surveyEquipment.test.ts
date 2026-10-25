@@ -2,8 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   equipmentHint, equipmentOptionsFor, showEquipmentField, parseEquipment,
   NO_EQUIPMENT_HOME_HINT, BANDS_ONLY_HOME_HINT, BOXING_BAG, HAMMER_AND_TYRE,
+  JUMP_EXPERIENCE_OPTIONS, JUMP_EXPERIENCE_QUESTION, jumpExperienceCode, showJumpExperience,
 } from "@workspace/survey-config";
-import { EMPTY_ANSWERS, isStepVisible, normalizeAnswers, validateStep, type Answers } from "./surveyWizard";
+import { EMPTY_ANSWERS, isStepVisible, normalizeAnswers, validateStep, visibleSteps, type Answers } from "./surveyWizard";
 
 const GOALS = ["Budowa sylwetki", "Zwiększenie siły", "Redukcja tkanki tłuszczowej", "Poprawa kondycji", "Poprawa sprawności", "Cel sportowy"];
 const SPORTY = ["Poprawa sprawności", "Cel sportowy"];
@@ -75,5 +76,33 @@ describe("ekran sprzętu w wywiadzie", () => {
     expect(gym.equipmentItems).toEqual([HAMMER_AND_TYRE]);
     expect(gym.equipmentOther).toBe("");
     expect(normalizeAnswers(a({ trainingLocation: "Siłownia", trainingGoal: "Budowa sylwetki", equipmentItems: [HAMMER_AND_TYRE] })).equipmentItems).toEqual([]);
+  });
+});
+
+describe("pytanie o doświadczenie ze skokami (5b)", () => {
+  const a = (over: Partial<Answers>): Answers => ({ ...EMPTY_ANSWERS, ...over });
+  it("treść pytania i odpowiedzi dokładnie jak w decyzji", () => {
+    expect(JUMP_EXPERIENCE_QUESTION).toBe("Czy masz doświadczenie ze skokami (np. skakanie na skrzynię, przeskoki)?");
+    expect([...JUMP_EXPERIENCE_OPTIONS]).toEqual(["Nie — dopiero zaczynam", "Trochę — robiłem/am okazjonalnie", "Tak — robię regularnie"]);
+  });
+  it("widoczne tylko przy celu „Cel sportowy”, tuż po pytaniach o sport", () => {
+    for (const goal of GOALS) expect(isStepVisible("jumps", a({ trainingGoal: goal }))).toBe(goal === "Cel sportowy");
+    expect(isStepVisible("jumps", a({ trainingGoal: "" }))).toBe(false);
+    const ids = visibleSteps(a({ trainingGoal: "Cel sportowy" }), { existingClient: true });
+    expect(ids.indexOf("jumps")).toBe(ids.indexOf("sportNeeds") + 1);
+    expect(visibleSteps(a({ trainingGoal: "Budowa sylwetki" })).includes("jumps")).toBe(false);
+  });
+  it("jest wymagane, a po zmianie celu odpowiedź znika i nie trafia do wysyłki", () => {
+    expect(validateStep("jumps", a({ trainingGoal: "Cel sportowy" }))).not.toBeNull();
+    expect(validateStep("jumps", a({ trainingGoal: "Cel sportowy", jumpExperience: JUMP_EXPERIENCE_OPTIONS[1] }))).toBeNull();
+    expect(normalizeAnswers(a({ trainingGoal: "Poprawa kondycji", jumpExperience: JUMP_EXPERIENCE_OPTIONS[2] })).jumpExperience).toBe("");
+    expect(normalizeAnswers(a({ trainingGoal: "Cel sportowy", jumpExperience: JUMP_EXPERIENCE_OPTIONS[2] })).jumpExperience).toBe(JUMP_EXPERIENCE_OPTIONS[2]);
+  });
+  it("kody odpowiedzi", () => {
+    expect(JUMP_EXPERIENCE_OPTIONS.map((o) => jumpExperienceCode(o))).toEqual(["nie", "troche", "tak"]);
+    expect(jumpExperienceCode("cokolwiek")).toBeNull();
+    expect(jumpExperienceCode(undefined)).toBeNull();
+    expect(showJumpExperience("Cel sportowy")).toBe(true);
+    expect(showJumpExperience("Poprawa sprawności")).toBe(false);
   });
 });

@@ -45,6 +45,8 @@ export const surveysTable = pgTable("surveys", {
   cardioPreference: text("cardio_preference"),
   cardioFrequency: text("cardio_frequency"),
   preferredCardioType: text("preferred_cardio_type"),
+  // Doświadczenie ze skokami (pytanie tylko przy celu „Cel sportowy”): steruje blokiem pliometrycznym
+  jumpExperience: text("jump_experience"),
   // Motivation — "Dlaczego chcesz trenować?" free-text field
   trainingMotivation: text("training_motivation"),
   // Czy klient ma przeciwwskazania do metod intensyfikacji (pytanie tak/nie, poprzedzające listę checkboxów)

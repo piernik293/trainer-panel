@@ -1,4 +1,4 @@
-import { birthDateError, heightError, weightError } from "@workspace/survey-config";
+import { birthDateError, heightError, weightError, showJumpExperience } from "@workspace/survey-config";
 import { Router, type IRouter } from "express";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { db, surveysTable, exercisesTable, clientsTable } from "@workspace/db";
@@ -328,6 +328,8 @@ router.put("/clients/:clientId/survey", requireAuth, async (req, res): Promise<v
     avoidedExerciseOtherText: parsed.data.avoidedExerciseOtherText ?? null,
     avoidedExerciseOtherReason: parsed.data.avoidedExerciseOtherReason ?? null,
     confirmedRestrictions,
+    // The jump question exists only with the goal "Cel sportowy".
+    jumpExperience: showJumpExperience(parsed.data.trainingGoal) ? parsed.data.jumpExperience ?? null : null,
   };
 
   const [survey] = await db
@@ -438,6 +440,8 @@ router.patch("/clients/:clientId/surveys/:surveyId", requireAuth, async (req, re
     avoidedExerciseOtherText: parsed.data.avoidedExerciseOtherText ?? null,
     avoidedExerciseOtherReason: parsed.data.avoidedExerciseOtherReason ?? null,
     confirmedRestrictions,
+    // Update: cleared only when the goal is sent and is not "Cel sportowy" (a partial update without the goal keeps it).
+    ...(parsed.data.trainingGoal !== undefined && !showJumpExperience(parsed.data.trainingGoal) ? { jumpExperience: null } : {}),
   };
 
   const [updated] = await db

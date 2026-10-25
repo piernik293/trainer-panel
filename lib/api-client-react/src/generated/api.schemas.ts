@@ -164,6 +164,7 @@ export interface Survey {
   cardioFrequency?: string | null;
   /** @nullable */
   preferredCardioType?: string | null;
+  jumpExperience?: string | null;
   /** @nullable */
   avoidsAdvancedMethods?: boolean | null;
   /** @nullable */
@@ -274,6 +275,7 @@ export interface SurveyInput {
   cardioPreference?: string;
   cardioFrequency?: string;
   preferredCardioType?: string;
+  jumpExperience?: string;
   avoidsAdvancedMethods?: boolean;
   /**
    * JSON array of confirmed restriction objects (bodyPart + optional note). Null or absent clears restrictions.
@@ -633,6 +635,7 @@ export interface PublicSurveySubmission {
   cardioPreference?: string;
   cardioFrequency?: string;
   preferredCardioType?: string;
+  jumpExperience?: string;
   avoidsAdvancedMethods?: boolean;
   trainingMotivation?: string;
 }

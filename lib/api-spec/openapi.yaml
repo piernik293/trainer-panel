@@ -1155,6 +1155,8 @@ components:
           type: ["string", "null"]
         preferredCardioType:
           type: ["string", "null"]
+        jumpExperience:
+          type: ["string", "null"]
         avoidsAdvancedMethods:
           type: ["boolean", "null"]
         confirmedRestrictions:
@@ -1253,6 +1255,8 @@ components:
         cardioFrequency:
           type: string
         preferredCardioType:
+          type: string
+        jumpExperience:
           type: string
         avoidsAdvancedMethods:
           type: boolean
@@ -1881,6 +1885,8 @@ components:
         cardioFrequency:
           type: string
         preferredCardioType:
+          type: string
+        jumpExperience:
           type: string
         avoidsAdvancedMethods:
           type: boolean
