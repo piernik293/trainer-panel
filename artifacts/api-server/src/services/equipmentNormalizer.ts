@@ -293,3 +293,15 @@ export function expandEquipmentForLocation(listed: readonly string[], location: 
   const extra = kind === "siłownia" ? FULL_GYM_EQUIPMENT : kind === "plener" ? ["Gumy oporowe"] : [];
   return [...new Set([...listed, ...extra])];
 }
+
+/** Trainer notice for a client training at home with no band, dumbbells or pull-up bar (owner's decision 25.10.2026). Not a block. */
+export const HOME_NO_EQUIPMENT_NOTICE =
+  "Brak sprzętu: plan nie obejmuje ćwiczeń na plecy. Zaleć klientowi minimum gumę oporową, a najlepiej hantle.";
+
+const BACK_EQUIPMENT = ["Gumy oporowe", "Hantle", "Drążek do podciągania"];
+
+/** True when the client trains at home (location "Dom") and has none of: resistance band, dumbbells, pull-up bar. */
+export function homeWithoutBackEquipment(location: string | null | undefined, equipment: readonly string[]): boolean {
+  if (locationKind(location) !== "dom") return false;
+  return !equipment.some((e) => BACK_EQUIPMENT.includes(e));
+}

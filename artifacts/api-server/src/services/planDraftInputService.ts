@@ -16,6 +16,8 @@ import {
   normalizeEquipmentList,
   defaultEquipmentForLocation,
   expandEquipmentForLocation,
+  homeWithoutBackEquipment,
+  HOME_NO_EQUIPMENT_NOTICE,
 } from "./equipmentNormalizer";
 import { recommendSplit } from "./splitRecommendationService";
 import {
@@ -326,6 +328,9 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
   }
   // Gym = full catalogue, outdoor gym = ticked + bands (owner's decision 25.10.2026).
   availableEquipment = expandEquipmentForLocation(availableEquipment, trainingLocation);
+  if (homeWithoutBackEquipment(trainingLocation, availableEquipment)) {
+    warnings.push({ code: "HOME_NO_EQUIPMENT", severity: "warning", message: HOME_NO_EQUIPMENT_NOTICE, blocking: false });
+  }
 
   // ── Lifestyle ───────────────────────────────────────────────────────────────
   const dailyActivity = survey?.activityLevel ?? null;

@@ -18,6 +18,9 @@
 
 import {
   EQUIPMENT_OPTIONS,
+  BOXING_BAG,
+  HAMMER_AND_TYRE,
+  equipmentOptionsFor,
   NO_EQUIPMENT,
   birthDateError,
   buildEquipmentString,
@@ -164,7 +167,7 @@ export function isStepVisible(id: StepId, a: Answers, prefill: Prefill = {}): bo
     case "cardioType":
       return normalizeCardioPreference(a.cardioPreference) === "include";
     case "equipment":
-      return showEquipmentField(a.trainingLocation);
+      return showEquipmentField(a.trainingLocation, a.trainingGoal);
     case "healthDesc":
       return a.injuryStatus === "Tak";
     // Intermediate / advanced by the EFFECTIVE level (the choice capped by training time).
@@ -205,6 +208,11 @@ export function normalizeAnswers(input: Answers, prefill: Prefill = {}): Answers
   if (!isStepVisible("equipment", a, prefill)) {
     a.equipmentItems = [];
     a.equipmentOther = "";
+  } else {
+    // Only what the screen offers for this goal and place (the boxing bag / hammer set disappear when the goal or place changes).
+    const offered = equipmentOptionsFor(a.trainingGoal, a.trainingLocation);
+    a.equipmentItems = a.equipmentItems.filter((x) => offered.includes(x));
+    if (a.trainingLocation === "Siłownia") a.equipmentOther = "";
   }
   if (!isStepVisible("healthDesc", a, prefill)) a.healthLimitations = "";
   if (!isStepVisible("avoided", a, prefill)) {
@@ -271,6 +279,8 @@ export function validateStep(id: StepId, a: Answers): string | null {
     case "location":
       return a.trainingLocation ? null : "To pole jest wymagane";
     case "equipment":
+      // At a gym the screen only offers the optional hammer-and-tyre set.
+      if (a.trainingLocation === "Siłownia" && showEquipmentField(a.trainingLocation, a.trainingGoal)) return null;
       return buildEquipmentString(a.equipmentItems, a.equipmentOther).trim() ? null : "To pole jest wymagane.";
     case "frequency":
       return a.desiredWeeklyFrequency && a.desiredWeeklyFrequency >= 1 && a.desiredWeeklyFrequency <= 7
@@ -408,7 +418,7 @@ export function remainingMinutes(stepsLeft: number): number {
   return Math.max(1, Math.round((stepsLeft * 10) / 60));
 }
 
-export const KNOWN_EQUIPMENT: readonly string[] = EQUIPMENT_OPTIONS;
+export const KNOWN_EQUIPMENT: readonly string[] = [...EQUIPMENT_OPTIONS, BOXING_BAG, HAMMER_AND_TYRE];
 export { isBeginnerLevel };
 
 // ─── Draft (autosave) ─────────────────────────────────────────────────────────

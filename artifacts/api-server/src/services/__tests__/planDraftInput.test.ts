@@ -583,3 +583,31 @@ describe("loadPlanDraftInput() — effective level (2-year rule, trainer overrid
     expect(result!.warnings.some((x) => x.code === "EFFECTIVE_LEVEL_ADJUSTED")).toBe(false);
   });
 });
+
+describe("ostrzeżenie dla trenera: dom bez sprzętu (4e)", () => {
+  let clientId: number;
+  const NOTICE = "Brak sprzętu: plan nie obejmuje ćwiczeń na plecy. Zaleć klientowi minimum gumę oporową, a najlepiej hantle.";
+  const warn = async (over: Record<string, unknown>) => {
+    await insertSurvey(clientId, { experienceLevel: "Początkujący", ...over });
+    const w = (await loadPlanDraftInput(clientId))!.warnings.find((x) => x.code === "HOME_NO_EQUIPMENT");
+    return w;
+  };
+  beforeAll(async () => { clientId = (await getOrCreateTestClient("plan-draft-home-no-equipment@example.com")).id; });
+
+  it("dom + „Brak sprzętu” albo pusta lista: jest, bez blokady, dokładny tekst", async () => {
+    for (const equipment of ["Brak sprzętu", "", "Masa własnego ciała"]) {
+      const w = await warn({ trainingLocation: "Dom", equipment });
+      expect(w?.message, equipment).toBe(NOTICE);
+      expect(w?.blocking).toBe(false);
+    }
+  });
+  it("znika, gdy klient ma gumę, hantle albo drążek", async () => {
+    for (const equipment of ["Gumy oporowe", "Hantle", "Drążek do podciągania", "Gumy oporowe, Hantle"]) {
+      expect(await warn({ trainingLocation: "Dom", equipment }), equipment).toBeUndefined();
+    }
+  });
+  it("nie dotyczy siłowni ani siłowni plenerowej", async () => {
+    expect(await warn({ trainingLocation: "Siłownia", equipment: "" })).toBeUndefined();
+    expect(await warn({ trainingLocation: "Siłownia plenerowa", equipment: "Brak sprzętu" })).toBeUndefined(); // plener dostaje gumę
+  });
+});

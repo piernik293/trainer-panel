@@ -53,7 +53,7 @@ import {
   ATHLETE_STATUS_OPTIONS,
   SPORT_PERFORMANCE_NEEDS,
   SESSION_DURATION_OPTIONS,
-  EQUIPMENT_OPTIONS,
+  equipmentOptionsFor,
   CARDIO_PREFERENCE_OPTIONS,
   CARDIO_FREQUENCY_OPTIONS,
   PREFERRED_CARDIO_TYPE_OPTIONS,
@@ -2107,7 +2107,7 @@ function SurveyFormBody({
                   <FormItem>
                     <FormLabel>Jakim sprzętem dysponuje klient?</FormLabel>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {EQUIPMENT_OPTIONS.map((opt) => (
+                      {equipmentOptionsFor(trainingGoal, trainingLocation).map((opt) => (
                         <label
                           key={opt}
                           className="flex items-center gap-2 text-sm cursor-pointer"

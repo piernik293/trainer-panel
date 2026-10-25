@@ -15,7 +15,7 @@ Stan: 2026-10-25. Komórka = **zweryfikowane / wszystkie** ćwiczenia dostępne 
 | Pchanie poziome | 2/2 | 3/7 | 3/9 | 2/11 |
 | Przyciąganie pionowe | 0/0 | 0/1 | 0/2 | 0/2 |
 | Przyciąganie poziome | 0/0 | 0/1 | 0/1 | 0/1 |
-| Przysiad | 1/1 | 3/5 | 5/10 | 6/12 |
+| Przysiad | 1/1 | 2/4 | 4/9 | 5/11 |
 | Przywodzenie | 0/0 | 0/1 | 0/1 | 0/1 |
 | Rotacja | 0/0 | 1/2 | 1/2 | 1/2 |
 | Stabilizacja tułowia | 2/3 | 3/3 | 3/3 | 3/3 |
@@ -43,7 +43,7 @@ Stan: 2026-10-25. Komórka = **zweryfikowane / wszystkie** ćwiczenia dostępne 
 | Pchanie poziome | 2/2 | 3/8 | 4/15 | 3/17 |
 | Przyciąganie pionowe | 0/0 | 0/1 | 0/4 | 0/4 |
 | Przyciąganie poziome | 1/1 | 1/4 | 1/4 | 1/4 |
-| Przysiad | 2/2 | 4/8 | 6/14 | 7/16 |
+| Przysiad | 2/2 | 3/7 | 5/13 | 6/15 |
 | Przywodzenie | 0/0 | 0/3 | 0/5 | 0/5 |
 | Rotacja | 0/0 | 2/5 | 2/5 | 2/5 |
 | Stabilizacja tułowia | 2/3 | 3/3 | 3/3 | 3/3 |
@@ -71,7 +71,7 @@ Stan: 2026-10-25. Komórka = **zweryfikowane / wszystkie** ćwiczenia dostępne 
 | Pchanie poziome | 2/2 | 3/7 | 3/9 | 2/11 |
 | Przyciąganie pionowe | 0/0 | 0/1 | 0/2 | 0/2 |
 | Przyciąganie poziome | 1/1 | 1/2 | 1/2 | 1/2 |
-| Przysiad | 1/1 | 2/4 | 5/10 | 7/13 |
+| Przysiad | 1/1 | 1/3 | 4/9 | 6/12 |
 | Przywodzenie | 0/0 | 0/3 | 0/3 | 0/3 |
 | Rotacja | 0/0 | 2/4 | 2/4 | 2/4 |
 | Stabilizacja tułowia | 2/3 | 3/3 | 3/3 | 3/3 |
@@ -99,7 +99,7 @@ Stan: 2026-10-25. Komórka = **zweryfikowane / wszystkie** ćwiczenia dostępne 
 | Pchanie poziome | 2/2 | 3/7 | 4/10 | 3/12 |
 | Przyciąganie pionowe | 0/0 | 0/1 | 2/4 | 2/4 |
 | Przyciąganie poziome | 1/1 | 1/2 | 1/2 | 1/2 |
-| Przysiad | 1/1 | 2/4 | 5/10 | 7/13 |
+| Przysiad | 1/1 | 1/3 | 4/9 | 6/12 |
 | Przywodzenie | 0/0 | 0/3 | 0/3 | 0/3 |
 | Rotacja | 0/0 | 2/4 | 2/4 | 2/4 |
 | Stabilizacja tułowia | 2/3 | 3/3 | 3/3 | 3/3 |
@@ -127,9 +127,9 @@ Stan: 2026-10-25. Komórka = **zweryfikowane / wszystkie** ćwiczenia dostępne 
 | Pchanie poziome | 3/4 | 10/22 | 19/46 | 18/49 |
 | Przyciąganie pionowe | 2/2 | 5/9 | 8/18 | 9/21 |
 | Przyciąganie poziome | 7/7 | 8/17 | 11/25 | 11/26 |
-| Przysiad | 2/2 | 6/11 | 11/25 | 15/32 |
+| Przysiad | 2/2 | 5/10 | 10/24 | 14/31 |
 | Przywodzenie | 0/0 | 6/11 | 7/16 | 7/16 |
-| Rotacja | 0/0 | 3/8 | 4/12 | 4/12 |
+| Rotacja | 0/0 | 3/8 | 4/13 | 4/13 |
 | Stabilizacja tułowia | 2/3 | 3/3 | 3/6 | 3/7 |
 | Wspięcie na palce | 1/2 | 2/9 | 2/9 | 2/9 |
 | Wykrok | 2/2 | 4/8 | 6/15 | 5/18 |
