@@ -137,3 +137,6 @@
 ### Blok 6 — priorytety generatora: audyt i propozycja (tylko dokument)
 - `docs/GENERATOR-PRIORYTETY.md`: porównanie dzisiejszego działania z hierarchią właściciela (zgodne / różnica / plik / ryzyko), plan wdrożenia w 8 krokach, 5 pytań z rekomendacją. Kodu generatora nie zmieniałem.
 - Najważniejsze ustalenia: (1) błąd kolejności `preferMainOverVariants` względem wykluczeń (odmiany znikają, gdy klient wykluczył główne); (2) `FAMILY_BLOCKING_MAP` blokuje całe rodziny, a hierarchia chce dokładnej pozycji; (3) aktywacja planu jest twardo blokowana ponad sufit dla wszystkich poziomów (hierarchia: Ś/Z ostrzeżenie); (4) cele w katalogu: stare nazwy, 0 ćwiczeń dla redukcji, 294 bez celów — bonus za cel prawie nie działa; (5) priorytet partii dla P ignorowany; (6) BA = blok 4 tygodnie twardo.
+
+### Blok 7 — cele i moduł kondycyjny (tylko dokument)
+- `docs/KONDYCJA.md` zaktualizowany: zatwierdzona tabela 6 celów × (trening oporowy, pliometria, kondycja, kroki), ograniczenia poziomu i stawów, kilka celów (priorytet 1), pierwsza jednostka BA/P (marsz 2 / trucht 1 × 6–8, 20–25 min), model danych (`plan_element_rules`), ekrany, testy, 5 pytań z rekomendacją. Nic nie zbudowano.
