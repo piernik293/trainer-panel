@@ -73,6 +73,20 @@ export function TrainerProfileGate({ children }: { children: ReactNode }) {
         </div>
       );
     }
+    if (err.code === "TRAINER_NOT_APPROVED") {
+      return (
+        <div className="min-h-screen flex items-center justify-center px-4">
+          <div role="alert" className="max-w-md text-center space-y-4">
+            <p className="text-lg font-semibold">To konto nie ma jeszcze dostępu trenera</p>
+            <p className="text-sm text-muted-foreground">{err.message}</p>
+            <Button variant="outline" className="gap-1.5" onClick={() => void signOut()}>
+              <LogOut size={14} />
+              Wyloguj się
+            </Button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <ErrorState

@@ -11,9 +11,13 @@ import { Router, type IRouter } from "express";
 import { getAuth } from "@clerk/express";
 import {
   CLIENT_ACCOUNT_MESSAGE,
+  TRAINER_NOT_APPROVED_MESSAGE,
+  canBecomeTrainer,
   isClientAccount,
   provisionTrainer,
 } from "../middlewares/requireAuth";
+import { eq } from "drizzle-orm";
+import { db, trainersTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -27,6 +31,13 @@ router.post("/trainer/profile", async (req, res): Promise<void> => {
 
   if (await isClientAccount(userId)) {
     res.status(403).json({ error: CLIENT_ACCOUNT_MESSAGE, code: "CLIENT_ACCOUNT" });
+    return;
+  }
+
+  // A new trainer profile only for accounts the administrator approved; an existing trainer just gets the row back.
+  const [existing] = await db.select({ id: trainersTable.id }).from(trainersTable).where(eq(trainersTable.clerkUserId, userId));
+  if (!existing && !canBecomeTrainer(userId)) {
+    res.status(403).json({ error: TRAINER_NOT_APPROVED_MESSAGE, code: "TRAINER_NOT_APPROVED" });
     return;
   }
 

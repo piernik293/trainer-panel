@@ -48,6 +48,24 @@ export function checkIsAppAdmin(clerkUserId: string | undefined): boolean {
   return adminIds.includes(clerkUserId);
 }
 
+/**
+ * Who may get a trainer profile (owner's decision 25.10.2026 — closes the hole where any signed-in user became a trainer):
+ *  - an existing trainer (handled by the caller: the row is returned as is);
+ *  - a Clerk user listed in TRAINER_CLERK_IDS (granted by the administrator through the env, like APP_ADMIN_CLERK_IDS);
+ *  - an app administrator;
+ *  - everyone, only when TRAINER_SIGNUP_OPEN=1 (development and the smoke test; never set it in the beta).
+ * Fail-closed: with none of these set, nobody new can become a trainer. Never expose the lists in logs or responses.
+ */
+export function canBecomeTrainer(clerkUserId: string): boolean {
+  if (process.env.TRAINER_SIGNUP_OPEN === "1") return true;
+  if (checkIsAppAdmin(clerkUserId)) return true;
+  const ids = (process.env.TRAINER_CLERK_IDS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  return ids.includes(clerkUserId);
+}
+
+export const TRAINER_NOT_APPROVED_MESSAGE =
+  "Konta trenerów zakłada administrator. Napisz do nas, a dodamy Twoje konto.";
+
 export const CLIENT_ACCOUNT_MESSAGE =
   "To konto należy do klienta. Zaloguj się w portalu klienta albo użyj konta trenera.";
 export const NO_TRAINER_PROFILE_MESSAGE =
