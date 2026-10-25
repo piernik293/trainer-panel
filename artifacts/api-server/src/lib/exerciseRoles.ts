@@ -38,3 +38,13 @@ export function isGeneratorSafe(
   }
   return true;
 }
+
+/**
+ * Variants (owner's decision 25.10.2026): the generator takes the main exercise by default and a variant only when the main
+ * exercise is not usable for this client (equipment of the place, a joint to spare, level, hidden…). `list` is the pool after all
+ * compatibility filters, so "the parent is in the list" means "the parent fits".
+ */
+export function preferMainOverVariants<T extends { id: number; parentExerciseId?: number | null }>(list: readonly T[]): T[] {
+  const ids = new Set(list.map((e) => e.id));
+  return list.filter((e) => e.parentExerciseId == null || !ids.has(e.parentExerciseId));
+}

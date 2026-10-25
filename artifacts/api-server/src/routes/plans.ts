@@ -41,7 +41,7 @@ import {
 } from "../services/planDraftDayRecommendationsService";
 import { requireAuth } from "../middlewares/requireAuth";
 import { jointWarningMessage, loadBlockedJoints, reportedJointsLoaded } from "../services/jointExclusion";
-import { findJointConflicts, replaceWithProposal } from "../services/jointPlanAudit";
+import { findJointConflicts, replaceWithProposal, replaceWithVariant } from "../services/jointPlanAudit";
 
 const router: IRouter = Router();
 
@@ -2203,6 +2203,27 @@ router.post("/plans/:id/exercises/:planExerciseId/joint-replacement", requireAut
   }
   const full = await getPlanFull(planId);
   res.json(full);
+});
+
+// Swap a plan slot to a variant of the same exercise (variants dropdown in the editor); prescription unchanged, logged in the plan history.
+router.post("/plans/:id/exercises/:planExerciseId/variant-replacement", requireAuth, async (req, res): Promise<void> => {
+  const planId = Number(req.params.id);
+  const planExerciseId = Number(req.params.planExerciseId);
+  const variantId = Number((req.body as { exerciseId?: unknown } | undefined)?.exerciseId);
+  if (!Number.isFinite(planId) || !Number.isFinite(planExerciseId) || !Number.isInteger(variantId) || variantId <= 0) {
+    res.status(400).json({ error: "Nieprawidłowe ID" });
+    return;
+  }
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
+  const result = await replaceWithVariant(planId, planExerciseId, variantId, req.trainer!.id);
+  if (!result.ok) {
+    res.status(result.code === "NOT_A_VARIANT" ? 409 : 404).json({
+      code: result.code,
+      error: result.code === "NOT_A_VARIANT" ? "To ćwiczenie nie jest odmianą wybranego ćwiczenia." : "Nie znaleziono ćwiczenia lub miejsca w planie.",
+    });
+    return;
+  }
+  res.json(await getPlanFull(planId));
 });
 
 export default router;

@@ -21,7 +21,7 @@
  */
 
 import { loadBlockedJoints } from "../services/jointExclusion";
-import { mainPlanRoleCondition, isGeneratorSafe } from "../lib/exerciseRoles";
+import { mainPlanRoleCondition, isGeneratorSafe, preferMainOverVariants } from "../lib/exerciseRoles";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
@@ -127,7 +127,7 @@ router.get("/clients/:clientId/exercise-recommendations", requireAuth, async (re
     new Set<number>(),
     blockedJoints,
   );
-  const compatibleExercises = completeExercises.filter((ex) =>
+  const compatibleExercises = preferMainOverVariants(completeExercises.filter((ex) =>
     isCompatible({
       id: ex.id,
       trainingLocation: ex.trainingLocation ?? [],
@@ -135,7 +135,7 @@ router.get("/clients/:clientId/exercise-recommendations", requireAuth, async (re
       requiredEquipmentAll: ex.requiredEquipmentAll ?? [],
       jointStressAreas: ex.jointStressAreas,
     }),
-  );
+  ));
 
   // Score each exercise against the client's survey profile.
   const scored = compatibleExercises

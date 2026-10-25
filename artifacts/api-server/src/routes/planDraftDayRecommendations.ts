@@ -281,6 +281,15 @@ router.get(
       });
     }
 
+    // Main exercise by default; a variant only when its main exercise did not make it into the pool.
+    {
+      const parentOf = new Map(completeExercises.map((e) => [e.id, e.parentExerciseId]));
+      const inPool = new Set(pool.map((p) => p.id));
+      const kept = pool.filter((p) => { const par = parentOf.get(p.id); return par == null || !inPool.has(par); });
+      pool.length = 0;
+      pool.push(...kept);
+    }
+
     // Sort pool by score descending, then name ascending (deterministic).
     pool.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, "pl"));
 

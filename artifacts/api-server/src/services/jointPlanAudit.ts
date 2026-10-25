@@ -11,7 +11,7 @@
  *  - exercises not on any ladder get no proposal (the trainer picks by hand).
  * Read-only except replaceWithProposal, which swaps only the exercise of one plan slot (prescription unchanged).
  */
-import { eq, inArray, ne } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 export { pool } from "@workspace/db";
 import {
   db,
@@ -200,4 +200,32 @@ export async function replaceWithProposal(planId: number, planExerciseId: number
     await tx.update(workoutPlansTable).set({ updatedAt: new Date() }).where(eq(workoutPlansTable.id, planId));
   });
   return { ok: true, replacement };
+}
+
+/**
+ * Swaps one plan slot to a variant of the same exercise family (the exercise's variant, its main exercise, or a sibling variant)
+ * — prescription unchanged — and records it in the plan history. The target must be visible to the trainer, active and not hidden.
+ */
+export async function replaceWithVariant(planId: number, planExerciseId: number, targetId: number, trainerId: number):
+  Promise<{ ok: true; to: { id: number; name: string } } | { ok: false; code: "NO_SLOT" | "NO_TARGET" | "NOT_A_VARIANT" }> {
+  const [slot] = await db.select({ id: workoutPlanExercisesTable.id, exerciseId: workoutPlanExercisesTable.exerciseId, dayId: workoutPlanExercisesTable.dayId })
+    .from(workoutPlanExercisesTable)
+    .innerJoin(workoutPlanDaysTable, eq(workoutPlanDaysTable.id, workoutPlanExercisesTable.dayId))
+    .where(and(eq(workoutPlanExercisesTable.id, planExerciseId), eq(workoutPlanDaysTable.planId, planId)));
+  if (!slot) return { ok: false, code: "NO_SLOT" };
+  const rows = await db.select({ id: exercisesTable.id, name: exercisesTable.name, parentExerciseId: exercisesTable.parentExerciseId, isActive: exercisesTable.isActive, hidden: exercisesTable.hidden, createdByTrainerId: exercisesTable.createdByTrainerId })
+    .from(exercisesTable).where(inArray(exercisesTable.id, [slot.exerciseId, targetId]));
+  const from = rows.find((r) => r.id === slot.exerciseId), to = rows.find((r) => r.id === targetId);
+  if (!from || !to || !to.isActive || to.hidden || (to.createdByTrainerId !== null && to.createdByTrainerId !== trainerId)) return { ok: false, code: "NO_TARGET" };
+  const sameFamily = to.id !== from.id && (to.parentExerciseId === from.id || from.parentExerciseId === to.id || (from.parentExerciseId !== null && from.parentExerciseId === to.parentExerciseId));
+  if (!sameFamily) return { ok: false, code: "NOT_A_VARIANT" };
+  await db.transaction(async (tx) => {
+    await tx.update(workoutPlanExercisesTable).set({ exerciseId: to.id }).where(eq(workoutPlanExercisesTable.id, planExerciseId));
+    await tx.insert(planChangeLogTable).values({
+      planId, trainerId, kind: "zamiana_odmiana", planExerciseId,
+      fromExerciseId: from.id, fromExerciseName: from.name, toExerciseId: to.id, toExerciseName: to.name, details: "odmiana ćwiczenia",
+    });
+    await tx.update(workoutPlansTable).set({ updatedAt: new Date() }).where(eq(workoutPlansTable.id, planId));
+  });
+  return { ok: true, to: { id: to.id, name: to.name } };
 }

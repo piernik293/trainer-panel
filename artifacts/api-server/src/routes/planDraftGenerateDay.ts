@@ -58,7 +58,7 @@ import {
   prescribeExercise,
 } from "../services/exercisePrescriptionService.js";
 import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
-import { mainPlanRoleCondition, isGeneratorSafe } from "../lib/exerciseRoles";
+import { mainPlanRoleCondition, isGeneratorSafe, preferMainOverVariants } from "../lib/exerciseRoles";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   authorizeGeneratedDay,
@@ -293,7 +293,8 @@ router.post(
       new Set<number>(),
       blockedJoints,
     );
-    const compatibleExercises = completeExercises.filter((ex) =>
+    // Main exercise by default; a variant only when its main exercise does not fit (equipment of the place, joint, level…).
+    const compatibleExercises = preferMainOverVariants(completeExercises.filter((ex) =>
       ladder.allowed(ex.id) && compatibilityFilter({
         id: ex.id,
         trainingLocation: ex.trainingLocation ?? [],
@@ -301,7 +302,7 @@ router.post(
         requiredEquipmentAll: ex.requiredEquipmentAll ?? [],
         jointStressAreas: ex.jointStressAreas,
       }),
-    );
+    ));
 
     // ── Family-level exercise blocking (Stage G — Part 1 — hard constraints) ──
     //
