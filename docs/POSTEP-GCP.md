@@ -133,3 +133,7 @@
 
 ### Pomyłka procesowa (do wiadomości)
 - Część testów API w tej sesji uruchomiłem na bazie aplikacji zamiast `scripts/test-api.sh`. Skutek: tylko fikstury testowe — trenerzy testowi 1270–1273 (`settings_test_trainer_a`, `train_test_trainer_a/b`, `legacy_test_trainer`), klienci testowi 268, 269, 275, 301, 314–319 oraz ankiety fikstur. Niczego nie usunąłem (zasada: bez usuwania danych). Powtórzone na bazie testowej: zielono. Czyszczenie wymaga zgody.
+
+### Blok 6 — priorytety generatora: audyt i propozycja (tylko dokument)
+- `docs/GENERATOR-PRIORYTETY.md`: porównanie dzisiejszego działania z hierarchią właściciela (zgodne / różnica / plik / ryzyko), plan wdrożenia w 8 krokach, 5 pytań z rekomendacją. Kodu generatora nie zmieniałem.
+- Najważniejsze ustalenia: (1) błąd kolejności `preferMainOverVariants` względem wykluczeń (odmiany znikają, gdy klient wykluczył główne); (2) `FAMILY_BLOCKING_MAP` blokuje całe rodziny, a hierarchia chce dokładnej pozycji; (3) aktywacja planu jest twardo blokowana ponad sufit dla wszystkich poziomów (hierarchia: Ś/Z ostrzeżenie); (4) cele w katalogu: stare nazwy, 0 ćwiczeń dla redukcji, 294 bez celów — bonus za cel prawie nie działa; (5) priorytet partii dla P ignorowany; (6) BA = blok 4 tygodnie twardo.
