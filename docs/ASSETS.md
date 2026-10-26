@@ -18,3 +18,13 @@ Obróbka (jednorazowo, poza repozytorium, Chromium/Canvas z Playwrighta; żadneg
 4. Eksport WebP, jakość 0,8.
 
 Zdjęcie jest dekoracyjne (`alt=""`). Miejsce na maskotkę: prop `mascot` w `AppHero` (stany: idle, walk, lift, success, error/loading).
+
+## Czcionka Manrope w raporcie PDF
+
+| | |
+|---|---|
+| Plik | `artifacts/api-server/src/assets/manropeFonts.ts` (dwa statyczne warianty, 400 i 700, jako base64) |
+| Źródło | Google Fonts, https://fonts.google.com/specimen/Manrope |
+| Autor / licencja | The Manrope Project Authors; SIL Open Font License 1.1 (wolno osadzać w dokumentach i rozpowszechniać z aplikacją) |
+| Pobrano | 26.10.2026 (API Google Fonts z parametrem `text`, TTF z podzbiorem: ASCII, polskie litery, typograficzna interpunkcja — ok. 27 KB każdy) |
+| Użycie | tylko raport PDF (`services/monthlyReport.ts`); czcionka jest osadzana w pliku PDF |

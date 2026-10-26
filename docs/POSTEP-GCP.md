@@ -186,3 +186,8 @@
 
 ### 26.10.2026 — #1611 trudność nauki 2 (migracja 0036, pg_dump `przed-0036-*`)
 - Martwy ciąg rumuński z gumą oporową: `learningDifficulty` 3 → 2 (decyzja właściciela: lekka guma, nauka zawiasu, ma być dla nieaktywnych). Plik/generator zaktualizowane. Dziury bez kandydata (dom bez sprzętu: pchanie pionowe BA/P, przyciąganie pionowe BA, zgięcie łokcia BA/P, anty-rotacja BA) zostają: generator pomija wzorzec, trener widzi ostrzeżenie o braku sprzętu; nowych ćwiczeń nie dodajemy.
+
+## 26.10.2026 — blok 10: raport PDF dla trenera (gałąź `feature/raport-pdf`, z `main`)
+- Własny, mały generator PDF bez bibliotek (`services/pdf/ttf.ts`, `pdfDoc.ts`): A4, osadzona czcionka Manrope (Type0/Identity-H, ToUnicode — tekst do wyszukiwania), prostokąty i linie. Raport (`services/monthlyReport.ts`, `POST /api/clients/:id/monthly-report`): frekwencja (odbyte vs zaplanowane z liczby dni planu na tydzień, słupki tygodni), lista treningów z oceną „jak było”, rekordy ciężaru (lepsze niż wszystko przed miesiącem), objętość (serie robocze wg partii), kroki (jeśli są), zgłoszenia bólu **tylko liczbą** (szczegóły i opisy dopiero po zaznaczeniu przez trenera), notatka trenera (do 1200 znaków), imię trenera opcjonalnie. Styl B: Manrope, akcent #C2410C. Brak loga trenera (w systemie nie ma wgrywania plików) — tylko imię; to NIE jest Wrapped.
+- Panel: przycisk „Raport PDF” w profilu podopiecznego (miesiąc domyślnie poprzedni, notatka, dwa pola wyboru).
+- Testy: `monthly-report.test.ts` (10: obliczenia, poprawność pliku — xref/trailer/czcionki, polskie znaki, dane, prywatność bólu, izolacja trenerów, walidacja), `MonthlyReportButton.test.tsx` (3). Czcionka: `docs/ASSETS.md`.

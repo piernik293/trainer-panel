@@ -33,6 +33,7 @@ import { CollapsibleSurveySection, DetailRow } from "@/components/CollapsibleSur
 import ExerciseRecommendationsTab from "./ExerciseRecommendationsTab";
 import TrainingSessionsTab, { usePainReports } from "./TrainingSessionsTab";
 import { StepsCard } from "@/components/StepsCard";
+import { MonthlyReportButton } from "@/components/MonthlyReportButton";
 import { formatDate } from "@/lib/utils";
 import { clientStatusLabel, surveyStatusLabel } from "@/lib/client-status";
 import { methodsAnswerUsable } from "@workspace/survey-config";
@@ -513,6 +514,7 @@ export default function ClientDetail() {
             <Link2 size={16} />
             Kopiuj link do portalu
           </Button>
+          <MonthlyReportButton clientId={Number(id)} clientName={`${client.firstName} ${client.lastName}`.trim()} />
           {client.hasSurvey && (
             <Button variant="outline" onClick={handlePrint} className="gap-2">
               <Printer size={16} />
