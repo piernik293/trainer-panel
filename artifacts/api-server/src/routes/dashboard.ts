@@ -9,10 +9,16 @@ import {
   surveysTable,
   workoutPlansTable,
   painReportsTable,
+  workoutSessionsTable,
+  clientPackagesTable,
+  attentionDismissalsTable,
+  trainerAttentionSettingsTable,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { computeSurveyStatus, fetchLatestSurveyPerClient } from "../lib/survey-status";
-import { buildAttention, buildOnboarding } from "../services/dashboardAttention";
+import { buildAttention, buildOnboarding, ATTENTION_KINDS, type AttentionKind } from "../services/dashboardAttention";
+import { usedCounts } from "../services/packages";
+import { z } from "zod";
 
 const router: IRouter = Router();
 
@@ -90,7 +96,26 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
           .where(and(inArray(painReportsTable.clientId, clientIds), isNull(painReportsTable.readByTrainerAt)))
       : [];
 
+  // Finished sessions (newest first, enough to judge "za ciężko 2×" and the last training day), active packages, dismissals, threshold.
+  const finishedSessions =
+    clientIds.length > 0
+      ? await db
+          .select({ clientId: workoutSessionsTable.clientId, id: workoutSessionsTable.id, date: workoutSessionsTable.sessionDate, rating: workoutSessionsTable.sessionRating })
+          .from(workoutSessionsTable)
+          .where(and(inArray(workoutSessionsTable.clientId, clientIds), eq(workoutSessionsTable.isCompleted, true)))
+          .orderBy(desc(workoutSessionsTable.sessionDate), desc(workoutSessionsTable.id))
+          .limit(2000)
+      : [];
+  const activePackages = await db.select().from(clientPackagesTable).where(and(eq(clientPackagesTable.trainerId, trainerId), eq(clientPackagesTable.status, "active")));
+  const usedByPackage = await usedCounts(activePackages.map((p) => p.id));
+  const dismissedRows = await db.select({ kind: attentionDismissalsTable.kind, ref: attentionDismissalsTable.ref }).from(attentionDismissalsTable).where(eq(attentionDismissalsTable.trainerId, trainerId));
+  const [settings] = await db.select().from(trainerAttentionSettingsTable).where(eq(trainerAttentionSettingsTable.trainerId, trainerId));
+
   const attention = buildAttention({
+    sessions: finishedSessions.map((x) => ({ clientId: x.clientId, id: x.id, date: String(x.date), rating: x.rating })),
+    packages: activePackages.map((p) => ({ clientId: p.clientId, id: p.id, totalSessions: p.totalSessions, used: usedByPackage.get(p.id) ?? 0, validUntil: p.validUntil })),
+    silenceDays: settings?.silenceDays ?? 7,
+    dismissed: new Set(dismissedRows.map((d) => `${d.kind}|${d.ref}`)),
     pains: unreadPains.map((p) => ({ ...p, createdAt: new Date(p.createdAt) })),
     clients,
     surveys: latestSurveys.map((s) => ({
@@ -104,6 +129,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
       status: p.status,
       createdAt: new Date(p.createdAt),
       endDate: p.endDate,
+      activatedAt: p.activatedAt ? new Date(p.activatedAt) : null,
     })),
     invites: invites.filter((i) => pendingIds.has(i.id)),
     today,
@@ -205,11 +231,42 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
       newInterviews: attention.byKind.interview,
       plansEndingSoon: attention.byKind.plan_ending,
     },
-    attention: { items: attention.items, total: attention.total },
+    attention: { items: attention.items, allItems: attention.allItems, total: attention.total, silenceDays: settings?.silenceDays ?? 7 },
     todayBookings,
     recentEvents,
     onboarding,
   });
+});
+
+// ─── "Załatwione" and the silence threshold ─────────────────────────────────────
+
+const DismissBody = z.object({ kind: z.enum(ATTENTION_KINDS as unknown as [AttentionKind, ...AttentionKind[]]), ref: z.string().min(1).max(200) });
+
+/** Marks a reason as done. The ref must belong to the trainer's own client (the id before the first ":" — 0 = no client, an invitation). */
+router.post("/dashboard/attention/dismiss", requireAuth, async (req, res): Promise<void> => {
+  const b = DismissBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: "Nieprawidłowe dane." }); return; }
+  const clientId = Number(b.data.ref.split(":")[0]);
+  if (!Number.isInteger(clientId) || clientId < 0) { res.status(400).json({ error: "Nieprawidłowe dane." }); return; }
+  if (clientId > 0) {
+    const [own] = await db.select({ id: clientsTable.id }).from(clientsTable).where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
+    if (!own) { res.status(404).json({ error: "Klient nie znaleziony." }); return; }
+  }
+  await db.insert(attentionDismissalsTable).values({ trainerId: req.trainer!.id, kind: b.data.kind, ref: b.data.ref }).onConflictDoNothing();
+  res.json({ ok: true });
+});
+
+const SettingsBody = z.object({ silenceDays: z.union([z.literal(7), z.literal(10), z.literal(14)]) });
+router.get("/dashboard/attention-settings", requireAuth, async (req, res): Promise<void> => {
+  const [s] = await db.select().from(trainerAttentionSettingsTable).where(eq(trainerAttentionSettingsTable.trainerId, req.trainer!.id));
+  res.json({ silenceDays: s?.silenceDays ?? 7 });
+});
+router.put("/dashboard/attention-settings", requireAuth, async (req, res): Promise<void> => {
+  const b = SettingsBody.safeParse(req.body);
+  if (!b.success) { res.status(400).json({ error: "Wybierz 7, 10 lub 14 dni." }); return; }
+  await db.insert(trainerAttentionSettingsTable).values({ trainerId: req.trainer!.id, silenceDays: b.data.silenceDays })
+    .onConflictDoUpdate({ target: trainerAttentionSettingsTable.trainerId, set: { silenceDays: b.data.silenceDays, updatedAt: new Date() } });
+  res.json({ silenceDays: b.data.silenceDays });
 });
 
 export default router;

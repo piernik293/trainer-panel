@@ -15,12 +15,16 @@ let mockIsLoading = false;
 let mockIsError = false;
 let mockSub: unknown = undefined;
 const mockRefetch = vi.fn();
+const mockDismiss = vi.fn();
+const mockSetDays = vi.fn();
 const mockNavigate = vi.fn();
 
 vi.mock("@/lib/dashboardApi", () => ({
   useDashboardSummary: () => ({
     data: mockData, isLoading: mockIsLoading, isError: mockIsError, error: null, refetch: mockRefetch,
   }),
+  useDismissAttention: () => ({ mutate: mockDismiss, isPending: false }),
+  useSetSilenceDays: () => ({ mutate: mockSetDays, isPending: false }),
 }));
 vi.mock("@/lib/use-subscription-summary", () => ({ useSubscriptionSummary: () => ({ data: mockSub }) }));
 vi.mock("@clerk/react", () => ({ useUser: () => ({ user: { firstName: "Anna" } }) }));
@@ -39,9 +43,11 @@ const base: DashboardSummary = {
   counts: { totalClients: 3, activeClients: 3, newInterviews: 1, plansEndingSoon: 1 },
   attention: {
     total: 2,
+    silenceDays: 7,
+    allItems: [],
     items: [
-      { kind: "interview", clientId: 1, name: "Ala Nowak", reasonLabel: "Nowy wywiad", description: "Klient wypełnił wywiad treningowy. Przejrzyj odpowiedzi.", at: "2026-10-21T09:00:00.000Z", actionLabel: "Przejrzyj", actionHref: "/clients/1" },
-      { kind: "plan_ending", clientId: 2, name: "Ola Kowalska", reasonLabel: "Koniec planu", description: "Data zakończenia planu: 25.10.", at: "2026-10-25T00:00:00.000Z", actionLabel: "Przedłuż plan", actionHref: "/plans/9" },
+      { kind: "interview", clientId: 1, name: "Ala Nowak", reasonLabel: "Nowy wywiad", description: "Klient wypełnił wywiad treningowy. Przejrzyj odpowiedzi.", at: "2026-10-21T09:00:00.000Z", actionLabel: "Przejrzyj", actionHref: "/clients/1", ref: "1:2026-10-21T09:00:00.000Z" },
+      { kind: "plan_ending", clientId: 2, name: "Ola Kowalska", reasonLabel: "Koniec planu", description: "Data zakończenia planu: 25.10.", at: "2026-10-25T00:00:00.000Z", actionLabel: "Przedłuż plan", actionHref: "/plans/9", ref: "2:9:2026-10-25" },
     ],
   },
   todayBookings: [{ id: 1, clientId: 1, clientName: "Ala Nowak", startsAt: "2026-10-22T14:00:00.000Z", durationMinutes: 60 }],
@@ -78,7 +84,7 @@ describe("Pulpit z klientami", () => {
   });
 
   it("says everything is up to date when nothing waits and nothing is booked", () => {
-    mockData = { ...base, attention: { items: [], total: 0 }, todayBookings: [] };
+    mockData = { ...base, attention: { items: [], allItems: [], total: 0, silenceDays: 7 }, todayBookings: [] };
     render(<Dashboard />);
     expect(screen.getByTestId("dashboard-sentence").textContent).toBe("Wszystko na bieżąco.");
     expect(screen.getByTestId("attention-empty").textContent).toBe("Nic nie czeka na Twoją reakcję.");
@@ -96,6 +102,30 @@ describe("Pulpit z klientami", () => {
     expect(within(rows[1]).getByText("Koniec planu")).toBeTruthy();
     expect(within(rows[1]).getByText(/za 3 dni/)).toBeTruthy();
     expect(within(rows[1]).getByRole("link", { name: /Przedłuż plan/ }).getAttribute("href")).toBe("/plans/9");
+  });
+
+  it("each row has 'Załatwione' (sends the kind and the event ref); the silence threshold is a 7/10/14 choice", () => {
+    mockDismiss.mockClear(); mockSetDays.mockClear();
+    mockData = base;
+    render(<Dashboard />);
+    const rows = screen.getAllByTestId("attention-row");
+    fireEvent.click(within(rows[1]).getByTestId("attention-dismiss"));
+    expect(mockDismiss).toHaveBeenCalledWith({ kind: "plan_ending", ref: "2:9:2026-10-25" });
+    const sel = screen.getByTestId("silence-days") as HTMLSelectElement;
+    expect([...sel.options].map((o) => o.value)).toEqual(["7", "10", "14"]);
+    fireEvent.change(sel, { target: { value: "14" } });
+    expect(mockSetDays).toHaveBeenCalledWith(14);
+  });
+
+  it("'Pokaż wszystkie' appears only when there are more reasons than shown and switches to the full list", () => {
+    const more = { ...base.attention.items[0]!, ref: "3:x", name: "Trzeci Klient", clientId: 3 };
+    mockData = { ...base, attention: { ...base.attention, total: 3, allItems: [...base.attention.items, more] } };
+    render(<Dashboard />);
+    expect(screen.getAllByTestId("attention-row")).toHaveLength(2);
+    fireEvent.click(screen.getByTestId("attention-toggle"));
+    expect(screen.getAllByTestId("attention-row")).toHaveLength(3);
+    fireEvent.click(screen.getByTestId("attention-toggle"));
+    expect(screen.getAllByTestId("attention-row")).toHaveLength(2);
   });
 
   it("tiles show real counts and no 'on track / at risk' tiles", () => {
@@ -143,7 +173,7 @@ describe("Pulpit: pierwszy dzień (bez klientów)", () => {
   const empty: DashboardSummary = {
     ...base,
     counts: { totalClients: 0, activeClients: 0, newInterviews: 0, plansEndingSoon: 0 },
-    attention: { items: [], total: 0 },
+    attention: { items: [], allItems: [], total: 0, silenceDays: 7 },
     todayBookings: [],
   };
 

@@ -9,11 +9,18 @@
  *   no_plan       active client with an interview but no draft/active plan
  *   plan_ending   active plan whose end date is within 7 days (or has passed)
  *   invite_pending interview invitation unused for more than 3 days, not expired
+ *   hard_twice    the last two finished sessions were both rated "za ciężko" (block 8)
+ *   silent        active plan, no finished session for N days (N = 7 / 10 / 14, set by the trainer) (block 8)
+ *   package       active session package: 2 or fewer sessions left, no sessions left, validity ending/over (block 7 + 8)
+ * Every reason can be marked "załatwione" (dismissal tied to a concrete event, `ref`): a NEW event brings the reason back.
+ * "Request to join" (accounts block) plugs in through `extraItems`.
  * Reasons that need saved workouts (pain, missed sessions, records) are not
  * built yet — see docs/ROADMAP.md item 4.
  */
 
-export const ATTENTION_KINDS = ["pain", "interview", "no_plan", "plan_ending", "invite_pending"] as const;
+import { packageReminders } from "./packages";
+
+export const ATTENTION_KINDS = ["pain", "hard_twice", "silent", "package", "interview", "no_plan", "plan_ending", "invite_pending"] as const;
 export type AttentionKind = (typeof ATTENTION_KINDS)[number];
 
 export const MAX_ATTENTION_ITEMS = 5;
@@ -37,7 +44,11 @@ export interface AttentionPlan {
   status: string; // draft | active | archived
   createdAt: Date;
   endDate: string | null; // YYYY-MM-DD
+  /** when the plan was activated (start of the "silent" count when the client has no finished session yet) */
+  activatedAt?: Date | null;
 }
+export interface AttentionSession { clientId: number; id: number; /** YYYY-MM-DD */ date: string; rating: string | null }
+export interface AttentionPackage { clientId: number; id: number; totalSessions: number; used: number; validUntil: string | null }
 export interface AttentionPain {
   clientId: number;
   createdAt: Date;
@@ -62,6 +73,8 @@ export interface AttentionItem {
   at: string;
   actionLabel: string;
   actionHref: string;
+  /** concrete event the reason refers to; used to mark it "załatwione" (POST /dashboard/attention/dismiss) */
+  ref: string;
 }
 
 export interface AttentionInput {
@@ -72,6 +85,16 @@ export interface AttentionInput {
   invites: AttentionInvite[];
   /** Unread pain reports (optional: older callers/tests pass none). */
   pains?: AttentionPain[];
+  /** FINISHED sessions (any age; the logic looks at the newest ones). */
+  sessions?: AttentionSession[];
+  /** Active packages with the number of sessions used. */
+  packages?: AttentionPackage[];
+  /** Days without a finished session before "silent" (7, 10 or 14; default 7). */
+  silenceDays?: number;
+  /** "kind|ref" of reasons marked as done by the trainer. */
+  dismissed?: ReadonlySet<string>;
+  /** Reasons supplied by other modules (e.g. a request to join); already scoped to the trainer. */
+  extraItems?: Array<AttentionItem & { sort?: number }>;
   /** Today's calendar day in Europe/Warsaw, YYYY-MM-DD. */
   today: string;
   now: Date;
@@ -83,6 +106,7 @@ function dayNumber(isoDate: string): number {
 
 export function buildAttention(input: AttentionInput): {
   items: AttentionItem[];
+  allItems: AttentionItem[];
   total: number;
   byKind: Record<AttentionKind, number>;
 } {
@@ -94,7 +118,9 @@ export function buildAttention(input: AttentionInput): {
 
   type Ranked = AttentionItem & { sort: number };
   const perClient = new Map<number, Ranked>();
+  const dismissed = input.dismissed ?? new Set<string>();
   const consider = (clientId: number, item: Ranked) => {
+    if (dismissed.has(`${item.kind}|${item.ref}`)) return; // marked as done: the next reason of this client may surface
     const current = perClient.get(clientId);
     const rank = (i: Ranked) => ATTENTION_KINDS.indexOf(i.kind);
     if (!current || rank(item) < rank(current)) perClient.set(clientId, item);
@@ -122,6 +148,7 @@ export function buildAttention(input: AttentionInput): {
         at: last.createdAt.toISOString(),
         actionLabel: "Odpowiedz",
         actionHref: `/clients/${c.id}?tab=treningi`,
+        ref: `${c.id}:${last.createdAt.toISOString()}`,
         sort: -last.createdAt.getTime(),
       });
     }
@@ -140,6 +167,7 @@ export function buildAttention(input: AttentionInput): {
         at: survey.createdAt.toISOString(),
         actionLabel: "Przejrzyj",
         actionHref: `/clients/${c.id}`,
+        ref: `${c.id}:${survey.createdAt.toISOString()}`,
         sort: survey.createdAt.getTime(),
       });
     }
@@ -154,7 +182,48 @@ export function buildAttention(input: AttentionInput): {
         at: survey.createdAt.toISOString(),
         actionLabel: "Przygotuj plan",
         actionHref: `/clients/${c.id}/plans/generate`,
+        ref: `${c.id}:${survey.createdAt.toISOString()}`,
         sort: survey.createdAt.getTime(),
+      });
+    }
+
+    // ── hard_twice: the last two finished sessions were both "za ciężko" ──
+    const finished = (input.sessions ?? []).filter((x) => x.clientId === c.id).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id));
+    if (finished.length >= 2 && finished[0]!.rating === "too_hard" && finished[1]!.rating === "too_hard") {
+      consider(c.id, {
+        kind: "hard_twice", clientId: c.id, name, reasonLabel: "Za ciężko 2 razy z rzędu",
+        description: "Dwa ostatnie treningi oceniono jako „za ciężko”. Warto obniżyć obciążenie lub objętość.",
+        at: `${finished[0]!.date}T00:00:00.000Z`, actionLabel: "Zobacz plan", actionHref: `/clients/${c.id}`,
+        ref: `${c.id}:${finished[0]!.id}`, sort: -Date.parse(`${finished[0]!.date}T00:00:00Z`),
+      });
+    }
+
+    // ── silent: active plan, no finished session for N days ──
+    const silenceDays = [7, 10, 14].includes(input.silenceDays ?? 7) ? (input.silenceDays ?? 7) : 7;
+    const activePlan = clientPlans.find((p) => p.status === "active");
+    if (activePlan) {
+      const started = (activePlan.activatedAt ?? activePlan.createdAt).toISOString().slice(0, 10);
+      const lastDay = finished[0]?.date && finished[0].date > started ? finished[0].date : started;
+      const days = todayNo - dayNumber(lastDay);
+      if (days >= silenceDays) {
+        consider(c.id, {
+          kind: "silent", clientId: c.id, name, reasonLabel: "Cisza",
+          description: finished.length > 0 ? `Brak treningu od ${days} dni.` : `Plan aktywny od ${days} dni, a klient nie zapisał jeszcze treningu.`,
+          at: `${lastDay}T00:00:00.000Z`, actionLabel: "Zobacz profil", actionHref: `/clients/${c.id}`,
+          ref: `${c.id}:${lastDay}`, sort: Date.parse(`${lastDay}T00:00:00Z`),
+        });
+      }
+    }
+
+    // ── package: few sessions left / used up / validity ──
+    for (const pk of (input.packages ?? []).filter((x) => x.clientId === c.id)) {
+      const reminders = packageReminders({ totalSessions: pk.totalSessions, validUntil: pk.validUntil, status: "active" }, pk.used, now);
+      const worst = reminders[0];
+      if (!worst) continue;
+      consider(c.id, {
+        kind: "package", clientId: c.id, name, reasonLabel: worst.code === "EXPIRING" || worst.code === "EXPIRED" ? "Kończy się ważność pakietu" : "Kończy się pakiet",
+        description: reminders.map((r) => r.text).join(" "), at: now.toISOString(), actionLabel: "Zobacz pakiet", actionHref: `/clients/${c.id}`,
+        ref: `${c.id}:${pk.id}:${worst.code}`, sort: 0,
       });
     }
 
@@ -174,6 +243,7 @@ export function buildAttention(input: AttentionInput): {
         at: `${ending.endDate}T00:00:00.000Z`,
         actionLabel: "Przedłuż plan",
         actionHref: `/plans/${ending.id}`,
+        ref: `${c.id}:${ending.id}:${ending.endDate}`,
         sort: Date.parse(`${ending.endDate}T00:00:00Z`),
       });
     }
@@ -183,7 +253,8 @@ export function buildAttention(input: AttentionInput): {
   const inviteItems: Ranked[] = invites
     .filter(
       (i) =>
-        now.getTime() - i.createdAt.getTime() > 3 * DAY_MS && i.expiresAt.getTime() > now.getTime(),
+        now.getTime() - i.createdAt.getTime() > 3 * DAY_MS && i.expiresAt.getTime() > now.getTime() &&
+        !dismissed.has(`invite_pending|${i.clientId ?? 0}:${i.id}`),
     )
     .map((i) => ({
       kind: "invite_pending" as const,
@@ -194,18 +265,24 @@ export function buildAttention(input: AttentionInput): {
       at: i.createdAt.toISOString(),
       actionLabel: "Przypomnij",
       actionHref: "/survey-invite",
+      ref: `${i.clientId ?? 0}:${i.id}`,
       sort: i.createdAt.getTime(),
     }));
 
-  const all = [...perClient.values(), ...inviteItems].sort(
+  const extra: Ranked[] = (input.extraItems ?? [])
+    .filter((e) => !dismissed.has(`${e.kind}|${e.ref}`))
+    .map((e) => ({ ...e, sort: e.sort ?? 0 }));
+  const all = [...perClient.values(), ...inviteItems, ...extra].sort(
     (a, b) => ATTENTION_KINDS.indexOf(a.kind) - ATTENTION_KINDS.indexOf(b.kind) || a.sort - b.sort,
   );
-  const byKind = { pain: 0, interview: 0, no_plan: 0, plan_ending: 0, invite_pending: 0 } as Record<AttentionKind, number>;
+  const byKind = Object.fromEntries(ATTENTION_KINDS.map((k) => [k, 0])) as Record<AttentionKind, number>;
   for (const i of all) byKind[i.kind]++;
   return {
     total: all.length,
     byKind,
     items: all.slice(0, MAX_ATTENTION_ITEMS).map(({ sort: _sort, ...item }) => item),
+    /** everything, for "Pokaż wszystkie" */
+    allItems: all.map(({ sort: _sort, ...item }) => item),
   };
 }
 

@@ -9,6 +9,59 @@ function input(over: Partial<AttentionInput>): AttentionInput {
   return { clients: [], surveys: [], plans: [], invites: [], today: "2026-10-22", now: NOW, ...over };
 }
 
+describe("buildAttention — silence, 'za ciężko', packages, done (block 8)", () => {
+  const activePlan = (clientId: number, activatedDaysAgo: number, id = clientId) => ({ id, clientId, status: "active", createdAt: daysAgo(activatedDaysAgo + 1), activatedAt: daysAgo(activatedDaysAgo), endDate: null });
+  const sess = (clientId: number, id: number, daysBack: number, rating: string | null = null) => ({ clientId, id, date: daysAgo(daysBack).toISOString().slice(0, 10), rating });
+
+  it("silent: threshold 7 / 10 / 14 days from the last finished session; a client who trained recently is not listed", () => {
+    const base = { clients: [client(1), client(2)], plans: [activePlan(1, 30), activePlan(2, 30)], sessions: [sess(1, 1, 8), sess(2, 2, 2)] };
+    expect(buildAttention(input({ ...base, silenceDays: 7 })).items.map((i) => [i.clientId, i.kind])).toEqual([[1, "silent"]]);
+    expect(buildAttention(input({ ...base, silenceDays: 10 })).total).toBe(0);
+    expect(buildAttention(input({ ...base, sessions: [sess(1, 1, 11), sess(2, 2, 2)], silenceDays: 10 })).items[0]).toMatchObject({ kind: "silent", description: "Brak treningu od 11 dni." });
+    expect(buildAttention(input({ ...base, sessions: [sess(1, 1, 13), sess(2, 2, 2)], silenceDays: 14 })).total).toBe(0);
+    expect(buildAttention(input({ ...base, sessions: [sess(1, 1, 15), sess(2, 2, 2)], silenceDays: 14 })).total).toBe(1);
+  });
+  it("silent: no finished session yet counts from the plan activation; an invalid threshold falls back to 7; no active plan → nothing", () => {
+    expect(buildAttention(input({ clients: [client(1)], plans: [activePlan(1, 9)], silenceDays: 7 })).items[0]).toMatchObject({ kind: "silent" });
+    expect(buildAttention(input({ clients: [client(1)], plans: [activePlan(1, 3)], silenceDays: 7 })).total).toBe(0);
+    expect(buildAttention(input({ clients: [client(1)], plans: [activePlan(1, 9)], silenceDays: 99 })).total).toBe(1);
+    expect(buildAttention(input({ clients: [client(1)], plans: [{ ...activePlan(1, 30), status: "draft" }] })).items.map((i) => i.kind)).not.toContain("silent");
+  });
+  it("hard_twice: only when the TWO latest finished sessions are both too_hard", () => {
+    const mk = (r: Array<string | null>) => buildAttention(input({ clients: [client(1)], plans: [activePlan(1, 1)], sessions: r.map((x, i) => sess(1, i + 1, i + 1, x)) }));
+    expect(mk(["too_hard", "too_hard", "just_right"]).items[0]).toMatchObject({ kind: "hard_twice", reasonLabel: "Za ciężko 2 razy z rzędu" });
+    expect(mk(["too_hard", "just_right", "too_hard"]).total).toBe(0);
+    expect(mk(["too_hard"]).total).toBe(0);
+    expect(mk([null, "too_hard", "too_hard"]).total).toBe(0);
+  });
+  it("package: 2 or fewer left, used up, ending validity; plenty left → nothing", () => {
+    const pk = (used: number, validUntil: string | null = null) => buildAttention(input({ clients: [client(1)], plans: [activePlan(1, 1)], packages: [{ clientId: 1, id: 5, totalSessions: 10, used, validUntil }] }));
+    expect(pk(5).total).toBe(0);
+    expect(pk(8).items[0]).toMatchObject({ kind: "package", description: "Zostały 2 sesje w pakiecie." });
+    expect(pk(10).items[0].description).toContain("wykorzystany");
+    expect(pk(0, "2026-10-25").items[0]).toMatchObject({ kind: "package", reasonLabel: "Kończy się ważność pakietu" });
+    expect(pk(0, "2026-12-01").total).toBe(0);
+  });
+  it("marking as done hides exactly that event; a new event (other ref) brings the reason back; the client's next reason surfaces", () => {
+    const base = { clients: [client(1)], plans: [activePlan(1, 30)], sessions: [sess(1, 1, 9)], packages: [{ clientId: 1, id: 5, totalSessions: 10, used: 9, validUntil: null }] };
+    const first = buildAttention(input(base));
+    expect(first.items[0].kind).toBe("silent"); // silent outranks package
+    const dismissed = new Set([`silent|${first.items[0].ref}`]);
+    const next = buildAttention(input({ ...base, dismissed }));
+    expect(next.items.map((i) => i.kind)).toEqual(["package"]);
+    // a new training and a new silence → another ref → shown again
+    const later = buildAttention(input({ ...base, sessions: [sess(1, 2, 8), ...base.sessions], dismissed }));
+    expect(later.items[0].kind).toBe("silent"); expect(later.items[0].ref).not.toBe(first.items[0].ref);
+  });
+  it("byKind counts every kind; allItems lists more than the 5 shown; extraItems plug in", () => {
+    const cl = [1, 2, 3, 4, 5, 6, 7].map((i) => client(i));
+    const r = buildAttention(input({ clients: cl, plans: cl.map((c) => activePlan(c.id, 20)), silenceDays: 7 }));
+    expect(r.items).toHaveLength(5); expect(r.allItems).toHaveLength(7); expect(r.total).toBe(7); expect(r.byKind.silent).toBe(7);
+    const ex = buildAttention(input({ extraItems: [{ kind: "interview", clientId: 9, name: "X", reasonLabel: "Prośba", description: "d", at: NOW.toISOString(), actionLabel: "a", actionHref: "/x", ref: "9:req" }] }));
+    expect(ex.total).toBe(1);
+  });
+});
+
 describe("buildAttention", () => {
   it("is empty without data", () => {
     expect(buildAttention(input({}))).toMatchObject({ items: [], total: 0 });
@@ -22,13 +75,13 @@ describe("buildAttention", () => {
           { clientId: 1, createdAt: daysAgo(1), completed: true }, // new interview, no plan
           { clientId: 2, createdAt: daysAgo(30), completed: true }, // old interview, no plan
         ],
-        plans: [{ id: 9, clientId: 3, status: "active", createdAt: daysAgo(40), endDate: "2026-10-25" }],
+        plans: [{ id: 9, clientId: 3, status: "active", createdAt: daysAgo(40), activatedAt: daysAgo(1), endDate: "2026-10-25" }],
         invites: [{ id: 1, clientId: null, intendedEmail: "a@b.pl", createdAt: daysAgo(5), expiresAt: new Date(NOW.getTime() + 86_400_000) }],
       }),
     );
     expect(r.items.map((i) => i.kind)).toEqual(["interview", "no_plan", "plan_ending", "invite_pending"]);
     expect(r.items.map((i) => i.actionLabel)).toEqual(["Przejrzyj", "Przygotuj plan", "Przedłuż plan", "Przypomnij"]);
-    expect(r.byKind).toEqual({ pain: 0, interview: 1, no_plan: 1, plan_ending: 1, invite_pending: 1 });
+    expect(r.byKind).toEqual({ pain: 0, hard_twice: 0, silent: 0, package: 0, interview: 1, no_plan: 1, plan_ending: 1, invite_pending: 1 });
   });
 
   it("shows one row per client, the most urgent reason", () => {
@@ -66,7 +119,7 @@ describe("buildAttention", () => {
   });
 
   it("plan ending: within 7 days or already over; not later", () => {
-    const mk = (id: number, end: string) => ({ id, clientId: id, status: "active", createdAt: daysAgo(60), endDate: end });
+    const mk = (id: number, end: string) => ({ id, clientId: id, status: "active", createdAt: daysAgo(60), activatedAt: daysAgo(1), endDate: end });
     const r = buildAttention(
       input({
         clients: [client(1), client(2), client(3), client(4)],
