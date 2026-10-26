@@ -186,3 +186,11 @@
 
 ### 26.10.2026 — #1611 trudność nauki 2 (migracja 0036, pg_dump `przed-0036-*`)
 - Martwy ciąg rumuński z gumą oporową: `learningDifficulty` 3 → 2 (decyzja właściciela: lekka guma, nauka zawiasu, ma być dla nieaktywnych). Plik/generator zaktualizowane. Dziury bez kandydata (dom bez sprzętu: pchanie pionowe BA/P, przyciąganie pionowe BA, zgięcie łokcia BA/P, anty-rotacja BA) zostają: generator pomija wzorzec, trener widzi ostrzeżenie o braku sprzętu; nowych ćwiczeń nie dodajemy.
+
+## 26.10.2026 — „wszystko naraz”: blok 5 (gałąź `feature/beta-przygotowanie`, worktree ~/tp-a1, z `main`)
+- Praca podzielona z drugą sesją Claude (uzgodnienie wiadomością): ona — bloki 1–4 w ~/trainer-panel (migracje 0037–0049), ja — bloki 5–12 w osobnym worktree ~/tp-a1 (migracje od 0050). Ciężkie polecenia (testy, db-setup, smoke) przez `flock /tmp/tp-heavy.lock`.
+- 5a: nagłówki bezpieczeństwa API (`securityHeaders.ts`), nagłówki front-endów (`scripts/security-headers.mjs`, CSP tylko raport), limiter zapytań w pamięci (`rateLimit.ts`; linki z tokenem 30/min, profil 20/min, generator 120/min/użytkownika, kody trenera 10 prób/15 min — dla bloku kont). Testy: `security-headers-rate-limit.test.ts`.
+- 5b: `scripts/backup-db.sh` (cron 03:15), `scripts/backup-restore-test.sh`; opis w CLAUDE.md. Pierwsza kopia i test przywrócenia OK (33 tabele, wiersze zgodne).
+- 5c: szkielety trzech dokumentów (`lib/survey-config/src/legal.ts`), strony `/legal/:slug` w panelu i portalu, linki w stopkach.
+- 5d: zgoda na dane o zdrowiu — migracja 0050 (4 kolumny nullable w `surveys`), pole `healthConsent` w wywiadzie, wycofanie w Ustawieniach portalu, podgląd u trenera w profilu klienta, najostrożniejsze ustawienia generatora bez zgody. Testy: `health-consent.test.ts`, wizard.
+- 5e: pliki `deploy/*.example`, `scripts/usun-konta-demo.sh` (tylko podgląd domyślnie, NIEURUCHOMIONY), rozdział 13 w `docs/WDROZENIE-PLAN.md`.
