@@ -84,6 +84,20 @@ describe("mięśnie główne wg decyzji (migracja 0034)", () => {
   });
 });
 
+describe("poprawki opisów po weryfikacji", () => {
+  it("wiosłowanie australijskie: tylko stabilny drążek (bez stołu i sztangi na podporach)", () => {
+    const i = byName("Wiosłowanie australijskie z ugiętymi nogami");
+    const text = `${i.description} ${i.coachingTips} ${i.commonMistakes} ${i.safetyNotes}`;
+    expect(text).toMatch(/stabilnym drążkiem/);
+    expect(text).not.toMatch(/stół|stoł|sztang/i);
+  });
+  it("dipy na podłodze: siad, dłonie za biodrami palcami do przodu, mały zakres łokci", () => {
+    const d = byName("Dipy na podłodze").description;
+    expect(d).toMatch(/dłonie za biodrami, palce skierowane do przodu/);
+    expect(d).toMatch(/w małym zakresie/);
+  });
+});
+
 describe("duplikaty i odmiany", () => {
   it("pominięte jako duplikaty: Burpees, Pajacyki, Krzesełko, Nordic curl, Przeskoki łyżwiarza, kajakowe", () => {
     const names = items.map((i) => i.name.toLowerCase()).join("|");

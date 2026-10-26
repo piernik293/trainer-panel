@@ -177,3 +177,9 @@
 - Objętość: żaden cel objętości nie obejmuje tych mięśni; wpisane do listy świadomych wyłączeń (`unmappedMuscleVtm.ts`, dopasowanie po nazwie, bo na bazie testowej id się różnią). Praca klatki w pompkach plus/łopatkowych nadal liczy się przez współczynniki pomocnicze 0,5.
 - Przegląd pozostałych ćwiczeń (nazwy, wzorce, rozgrzewki): **żadne inne** nie ma tych mięśni jako głównej pracy (brak wall slide, serratus punch, ćwiczeń na piszczel); face pull, wykroki, bieganie — bez zmian.
 - Przy okazji: test `training-flow` („aborted session…”) zależał od dnia tygodnia (w poniedziałek sesje cofnięte o 1–2 dni wypadały w poprzednim tygodniu); asercja liczy teraz ukończone sesje z bieżącego tygodnia.
+
+### 26.10.2026 — weryfikacja ćwiczeń openGym wg decyzji właściciela (migracja 0035, pg_dump `przed-0035-*`)
+- **Zweryfikowane (23):** 1621, 1609, 1597, 1651, 1639, 1620, 1622, 1594, 1646, 1647, 1600, 1649, 1610, 1611, 1605, 1606, 1615, 1632, 1604, 1634, 1601, 1650, 1598. **Dodatkowo dla nieaktywnych (13):** 1639, 1620, 1622, 1594, 1600, 1649, 1610, 1611, 1605, 1606, 1615, 1650, 1598 (flaga + poziom „Brak aktywności”; ten sam poziom dopisany wcześniej oznaczonym 11 ćwiczeniom z pkt 5 — wpływa tylko na punktację dopasowania).
+- **Zostają niezweryfikowane:** 1629 Dipy na podłodze (od Ś; opis poprawiony: siad, dłonie za biodrami palcami do przodu, unieś biodra, zginaj łokcie w małym zakresie) i 1635 Uginanie nóg leżąc z hantlem. 1597: opis i uwaga bez „stołu” i „sztangi na podporach”, tylko stabilny drążek.
+- **Uwaga:** #1611 Martwy ciąg rumuński z gumą ma `learningDifficulty = 3`, a silnik wymaga ≤ 2 dla BA/P. Mimo flagi dla nieaktywnych generator go jeszcze nie wybierze dla BA, dopóki trudności nie obniżysz do 2 (nie zmieniałem bez Twojej zgody).
+- Pokrycie przeliczone: dziury BA/P 23 → 19.

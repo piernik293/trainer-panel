@@ -56,9 +56,9 @@ r("3542", "Unoszenie T leżąc na ławce skośnej", "Incline T-Raise", S, "pomoc
   "Łopatki delikatnie ściągnięte do siebie. Łatwiej: bez ciężaru. Trudniej: pauza 2 s na górze.", "Zbyt duży ciężar, unoszenie barków do uszu, bujanie.",
   "Użyj bardzo lekkich hantli.", 3, parent="=OG_3541", pos="ramiona na boki (T)")
 r("2300", "Wiosłowanie australijskie z ugiętymi nogami", "Inverted Row, Bent Knees", P, "główne", BW, "Przyciąganie poziome", "Plecy", "RHOM", "LAT TRAP BIC DELR", "Łokieć, Bark", "siła, sylwetka, sprawność",
-  "Połóż się pod stabilnym drążkiem lub sztangą na podporach, chwyć ją nachwytem. Ugnij kolana, stopy zostaw na podłodze, ciało w linii od kolan do głowy. Przyciągnij klatkę do drążka i opuść się powoli.",
+  "Połóż się pod stabilnym drążkiem zamocowanym nisko i chwyć go nachwytem. Ugnij kolana, stopy zostaw na podłodze, ciało w linii od kolan do głowy. Przyciągnij klatkę do drążka i opuść się powoli.",
   "Biodra wysoko, łopatki do siebie. Łatwiej: wyżej ustawiony drążek. Trudniej: proste nogi (wiosłowanie australijskie).",
-  "Opadające biodra, wysuwanie głowy, niepełny ruch.", "Użyj tylko stabilnego sprzętu, który udźwignie Twój ciężar.", 2, parent="1089", pos="nogi ugięte")
+  "Opadające biodra, wysuwanie głowy, niepełny ruch.", "Użyj tylko stabilnego drążka, który udźwignie Twój ciężar.", 2, parent="1089", pos="nogi ugięte")
 r("1346", "Rozciąganie najszerszego grzbietu w klęku", "Kneeling Lat Stretch", P, "rozciąganie", BW, "Rozciąganie", "Plecy", "LAT", "TERES", "Bark", "sprawność",
   "Uklęknij przed ławką lub krzesłem, połóż na nim przedramiona lub dłonie. Wypchnij biodra do tyłu i opuść klatkę w dół, aż poczujesz rozciąganie wzdłuż boków pleców. Zostań w pozycji, oddychając spokojnie.",
   "Plecy proste, oddech spokojny. Łatwiej: mniej opuszczona klatka. Trudniej: dłuższe utrzymanie.", "Wyginanie lędźwi, szarpanie, wstrzymywanie oddechu.", "Rozciągaj tylko do uczucia komfortowego napięcia.", 1, secs="30")
@@ -181,7 +181,7 @@ r("0864", "Rotacja zewnętrzna barku w odwiedzeniu 90° z hantlem", "Dumbbell 90
   "Łokieć na wysokości barku, ruch tylko w obrocie. Łatwiej: bez ciężaru lub z gumą. Trudniej: wolniejsze tempo.", "Opadający łokieć, zbyt duży ciężar, bujanie tułowiem.",
   "Użyj bardzo lekkiego hantla, to pozycja wymagająca dla barku.", 3, parent="211", pos="ramię odwiedzione 90°")
 r("1399", "Dipy na podłodze", "Floor Dip", P, "pomocnicze", BW, "Wyprost łokcia", "Triceps", "TRI", "PM DELF", "Bark, Łokieć, Nadgarstek", "sylwetka, sprawność",
-  "Usiądź na podłodze, kolana ugięte, dłonie za biodrami palcami do stóp. Unieś biodra, zegnij łokcie do tyłu i opuść się, po czym wypchnij się w górę.",
+  "Usiądź na podłodze, kolana ugięte, dłonie za biodrami, palce skierowane do przodu. Unieś biodra i zginaj łokcie w małym zakresie, po czym wypchnij się w górę.",
   "Łokcie wskazują do tyłu, barki nisko od uszu. Łatwiej: stopy bliżej bioder, mniejszy zakres. Trudniej: dipy na ławce.", "Rozchylanie łokci, zbyt głębokie opuszczanie, unoszenie barków.",
   "Opuszczaj się tylko tak głęboko, by bark pozostał komfortowy.", 2, parent="1093", pos="na podłodze")
 r("0296", "Wyciskanie hantli wąsko (hantle złączone)", "Close-Grip Dumbbell Press", S, "główne", f"{HAN}, {LAWKA}", "Pchanie poziome", "Klatka piersiowa", "PM", "TRI DELF", "Bark, Łokieć, Nadgarstek", "sylwetka, siła",
