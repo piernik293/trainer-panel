@@ -187,6 +187,8 @@
 ### 26.10.2026 — #1611 trudność nauki 2 (migracja 0036, pg_dump `przed-0036-*`)
 - Martwy ciąg rumuński z gumą oporową: `learningDifficulty` 3 → 2 (decyzja właściciela: lekka guma, nauka zawiasu, ma być dla nieaktywnych). Plik/generator zaktualizowane. Dziury bez kandydata (dom bez sprzętu: pchanie pionowe BA/P, przyciąganie pionowe BA, zgięcie łokcia BA/P, anty-rotacja BA) zostają: generator pomija wzorzec, trener widzi ostrzeżenie o braku sprzętu; nowych ćwiczeń nie dodajemy.
 
-## Blok 12 — moduł kondycyjny (feature/kondycja) — W TOKU (przerwane limitem)
-- Gotowe: migracja 0054 (day_type, conditioning, plan_element_rules z zasiewem, conditioning_logs, conditioning_checkins; backup przed), schemat Drizzle, `services/conditioning.ts` (marszobieg 8 tyg., lżejszy co 4., RPE + test rozmowy, filtr bólu → sprzęt, BA/P bez interwałów), `routes/conditioning.ts` za `CONDITIONING_ENABLED` (domyślnie wyłączone), pominięcie wymogu ćwiczeń dla dni kondycyjnych. Typecheck zielony.
-- Brak: testy bloku 12 (flaga 404, izolacja A/B, BA bez interwałów, filtr bólu, tydzień lżejszy, idempotencja, check-in zabroniony dla Solo), pełny łańcuch weryfikacji, ekrany UI.
+## Blok 12 — moduł kondycyjny (feature/kondycja) — GOTOWE (API; bez ekranów UI)
+- Migracja 0054 (backup przed), `services/conditioning.ts`, `routes/conditioning.ts` za `CONDITIONING_ENABLED` (domyślnie wyłączone → 404), dni kondycyjne omijają wymóg ćwiczeń przy aktywacji.
+- Testy `conditioning.test.ts` (12): flaga, brak interwałów dla BA/P, filtr bólu, tydzień lżejszy, wzrost ≤15%, idempotencja, izolacja A/B, check-in zabroniony dla Solo, słownik tylko admin.
+- Weryfikacja: API 2599, bezpieczeństwo 101, panel 765, portal 228, typecheck i build OK, smoke 131/0.
+- Brak: ekrany panelu i portalu (po decyzji o menu/UX), przełącznik w ustawieniach.
