@@ -1,3 +1,4 @@
+import Legal from "@/pages/Legal";
 import { useEffect, useRef } from "react";
 import { AppHero } from "@workspace/design-tokens/hero";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from "@clerk/react";
@@ -366,6 +367,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/sign-in/*?" component={ClientSignInPage} />
             <Route path="/trainer/sign-in/*?" component={TrainerSignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
+            <Route path="/legal/:slug" component={Legal} />
             {/* Dev-only visual preview of the calendar (mocked data via ?mockCalendar=1).
                 Stripped from production builds — import.meta.env.DEV is false there. */}
             {import.meta.env.DEV && (

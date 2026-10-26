@@ -1,3 +1,4 @@
+import { frontendSecurityHeaders } from '../../scripts/security-headers.mjs';
 import path from 'path';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -72,6 +73,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    headers: frontendSecurityHeaders(),
     port,
     strictPort: true,
     host: '0.0.0.0',
@@ -91,6 +93,7 @@ export default defineConfig({
       : {}),
   },
   preview: {
+    headers: frontendSecurityHeaders(),
     port,
     host: '0.0.0.0',
     allowedHosts: true,

@@ -1,3 +1,4 @@
+import LegalPage from "@/pages/legal";
 import { ClerkProvider } from '@clerk/react';
 import { plPL } from '@clerk/localizations';
 import { publishableKeyFromHost } from '@clerk/react/internal';
@@ -94,6 +95,7 @@ function Router() {
         <Route path="/portal-preview" component={PortalPreviewPage} />
       )}
       {/* Survey token pages are accessible without Clerk auth */}
+      <Route path="/legal/:slug" component={LegalPage} />
       <Route path="/survey/:token" component={SurveyTokenPage} />
       {/* Client portal activation — token validates server-side before Clerk auth */}
       <Route path="/invite/:token" component={ActivatePage} />

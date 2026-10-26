@@ -1,3 +1,4 @@
+import { LegalLinks } from "@/components/LegalLinks";
 import { motion } from "framer-motion";
 import { Link2 } from "lucide-react";
 
@@ -38,6 +39,7 @@ export default function Home() {
       {/* FOOTER */}
       <footer className="border-t border-border py-12 text-center bg-card">
         <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} Optimatren</p>
+        <LegalLinks className="mt-3" />
       </footer>
     </div>
   );
