@@ -72,7 +72,7 @@ describe("API raportu", () => {
     const [sv] = await db.insert(surveysTable).values({ clientId: cid, experienceLevel: "Początkujący" } as never).returning();
     const [ver] = await db.select({ id: volumeGuidelineVersionsTable.id }).from(volumeGuidelineVersionsTable).limit(1);
     const [plan] = await db.insert(workoutPlansTable).values({ clientId: cid, surveyId: sv!.id, guidelineVersionId: ver!.id, experienceLevelUsed: "Początkujący", title: "Plan", status: "active" } as never).returning();
-    const days = [];
+    const days: Array<{ id: number }> = [];
     for (const n of [1, 2, 3]) days.push((await db.insert(workoutPlanDaysTable).values({ planId: plan!.id, dayOrder: n, dayName: n === 1 ? "Dół ciała" : `Dzień ${n}` } as never).returning())[0]!);
     const mkSession = async (date: string, rating: string | null) => (await db.insert(workoutSessionsTable).values({ clientId: cid, planId: plan!.id, planDayId: days[0]!.id, sessionDate: date, isCompleted: true, sessionRating: rating } as never).returning())[0]!;
     const prior = await mkSession("2026-08-20", null);
