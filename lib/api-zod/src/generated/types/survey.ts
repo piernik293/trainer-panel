@@ -70,6 +70,7 @@ export interface Survey {
   cardioFrequency?: string | null;
   /** @nullable */
   preferredCardioType?: string | null;
+  jumpExperience?: string | null;
   /** @nullable */
   avoidsAdvancedMethods?: boolean | null;
   createdAt: Date;

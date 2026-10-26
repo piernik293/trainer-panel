@@ -25,7 +25,8 @@ ENV_SETUP="set -a; . '$ROOT/.env'; set +a; \
 export LOCAL_API_SERVER_URL=\"\${LOCAL_API_SERVER_URL:-http://localhost:8080}\"; \
 export LOCAL_CLIENT_PORTAL_DEV_URL=\"\${LOCAL_CLIENT_PORTAL_DEV_URL:-http://localhost:22347}\"; \
 export LOCAL_TRAINER_APP_ORIGIN=\"\${LOCAL_TRAINER_APP_ORIGIN:-http://localhost:23889}\"; \
-export LOCAL_CLIENT_PORTAL_ORIGIN=\"\${LOCAL_CLIENT_PORTAL_ORIGIN:-http://localhost:23889}\""
+export LOCAL_CLIENT_PORTAL_ORIGIN=\"\${LOCAL_CLIENT_PORTAL_ORIGIN:-http://localhost:23889}\"; \
+export TRAINER_SIGNUP_OPEN='${TRAINER_SIGNUP_OPEN:-}'"
 
 run() { # nazwa, komenda
   tmux new-window -t "$SESSION" -n "$1" \

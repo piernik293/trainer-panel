@@ -35,6 +35,8 @@ export const CANONICAL_EQUIPMENT = [
   "Kółka gimnastyczne",
   "Roller",
   "Landmine",
+  "Worek bokserski",
+  "Młot i opona",
   "Brak sprzętu",
   "Masa własnego ciała",
 ] as const;
@@ -149,6 +151,12 @@ const ALIAS_MAP: Record<string, string> = {
   "wałek do rolowania": "Roller",
   "foam roller": "Roller",
 
+  // Worek bokserski i młot z oponą — tylko przy celach Poprawa sprawności / Cel sportowy
+  "worek bokserski": "Worek bokserski",
+  "worek": "Worek bokserski",
+  "młot i opona": "Młot i opona",
+  "młot z oponą": "Młot i opona",
+
   // Landmine — tylko siłownia (uchwyt na sztangę), brak opcji w wywiadzie
   "landmine": "Landmine",
 
@@ -193,6 +201,7 @@ export const FULL_GYM_EQUIPMENT: string[] = [
   "Piłka stabilizacyjna (bosu/fit)",
   "Roller",
   "Landmine",
+  "Worek bokserski",
   "Rower stacjonarny / orbitrek",
 ];
 
@@ -283,4 +292,16 @@ export function expandEquipmentForLocation(listed: readonly string[], location: 
   const kind = locationKind(location);
   const extra = kind === "siłownia" ? FULL_GYM_EQUIPMENT : kind === "plener" ? ["Gumy oporowe"] : [];
   return [...new Set([...listed, ...extra])];
+}
+
+/** Trainer notice for a client training at home with no band, dumbbells or pull-up bar (owner's decision 25.10.2026). Not a block. */
+export const HOME_NO_EQUIPMENT_NOTICE =
+  "Brak sprzętu: plan nie obejmuje ćwiczeń na plecy. Zaleć klientowi minimum gumę oporową, a najlepiej hantle.";
+
+const BACK_EQUIPMENT = ["Gumy oporowe", "Hantle", "Drążek do podciągania"];
+
+/** True when the client trains at home (location "Dom") and has none of: resistance band, dumbbells, pull-up bar. */
+export function homeWithoutBackEquipment(location: string | null | undefined, equipment: readonly string[]): boolean {
+  if (locationKind(location) !== "dom") return false;
+  return !equipment.some((e) => BACK_EQUIPMENT.includes(e));
 }

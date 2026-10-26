@@ -18,6 +18,9 @@
 
 import {
   EQUIPMENT_OPTIONS,
+  BOXING_BAG,
+  HAMMER_AND_TYRE,
+  equipmentOptionsFor,
   NO_EQUIPMENT,
   birthDateError,
   buildEquipmentString,
@@ -34,6 +37,7 @@ import {
   isBeginnerLevel,
   isIntermediateOrAdvancedLevel,
   showEquipmentField,
+  showJumpExperience,
   showTrainingDurationField,
 } from "@workspace/survey-config";
 
@@ -61,6 +65,8 @@ export interface Answers {
   trainingGoal: string;
   athleteStatus: string;
   sportPerformanceNeeds: string[];
+  /** Only with the goal "Cel sportowy" (one of JUMP_EXPERIENCE_OPTIONS). */
+  jumpExperience: string;
   trainingMotivation: string;
   experienceLevel: string;
   trainingDuration: string;
@@ -93,7 +99,7 @@ export interface Answers {
 export const EMPTY_ANSWERS: Answers = {
   firstName: "", lastName: "", email: "", phone: "", dateOfBirth: "", gender: "",
   heightCm: undefined, weightKg: "",
-  trainingGoal: "", athleteStatus: "", sportPerformanceNeeds: [], trainingMotivation: "",
+  trainingGoal: "", athleteStatus: "", sportPerformanceNeeds: [], jumpExperience: "", trainingMotivation: "",
   experienceLevel: "", trainingDuration: "",
   trainingLocation: "", equipmentItems: [], equipmentOther: "",
   desiredWeeklyFrequency: undefined, sessionDuration: "",
@@ -112,7 +118,7 @@ export const EMPTY_ANSWERS: Answers = {
 
 export type StepId =
   | "name" | "contact" | "birth" | "body"
-  | "goal" | "sportStatus" | "sportNeeds" | "motivation"
+  | "goal" | "sportStatus" | "sportNeeds" | "jumps" | "motivation"
   | "level" | "duration"
   | "location" | "equipment"
   | "frequency" | "session"
@@ -130,7 +136,7 @@ export interface Stage {
 /** Order matters: a dependent question always comes after the one it depends on. */
 export const STAGES: Stage[] = [
   { id: "about", name: "O Tobie", steps: ["name", "contact", "birth", "body"] },
-  { id: "goal", name: "Cel", steps: ["goal", "sportStatus", "sportNeeds", "motivation"] },
+  { id: "goal", name: "Cel", steps: ["goal", "sportStatus", "sportNeeds", "jumps", "motivation"] },
   { id: "experience", name: "Doświadczenie", steps: ["level", "duration"] },
   { id: "place", name: "Miejsce i sprzęt", steps: ["location", "equipment"] },
   { id: "time", name: "Czas i częstotliwość", steps: ["frequency", "session"] },
@@ -158,13 +164,15 @@ export function isStepVisible(id: StepId, a: Answers, prefill: Prefill = {}): bo
     case "sportStatus":
     case "sportNeeds":
       return goalIsSport(a.trainingGoal);
+    case "jumps":
+      return showJumpExperience(a.trainingGoal);
     case "duration":
       return showTrainingDurationField(a.experienceLevel);
     // The cardio form is asked only when the client wants cardio in the plan ("Tak"); "minimum" skips it.
     case "cardioType":
       return normalizeCardioPreference(a.cardioPreference) === "include";
     case "equipment":
-      return showEquipmentField(a.trainingLocation);
+      return showEquipmentField(a.trainingLocation, a.trainingGoal);
     case "healthDesc":
       return a.injuryStatus === "Tak";
     // Intermediate / advanced by the EFFECTIVE level (the choice capped by training time).
@@ -197,6 +205,7 @@ export function normalizeAnswers(input: Answers, prefill: Prefill = {}): Answers
     a.athleteStatus = "";
     a.sportPerformanceNeeds = [];
   }
+  if (!isStepVisible("jumps", a, prefill)) a.jumpExperience = "";
   // "Brak sprzętu" excludes the rest (the UI keeps it that way; a draft from an older version is repaired here).
   if (a.equipmentItems.includes(NO_EQUIPMENT) && a.equipmentItems.length > 1) a.equipmentItems = [NO_EQUIPMENT];
   if (a.equipmentItems.includes(NO_EQUIPMENT)) a.equipmentOther = "";
@@ -205,6 +214,11 @@ export function normalizeAnswers(input: Answers, prefill: Prefill = {}): Answers
   if (!isStepVisible("equipment", a, prefill)) {
     a.equipmentItems = [];
     a.equipmentOther = "";
+  } else {
+    // Only what the screen offers for this goal and place (the boxing bag / hammer set disappear when the goal or place changes).
+    const offered = equipmentOptionsFor(a.trainingGoal, a.trainingLocation);
+    a.equipmentItems = a.equipmentItems.filter((x) => offered.includes(x));
+    if (a.trainingLocation === "Siłownia") a.equipmentOther = "";
   }
   if (!isStepVisible("healthDesc", a, prefill)) a.healthLimitations = "";
   if (!isStepVisible("avoided", a, prefill)) {
@@ -266,11 +280,15 @@ export function validateStep(id: StepId, a: Answers): string | null {
       return a.trainingGoal ? null : "To pole jest wymagane";
     case "sportStatus":
       return a.athleteStatus ? null : "Wybierz poziom sportowy.";
+    case "jumps":
+      return a.jumpExperience ? null : "Wybierz jedną odpowiedź.";
     case "level":
       return a.experienceLevel ? null : "Poziom doświadczenia jest wymagany";
     case "location":
       return a.trainingLocation ? null : "To pole jest wymagane";
     case "equipment":
+      // At a gym the screen only offers the optional hammer-and-tyre set.
+      if (a.trainingLocation === "Siłownia" && showEquipmentField(a.trainingLocation, a.trainingGoal)) return null;
       return buildEquipmentString(a.equipmentItems, a.equipmentOther).trim() ? null : "To pole jest wymagane.";
     case "frequency":
       return a.desiredWeeklyFrequency && a.desiredWeeklyFrequency >= 1 && a.desiredWeeklyFrequency <= 7
@@ -330,6 +348,7 @@ export function missingHint(id: StepId, a: Answers): string | null {
       return "Popraw wagę.";
     case "goal": return missing("cel treningowy");
     case "sportStatus": return missing("jak uprawiasz sport");
+    case "jumps": return missing("odpowiedź o doświadczeniu ze skokami");
     case "level": return missing("poziom doświadczenia");
     case "location": return missing("miejsce treningu");
     case "equipment": return missing("sprzęt (zaznacz coś albo „Brak sprzętu”)");
@@ -387,6 +406,7 @@ export function buildSurveyPayload(raw: Answers, prefill: Prefill = {}): Record<
     athleteStatus: isSport && a.athleteStatus ? (ATHLETE_TO_API[a.athleteStatus] ?? "Nie") : "Nie",
     sportDiscipline: undefined,
     sportPerformanceNeeds: isSport ? a.sportPerformanceNeeds : [],
+    jumpExperience: showJumpExperience(a.trainingGoal) && a.jumpExperience ? a.jumpExperience : undefined,
     sportsPriorities: isSport ? a.sportPerformanceNeeds.map((n) => SPORT_NEED_KEY[n]).filter(Boolean) : [],
     avoidsAdvancedMethods: avoids,
     advancedMethodsToAvoid: avoids === true ? a.advancedMethodsToAvoid : [],
@@ -408,7 +428,7 @@ export function remainingMinutes(stepsLeft: number): number {
   return Math.max(1, Math.round((stepsLeft * 10) / 60));
 }
 
-export const KNOWN_EQUIPMENT: readonly string[] = EQUIPMENT_OPTIONS;
+export const KNOWN_EQUIPMENT: readonly string[] = [...EQUIPMENT_OPTIONS, BOXING_BAG, HAMMER_AND_TYRE];
 export { isBeginnerLevel };
 
 // ─── Draft (autosave) ─────────────────────────────────────────────────────────

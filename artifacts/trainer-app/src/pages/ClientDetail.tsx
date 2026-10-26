@@ -1231,6 +1231,7 @@ function SurveyDetails({ survey, bmi, showBmiRecommendation, clientName, clientE
       cardioPreference: strOrUndef(s.cardioPreference),
       cardioFrequency: strOrUndef(s.cardioFrequency),
       preferredCardioType: strOrUndef(s.preferredCardioType),
+      jumpExperience: strOrUndef(s.jumpExperience),
       // scalar number fields
       weeklyFrequency: numOrUndef(s.weeklyFrequency),
       desiredWeeklyFrequency: numOrUndef(s.desiredWeeklyFrequency),

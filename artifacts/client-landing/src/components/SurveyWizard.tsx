@@ -32,7 +32,10 @@ import {
   CARDIO_FREQUENCY_OPTIONS,
   CARDIO_PREFERENCE_OPTIONS,
   CARDIO_RECOMMENDATION_TEXT,
-  EQUIPMENT_OPTIONS,
+  equipmentOptionsFor,
+  JUMP_EXPERIENCE_OPTIONS,
+  JUMP_EXPERIENCE_QUESTION,
+  equipmentHint,
   EXPERIENCE_LEVEL_OPTIONS,
   MUSCLE_GROUPS,
   PLAN_STYLE_OPTIONS,
@@ -554,6 +557,12 @@ export default function SurveyWizard({
             />
           </Section>
         );
+      case "jumps":
+        return (
+          <Section id={id} headingRef={heading} title={JUMP_EXPERIENCE_QUESTION} lead="Pytamy o to, bo wybrałeś/-aś cel sportowy. Od tego zależy, od jakich skoków zaczniemy.">
+            <ChoiceList name="Doświadczenie ze skokami" options={JUMP_EXPERIENCE_OPTIONS.map((v) => ({ value: v, label: v }))} value={answers.jumpExperience} onChange={(v) => choose({ jumpExperience: v })} />
+          </Section>
+        );
       case "motivation":
         return (
           <Section id={id} headingRef={heading} title="Dlaczego chcesz trenować?" lead={<Opt text={HINT_TEXT.motivation} />}>
@@ -585,9 +594,10 @@ export default function SurveyWizard({
         );
       case "equipment":
         return (
-          <Section id={id} headingRef={heading} title="Jakim sprzętem dysponujesz?" lead="Pytamy o to, bo trenujesz w domu lub na siłowni plenerowej. Zaznacz wszystko, co masz.">
-            <MultiList columns={2} options={EQUIPMENT_OPTIONS.map((v) => ({ value: v, label: v }))} selected={answers.equipmentItems} onToggle={(v) => set({ equipmentItems: toggleEquipment(answers.equipmentItems, v) })} />
-            <Input aria-label="Inny sprzęt" placeholder="Inny sprzęt" value={answers.equipmentOther} onChange={(e) => set({ equipmentOther: e.target.value, ...(e.target.value.trim() ? { equipmentItems: answers.equipmentItems.filter((x) => x !== NO_EQUIPMENT) } : {}) })} className={bigInput} />
+          <Section id={id} headingRef={heading} title="Jakim sprzętem dysponujesz?" lead={answers.trainingLocation === "Siłownia" ? "Siłownia ma wszystko, co podstawowe. Zaznacz tylko to, co masz dodatkowo." : "Pytamy o to, bo trenujesz w domu lub na siłowni plenerowej. Zaznacz wszystko, co masz."}>
+            <MultiList columns={2} options={equipmentOptionsFor(answers.trainingGoal, answers.trainingLocation).map((v) => ({ value: v, label: v }))} selected={answers.equipmentItems} onToggle={(v) => set({ equipmentItems: toggleEquipment(answers.equipmentItems, v) })} />
+            {answers.trainingLocation !== "Siłownia" && <Input aria-label="Inny sprzęt" placeholder="Inny sprzęt" value={answers.equipmentOther} onChange={(e) => set({ equipmentOther: e.target.value, ...(e.target.value.trim() ? { equipmentItems: answers.equipmentItems.filter((x) => x !== NO_EQUIPMENT) } : {}) })} className={bigInput} />}
+            {(() => { const hint = equipmentHint({ trainingLocation: answers.trainingLocation, items: answers.equipmentItems, other: answers.equipmentOther, effectiveLevel }); return hint ? <Note>{hint}</Note> : null; })()}
             {err() && <p className="text-sm text-danger">{err()}</p>}
           </Section>
         );
@@ -906,6 +916,7 @@ export function summaryText(id: StepId, a: Answers): string {
     case "goal": return a.trainingGoal;
     case "sportStatus": return a.athleteStatus;
     case "sportNeeds": return a.sportPerformanceNeeds.join(", ");
+    case "jumps": return a.jumpExperience;
     case "motivation": return a.trainingMotivation;
     case "level": return a.experienceLevel;
     case "duration": return a.trainingDuration;

@@ -119,7 +119,9 @@ async function main(): Promise<void> {
   // The trainer app creates trainer profiles right after sign-in.
   for (const [name, tok] of [["A", A], ["B", B]] as const) {
     const profile = await call(tok, "POST", "/trainer/profile");
-    check(`trener ${name}: profil trenera (POST /trainer/profile)`, profile.status === 200, why(profile));
+    // Sign-up of new trainers is closed by default (the administrator approves accounts): for this test start the API with TRAINER_SIGNUP_OPEN=1.
+    const hint = profile.body?.code === "TRAINER_NOT_APPROVED" ? " — uruchom API z TRAINER_SIGNUP_OPEN=1 (TRAINER_SIGNUP_OPEN=1 scripts/dev-gcp.sh)" : "";
+    check(`trener ${name}: profil trenera (POST /trainer/profile)`, profile.status === 200, why(profile) + hint);
   }
   const run = `smoke-${Date.now()}`;
   const email = `${run}@example.invalid`;

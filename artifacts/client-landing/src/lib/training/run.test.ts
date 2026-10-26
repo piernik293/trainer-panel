@@ -7,21 +7,22 @@ const fresh = (): RunState => newRun(day, "uuid-1", new Date("2026-10-23T10:00:0
 const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k) }; };
 
 describe("run state", () => {
-  it("walks warm-up → exercises → cooldown → finish", () => {
+  it("walks exercises → finish (warm-up and cool-down are separate, see ramp.ts)", () => {
     let s = fresh();
-    expect(s.stage).toBe("warmup");
-    s = runReducer(s, { type: "warmupNext", total: 2 });
-    expect(s).toMatchObject({ stage: "warmup", warmupIndex: 1 });
-    s = runReducer(s, { type: "warmupNext", total: 2 });
     expect(s.stage).toBe("exercises");
     s = runReducer(s, { type: "nextExercise", total: 2 });
     expect(s.exerciseIndex).toBe(1);
     s = runReducer(s, { type: "nextExercise", total: 2 });
-    expect(s.stage).toBe("cooldown");
-    s = runReducer(s, { type: "cooldownNext", total: 1 });
     expect(s.stage).toBe("finish");
     s = runReducer(s, { type: "end", at: "2026-10-23T11:00:00Z" });
     expect(s).toMatchObject({ stage: "done", endedAt: "2026-10-23T11:00:00Z" });
+  });
+  it("a run saved before the split (warmup / cooldown stage) loads as exercises / finish", () => {
+    const st = mem();
+    saveRun({ ...fresh(), stage: "warmup" }, st);
+    expect(loadRun(7, st)!.stage).toBe("exercises");
+    saveRun({ ...fresh(), stage: "cooldown" }, st);
+    expect(loadRun(7, st)!.stage).toBe("finish");
   });
   it("saves, corrects and counts sets; skipped sets are not counted", () => {
     let s = fresh();

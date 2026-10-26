@@ -11,7 +11,8 @@
  *  - equipment the client does not have (bands, bike, roller) and a wrong training place are skipped; a roller counts as
  *    available when the client ticked it or trains at a gym;
  *  - hidden exercises are never offered; exercises not yet reviewed by the trainer only for intermediate / advanced.
- * Cool-down: up to 3–4 stretches / rolling (at most one roller exercise) for the day's groups, plus one calm breathing exercise at the end.
+ * Cool-down: up to 3–4 stretches for the day's groups; rolling (at most one roller exercise) only on 1–2 days a week (rollerDayIndexes); one calm
+ * breathing exercise at the end ONLY when the client switched that on (default off).
  */
 import { PAIN_AREAS } from "@workspace/db";
 
@@ -48,7 +49,21 @@ export interface SelectionContext {
   trainingLocation?: string | null;
   /** the survey's free-text equipment list */
   equipmentText?: string | null;
+  /** client setting "Kończ schłodzenie minutą spokojnego oddechu" — default OFF: the generator never adds breathing on its own */
+  breathing?: boolean;
+  /** this plan day may carry rolling (1–2 days a week, see rollerDayIndexes) — default NO */
+  rollerAllowed?: boolean;
 }
+
+/**
+ * Rolling goes into the cool-down on at most two days of the week (owner's decision 25.10.2026): the first training day and the
+ * one in the middle. Deterministic from the plan layout, so it needs no memory of past sessions. `dayIndex` is 0-based.
+ */
+export function rollerDayIndexes(totalDays: number): number[] {
+  if (totalDays <= 1) return [0];
+  return [0, Math.floor(totalDays / 2)];
+}
+export const isRollerDay = (dayIndex: number, totalDays: number) => rollerDayIndexes(totalDays).includes(dayIndex);
 
 const GENERAL_MARCH = "Marsz w miejscu";
 const GENERAL_BIKE = "Rowerek stacjonarny (lekki)";
@@ -97,7 +112,7 @@ function eligible(it: CatalogueWarmupItem, ctx: SelectionContext): boolean {
   const needsBike = (it.equipmentDetail ?? []).some((d) => /rower/i.test(d));
   if (needsBands && !/gum/.test(eq)) return false;
   if (needsBike && !/rower|orbitrek/.test(eq)) return false;
-  // Roller only when the client has one or trains at a gym (the gym has rollers).
+  // Roller only when the client has one or trains at a gym (the gym has rollers); the day limit is applied in selectCooldown.
   const atGym = (ctx.trainingLocation ?? "").trim().toLowerCase() === "siłownia";
   if (it.equipment.includes("Roller") && !atGym && !/roller|wałek/.test(eq)) return false;
   return true;
@@ -143,11 +158,11 @@ const BREATHING = "Oddychanie";
 const isRoller = (i: CatalogueWarmupItem) => i.equipment.includes("Roller");
 
 export function selectCooldown(catalogue: readonly CatalogueWarmupItem[], ctx: SelectionContext): CatalogueWarmupItem[] {
-  const all = catalogue.filter((i) => i.role === "rozciąganie" && eligible(i, ctx)).sort(byRelevance(ctx.dayGroups));
+  const all = catalogue.filter((i) => i.role === "rozciąganie" && eligible(i, ctx) && (ctx.rollerAllowed === true || !isRoller(i))).sort(byRelevance(ctx.dayGroups));
   const breathing = all.filter((i) => i.movementPattern === BREATHING).sort((a, b) => a.id - b.id);
   const pool = all.filter((i) => i.movementPattern !== BREATHING);
-  // Rotate the breathing exercise with the day's groups so consecutive days differ; none when there is no eligible one.
-  const calm = breathing.length ? breathing[ctx.dayGroups.join("|").length % breathing.length] : undefined;
+  // Only when the client switched it on; rotated with the day's groups so consecutive days differ; none when there is no eligible one.
+  const calm = ctx.breathing === true && breathing.length ? breathing[ctx.dayGroups.join("|").length % breathing.length] : undefined;
   const limit = calm ? 3 : 4;
   let rollers = 0;
   const take = (list: CatalogueWarmupItem[], n: number) => {

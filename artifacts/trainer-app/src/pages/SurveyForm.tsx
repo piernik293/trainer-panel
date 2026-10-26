@@ -53,7 +53,9 @@ import {
   ATHLETE_STATUS_OPTIONS,
   SPORT_PERFORMANCE_NEEDS,
   SESSION_DURATION_OPTIONS,
-  EQUIPMENT_OPTIONS,
+  equipmentOptionsFor,
+  JUMP_EXPERIENCE_OPTIONS,
+  showJumpExperience,
   CARDIO_PREFERENCE_OPTIONS,
   CARDIO_FREQUENCY_OPTIONS,
   PREFERRED_CARDIO_TYPE_OPTIONS,
@@ -92,6 +94,7 @@ import {
 const surveySchema = z.object({
   trainingGoal: z.string().optional(),
   athleteStatus: z.enum(["Hobbystycznie", "Zawodowo"]).optional(),
+  jumpExperience: z.string().optional(),
   sportPerformanceNeeds: z.array(z.string()).optional().default([]),
   sportsPriorities: z.array(z.string()).optional().default([]),
   trainingMotivation: z.string().optional(),
@@ -472,6 +475,7 @@ function SurveyReadonlyPreview({
           />
           {/* Fix 1: public label + mapped display value */}
           <Field label="Jak uprawiasz sport?" value={athleteStatusDisplay} />
+          {showJumpExperience(survey.trainingGoal) && <Field label="Doświadczenie ze skokami" value={(survey as { jumpExperience?: string | null }).jumpExperience} />}
           {/* Fix 2: "Potrzeby sportowe" removed — internal field, not a public question */}
           <ArrayField
             label="Priorytety sportowe"
@@ -686,6 +690,7 @@ function SurveyFormBody({
     defaultValues: {
       trainingGoal: (survey?.trainingGoal as string) ?? "",
       athleteStatus: derivedAthleteStatus,
+      jumpExperience: (survey?.jumpExperience as string | null | undefined) ?? undefined,
       sportPerformanceNeeds: (survey?.sportPerformanceNeeds as string[]) ?? [],
       sportsPriorities: (survey?.sportsPriorities as string[]) ?? [],
       trainingMotivation: (survey?.trainingMotivation as string) ?? "",
@@ -958,6 +963,7 @@ function SurveyFormBody({
         isSportGoalSubmit && data.athleteStatus
           ? (ATHLETE_STATUS_TO_API[data.athleteStatus] ?? "Nie")
           : "Nie",
+      jumpExperience: isSportGoalSubmit && data.jumpExperience ? data.jumpExperience : undefined,
       sportPerformanceNeeds: isSportGoalSubmit
         ? (data.sportPerformanceNeeds ?? [])
         : [],
@@ -1138,6 +1144,31 @@ function SurveyFormBody({
                                     <SelectItem key={opt} value={opt}>
                                       {opt}
                                     </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="jumpExperience"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Doświadczenie ze skokami</FormLabel>
+                              <FormDescription className="text-xs">
+                                Decyduje, od jakich skoków zacznie blok pliometryczny. Brak odpowiedzi = jak „Nie”.
+                              </FormDescription>
+                              <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Wybierz...">{field.value || undefined}</SelectValue>
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {JUMP_EXPERIENCE_OPTIONS.map((opt) => (
+                                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
@@ -2107,7 +2138,7 @@ function SurveyFormBody({
                   <FormItem>
                     <FormLabel>Jakim sprzętem dysponuje klient?</FormLabel>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {EQUIPMENT_OPTIONS.map((opt) => (
+                      {equipmentOptionsFor(trainingGoal, trainingLocation).map((opt) => (
                         <label
                           key={opt}
                           className="flex items-center gap-2 text-sm cursor-pointer"

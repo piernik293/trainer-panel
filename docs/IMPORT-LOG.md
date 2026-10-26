@@ -66,3 +66,9 @@ Stan paczek 1–6 (122 wiersze, 24.10.2026 po scaleniu sprzętu): 122/122 przech
 - pominięto „nie”: 0, pusta decyzja: 0, do poprawy: 0, odrzucone: 0, duplikaty: 0, już były: 0
 - kopia bazy: /home/andrzejwysocki769/backups/trainer_panel_przed_importem_schlodzenie-5_202610251807.sql
 
+
+## 2026-10-25T20:51 — import paczki „BAZA-IMPORT-10” (BAZA-IMPORT-10.csv)
+- zaimportowano: 4 (id: 1536, 1537, 1538, 1539)
+- pominięto „nie”: 0, pusta decyzja: 0, do poprawy: 0, odrzucone: 0, duplikaty: 0, już były: 0
+- kopia bazy: /home/andrzejwysocki769/backups/trainer_panel_przed_importem_BAZA-IMPORT-10_202610252051.sql
+

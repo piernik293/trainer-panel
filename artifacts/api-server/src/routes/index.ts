@@ -24,6 +24,7 @@ import subscriptionRouter from "./subscription";
 import trainerProfileRouter from "./trainerProfile";
 import trainingRouter from "./training";
 import stepsRouter from "./steps";
+import clientSettingsRouter from "./clientSettings";
 
 const router: IRouter = Router();
 
@@ -52,6 +53,7 @@ router.use(subscriptionRouter);
 router.use(trainerProfileRouter);
 router.use(trainingRouter);
 router.use(stepsRouter);
+router.use(clientSettingsRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────

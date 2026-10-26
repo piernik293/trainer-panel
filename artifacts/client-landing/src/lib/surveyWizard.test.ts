@@ -208,7 +208,8 @@ describe("question count (before = after)", () => {
     expect(STAGES).toHaveLength(9);
     // beginner / gym / no injury: 22 of the 28 screens (the former yes/no "methods" screen is merged into "Metody do unikania")
     expect(visibleSteps(base)).toHaveLength(22);
-    expect(visibleSteps({ ...base, experienceLevel: "Zaawansowany", trainingLocation: "Dom", injuryStatus: "Tak", trainingGoal: "Cel sportowy", trainingDuration: "5 lat" })).toHaveLength(28);
+    // the longest path (sport goal, home, injury): 29 screens — "jumps" (experience with jumps) exists only with "Cel sportowy"
+    expect(visibleSteps({ ...base, experienceLevel: "Zaawansowany", trainingLocation: "Dom", injuryStatus: "Tak", trainingGoal: "Cel sportowy", trainingDuration: "5 lat" })).toHaveLength(29);
   });
 });
 

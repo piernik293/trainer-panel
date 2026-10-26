@@ -13,7 +13,7 @@ import crypto from "crypto";
 import { and, eq, gt, isNull, or } from "drizzle-orm";
 import { db, clientsTable, surveysTable, surveyInvitesTable } from "@workspace/db";
 import { SubmitPublicSurveyBody } from "@workspace/api-zod";
-import { PRIORITY_BEGINNER_MESSAGE, isBeginnerLevel, resolveEffectiveLevel, EQUIPMENT_CONFLICT_MESSAGE, birthDateError, equipmentConflict, heightError, parseEquipment, weightError } from "@workspace/survey-config";
+import { PRIORITY_BEGINNER_MESSAGE, goalIsSport, isBeginnerLevel, resolveEffectiveLevel, EQUIPMENT_CONFLICT_MESSAGE, birthDateError, equipmentConflict, heightError, parseEquipment, weightError } from "@workspace/survey-config";
 import { logger } from "../lib/logger";
 import {
   assertSubscriptionLimitInTransaction,
@@ -252,6 +252,7 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
     cardioPreference,
     cardioFrequency,
     preferredCardioType,
+    jumpExperience,
     avoidsAdvancedMethods,
     athleteStatus,
     sportDiscipline,
@@ -366,6 +367,7 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
         cardioPreference,
         cardioFrequency,
         preferredCardioType,
+        jumpExperience: goalIsSport(trainingGoal) ? jumpExperience ?? null : null,
         trainingMotivation,
         sportsPriorities: sportsPriorities ?? [],
         avoidsAdvancedMethods,

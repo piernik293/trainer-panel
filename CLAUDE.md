@@ -24,10 +24,10 @@ Szczegółowy plan bieżącego etapu jest w `~/etap-1-uruchomienie-i-stabilizacj
 - API po zmianie kodu wymaga restartu (`scripts/stop-gcp.sh && scripts/dev-gcp.sh`) — działa ze zbudowanego `dist`.
 
 ## Testy, typecheck, build
-- API: `scripts/test-api.sh [pliki…]` — vitest na osobnej bazie `trainer_panel_test`. Nigdy nie uruchamiaj testów API na bazie aplikacji: testy integracyjne tworzą rekordy (fikstury bez trenera blokują start API przy ≥ 2 trenerach). Frontendy: `pnpm --filter @workspace/trainer-app test`, `pnpm --filter @workspace/client-landing test`.
+- API: `scripts/test-api.sh [pliki…]` — vitest na osobnej bazie `trainer_panel_test`. Nigdy nie uruchamiaj testów API na bazie aplikacji: testy integracyjne tworzą rekordy (fikstury bez trenera blokują start API przy ≥ 2 trenerach). Vitest sam odmawia startu, gdy `DATABASE_URL` nie wskazuje bazy `*_test` (`artifacts/api-server/src/lib/testGuard.ts`, test `test-database-guard`); nie omijaj tego zabezpieczenia i nie uruchamiaj `vitest` z wczytanym `.env` — zawsze `scripts/test-api.sh`. Po kompakcji kontekstu ta reguła nadal obowiązuje. Frontendy: `pnpm --filter @workspace/trainer-app test`, `pnpm --filter @workspace/client-landing test`.
 - Test dymny działającej aplikacji (po `scripts/dev-gcp.sh`): `scripts/smoke-gcp.sh` — przepływ zaproszenie → ankieta → plan → portal klienta i izolacja dla trenera A/B, klienta A1/B1 i braku sesji; ~2 s, kod wyjścia 0 = OK. Uruchamiaj po każdej większej zmianie. Konta testowe Clerk dev tworzy sam (`…+clerk_test@example.com`); sprząta swoich klientów.
 - Testy bezpieczeństwa generatora (muszą być zielone po każdej zmianie generatora):
-  `pnpm --filter @workspace/api-server exec vitest run src/__tests__/beginner-safety.test.ts src/services/__tests__/beginnerBalancingPass.test.ts`
+  `scripts/test-api.sh src/__tests__/beginner-safety.test.ts src/services/__tests__/beginnerBalancingPass.test.ts`
 - Typecheck: `pnpm run typecheck`. Build: `pnpm run build`.
 - Jeden ciężki proces naraz (8 GB RAM). Długie komendy zapisuj do logu w pliku i pilnuj `free -h`.
 

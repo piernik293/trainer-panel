@@ -38,6 +38,8 @@ export const EQUIPMENT_OPTIONS = [
   "Kółka gimnastyczne",
   "Roller",
   "Landmine",
+  "Worek bokserski",
+  "Młot i opona",
   "Brak sprzętu",
   "Inny",
 ] as const;

@@ -32,7 +32,11 @@ const RACE_TRAINER = "trainer_profile_test_race";
 const CLIENT_ACCOUNT = "trainer_profile_test_client";
 const OWNER = "trainer_profile_test_owner";
 const CLIENT_EMAIL = "trainer-profile-test-client@example.invalid";
-const ALL = [NEW_TRAINER, RACE_TRAINER, CLIENT_ACCOUNT, OWNER];
+const UNAPPROVED = "trainer_profile_test_unapproved";
+const ALL = [NEW_TRAINER, RACE_TRAINER, CLIENT_ACCOUNT, OWNER, UNAPPROVED];
+// The administrator approves these two accounts (env, like APP_ADMIN_CLERK_IDS); UNAPPROVED is not on the list.
+process.env.TRAINER_CLERK_IDS = `${NEW_TRAINER},${RACE_TRAINER}`;
+delete process.env.TRAINER_SIGNUP_OPEN;
 
 const TRAINER_ENDPOINTS = ["/api/clients", "/api/stats", "/api/survey-invites"];
 
@@ -135,5 +139,45 @@ describe("trainer account and client portal invitations", () => {
     expect(res.status).toBe(403);
     expect(res.body.code).toBe("TRAINER_ACCOUNT");
     expect(res.body.error).toBe("To konto jest kontem trenera. Użyj innego adresu e-mail.");
+  });
+});
+
+describe("only the administrator can make someone a trainer (closed sign-up)", () => {
+  it("a signed-in stranger is refused: 403 TRAINER_NOT_APPROVED and no trainers row", async () => {
+    mockUserId = UNAPPROVED;
+    const res = await request(app).post("/api/trainer/profile");
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("TRAINER_NOT_APPROVED");
+    expect(await trainerRows(UNAPPROVED)).toHaveLength(0);
+    // and still no access to trainer endpoints
+    expect((await request(app).get("/api/clients")).status).toBe(403);
+  });
+  it("an account approved in TRAINER_CLERK_IDS gets the profile; an existing trainer is not affected by the list", async () => {
+    mockUserId = OWNER; // already a trainer, not on the list
+    expect((await request(app).post("/api/trainer/profile")).status).toBe(200);
+    mockUserId = NEW_TRAINER;
+    expect((await request(app).post("/api/trainer/profile")).status).toBe(200);
+    expect(await trainerRows(NEW_TRAINER)).toHaveLength(1);
+  });
+  it("an app administrator may be a trainer; a client account never becomes one", async () => {
+    process.env.APP_ADMIN_CLERK_IDS = UNAPPROVED;
+    try {
+      mockUserId = UNAPPROVED;
+      expect((await request(app).post("/api/trainer/profile")).status).toBe(200);
+    } finally { delete process.env.APP_ADMIN_CLERK_IDS; }
+    process.env.TRAINER_CLERK_IDS += `,${CLIENT_ACCOUNT}`;
+    mockUserId = CLIENT_ACCOUNT;
+    const res = await request(app).post("/api/trainer/profile");
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("CLIENT_ACCOUNT");
+  });
+  it("TRAINER_SIGNUP_OPEN=1 (development / smoke test) opens sign-up; without it the default is closed", async () => {
+    await db.delete(trainersTable).where(eq(trainersTable.clerkUserId, UNAPPROVED));
+    mockUserId = UNAPPROVED;
+    process.env.TRAINER_SIGNUP_OPEN = "1";
+    try { expect((await request(app).post("/api/trainer/profile")).status).toBe(200); }
+    finally { delete process.env.TRAINER_SIGNUP_OPEN; }
+    await db.delete(trainersTable).where(eq(trainersTable.clerkUserId, UNAPPROVED));
+    expect((await request(app).post("/api/trainer/profile")).status).toBe(403);
   });
 });

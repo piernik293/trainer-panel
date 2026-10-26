@@ -5,6 +5,7 @@
 import type { LoggedSet } from "./logic";
 import type { Rating, TrainingDay } from "./types";
 
+/** "warmup" / "cooldown" exist only in runs saved before warm-up and cool-down became separate (see ramp.ts); they load as "exercises" / "finish". */
 export type Stage = "warmup" | "exercises" | "cooldown" | "finish" | "done";
 
 export interface RunState {
@@ -34,15 +35,13 @@ export function newRun(day: TrainingDay, sessionUuid: string, now = new Date()):
     (sets[s.planExerciseId] ??= {})[s.setNumber] = { weightKg: s.weightKg, reps: s.reps, rir: s.rir, skipped: s.skipped };
   }
   return {
-    v: 1, planDayId: day.planDayId, sessionUuid, startedAt: now.toISOString(), stage: "warmup",
+    v: 1, planDayId: day.planDayId, sessionUuid, startedAt: now.toISOString(), stage: "exercises",
     warmupIndex: 0, exerciseIndex: 0, cooldownIndex: 0, sets, skippedExercises: [], rating: null, note: "", endedAt: null, painAreas: [],
   };
 }
 
 export type RunAction =
   | { type: "stage"; stage: Stage }
-  | { type: "warmupNext"; total: number }
-  | { type: "cooldownNext"; total: number }
   | { type: "saveSet"; planExerciseId: number; setNumber: number; value: LoggedSet }
   | { type: "goToExercise"; index: number }
   | { type: "nextExercise"; total: number }
@@ -55,15 +54,11 @@ export type RunAction =
 export function runReducer(s: RunState, a: RunAction): RunState {
   switch (a.type) {
     case "stage": return { ...s, stage: a.stage };
-    case "warmupNext":
-      return s.warmupIndex + 1 >= a.total ? { ...s, stage: "exercises", warmupIndex: 0 } : { ...s, warmupIndex: s.warmupIndex + 1 };
-    case "cooldownNext":
-      return s.cooldownIndex + 1 >= a.total ? { ...s, stage: "finish", cooldownIndex: 0 } : { ...s, cooldownIndex: s.cooldownIndex + 1 };
     case "saveSet":
       return { ...s, sets: { ...s.sets, [a.planExerciseId]: { ...(s.sets[a.planExerciseId] ?? {}), [a.setNumber]: a.value } } };
     case "goToExercise": return { ...s, stage: "exercises", exerciseIndex: Math.max(0, a.index) };
     case "nextExercise":
-      return s.exerciseIndex + 1 >= a.total ? { ...s, stage: "cooldown", cooldownIndex: 0 } : { ...s, exerciseIndex: s.exerciseIndex + 1 };
+      return s.exerciseIndex + 1 >= a.total ? { ...s, stage: "finish" } : { ...s, exerciseIndex: s.exerciseIndex + 1 };
     case "prevExercise": return { ...s, exerciseIndex: Math.max(0, s.exerciseIndex - 1) };
     case "skipExercise":
       return s.skippedExercises.includes(a.planExerciseId) ? s : { ...s, skippedExercises: [...s.skippedExercises, a.planExerciseId] };
@@ -90,7 +85,8 @@ export function loadRun(planDayId: number, storage: Pick<Storage, "getItem"> = s
     const raw = storage.getItem(key(planDayId));
     if (!raw) return null;
     const r = JSON.parse(raw) as RunState;
-    return r?.v === 1 && r.planDayId === planDayId ? r : null;
+    if (r?.v !== 1 || r.planDayId !== planDayId) return null;
+    return { ...r, stage: r.stage === "warmup" ? "exercises" : r.stage === "cooldown" ? "finish" : r.stage };
   } catch { return null; }
 }
 export function saveRun(run: RunState, storage: Pick<Storage, "setItem"> = safeStorage()): void {

@@ -96,8 +96,9 @@ describe("GET /api/exercises/search", () => {
     const ex = await getActiveExercise();
     if (!ex) return; // no exercises in test DB — skip gracefully
 
-    // Use a prefix of the exercise name (first 3 chars)
-    const prefix = ex.name.slice(0, 3);
+    // The full name in UPPER CASE: unambiguous (a 3-letter prefix can match more rows than the search limit) and
+    // it checks the case-insensitive match.
+    const prefix = ex.name.toLocaleUpperCase("pl");
     const res = await req.get(`/api/exercises/search?q=${encodeURIComponent(prefix)}`);
     expect(res.status).toBe(200);
     // At least the known exercise should appear if prefix matches

@@ -29,7 +29,7 @@ import { buildLadderRules, loadLadderRows } from "../services/ladderSelection";
 import { loadBlockedJoints } from "../services/jointExclusion";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
 import { Router, type IRouter } from "express";
-import { eq, sql, and, or, inArray } from "drizzle-orm";
+import { eq, sql, and, or, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   db,
@@ -59,6 +59,7 @@ import {
 } from "../services/exercisePrescriptionService.js";
 import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
 import { mainPlanRoleCondition, isGeneratorSafe, preferMainOverVariants } from "../lib/exerciseRoles";
+import { LANDING_ROLE, SPORT_GOAL, isPlyoExercise, plyoRule, selectPlyoBlock } from "../services/plyoBlock";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   authorizeGeneratedDay,
@@ -293,9 +294,13 @@ router.post(
       new Set<number>(),
       blockedJoints,
     );
+    // Jumps never come out of the ordinary slots: they are used only by the plyometric block (below) or a "plyo" day.
+    const plyoRuleForClient = v0SessionType === "plyo"
+      ? plyoRule({ goal: null, effectiveLevel: null })
+      : plyoRule({ goal: survey.trainingGoal, effectiveLevel: survey.experienceLevel, jumpExperience: survey.jumpExperience });
     // Main exercise by default; a variant only when its main exercise does not fit (equipment of the place, joint, level…).
     const compatibleExercises = preferMainOverVariants(completeExercises.filter((ex) =>
-      ladder.allowed(ex.id) && compatibilityFilter({
+      (v0SessionType === "plyo" || !isPlyoExercise(ex)) && ladder.allowed(ex.id) && compatibilityFilter({
         id: ex.id,
         trainingLocation: ex.trainingLocation ?? [],
         equipment: ex.equipment ?? [],
@@ -707,6 +712,50 @@ router.post(
       `SESSION_COMPLETE: ${v0Result.exercises.length} exercises selected for ${v0SessionType.toUpperCase()}`,
     );
 
+    // ── Plyometric block (blok 5) ─────────────────────────────────────────────
+    // 2–4 jumps right after the warm-up for "Cel sportowy" (by experience), or low-intensity ones for
+    // "Poprawa kondycji" / "Poprawa sprawności" from intermediate. Same safety filters as everything else;
+    // fewer than 2 when the pool is thin — never padded with other exercises.
+    let plyoBlockNote: string | null = null;
+    const plyoBlockIds = new Set<number>();
+    if (plyoRuleForClient.allowed) {
+      const plyoRows = await db
+        .select()
+        .from(exercisesTable)
+        .where(and(
+          eq(exercisesTable.isActive, true),
+          or(eq(exercisesTable.role, LANDING_ROLE), and(isNotNull(exercisesTable.intensity), inArray(exercisesTable.role, ["główne", "pomocnicze"]))),
+        ));
+      const plyoStats = await fetchMuscleStats(plyoRows.map((e) => e.id));
+      const fit = plyoRows.filter((ex) =>
+        !avoidedExerciseIds.has(ex.id) &&
+        computeCompleteness(ex, plyoStats.get(ex.id)).isComplete &&
+        compatibilityFilter({
+          id: ex.id, trainingLocation: ex.trainingLocation ?? [], equipment: ex.equipment ?? [],
+          requiredEquipmentAll: ex.requiredEquipmentAll ?? [], jointStressAreas: ex.jointStressAreas,
+        }),
+      );
+      const chosen = selectPlyoBlock(fit, plyoRuleForClient, survey.experienceLevel, alternativeIndex);
+      if (chosen.length > 0) {
+        const items = chosen.map((ex) => {
+          plyoBlockIds.add(ex.id);
+          return {
+            id: ex.id, name: ex.name, mainMuscleGroup: ex.mainMuscleGroup ?? "", matchingTargets: [] as string[],
+            equipment: ex.equipment ?? [], trainingLocation: ex.trainingLocation ?? [], score: 0,
+            matchReasons: ["Blok pliometryczny"], warnReasons: [], isAvoided: false,
+            exerciseType: ex.exerciseType ?? null, neurologicalFatigue: ex.neurologicalFatigue ?? null,
+            learningDifficulty: ex.learningDifficulty ?? null, exercisePriority: ex.exercisePriority ?? null,
+            movementPattern: ex.movementPattern ?? null,
+            movementCategoryKey: normalizeMovementCategory(ex.movementPattern ?? null, ex.movementCategory ?? null),
+            secondaryMuscleGroups: ex.secondaryMuscleGroups ?? [], suitableForNoActivity: ex.suitableForNoActivity ?? null,
+          };
+        });
+        v0Result = { ...v0Result, exercises: [...items, ...v0Result.exercises] as typeof v0Result.exercises };
+        plyoBlockNote = `Blok pliometryczny (${chosen.length} ćw.) ustawiono po rozgrzewce — cel: ${survey.trainingGoal}` +
+          (survey.trainingGoal === SPORT_GOAL ? `, doświadczenie ze skokami: ${survey.jumpExperience ?? "brak odpowiedzi (jak „Nie”)"}.` : ", tylko niska intensywność.");
+      }
+    }
+
     // ── Explanation block (Stage G — Part 4) ─────────────────────────────────
     //
     // Compact, trainer-facing explanation of what was selected, what was blocked,
@@ -817,7 +866,8 @@ router.post(
 
     let enrichedExercises = v0Result.exercises
       .map((ex) => {
-        const exerciseClass = deriveExerciseClassForOutput(ex);
+        // The plyometric block is always the explosive primer, whatever the exercise is called.
+        const exerciseClass = plyoBlockIds.has(ex.id) ? ("plyometric_power" as const) : deriveExerciseClassForOutput(ex);
         // Part 6: Pompki that survive into a full-gym plan receive secondary_compound
         // prescription rather than main_compound — they are fallbacks, not anchors.
         const isBodyweightInGym =
@@ -1039,6 +1089,7 @@ router.post(
     );
     const hasCore      = enrichedExercises.some((e) => e.exerciseClass === "core");
 
+    if (plyoBlockNote) generatorNotes.push(plyoBlockNote);
     if (hasPlyo) {
       generatorNotes.push(
         "Element eksplozywny ustawiono na początku sesji ze względu na cel sportowy / dynamikę.",

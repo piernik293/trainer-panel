@@ -277,6 +277,27 @@ export function goalIsSport(trainingGoal: string | undefined): boolean {
   return trainingGoal === "Cel sportowy";
 }
 
+// ─── Jump experience (only with the goal "Cel sportowy") ──────────────────────
+
+export const JUMP_EXPERIENCE_QUESTION = "Czy masz doświadczenie ze skokami (np. skakanie na skrzynię, przeskoki)?";
+export const JUMP_EXPERIENCE_OPTIONS = [
+  "Nie — dopiero zaczynam",
+  "Trochę — robiłem/am okazjonalnie",
+  "Tak — robię regularnie",
+] as const;
+export type JumpExperienceCode = "nie" | "troche" | "tak";
+
+/** The question is asked only with the goal "Cel sportowy". */
+export function showJumpExperience(trainingGoal: string | undefined | null): boolean {
+  return trainingGoal === "Cel sportowy";
+}
+
+/** Stored answer (one of JUMP_EXPERIENCE_OPTIONS) → code; anything else (including no answer) → null. */
+export function jumpExperienceCode(value: string | undefined | null): JumpExperienceCode | null {
+  const i = JUMP_EXPERIENCE_OPTIONS.findIndex((o) => o === value);
+  return i === 0 ? "nie" : i === 1 ? "troche" : i === 2 ? "tak" : null;
+}
+
 export function isBeginnerLevel(experienceLevel: string | undefined): boolean {
   return (
     experienceLevel === "Brak aktywności fizycznej" ||
@@ -303,8 +324,61 @@ export function showTrainingDurationField(
   );
 }
 
-export function showEquipmentField(trainingLocation: string | undefined): boolean {
-  return trainingLocation === "Dom" || trainingLocation === "Siłownia plenerowa";
+/** Goals for which the interview offers the boxing bag and the sledgehammer-and-tyre set (owner's decision 25.10.2026). */
+export const SPORT_EQUIPMENT_GOALS: readonly string[] = ["Poprawa sprawności", "Cel sportowy"];
+export const BOXING_BAG = "Worek bokserski";
+export const HAMMER_AND_TYRE = "Młot i opona";
+
+const wantsSportEquipment = (goal: string | undefined) => !!goal && SPORT_EQUIPMENT_GOALS.includes(goal);
+
+/**
+ * The equipment screen is for home and the outdoor gym. A gym has everything, so there it appears only to tick the
+ * hammer-and-tyre set, and only for the two sport goals.
+ */
+export function showEquipmentField(trainingLocation: string | undefined, trainingGoal?: string): boolean {
+  if (trainingLocation === "Dom" || trainingLocation === "Siłownia plenerowa") return true;
+  return trainingLocation === "Siłownia" && wantsSportEquipment(trainingGoal);
+}
+
+/**
+ * Options of the equipment screen. The boxing bag only at home (a gym already has one by default) and the hammer-and-tyre set at
+ * any place — both only for "Poprawa sprawności" and "Cel sportowy"; with other goals both are hidden.
+ * At a gym only the hammer-and-tyre set is offered (the rest of the gym is assumed).
+ */
+export function equipmentOptionsFor(trainingGoal: string | undefined, trainingLocation: string | undefined): string[] {
+  const base: string[] = [...EQUIPMENT_OPTIONS];
+  if (!wantsSportEquipment(trainingGoal)) return base;
+  if (trainingLocation === "Siłownia") return [HAMMER_AND_TYRE];
+  const withoutNone = base.filter((o) => o !== "Brak sprzętu");
+  const extra = trainingLocation === "Dom" ? [BOXING_BAG, HAMMER_AND_TYRE] : [HAMMER_AND_TYRE];
+  return [...withoutNone, ...extra, "Brak sprzętu"];
+}
+
+// ─── Hints under the equipment list (short, for someone who is just starting) ─
+
+export const NO_EQUIPMENT_HOME_HINT =
+  "Bez sprzętu część ćwiczeń nie będzie możliwa, a efekty będą wolniejsze. Do pełnego treningu wystarczy guma oporowa, a para hantli przyspieszy postępy.";
+export const BANDS_ONLY_HOME_HINT =
+  "Guma wystarczy na start. Para hantli pozwoli bezpiecznie zwiększać obciążenie, gdy ćwiczenia staną się łatwe.";
+
+/**
+ * Neutral information under the equipment list (never blocks going on):
+ *  - home and "Brak sprzętu" → NO_EQUIPMENT_HOME_HINT;
+ *  - home, only a resistance band ticked, and the effective level is "Brak aktywności" or "Początkujący" → BANDS_ONLY_HOME_HINT.
+ *    When the level is not known on this screen yet, everyone with only a band sees it.
+ */
+export function equipmentHint(opts: {
+  trainingLocation: string | undefined;
+  items: readonly string[];
+  other?: string;
+  effectiveLevel?: string | null;
+}): string | null {
+  if (opts.trainingLocation !== "Dom") return null;
+  const hasOther = !!(opts.other ?? "").trim();
+  if (opts.items.includes("Brak sprzętu") && opts.items.length === 1 && !hasOther) return NO_EQUIPMENT_HOME_HINT;
+  const onlyBands = opts.items.length === 1 && opts.items[0] === "Gumy oporowe" && !hasOther;
+  if (onlyBands && (!opts.effectiveLevel || isBeginnerLevel(opts.effectiveLevel))) return BANDS_ONLY_HOME_HINT;
+  return null;
 }
 
 export function showCardioRecommendation(trainingGoal: string | undefined): boolean {
@@ -339,7 +413,7 @@ export function parseEquipment(raw: string | undefined | null): {
     .split(",")
     .map((p) => p.trim())
     .filter(Boolean);
-  const knownSet = new Set<string>(EQUIPMENT_OPTIONS);
+  const knownSet = new Set<string>([...EQUIPMENT_OPTIONS, BOXING_BAG, HAMMER_AND_TYRE]);
   const items = parts.filter((p) => knownSet.has(p));
   const other = parts
     .filter((p) => !knownSet.has(p))

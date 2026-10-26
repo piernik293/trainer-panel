@@ -1,6 +1,34 @@
-# Moduł kondycyjny — projekt (25.10.2026)
+# Moduł kondycyjny — projekt (25.10.2026, zaktualizowany po decyzjach tego samego dnia)
 
 **Status: tylko projekt, nic nie zbudowano. Punkt STOP-5 — czeka na akceptację właściciela.** Zawiera model danych (STOP-2 — migracje dopiero po zgodzie), ekrany i reguły bezpieczeństwa. Nie obiecujemy efektów zdrowotnych; kondycja to plan wysiłku i zapis tego, co klient zrobił.
+
+## 0. Zatwierdzone: moduł nie jest nowym profilem, tylko elementami planu przypisanymi do celu
+Plan podopiecznego składa się z **typów elementów** (trening oporowy, pliometria, kondycja, kroki). Cel klienta określa, które elementy i w jakiej ilości. Tabela zatwierdzona przez właściciela (6 celów z bazy):
+
+| Cel | Trening oporowy | Pliometria | Kondycja | Kroki |
+|---|---|---|---|---|
+| Zwiększenie siły | główny, ciężkie wielostawowe | nie (trener może dodać) | opcjonalnie 1×/tydz., lekka regeneracyjna | opcjonalnie |
+| Budowa sylwetki | główny | nie | opcjonalnie 1×/tydz. | opcjonalnie |
+| Redukcja tkanki tłuszczowej | tak | nie | 1–2×/tydz. | tak, z celem |
+| Poprawa kondycji | tak, całe ciało, obwody | tylko niska, od Ś | 2–3×/tydz., główny element | tak |
+| Poprawa sprawności | tak, całe ciało | tylko niska, od Ś | 1–2×/tydz. marszobieg → bieg/interwały | tak |
+| Cel sportowy | tak | wg doświadczenia (zbudowane 25.10, blok 5) | 1–2×/tydz. interwały i sprinty | opcjonalnie |
+
+**Poziom ogranicza formę:** BA — tylko marsz / marszobieg + kroki; P — marszobieg → bieg ciągły, interwały łagodne; Ś/Z — pełny zakres. **Ból i stawy wykluczają też formy kondycyjne** (np. bieg przy bólu kolana → rower, marsz; ta sama lista stawów i okno 30 dni co w generatorze: `jointExclusion`). **Kilka celów:** priorytet 1 decyduje o głównym elemencie; pozostałe tylko dodają elementy opcjonalne z tabeli (bez podwajania częstotliwości — przy konflikcie obowiązuje mniejsza). **Pierwsza jednostka BA/P:** 20–25 min, marsz 2 min / trucht 1 min × 6–8, skala odczuwalnego wysiłku (RPE, skala z pkt 6).
+
+Już zbudowane: kroki wpisywane ręcznie (blok 6 poprzedniego etapu) i blok pliometryczny (blok 5 tego etapu). Moduł kondycyjny dołoży trzeci typ elementu, korzystając z tych samych mechanizmów (portal „Dziś”, kolejka offline, izolacja klient/trener).
+
+### 0.1 Model danych (rozszerzenie pkt 5)
+- `plan_element_rules` (słownik, seed, edytowalny przez administratora): cel × typ elementu × poziom → `mode` (`wymagany` / `opcjonalny` / `brak`), `perWeekMin`, `perWeekMax`, `allowedMethods[]`. To zamiast zaszywania tabeli celów w kodzie.
+- `conditioning_plans.goal_snapshot` (cel w chwili układania planu) i `conditioning_sessions_planned.element_rule_id` — żeby było wiadomo, z czego wynika częstotliwość.
+- Reguły poziomu i stawów jako czysta funkcja `allowedConditioningTools(level, blockedJoints)`; testy tabelaryczne cel × poziom × staw.
+
+### 0.2 Ekrany (dodatek do pkt 6)
+- Panel trenera: w ułożonym planie lista elementów „z celu” (z oznaczeniem, dlaczego: „Poprawa kondycji → 2–3×/tydz.”), możliwość dodania/usunięcia elementu ręcznie (ostrzeżenie, nie blokada, poza regułami BA/P).
+- Portal: „Dziś” pokazuje elementy dnia jako osobne kafelki (jak rozgrzewka / trening / schłodzenie); kafelek kondycji dopiero po akceptacji.
+
+### 0.3 Testy
+Tabela cel × poziom × staw → dozwolone formy i częstotliwość; BA nigdy interwały/tempo/skakanka; kilka celów → priorytet 1; pierwsza jednostka BA/P = 20–25 min i marsz 2 / trucht 1; izolacja klient/trener A/B jak przy krokach.
 
 ## 1. Cel i zasady
 - Uzupełnienie planu siłowego (FBW) o prosty trening kondycyjny: marszobieg, bieg ciągły, interwały, tempo, fartlek.
@@ -20,7 +48,7 @@
 
 ## 3. Progresja tygodniowa (szablon, trener może zmienić)
 - **Zasada:** w tygodniu zwiększamy tylko jedną rzecz (czas albo liczbę odcinków albo intensywność), o ok. 10% łącznego czasu; co 4. tydzień „lżejszy” (−30%).
-- **Marszobieg (BA/P), 3 jednostki/tydz.:** tyg. 1–2: 1 min trucht / 2 min marsz × 6; tyg. 3–4: 2/2 × 6; tyg. 5–6: 3/2 × 5; tyg. 7–8: 5/2 × 4; tyg. 9+: bieg ciągły 15–20 min w strefie rozmownej.
+- **Marszobieg (BA/P), 3 jednostki/tydz.:** tyg. 1–2: marsz 2 min / trucht 1 min × 6–8 (20–25 min); tyg. 3–4: 2/2 × 6; tyg. 5–6: 3/2 × 5; tyg. 7–8: 5/2 × 4; tyg. 9+: bieg ciągły 15–20 min w strefie rozmownej.
 - **Bieg ciągły:** start 15 min → +2–3 min co tydzień do 30–40 min; długi bieg raz w tygodniu.
 - **Interwały (Ś/Z), 1×/tydz.:** 6 × 1 min (RPE 7–8) / 2 min lekko → +1 odcinek co tydzień do 10; potem odcinki 2 min.
 - **Tempo (Ś/Z), 1×/tydz.:** 10 min → 20–30 min.
@@ -61,8 +89,9 @@
 3. Panel: szablony metod i siatka tygodnia; kolizje z FBW.
 4. Później: strefy tętna / zegarki (wymaga aplikacji natywnej — jak kroki w ROADMAP).
 
-## 9. Do decyzji właściciela
-- Czy kondycja ma własny plan (`conditioning_plans`), czy jest elementem planu siłowego (dodatkowe „dni”)?
-- Czy skala RPE wystarcza na start, czy od razu dodać test rozmowy jako osobne pytanie po treningu?
-- Zakres progresji: szablony jak w pkt 3 czy inne tempo dla początkujących.
-- Czy pokazywać klientowi tygodniowy cel czasu (np. 90 min) obok celu kroków.
+## 9. Do decyzji właściciela (max 5, z rekomendacją)
+1. **Własny plan kondycyjny czy dodatkowe „dni” w planie siłowym?** Rekomendacja: własna tabela planu kondycyjnego (pkt 5), ale pokazywana razem z planem siłowym w „Dziś” — prostsza progresja i brak wpływu na objętość siłową.
+2. **Czy skala RPE wystarcza na start?** Rekomendacja: tak; test rozmowy jako podpowiedź tekstowa przy skali, bez osobnego pytania.
+3. **Tempo progresji dla początkujących: szablony z pkt 3 (marsz 2 min / trucht 1 min × 6–8 → 3/2 → 5/2 → bieg ciągły po ok. 8 tyg.)?** Rekomendacja: tak, z tygodniem lżejszym co 4. tydzień.
+4. **Czy tabela celów (pkt 0) ma być w bazie jako edytowalny słownik (`plan_element_rules`)?** Rekomendacja: tak — zmiana częstotliwości bez wdrażania kodu, zmiany tylko przez administratora.
+5. **Czy pokazywać klientowi tygodniowy cel czasu kondycji (np. 90 min) obok celu kroków?** Rekomendacja: nie na start — jeden cel tygodniowy na ekranie, pierwszy: liczba jednostek.
