@@ -45,10 +45,17 @@ describe("Unmapped-muscle guard", () => {
 
     const mappedMuscleIds = new Set(mappedRows.map((r) => r.specificMuscleId));
 
+    // Entries with dbName are also matched by name (ids of muscles added later can differ between databases).
+    const allMuscles = await db.select({ id: specificMusclesTable.id, name: specificMusclesTable.name }).from(specificMusclesTable);
+    const excludedIds = new Set<number>(INTENTIONALLY_EXCLUDED_MUSCLE_ID_SET);
+    for (const e of INTENTIONALLY_EXCLUDED_MUSCLES) {
+      if (e.dbName) for (const m of allMuscles) if (m.name === e.dbName) excludedIds.add(m.id);
+    }
+
     // 3. Determine which high-coefficient muscles are neither mapped nor excluded.
     const unmappedAndUnexplained: number[] = [];
     for (const muscleId of highCoeffMuscleIds) {
-      if (!mappedMuscleIds.has(muscleId) && !INTENTIONALLY_EXCLUDED_MUSCLE_ID_SET.has(muscleId)) {
+      if (!mappedMuscleIds.has(muscleId) && !excludedIds.has(muscleId)) {
         unmappedAndUnexplained.push(muscleId);
       }
     }
@@ -97,10 +104,13 @@ describe("Unmapped-muscle guard", () => {
     if (INTENTIONALLY_EXCLUDED_MUSCLES.length === 0) return;
 
     const nameRows = await db
-      .select({ id: specificMusclesTable.id })
+      .select({ id: specificMusclesTable.id, name: specificMusclesTable.name })
       .from(specificMusclesTable);
 
     const existingIds = new Set(nameRows.map((r) => r.id));
+    for (const e of INTENTIONALLY_EXCLUDED_MUSCLES) {
+      if (e.dbName && nameRows.some((r) => r.name === e.dbName)) existingIds.add(e.muscleId);
+    }
 
     for (const entry of INTENTIONALLY_EXCLUDED_MUSCLES) {
       expect(

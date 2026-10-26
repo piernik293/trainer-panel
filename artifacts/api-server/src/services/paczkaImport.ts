@@ -127,7 +127,7 @@ export const IMPORT_PATTERNS = new Set([
 ]);
 export const IMPORT_JOINTS = new Set(["Kolano", "Biodro", "Plecy — dół", "Bark", "Łokieć", "Nadgarstek"]);
 
-/** Our 28 specific muscles (specific_muscles.name → broad category), exactly as in catalogueSeed.ts. */
+/** Our 30 specific muscles (28 from the seed + 2 from migration 0034) (specific_muscles.name → broad category), exactly as in catalogueSeed.ts. */
 export const SPECIFIC_MUSCLES: ReadonlyMap<string, string> = new Map([
   ["Mięsień piersiowy większy", "Klatka piersiowa"], ["Mięsień piersiowy mniejszy", "Klatka piersiowa"],
   ["Mięsień najszerszy grzbietu", "Plecy"], ["Mięsień czworoboczny grzbietu", "Plecy"], ["Mięśnie równoległoboczne", "Plecy"],
@@ -141,6 +141,8 @@ export const SPECIFIC_MUSCLES: ReadonlyMap<string, string> = new Map([
   ["Mięsień czworogłowy uda", "Mięśnie czworogłowe uda"], ["Mięśnie kulszowo-goleniowe", "Mięśnie dwugłowe uda"],
   ["Mięśnie przywodziciele uda", "Przywodziciele"], ["Mięśnie odwodziciele uda", "Odwodziciele"],
   ["Mięsień brzuchaty łydki", "Łydki"], ["Mięsień płaszczkowaty", "Łydki"],
+  // dodane migracją 0034 (26.10.2026)
+  ["Mięsień piszczelowy przedni", "Łydki"], ["Mięsień zębaty przedni", "Klatka piersiowa"],
 ]);
 export const PRIMARY_COEFFICIENT = 1;
 export const SECONDARY_COEFFICIENT = 0.5;

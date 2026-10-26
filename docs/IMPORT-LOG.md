@@ -72,3 +72,9 @@ Stan paczek 1–6 (122 wiersze, 24.10.2026 po scaleniu sprzętu): 122/122 przech
 - pominięto „nie”: 0, pusta decyzja: 0, do poprawy: 0, odrzucone: 0, duplikaty: 0, już były: 0
 - kopia bazy: /home/andrzejwysocki769/backups/trainer_panel_przed_importem_BAZA-IMPORT-10_202610252051.sql
 
+
+## 2026-10-26T09:28 — import paczki „BAZA-IMPORT-OPENGYM” (BAZA-IMPORT-OPENGYM.csv)
+- zaimportowano: 58 (id: 1594, 1595, 1596, 1597, 1598, 1599, 1600, 1601, 1602, 1603, 1604, 1605, 1606, 1607, 1608, 1609, 1610, 1611, 1612, 1613, 1614, 1615, 1616, 1617, 1618, 1619, 1620, 1621, 1622, 1623, 1624, 1625, 1626, 1627, 1628, 1629, 1630, 1631, 1632, 1633, 1634, 1635, 1636, 1637, 1638, 1639, 1640, 1641, 1642, 1643, 1644, 1645, 1646, 1647, 1648, 1649, 1650, 1651)
+- pominięto „nie”: 0, pusta decyzja: 0, do poprawy: 0, odrzucone: 0, duplikaty: 0, już były: 0
+- kopia bazy: /home/andrzejwysocki769/backups/trainer_panel_przed_importem_BAZA-IMPORT-OPENGYM_202610260928.sql
+
