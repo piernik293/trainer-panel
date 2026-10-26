@@ -186,3 +186,7 @@
 
 ### 26.10.2026 — #1611 trudność nauki 2 (migracja 0036, pg_dump `przed-0036-*`)
 - Martwy ciąg rumuński z gumą oporową: `learningDifficulty` 3 → 2 (decyzja właściciela: lekka guma, nauka zawiasu, ma być dla nieaktywnych). Plik/generator zaktualizowane. Dziury bez kandydata (dom bez sprzętu: pchanie pionowe BA/P, przyciąganie pionowe BA, zgięcie łokcia BA/P, anty-rotacja BA) zostają: generator pomija wzorzec, trener widzi ostrzeżenie o braku sprzętu; nowych ćwiczeń nie dodajemy.
+
+## 26.10.2026 — blok 7: pakiety i licznik sesji (gałąź `feature/pakiety-sesje`, z `main`)
+- Migracja 0051 (`client_packages`, `package_sessions`; najwyżej jeden aktywny pakiet na podopiecznego; cofnięcie sesji = oznaczenie, nie usunięcie). API: `routes/packages.ts`, reguły przypomnień `services/packages.ts` (≤ 2 sesje, ważność ≤ 7 dni). Panel: karta „Pakiet sesji” w profilu podopiecznego; portal: kafelek „Zostało X sesji” (tylko gdy trener pozwolił, bez ceny). Bez płatności online.
+- Testy: `packages.test.ts` (10: reguły, izolacja trenerów, limit i wyścig ostatniej sesji, widok klienta bez ceny), `PackageTile.test.tsx` (6). Pełna weryfikacja: API 2597/2597, bezpieczeństwo 101/101, panel 765/765, portal 234/234, typecheck, build, test dymny 131/0.
