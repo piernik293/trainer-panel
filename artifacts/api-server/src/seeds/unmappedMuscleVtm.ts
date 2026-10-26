@@ -48,6 +48,11 @@ export interface IntentionalExclusion {
   muscleId: number;
   /** Human-readable name for diagnostics. */
   muscleName: string;
+  /**
+   * Exact specific_muscles.name. Entries added after the first 28 muscles (migration 0034) are matched by name as well as by id,
+   * because their ids are assigned by the sequence and can differ between databases (the test database has an extra row).
+   */
+  dbName?: string;
   /** Why no current volume target is suitable. */
   reason: string;
   /** Which target should eventually receive this muscle once created. */
@@ -79,6 +84,24 @@ export const INTENTIONALLY_EXCLUDED_MUSCLES: IntentionalExclusion[] = [
       "volume without distorting the biceps or triceps ceilings. Exercises like wrist " +
       "extensions and reverse curls carry sm16 at high coefficients.",
     futureTarget: "Dedicated 'Przedramiona' (Forearm) target (same as sm15)",
+  },
+  {
+    muscleId: 29,
+    dbName: "Mięsień piszczelowy przedni",
+    muscleName: "Mięsień piszczelowy przedni (Tibialis anterior)",
+    reason:
+      "Front of the shin: not a calf muscle, so it must not count toward the calf (triceps surae) target. " +
+      "Only the tibialis raise carries it as the primary muscle.",
+    futureTarget: "Dedicated 'Przód podudzia' (Shin) target",
+  },
+  {
+    muscleId: 30,
+    dbName: "Mięsień zębaty przedni",
+    muscleName: "Mięsień zębaty przedni (Serratus anterior)",
+    reason:
+      "Scapular protraction muscle: the chest target holds only the pectoralis major. Scapular push-ups and push-up plus " +
+      "carry it as the primary muscle; their pectoral work still counts through the secondary coefficients.",
+    futureTarget: "Dedicated 'Stabilizacja łopatki' (Scapular stability) target",
   },
 ];
 

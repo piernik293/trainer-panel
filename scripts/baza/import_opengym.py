@@ -16,6 +16,7 @@ M = {  # skróty mięśni szczegółowych
  "RA": "Mięsień prosty brzucha", "OBL": "Mięśnie skośne brzucha", "TA": "Mięsień poprzeczny brzucha",
  "GMAX": "Mięsień pośladkowy wielki", "GMED": "Mięsień pośladkowy średni", "QUAD": "Mięsień czworogłowy uda", "HAM": "Mięśnie kulszowo-goleniowe",
  "ADD": "Mięśnie przywodziciele uda", "ABD": "Mięśnie odwodziciele uda", "GAS": "Mięsień brzuchaty łydki", "SOL": "Mięsień płaszczkowaty",
+ "TIB": "Mięsień piszczelowy przedni", "SA": "Mięsień zębaty przedni",
 }
 def mm(s): return ", ".join(M[x] for x in s.split()) if s else ""
 
@@ -73,19 +74,19 @@ r("3124", "Wyciskanie gumy oporowej siedząc", "Band Seated Chest Press", P, "g�
   "Usiądź prosto na krześle lub ławce, gumę przeprowadź za plecami pod pachami. Wypchnij ręce przed siebie i wróć powoli. Oparte plecy ułatwiają utrzymanie pozycji.",
   "Plecy oparte, łopatki lekko ściągnięte. Łatwiej: lżejsza guma. Trudniej: mocniejsza guma.", "Garbienie się, szarpanie, unoszenie barków.",
   "Sprawdź stan gumy przed ćwiczeniem.", 2, parent="=OG_1254", pos="siedząc")
-r("3021", "Pompki łopatkowe", "Scapular Push-Up", P, "pomocnicze", BW, "Aktywacja", "Klatka piersiowa", "PMN", "PM TRI DELF", "Nadgarstek, Bark", "sprawność, sylwetka",
+r("3021", "Pompki łopatkowe", "Scapular Push-Up", P, "pomocnicze", BW, "Aktywacja", "Klatka piersiowa", "SA", "PMN PM TRI DELF", "Nadgarstek, Bark", "sprawność, sylwetka",
   "Przyjmij pozycję podporu przodem na prostych rękach. Nie zginając łokci, opuść klatkę między łopatkami, a potem wypchnij się w górę, rozsuwając łopatki. To mały ruch samych łopatek.",
   "Ręce proste, ruch tylko w łopatkach. Łatwiej: na kolanach lub o ścianę. Trudniej: pompki plus.", "Zginanie łokci, opadające biodra, zbyt szybkie tempo.",
   "Ruch jest bardzo mały; skup się na kontroli, nie na liczbie powtórzeń.", 2)
-r("3011", "Pompki łopatkowe na podwyższeniu", "Incline Scapular Push-Up", P, "pomocnicze", BW, "Aktywacja", "Klatka piersiowa", "PMN", "PM TRI DELF", "Nadgarstek, Bark", "sprawność, sylwetka",
+r("3011", "Pompki łopatkowe na podwyższeniu", "Incline Scapular Push-Up", P, "pomocnicze", BW, "Aktywacja", "Klatka piersiowa", "SA", "PMN PM TRI DELF", "Nadgarstek, Bark", "sprawność, sylwetka",
   "Oprzyj dłonie na stabilnym podwyższeniu (ławka, stół). Ciało w jednej linii, ręce proste. Opuść klatkę między łopatkami i wypchnij ją w górę bez zginania łokci.",
   "Im wyższe podwyższenie, tym łatwiej. Łatwiej: wyższe podparcie. Trudniej: pompki łopatkowe na podłodze.", "Zginanie łokci, wygięte plecy, pośpiech.",
   "Wybierz stabilne podparcie, które się nie przesunie.", 1, parent="=OG_3021", pos="na podwyższeniu")
-r("3145", "Pompki plus", "Push-Up Plus", S, "pomocnicze", BW, "Pchanie poziome", "Klatka piersiowa", "PM", "PMN TRI DELF", "Nadgarstek, Bark, Łokień".replace("Łokień", "Łokieć"), "sylwetka, sprawność",
+r("3145", "Pompki plus", "Push-Up Plus", S, "pomocnicze", BW, "Pchanie poziome", "Klatka piersiowa", "SA", "PM PMN TRI DELF", "Nadgarstek, Bark, Łokień".replace("Łokień", "Łokieć"), "sylwetka, sprawność",
   "W pozycji pompki opuść klatkę, wypchnij się w górę, a na końcu dodatkowo rozsuń łopatki, wypychając górną część pleców ku górze. Wróć do kolejnego powtórzenia.",
   "Ciało w jednej linii, na górze plecy lekko zaokrąglone przez rozsunięcie łopatek. Łatwiej: na kolanach. Trudniej: nogi na podwyższeniu.",
   "Opadające biodra, brak końcowego wypchnięcia, niepełny ruch.", "Zacznij od małej liczby powtórzeń.", 3)
-r("1396", "Unoszenie palców stóp (tibialis raise)", "Tibialis Raise", P, "pomocnicze", BW, "Wspięcie na palce", "Łydki", "SOL", "", "Kolano", "sprawność",
+r("1396", "Unoszenie palców stóp (tibialis raise)", "Tibialis Raise", P, "pomocnicze", BW, "Wspięcie na palce", "Łydki", "TIB", "", "Kolano", "sprawność",
   "Stań plecami przy ścianie, stopy 30–40 cm od niej, pięty na podłodze. Unieś palce stóp w górę jak najwyżej, ściągając stopy ku goleniom, i opuść powoli. Ćwiczy przód podudzia (piszczel).",
   "Pośladki i plecy przy ścianie, ruch tylko w stopach. Łatwiej: bliżej ściany. Trudniej: dalej od ściany lub jedną stopą.", "Odrywanie pleców od ściany, zginanie kolan, szybki ruch.",
   "Zrób kilka powtórzeń na rozgrzewkę i zwiększaj zakres stopniowo.", 1)

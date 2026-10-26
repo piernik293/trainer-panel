@@ -23,6 +23,7 @@ import {
 } from "@workspace/db";
 import { provisionTrainer } from "../middlewares/requireAuth";
 import { seedWarmupCatalogue } from "../seeds/warmupCatalogueSeed";
+import { startOfWeek } from "../services/training";
 
 const TA = "train_test_trainer_a", TB = "train_test_trainer_b";
 const CA1 = "train_test_client_a1", CA2 = "train_test_client_a2", CB1 = "train_test_client_b1";
@@ -236,7 +237,13 @@ describe("finish, summary, previous result and record", () => {
     const s = await start(day1);
     const f = await request(app).post(`/api/client-portal/training/sessions/${s.body.id}/finish`).send({ status: "aborted" });
     expect(f.body.status).toBe("aborted");
-    expect(f.body.week.done).toBe(2); // the two completed ones
+    const [aborted] = await db.select().from(workoutSessionsTable).where(eq(workoutSessionsTable.id, s.body.id));
+    // Only the two COMPLETED sessions count (the aborted one never does). The test moves their dates back by 1–2 days,
+    // so on a Monday they fall into the previous week: the expectation follows the real week boundary instead of a fixed 2.
+    const done = await db.select().from(workoutSessionsTable).where(eq(workoutSessionsTable.status, "completed"));
+    const thisWeek = done.filter((r) => r.clientId === (aborted.clientId) && r.completedAt && r.completedAt >= startOfWeek(new Date())).length;
+    expect(f.body.week.done).toBe(thisWeek);
+    expect(done.filter((r) => r.clientId === aborted.clientId)).toHaveLength(2);
     const again = await start(day1);
     expect(again.status).toBe(201); // the day is not blocked by the aborted attempt
     expect(again.body.id).not.toBe(s.body.id);

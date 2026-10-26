@@ -165,10 +165,15 @@ describe("duplicate detection at import time", () => {
 });
 
 describe("lista mięśni szczegółowych", () => {
-  it("SPECIFIC_MUSCLES = 28 mięśni z katalogu", () => {
+  it("SPECIFIC_MUSCLES = 28 mięśni z katalogu + 2 z migracji 0034 (piszczelowy przedni, zębaty przedni)", () => {
     const seed = readFileSync(join(__dirname, "..", "seeds", "catalogueSeed.ts"), "utf8");
     const names = [...seed.matchAll(/\((\d+),'([^']+)','([^']+)'\)/g)].filter((m) => Number(m[1]) <= 28).slice(0, 28);
-    expect(new Map(names.map((m) => [m[2], m[3]]))).toEqual(SPECIFIC_MUSCLES);
+    const fromSeed = new Map(names.map((m) => [m[2], m[3]]));
+    expect(fromSeed.size).toBe(28);
+    const migration = readFileSync(join(__dirname, "..", "..", "..", "..", "lib", "db", "migrations", "0034_miesnie_piszczelowy_zebaty.sql"), "utf8");
+    const added = [...migration.matchAll(/\('([^']+)', '([^']+)'\)/g)].map((m) => [m[1], m[2]] as [string, string]);
+    expect(added).toEqual([["Mięsień piszczelowy przedni", "Łydki"], ["Mięsień zębaty przedni", "Klatka piersiowa"]]);
+    expect(new Map([...fromSeed, ...added])).toEqual(SPECIFIC_MUSCLES);
   });
 });
 

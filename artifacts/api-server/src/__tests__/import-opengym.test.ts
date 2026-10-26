@@ -73,6 +73,17 @@ describe("bezpieczeństwo: niezweryfikowane, tylko Ś/Z", () => {
   });
 });
 
+describe("mięśnie główne wg decyzji (migracja 0034)", () => {
+  it("tibialis raise → piszczelowy przedni; pompki łopatkowe (i na podwyższeniu) oraz pompki plus → zębaty przedni", () => {
+    expect(byName("Unoszenie palców stóp (tibialis raise)").primaryMuscles).toEqual(["Mięsień piszczelowy przedni"]);
+    for (const n of ["Pompki łopatkowe", "Pompki łopatkowe na podwyższeniu", "Pompki plus"]) expect(byName(n).primaryMuscles, n).toEqual(["Mięsień zębaty przedni"]);
+  });
+  it("żadne inne ćwiczenie z paczki nie ma ich jako głównych", () => {
+    const withNew = items.filter((i) => i.primaryMuscles.some((m) => /piszczelowy przedni|zębaty przedni/.test(m))).map((i) => i.name).sort();
+    expect(withNew).toEqual(["Pompki plus", "Pompki łopatkowe", "Pompki łopatkowe na podwyższeniu", "Unoszenie palców stóp (tibialis raise)"].sort());
+  });
+});
+
 describe("duplikaty i odmiany", () => {
   it("pominięte jako duplikaty: Burpees, Pajacyki, Krzesełko, Nordic curl, Przeskoki łyżwiarza, kajakowe", () => {
     const names = items.map((i) => i.name.toLowerCase()).join("|");
@@ -95,7 +106,7 @@ describe("duplikaty i odmiany", () => {
     const existing = items.map((i, n) => ({ id: 9000 + n, name: i.name, slug: i.slug, mainMuscleGroup: i.mainMuscle, movementPattern: i.pattern, equipment: i.equipment, source: "free-exercise-db", sourceId: i.sourceId }));
     const plan = buildPlan(rows, existing, "free-exercise-db", missingColumns, OPTS);
     expect(plan.toImport).toHaveLength(0);
-    expect(plan.alreadyImported ?? plan.skippedExisting ?? []).toHaveLength(58);
+    expect(plan.alreadyImported).toHaveLength(58);
   });
 });
 
