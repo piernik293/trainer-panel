@@ -31,6 +31,7 @@ if (process.env.TRUST_PROXY) {
   const v = process.env.TRUST_PROXY;
   app.set("trust proxy", /^\d+$/.test(v) ? Number(v) : v);
 }
+app.disable("x-powered-by");
 app.use(securityHeaders());
 
 app.use(

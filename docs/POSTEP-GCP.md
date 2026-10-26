@@ -194,3 +194,4 @@
 - 5c: szkielety trzech dokumentów (`lib/survey-config/src/legal.ts`), strony `/legal/:slug` w panelu i portalu, linki w stopkach.
 - 5d: zgoda na dane o zdrowiu — migracja 0050 (4 kolumny nullable w `surveys`), pole `healthConsent` w wywiadzie, wycofanie w Ustawieniach portalu, podgląd u trenera w profilu klienta, najostrożniejsze ustawienia generatora bez zgody. Testy: `health-consent.test.ts`, wizard.
 - 5e: pliki `deploy/*.example`, `scripts/usun-konta-demo.sh` (tylko podgląd domyślnie, NIEURUCHOMIONY), rozdział 13 w `docs/WDROZENIE-PLAN.md`.
+- Blok 5 — weryfikacja końcowa: API 2598/2598, bezpieczeństwo generatora 101/101, panel 765/765, portal 235/235, typecheck i build OK, test dymny 131/0 (na własnym API na porcie 18081, żeby nie ruszać usług drugiej sesji). Poprawka po drodze: limiter zapytań jest wyłączony w testach (VITEST), chyba że test ustawi `RATE_LIMIT_FORCE=1`.
