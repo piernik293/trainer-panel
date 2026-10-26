@@ -31,7 +31,7 @@ const DROPPED: Record<string, string> = {
   "Nie kieruj się wyłącznie liczbą lat treningu": "decyzja 23.10: kłóci się z regułą 2 lat; zastąpione zdaniem „Wybierz opis, który najlepiej do Ciebie pasuje…”",
 };
 
-const base: Answers = { ...EMPTY_ANSWERS, firstName: "Ala", lastName: "T", email: "a@example.com", dateOfBirth: "1992-05-10", gender: "Kobieta", heightCm: 168, weightKg: "62", sessionDuration: "45–60 min", desiredWeeklyFrequency: 3 };
+const base: Answers = { ...EMPTY_ANSWERS, healthConsent: true, firstName: "Ala", lastName: "T", email: "a@example.com", dateOfBirth: "1992-05-10", gender: "Kobieta", heightCm: 168, weightKg: "62", sessionDuration: "45–60 min", desiredWeeklyFrequency: 3 };
 const PROFILES: Answers[] = [
   { ...base, trainingGoal: "Redukcja tkanki tłuszczowej", experienceLevel: "Początkujący", trainingLocation: "Dom", injuryStatus: "Tak", activityLevel: "Siedzący", cardioPreference: "Tylko niezbędne minimum", planStylePreference: "Prosty i łatwy do utrzymania" },
   { ...base, trainingGoal: "Cel sportowy", athleteStatus: "Hobbystycznie", experienceLevel: "Zaawansowany", trainingLocation: "Siłownia plenerowa", injuryStatus: "Nie", avoidsAdvancedMethods: "Tak", cardioPreference: "Tak, uwzględnij cardio w planie" },

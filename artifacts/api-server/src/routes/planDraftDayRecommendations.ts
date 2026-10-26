@@ -28,7 +28,7 @@
  */
 
 import { buildLadderRules, loadLadderRows } from "../services/ladderSelection";
-import { hitsBlockedJoint, loadBlockedJoints } from "../services/jointExclusion";
+import { hitsBlockedJoint, loadBlockedJoints, isConservativeHealth, violatesConservative } from "../services/jointExclusion";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
 import { Router, type IRouter } from "express";
 import { eq, and, or, inArray } from "drizzle-orm";
@@ -237,6 +237,7 @@ router.get(
     for (const ex of completeExercises) {
       if (alreadyAddedIds.has(ex.id)) continue;
       if (hitsBlockedJoint(ex.jointStressAreas, blockedJoints)) continue;
+      if (violatesConservative(ex, isConservativeHealth(survey.healthConsentStatus))) continue;
       if (!ladder.allowed(ex.id)) continue;
       if (!isLocationCompatible(ex.trainingLocation ?? [], survey.trainingLocation)) continue;
       if (!isEquipmentCompatible(ex.equipment ?? [], ex.requiredEquipmentAll ?? [], clientEquipment)) continue;

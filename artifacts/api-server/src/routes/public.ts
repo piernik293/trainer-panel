@@ -8,6 +8,7 @@
  * POST /public/survey/:token   Submit the survey, create the client, consume the token.
  */
 
+import { HEALTH_CONSENT_VERSION } from "@workspace/survey-config";
 import { Router, type IRouter } from "express";
 import crypto from "crypto";
 import { and, eq, gt, isNull, or } from "drizzle-orm";
@@ -168,8 +169,12 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
     return;
   }
 
-  // Health question is mandatory (answer "Brak" or "Tak"); "Tak" needs a description.
-  if (!parsed.data.injuryStatus) {
+  // Consent to process health data (owner's decision, block 5d). healthConsent === false → the health questions were not asked:
+  // whatever came with the request in those fields is dropped. Omitted (older client) → legacy behaviour below.
+  const consentDeclined = parsed.data.healthConsent === false;
+  if (consentDeclined) { parsed.data.injuryStatus = undefined; parsed.data.healthLimitations = ""; }
+  // Health question is mandatory when consent is given (answer "Brak" or "Tak"); "Tak" needs a description.
+  if (!consentDeclined && !parsed.data.injuryStatus) {
     res.status(400).json({ error: "Odpowiedz na pytanie o kontuzje i ograniczenia ruchowe." });
     return;
   }
@@ -338,6 +343,9 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
         trainingDuration,
         healthLimitations,
         injuryStatus: injuryStatus ?? null,
+        healthConsentStatus: parsed.data.healthConsent === true ? "given" : parsed.data.healthConsent === false ? "declined" : null,
+        healthConsentAt: parsed.data.healthConsent === undefined ? null : new Date(),
+        healthConsentVersion: parsed.data.healthConsent === undefined ? null : HEALTH_CONSENT_VERSION,
         athleteStatus: athleteStatus ?? null,
         sportDiscipline: sportDiscipline ?? null,
         sportPerformanceNeeds: sportPerformanceNeeds ?? [],

@@ -35,6 +35,7 @@ function oldPayload(
     ...rest,
     avoidedExercises: "",
     age,
+    healthConsent: true,
     injuryStatus: injuryStatus === "Nie" ? "Brak" : injuryStatus,
     healthLimitations: injuryStatus === "Nie" ? "" : rest.healthLimitations,
     favoriteExercises: extra.favorites.length > 0 ? extra.favorites.map((e) => e.name).join(", ") : undefined,
@@ -53,6 +54,7 @@ function oldPayload(
 
 const base: Answers = {
   ...EMPTY_ANSWERS,
+  healthConsent: true,
   firstName: "Anna", lastName: "Nowak", email: "anna@example.com", phone: "600100200",
   dateOfBirth: "1990-05-05", gender: "Kobieta", heightCm: 170, weightKg: "65.5",
   trainingGoal: "Budowa sylwetki", trainingMotivation: "Chcę być silniejsza",
@@ -215,7 +217,7 @@ describe("question count (before = after)", () => {
 
 describe("validation as in the old form", () => {
   it("required answers block; optional ones do not", () => {
-    expect(validateStep("injury", EMPTY_ANSWERS)).toBeTruthy(); // health question is mandatory now
+    expect(validateStep("injury", { ...EMPTY_ANSWERS, healthConsent: true })).toBeTruthy(); // health question is mandatory now
     expect(validateStep("injury", { ...base, injuryStatus: "Nie" })).toBeNull();
     expect(validateStep("healthDesc", { ...base, injuryStatus: "Tak", healthLimitations: " " })).toBeTruthy();
     expect(validateStep("body", { ...base, heightCm: 119 })).toBe("Wzrost musi być między 120 a 230 cm.");
@@ -262,4 +264,25 @@ describe("autosave", () => {
     expect(() => { saveDraft("d".repeat(64), { v: 1, answers: base, stepId: "goal" }); expect(loadDraft("d".repeat(64))).toBeNull(); clearDraft("d".repeat(64)); }).not.toThrow();
     delete (globalThis as unknown as { window?: unknown }).window;
   });
+});
+
+describe("consent to process health data", () => {
+  const withoutConsent: Answers = { ...base, healthConsent: false, injuryStatus: "Tak", healthLimitations: "kolano" };
+  it("without consent the health questions are not asked and nothing health-related is sent", () => {
+    const a = normalizeAnswers(withoutConsent);
+    expect(a.injuryStatus).toBe(""); expect(a.healthLimitations).toBe("");
+    expect(isStepVisible("injury", a)).toBe(true); // the screen with the checkbox is always shown
+    expect(isStepVisible("healthDesc", { ...a, injuryStatus: "Tak" })).toBe(false);
+    expect(validateStep("injury", a)).toBeNull(); // may be passed without consent
+    const p = buildSurveyPayload(a) as Record<string, unknown>;
+    expect(p.healthConsent).toBe(false); expect(p.injuryStatus).toBeUndefined(); expect(p.healthLimitations).toBe("");
+  });
+  it("with consent the question is required and the description follows 'Tak'", () => {
+    const a: Answers = { ...base, healthConsent: true, injuryStatus: "" };
+    expect(validateStep("injury", a)).not.toBeNull();
+    expect(validateStep("injury", { ...a, injuryStatus: "Nie" })).toBeNull();
+    expect(isStepVisible("healthDesc", { ...a, injuryStatus: "Tak" })).toBe(true);
+    expect((buildSurveyPayload({ ...a, injuryStatus: "Nie" }) as Record<string, unknown>).healthConsent).toBe(true);
+  });
+  it("the checkbox is not ticked by default", () => { expect(EMPTY_ANSWERS.healthConsent).toBe(false); });
 });

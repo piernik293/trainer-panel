@@ -620,8 +620,21 @@ export default function SurveyWizard({
       case "injury":
         return (
           <Section id={id} headingRef={heading} title="Czy masz kontuzje, dolegliwości bólowe lub ograniczenia ruchowe?" lead={SECTION_TEXT.health}>
-            <Note tone="health">To nie jest diagnoza. Podaj tylko to, co trener powinien wiedzieć, żeby dobrać bezpieczne ćwiczenia.</Note>
-            <ChoiceList name="Kontuzje i ograniczenia" columns={2} options={[{ value: "Tak", label: "Tak" }, { value: "Nie", label: "Nie" }]} value={answers.injuryStatus} onChange={(v) => choose({ injuryStatus: v as Answers["injuryStatus"] })} />
+            <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-3 text-sm" data-testid="health-consent">
+              <input type="checkbox" className="mt-1 h-5 w-5 shrink-0" checked={answers.healthConsent} onChange={(e) => set({ healthConsent: e.target.checked })} />
+              <span>
+                Zgadzam się na przetwarzanie moich danych o zdrowiu (ból, kontuzje, ograniczenia) w celu dobrania bezpiecznego planu treningowego. Zgoda jest dobrowolna i możesz ją wycofać w Ustawieniach.{" "}
+                <a href={`${import.meta.env.BASE_URL}legal/zgoda-zdrowie`} target="_blank" rel="noreferrer" className="underline underline-offset-2">Treść zgody</a>
+              </span>
+            </label>
+            {answers.healthConsent ? (
+              <>
+                <Note tone="health">To nie jest diagnoza. Podaj tylko to, co trener powinien wiedzieć, żeby dobrać bezpieczne ćwiczenia.</Note>
+                <ChoiceList name="Kontuzje i ograniczenia" columns={2} options={[{ value: "Tak", label: "Tak" }, { value: "Nie", label: "Nie" }]} value={answers.injuryStatus} onChange={(v) => choose({ injuryStatus: v as Answers["injuryStatus"] })} />
+              </>
+            ) : (
+              <Note tone="health">Bez zgody pomijamy pytania o zdrowie. Plan przygotujemy z najostrożniejszymi ustawieniami.</Note>
+            )}
             {showError && error && <p className="text-sm text-danger">{error}</p>}
           </Section>
         );
@@ -924,7 +937,7 @@ export function summaryText(id: StepId, a: Answers): string {
     case "equipment": return buildEquipmentString(a.equipmentItems, a.equipmentOther);
     case "frequency": return a.desiredWeeklyFrequency ? `${a.desiredWeeklyFrequency} w tygodniu` : "";
     case "session": return a.sessionDuration;
-    case "injury": return a.injuryStatus === "Tak" ? "Są ograniczenia" : a.injuryStatus === "Nie" ? "Brak ograniczeń" : "";
+    case "injury": return !a.healthConsent ? "Bez zgody — pominięto" : a.injuryStatus === "Tak" ? "Są ograniczenia" : a.injuryStatus === "Nie" ? "Brak ograniczeń" : "";
     case "healthDesc": return a.healthLimitations;
     case "activity": return a.activityLevel;
     case "sleep": return a.sleepHours;

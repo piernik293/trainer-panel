@@ -7,6 +7,7 @@
  */
 import { ThemeSelect } from "@/components/ThemeSelect";
 import { BreathingSetting } from "@/components/BreathingSetting";
+import { HealthConsentSetting } from "@/components/HealthConsentSetting";
 import { BrandMark } from "@/components/BrandMark";
 import { useState } from "react";
 import { useUser, useClerk } from "@clerk/react";
@@ -221,6 +222,7 @@ export function ClientPortalNav({ firstName, lastName, showCalendar, onNavigate 
           </dl>
           <ThemeSelect />
           <BreathingSetting />
+          <HealthConsentSetting />
           <p className="text-xs text-muted-foreground">
             Logowanie odbywa się przez konto Google — zarządzanie hasłem nie jest tu potrzebne.
           </p>

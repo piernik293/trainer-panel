@@ -47,6 +47,11 @@ export const surveysTable = pgTable("surveys", {
   preferredCardioType: text("preferred_cardio_type"),
   // Doświadczenie ze skokami (pytanie tylko przy celu „Cel sportowy”): steruje blokiem pliometrycznym
   jumpExperience: text("jump_experience"),
+  // Zgoda na dane o zdrowiu (migration 0050): NULL = brak informacji (stary wywiad / wpisany przez trenera)
+  healthConsentStatus: text("health_consent_status"), // 'given' | 'declined' | 'withdrawn'
+  healthConsentAt: timestamp("health_consent_at"),
+  healthConsentVersion: text("health_consent_version"),
+  healthConsentWithdrawnAt: timestamp("health_consent_withdrawn_at"),
   // Motivation — "Dlaczego chcesz trenować?" free-text field
   trainingMotivation: text("training_motivation"),
   // Czy klient ma przeciwwskazania do metod intensyfikacji (pytanie tak/nie, poprzedzające listę checkboxów)

@@ -75,6 +75,8 @@ export interface Answers {
   equipmentOther: string;
   desiredWeeklyFrequency?: number;
   sessionDuration: string;
+  /** Consent to process health data (pain, injuries, limitations); required to answer the health questions. */
+  healthConsent: boolean;
   injuryStatus: "" | "Tak" | "Nie";
   healthLimitations: string;
   activityLevel: string;
@@ -103,7 +105,7 @@ export const EMPTY_ANSWERS: Answers = {
   experienceLevel: "", trainingDuration: "",
   trainingLocation: "", equipmentItems: [], equipmentOther: "",
   desiredWeeklyFrequency: undefined, sessionDuration: "",
-  injuryStatus: "", healthLimitations: "",
+  healthConsent: false, injuryStatus: "", healthLimitations: "",
   activityLevel: "", sleepHours: "", stressLevel: undefined,
   cardioPreference: "", cardioFrequency: "", preferredCardioType: "",
   planStylePreference: "",
@@ -174,7 +176,7 @@ export function isStepVisible(id: StepId, a: Answers, prefill: Prefill = {}): bo
     case "equipment":
       return showEquipmentField(a.trainingLocation, a.trainingGoal);
     case "healthDesc":
-      return a.injuryStatus === "Tak";
+      return a.healthConsent && a.injuryStatus === "Tak";
     // Intermediate / advanced by the EFFECTIVE level (the choice capped by training time).
     case "avoided":
     case "methodsList":
@@ -220,6 +222,7 @@ export function normalizeAnswers(input: Answers, prefill: Prefill = {}): Answers
     a.equipmentItems = a.equipmentItems.filter((x) => offered.includes(x));
     if (a.trainingLocation === "Siłownia") a.equipmentOther = "";
   }
+  if (!a.healthConsent) a.injuryStatus = ""; // without consent the health questions are not asked
   if (!isStepVisible("healthDesc", a, prefill)) a.healthLimitations = "";
   if (!isStepVisible("avoided", a, prefill)) {
     a.avoidedExercises = [];
@@ -297,6 +300,7 @@ export function validateStep(id: StepId, a: Answers): string | null {
     case "session":
       return a.sessionDuration ? null : "To pole jest wymagane";
     case "injury":
+      if (!a.healthConsent) return null; // consent not given: the screen can be passed, the questions are skipped
       return a.injuryStatus ? null : "Odpowiedz na to pytanie — jest ważne dla Twojego bezpieczeństwa.";
     case "healthDesc":
       return a.healthLimitations.trim() ? null : "Opisz swoje ograniczenia zdrowotne, kontuzje lub dolegliwości bólowe.";
@@ -382,7 +386,7 @@ export function buildSurveyPayload(raw: Answers, prefill: Prefill = {}): Record<
     trainingGoal: a.trainingGoal,
     experienceLevel: a.experienceLevel,
     trainingDuration: a.trainingDuration,
-    healthLimitations: a.injuryStatus === "Nie" ? "" : a.healthLimitations,
+    healthLimitations: !a.healthConsent || a.injuryStatus === "Nie" ? "" : a.healthLimitations,
     sessionDuration: a.sessionDuration,
     avoidedExercises: "",
     desiredWeeklyFrequency: a.desiredWeeklyFrequency,
@@ -401,7 +405,8 @@ export function buildSurveyPayload(raw: Answers, prefill: Prefill = {}): Record<
     preferredCardioType: a.preferredCardioType,
     trainingMotivation: a.trainingMotivation,
     age: calculateAge(a.dateOfBirth) ?? undefined,
-    injuryStatus: a.injuryStatus === "Nie" ? "Brak" : a.injuryStatus || undefined,
+    healthConsent: a.healthConsent === true,
+    injuryStatus: !a.healthConsent ? undefined : a.injuryStatus === "Nie" ? "Brak" : a.injuryStatus || undefined,
     favoriteExercises: a.favoriteExercises.length > 0 ? a.favoriteExercises.map((e) => e.name).join(", ") : undefined,
     athleteStatus: isSport && a.athleteStatus ? (ATHLETE_TO_API[a.athleteStatus] ?? "Nie") : "Nie",
     sportDiscipline: undefined,

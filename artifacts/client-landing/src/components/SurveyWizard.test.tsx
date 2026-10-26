@@ -77,10 +77,24 @@ describe("steps", () => {
   });
 
   it("health question carries the 'not a diagnosis' note", () => {
-    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS }, stepId: "injury" }));
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS, healthConsent: true }, stepId: "injury" }));
     mount();
     expect(screen.getByText(/To nie jest diagnoza/)).toBeTruthy();
     expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("health consent: unticked by default; without it the question is not asked and the screen can be passed; ticking shows the question", () => {
+    window.localStorage.setItem(draftKey(TOKEN), JSON.stringify({ v: 1, answers: { ...EMPTY_ANSWERS }, stepId: "injury" }));
+    mount();
+    const box = within(screen.getByTestId("health-consent")).getByRole("checkbox") as HTMLInputElement;
+    expect(box.checked).toBe(false);
+    expect(screen.getByText(/Bez zgody pomijamy pytania o zdrowie/)).toBeTruthy();
+    expect(screen.queryByRole("radio", { name: "Tak" })).toBeNull();
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(box);
+    expect(screen.getByRole("radio", { name: "Tak" })).toBeTruthy();
+    expect((screen.getByTestId("next") as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByText(/Bez zgody pomijamy pytania o zdrowie/)).toBeNull();
   });
 
   it("height and weight screen never shows BMI (value or text) to the client", () => {
@@ -144,7 +158,7 @@ describe("summary", () => {
   const filled: Answers = {
     ...EMPTY_ANSWERS, firstName: "Marta", lastName: "Test", email: "m@example.com", dateOfBirth: "1990-05-05", gender: "Kobieta",
     heightCm: 170, weightKg: "65", trainingGoal: "Budowa sylwetki", experienceLevel: "Początkujący", trainingLocation: "Siłownia",
-    desiredWeeklyFrequency: 3, sessionDuration: "45–60 min", injuryStatus: "Nie", activityLevel: "Siedzący", sleepHours: "7–8 godzin",
+    desiredWeeklyFrequency: 3, sessionDuration: "45–60 min", healthConsent: true, injuryStatus: "Nie", activityLevel: "Siedzący", sleepHours: "7–8 godzin",
     planStylePreference: "Prosty i łatwy do utrzymania",
   };
 
@@ -169,7 +183,7 @@ describe("summary", () => {
     await screen.findByText("Krok pierwszy zrobiony.");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
-    expect(body).toMatchObject({ trainingGoal: "Budowa sylwetki", injuryStatus: "Brak", firstName: "Marta", athleteStatus: "Nie" });
+    expect(body).toMatchObject({ trainingGoal: "Budowa sylwetki", injuryStatus: "Brak", healthConsent: true, firstName: "Marta", athleteStatus: "Nie" });
     expect(window.localStorage.getItem(draftKey(TOKEN))).toBeNull();
   });
 });
