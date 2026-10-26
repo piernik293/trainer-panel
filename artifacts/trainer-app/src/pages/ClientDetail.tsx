@@ -33,6 +33,7 @@ import { CollapsibleSurveySection, DetailRow } from "@/components/CollapsibleSur
 import ExerciseRecommendationsTab from "./ExerciseRecommendationsTab";
 import TrainingSessionsTab, { usePainReports } from "./TrainingSessionsTab";
 import { StepsCard } from "@/components/StepsCard";
+import { PackageCard } from "@/components/PackageCard";
 import { formatDate } from "@/lib/utils";
 import { clientStatusLabel, surveyStatusLabel } from "@/lib/client-status";
 import { methodsAnswerUsable } from "@workspace/survey-config";
@@ -631,6 +632,7 @@ export default function ClientDetail() {
 
         <TabsContent value="workout-history" className="pt-4 space-y-4">
           <StepsCard clientId={id} />
+          <PackageCard clientId={id} />
           <TrainingSessionsTab clientId={id} />
         </TabsContent>
 
