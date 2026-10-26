@@ -119,7 +119,7 @@ r("1004", "Przysiad z gumą oporową", "Band Squat", P, "główne", GUM, "Przysi
 r("1009", "Martwy ciąg rumuński z gumą oporową", "Band Romanian Deadlift", P, "główne", GUM, "Zawias biodrowy", "Mięśnie dwugłowe uda", "HAM", "GMAX ERECT", "Plecy — dół, Biodro", "sylwetka, siła, kondycja",
   "Stań na gumie, końce trzymaj przy biodrach. Z lekko ugiętymi kolanami wypchnij biodra do tyłu, pochylając tułów z prostymi plecami, aż poczujesz rozciągnięcie z tyłu ud. Wróć, prostując biodra.",
   "Guma blisko nóg, plecy płaskie. Łatwiej: mniejszy zakres. Trudniej: mocniejsza guma lub jedna noga.", "Zaokrąglone plecy, uginanie kolan jak w przysiadzie, ruch z dolnych pleców.",
-  "Przy bólu dolnego odcinka pleców zmniejsz zakres albo pomiń.", 3)
+  "Przy bólu dolnego odcinka pleców zmniejsz zakres albo pomiń. Zacznij od lekkiej gumy i nauki ruchu w biodrach.", 2)
 r("1410", "Wykrok w bok", "Lateral Lunge", P, "główne", f"{BW}, {HAN}", "Wykrok", "Pośladki", "GMAX", "QUAD ADD HAM", "Kolano, Biodro", "sprawność, sylwetka, kondycja",
   "Stań prosto, zrób duży krok w bok i zegnij kolano tej nogi, cofając biodra, druga noga zostaje prosta. Odepchnij się stopą i wróć do pozycji. Powtórz na drugą stronę.",
   "Stopa ugiętej nogi płasko, kolano nad stopą. Łatwiej: mniejszy krok. Trudniej: hantel przy klatce.", "Kolano ucieka do środka, pochylanie tułowia, odrywanie pięty.",

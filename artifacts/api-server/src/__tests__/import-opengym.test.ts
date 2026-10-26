@@ -85,6 +85,9 @@ describe("mięśnie główne wg decyzji (migracja 0034)", () => {
 });
 
 describe("poprawki opisów po weryfikacji", () => {
+  it("martwy ciąg rumuński z gumą: trudność nauki 2 (dla nieaktywnych, lekka guma)", () => {
+    expect(byName("Martwy ciąg rumuński z gumą oporową").learningDifficulty).toBe(2);
+  });
   it("wiosłowanie australijskie: tylko stabilny drążek (bez stołu i sztangi na podporach)", () => {
     const i = byName("Wiosłowanie australijskie z ugiętymi nogami");
     const text = `${i.description} ${i.coachingTips} ${i.commonMistakes} ${i.safetyNotes}`;

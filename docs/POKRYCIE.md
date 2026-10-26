@@ -16,7 +16,7 @@ Stan: 2026-10-26. Komórka = **zweryfikowane / wszystkie** ćwiczenia dostępne 
 | Pchanie poziome | 2/2 | 4/8 | 4/11 | 3/11 |
 | Przyciąganie pionowe | 0/0 | 1/1 | 1/2 | 1/2 |
 | Przyciąganie poziome | 0/0 | 1/2 | 1/2 | 1/2 |
-| Przysiad | 1/1 | 3/6 | 5/9 | 6/11 |
+| Przysiad | 1/1 | 2/5 | 4/8 | 5/10 |
 | Przywodzenie | 1/1 | 1/1 | 1/2 | 1/2 |
 | Rotacja | 1/1 | 2/2 | 2/2 | 2/2 |
 | Stabilizacja tułowia | 4/5 | 5/5 | 5/5 | 5/7 |
@@ -45,7 +45,7 @@ Stan: 2026-10-26. Komórka = **zweryfikowane / wszystkie** ćwiczenia dostępne 
 | Pchanie poziome | 4/4 | 6/11 | 7/20 | 6/20 |
 | Przyciąganie pionowe | 1/1 | 4/4 | 4/7 | 4/7 |
 | Przyciąganie poziome | 2/2 | 3/6 | 3/6 | 3/6 |
-| Przysiad | 3/3 | 6/11 | 8/14 | 9/16 |
+| Przysiad | 3/3 | 4/9 | 6/12 | 7/14 |
 | Przywodzenie | 2/2 | 2/2 | 2/5 | 2/5 |
 | Rotacja | 1/1 | 3/5 | 3/7 | 3/7 |
 | Stabilizacja tułowia | 4/5 | 5/5 | 5/5 | 5/7 |
@@ -132,7 +132,7 @@ Stan: 2026-10-26. Komórka = **zweryfikowane / wszystkie** ćwiczenia dostępne 
 | Pchanie poziome | 5/6 | 13/25 | 22/49 | 21/50 |
 | Przyciąganie pionowe | 3/3 | 9/14 | 12/23 | 13/27 |
 | Przyciąganie poziome | 8/8 | 10/20 | 13/30 | 13/31 |
-| Przysiad | 3/3 | 8/15 | 13/29 | 17/36 |
+| Przysiad | 3/3 | 6/13 | 11/27 | 15/34 |
 | Przywodzenie | 2/2 | 8/10 | 9/16 | 9/16 |
 | Rotacja | 1/1 | 4/8 | 5/15 | 5/15 |
 | Stabilizacja tułowia | 4/5 | 5/5 | 5/8 | 5/11 |

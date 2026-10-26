@@ -183,3 +183,6 @@
 - **Zostają niezweryfikowane:** 1629 Dipy na podłodze (od Ś; opis poprawiony: siad, dłonie za biodrami palcami do przodu, unieś biodra, zginaj łokcie w małym zakresie) i 1635 Uginanie nóg leżąc z hantlem. 1597: opis i uwaga bez „stołu” i „sztangi na podporach”, tylko stabilny drążek.
 - **Uwaga:** #1611 Martwy ciąg rumuński z gumą ma `learningDifficulty = 3`, a silnik wymaga ≤ 2 dla BA/P. Mimo flagi dla nieaktywnych generator go jeszcze nie wybierze dla BA, dopóki trudności nie obniżysz do 2 (nie zmieniałem bez Twojej zgody).
 - Pokrycie przeliczone: dziury BA/P 23 → 19.
+
+### 26.10.2026 — #1611 trudność nauki 2 (migracja 0036, pg_dump `przed-0036-*`)
+- Martwy ciąg rumuński z gumą oporową: `learningDifficulty` 3 → 2 (decyzja właściciela: lekka guma, nauka zawiasu, ma być dla nieaktywnych). Plik/generator zaktualizowane. Dziury bez kandydata (dom bez sprzętu: pchanie pionowe BA/P, przyciąganie pionowe BA, zgięcie łokcia BA/P, anty-rotacja BA) zostają: generator pomija wzorzec, trener widzi ostrzeżenie o braku sprzętu; nowych ćwiczeń nie dodajemy.
