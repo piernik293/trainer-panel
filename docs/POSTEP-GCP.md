@@ -186,3 +186,7 @@
 
 ### 26.10.2026 — #1611 trudność nauki 2 (migracja 0036, pg_dump `przed-0036-*`)
 - Martwy ciąg rumuński z gumą oporową: `learningDifficulty` 3 → 2 (decyzja właściciela: lekka guma, nauka zawiasu, ma być dla nieaktywnych). Plik/generator zaktualizowane. Dziury bez kandydata (dom bez sprzętu: pchanie pionowe BA/P, przyciąganie pionowe BA, zgięcie łokcia BA/P, anty-rotacja BA) zostają: generator pomija wzorzec, trener widzi ostrzeżenie o braku sprzętu; nowych ćwiczeń nie dodajemy.
+
+## Blok 12 — moduł kondycyjny (feature/kondycja) — W TOKU (przerwane limitem)
+- Gotowe: migracja 0054 (day_type, conditioning, plan_element_rules z zasiewem, conditioning_logs, conditioning_checkins; backup przed), schemat Drizzle, `services/conditioning.ts` (marszobieg 8 tyg., lżejszy co 4., RPE + test rozmowy, filtr bólu → sprzęt, BA/P bez interwałów), `routes/conditioning.ts` za `CONDITIONING_ENABLED` (domyślnie wyłączone), pominięcie wymogu ćwiczeń dla dni kondycyjnych. Typecheck zielony.
+- Brak: testy bloku 12 (flaga 404, izolacja A/B, BA bez interwałów, filtr bólu, tydzień lżejszy, idempotencja, check-in zabroniony dla Solo), pełny łańcuch weryfikacji, ekrany UI.

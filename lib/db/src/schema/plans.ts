@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  jsonb,
   pgTable,
   serial,
   integer,
@@ -145,6 +146,10 @@ export const workoutPlanDaysTable = pgTable("workout_plan_days", {
   estimatedDurationMinutes: integer("estimated_duration_minutes"),
   /** Private trainer notes for this day */
   trainerNotes: text("trainer_notes"),
+  /** NULL / 'silowy' = strength day; 'kondycyjny' = conditioning day (migration 0054, behind CONDITIONING_ENABLED). */
+  dayType: text("day_type"),
+  /** For conditioning days: { method, tool, weeks: [...] } (services/conditioning.ts). */
+  conditioning: jsonb("conditioning"),
 }, (table) => [
   // Changed from uniqueIndex to index to allow safe bulk reordering.
   // Application code maintains order integrity.

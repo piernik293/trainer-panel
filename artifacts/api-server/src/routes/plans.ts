@@ -1916,7 +1916,8 @@ function buildActivationMissingFields(
     if (!day.dayName?.trim()) {
       missing.push({ scope: "day", dayId: day.id, exerciseEntryId: null, field: "dayName", label: "Nazwa dnia", message: `Dzień ${day.dayOrder} musi mieć nazwę.` });
     }
-    if (day.exercises.length === 0) {
+    // dzień kondycyjny (blok 12) nie ma ćwiczeń siłowych — jego opis jest w polu conditioning
+    if (day.exercises.length === 0 && day.dayType !== "kondycyjny") {
       missing.push({ scope: "day", dayId: day.id, exerciseEntryId: null, field: "exercises", label: "Ćwiczenia", message: `Dzień "${day.dayName ?? `Dzień ${day.dayOrder}`}" musi zawierać co najmniej jedno ćwiczenie.` });
     }
 
