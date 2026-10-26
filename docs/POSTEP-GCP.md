@@ -186,3 +186,10 @@
 
 ### 26.10.2026 — #1611 trudność nauki 2 (migracja 0036, pg_dump `przed-0036-*`)
 - Martwy ciąg rumuński z gumą oporową: `learningDifficulty` 3 → 2 (decyzja właściciela: lekka guma, nauka zawiasu, ma być dla nieaktywnych). Plik/generator zaktualizowane. Dziury bez kandydata (dom bez sprzętu: pchanie pionowe BA/P, przyciąganie pionowe BA, zgięcie łokcia BA/P, anty-rotacja BA) zostają: generator pomija wzorzec, trener widzi ostrzeżenie o braku sprzętu; nowych ćwiczeń nie dodajemy.
+
+## 26.10.2026 — blok 11: Solo za przełącznikiem (gałąź `feature/solo`, z `main`)
+- **Przełącznik `SOLO_ENABLED` (domyślnie wyłączony):** `GET /api/solo/status`; `POST /api/solo/start` i `GET /api/solo/me` odpowiadają 404 `SOLO_DISABLED`, dopóki nie ustawisz `SOLO_ENABLED=1`. Aplikacja nadal pokazuje „Wkrótce” (nic nowego nie wyświetla się klientom).
+- **Model:** osoba Solo = wiersz `clients` z `trainer_id` NULL (kolumna jest nullable; każde zapytanie trenera filtruje po `trainer_id`, więc dane Solo są niewidoczne dla trenerów — test). Konto trenera ani konto klienta trenera nie może zostać Solo (403 `TRAINER_ACCOUNT` / `ALREADY_LINKED`), konto Solo nie dostaje panelu trenera. Brak zmian schematu.
+- **Ostrzejsze zasady (`services/solo.ts`, wpięte w pulę generatora `planDraftGenerateDay`):** tylko ćwiczenia zweryfikowane na każdym poziomie; pliometria i olimpijskie tylko przy „Tak” w doświadczeniu ze skokami i od poziomu Ś; ból zgłoszony na ćwiczeniu wyklucza je z planów Solo na 90 dni, komunikat „Skonsultuj się ze specjalistą.”; brak cotygodniowego check-inu RPE (`SOLO_WEEKLY_CHECKIN = false`).
+- **NIE zrobione (zależy od bloków kont 1–3 drugiej sesji, patrz niżej w raporcie):** ekrany Solo (wywiad → plan → trening → kroki) i generowanie planu po stronie serwera dla osoby bez trenera. Generator jest dziś sterowany z kreatora trenera (kolejne wywołania dzień po dniu), a trasy wymagają zalogowanego trenera; potrzebny jest serwerowy „sterownik” generowania i tabela `accounts` z bloku 2. Reguły i filtr bezpieczeństwa są gotowe i przetestowane, więc ten sterownik będzie je tylko wywoływał.
+- Testy bezpieczeństwa Solo osobno: `solo-safety.test.ts` (10).
