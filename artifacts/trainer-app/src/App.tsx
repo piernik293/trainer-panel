@@ -27,6 +27,7 @@ import ExerciseDetail from "@/pages/ExerciseDetail";
 import PlanCreate from "@/pages/PlanCreate";
 import PlanEditor from "@/pages/PlanEditor";
 import PlanDraftWizard from "@/pages/PlanDraftWizard";
+import PlanImport from "@/pages/PlanImport";
 import SurveyInvite from "@/pages/SurveyInvite";
 import CalendarPage from "@/pages/CalendarPage";
 import Settings from "@/pages/Settings";
@@ -282,6 +283,7 @@ function Router() {
         <Route path="/clients/:id/survey" component={SurveyForm} />
         <Route path="/clients/:id/plans/new" component={PlanCreate} />
         <Route path="/clients/:id/plans/generate" component={PlanDraftWizard} />
+        <Route path="/clients/:id/plans/import" component={PlanImport} />
         <Route path="/clients/:id/portal-preview" component={ClientPortalPreview} />
         <Route path="/clients/:id/trainer-session" component={TrainerLedSession} />
         <Route path="/clients/:id" component={ClientDetail} />

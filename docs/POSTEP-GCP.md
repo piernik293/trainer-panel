@@ -186,3 +186,9 @@
 
 ### 26.10.2026 — #1611 trudność nauki 2 (migracja 0036, pg_dump `przed-0036-*`)
 - Martwy ciąg rumuński z gumą oporową: `learningDifficulty` 3 → 2 (decyzja właściciela: lekka guma, nauka zawiasu, ma być dla nieaktywnych). Plik/generator zaktualizowane. Dziury bez kandydata (dom bez sprzętu: pchanie pionowe BA/P, przyciąganie pionowe BA, zgięcie łokcia BA/P, anty-rotacja BA) zostają: generator pomija wzorzec, trener widzi ostrzeżenie o braku sprzętu; nowych ćwiczeń nie dodajemy.
+
+## 26.10.2026 — blok 9: import planu z Excela (gałąź `feature/import-excel`, z `main`)
+- Bez AI i bez nowych bibliotek: własny czytnik .xlsx (ZIP przez `node:zlib` + XML; limit 2 MB, 1500 wierszy, 30 kolumn, ochrona przed „zip bomb”), .csv (UTF-8/BOM/Windows-1250, `;` `,` lub tab). Przepływ: plik → podgląd i dopasowanie kolumn (dzień, ćwiczenie, serie, powtórzenia, ciężar, RIR, notatka) → dopasowanie nazw do katalogu (najlepsze trafienie tylko gdy pewne; inaczej lista kandydatów, „ćwiczenie własne trenera” albo pomiń) → zapis jako szkic planu klienta albo szablon.
+- Bezpieczeństwo jak przy ręcznym dodaniu: sprzęt/miejsce z wywiadu twardo (422), ćwiczenie na zgłoszony staw wymaga potwierdzenia (409 → `acknowledgeJointWarning`, decyzja zapisana w `joint_warning_decisions`). Ćwiczenia własne powstają jako prywatne ćwiczenia trenera (limit pakietu trenera obowiązuje).
+- Migracja 0053 (`plan_templates`). Szablon pliku do pobrania (`GET /api/plan-import/template.csv`). Panel: `/clients/:id/plans/import`, przycisk „Import z pliku” w profilu klienta. Zastosowanie szablonu: `POST /api/plan-templates/:id/apply` (UI do wyboru szablonu — później, blok „szablony/kopiowanie planów”, faza 2).
+- Testy: `plan-import-parse.test.ts` (11), `plan-import.test.ts` (7), `planImportUi.test.ts` (4).
