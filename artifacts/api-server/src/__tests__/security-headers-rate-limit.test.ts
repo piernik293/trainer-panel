@@ -1,4 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
+
+process.env.RATE_LIMIT_FORCE = "1"; // the app-level test below needs the real limiter
 import type { Request, Response } from "express";
 
 vi.mock("@clerk/express", () => ({
