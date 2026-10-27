@@ -30,6 +30,7 @@ import healthConsentRouter from "./healthConsent";
 import joinRequestsRouter from "./joinRequests";
 
 import adminRouter from "./admin";
+import trainerApplicationsRouter from "./trainerApplications";
 
 const router: IRouter = Router();
 
@@ -64,6 +65,7 @@ router.use(healthConsentRouter);
 router.use(joinRequestsRouter);
 
 router.use(adminRouter);
+router.use(trainerApplicationsRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────

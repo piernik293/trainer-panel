@@ -14,6 +14,10 @@ vi.mock("@/lib/adminApi", () => ({
   useAdminSolo: () => ({ data: undefined }),
   useAdminSubscriptions: () => ({ data: undefined }),
   useAccessLog: () => ({ data: { entries: [] } }),
+  useTrainerApplications: () => ({ data: { applications: [] } }),
+  useAutoAccept: () => ({ data: { autoAccept: false } }),
+  useApplicationActions: () => ({ decide: { mutate: vi.fn() }, setAutoAccept: { mutate: vi.fn() } }),
+  AUTO_ACCEPT_CONFIRM: "y",
   useAdminAction: () => ({ review: { mutate: vi.fn() }, setPlan: { mutate: vi.fn() }, block: { mutate: vi.fn() }, access: { mutate: vi.fn(), isPending: false } }),
   BLOCK_CONFIRM: "x", SOURCE_LABEL: { api: "Serwer", panel: "Panel", portal: "Portal" },
 }));
@@ -34,7 +38,7 @@ describe("strona /admin", () => {
   it("administrator widzi wszystkie zakładki", () => {
     isAdmin = true;
     render(<Admin />);
-    for (const name of ["Błędy", "Trenerzy", "Solo", "Abonamenty i limity", "Dziennik dostępu"]) {
+    for (const name of ["Błędy", "Wnioski", "Trenerzy", "Solo", "Abonamenty i limity", "Dziennik dostępu"]) {
       expect(screen.getByRole("tab", { name })).toBeTruthy();
     }
   });

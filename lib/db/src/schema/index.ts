@@ -18,3 +18,4 @@ export * from "./dailySteps";
 export * from "./joinRequests";
 
 export * from "./admin";
+export * from "./trainerApplications";

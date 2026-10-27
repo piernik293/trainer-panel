@@ -41,3 +41,27 @@ export function useAdminAction() {
 
 export const BLOCK_CONFIRM = "Zablokować to konto? Trener nie zaloguje się do panelu, dopóki go nie odblokujesz.";
 export const SOURCE_LABEL: Record<AdminError["source"], string> = { api: "Serwer", panel: "Panel", portal: "Portal" };
+
+export interface TrainerApplication { id: number; name: string | null; email: string | null; note: string | null; status: "pending" | "accepted" | "rejected"; createdAt: string; decidedAt: string | null }
+export const useTrainerApplications = () => useQuery<{ applications: TrainerApplication[] }>({ queryKey: ["admin-applications"], queryFn: () => customFetch("/api/admin/trainer-applications") });
+export const useAutoAccept = () => useQuery<{ autoAccept: boolean }>({ queryKey: ["admin-settings"], queryFn: () => customFetch("/api/admin/settings") });
+export function useApplicationActions() {
+  const qc = useQueryClient();
+  const done = () => qc.invalidateQueries();
+  return {
+    decide: useMutation({ mutationFn: (v: { id: number; accept: boolean }) => customFetch(`/api/admin/trainer-applications/${v.id}/${v.accept ? "accept" : "reject"}`, { method: "POST" }), onSuccess: done }),
+    setAutoAccept: useMutation({ mutationFn: (autoAccept: boolean) => customFetch("/api/admin/settings", { method: "PUT", body: JSON.stringify({ autoAccept }) }), onSuccess: done }),
+  };
+}
+export const AUTO_ACCEPT_CONFIRM = "Włączyć automatyczne przyjmowanie? Każdy, kto złoży wniosek, od razu dostanie konto trenera.";
+
+/** Czy konto ma też własny trening (do linku „Mój trening” w menu). Bez react-query, błąd = false. */
+export function useHasOwnTraining(): boolean {
+  const [has, setHas] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.resolve().then(() => customFetch<{ isClient: boolean }>("/api/account/roles")).then((r) => { if (!cancelled) setHas(!!r?.isClient); }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
+  return has;
+}
