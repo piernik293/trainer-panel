@@ -133,6 +133,11 @@ export async function requireAuth(
       });
       return;
     }
+    // konto zablokowane przez administratora (administratora nie da się zablokować)
+    if (trainer.blockedAt && !checkIsAppAdmin(userId)) {
+      res.status(403).json({ error: "To konto jest zablokowane. Skontaktuj się z administratorem.", code: "ACCOUNT_BLOCKED" });
+      return;
+    }
     req.trainer = trainer;
     next();
   } catch (err) {

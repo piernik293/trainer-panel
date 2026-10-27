@@ -1,7 +1,7 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
-import { clerkMiddleware } from "@clerk/express";
+import { clerkMiddleware, getAuth } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import {
   CLERK_PROXY_PATH,
@@ -10,6 +10,7 @@ import {
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { recordError } from "./services/errorLog";
 import { buildAllowedOrigins, makeCorsOriginCallback } from "./lib/corsOrigins";
 
 // In production, Clerk publishable key must be present. Fail at startup
@@ -62,6 +63,10 @@ app.use(
   })),
 );
 
+const safeUserId = (req: Request): string | null => {
+  try { return getAuth(req)?.userId ?? null; } catch { return null; }
+};
+
 app.use("/api", router);
 
 // ─── Central error handler ────────────────────────────────────────────────────
@@ -84,6 +89,9 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
     },
     err instanceof Error ? `${err.name}: ${err.message}` : "Unhandled non-Error thrown",
   );
+
+  // dziennik błędów administratora: tylko oczyszczony opis i miejsce bez identyfikatorów; zapis w tle
+  void recordError({ source: "api", place: `${req.method} ${req.originalUrl?.split("?")[0]}`, message: err instanceof Error ? `${err.name}: ${err.message}` : "Unhandled non-Error thrown", userKey: safeUserId(req) });
 
   if (res.headersSent) return;
   // Respect 4xx statuses set by middleware (e.g. body-parser 400 on malformed

@@ -10,6 +10,7 @@ import {
   trainersTable,
 } from "@workspace/db";
 import { clerkClient } from "@clerk/express";
+import { checkIsAppAdmin } from "../middlewares/requireAuth";
 import { and, asc, count, eq, sql } from "drizzle-orm";
 
 export type PlanCode = "FREE" | "PRO" | "UNLIMITED";
@@ -198,6 +199,8 @@ async function hasUnlimitedPlanGenerations(
     .from(trainersTable)
     .where(eq(trainersTable.id, trainerId));
   if (!trainer) return false;
+  // administrator aplikacji nie ma limitów generatora
+  if (checkIsAppAdmin(trainer.clerkUserId)) return true;
 
   const storedEmail = trainer.email?.trim().toLowerCase();
   if (storedEmail && storedEmail !== UNLIMITED_PLAN_GENERATION_EMAIL) return false;
