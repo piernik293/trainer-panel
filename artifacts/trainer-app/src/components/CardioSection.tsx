@@ -377,19 +377,19 @@ export function CardioSection({
               <div className="flex flex-wrap gap-1.5">
                 <Badge
                   variant="outline"
-                  className="text-xs px-2 py-0.5 bg-white border-blue-200 text-blue-800 font-normal"
+                  className="text-xs px-2 py-0.5 bg-card border-border text-foreground font-normal"
                 >
                   {sessionsLabel(rec.sessionsPerWeek)}
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="text-xs px-2 py-0.5 bg-white border-blue-200 text-blue-800 font-normal"
+                  className="text-xs px-2 py-0.5 bg-card border-border text-foreground font-normal"
                 >
                   {rec.activity}
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="text-xs px-2 py-0.5 bg-white border-blue-200 text-blue-800 font-normal"
+                  className="text-xs px-2 py-0.5 bg-card border-border text-foreground font-normal"
                 >
                   {rec.sessions[0]?.durationMinutes} min
                 </Badge>
