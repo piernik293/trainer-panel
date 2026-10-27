@@ -26,6 +26,7 @@ import trainingRouter from "./training";
 import stepsRouter from "./steps";
 import clientSettingsRouter from "./clientSettings";
 import adminRouter from "./admin";
+import trainerApplicationsRouter from "./trainerApplications";
 
 const router: IRouter = Router();
 
@@ -56,6 +57,7 @@ router.use(trainingRouter);
 router.use(stepsRouter);
 router.use(clientSettingsRouter);
 router.use(adminRouter);
+router.use(trainerApplicationsRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────

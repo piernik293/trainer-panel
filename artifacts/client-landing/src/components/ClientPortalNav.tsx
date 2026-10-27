@@ -8,6 +8,7 @@
 import { ThemeSelect } from "@/components/ThemeSelect";
 import { BreathingSetting } from "@/components/BreathingSetting";
 import { BrandMark } from "@/components/BrandMark";
+import { TrainerApplyCard } from "@/components/TrainerApplyCard";
 import { useState } from "react";
 import { useUser, useClerk } from "@clerk/react";
 import { Menu, LogOut, UserRound, CalendarDays, History, Dumbbell } from "lucide-react";
@@ -219,6 +220,7 @@ export function ClientPortalNav({ firstName, lastName, showCalendar, onNavigate 
               </dd>
             </div>
           </dl>
+          <TrainerApplyCard />
           <ThemeSelect />
           <BreathingSetting />
           <p className="text-xs text-muted-foreground">

@@ -195,3 +195,12 @@
 - Panel: strona `/admin` (5 zakładek), pozycja w menu konta tylko dla administratora; zgłaszanie błędów w panelu i portalu (`lib/errorReport.ts`).
 - Testy: `admin-panel.test.ts` (14), `admin-page.test.tsx` (2).
 - Weryfikacja bloku 3: API 2601, bezpieczeństwo 101, panel 767, portal 228, typecheck i build OK, smoke 131/0.
+
+## 27.10.2026 — blok 6: wnioski trenerów (gałąź `feature/wnioski-trenerow`, z `feature/panel-admin`, NIE scalona)
+- Migracja 0040 (backup `~/backups/przed_0040_*`): `trainer_applications`, `app_settings`; tylko dodawanie.
+- API `routes/trainerApplications.ts`: wniosek „Prowadzę podopiecznych” (jeden oczekujący; po odrzuceniu ponownie dopiero po 14 dniach), `GET /account/roles`, lista i decyzje [Odrzuć]/[Akceptuj] w panelu administratora (zakładka „Wnioski”), przełącznik „przyjmuj automatycznie” — domyślnie WYŁĄCZONY, zmiana z potwierdzeniem. Akceptacja nadaje rolę trenera (rekord `trainers`); `TRAINER_CLERK_IDS` zostaje listą awaryjną.
+- Maile: do wnioskodawcy po decyzji i do właściciela o nowym wniosku — tylko jeśli skonfigurowano pocztę (`SMTP_*`) i adres właściciela w `OWNER_NOTIFY_EMAIL` (nie ustawiony, więc mail do właściciela nie jest wysyłany).
+- Portal: sekcja „Prowadzę podopiecznych” w oknie „Moje konto”; po akceptacji prosty przełącznik [Mój trening] / [Podopieczni]. Panel: „Mój trening” w menu konta, gdy konto ma też plan treningowy.
+- Funkcja `sendPlainEmail` (w `inviteEmail.ts`) jest w tej gałęzi identyczna jak w `feature/konta-link-kod` — przy scaleniu obu bez konfliktu.
+- Testy: `trainer-applications.test.ts` (6), `TrainerApplyCard.test.tsx`, `admin-page.test.tsx`.
+- Weryfikacja bloku 6: API 2607, bezpieczeństwo 101, panel 767, portal 229, typecheck i build OK, smoke 131/0.

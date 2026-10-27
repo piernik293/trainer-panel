@@ -7,12 +7,12 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { humanizeError } from "@/lib/userError";
 import {
-  BLOCK_CONFIRM, SOURCE_LABEL, useAccessLog, useAdminAction, useAdminErrors, useAdminSolo, useAdminSubscriptions, useAdminTrainers, useIsAdmin,
+  AUTO_ACCEPT_CONFIRM, BLOCK_CONFIRM, SOURCE_LABEL, useApplicationActions, useAutoAccept, useTrainerApplications, useAccessLog, useAdminAction, useAdminErrors, useAdminSolo, useAdminSubscriptions, useAdminTrainers, useIsAdmin,
 } from "@/lib/adminApi";
 
-type Tab = "errors" | "trainers" | "solo" | "subs" | "log";
+type Tab = "errors" | "applications" | "trainers" | "solo" | "subs" | "log";
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
-  { id: "errors", label: "Błędy" }, { id: "trainers", label: "Trenerzy" }, { id: "solo", label: "Solo" },
+  { id: "errors", label: "Błędy" }, { id: "applications", label: "Wnioski" }, { id: "trainers", label: "Trenerzy" }, { id: "solo", label: "Solo" },
   { id: "subs", label: "Abonamenty i limity" }, { id: "log", label: "Dziennik dostępu" },
 ];
 const fmt = (d: string | null) => (d ? new Date(d).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" }) : "—");
@@ -41,6 +41,51 @@ function Errors() {
               {e.status === "new" && <Button size="sm" variant="outline" onClick={() => review.mutate(e.id)}>Oznacz jako przejrzany</Button>}
             </li>
           ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function Applications() {
+  const { toast } = useToast();
+  const { data } = useTrainerApplications();
+  const auto = useAutoAccept();
+  const { decide, setAutoAccept } = useApplicationActions();
+  const onErr = (e: unknown) => toast({ title: humanizeError(e), variant: "destructive" });
+  const pending = (data?.applications ?? []).filter((a) => a.status === "pending");
+  const decided = (data?.applications ?? []).filter((a) => a.status !== "pending").slice(0, 10);
+  const on = auto.data?.autoAccept ?? false;
+  return (
+    <div className="space-y-4">
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={on} aria-label="Przyjmuj wnioski automatycznie"
+          onChange={() => { if (on || window.confirm(AUTO_ACCEPT_CONFIRM)) setAutoAccept.mutate(!on, { onError: onErr }); }} />
+        Przyjmuj wnioski automatycznie {on ? "(włączone)" : "(wyłączone)"}
+      </label>
+      <div>
+        <p className="text-sm font-medium mb-2">Oczekujące ({pending.length})</p>
+        {pending.length === 0 ? <p className="text-sm text-muted-foreground">Brak wniosków.</p> : (
+          <ul className="divide-y rounded-md border">
+            {pending.map((a) => (
+              <li key={a.id} className="p-3 space-y-1" data-testid="admin-application">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm font-medium">{a.name ?? "(bez imienia)"}</span>
+                  <span className="text-xs text-muted-foreground">{fmt(a.createdAt)}</span>
+                </div>
+                {a.note && <p className="text-sm text-muted-foreground break-words">{a.note}</p>}
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => decide.mutate({ id: a.id, accept: false }, { onError: onErr })}>Odrzuć</Button>
+                  <Button size="sm" onClick={() => decide.mutate({ id: a.id, accept: true }, { onError: onErr })}>Akceptuj</Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      {decided.length > 0 && (
+        <ul className="text-xs text-muted-foreground space-y-1">
+          {decided.map((a) => <li key={a.id}>{a.name ?? "(bez imienia)"} — {a.status === "accepted" ? "przyjęty" : "odrzucony"} {fmt(a.decidedAt)}</li>)}
         </ul>
       )}
     </div>
@@ -170,6 +215,7 @@ export default function Admin() {
         {TABS.map((t) => <Button key={t.id} role="tab" aria-selected={tab === t.id} size="sm" variant={tab === t.id ? "default" : "outline"} onClick={() => setTab(t.id)}>{t.label}</Button>)}
       </div>
       {tab === "errors" && <Errors />}
+      {tab === "applications" && <Applications />}
       {tab === "trainers" && <Trainers />}
       {tab === "solo" && <Solo />}
       {tab === "subs" && <Subs />}
