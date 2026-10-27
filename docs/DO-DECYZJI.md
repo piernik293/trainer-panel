@@ -107,3 +107,17 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 ### Uwagi do scalania
 37. Migracje: 0037–0040 (część 1) i 0050–0054 (moje bloki) mają różne numery, więc nie kolidują. Wszystkie są już zastosowane na bazie aplikacji i testowej. Konflikty tekstowe możliwe w: `docs/POSTEP-GCP.md`, `docs/DO-DECYZJI.md`, `lib/db/src/schema/trainers.ts` (kolumny z bloków 2, 3, 5), `routes/index.ts`, `lib/db/src/schema/index.ts`, `requireAuth.ts`.
    - ODPOWIEDŹ: ZATWIERDZONE tak, jak zrobiono.
+
+
+## Przegląd jakości przed betą (27.10.2026, gałąź `qa/przeglad-bety`, `qa/bezpieczenstwo`)
+38. **KRYTYCZNE — scal poprawkę startu API przed jakimkolwiek restartem z `main`.** Na `main` osoba z kontem bez trenera (Solo, prośba o dołączenie) blokuje start API przy ≥ 2 trenerach, a przy jednym trenerze zostaje po cichu mu przypisana. Poprawka jest na `qa/przeglad-bety` (commit `ee023a4`) i identyczna na `qa/bezpieczenstwo`. Działającej teraz aplikacji to nie dotyczy do pierwszego restartu.
+39. **Napis „maskotka” w okręgu na końcu treningu** to placeholder na przyszłą maskotkę. Zostawiłem (maskotka jest poza moim zakresem). Czy chcesz do czasu maskotki ukryć okrąg (bezpieczna wartość domyślna: ukryć)?
+40. **Formularz „Prowadzę podopiecznych” jest teraz w dwóch miejscach:** w oknie „Moje konto” (poz. 34) i na ekranie osoby bez trenera i planu (bez tego ta osoba w ogóle nie mogła go znaleźć). Czy tak zostaje?
+41. **Nowy tekst dla osoby wypełniającej wywiad, gdy trener ma limit klientów:** „Nie udało się teraz wysłać wywiadu. Napisz do swojego trenera — poprosi Cię o ponowną próbę.” Poprzedni tekst mówił o pakiecie trenera. Zatwierdź albo podaj własny.
+42. **Rodzaj dnia w planie po polsku:** klucze z kreatora (`upper`, `lower`, `full_body`…) wyświetlam jako „Góra ciała”, „Dół ciała”, „Całe ciało”… (tylko wyświetlanie, dane w bazie bez zmian). Docelowo kreator mógłby od razu zapisywać polskie nazwy — to zmiana generatora, więc tylko za zgodą.
+43. **Panel administratora, lista trenerów:** trener bez nazwy i e-maila jest pokazywany jako „Konto …” + 6 ostatnich znaków identyfikatora. Zbiera nazwę i e-mail z profilu dopiero, gdy trener je poda — warto przy zakładaniu konta trenera prosić o imię i e-mail.
+44. **Komunikat 404 w portalu** zmieniony z szablonu programisty na „Nie ma takiej strony” + link do planu.
+45. **Konta i dane QA zostały w bazie aplikacji:** konta Clerk `qa…+clerk_test@example.com`, klienci „Sportowiec/Poczatkujacy/Nieaktywna QA”, „Ewa”, „Wnioskodawca” oraz ich plany, sesje, pakiet i zgłoszenie bólu. Nie usuwałem ich (usuwanie danych tylko za Twoją zgodą). Trener-administrator QA ma w bazie rolę trenera. Lista do usunięcia razem z fikstury testów: `docs/BETA-START.md`, pkt 10.
+46. **Zmiany pakietów i uprawnień kont testowych nie wykonywałem** (zabezpieczenie STOP-7 zablokowało próbę); rolę administratora konta QA nadałem wyłącznie w osobnych procesach QA przez zmienną środowiskową, bez zmiany `.env`.
+47. **Cele dotyku < 44 px** (menu, kalendarz, przełączniki) wymagają przeglądu nawigacji i układu na telefonie — to zakres „nowa nawigacja/UX”, którego nie ruszałem.
+48. **Nazwy ćwiczeń** — konwencja i lista „stara → nowa” w `docs/NAZWY-PROPOZYCJA.md` (propozycja; baza bez zmian). **Bezpieczeństwo** — przegląd w `docs/BEZPIECZENSTWO-BETA.md`; otwarte: kopie bazy tylko na tej samej maszynie, limity zapytań w pamięci, CSP w trybie „tylko raport”.
