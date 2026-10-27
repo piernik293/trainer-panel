@@ -191,3 +191,5 @@
 - Dokończenie pracy z poprzedniej sesji (zmiany niezatwierdzone → commity) oraz 1e, 1f, 1g. Szczegóły: `docs/GENERATOR-PRIORYTETY.md`, sekcja „Wdrożone 27.10.2026”.
 - Migracja 0037 (dane: cele rozgrzewek i rozciągania; backup `~/backups/przed_0037_*`).
 - Testy: `generator-priorities.test.ts` (12), `catalogueTabs.test.ts` (2).
+- Test `blockDurationRule.test.ts` zaktualizowany świadomie do nowej reguły długości cyklu (decyzja właściciela); asercje bezpieczeństwa bez zmian.
+- Weryfikacja bloku 1: API 2599 (po poprawce testu długości cyklu zielone), bezpieczeństwo generatora 101, panel 767, portal 228, typecheck i build OK, smoke 131/0.
