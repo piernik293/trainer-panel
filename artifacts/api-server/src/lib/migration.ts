@@ -79,7 +79,10 @@ export async function runStartupMigration(): Promise<void> {
   }
 
   // ── Step B — backfill trainer_id ─────────────────────────────────────────
-  const [nullCountRow] = (await db.execute(sql`SELECT COUNT(*)::int AS n FROM clients WHERE trainer_id IS NULL`)).rows as Array<{ n: number }>;
+  // Only LEGACY orphans (no trainer and no portal account) are backfilled. A person with an account and no trainer (Solo, or someone whose
+  // request to join is still pending) has no trainer on purpose: assigning them to a trainer would show their data without consent,
+  // and counting them as "ambiguous" would make the API refuse to start (found in the pre-beta QA, 27.10.2026).
+  const [nullCountRow] = (await db.execute(sql`SELECT COUNT(*)::int AS n FROM clients WHERE trainer_id IS NULL AND clerk_user_id IS NULL`)).rows as Array<{ n: number }>;
   const nullCount = nullCountRow.n;
 
   if (nullCount === 0) {
@@ -118,10 +121,10 @@ export async function runStartupMigration(): Promise<void> {
 
     logger.info({ trainerId, nullCount }, "migration: Step B — backfilling trainer_id");
     await db.execute(sql`
-      UPDATE clients SET trainer_id = ${trainerId} WHERE trainer_id IS NULL
+      UPDATE clients SET trainer_id = ${trainerId} WHERE trainer_id IS NULL AND clerk_user_id IS NULL
     `);
 
-    const [verify] = (await db.execute(sql`SELECT COUNT(*)::int AS n FROM clients WHERE trainer_id IS NULL`)).rows as Array<{ n: number }>;
+    const [verify] = (await db.execute(sql`SELECT COUNT(*)::int AS n FROM clients WHERE trainer_id IS NULL AND clerk_user_id IS NULL`)).rows as Array<{ n: number }>;
     if (verify.n !== 0) {
       throw new Error(`migration: Step B verification failed — ${verify.n} clients still have NULL trainer_id`);
     }
