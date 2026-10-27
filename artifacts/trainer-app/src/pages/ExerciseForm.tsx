@@ -718,6 +718,7 @@ function ExerciseFormBody({
                     <Checkbox
                       checked={field.value ?? false}
                       onCheckedChange={(checked) => field.onChange(!!checked)}
+                      aria-label="Wymaga asekuracji (spotter)"
                     />
                     <FormLabel className="cursor-pointer font-normal">
                       Wymaga asekuracji (spotter)
@@ -736,6 +737,7 @@ function ExerciseFormBody({
                     <Checkbox
                       checked={field.value ?? false}
                       onCheckedChange={(checked) => field.onChange(!!checked)}
+                      aria-label="Odpowiednie dla segmentu Start adaptacyjny (brak aktywności fizycznej)"
                     />
                     <FormLabel className="cursor-pointer font-normal">
                       Odpowiednie dla segmentu „Start adaptacyjny" (brak aktywności fizycznej)
