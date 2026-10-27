@@ -26,13 +26,39 @@ describe("services/conditioning (czysta logika)", () => {
     expect(conditioningEnabled({} as NodeJS.ProcessEnv)).toBe(false);
     expect(conditioningEnabled({ CONDITIONING_ENABLED: "1" } as unknown as NodeJS.ProcessEnv)).toBe(true);
   });
-  it("brak aktywności i początkujący nigdy nie dostają interwałów ani tempa", () => {
-    for (const l of ["Brak aktywności fizycznej", "Początkujący", null, undefined]) {
+  it("brak aktywności (i brak danych) nigdy nie dostaje interwałów, tempa ani fartleku", () => {
+    for (const l of ["Brak aktywności fizycznej", null, undefined]) {
       const m = allowedMethods(l);
-      expect(m).not.toContain("interwaly"); expect(m).not.toContain("tempo"); expect(m).not.toContain("fartlek");
+      expect(m).toEqual(["marszobieg"]);
+      expect(prescribe({ level: l, method: "interwaly", week: 1, blockedJoints: new Set() }).ok).toBe(false);
     }
+  });
+  it("początkujący: tylko łagodne interwały, bez tempa i fartleku", () => {
+    const m = allowedMethods("Początkujący");
+    expect(m).toContain("interwaly"); expect(m).not.toContain("tempo"); expect(m).not.toContain("fartlek");
     expect(allowedMethods("Średniozaawansowany")).toContain("interwaly");
-    expect(prescribe({ level: "Początkujący", method: "interwaly", week: 1, blockedJoints: new Set() }).ok).toBe(false);
+  });
+  it("łagodne interwały: marsz szybki/trucht i marsz wolny, wysiłek najwyżej 6/10, bez sprintów, tylko teren i bieżnia", () => {
+    for (let w = 1; w <= 12; w++) {
+      const p = prescribe({ level: "Początkujący", method: "interwaly", week: w, blockedJoints: new Set() });
+      expect(p.ok).toBe(true);
+      if (!p.ok) continue;
+      const wk = p.value.weekPlan;
+      for (const st of wk.pattern) expect(Math.max(...st.rpe)).toBeLessThanOrEqual(6);
+      expect(wk.pattern[0]).toMatchObject({ kind: "odcinek", minutes: 1 });
+      expect(wk.pattern[1]).toMatchObject({ kind: "przerwa", minutes: 2 });
+      expect(wk.repeats).toBeLessThanOrEqual(8);
+      expect(["teren", "bieznia"]).toContain(p.value.tool);
+    }
+    const ids = allowedTools("Początkujący", "interwaly", new Set()).map((t) => t.id);
+    expect(ids.sort()).toEqual(["bieznia", "teren"]);
+    // Ś dalej dostaje mocne interwały (RPE 7–8)
+    const strong = prescribe({ level: "Średniozaawansowany", method: "interwaly", week: 1, blockedJoints: new Set() });
+    expect(strong.ok && Math.max(...strong.value.weekPlan.pattern[0]!.rpe)).toBe(8);
+  });
+  it("łagodne interwały przy bólu kolana: brak bezpiecznego sprzętu zamiast biegu", () => {
+    const p = prescribe({ level: "Początkujący", method: "interwaly", week: 1, blockedJoints: new Set(["Kolano"]) });
+    expect(p.ok).toBe(false);
   });
   it("skakanka i sanki dopiero od poziomu Ś", () => {
     const ids = (l: string) => allowedTools(l, "interwaly", new Set()).map((t) => t.id);
@@ -87,7 +113,7 @@ describe("trasy", () => {
     expect(r.status).toBe(404); expect(r.body.code).toBe("CONDITIONING_DISABLED");
   });
 
-  it("dzień kondycyjny: własny klient tak, cudzy 404, interwały dla P 422", async () => {
+  it("dzień kondycyjny: własny klient tak, cudzy 404, tempo dla P 422", async () => {
     process.env.CONDITIONING_ENABLED = "1";
     as(TA);
     const ok = await request(app).post(`/api/clients/${a1}/plans/${planId}/conditioning-days`).send({ method: "marszobieg", week: 1 });
@@ -97,7 +123,11 @@ describe("trasy", () => {
     expect((await request(app).post(`/api/clients/${a1}/plans/${planId}/conditioning-days`).send({ method: "marszobieg" })).status).toBe(404);
     expect((await request(app).get(`/api/clients/${a1}/conditioning/logs`)).status).toBe(404);
     as(TA);
-    const bad = await request(app).post(`/api/clients/${a1}/plans/${planId}/conditioning-days`).send({ method: "interwaly" });
+    // początkujący: łagodne interwały tak, tempo i fartlek nie
+    const gentle = await request(app).post(`/api/clients/${a1}/plans/${planId}/conditioning-days`).send({ method: "interwaly" });
+    expect(gentle.status).toBe(201);
+    expect(["teren", "bieznia"]).toContain(gentle.body.prescription.tool);
+    const bad = await request(app).post(`/api/clients/${a1}/plans/${planId}/conditioning-days`).send({ method: "tempo" });
     expect(bad.status).toBe(422);
   });
 
