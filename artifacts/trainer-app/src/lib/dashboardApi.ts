@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 
-export type AttentionKind = "pain" | "hard_twice" | "silent" | "package" | "interview" | "no_plan" | "plan_ending" | "invite_pending";
+export type AttentionKind = "pain" | "join_request" | "hard_twice" | "silent" | "package" | "interview" | "no_plan" | "plan_ending" | "invite_pending";
 
 export interface AttentionItem {
   kind: AttentionKind;

@@ -12,6 +12,7 @@ import { formatWhen } from "@/lib/dashboardFormat";
 // The pill always carries a text label: colour only reinforces it.
 const PILL: Record<AttentionKind, string> = {
   pain: "bg-destructive/10 text-destructive",
+  join_request: "bg-brand-soft text-primary",
   hard_twice: "bg-warning-soft text-warning",
   silent: "bg-muted text-foreground",
   package: "bg-warning-soft text-warning",
