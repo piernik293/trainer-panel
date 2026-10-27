@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TodayCard } from "@/components/training/TodayCard";
 import { StepsTile } from "@/components/StepsTile";
+import { AccountNotice } from "@/components/AccountNotice";
 import { TrainingFlow } from "@/components/training/TrainingFlow";
 import { RampFlow } from "@/components/training/RampFlow";
 import type { RampKind } from "@/lib/training/ramp";
@@ -1287,6 +1288,7 @@ export default function PlanPortal() {
           <p className="text-sm text-muted-foreground">
             Skontaktuj się ze swoim trenerem — musi aktywować Twój plan i powiązać konto z Twoim profilem.
           </p>
+          <AccountNotice />
           {planError && (
             <Button onClick={() => setPlanRetry((c) => c + 1)} className="rounded-lg mt-2">
               Spróbuj ponownie

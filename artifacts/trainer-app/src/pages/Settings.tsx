@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getInitials } from "@/components/layout/AccountMenu";
 import { SubscriptionSummary } from "@/components/subscription/SubscriptionSummary";
 import { ThemeSelect } from "@/components/ThemeSelect";
+import { JoinCard } from "@/components/JoinCard";
 
 export default function Settings() {
   const { user, isLoaded } = useUser();
@@ -94,6 +95,8 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      <JoinCard />
 
       {/* ── Konto ──────────────────────────────────────────────────── */}
       <Card>

@@ -5,6 +5,9 @@ export const trainersTable = pgTable("trainers", {
   clerkUserId: text("clerk_user_id").notNull().unique(),
   displayName: text("display_name"),
   email: text("email"),
+  /** Kod/link do dołączenia podopiecznych (migration 0038); NULL = jeszcze nie wygenerowany. Nowy kod unieważnia stary. */
+  joinCode: text("join_code"),
+  joinCodeCreatedAt: timestamp("join_code_created_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

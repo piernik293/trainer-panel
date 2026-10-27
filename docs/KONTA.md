@@ -69,3 +69,12 @@ Tabela rola × zasób: klient A1 nie widzi danych A2 ani B1; trener A nie widzi 
 3. **Kod trenera czy tylko link?** Rekomendacja: oba, ale kod ważny do odnowienia przez trenera i z limitem prób (ochrona przed zgadywaniem).
 4. **Po odrzuceniu wniosku: ponowny wniosek po 14 dniach?** Rekomendacja: tak, z możliwością wcześniejszego ręcznego odblokowania przez administratora.
 5. **Czy trener może odłączyć podopiecznego, czy tylko podopieczny trenera?** Rekomendacja: oba kierunki, z mailem do drugiej strony; historia treningów zostaje u podopiecznego, trener traci dostęp.
+
+## Wdrożone 27.10.2026 (gałąź `feature/konta-link-kod`, blok 2)
+- **Jedno konto, trener opcjonalny.** Osoba, która dołącza przez link/kod, dostaje w bazie od razu konto bez trenera (`clients.trainer_id` = NULL, czyli Solo). Rola trenera nadal tylko z listy dopuszczonych (`TRAINER_CLERK_IDS`) — konto z linku nigdy nie staje się trenerem, a konto trenera nie może prosić o dołączenie.
+- **Link i kod.** Trener ma jeden kod (10 znaków, bez mylących 0/O/1/I/L), link to `…/client-landing/join/<kod>`. Ustawienia → „Dołączanie podopiecznych”: kopiowanie linku i kodu, „Nowy kod” (stary przestaje działać), lista próśb z [Odrzuć] / [Akceptuj]. Zaproszenia mailem działają jak dotąd.
+- **Ochrona przed zgadywaniem.** 10 prób na 15 minut na konto i na adres IP (w pamięci procesu); błędny, stary i nieistniejący kod dają to samo 404.
+- **Akceptacja.** Trener widzi dane osoby dopiero po [Akceptuj]; po akceptacji pozostałe oczekujące prośby tej osoby wygasają. Osoba połączona z trenerem nie dołączy do drugiego bez odłączenia.
+- **Odłączenie.** Może każda strona (`POST /clients/:id/disconnect`, `POST /client-portal/disconnect`); mail do drugiej strony (jeśli skonfigurowano pocztę); `trainer_id` = NULL, historia treningów zostaje u osoby, trener traci dostęp. Zdarzenia zapisują się w `client_link_events`.
+- **Ekran bez trenera.** W portalu osoba bez trenera widzi „Trening samodzielny — wkrótce” (bez martwych przycisków) i pole na kod trenera.
+- **Ponowny wniosek o konto trenera (2e) — tylko model, panel po becie.** Odrzucony wniosek można ponowić po 14 dniach od odrzucenia. Model: tabela `trainer_applications` (clerk_user_id, status pending/accepted/rejected, created_at, decided_at, opcjonalna notka); reguła: nowy wniosek dozwolony, gdy brak wniosku `pending` i `decided_at` starsze niż 14 dni. Akceptacja nadaje rolę trenera (rekord `trainers`); `TRAINER_CLERK_IDS` zostaje jako lista awaryjna. Nie zbudowane w tej gałęzi (blok 6).

@@ -202,3 +202,10 @@
 - Testy: `generator-priorities.test.ts` (12), `catalogueTabs.test.ts` (2).
 - Test `blockDurationRule.test.ts` zaktualizowany świadomie do nowej reguły długości cyklu (decyzja właściciela); asercje bezpieczeństwa bez zmian.
 - Weryfikacja bloku 1: API 2599 (po poprawce testu długości cyklu zielone), bezpieczeństwo generatora 101, panel 767, portal 228, typecheck i build OK, smoke 131/0.
+
+## 27.10.2026 — blok 2: konta, link i kod trenera (gałąź `feature/konta-link-kod`, z `main`, NIE scalona)
+- Migracja 0038 (backup `~/backups/przed_0038_*`): `trainers.join_code`, `trainer_join_requests`, `client_link_events`; tylko dodawanie.
+- API: `routes/joinRequests.ts` (kod/link, prośby, akceptacja/odrzucenie, odłączenie przez każdą ze stron), `services/joinCode.ts`, `sendPlainEmail` w `services/inviteEmail.ts`.
+- Panel: karta „Dołączanie podopiecznych” w Ustawieniach, przycisk „Odłącz”. Portal: strona `/join/:kod`, ekran „wkrótce” + pole na kod.
+- Testy: `join-requests.test.ts` (11), `AccountNotice.test.tsx`. Opis i model wniosku o konto trenera (2e): `docs/KONTA.md`.
+- Weryfikacja bloku 2: API 2598, bezpieczeństwo 101, panel 765, portal 230, typecheck i build OK, smoke 131/0 (jedyny test wysyłki maili wymusza jeden plik z `sendMail`, więc `sendPlainEmail` jest w `inviteEmail.ts`).

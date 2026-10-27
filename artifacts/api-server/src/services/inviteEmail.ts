@@ -208,3 +208,21 @@ export async function sendInviteEmail(
     return { sent: false, code: "SEND_FAILED", message: SEND_FAILED_MESSAGE };
   }
 }
+
+/** Krótki mail tekstowy do jednej osoby (np. odłączenie od trenera). Ten sam SMTP co zaproszenia; bez SMTP — cichy brak wysyłki. */
+export async function sendPlainEmail(opts: { to: string | null | undefined; subject: string; text: string; fromName?: string | null }): Promise<boolean> {
+  const host = process.env["SMTP_HOST"];
+  const user = process.env["SMTP_USER"];
+  const pass = process.env["SMTP_PASS"];
+  if (!opts.to || !host || !user || !pass) return false;
+  const port = parseInt(process.env["SMTP_PORT"] ?? "587", 10);
+  try {
+    const nodemailer = await import("nodemailer");
+    const transporter = nodemailer.default.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+    await transporter.sendMail({ from: senderHeader(opts.fromName ?? null), to: opts.to, subject: opts.subject, text: opts.text });
+    return true;
+  } catch (err) {
+    logger.error({ err: err instanceof Error ? err.message : String(err) }, "Failed to send notification email");
+    return false;
+  }
+}
