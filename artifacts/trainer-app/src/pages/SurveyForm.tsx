@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { HEALTH_CONSENT_HINT, HEALTH_CONSENT_LABEL } from "@/lib/healthConsentText";
 import { Slider } from "@/components/ui/slider";
 import { ArrowLeft, Save, Pencil, AlertCircle, Plus, X } from "lucide-react";
 import { MuscleGroupCombobox } from "@/components/MuscleGroupCombobox";
@@ -668,6 +669,10 @@ function SurveyFormBody({
   const upsertSurvey = useUpsertClientSurvey();
   const patchSurvey = usePatchSurvey();
   const { toast } = useToast();
+  // Zgoda na dane o zdrowiu przy wywiadzie wpisywanym przez trenera (domyślnie niezaznaczona). Przy edycji istniejącego wywiadu
+  // wysyłamy ją tylko, gdy trener ją zmienił — starsze wywiady zostają bez zmian.
+  const [healthConsent, setHealthConsent] = useState(false);
+  const [healthConsentTouched, setHealthConsentTouched] = useState(false);
 
   // Derive injuryStatus from stored data for backward-compat with old surveys
   const derivedInjuryStatus =
@@ -977,6 +982,7 @@ function SurveyFormBody({
       avoidsAdvancedMethods: avoidsAdvancedMethodsBool,
       advancedMethodsToAvoid:
         avoidsAdvancedMethodsBool === true ? data.advancedMethodsToAvoid : [],
+      healthConsent: surveyId && !healthConsentTouched ? undefined : healthConsent,
       favoriteExercises: favoritesString,
       avoidedExercises: avoidedString,
       avoidedExerciseIds: avoidedIds,
@@ -1505,6 +1511,19 @@ function SurveyFormBody({
               <CardDescription>Kluczowe dla bezpieczeństwa planu</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
+              <div className="flex items-start gap-3" data-testid="health-consent-field">
+                <Checkbox
+                  id="health-consent"
+                  checked={healthConsent}
+                  onCheckedChange={(v) => { setHealthConsent(v === true); setHealthConsentTouched(true); }}
+                  aria-label={HEALTH_CONSENT_LABEL}
+                />
+                <label htmlFor="health-consent" className="text-sm leading-snug">
+                  {HEALTH_CONSENT_LABEL}
+                  <span className="block text-xs text-muted-foreground mt-0.5">{HEALTH_CONSENT_HINT}</span>
+                </label>
+              </div>
+
               <FormField
                 control={form.control}
                 name="injuryStatus"

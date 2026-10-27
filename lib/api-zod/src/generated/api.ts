@@ -252,6 +252,9 @@ export const upsertClientSurveyBodyStressLevelMax = 10;
 
 
 export const UpsertClientSurveyBody = zod.object({
+  // NOTE: healthConsent added manually (interview entered by the trainer): true = the client agreed to the processing of health data,
+  // false = no consent (most cautious generator settings); absent = unchanged (older interviews keep a NULL status).
+  "healthConsent": zod.boolean().optional(),
   "trainingGoal": zod.string().optional(),
   "trainingGoalOther": zod.string().optional(),
   "experienceLevel": zod.string().optional(),
