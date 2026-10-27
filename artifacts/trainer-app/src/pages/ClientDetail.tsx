@@ -180,6 +180,9 @@ function PlansTab({
               Nowy plan
             </Link>
           </Button>
+          <Button asChild size="sm" variant="outline" className="gap-1">
+            <Link href={`/clients/${clientId}/plans/import`}>Import z pliku</Link>
+          </Button>
           <Button asChild size="sm" className="gap-1">
             <Link href={`/clients/${clientId}/plans/generate`}>
               <Sparkles size={14} />

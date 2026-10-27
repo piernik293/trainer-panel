@@ -34,6 +34,8 @@ import trainerApplicationsRouter from "./trainerApplications";
 
 import packagesRouter from "./packages";
 
+import planImportRouter from "./planImport";
+
 const router: IRouter = Router();
 
 router.use(healthRouter);
@@ -70,6 +72,8 @@ router.use(adminRouter);
 router.use(trainerApplicationsRouter);
 
 router.use(packagesRouter);
+
+router.use(planImportRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────

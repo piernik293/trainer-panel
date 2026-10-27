@@ -22,3 +22,5 @@ export * from "./trainerApplications";
 
 export * from "./packages";
 export * from "./attention";
+
+export * from "./planTemplates";
