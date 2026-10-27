@@ -260,3 +260,8 @@
 - Testy `conditioning.test.ts` (12): flaga, brak interwałów dla BA/P, filtr bólu, tydzień lżejszy, wzrost ≤15%, idempotencja, izolacja A/B, check-in zabroniony dla Solo, słownik tylko admin.
 - Weryfikacja: API 2599, bezpieczeństwo 101, panel 765, portal 228, typecheck i build OK, smoke 131/0.
 - Brak: ekrany panelu i portalu (po decyzji o menu/UX), przełącznik w ustawieniach.
+
+## 27.10.2026 — scalenie do `main` i decyzje właściciela
+- Scalone (`--no-ff`) w kolejności z raportu: beta-przygotowanie, generator-priorytety, konta-link-kod, panel-admin, wnioski-trenerow, pakiety-sesje, skrzynka-uwagi, import-excel, raport-pdf, solo, kondycja, docs/kondycja-aktualizacja, docs/raport-wlasciciela. Konflikty tylko tekstowe (lista tras, indeks schematu, importy, POSTEP, trainers.ts) — zachowano zmiany obu stron.
+- Decyzje właściciela wykonane: łagodne interwały dla początkujących (`fix/interwaly-poczatkujacy`), zgoda w wywiadzie wpisywanym przez trenera (`fix/zgoda-wywiad-reczny`), prośba o dołączenie w „Wymaga uwagi” (`fix/prosba-w-wymaga-uwagi`), odpowiedzi w `docs/DO-DECYZJI.md`, cron kopii bazy na `~/trainer-panel`.
+- Flagi `SOLO_ENABLED` i `CONDITIONING_ENABLED` zostają wyłączone. `OWNER_NOTIFY_EMAIL` — adres poda właściciel.
