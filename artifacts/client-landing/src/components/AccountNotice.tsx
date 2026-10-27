@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TrainerApplyCard } from "@/components/TrainerApplyCard";
 
 export interface AccountStatus { linked: boolean; trainerName: string | null; pendingTrainerName: string | null }
 
@@ -14,14 +15,15 @@ export function joinPathFromCode(raw: string): string | null {
   return code.length === 10 && /^[A-Z0-9]+$/.test(code) ? `/join/${code}` : null;
 }
 
-export function AccountNotice() {
+export function AccountNotice({ onStatus }: { onStatus?: (s: AccountStatus | null) => void } = {}) {
   const [status, setStatus] = useState<AccountStatus | null>(null);
   const [code, setCode] = useState("");
   useEffect(() => {
     fetch("/api/account/status", { credentials: "include" })
       .then((r) => (r.ok ? (r.json() as Promise<AccountStatus>) : null))
-      .then(setStatus)
-      .catch(() => setStatus(null));
+      .then((s) => { setStatus(s); onStatus?.(s); })
+      .catch(() => { setStatus(null); onStatus?.(null); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   if (!status || status.linked) return null;
   const path = joinPathFromCode(code);
@@ -39,6 +41,8 @@ export function AccountNotice() {
           </div>
         </>
       )}
+      {/* Osoba bez trenera nie ma planu, więc nie ma też menu konta — wniosek o konto trenera musi być osiągalny tutaj */}
+      <TrainerApplyCard />
     </div>
   );
 }
