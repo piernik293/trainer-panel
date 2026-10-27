@@ -11,6 +11,7 @@
  * Step 5 — Podgląd szkicu         : (Phase 4C — read-only preview, frontend-only)
  */
 
+import { blockDurationRange } from "@workspace/survey-config";
 import { StepHint } from "@/components/dashboard/StepHint";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { humanizeError } from "@/lib/userError";
@@ -765,13 +766,8 @@ function Step2Preferences({
     onPrefsChange({ ...prefs, [key]: value });
   }
 
-  // Auto-reset block duration to 4 when level is "Brak aktywności fizycznej"
-  const isNoActivity = data.input.experienceLevel === "Brak aktywności fizycznej";
-  useEffect(() => {
-    if (isNoActivity && prefs.blockDurationWeeks !== 4) {
-      onPrefsChange({ ...prefs, blockDurationWeeks: 4 });
-    }
-  }, [isNoActivity]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Cycle length: recommended range by level (BA/P 8–12, Ś 6–8, Z 4–6); the trainer may pick any length from 4 to 12.
+  const durationRange = blockDurationRange(data.input.experienceLevel);
 
   function handleDaysChange(days: number) {
     const newCompatible = getCompatibleSplits(days);
@@ -1037,43 +1033,32 @@ function Step2Preferences({
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 py-4 space-y-3">
-          {isNoActivity ? (
-            /* Fixed 4-week adaptive block for "Brak aktywności fizycznej" */
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full border border-primary bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center">
-                  4
-                </div>
-                <span className="text-sm font-medium text-foreground">Blok adaptacyjny: 4 tygodnie</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Dla poziomu „Brak aktywności fizycznej" długość bloku adaptacyjnego wynosi zawsze 4 tygodnie.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label className="text-sm">Liczba tygodni (4–12)</Label>
-              <div className="flex items-center gap-3 flex-wrap">
-                {[4, 5, 6, 7, 8, 9, 10, 11, 12].map((w) => (
+          <div className="space-y-2">
+            <Label className="text-sm">Liczba tygodni (4–12)</Label>
+            <div className="flex items-center gap-3 flex-wrap">
+              {[4, 5, 6, 7, 8, 9, 10, 11, 12].map((w) => {
+                const recommended = w >= durationRange.min && w <= durationRange.max;
+                return (
                   <button
                     key={w}
                     type="button"
                     onClick={() => set("blockDurationWeeks", w)}
+                    aria-label={`${w} tygodni${recommended ? " (zalecane)" : ""}`}
                     className={`w-9 h-9 rounded-full border text-sm font-medium transition-colors
                       ${prefs.blockDurationWeeks === w
                         ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border hover:bg-muted"
+                        : recommended ? "border-primary/60 hover:bg-muted" : "border-border text-muted-foreground hover:bg-muted"
                       }`}
                   >
                     {w}
                   </button>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Standardowy mezocykl: 6 tygodni. Dla zaawansowanych można stosować 8–12 tygodni.
-              </p>
+                );
+              })}
             </div>
-          )}
+            <p className="text-xs text-muted-foreground" data-testid="block-duration-hint">
+              Zalecane dla tego poziomu: {durationRange.min}–{durationRange.max} tygodni (domyślnie {durationRange.default}). Ćwiczenia główne zostają te same w całym cyklu; możesz wybrać inną długość.
+            </p>
+          </div>
         </CardContent>
       </Card>
 

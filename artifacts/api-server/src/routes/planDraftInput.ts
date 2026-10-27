@@ -36,6 +36,7 @@ import {
 import { eq, and } from "drizzle-orm";
 import { db, clientsTable, volumeTargetsTable } from "@workspace/db";
 import { loadPlanDraftInput } from "../services/planDraftInputService";
+import { blockDurationRange } from "@workspace/survey-config";
 import { requireAuth } from "../middlewares/requireAuth";
 import { calculateVolumeDecisions } from "../services/planDraftVolumeDecisionService";
 import { calculateVolumeDistribution } from "../services/planDraftVolumeDistributionService";
@@ -136,18 +137,18 @@ router.post("/plans/draft-input/validate", requireAuth, async (req, res): Promis
 
   // Validate block duration (experience-level dependent)
   const blockLevel = draftInput.input.experienceLevel;
-  if (blockLevel === "Brak aktywności fizycznej") {
-    // No-activity level: block is always 4 weeks. Non-4 values are normalized to 4 on the
-    // frontend; log a non-blocking warning if a stale/invalid value reaches the backend.
-    if (preferences.blockDurationWeeks !== 4) {
+  if (preferences.blockDurationWeeks >= 4 && preferences.blockDurationWeeks <= 12) {
+    // Within 4–12 any length is allowed; outside the recommended range for the level the trainer only gets a notice.
+    const rec = blockDurationRange(blockLevel);
+    if (preferences.blockDurationWeeks < rec.min || preferences.blockDurationWeeks > rec.max) {
       warnings.push({
-        code: "BLOCK_DURATION_NORMALIZED",
-        severity: "warning",
-        message: `Dla poziomu "Brak aktywności fizycznej" długość bloku wynosi zawsze 4 tygodnie. Wartość zostanie ustawiona na 4.`,
+        code: "BLOCK_DURATION_OUT_OF_RANGE",
+        severity: "notice",
+        message: `Zalecana długość cyklu dla tego poziomu: ${rec.min}–${rec.max} tygodni. Wybrano ${preferences.blockDurationWeeks}.`,
         blocking: false,
       });
     }
-  } else if (preferences.blockDurationWeeks < 4 || preferences.blockDurationWeeks > 12) {
+  } else {
     warnings.push({
       code: "INVALID_BLOCK_DURATION",
       severity: "warning",

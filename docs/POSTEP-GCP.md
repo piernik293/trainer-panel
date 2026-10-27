@@ -195,3 +195,10 @@
 - 5d: zgoda na dane o zdrowiu — migracja 0050 (4 kolumny nullable w `surveys`), pole `healthConsent` w wywiadzie, wycofanie w Ustawieniach portalu, podgląd u trenera w profilu klienta, najostrożniejsze ustawienia generatora bez zgody. Testy: `health-consent.test.ts`, wizard.
 - 5e: pliki `deploy/*.example`, `scripts/usun-konta-demo.sh` (tylko podgląd domyślnie, NIEURUCHOMIONY), rozdział 13 w `docs/WDROZENIE-PLAN.md`.
 - Blok 5 — weryfikacja końcowa: API 2598/2598, bezpieczeństwo generatora 101/101, panel 765/765, portal 235/235, typecheck i build OK, test dymny 131/0 (na własnym API na porcie 18081, żeby nie ruszać usług drugiej sesji). Poprawka po drodze: limiter zapytań jest wyłączony w testach (VITEST), chyba że test ustawi `RATE_LIMIT_FORCE=1`.
+
+## 27.10.2026 — blok 1: generator, priorytety (gałąź `feature/generator-priorytety`, z `main`, NIE scalona)
+- Dokończenie pracy z poprzedniej sesji (zmiany niezatwierdzone → commity) oraz 1e, 1f, 1g. Szczegóły: `docs/GENERATOR-PRIORYTETY.md`, sekcja „Wdrożone 27.10.2026”.
+- Migracja 0037 (dane: cele rozgrzewek i rozciągania; backup `~/backups/przed_0037_*`).
+- Testy: `generator-priorities.test.ts` (12), `catalogueTabs.test.ts` (2).
+- Test `blockDurationRule.test.ts` zaktualizowany świadomie do nowej reguły długości cyklu (decyzja właściciela); asercje bezpieczeństwa bez zmian.
+- Weryfikacja bloku 1: API 2599 (po poprawce testu długości cyklu zielone), bezpieczeństwo generatora 101, panel 767, portal 228, typecheck i build OK, smoke 131/0.

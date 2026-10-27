@@ -163,7 +163,8 @@ export async function findJointConflicts(planIds: readonly number[], now: Date =
     for (const s of slots) {
       const joints = reportedJointsLoaded(s.joints, blocked);
       if (joints.length === 0) continue;
-      const sameDay = new Set(slots.filter((x) => x.dayId === s.dayId).map((x) => x.exerciseId));
+      // not proposed again if it is anywhere in the plan (owner's decision 26.10.2026: no repeated exercises in a plan)
+      const sameDay = new Set(slots.map((x) => x.exerciseId));
       out.push({
         clientId: p.clientId, clientLabel: `#${p.clientId} ${p.firstName} ${(p.lastName ?? "").slice(0, 1)}.`.trim(),
         planId: p.id, planTitle: p.title, planStatus: p.status,
@@ -207,7 +208,7 @@ export async function replaceWithProposal(planId: number, planExerciseId: number
  * — prescription unchanged — and records it in the plan history. The target must be visible to the trainer, active and not hidden.
  */
 export async function replaceWithVariant(planId: number, planExerciseId: number, targetId: number, trainerId: number):
-  Promise<{ ok: true; to: { id: number; name: string } } | { ok: false; code: "NO_SLOT" | "NO_TARGET" | "NOT_A_VARIANT" }> {
+  Promise<{ ok: true; to: { id: number; name: string } } | { ok: false; code: "NO_SLOT" | "NO_TARGET" | "NOT_A_VARIANT" | "ALREADY_IN_PLAN" }> {
   const [slot] = await db.select({ id: workoutPlanExercisesTable.id, exerciseId: workoutPlanExercisesTable.exerciseId, dayId: workoutPlanExercisesTable.dayId })
     .from(workoutPlanExercisesTable)
     .innerJoin(workoutPlanDaysTable, eq(workoutPlanDaysTable.id, workoutPlanExercisesTable.dayId))
@@ -219,6 +220,10 @@ export async function replaceWithVariant(planId: number, planExerciseId: number,
   if (!from || !to || !to.isActive || to.hidden || (to.createdByTrainerId !== null && to.createdByTrainerId !== trainerId)) return { ok: false, code: "NO_TARGET" };
   const sameFamily = to.id !== from.id && (to.parentExerciseId === from.id || from.parentExerciseId === to.id || (from.parentExerciseId !== null && from.parentExerciseId === to.parentExerciseId));
   if (!sameFamily) return { ok: false, code: "NOT_A_VARIANT" };
+  const inPlan = await db.select({ id: workoutPlanExercisesTable.id }).from(workoutPlanExercisesTable)
+    .innerJoin(workoutPlanDaysTable, eq(workoutPlanDaysTable.id, workoutPlanExercisesTable.dayId))
+    .where(and(eq(workoutPlanDaysTable.planId, planId), eq(workoutPlanExercisesTable.exerciseId, to.id)));
+  if (inPlan.length > 0) return { ok: false, code: "ALREADY_IN_PLAN" };
   await db.transaction(async (tx) => {
     await tx.update(workoutPlanExercisesTable).set({ exerciseId: to.id }).where(eq(workoutPlanExercisesTable.id, planExerciseId));
     await tx.insert(planChangeLogTable).values({

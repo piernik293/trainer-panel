@@ -19,6 +19,7 @@ import {
 import { useSubscriptionSummary } from "@/lib/use-subscription-summary";
 import { ErrorState } from "@/components/ErrorState";
 import { humanizeError } from "@/lib/userError";
+import { CATALOGUE_TABS, splitByTab, type CatalogueTab } from "@/lib/catalogueTabs";
 
 export default function ExerciseList() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,6 +44,9 @@ export default function ExerciseList() {
     movementPattern: movementPatternFilter !== "all" ? movementPatternFilter : undefined,
     suitableForNoActivity: levelFilter === "adaptive" ? true : undefined,
   });
+  // Zakładki katalogu: ćwiczenia treningowe osobno od rozgrzewek i rozciągania (decyzja właściciela 26.10.2026).
+  const [tab, setTab] = useState<CatalogueTab>("training");
+  const shown = splitByTab(exercises, tab);
   const { data: subscription } = useSubscriptionSummary();
   const customExerciseLimitReached =
     subscription?.usage.customExercises.atLimit ?? false;
@@ -102,6 +106,15 @@ export default function ExerciseList() {
           {subscription?.plan.name}. Usunięcie własnego ćwiczenia zwolni miejsce.
         </div>
       )}
+
+      <div role="tablist" className="flex gap-2" data-testid="catalogue-tabs">
+        {CATALOGUE_TABS.map((t) => (
+          <Button
+            key={t.id} role="tab" aria-selected={tab === t.id} data-testid={`tab-${t.id}`}
+            variant={tab === t.id ? "default" : "outline"} size="sm" onClick={() => setTab(t.id)}
+          >{t.label}</Button>
+        ))}
+      </div>
 
       <div className="bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
         {/* Filter bar */}
@@ -216,7 +229,7 @@ export default function ExerciseList() {
               onRetry={() => void refetch()}
             />
           </div>
-        ) : exercises?.length === 0 ? (
+        ) : shown.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
               <Dumbbell className="h-8 w-8 text-muted-foreground" />
@@ -248,7 +261,7 @@ export default function ExerciseList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {exercises?.map((exercise) => (
+                  {shown.map((exercise) => (
                     <TableRow key={exercise.id} className="group">
                       <TableCell className="font-medium">
                         <Link href={`/exercises/${exercise.id}`} className="hover:underline">
@@ -296,7 +309,7 @@ export default function ExerciseList() {
 
             {/* Mobile cards */}
             <div className="md:hidden divide-y divide-border/50">
-              {exercises?.map((exercise) => (
+              {shown.map((exercise) => (
                 <Link
                   key={exercise.id}
                   href={`/exercises/${exercise.id}`}

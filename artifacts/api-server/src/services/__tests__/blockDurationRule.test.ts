@@ -2,9 +2,11 @@
  * Focused tests for the experience-dependent training-block duration rule.
  *
  * Spec items covered:
- * ✓ 1. Brak aktywności always uses 4 weeks (defaultPreferences + blockDurationRange)
- * ✓ 2. Changing level to Brak aktywności resets 6/8/10/12 → 4 (defaultPreferences returns 4)
- * ✓ 3. Brak aktywności control is fixed/read-only (blockDurationRange.min === max === 4)
+ * Zmiana reguły (decyzja właściciela 26.10.2026): długość cyklu zależy od poziomu — BA i P 8–12 (domyślnie 8), Ś 6–8 (6), Z 4–6 (4);
+ * trener może wybrać każdą z 4–12 (poza zalecanym zakresem dostaje tylko informację BLOCK_DURATION_OUT_OF_RANGE).
+ * ✓ 1. Brak aktywności: domyślnie 8 tygodni, zakres 8–12
+ * ✓ 2. Zapisany wcześniej wybór nie zmienia domyślnych wartości serwisu
+ * ✓ 3. Zakres Brak aktywności to 8–12 (domyślnie 8)
  * ✓ 4. Początkujący accepts 4–12 (validate endpoint: no INVALID_BLOCK_DURATION for valid values)
  * ✓ 5. Średniozaawansowany accepts 4–12
  * ✓ 6. Zaawansowany accepts 4–12
@@ -97,23 +99,21 @@ describe("Brak aktywności fizycznej — service defaults", () => {
     await upsertSurvey(clientId, "Brak aktywności fizycznej");
   });
 
-  it("1. defaultPreferences.blockDurationWeeks is 4", async () => {
+  it("1. defaultPreferences.blockDurationWeeks is 8", async () => {
     const result = await loadPlanDraftInput(clientId);
     expect(result).not.toBeNull();
-    expect(result!.defaultPreferences.blockDurationWeeks).toBe(4);
+    expect(result!.defaultPreferences.blockDurationWeeks).toBe(8);
   });
 
-  it("3. blockDurationRange is fixed at 4 (min === max === default === 4)", async () => {
+  it("3. blockDurationRange is 8–12 (default 8)", async () => {
     const result = await loadPlanDraftInput(clientId);
-    expect(result!.blockDurationRange.min).toBe(4);
-    expect(result!.blockDurationRange.max).toBe(4);
-    expect(result!.blockDurationRange.default).toBe(4);
+    expect(result!.blockDurationRange).toEqual({ min: 8, max: 12, default: 8 });
   });
 });
 
 // ─── 2: Reset from previously selected values ────────────────────────────────
 
-describe("Brak aktywności fizycznej — defaultPreferences always returns 4, not prior selection", () => {
+describe("Brak aktywności fizycznej — defaultPreferences always returns the level default, not prior selection", () => {
   // This tests the service layer: regardless of what a prior wizard state may have stored,
   // a fresh load for a "Brak aktywności" client always returns 4.
   let clientId: number;
@@ -124,12 +124,12 @@ describe("Brak aktywności fizycznej — defaultPreferences always returns 4, no
     await upsertSurvey(clientId, "Brak aktywności fizycznej");
   });
 
-  for (const previousValue of [6, 8, 10, 12]) {
-    it(`2. previously selected ${previousValue} weeks: defaultPreferences returns 4 for Brak aktywności`, async () => {
+  for (const previousValue of [6, 10, 12]) {
+    it(`2. previously selected ${previousValue} weeks: defaultPreferences returns 8 for Brak aktywności`, async () => {
       // The service derives defaultPreferences purely from the survey level.
       // Any prior wizard selection of ${previousValue} is not persisted in defaultPreferences.
       const result = await loadPlanDraftInput(clientId);
-      expect(result!.defaultPreferences.blockDurationWeeks).toBe(4);
+      expect(result!.defaultPreferences.blockDurationWeeks).toBe(8);
       // Confirm the value is NOT the "previous" value
       expect(result!.defaultPreferences.blockDurationWeeks).not.toBe(previousValue);
     });
@@ -254,7 +254,7 @@ describe("Active training levels — below 4 or above 12 are rejected at schema 
 
 // ─── Brak aktywności: non-4 value triggers BLOCK_DURATION_NORMALIZED (not INVALID) ──
 
-describe("Brak aktywności fizycznej — non-4 value normalizes, not hard-errors", () => {
+describe("Brak aktywności fizycznej — poza zalecanym zakresem tylko informacja", () => {
   let clientId: number;
 
   beforeAll(async () => {
@@ -263,50 +263,45 @@ describe("Brak aktywności fizycznej — non-4 value normalizes, not hard-errors
     await upsertSurvey(clientId, "Brak aktywności fizycznej");
   });
 
-  it("Brak aktywności + blockDurationWeeks=6 → BLOCK_DURATION_NORMALIZED (non-blocking)", async () => {
+  it("Brak aktywności + blockDurationWeeks=6 → BLOCK_DURATION_OUT_OF_RANGE (informacja, nieblokująca)", async () => {
     const res = await req
       .post("/api/plans/draft-input/validate")
       .send({ clientId, preferences: basePrefs(6) });
     expect(res.status).toBe(200);
     const codes = res.body.warnings.map((w: { code: string }) => w.code);
-    expect(codes).toContain("BLOCK_DURATION_NORMALIZED");
+    expect(codes).toContain("BLOCK_DURATION_OUT_OF_RANGE");
     const blocking = res.body.warnings.filter((w: { code: string; blocking: boolean }) => w.blocking);
     const blockingCodes = blocking.map((w: { code: string }) => w.code);
-    expect(blockingCodes).not.toContain("BLOCK_DURATION_NORMALIZED");
+    expect(blockingCodes).not.toContain("BLOCK_DURATION_OUT_OF_RANGE");
   });
 
-  it("Brak aktywności + blockDurationWeeks=4 → no BLOCK_DURATION_NORMALIZED", async () => {
+  it("Brak aktywności + blockDurationWeeks=8 → bez informacji o zakresie", async () => {
     const res = await req
       .post("/api/plans/draft-input/validate")
-      .send({ clientId, preferences: basePrefs(4) });
+      .send({ clientId, preferences: basePrefs(8) });
     expect(res.status).toBe(200);
     const codes = res.body.warnings.map((w: { code: string }) => w.code);
-    expect(codes).not.toContain("BLOCK_DURATION_NORMALIZED");
+    expect(codes).not.toContain("BLOCK_DURATION_OUT_OF_RANGE");
   });
 });
 
-// ─── Other levels: defaultPreferences.blockDurationWeeks remains 6 ────────────
+// ─── Domyślna długość i zakres wg poziomu ───────────────────────────────────
 
-describe("Other levels — defaultPreferences.blockDurationWeeks remains 6", () => {
+const EXPECTED = {
+  "Początkujący": { min: 8, max: 12, default: 8 },
+  "Średniozaawansowany": { min: 6, max: 8, default: 6 },
+  "Zaawansowany": { min: 4, max: 6, default: 4 },
+} as const;
+
+describe("Domyślna długość cyklu i zakres wg poziomu", () => {
   for (const level of ["Początkujący", "Średniozaawansowany", "Zaawansowany"] as const) {
-    it(`8. ${level}: defaultPreferences.blockDurationWeeks is 6`, async () => {
+    it(`8. ${level}: domyślnie ${EXPECTED[level].default} tygodni, zakres ${EXPECTED[level].min}–${EXPECTED[level].max}`, async () => {
       const email = `block-rule-default-${level.toLowerCase().replace(/\s/g, "-")}@example.com`;
       const client = await getOrCreateClient(email);
       await upsertSurvey(client.id, level);
       const result = await loadPlanDraftInput(client.id);
-      expect(result!.defaultPreferences.blockDurationWeeks).toBe(6);
-    });
-  }
-
-  for (const level of ["Początkujący", "Średniozaawansowany", "Zaawansowany"] as const) {
-    it(`8. ${level}: blockDurationRange is 4–12`, async () => {
-      const email = `block-rule-range-${level.toLowerCase().replace(/\s/g, "-")}@example.com`;
-      const client = await getOrCreateClient(email);
-      await upsertSurvey(client.id, level);
-      const result = await loadPlanDraftInput(client.id);
-      expect(result!.blockDurationRange.min).toBe(4);
-      expect(result!.blockDurationRange.max).toBe(12);
-      expect(result!.blockDurationRange.default).toBe(6);
+      expect(result!.defaultPreferences.blockDurationWeeks).toBe(EXPECTED[level].default);
+      expect(result!.blockDurationRange).toEqual(EXPECTED[level]);
     });
   }
 });
