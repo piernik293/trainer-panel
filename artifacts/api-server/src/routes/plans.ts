@@ -42,6 +42,8 @@ import {
 import { requireAuth } from "../middlewares/requireAuth";
 import { jointWarningMessage, loadBlockedJoints, reportedJointsLoaded } from "../services/jointExclusion";
 import { findJointConflicts, replaceWithProposal, replaceWithVariant } from "../services/jointPlanAudit";
+import { swapPlanExercise } from "../services/planSwap";
+import { VOLUME_ABOVE_RANGE_TEXT, VOLUME_IN_RANGE_TEXT, hasHardVolumeLimit } from "@workspace/survey-config";
 
 const router: IRouter = Router();
 
@@ -2048,7 +2050,9 @@ router.post("/plans/:id/activate", requireAuth, async (req, res): Promise<void> 
   const violations = fullPlan.volume.targets.filter(
     (t) => t.status === "above_max_recommended" || t.status === "overtraining_warning",
   );
-  if (violations.length > 0) {
+  // BA / P: the upper limit is HARD (activation blocked). Ś / Z: it is a recommended range — activation goes ahead with a notice.
+  const hardLimit = hasHardVolumeLimit(plan.experienceLevelUsed);
+  if (violations.length > 0 && hardLimit) {
     res.status(422).json({
       error: "Aktywacja zablokowana: przekroczono absolutny limit tygodniowy",
       violations: violations.map((v) => ({
@@ -2082,7 +2086,14 @@ router.post("/plans/:id/activate", requireAuth, async (req, res): Promise<void> 
   });
 
   const full = await getPlanFull(planId);
-  res.json({ ...full, archivedPlans });
+  const volumeNotice = violations.length > 0
+    ? {
+        status: "above_range" as const,
+        text: VOLUME_ABOVE_RANGE_TEXT,
+        targets: violations.map((v) => ({ targetName: v.targetName, weeklyEffectiveSets: Math.round(v.weeklyEffectiveSets * 10) / 10, weeklyAbsoluteCeiling: v.weeklyAbsoluteCeiling })),
+      }
+    : { status: "in_range" as const, text: VOLUME_IN_RANGE_TEXT, targets: [] };
+  res.json({ ...full, archivedPlans, volumeNotice });
 });
 
 // ─── GET /volume-guidelines ───────────────────────────────────────────────────
@@ -2217,13 +2228,38 @@ router.post("/plans/:id/exercises/:planExerciseId/variant-replacement", requireA
   if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
   const result = await replaceWithVariant(planId, planExerciseId, variantId, req.trainer!.id);
   if (!result.ok) {
-    res.status(result.code === "NOT_A_VARIANT" ? 409 : 404).json({
+    res.status(result.code === "NOT_A_VARIANT" || result.code === "ALREADY_IN_PLAN" ? 409 : 404).json({
       code: result.code,
-      error: result.code === "NOT_A_VARIANT" ? "To ćwiczenie nie jest odmianą wybranego ćwiczenia." : "Nie znaleziono ćwiczenia lub miejsca w planie.",
+      error: result.code === "NOT_A_VARIANT" ? "To ćwiczenie nie jest odmianą wybranego ćwiczenia."
+        : result.code === "ALREADY_IN_PLAN" ? "To ćwiczenie jest już w planie."
+        : "Nie znaleziono ćwiczenia lub miejsca w planie.",
     });
     return;
   }
   res.json(await getPlanFull(planId));
+});
+
+// "Zamień": another exercise on the same slot — different from the removed one and from everything already in the plan, same pattern,
+// all safety filters. No option → 409 NO_OPTION, or (removeIfNone) the slot is emptied for a manual choice.
+router.post("/plans/:id/exercises/:planExerciseId/swap", requireAuth, async (req, res): Promise<void> => {
+  const planId = Number(req.params.id);
+  const planExerciseId = Number(req.params.planExerciseId);
+  const removeIfNone = (req.body as { removeIfNone?: unknown } | undefined)?.removeIfNone === true;
+  if (!Number.isFinite(planId) || !Number.isFinite(planExerciseId)) {
+    res.status(400).json({ error: "Nieprawidłowe ID" });
+    return;
+  }
+  if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
+  const result = await swapPlanExercise(planId, planExerciseId, req.trainer!.id, removeIfNone);
+  if (!result.ok) {
+    if (result.code === "NO_SLOT") { res.status(404).json({ code: result.code, error: "Nie znaleziono miejsca w planie." }); return; }
+    res.status(409).json({ code: result.code, error: "Brak innego bezpiecznego ćwiczenia na to miejsce. Wybierz ćwiczenie ręcznie." });
+    return;
+  }
+  const message = result.outcome === "replaced"
+    ? `Zamieniono na: ${result.to.name}`
+    : "Brak innego bezpiecznego ćwiczenia — miejsce jest puste. Dodaj ćwiczenie ręcznie.";
+  res.json({ outcome: result.outcome, message, plan: await getPlanFull(planId) });
 });
 
 export default router;

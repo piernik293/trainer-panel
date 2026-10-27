@@ -60,6 +60,7 @@ import {
 import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
 import { mainPlanRoleCondition, isGeneratorSafe, preferMainOverVariants } from "../lib/exerciseRoles";
 import { LANDING_ROLE, SPORT_GOAL, isPlyoExercise, plyoRule, selectPlyoBlock } from "../services/plyoBlock";
+import { chooseFreshRun, previousPlanExerciseIds } from "../services/planHistory";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   authorizeGeneratedDay,
@@ -299,8 +300,10 @@ router.post(
       ? plyoRule({ goal: null, effectiveLevel: null })
       : plyoRule({ goal: survey.trainingGoal, effectiveLevel: survey.experienceLevel, jumpExperience: survey.jumpExperience });
     // Main exercise by default; a variant only when its main exercise does not fit (equipment of the place, joint, level…).
+    // An exercise excluded in the interview is removed FIRST: only that exact position goes (RDL with a barbell out, RDL with dumbbells
+    // stays), and its variants are still offered because their main exercise is no longer in the list.
     const compatibleExercises = preferMainOverVariants(completeExercises.filter((ex) =>
-      (v0SessionType === "plyo" || !isPlyoExercise(ex)) && ladder.allowed(ex.id) && compatibilityFilter({
+      !avoidedExerciseIds.has(ex.id) && (v0SessionType === "plyo" || !isPlyoExercise(ex)) && ladder.allowed(ex.id) && compatibilityFilter({
         id: ex.id,
         trainingLocation: ex.trainingLocation ?? [],
         equipment: ex.equipment ?? [],
@@ -309,34 +312,11 @@ router.post(
       }),
     ));
 
-    // ── Family-level exercise blocking (Stage G — Part 1 — hard constraints) ──
-    //
-    // An excluded exercise often implies the entire movement family, not just
-    // the exact DB row.  E.g. avoiding "martwy ciąg" should block "martwy ciąg
-    // rumuński", "martwy ciąg sumo", etc.
-    //
-    // This expansion runs BEFORE pool building so that isAvoided propagates to
-    // every family member via the same avoidedExerciseIds Set used in the pool
-    // loop below.
-    //
-    // Conservative design: 6 practical families are mapped.  Any excluded
-    // exercise whose name does not match a trigger is blocked exactly (exact-only).
-    const FAMILY_BLOCKING_MAP: Array<{
-      trigger: string;        // substring matched against the avoided exercise name
-      blocksFragment: string; // substring matched against ALL active exercise names
-      label: string;          // human-readable description for the explanation block
-    }> = [
-      { trigger: "martwy ciąg",          blocksFragment: "martwy ciąg",        label: "martwy ciąg i warianty (cała rodzina)" },
-      { trigger: "wyciskanie nad głowę",  blocksFragment: "nad głowę",          label: "wyciskanie nad głowę i warianty (cała rodzina)" },
-      { trigger: "ohp",                   blocksFragment: "nad głowę",          label: "wyciskanie nad głowę i warianty (cała rodzina)" },
-      { trigger: "wiosłowanie",           blocksFragment: "wiosłowanie",        label: "wiosłowanie i warianty (cała rodzina)" },
-      { trigger: "przysiad",              blocksFragment: "przysiad",           label: "przysiady i warianty (cała rodzina)" },
-      { trigger: "wyciskanie sztangą",    blocksFragment: "wyciskanie sztangą", label: "wyciskanie sztangą i warianty (cała rodzina)" },
-    ];
-
+    // Exclusions from the interview are EXACT (owner's decision 26.10.2026): only the chosen row is excluded, never a whole family
+    // of similar names. (The earlier family map was never applied and has been removed.)
     // Tracks what was blocked and how — surfaced in the explanation block.
     const blockedFamilies: Array<{ avoidedName: string; label: string }> = [];
-    const exactOnlyBlocks: string[] = [];
+    const exactOnlyBlocks: string[] = exercises.filter((e) => avoidedExerciseIds.has(e.id)).map((e) => e.name);
 
     const BEGINNER_EXPERIENCE_LEVELS_FOR_ADAPTIVE = new Set([
       "Brak aktywności fizycznej",
@@ -652,6 +632,11 @@ router.post(
     // alt sessions (e.g. Upper B avoids barbell when Upper A already used it).
     // Pass it through to the engine so the diversity logic actually fires.
     const sameTypePrev = body.data.sameTypePreviousExercises ?? [];
+    // "Generuj od nowa": first without the exercises of the client's previous plan; the previous plan's exercises come back only for
+    // slots where no other safe option exists (see chooseFreshRun). All safety filters apply to both runs, they are in the pool.
+    const previousIds = await previousPlanExerciseIds(clientId);
+    const baselineUsed = new Set(usedExerciseIds);
+    for (const id of previousIds) usedExerciseIds.add(String(id));
     let v0Result = runExerciseSelectionEngineV0(
       pool,
       v0SessionType as V0SessionType,
@@ -659,6 +644,18 @@ router.post(
       priorityContext,
       { alternativeIndex, sameTypePreviousExercises: sameTypePrev },
     );
+    let repeatNote: string | null = null;
+    if (previousIds.size > 0) {
+      const baseline = runExerciseSelectionEngineV0(
+        pool, v0SessionType as V0SessionType, new Set(baselineUsed), priorityContext,
+        { alternativeIndex, sameTypePreviousExercises: sameTypePrev },
+      );
+      const chosen = chooseFreshRun(v0Result, baseline, previousIds);
+      v0Result = chosen.result;
+      if (chosen.repeated > 0) {
+        repeatNote = `Powtórzone z poprzedniego planu: ${chosen.repeated} z ${v0Result.exercises.length} ćwiczeń w tym dniu — brak innych bezpiecznych opcji dla tych miejsc.`;
+      }
+    }
 
     // ── Thin-pool retry for alternative sessions ──────────────────────────────
     //
@@ -1090,6 +1087,7 @@ router.post(
     const hasCore      = enrichedExercises.some((e) => e.exerciseClass === "core");
 
     if (plyoBlockNote) generatorNotes.push(plyoBlockNote);
+    if (repeatNote) generatorNotes.push(repeatNote);
     if (hasPlyo) {
       generatorNotes.push(
         "Element eksplozywny ustawiono na początku sesji ze względu na cel sportowy / dynamikę.",

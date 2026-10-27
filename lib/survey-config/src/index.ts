@@ -298,6 +298,37 @@ export function jumpExperienceCode(value: string | undefined | null): JumpExperi
   return i === 0 ? "nie" : i === 1 ? "troche" : i === 2 ? "tak" : null;
 }
 
+// ─── Weekly volume: hard limit vs recommended range (owner's decision 26.10.2026) ──
+
+export const VOLUME_IN_RANGE_TEXT = "Objętość: w zalecanym zakresie ✓";
+export const VOLUME_ABOVE_RANGE_TEXT = "Objętość: powyżej zalecanego zakresu — sprawdź";
+
+/**
+ * "Brak aktywności fizycznej" and "Początkujący" keep the HARD upper limit of weekly sets per muscle group (activation is blocked above it);
+ * for intermediate and advanced the same limit is only a recommended range (a warning). An unknown level is treated as hard (safe side).
+ */
+export function hasHardVolumeLimit(experienceLevel: string | null | undefined): boolean {
+  return !experienceLevel || experienceLevel === "Brak aktywności fizycznej" || experienceLevel === "Początkujący";
+}
+
+// ─── Length of the training cycle (main exercises stay the same during it) ───
+
+export interface BlockDurationRange { min: number; max: number; default: number }
+
+/**
+ * Recommended cycle length in weeks (owner's decision 26.10.2026): BA and P 8–12 (default 8), Ś 6–8 (default 6), Z 4–6 (default 4).
+ * The trainer may choose any length from 4 to 12; outside this range only a notice is shown. Unknown level: 6 (4–12).
+ */
+export function blockDurationRange(experienceLevel: string | null | undefined): BlockDurationRange {
+  switch (experienceLevel) {
+    case "Brak aktywności fizycznej":
+    case "Początkujący": return { min: 8, max: 12, default: 8 };
+    case "Średniozaawansowany": return { min: 6, max: 8, default: 6 };
+    case "Zaawansowany": return { min: 4, max: 6, default: 4 };
+    default: return { min: 4, max: 12, default: 6 };
+  }
+}
+
 export function isBeginnerLevel(experienceLevel: string | undefined): boolean {
   return (
     experienceLevel === "Brak aktywności fizycznej" ||

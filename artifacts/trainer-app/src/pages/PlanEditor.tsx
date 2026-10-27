@@ -1,4 +1,5 @@
 import { VariantPicker } from "@/components/VariantPicker";
+import { SwapExerciseButton } from "@/components/SwapExerciseButton";
 import { useState, useEffect, useContext, createContext, useMemo } from "react";
 import { jointWarningFromError, planJointWarningText, jointReplaceConfirmText, activationConfirmText } from "@/lib/jointWarning";
 import { rirTargetLabel } from "@/lib/exerciseDraftHelpers";
@@ -118,6 +119,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CardioSection } from "@/components/CardioSection";
+import { VOLUME_ABOVE_RANGE_TEXT, VOLUME_IN_RANGE_TEXT, hasHardVolumeLimit } from "@workspace/survey-config";
 
 // ─── AvoidedExercisesContext ──────────────────────────────────────────────────
 // Holds a map of exerciseId → reason (null when no reason) for exercises that
@@ -907,6 +909,7 @@ function ExerciseRow({
               {summaryParts.join(" · ")}
             </p>
             <VariantPicker planId={planId} planExerciseId={ex.id} exerciseId={ex.exerciseId} readOnly={!canReplace} />
+            <SwapExerciseButton planId={planId} planExerciseId={ex.id} readOnly={!canReplace} />
             {ex.notes && (
               <p className="text-xs text-muted-foreground italic mt-0.5">🔒 {ex.notes}</p>
             )}
@@ -1769,7 +1772,10 @@ export default function PlanEditor() {
   }
 
   const statusMeta = STATUS_BADGE[plan.status];
-  const hasAbsoluteViolation = plan.volume.targets.some((t) => t.status === "overtraining_warning");
+  // BA / P: hard upper limit (activation blocked). Ś / Z: only a recommended range — a notice, activation allowed.
+  const hardVolumeLimit = hasHardVolumeLimit(plan.experienceLevelUsed);
+  const aboveRange = plan.volume.targets.some((t) => t.status === "above_max_recommended" || t.status === "overtraining_warning");
+  const hasAbsoluteViolation = hardVolumeLimit && plan.volume.targets.some((t) => t.status === "overtraining_warning");
   const hasUnassignedExercises = plan.volume.exercisesWithoutAssignments.length > 0;
   const canActivate = plan.status === "draft" && !hasAbsoluteViolation && !hasUnassignedExercises;
   const canEdit = plan.status === "draft";
@@ -1778,7 +1784,10 @@ export default function PlanEditor() {
 
   const doActivate = () => {
     activatePlan.mutate(undefined, {
-      onSuccess: () => toast({ title: "Plan aktywowany!" }),
+      onSuccess: (res) => {
+        const notice = (res as { volumeNotice?: { status: string; text: string } }).volumeNotice;
+        toast({ title: "Plan aktywowany!", description: notice?.status === "above_range" ? notice.text : undefined });
+      },
       onError: (err) => {
         const detail = (err as any)?.data;
         if (detail?.error === "PLAN_ACTIVATION_VALIDATION_FAILED" && Array.isArray(detail?.missingFields) && detail.missingFields.length > 0) {
@@ -1969,6 +1978,15 @@ export default function PlanEditor() {
             )}
           </div>
         </div>
+
+        {plan.status === "draft" && !hardVolumeLimit && (
+          <p
+            className={`rounded-lg border px-4 py-2 text-sm ${aboveRange ? "border-amber-300 bg-amber-50 text-amber-900" : "border-border text-muted-foreground"}`}
+            data-testid="volume-range-notice"
+          >
+            {aboveRange ? VOLUME_ABOVE_RANGE_TEXT : VOLUME_IN_RANGE_TEXT}
+          </p>
+        )}
 
         {(hasAbsoluteViolation || hasUnassignedExercises) && plan.status === "draft" && (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 space-y-1">

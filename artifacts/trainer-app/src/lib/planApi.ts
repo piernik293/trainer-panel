@@ -352,6 +352,22 @@ export function useReplaceWithVariant(planId: number) {
   });
 }
 
+export interface SwapResponse { outcome: "replaced" | "removed"; message: string; plan: WorkoutPlan }
+
+/** "Zamień": another exercise on the same slot (never one already in the plan); no safe option → the slot is emptied for a manual choice. */
+export function useSwapExercise(planId: number) {
+  const invalidate = usePlanInvalidator(planId);
+  const queryClient = useQueryClient();
+  return useMutation<SwapResponse, Error, { planExerciseId: number }>({
+    mutationFn: ({ planExerciseId }) =>
+      apiFetch<SwapResponse>(`/plans/${planId}/exercises/${planExerciseId}/swap`, { method: "POST", body: JSON.stringify({ removeIfNone: true }) }),
+    onSuccess: (res) => {
+      invalidate(res.plan);
+      queryClient.invalidateQueries({ queryKey: planKeys.history(planId) });
+    },
+  });
+}
+
 export function useCreatePlan(clientId: number) {
   const queryClient = useQueryClient();
   return useMutation<WorkoutPlan, Error, { title: string; surveyId: number; goal?: string; description?: string }>({

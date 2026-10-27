@@ -8,7 +8,7 @@
  * This service NEVER generates exercises, allocates volume, or saves plans.
  */
 
-import { isBeginnerLevel } from "@workspace/survey-config";
+import { blockDurationRange, isBeginnerLevel } from "@workspace/survey-config";
 import { effectiveLevelWarning, resolveEffectiveLevel, withEffectiveLevel } from "../lib/effectiveLevel";
 import { eq, desc } from "drizzle-orm";
 import { db, clientsTable, surveysTable } from "@workspace/db";
@@ -475,8 +475,8 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
   // `effectiveTrainingDays` — the value all planning defaults must use
   const effectiveTrainingDays = splitRecommendation?.cappedTrainingDays ?? trainingDays;
 
-  // No-activity clients use a fixed 4-week adaptive block; all other levels default to 6.
-  const defaultBlockDurationWeeks = experienceLevel === "Brak aktywności fizycznej" ? 4 : 6;
+  // Cycle length by level (owner's decision 26.10.2026): BA/P 8–12 (default 8), Ś 6–8 (default 6), Z 4–6 (default 4); the trainer may change it.
+  const defaultBlockDurationWeeks = blockDurationRange(experienceLevel).default;
 
   const defaultPreferences: PlanDraftGenerationPreferencesType = {
     trainingDays: effectiveTrainingDays,
@@ -525,10 +525,7 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     warnings,
     defaultPreferences,
     allowedSplitTypes,
-    blockDurationRange:
-      experienceLevel === "Brak aktywności fizycznej"
-        ? { min: 4, max: 4, default: 4 }
-        : { min: 4, max: 12, default: 6 },
+    blockDurationRange: blockDurationRange(experienceLevel),
     splitRecommendation,
     safetyAlerts,
     cardioRecommendation,
