@@ -36,6 +36,8 @@ import packagesRouter from "./packages";
 
 import planImportRouter from "./planImport";
 
+import reportPdfRouter from "./reportPdf";
+
 const router: IRouter = Router();
 
 router.use(healthRouter);
@@ -74,6 +76,8 @@ router.use(trainerApplicationsRouter);
 router.use(packagesRouter);
 
 router.use(planImportRouter);
+
+router.use(reportPdfRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
