@@ -31,6 +31,7 @@ import PlanDraftWizard from "@/pages/PlanDraftWizard";
 import SurveyInvite from "@/pages/SurveyInvite";
 import CalendarPage from "@/pages/CalendarPage";
 import Settings from "@/pages/Settings";
+import Admin from "@/pages/Admin";
 
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so the
 // same build serves multiple Clerk custom domains. Do not inline the env var.
@@ -295,6 +296,7 @@ function Router() {
         <Route path="/calendar" component={CalendarPage} />
         <Route path="/survey-invite" component={SurveyInvite} />
         <Route path="/settings" component={Settings} />
+        <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

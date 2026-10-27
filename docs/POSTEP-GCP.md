@@ -209,3 +209,12 @@
 - Panel: karta „Dołączanie podopiecznych” w Ustawieniach, przycisk „Odłącz”. Portal: strona `/join/:kod`, ekran „wkrótce” + pole na kod.
 - Testy: `join-requests.test.ts` (11), `AccountNotice.test.tsx`. Opis i model wniosku o konto trenera (2e): `docs/KONTA.md`.
 - Weryfikacja bloku 2: API 2598, bezpieczeństwo 101, panel 765, portal 230, typecheck i build OK, smoke 131/0 (jedyny test wysyłki maili wymusza jeden plik z `sendMail`, więc `sendPlainEmail` jest w `inviteEmail.ts`).
+
+## 27.10.2026 — blok 3: panel administratora (gałąź `feature/panel-admin`, z `main`, NIE scalona)
+- Migracja 0039 (backup `~/backups/przed_0039_*`): `trainers.blocked_at`, `app_errors` + `app_error_users`, `admin_access_log` z wyzwalaczem blokującym UPDATE/DELETE (dziennik nieusuwalny nawet z bazy).
+- Rola administratora: wyłącznie lista w `.env` (zmienna `APP_ADMIN_CLERK_IDS`, istniejąca — zadanie nazywało ją `ADMIN_CLERK_IDS`); administrator nie ma limitu generatora; konta administratora nie da się zablokować.
+- API `routes/admin.ts`: błędy, trenerzy (pakiet, blokada z potwierdzeniem, instrukcja dopisania do listy), Solo (liczby i lista), abonamenty i zużycie, wgląd w osobę z powodem (wpis w dzienniku PRZED pokazaniem danych), dziennik dostępu. Blokada konta: `requireAuth` odpowiada 403 `ACCOUNT_BLOCKED`.
+- Dziennik błędów: błędy API (centralny handler) oraz zgłoszenia z panelu i portalu (`POST /client-errors`, limit 20/min/IP); `services/errorLog.ts` usuwa e-maile, tokeny, hasła, długie liczby, parametry adresów, a opisy ze słowami zdrowotnymi ukrywa w całości; retencja 90 dni.
+- Panel: strona `/admin` (5 zakładek), pozycja w menu konta tylko dla administratora; zgłaszanie błędów w panelu i portalu (`lib/errorReport.ts`).
+- Testy: `admin-panel.test.ts` (14), `admin-page.test.tsx` (2).
+- Weryfikacja bloku 3: API 2601, bezpieczeństwo 101, panel 767, portal 228, typecheck i build OK, smoke 131/0.

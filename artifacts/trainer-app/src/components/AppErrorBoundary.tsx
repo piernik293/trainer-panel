@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { reportClientError } from "@/lib/errorReport";
 
 interface AppErrorBoundaryProps {
   children: ReactNode;
@@ -29,6 +30,7 @@ export class AppErrorBoundary extends Component<
       componentStack: errorInfo.componentStack,
       url: window.location.href,
     });
+    reportClientError(error);
   }
 
   private tryAgain = () => {

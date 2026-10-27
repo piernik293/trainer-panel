@@ -1,6 +1,6 @@
 import { useUser, useClerk } from "@clerk/react";
 import { useLocation } from "wouter";
-import { Settings, LogOut, UserCog } from "lucide-react";
+import { Settings, LogOut, UserCog, ShieldCheck } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsAdmin } from "@/lib/adminApi";
 
 /** Derives up to 2 uppercase initials from a display name. */
 export function getInitials(name: string | null | undefined): string {
@@ -29,6 +30,7 @@ export function AccountMenu({ compact = false }: AccountMenuProps) {
   const { user, isLoaded } = useUser();
   const { signOut, openUserProfile } = useClerk();
   const [, navigate] = useLocation();
+  const { data: adminInfo } = useIsAdmin();
 
   if (!isLoaded) {
     if (compact) {
@@ -130,6 +132,13 @@ export function AccountMenu({ compact = false }: AccountMenuProps) {
           <Settings className="w-4 h-4 mr-2" />
           Ustawienia
         </DropdownMenuItem>
+
+        {adminInfo?.isAdmin && (
+          <DropdownMenuItem onClick={() => navigate("/admin")} data-testid="menu-admin">
+            <ShieldCheck className="w-4 h-4 mr-2" />
+            Panel administratora
+          </DropdownMenuItem>
+        )}
 
         <DropdownMenuItem
           onClick={() => openUserProfile()}

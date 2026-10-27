@@ -3,9 +3,11 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 
 import { initTheme } from '@workspace/design-tokens';
+import { installErrorReporting } from './lib/errorReport';
 import './index.css';
 
 initTheme();
+installErrorReporting();
 
 // Offline support (PWA): production builds only — in dev the worker would serve stale modules.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
