@@ -25,6 +25,7 @@
  *   { hasProfile, hasLocationData, sessionType, exercises: DayRecommendationExercise[] }
  */
 
+import { isSoloClient, soloAllowsExercise, soloEnabled, soloPainExcludedIds } from "../services/solo";
 import { buildLadderRules, loadLadderRows } from "../services/ladderSelection";
 import { loadBlockedJoints, isConservativeHealth, CONSERVATIVE_NOTE } from "../services/jointExclusion";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
@@ -276,8 +277,13 @@ router.post(
 
     // ── Filter to complete exercises ───────────────────────────────────────────
     const statsMap = await fetchMuscleStats(exercises.map((e) => e.id));
+    // Solo (a person without a trainer, behind SOLO_ENABLED): stricter rules — verified only, jumps only with experience, no exercise they felt pain on.
+    const solo = soloEnabled() && isSoloClient({ trainerId: req.trainer?.id ?? null })
+      ? { effectiveLevel: survey.experienceLevel, jumpExperience: survey.jumpExperience, painExcludedIds: await soloPainExcludedIds(clientId) }
+      : null;
     const completeExercises = exercises.filter((ex) => {
       if (!isGeneratorSafe(ex, survey.experienceLevel)) return false;
+      if (solo && !soloAllowsExercise(ex, solo)) return false;
       const stats = statsMap.get(ex.id);
       const { isComplete } = computeCompleteness(ex, stats);
       return isComplete;

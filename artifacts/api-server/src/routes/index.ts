@@ -38,6 +38,8 @@ import planImportRouter from "./planImport";
 
 import reportPdfRouter from "./reportPdf";
 
+import soloRouter from "./solo";
+
 const router: IRouter = Router();
 
 router.use(healthRouter);
@@ -78,6 +80,8 @@ router.use(packagesRouter);
 router.use(planImportRouter);
 
 router.use(reportPdfRouter);
+
+router.use(soloRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
