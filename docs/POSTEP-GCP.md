@@ -186,3 +186,10 @@
 
 ### 26.10.2026 — #1611 trudność nauki 2 (migracja 0036, pg_dump `przed-0036-*`)
 - Martwy ciąg rumuński z gumą oporową: `learningDifficulty` 3 → 2 (decyzja właściciela: lekka guma, nauka zawiasu, ma być dla nieaktywnych). Plik/generator zaktualizowane. Dziury bez kandydata (dom bez sprzętu: pchanie pionowe BA/P, przyciąganie pionowe BA, zgięcie łokcia BA/P, anty-rotacja BA) zostają: generator pomija wzorzec, trener widzi ostrzeżenie o braku sprzętu; nowych ćwiczeń nie dodajemy.
+
+## 27.10.2026 — blok 2: konta, link i kod trenera (gałąź `feature/konta-link-kod`, z `main`, NIE scalona)
+- Migracja 0038 (backup `~/backups/przed_0038_*`): `trainers.join_code`, `trainer_join_requests`, `client_link_events`; tylko dodawanie.
+- API: `routes/joinRequests.ts` (kod/link, prośby, akceptacja/odrzucenie, odłączenie przez każdą ze stron), `services/joinCode.ts`, `sendPlainEmail` w `services/inviteEmail.ts`.
+- Panel: karta „Dołączanie podopiecznych” w Ustawieniach, przycisk „Odłącz”. Portal: strona `/join/:kod`, ekran „wkrótce” + pole na kod.
+- Testy: `join-requests.test.ts` (11), `AccountNotice.test.tsx`. Opis i model wniosku o konto trenera (2e): `docs/KONTA.md`.
+- Weryfikacja bloku 2: API 2598, bezpieczeństwo 101, panel 765, portal 230, typecheck i build OK, smoke 131/0 (jedyny test wysyłki maili wymusza jeden plik z `sendMail`, więc `sendPlainEmail` jest w `inviteEmail.ts`).

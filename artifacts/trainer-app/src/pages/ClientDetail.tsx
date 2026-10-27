@@ -1,5 +1,6 @@
 import { useState, useId } from "react";
 import { StepHint } from "@/components/dashboard/StepHint";
+import { DisconnectButton } from "@/components/DisconnectButton";
 import { humanizeError } from "@/lib/userError";
 import { useParams, Link } from "wouter";
 import {
@@ -954,6 +955,7 @@ function InvitationCard({ clientId }: { clientId: number }) {
               <UserCheck className="w-3 h-3" /> Konto aktywne
             </span>
           )}
+          {status === "active" && <DisconnectButton clientId={clientId} />}
           {status === "invited" && (
             <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-amber-100 text-amber-700">
               <Send className="w-3 h-3" /> Zaproszenie wysłane
