@@ -255,6 +255,7 @@ function PlansTab({
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-destructive hover:text-destructive"
+                    aria-label="Usuń plan"
                     onClick={() => handleDelete(plan)}
                   >
                     <Trash2 size={14} />
@@ -696,6 +697,7 @@ export default function ClientDetail() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                aria-label="Usuń notatkę"
                                 onClick={() => handleDeleteNote(note.id)}
                               >
                                 <Trash2 size={14} />
