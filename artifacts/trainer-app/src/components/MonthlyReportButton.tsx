@@ -42,7 +42,7 @@ export function MonthlyReportButton({ clientId, clientName }: { clientId: number
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Raport miesięczny — {clientName}</DialogTitle>
-          <DialogDescription>Frekwencja, treningi, rekordy, objętość, kroki i liczba zgłoszeń bólu. Raport jest dla Ciebie — to nie jest „Wrapped” dla podopiecznego.</DialogDescription>
+          <DialogDescription>Frekwencja, treningi, rekordy, objętość, kroki i liczba zgłoszeń bólu. Raport jest dla Ciebie, nie dla podopiecznego.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 text-sm">
           <label className="block space-y-1"><span>Miesiąc</span><input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-2" aria-label="Miesiąc raportu" /></label>
