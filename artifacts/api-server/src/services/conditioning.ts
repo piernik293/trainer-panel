@@ -1,7 +1,8 @@
 /**
  * Moduł kondycyjny (blok 12) — czysta logika, bez bazy. Domyślnie WYŁĄCZONY przełącznikiem CONDITIONING_ENABLED.
  * Zasady z docs/KONDYCJA.md: bez sprzętu pomiarowego (RPE + test rozmowy), tydzień lżejszy co 4., wzrost nie większy niż ~15% tygodniowo,
- * brak aktywności i początkujący nigdy nie dostają interwałów (bezpieczniejsza z dwóch interpretacji tabeli — zob. docs/DO-DECYZJI.md).
+ * brak aktywności nigdy nie dostaje interwałów; początkujący tylko łagodne (decyzja właściciela 27.10.2026): marsz szybki/wolny albo trucht/marsz,
+ * odczuwalny wysiłek najwyżej ok. 6/10, bez sprintów, bez skakanki, sanek i lin.
  */
 
 export const CONDITIONING_DISABLED_BODY = { error: "Nie znaleziono.", code: "CONDITIONING_DISABLED" } as const;
@@ -25,12 +26,19 @@ export function levelRank(level: string | null | undefined): LevelRank {
   return 0; // także brak danych — najostrożniej
 }
 
-/** Metody dozwolone dla poziomu. BA/P: tylko marszobieg i bieg ciągły (P dopiero po bazie — bieg ciągły startuje od 9. tygodnia). */
+/** Metody dozwolone dla poziomu. BA: tylko marszobieg. P: marszobieg, bieg ciągły i ŁAGODNE interwały. Ś/Z: pełny zakres. */
 export function allowedMethods(level: string | null | undefined): ConditioningMethod[] {
   const r = levelRank(level);
-  if (r <= 1) return r === 0 ? ["marszobieg"] : ["marszobieg", "bieg_ciagly"];
+  if (r === 0) return ["marszobieg"];
+  if (r === 1) return ["marszobieg", "bieg_ciagly", "interwaly"];
   return [...METHODS];
 }
+
+/** Łagodne interwały (początkujący): odcinki tylko marszem szybkim albo truchtem, przerwa marszem wolnym. */
+export const isGentleIntervals = (level: string | null | undefined, method: ConditioningMethod): boolean =>
+  method === "interwaly" && levelRank(level) <= 1;
+export const GENTLE_RPE_MAX = 6;
+const GENTLE_TOOL_IDS: readonly string[] = ["teren", "bieznia"];
 
 export interface ConditioningTool {
   id: string; label: string; place: "Dom" | "Plener" | "Siłownia"; minLevel: LevelRank;
@@ -54,8 +62,10 @@ export const TOOLS: readonly ConditioningTool[] = [
 
 export function allowedTools(level: string | null | undefined, method: ConditioningMethod | null, blockedJoints: ReadonlySet<string>): ConditioningTool[] {
   const r = levelRank(level);
+  const gentle = method != null && isGentleIntervals(level, method);
   return TOOLS.filter((t) =>
     t.minLevel <= r &&
+    (!gentle || GENTLE_TOOL_IDS.includes(t.id)) &&
     (method == null || t.methods.includes(method)) &&
     !t.loads.some((j) => blockedJoints.has(j)));
 }
@@ -142,12 +152,21 @@ export function continuousWeek(week: number, startMinutes = 15, capMinutes = 40)
 }
 
 /** Interwały (tylko Ś/Z): 6 × 1 min / 2 min lekko, +1 odcinek co tydzień do 10; lżejszy tydzień co 4. */
-export function intervalWeek(week: number): ConditioningWeek {
+export function intervalWeek(week: number, gentle = false): ConditioningWeek {
   const w = Math.max(1, Math.floor(week));
   let reps = 6;
   for (let i = 2; i <= w; i++) if (!isLightWeek(i)) reps = Math.min(10, reps + 1);
   const light = isLightWeek(w);
   const r = light ? Math.max(4, Math.round(reps * LIGHT_FACTOR)) : reps;
+  if (gentle) {
+    // początkujący: odcinek 1 min marszu szybkiego/truchtu (RPE 5–6), przerwa 2 min marszu wolnego; najwyżej 8 powtórzeń, bez sprintów
+    const gr = Math.min(8, Math.max(4, r - 2));
+    return {
+      week: w, light, totalMinutes: gr * 3, sessionsPerWeek: 1,
+      pattern: [{ kind: "odcinek", minutes: 1, rpe: [5, GENTLE_RPE_MAX] }, { kind: "przerwa", minutes: 2, rpe: [2, 3] }], repeats: gr,
+      note: light ? "Tydzień lżejszy." : "Szybszy marsz lub trucht przez minutę, potem marsz wolno. Nie biegnij sprintem.",
+    };
+  }
   return {
     week: w, light, totalMinutes: r * 3, sessionsPerWeek: 1,
     pattern: [{ kind: "odcinek", minutes: 1, rpe: [7, 8] }, { kind: "przerwa", minutes: 2, rpe: [2, 3] }], repeats: r,
@@ -155,10 +174,10 @@ export function intervalWeek(week: number): ConditioningWeek {
   };
 }
 
-export function buildWeek(method: ConditioningMethod, week: number): ConditioningWeek {
+export function buildWeek(method: ConditioningMethod, week: number, gentle = false): ConditioningWeek {
   switch (method) {
     case "marszobieg": return walkRunWeek(week);
-    case "interwaly": return intervalWeek(week);
+    case "interwaly": return intervalWeek(week, gentle);
     default: return continuousWeek(week, method === "tempo" ? 10 : 15, method === "tempo" ? 30 : 40);
   }
 }
@@ -182,7 +201,7 @@ export function prescribe(opts: { level: string | null | undefined; method: Cond
     ok: true,
     value: {
       method: opts.method, methodLabel: METHOD_LABEL[opts.method], tool: tool.id, toolLabel: tool.label,
-      week: opts.week, weekPlan: buildWeek(opts.method, opts.week), rpeScale: RPE_SCALE, talkTest: TALK_TEST, swapped: tool.id !== wanted,
+      week: opts.week, weekPlan: buildWeek(opts.method, opts.week, isGentleIntervals(opts.level, opts.method)), rpeScale: RPE_SCALE, talkTest: TALK_TEST, swapped: tool.id !== wanted,
     },
   };
 }

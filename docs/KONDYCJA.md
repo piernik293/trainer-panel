@@ -10,7 +10,7 @@
 5. **Tabela celów (pkt 0) jako słownik edytowalny przez administratora** (`plan_element_rules`: cel × element → wymagany / opcjonalny / brak, ile razy w tygodniu, notatka). Zmiany częstotliwości bez wdrażania kodu; zasiew zgodny z tabelą w pkt 0.
 6. **Tygodniowy cel czasu kondycji — nie na start.** Pierwszy cel tygodniowy to liczba jednostek.
 7. **Nic nie budujemy teraz** — moduł po becie, za przełącznikiem `CONDITIONING_ENABLED` (domyślnie wyłączony).
-8. **Zasada bezpieczeństwa przy niejasności:** tabela celów mówi o „łagodnych interwałach” dla P, a reguła 1 w pkt 7 zabrania interwałów dla BA i P. Obowiązuje reguła bezpieczeństwa: BA i P — tylko marszobieg i bieg ciągły; interwały dopiero od Ś (do potwierdzenia przez właściciela).
+8. **Łagodne interwały dla początkujących (decyzja z 27.10.2026, zastępuje wcześniejszy zakaz):** P mogą mieć interwały tylko w łagodnej formie — odcinek 1 min marszu szybkiego albo truchtu, przerwa 2 min marszu wolnego, najwyżej 8 powtórzeń, odczuwalny wysiłek najwyżej ok. 6/10, bez sprintów; sprzęt tylko teren i bieżnia (bez skakanki, lin i sanek). Przy bólu kolana lub biodra nie ma bezpiecznego sprzętu dla tej formy (zamiast niej marszobieg). **Brak aktywności — nadal bez interwałów** (tylko marsz/marszobieg). Tempo i fartlek dopiero od Ś. Moduł nadal wyłączony przełącznikiem `CONDITIONING_ENABLED`.
 
 ## 0. Zatwierdzone: moduł nie jest nowym profilem, tylko elementami planu przypisanymi do celu
 Plan podopiecznego składa się z **typów elementów** (trening oporowy, pliometria, kondycja, kroki). Cel klienta określa, które elementy i w jakiej ilości. Tabela zatwierdzona przez właściciela (6 celów z bazy):
@@ -24,7 +24,7 @@ Plan podopiecznego składa się z **typów elementów** (trening oporowy, pliome
 | Poprawa sprawności | tak, całe ciało | tylko niska, od Ś | 1–2×/tydz. marszobieg → bieg/interwały | tak |
 | Cel sportowy | tak | wg doświadczenia (zbudowane 25.10, blok 5) | 1–2×/tydz. interwały i sprinty | opcjonalnie |
 
-**Poziom ogranicza formę:** BA — tylko marsz / marszobieg + kroki; P — marszobieg → bieg ciągły, interwały łagodne; Ś/Z — pełny zakres. **Ból i stawy wykluczają też formy kondycyjne** (np. bieg przy bólu kolana → rower, marsz; ta sama lista stawów i okno 30 dni co w generatorze: `jointExclusion`). **Kilka celów:** priorytet 1 decyduje o głównym elemencie; pozostałe tylko dodają elementy opcjonalne z tabeli (bez podwajania częstotliwości — przy konflikcie obowiązuje mniejsza). **Pierwsza jednostka BA/P:** 20–25 min, marsz 2 min / trucht 1 min × 6–8, skala odczuwalnego wysiłku (RPE, skala z pkt 6).
+**Poziom ogranicza formę:** BA — tylko marsz / marszobieg + kroki; P — marszobieg → bieg ciągły, łagodne interwały (marsz szybki/trucht, wysiłek maks. ok. 6/10, bez sprintów); Ś/Z — pełny zakres. **Ból i stawy wykluczają też formy kondycyjne** (np. bieg przy bólu kolana → rower, marsz; ta sama lista stawów i okno 30 dni co w generatorze: `jointExclusion`). **Kilka celów:** priorytet 1 decyduje o głównym elemencie; pozostałe tylko dodają elementy opcjonalne z tabeli (bez podwajania częstotliwości — przy konflikcie obowiązuje mniejsza). **Pierwsza jednostka BA/P:** 20–25 min, marsz 2 min / trucht 1 min × 6–8, skala odczuwalnego wysiłku (RPE, skala z pkt 6).
 
 Już zbudowane: kroki wpisywane ręcznie (blok 6 poprzedniego etapu) i blok pliometryczny (blok 5 tego etapu). Moduł kondycyjny dołoży trzeci typ elementu, korzystając z tych samych mechanizmów (portal „Dziś”, kolejka offline, izolacja klient/trener).
 
@@ -51,7 +51,7 @@ Tabela cel × poziom × staw → dozwolone formy i częstotliwość; BA nigdy in
 |---|---|---|---|
 | **Marszobieg** | pierwsza jednostka dla BA i początkujących | naprzemiennie marsz i trucht, np. 1 min trucht / 2 min marsz × 6–8 | trucht 4–5, marsz 2–3 |
 | **Bieg ciągły w strefie rozmownej** | P → Z | jedno tempo, w którym da się mówić pełnymi zdaniami | 4–5 |
-| **Interwały** | Ś, Z (P dopiero po 6–8 tyg. bazy) | krótkie odcinki szybciej, przerwa marszem/truchtem 1:1–1:2 | odcinek 7–8, przerwa 2–3 |
+| **Interwały** | Ś, Z; P tylko łagodne (marsz szybki/trucht, wysiłek maks. ok. 6) | krótkie odcinki szybciej, przerwa marszem/truchtem 1:1–1:2 | odcinek 7–8, przerwa 2–3 |
 | **Tempo** | Ś, Z | ciągły odcinek 15–30 min „komfortowo trudno” | 6–7 |
 | **Fartlek** | Ś, Z | swobodne przyspieszenia według odczuć w biegu ciągłym | 4–8 zmiennie |
 Środki (z grupy G4, nie importowane do katalogu siłowego): bieżnia (marsz/bieg), wioślarz, rower (stacjonarny i zwykły), orbitrek, skakanka, liny (battle ropes), sanki/prowler, bieg w terenie. Każdy środek ma: nazwę, sprzęt, miejsce (Dom/Plener/Siłownia), czy nadaje się do metody (np. skakanka — interwały tak, marszobieg nie), poziom minimalny (skakanka i sanki: Ś).
@@ -84,7 +84,7 @@ Tabela cel × poziom × staw → dozwolone formy i częstotliwość; BA nigdy in
 - **Skala RPE dla klienta:** 1–2 „bardzo lekko”, 3–4 „lekko, swobodna rozmowa”, 5–6 „średnio, mówię zdaniami”, 7–8 „ciężko, mówię pojedyncze słowa”, 9–10 „maksymalnie” (nie używana w planach początkujących).
 
 ## 7. Reguły bezpieczeństwa
-1. BA i początkujący: tylko marszobieg i bieg ciągły w strefie rozmownej; RPE docelowe ≤ 5; brak interwałów, tempa, skakanki, sanek.
+1. BA: tylko marszobieg (bez interwałów, tempa, skakanki, sanek). Początkujący: marszobieg, bieg ciągły w strefie rozmownej (RPE ≤ 5) i łagodne interwały (marsz szybki/trucht, RPE maks. ok. 6, bez sprintów); bez tempa, fartleku, skakanki, lin i sanek.
 2. Intensywności ≥ RPE 7 tylko dla Ś/Z i dopiero po ≥ 6 tygodniach bazy.
 3. Staw zgłoszony jako bolący (wywiad lub „Coś boli?”) → środki o wysokim obciążeniu stawów (bieg, skakanka) zamieniane na rower/orbitrek/marsz; bez zgody trenera nie wracają.
 4. Brak „leczenia”: teksty bez obietnic zdrowotnych i bez diagnoz; stały komunikat „przy bólu w klatce piersiowej, zawrotach głowy lub duszności przerwij wysiłek i skonsultuj się z lekarzem” na ekranie startu jednostki (jak komunikat bólu w treningu).
