@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { ArrowLeft, Trophy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { pluralPl } from "@/lib/plural";
 import { RATING_LABELS, type Rating, type TrainingDay } from "@/lib/training/types";
 import { countDoneSets, loadRun, newRun, runReducer, saveRun, clearRun, type RunState } from "@/lib/training/run";
 import { updateRamp, withoutPainJoints } from "@/lib/training/ramp";
@@ -72,7 +73,7 @@ function FinishScreen({ firstName, day, run, week, onFeedback, onFinish }: {
         <p className="text-muted-foreground">Dobra robota{firstName ? `, ${firstName}` : ""}!</p>
       </div>
       <dl className="grid grid-cols-3 gap-2 text-center">
-        {[[`${sum.minutes}`, "minut"], [`${sum.sets}`, "serii"], [`${sum.weekDone} z ${sum.weekTarget}`, "w tym tygodniu"]].map(([v, l]) => (
+        {[[`${sum.minutes}`, pluralPl(sum.minutes, "minuta", "minuty", "minut")], [`${sum.sets}`, pluralPl(sum.sets, "seria", "serie", "serii")], [`${sum.weekDone} z ${sum.weekTarget}`, "w tym tygodniu"]].map(([v, l]) => (
           <div key={l} className="rounded-xl border border-border bg-card px-2 py-3"><dd className="text-xl font-bold tabular-nums">{v}</dd><dt className="text-xs text-muted-foreground">{l}</dt></div>
         ))}
       </dl>
