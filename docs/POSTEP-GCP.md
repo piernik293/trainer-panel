@@ -186,3 +186,8 @@
 
 ### 26.10.2026 — #1611 trudność nauki 2 (migracja 0036, pg_dump `przed-0036-*`)
 - Martwy ciąg rumuński z gumą oporową: `learningDifficulty` 3 → 2 (decyzja właściciela: lekka guma, nauka zawiasu, ma być dla nieaktywnych). Plik/generator zaktualizowane. Dziury bez kandydata (dom bez sprzętu: pchanie pionowe BA/P, przyciąganie pionowe BA, zgięcie łokcia BA/P, anty-rotacja BA) zostają: generator pomija wzorzec, trener widzi ostrzeżenie o braku sprzętu; nowych ćwiczeń nie dodajemy.
+
+## 27.10.2026 — blok 1: generator, priorytety (gałąź `feature/generator-priorytety`, z `main`, NIE scalona)
+- Dokończenie pracy z poprzedniej sesji (zmiany niezatwierdzone → commity) oraz 1e, 1f, 1g. Szczegóły: `docs/GENERATOR-PRIORYTETY.md`, sekcja „Wdrożone 27.10.2026”.
+- Migracja 0037 (dane: cele rozgrzewek i rozciągania; backup `~/backups/przed_0037_*`).
+- Testy: `generator-priorities.test.ts` (12), `catalogueTabs.test.ts` (2).
