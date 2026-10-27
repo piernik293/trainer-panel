@@ -46,3 +46,13 @@ export function jointWarningMessage(joints: readonly string[]): string {
   const list = joints.map((j) => j.toLowerCase()).join(", ");
   return `Klient zgłosił ból: ${list}. To ćwiczenie obciąża ${list}. Dodać mimo to?`;
 }
+
+/**
+ * Without consent to process health data (declined or withdrawn) the generator uses the most cautious setting we can apply without
+ * health answers: exercises with a HIGH joint load (joint_stress = "Wysokie") are left out and the trainer is told why.
+ * NULL status (older interview, or entered by the trainer) keeps the previous behaviour.
+ */
+export const CONSERVATIVE_CONSENT_STATUSES: ReadonlySet<string> = new Set(["declined", "withdrawn"]);
+export const isConservativeHealth = (status: string | null | undefined): boolean => status != null && CONSERVATIVE_CONSENT_STATUSES.has(status);
+export const violatesConservative = (ex: { jointStress?: string | null }, conservative: boolean): boolean => conservative && ex.jointStress === "Wysokie";
+export const CONSERVATIVE_NOTE = "Brak zgody na dane o zdrowiu — plan przygotowano z najostrożniejszymi ustawieniami (bez ćwiczeń o wysokim obciążeniu stawów). Zapytaj o zdrowie osobiście.";

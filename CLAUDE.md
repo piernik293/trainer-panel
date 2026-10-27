@@ -48,6 +48,11 @@ Szczegółowy plan bieżącego etapu jest w `~/etap-1-uruchomienie-i-stabilizacj
   - Każda zmiana schematu = nowa migracja SQL w `lib/db/migrations/` (nowe tabele, kolumny nullable, indeksy) + zmiana w schemacie Drizzle. Nigdy `drizzle-kit push` bezpośrednio, nigdy `push --force` / `push-force`, nigdy ręczny `DROP`.
   - Baza testowa: `DATABASE_URL=…/trainer_panel_test scripts/db-setup-gcp.sh`.
 
+## Kopie bazy
+- Codziennie 03:15 (cron) `scripts/backup-db.sh`: `pg_dump | gzip` → `~/backups/trainer_panel_daily_RRRRMMDD-GGMM.sql.gz`, kontrola miejsca (min. 2 GB wolnego, inaczej błąd i brak kopii), test integralności pliku, rotacja 14 dni — usuwa wyłącznie własne pliki `trainer_panel_daily_*` (ręcznych kopii `przed_*` nie rusza). Log: `~/logs/backup-db.log`.
+- Test przywrócenia: `scripts/backup-restore-test.sh [plik]` — wczytuje kopię do tymczasowego schematu `restore_check` w bazie `trainer_panel_test` (schemat kasowany po teście; tabele w `public` nietknięte) i porównuje liczbę tabel i wierszy kluczowych tabel. Uruchamiaj raz w miesiącu i po zmianie skryptu.
+- Kopia poza maszyną (awaria dysku) to osobna decyzja kosztowa — `docs/WDROZENIE-PLAN.md`, sekcja 6.
+
 ## Git
 - Pracujesz na gałęzi `migracja-gcp`. Jeden commit to jedna logiczna zmiana, opis po polsku.
 - Autor commitów: `piernik293@users.noreply.github.com` (ustawione w lokalnym git config).

@@ -576,3 +576,4 @@ export function methodsAnswerUsable(surveyCreatedAt: string | Date | null | unde
   if (!surveyCreatedAt) return false;
   return new Date(surveyCreatedAt).getTime() >= Date.parse(METHODS_QUESTION_FIXED_AT);
 }
+export * from "./legal";

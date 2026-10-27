@@ -10,6 +10,8 @@ import {
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { securityHeaders } from "./middlewares/securityHeaders";
+import { rateLimit, LIMITS } from "./middlewares/rateLimit";
 import { buildAllowedOrigins, makeCorsOriginCallback } from "./lib/corsOrigins";
 
 // In production, Clerk publishable key must be present. Fail at startup
@@ -23,6 +25,14 @@ if (process.env.NODE_ENV === "production" && !process.env.CLERK_PUBLISHABLE_KEY)
 const _allowedOrigins = buildAllowedOrigins();
 
 const app: Express = express();
+
+// Behind a reverse proxy (Caddy) req.ip must be the real client address: TRUST_PROXY=loopback (or a number of hops).
+if (process.env.TRUST_PROXY) {
+  const v = process.env.TRUST_PROXY;
+  app.set("trust proxy", /^\d+$/.test(v) ? Number(v) : v);
+}
+app.disable("x-powered-by");
+app.use(securityHeaders());
 
 app.use(
   pinoHttp({
@@ -61,6 +71,13 @@ app.use(
     ),
   })),
 );
+
+// Rate limits (docs/WDROZENIE-PLAN.md): token guessing on public links, the post-sign-in profile call, the generator.
+app.use("/api/public", rateLimit(LIMITS.publicToken));
+app.use("/api/client-invitations", rateLimit(LIMITS.publicToken));
+app.use("/api/trainer/profile", rateLimit(LIMITS.trainerProfile));
+app.use("/api/clients/:clientId/plan-draft", rateLimit(LIMITS.generator));
+app.use("/api/plans/draft-input", rateLimit(LIMITS.generator));
 
 app.use("/api", router);
 

@@ -152,3 +152,24 @@ Bez porad prawnych; treści przygotowuje właściciel (lub prawnik).
 | Poczta (Brevo / Resend) | 0 zł w darmowym progu | tak |
 | Kopia poza maszyną (migawki lub Cloud Storage) | od groszy do kilku USD/mies. | zalecane |
 | Monitoring (UptimeRobot / Cloud Monitoring) | 0 zł w darmowych limitach | zalecane |
+
+
+## 13. Przygotowane pliki i kroki (stan 26.10.2026) — NIC z tego nie zostało uruchomione
+
+Zrobione w kodzie (bez kosztów, działa już teraz): nagłówki bezpieczeństwa API i front-endów (`middlewares/securityHeaders.ts`, `scripts/security-headers.mjs`; HSTS tylko przy `HSTS_ENABLED=1`, CSP w trybie „tylko raport” dopóki `CSP_ENFORCE≠1`), limity zapytań (`middlewares/rateLimit.ts`: linki z tokenem 30/min, profil po logowaniu 20/min, generator 120/min na użytkownika, kody trenera 10 prób/15 min — gotowe do użycia przy kodach), kopie bazy (`scripts/backup-db.sh` + cron 03:15, rotacja 14 dni, test `scripts/backup-restore-test.sh`), szkielety stron prawnych (`/legal/...`), zgoda na dane o zdrowiu w wywiadzie.
+
+Gotowe pliki (szablony w `deploy/`): `Caddyfile.example`, `trainer-api.service.example`, `env.production.example`; skrypt `scripts/usun-konta-demo.sh` (domyślnie tylko podgląd).
+
+Kroki dla właściciela, w kolejności (przy każdym: koszt i co kliknąć/wpisać):
+1. **Domena** — kup u dowolnego rejestratora. Koszt: ok. 50–100 zł/rok. Wpisz: domenę (np. panel.twojadomena.pl) i nic poza tym; DNS poniżej.
+2. **Stały adres IP** w Google Cloud („Zarezerwuj statyczny adres zewnętrzny”). Koszt: kilka zł/mies. Klikasz: VPC → Adresy IP → Zarezerwuj; przypisz do maszyny. Potem w DNS dodaj rekord A: panel → ten adres.
+3. **Porty 80 i 443** — reguła zapory (VPC → Reguły zapory): zezwól TCP 80,443 z 0.0.0.0/0 dla tej maszyny. Koszt: 0. (Port 8080 i inne zostają zamknięte.)
+4. **Caddy** — instalacja z oficjalnego repozytorium Caddy (3 polecenia z instrukcji Caddy dla Debiana), plik `deploy/Caddyfile.example` → `/etc/caddy/Caddyfile` z Twoją domeną. Koszt: 0. Certyfikat Let’s Encrypt odnawia się sam.
+5. **Clerk produkcyjny** — w panelu Clerk: Create production instance, dodaj domenę, Clerk poda rekordy CNAME do wpisania w DNS i klucze (publishable + secret). Koszt: darmowy próg (sprawdź aktualny cennik). Wpisujesz klucze TYLKO do `.env.production` (szablon: `deploy/env.production.example`). W Clerk włącz logowanie Google (własne dane OAuth z Google Cloud → Credentials, domena w „Authorized origins”).
+6. **Poczta** — usługa z darmowym progiem (np. Brevo lub Resend); weryfikacja domeny (SPF, DKIM, DMARC — usługa poda rekordy TXT do DNS). Koszt: 0 w progu; wpisujesz dane SMTP w `.env.production`.
+7. **Baza produkcyjna** — nowa, pusta: `createdb trainer_panel_prod`, potem `DATABASE_URL=… scripts/db-setup-gcp.sh`; dane deweloperskie NIE są kopiowane (więc konta demo nie przechodzą).
+8. **Usługi** — `deploy/trainer-api.service.example` → `/etc/systemd/system/trainer-api.service`; `pnpm run build`; `systemctl enable --now trainer-api caddy`. Koszt: 0.
+9. **Po pierwszym czystym przebiegu** — ustaw `CSP_ENFORCE=1` i w Caddyfile zmień `Content-Security-Policy-Report-Only` na `Content-Security-Policy`.
+10. **Kopia poza maszyną** (sekcja 6) i **monitoring** (sekcja 7) — decyzje kosztowe osobno.
+11. **Konta demo** — `DEMO_TRAINER_CLERK_IDS=… scripts/usun-konta-demo.sh` pokaże, co zniknie; usunięcie dopiero z `--wykonaj` i `POTWIERDZAM=USUN`, po Twojej zgodzie. Konta w Clerk usuwasz ręcznie w panelu.
+12. **Prawnik** — uzupełnia treści trzech dokumentów (wskazane w kodzie jako „DO UZUPEŁNIENIA PRZEZ PRAWNIKA”: `lib/survey-config/src/legal.ts`); po zmianie zgody zmień `HEALTH_CONSENT_VERSION`.

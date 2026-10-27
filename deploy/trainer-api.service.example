@@ -1,0 +1,22 @@
+# systemd — API trainer-panel (PRZYGOTOWANE, NIEURUCHOMIONE). Instalacja: docs/WDROZENIE-PLAN.md, sekcja 13.
+[Unit]
+Description=trainer-panel API
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=UŻYTKOWNIK
+WorkingDirectory=/home/UŻYTKOWNIK/trainer-panel/artifacts/api-server
+# .env produkcyjny (uprawnienia 600), osobny od deweloperskiego
+EnvironmentFile=/home/UŻYTKOWNIK/trainer-panel/.env.production
+Environment=NODE_ENV=production
+Environment=TRUST_PROXY=loopback
+Environment=HSTS_ENABLED=1
+ExecStart=/usr/bin/node --enable-source-maps ./dist/index.mjs
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

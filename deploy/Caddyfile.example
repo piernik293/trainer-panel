@@ -1,0 +1,34 @@
+# Caddy — HTTPS dla trainer-panel (PRZYGOTOWANE, NIEURUCHOMIONE). Kroki: docs/WDROZENIE-PLAN.md, sekcja 13.
+# Zamień panel.example.pl na swoją domenę i /home/UŻYTKOWNIK na właściwy katalog. Uruchamiaj dopiero po kupnie domeny i DNS.
+panel.example.pl {
+	encode zstd gzip
+	request_body {
+		max_size 12MB
+	}
+
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle_path /client-landing/* {
+		root * /home/UŻYTKOWNIK/trainer-panel/artifacts/client-landing/dist/public
+		try_files {path} /index.html
+		file_server
+	}
+	handle {
+		root * /home/UŻYTKOWNIK/trainer-panel/artifacts/trainer-app/dist/public
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		# Najpierw tryb „tylko raport”; po czystym przebiegu zmień nazwę nagłówka na Content-Security-Policy.
+		# Treść: scripts/security-headers.mjs (dopuszcza Clerk i Google Fonts).
+		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://img.clerk.com https://*.clerk.com; connect-src 'self' https://*.clerk.com; frame-src https://*.clerk.com https://challenges.cloudflare.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+	}
+}

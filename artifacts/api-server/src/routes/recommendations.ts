@@ -20,7 +20,7 @@
  * own exercise pool without going through HTTP — no changes to this file needed.
  */
 
-import { loadBlockedJoints } from "../services/jointExclusion";
+import { loadBlockedJoints, isConservativeHealth } from "../services/jointExclusion";
 import { mainPlanRoleCondition, isGeneratorSafe, preferMainOverVariants } from "../lib/exerciseRoles";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
 import { Router, type IRouter } from "express";
@@ -126,6 +126,7 @@ router.get("/clients/:clientId/exercise-recommendations", requireAuth, async (re
     survey.equipment,
     new Set<number>(),
     blockedJoints,
+    isConservativeHealth(survey.healthConsentStatus),
   );
   const compatibleExercises = preferMainOverVariants(completeExercises.filter((ex) =>
     isCompatible({
@@ -134,6 +135,7 @@ router.get("/clients/:clientId/exercise-recommendations", requireAuth, async (re
       equipment: ex.equipment ?? [],
       requiredEquipmentAll: ex.requiredEquipmentAll ?? [],
       jointStressAreas: ex.jointStressAreas,
+        jointStress: ex.jointStress,
     }),
   ));
 

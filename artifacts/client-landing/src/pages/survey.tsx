@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LegalLinks } from "@/components/LegalLinks";
 import { AppHero } from "@workspace/design-tokens/hero";
 import { BrandMark } from "@/components/BrandMark";
 import { useParams } from "wouter";
@@ -258,6 +259,7 @@ export default function SurveyTokenPage() {
       {/* FOOTER */}
       <footer className="border-t border-border py-8 text-center bg-card/50">
         <p className="text-muted-foreground text-sm">© {new Date().getFullYear()} Optimatren</p>
+        <LegalLinks className="mt-3" />
       </footer>
     </div>
   );

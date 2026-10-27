@@ -851,6 +851,7 @@ function SurveyTab({ client, survey, surveyLoading, id, bmi, showBmiRecommendati
   return (
     <div className="space-y-6">
       <InvitationCard clientId={client.id} />
+      <HealthConsentNote clientId={client.id} />
       <EffectiveLevelCard
         clientId={client.id}
         chosen={survey.experienceLevel ?? null}
@@ -1587,5 +1588,27 @@ function SurveyBlock({ label, value, fullWidth = false, className = "" }: { labe
         value
       )}
     </div>
+  );
+}
+
+
+const CONSENT_TEXT: Record<string, string> = {
+  given: "Zgoda na dane o zdrowiu: udzielona",
+  declined: "Zgoda na dane o zdrowiu: nie udzielona — pytania o zdrowie pominięto, plan z najostrożniejszymi ustawieniami",
+  withdrawn: "Zgoda na dane o zdrowiu: wycofana — plan z najostrożniejszymi ustawieniami",
+};
+
+/** Whether the client agreed to the processing of health data (from the interview); nothing is shown for older interviews. */
+function HealthConsentNote({ clientId }: { clientId: number }) {
+  const { data } = useQuery({
+    queryKey: ["health-consent", clientId],
+    queryFn: () => customFetch<{ status: string | null; givenAt: string | null; version: string | null; withdrawnAt: string | null }>(`/api/clients/${clientId}/health-consent`),
+  });
+  if (!data?.status || !CONSENT_TEXT[data.status]) return null;
+  const when = data.status === "withdrawn" ? data.withdrawnAt : data.givenAt;
+  return (
+    <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground" data-testid="health-consent-note">
+      {CONSENT_TEXT[data.status]}{when ? ` (${new Date(when).toLocaleDateString("pl-PL")}${data.version ? `, wersja ${data.version}` : ""})` : ""}.
+    </p>
   );
 }

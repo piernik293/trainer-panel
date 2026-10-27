@@ -25,6 +25,7 @@ import trainerProfileRouter from "./trainerProfile";
 import trainingRouter from "./training";
 import stepsRouter from "./steps";
 import clientSettingsRouter from "./clientSettings";
+import healthConsentRouter from "./healthConsent";
 
 const router: IRouter = Router();
 
@@ -54,6 +55,7 @@ router.use(trainerProfileRouter);
 router.use(trainingRouter);
 router.use(stepsRouter);
 router.use(clientSettingsRouter);
+router.use(healthConsentRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────

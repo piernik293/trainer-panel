@@ -26,7 +26,7 @@
  */
 
 import { buildLadderRules, loadLadderRows } from "../services/ladderSelection";
-import { loadBlockedJoints } from "../services/jointExclusion";
+import { loadBlockedJoints, isConservativeHealth, CONSERVATIVE_NOTE } from "../services/jointExclusion";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
 import { Router, type IRouter } from "express";
 import { eq, sql, and, or, inArray, isNotNull } from "drizzle-orm";
@@ -293,6 +293,7 @@ router.post(
       survey.equipment,
       new Set<number>(),
       blockedJoints,
+      isConservativeHealth(survey.healthConsentStatus),
     );
     // Jumps never come out of the ordinary slots: they are used only by the plyometric block (below) or a "plyo" day.
     const plyoRuleForClient = v0SessionType === "plyo"
@@ -306,6 +307,7 @@ router.post(
         equipment: ex.equipment ?? [],
         requiredEquipmentAll: ex.requiredEquipmentAll ?? [],
         jointStressAreas: ex.jointStressAreas,
+        jointStress: ex.jointStress,
       }),
     ));
 
@@ -1089,6 +1091,7 @@ router.post(
     );
     const hasCore      = enrichedExercises.some((e) => e.exerciseClass === "core");
 
+    if (isConservativeHealth(survey.healthConsentStatus)) generatorNotes.push(CONSERVATIVE_NOTE);
     if (plyoBlockNote) generatorNotes.push(plyoBlockNote);
     if (hasPlyo) {
       generatorNotes.push(

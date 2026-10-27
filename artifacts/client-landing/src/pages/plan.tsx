@@ -1,3 +1,4 @@
+import { LegalLinks } from "@/components/LegalLinks";
 import { useState, useEffect, useCallback } from "react";
 import { useUser, SignIn } from "@clerk/react";
 import { Loader2, CheckCircle2, ChevronRight, ChevronLeft, Dumbbell, Activity, CalendarDays } from "lucide-react";
@@ -1367,6 +1368,7 @@ export default function PlanPortal() {
           </>
         }
       />
+      <LegalLinks className="py-6 pb-24" />
     </>
   );
 }

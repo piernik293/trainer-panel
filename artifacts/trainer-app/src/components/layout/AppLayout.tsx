@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
+import { LegalLinks } from "@/components/LegalLinks";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -8,6 +9,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <main className="flex-1 overflow-y-auto print-container">
         <div className="max-w-6xl mx-auto p-4 md:p-8 print-container">
           {children}
+          <LegalLinks className="mt-10 print:hidden" />
         </div>
       </main>
     </div>
