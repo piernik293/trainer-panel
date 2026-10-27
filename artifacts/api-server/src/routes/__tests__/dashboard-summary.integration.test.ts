@@ -127,7 +127,7 @@ describe("GET /api/dashboard/summary", () => {
     const res = await request(app).get("/api/dashboard/summary");
     expect(res.status).toBe(200);
     expect(res.body.counts.totalClients).toBe(0);
-    expect(res.body.attention).toEqual({ items: [], total: 0 });
+    expect(res.body.attention).toEqual({ items: [], allItems: [], total: 0, silenceDays: 7 });
     expect(res.body.todayBookings).toEqual([]);
     expect(res.body.recentEvents).toEqual([]);
     expect(res.body.onboarding).toMatchObject({ completed: 1, next: "invite" });

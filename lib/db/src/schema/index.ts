@@ -21,3 +21,4 @@ export * from "./admin";
 export * from "./trainerApplications";
 
 export * from "./packages";
+export * from "./attention";

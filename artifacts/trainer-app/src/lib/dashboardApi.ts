@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 
-export type AttentionKind = "pain" | "interview" | "no_plan" | "plan_ending" | "invite_pending";
+export type AttentionKind = "pain" | "hard_twice" | "silent" | "package" | "interview" | "no_plan" | "plan_ending" | "invite_pending";
 
 export interface AttentionItem {
   kind: AttentionKind;
@@ -12,13 +12,15 @@ export interface AttentionItem {
   at: string;
   actionLabel: string;
   actionHref: string;
+  /** concrete event; sent back to mark the reason as done */
+  ref: string;
 }
 
 export interface DashboardSummary {
   today: string; // YYYY-MM-DD, Europe/Warsaw
   trainerName: string | null;
   counts: { totalClients: number; activeClients: number; newInterviews: number; plansEndingSoon: number };
-  attention: { items: AttentionItem[]; total: number };
+  attention: { items: AttentionItem[]; allItems: AttentionItem[]; total: number; silenceDays: number };
   todayBookings: { id: number; clientId: number; clientName: string; startsAt: string; durationMinutes: number }[];
   recentEvents: {
     type: "interview_submitted" | "plan_activated" | "portal_joined";
@@ -45,5 +47,21 @@ export function useDashboardSummary() {
     refetchInterval: (query) => (query.state.status === "error" ? false : 60_000),
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+  });
+}
+
+export function useDismissAttention() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { kind: AttentionKind; ref: string }) => customFetch(`/api/dashboard/attention/dismiss`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(v) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: getDashboardSummaryQueryKey() }),
+  });
+}
+
+export function useSetSilenceDays() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (silenceDays: 7 | 10 | 14) => customFetch(`/api/dashboard/attention-settings`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ silenceDays }) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: getDashboardSummaryQueryKey() }),
   });
 }
