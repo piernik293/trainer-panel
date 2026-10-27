@@ -1,4 +1,4 @@
-import { birthDateError, heightError, weightError, showJumpExperience } from "@workspace/survey-config";
+import { birthDateError, heightError, weightError, showJumpExperience, HEALTH_CONSENT_VERSION } from "@workspace/survey-config";
 import { Router, type IRouter } from "express";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { db, surveysTable, exercisesTable, clientsTable } from "@workspace/db";
@@ -215,6 +215,21 @@ router.get("/clients/:clientId/avoided-exercises", requireAuth, async (req, res)
   res.json(GetClientAvoidedExercisesResponse.parse(items));
 });
 
+/**
+ * Interview entered by the trainer: the checkbox "Podopieczny wyraził zgodę na przetwarzanie danych o zdrowiu" (owner's decision 27.10.2026).
+ * true → status "given" (version marked as given through the trainer); false → "declined" (the generator uses the most cautious settings);
+ * undefined → nothing changes (older interviews keep a NULL status and the previous behaviour).
+ */
+export function trainerConsentFields(healthConsent: boolean | undefined) {
+  if (healthConsent === undefined) return {};
+  return {
+    healthConsentStatus: healthConsent ? "given" : "declined",
+    healthConsentAt: new Date(),
+    healthConsentVersion: `${HEALTH_CONSENT_VERSION}:trainer`,
+    healthConsentWithdrawnAt: null,
+  };
+}
+
 // ─── PUT /clients/:clientId/survey ───────────────────────────────────────────
 // Always inserts a new survey row — surveys are append-only history so past
 // answers are never lost when the trainer saves an updated interview.
@@ -289,7 +304,7 @@ router.put("/clients/:clientId/survey", requireAuth, async (req, res): Promise<v
   }
 
   // `dateOfBirth` is a plain "YYYY-MM-DD" string — parse for validation/age math only.
-  const { dateOfBirth, ...rest } = parsed.data;
+  const { dateOfBirth, healthConsent, ...rest } = parsed.data;
   const dateOfBirthDate = dateOfBirth ? new Date(dateOfBirth) : undefined;
   if (dateOfBirthDate && dateOfBirthDate.getTime() > Date.now()) {
     res.status(400).json({ error: "Data urodzenia nie może być w przyszłości" });
@@ -334,7 +349,7 @@ router.put("/clients/:clientId/survey", requireAuth, async (req, res): Promise<v
 
   const [survey] = await db
     .insert(surveysTable)
-    .values({ ...normalizedData, clientId: params.data.clientId })
+    .values({ ...normalizedData, ...trainerConsentFields(healthConsent), clientId: params.data.clientId })
     .returning();
 
   res.json(UpsertClientSurveyResponse.parse(survey));
@@ -411,7 +426,7 @@ router.patch("/clients/:clientId/surveys/:surveyId", requireAuth, async (req, re
     if (trimmed) normalizedReasons[k] = trimmed;
   }
 
-  const { dateOfBirth, ...rest } = parsed.data;
+  const { dateOfBirth, healthConsent, ...rest } = parsed.data;
   const dateOfBirthDate = dateOfBirth ? new Date(dateOfBirth) : undefined;
   if (dateOfBirthDate && dateOfBirthDate.getTime() > Date.now()) {
     res.status(400).json({ error: "Data urodzenia nie może być w przyszłości" });
@@ -446,7 +461,7 @@ router.patch("/clients/:clientId/surveys/:surveyId", requireAuth, async (req, re
 
   const [updated] = await db
     .update(surveysTable)
-    .set(normalizedData)
+    .set({ ...normalizedData, ...trainerConsentFields(healthConsent) })
     .where(and(eq(surveysTable.id, params.data.surveyId), eq(surveysTable.clientId, params.data.clientId)))
     .returning();
 
