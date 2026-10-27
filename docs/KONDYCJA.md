@@ -1,6 +1,16 @@
 # Moduł kondycyjny — projekt (25.10.2026, zaktualizowany po decyzjach tego samego dnia)
 
-**Status: tylko projekt, nic nie zbudowano. Punkt STOP-5 — czeka na akceptację właściciela.** Zawiera model danych (STOP-2 — migracje dopiero po zgodzie), ekrany i reguły bezpieczeństwa. Nie obiecujemy efektów zdrowotnych; kondycja to plan wysiłku i zapis tego, co klient zrobił.
+**Status (27.10.2026): projekt zaktualizowany po decyzjach właściciela (sekcja niżej). Moduł zostanie zbudowany po becie — w tym dokumencie nic nie jest budowane.** Zawiera model danych (STOP-2 — migracje dopiero po zgodzie), ekrany i reguły bezpieczeństwa. Nie obiecujemy efektów zdrowotnych; kondycja to plan wysiłku i zapis tego, co klient zrobił.
+
+## Decyzje właściciela (27.10.2026) — mają pierwszeństwo nad resztą dokumentu
+1. **Jeden plan z różnymi typami dni** (siłowy, kondycyjny) zamiast osobnego planu kondycyjnego. Trener ma wszystko w jednym miejscu, podopieczny widzi to w „Dziś”. Konsekwencja dla modelu (pkt 5): zamiast `conditioning_plans` i `conditioning_sessions_planned` — dwie kolumny w dniu planu: `day_type` (`silowy` / `kondycyjny`) i `conditioning` (opis jednostki: metoda, sprzęt, tydzień startu). Dzień kondycyjny nie wymaga ćwiczeń siłowych przy aktywacji i nie liczy się do objętości siłowej.
+2. **Skala odczuwalnego wysiłku (RPE) + test rozmowy** na start; bez sprzętu pomiarowego. Test rozmowy jako podpowiedź tekstowa przy skali.
+3. **Cotygodniowy check-in** („lekko / w sam raz / ciężko” + notatka) **tylko dla podopiecznego trenera**. Osoba samodzielna (Solo) go nie dostaje — nikt by go nie czytał.
+4. **Szablon marszobiegu ok. 8 tygodni**, tydzień lżejszy co 4. (−30% czasu), przyrost tygodniowy najwyżej ok. 15%: tyg. 1–2 marsz 2 / trucht 1 × 7 · tyg. 3–4 marsz 2 / trucht 2 × 6 · tyg. 5–6 marsz 2 / trucht 3 × 5 · tyg. 7–8 marsz 2 / trucht 5 × 4; po 8. tygodniu bieg ciągły w strefie rozmownej (start 15 min, +2 min tygodniowo).
+5. **Tabela celów (pkt 0) jako słownik edytowalny przez administratora** (`plan_element_rules`: cel × element → wymagany / opcjonalny / brak, ile razy w tygodniu, notatka). Zmiany częstotliwości bez wdrażania kodu; zasiew zgodny z tabelą w pkt 0.
+6. **Tygodniowy cel czasu kondycji — nie na start.** Pierwszy cel tygodniowy to liczba jednostek.
+7. **Nic nie budujemy teraz** — moduł po becie, za przełącznikiem `CONDITIONING_ENABLED` (domyślnie wyłączony).
+8. **Zasada bezpieczeństwa przy niejasności:** tabela celów mówi o „łagodnych interwałach” dla P, a reguła 1 w pkt 7 zabrania interwałów dla BA i P. Obowiązuje reguła bezpieczeństwa: BA i P — tylko marszobieg i bieg ciągły; interwały dopiero od Ś (do potwierdzenia przez właściciela).
 
 ## 0. Zatwierdzone: moduł nie jest nowym profilem, tylko elementami planu przypisanymi do celu
 Plan podopiecznego składa się z **typów elementów** (trening oporowy, pliometria, kondycja, kroki). Cel klienta określa, które elementy i w jakiej ilości. Tabela zatwierdzona przez właściciela (6 celów z bazy):
@@ -89,7 +99,11 @@ Tabela cel × poziom × staw → dozwolone formy i częstotliwość; BA nigdy in
 3. Panel: szablony metod i siatka tygodnia; kolizje z FBW.
 4. Później: strefy tętna / zegarki (wymaga aplikacji natywnej — jak kroki w ROADMAP).
 
-## 9. Do decyzji właściciela (max 5, z rekomendacją)
+## 9. Do decyzji właściciela (max 5, z rekomendacją) — rozstrzygnięte 27.10.2026, patrz „Decyzje właściciela” na początku
+
+Rozstrzygnięcia: (1) jeden plan z typami dni; (2) tak, RPE + test rozmowy; (3) tak, szablon 8 tygodni z tygodniem lżejszym co 4.; (4) tak, słownik edytowalny przez administratora; (5) nie na start.
+
+Treść pierwotna (historia):
 1. **Własny plan kondycyjny czy dodatkowe „dni” w planie siłowym?** Rekomendacja: własna tabela planu kondycyjnego (pkt 5), ale pokazywana razem z planem siłowym w „Dziś” — prostsza progresja i brak wpływu na objętość siłową.
 2. **Czy skala RPE wystarcza na start?** Rekomendacja: tak; test rozmowy jako podpowiedź tekstowa przy skali, bez osobnego pytania.
 3. **Tempo progresji dla początkujących: szablony z pkt 3 (marsz 2 min / trucht 1 min × 6–8 → 3/2 → 5/2 → bieg ciągły po ok. 8 tyg.)?** Rekomendacja: tak, z tygodniem lżejszym co 4. tydzień.
