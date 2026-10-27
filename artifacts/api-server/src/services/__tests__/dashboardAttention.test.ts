@@ -81,7 +81,7 @@ describe("buildAttention", () => {
     );
     expect(r.items.map((i) => i.kind)).toEqual(["interview", "no_plan", "plan_ending", "invite_pending"]);
     expect(r.items.map((i) => i.actionLabel)).toEqual(["Przejrzyj", "Przygotuj plan", "Przedłuż plan", "Przypomnij"]);
-    expect(r.byKind).toEqual({ pain: 0, hard_twice: 0, silent: 0, package: 0, interview: 1, no_plan: 1, plan_ending: 1, invite_pending: 1 });
+    expect(r.byKind).toEqual({ pain: 0, join_request: 0, hard_twice: 0, silent: 0, package: 0, interview: 1, no_plan: 1, plan_ending: 1, invite_pending: 1 });
   });
 
   it("shows one row per client, the most urgent reason", () => {

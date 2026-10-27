@@ -13,14 +13,15 @@
  *   silent        active plan, no finished session for N days (N = 7 / 10 / 14, set by the trainer) (block 8)
  *   package       active session package: 2 or fewer sessions left, no sessions left, validity ending/over (block 7 + 8)
  * Every reason can be marked "załatwione" (dismissal tied to a concrete event, `ref`): a NEW event brings the reason back.
- * "Request to join" (accounts block) plugs in through `extraItems`.
+ *   join_request  a person asked to join the trainer (link / code); action: go to the request (Ustawienia → Dołączanie podopiecznych)
+ * It plugs in through `extraItems` (built by `joinRequestItems`).
  * Reasons that need saved workouts (pain, missed sessions, records) are not
  * built yet — see docs/ROADMAP.md item 4.
  */
 
 import { packageReminders } from "./packages";
 
-export const ATTENTION_KINDS = ["pain", "hard_twice", "silent", "package", "interview", "no_plan", "plan_ending", "invite_pending"] as const;
+export const ATTENTION_KINDS = ["pain", "join_request", "hard_twice", "silent", "package", "interview", "no_plan", "plan_ending", "invite_pending"] as const;
 export type AttentionKind = (typeof ATTENTION_KINDS)[number];
 
 export const MAX_ATTENTION_ITEMS = 5;
@@ -349,4 +350,24 @@ export function buildOnboarding(f: OnboardingFacts, targets: OnboardingTargets) 
   const completed = steps.filter((s) => s.done).length;
   const next = steps.find((s) => !s.done)?.key ?? null;
   return { steps, completed, total: steps.length, next };
+}
+
+// ─── Prośba o dołączenie (link / kod trenera) ────────────────────────────────
+
+export interface PendingJoinRequest { id: number; firstName: string; createdAt: Date }
+
+/** Prośby o dołączenie czekające na decyzję trenera → pozycje „Wymaga uwagi”. Akcja: przejście do próśb w Ustawieniach. */
+export function joinRequestItems(requests: readonly PendingJoinRequest[]): Array<AttentionItem & { sort: number }> {
+  return requests.map((r) => ({
+    kind: "join_request" as const,
+    clientId: null,
+    name: r.firstName,
+    reasonLabel: "Prośba o dołączenie",
+    description: "Chce dołączyć do Twoich podopiecznych. Zaakceptuj albo odrzuć.",
+    at: r.createdAt.toISOString(),
+    actionLabel: "Przejdź do prośby",
+    actionHref: "/settings#dolaczanie",
+    ref: String(r.id),
+    sort: r.createdAt.getTime(),
+  }));
 }

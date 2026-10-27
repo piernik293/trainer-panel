@@ -16,7 +16,7 @@ export function JoinCard() {
     catch { toast({ title: "Nie udało się skopiować", variant: "destructive" }); }
   };
   return (
-    <Card data-testid="join-card">
+    <Card id="dolaczanie" className="scroll-mt-4" data-testid="join-card">
       <CardHeader>
         <CardTitle className="text-base">Dołączanie podopiecznych</CardTitle>
         <CardDescription>Wyślij link albo kod (SMS, WhatsApp, Instagram). Osoba prosi o dołączenie, a Ty ją akceptujesz.</CardDescription>

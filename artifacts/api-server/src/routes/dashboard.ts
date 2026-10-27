@@ -13,10 +13,11 @@ import {
   clientPackagesTable,
   attentionDismissalsTable,
   trainerAttentionSettingsTable,
+  trainerJoinRequestsTable,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { computeSurveyStatus, fetchLatestSurveyPerClient } from "../lib/survey-status";
-import { buildAttention, buildOnboarding, ATTENTION_KINDS, type AttentionKind } from "../services/dashboardAttention";
+import { buildAttention, buildOnboarding, joinRequestItems, ATTENTION_KINDS, type AttentionKind } from "../services/dashboardAttention";
 import { usedCounts } from "../services/packages";
 import { z } from "zod";
 
@@ -111,7 +112,14 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
   const dismissedRows = await db.select({ kind: attentionDismissalsTable.kind, ref: attentionDismissalsTable.ref }).from(attentionDismissalsTable).where(eq(attentionDismissalsTable.trainerId, trainerId));
   const [settings] = await db.select().from(trainerAttentionSettingsTable).where(eq(trainerAttentionSettingsTable.trainerId, trainerId));
 
+  const joinRows = await db
+    .select({ id: trainerJoinRequestsTable.id, firstName: clientsTable.firstName, createdAt: trainerJoinRequestsTable.createdAt })
+    .from(trainerJoinRequestsTable)
+    .innerJoin(clientsTable, eq(clientsTable.id, trainerJoinRequestsTable.clientId))
+    .where(and(eq(trainerJoinRequestsTable.trainerId, trainerId), eq(trainerJoinRequestsTable.status, "pending")));
+
   const attention = buildAttention({
+    extraItems: joinRequestItems(joinRows),
     sessions: finishedSessions.map((x) => ({ clientId: x.clientId, id: x.id, date: String(x.date), rating: x.rating })),
     packages: activePackages.map((p) => ({ clientId: p.clientId, id: p.id, totalSessions: p.totalSessions, used: usedByPackage.get(p.id) ?? 0, validUntil: p.validUntil })),
     silenceDays: settings?.silenceDays ?? 7,
