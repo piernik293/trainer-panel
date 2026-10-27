@@ -76,6 +76,10 @@ describe("dostęp do panelu", () => {
     const t = (await request(app).get("/api/admin/trainers")).body;
     expect(t.trainers.some((x: { id: number }) => x.id === trId)).toBe(true);
     expect(t.howToAddTrainer).toContain("TRAINER_CLERK_IDS");
+    // każdy trener ma czytelną etykietę (konto bez nazwy i e-maila: „Konto …” + końcówka identyfikatora, nie cały identyfikator)
+    expect(t.trainers.every((x: { label: string }) => x.label.length > 0)).toBe(true);
+    const mine = t.trainers.find((x: { id: number }) => x.id === trId);
+    expect(mine.label).toMatch(/^Konto …\S{1,6}$/);
     expect((await request(app).get("/api/admin/solo")).body.accounts.some((a: { firstName: string }) => a.firstName === "Solo")).toBe(true);
   });
 });

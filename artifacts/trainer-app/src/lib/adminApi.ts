@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 
 export interface AdminError { id: number; source: "api" | "panel" | "portal"; place: string; message: string; occurrences: number; users: number; status: "new" | "reviewed"; firstSeen: string; lastSeen: string }
-export interface AdminTrainer { id: number; name: string | null; email: string | null; planCode: "FREE" | "PRO" | "UNLIMITED"; clients: number; lastActivity: string | null; createdAt: string; blocked: boolean; isAdmin: boolean }
+export interface AdminTrainer { id: number; name: string | null; label: string; email: string | null; planCode: "FREE" | "PRO" | "UNLIMITED"; clients: number; lastActivity: string | null; createdAt: string; blocked: boolean; isAdmin: boolean }
 export interface AdminUsage { trainerId: number; name: string | null; email: string | null; planCode: string; limits: Limits; used: Limits }
 export interface Limits { clients: number | null; customExercises: number | null; planGenerations: number | null }
 export interface AccessEntry { id: number; at: string; action: string; clientId: number | null; reason: string; admin: string }
