@@ -227,3 +227,7 @@
 - Funkcja `sendPlainEmail` (w `inviteEmail.ts`) jest w tej gałęzi identyczna jak w `feature/konta-link-kod` — przy scaleniu obu bez konfliktu.
 - Testy: `trainer-applications.test.ts` (6), `TrainerApplyCard.test.tsx`, `admin-page.test.tsx`.
 - Weryfikacja bloku 6: API 2607, bezpieczeństwo 101, panel 767, portal 229, typecheck i build OK, smoke 131/0.
+
+## 26.10.2026 — blok 7: pakiety i licznik sesji (gałąź `feature/pakiety-sesje`, z `main`)
+- Migracja 0051 (`client_packages`, `package_sessions`; najwyżej jeden aktywny pakiet na podopiecznego; cofnięcie sesji = oznaczenie, nie usunięcie). API: `routes/packages.ts`, reguły przypomnień `services/packages.ts` (≤ 2 sesje, ważność ≤ 7 dni). Panel: karta „Pakiet sesji” w profilu podopiecznego; portal: kafelek „Zostało X sesji” (tylko gdy trener pozwolił, bez ceny). Bez płatności online.
+- Testy: `packages.test.ts` (10: reguły, izolacja trenerów, limit i wyścig ostatniej sesji, widok klienta bez ceny), `PackageTile.test.tsx` (6). Pełna weryfikacja: API 2597/2597, bezpieczeństwo 101/101, panel 765/765, portal 234/234, typecheck, build, test dymny 131/0.

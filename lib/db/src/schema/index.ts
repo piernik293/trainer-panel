@@ -19,3 +19,5 @@ export * from "./joinRequests";
 
 export * from "./admin";
 export * from "./trainerApplications";
+
+export * from "./packages";

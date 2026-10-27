@@ -32,6 +32,8 @@ import joinRequestsRouter from "./joinRequests";
 import adminRouter from "./admin";
 import trainerApplicationsRouter from "./trainerApplications";
 
+import packagesRouter from "./packages";
+
 const router: IRouter = Router();
 
 router.use(healthRouter);
@@ -66,6 +68,8 @@ router.use(joinRequestsRouter);
 
 router.use(adminRouter);
 router.use(trainerApplicationsRouter);
+
+router.use(packagesRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
