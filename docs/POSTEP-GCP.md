@@ -254,3 +254,9 @@
 - **Ostrzejsze zasady (`services/solo.ts`, wpięte w pulę generatora `planDraftGenerateDay`):** tylko ćwiczenia zweryfikowane na każdym poziomie; pliometria i olimpijskie tylko przy „Tak” w doświadczeniu ze skokami i od poziomu Ś; ból zgłoszony na ćwiczeniu wyklucza je z planów Solo na 90 dni, komunikat „Skonsultuj się ze specjalistą.”; brak cotygodniowego check-inu RPE (`SOLO_WEEKLY_CHECKIN = false`).
 - **NIE zrobione (zależy od bloków kont 1–3 drugiej sesji, patrz niżej w raporcie):** ekrany Solo (wywiad → plan → trening → kroki) i generowanie planu po stronie serwera dla osoby bez trenera. Generator jest dziś sterowany z kreatora trenera (kolejne wywołania dzień po dniu), a trasy wymagają zalogowanego trenera; potrzebny jest serwerowy „sterownik” generowania i tabela `accounts` z bloku 2. Reguły i filtr bezpieczeństwa są gotowe i przetestowane, więc ten sterownik będzie je tylko wywoływał.
 - Testy bezpieczeństwa Solo osobno: `solo-safety.test.ts` (10).
+
+## Blok 12 — moduł kondycyjny (feature/kondycja) — GOTOWE (API; bez ekranów UI)
+- Migracja 0054 (backup przed), `services/conditioning.ts`, `routes/conditioning.ts` za `CONDITIONING_ENABLED` (domyślnie wyłączone → 404), dni kondycyjne omijają wymóg ćwiczeń przy aktywacji.
+- Testy `conditioning.test.ts` (12): flaga, brak interwałów dla BA/P, filtr bólu, tydzień lżejszy, wzrost ≤15%, idempotencja, izolacja A/B, check-in zabroniony dla Solo, słownik tylko admin.
+- Weryfikacja: API 2599, bezpieczeństwo 101, panel 765, portal 228, typecheck i build OK, smoke 131/0.
+- Brak: ekrany panelu i portalu (po decyzji o menu/UX), przełącznik w ustawieniach.

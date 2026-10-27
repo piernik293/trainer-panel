@@ -40,6 +40,8 @@ import reportPdfRouter from "./reportPdf";
 
 import soloRouter from "./solo";
 
+import conditioningRouter from "./conditioning";
+
 const router: IRouter = Router();
 
 router.use(healthRouter);
@@ -82,6 +84,8 @@ router.use(planImportRouter);
 router.use(reportPdfRouter);
 
 router.use(soloRouter);
+
+router.use(conditioningRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
