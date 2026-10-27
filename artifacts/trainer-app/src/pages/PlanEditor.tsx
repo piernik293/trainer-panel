@@ -119,7 +119,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CardioSection } from "@/components/CardioSection";
-import { VOLUME_ABOVE_RANGE_TEXT, VOLUME_IN_RANGE_TEXT, hasHardVolumeLimit } from "@workspace/survey-config";
+import { VOLUME_ABOVE_RANGE_TEXT, VOLUME_IN_RANGE_TEXT, dayFocusLabel, hasHardVolumeLimit } from "@workspace/survey-config";
 
 // ─── AvoidedExercisesContext ──────────────────────────────────────────────────
 // Holds a map of exerciseId → reason (null when no reason) for exercises that
@@ -718,7 +718,7 @@ function MoveExerciseDialog({
                 {otherDays.map((d) => (
                   <SelectItem key={d.id} value={String(d.id)}>
                     {d.dayName ?? `Dzień ${d.dayOrder}`}
-                    {d.subtitle ? ` — ${d.subtitle}` : ""}
+                    {d.subtitle ? ` — ${dayFocusLabel(d.subtitle)}` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1213,7 +1213,7 @@ function DaySection({
                 {day.dayName ?? `Dzień ${day.dayOrder}`}
               </CardTitle>
               {day.subtitle && (
-                <span className="text-xs text-muted-foreground">— {day.subtitle}</span>
+                <span className="text-xs text-muted-foreground">— {dayFocusLabel(day.subtitle)}</span>
               )}
               {day.estimatedDurationMinutes && (
                 <span className="text-xs text-muted-foreground flex items-center gap-0.5">

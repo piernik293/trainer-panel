@@ -7,6 +7,7 @@ import { Loader2, CheckCircle2, ChevronRight, ChevronLeft, Dumbbell, Activity, C
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TodayCard } from "@/components/training/TodayCard";
+import { dayFocusLabel } from "@workspace/survey-config";
 import { StepsTile } from "@/components/StepsTile";
 import { AccountNotice } from "@/components/AccountNotice";
 import { TrainingFlow } from "@/components/training/TrainingFlow";
@@ -347,7 +348,7 @@ function DayPreview({ day, onBack }: { day: PlanDay; onBack: () => void }) {
         </button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{day.dayName ?? `Dzień ${day.dayOrder}`}</h1>
-          {day.subtitle && <p className="text-sm text-muted-foreground">{day.subtitle}</p>}
+          {day.subtitle && <p className="text-sm text-muted-foreground">{dayFocusLabel(day.subtitle)}</p>}
           <p className="mt-1 text-xs text-muted-foreground">Podgląd planu. Trening zaczniesz na ekranie „Dziś”.</p>
         </div>
         <ol className="space-y-2">
@@ -1174,7 +1175,7 @@ export function PlanView({
                       <span className="font-semibold text-sm">{day.dayName ?? `Dzień ${day.dayOrder}`}</span>
                       {day.subtitle && (
                         <Badge variant="outline" className="text-xs px-1.5 py-0 border-input text-muted-foreground">
-                          {day.subtitle}
+                          {dayFocusLabel(day.subtitle)}
                         </Badge>
                       )}
                     </div>
