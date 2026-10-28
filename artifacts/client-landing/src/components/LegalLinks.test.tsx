@@ -27,3 +27,18 @@ describe("legal documents (skeletons)", () => {
     expect(container.textContent).toContain("Regulamin");
   });
 });
+
+describe("document page navigation (QA C5)", () => {
+  it("links between documents are at least 44 px high; the open document is marked as the current page", async () => {
+    const { Router, Route } = await import("wouter");
+    const { memoryLocation } = await import("wouter/memory-location");
+    const { hook } = memoryLocation({ path: "/legal/regulamin" });
+    const { container } = render(<Router hook={hook}><Route path="/legal/:slug" component={LegalPage} /></Router>);
+    const links = [...container.querySelectorAll('nav[aria-label="Dokumenty"] a')];
+    expect(links.length).toBe(3);
+    for (const a of links) expect(a.className).toContain("min-h-11");
+    const current = links.filter((a) => a.getAttribute("aria-current") === "page");
+    expect(current.length).toBe(1);
+    expect(current[0]!.getAttribute("href")).toMatch(/regulamin$/);
+  });
+});

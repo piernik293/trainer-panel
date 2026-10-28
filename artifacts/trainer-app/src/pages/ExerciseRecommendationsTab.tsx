@@ -219,19 +219,19 @@ export default function ExerciseRecommendationsTab({ clientId, hasSurvey }: Prop
                       <span className="text-muted-foreground">{ex.mainMuscleGroup}</span>
                       {ex.difficultyLevel && (
                         <>
-                          <span className="text-border">·</span>
+                          <span className="text-muted-foreground" aria-hidden="true">·</span>
                           <span className="text-muted-foreground">{ex.difficultyLevel}</span>
                         </>
                       )}
                       {ex.exerciseType && (
                         <>
-                          <span className="text-border">·</span>
+                          <span className="text-muted-foreground" aria-hidden="true">·</span>
                           <span className="text-muted-foreground">{ex.exerciseType}</span>
                         </>
                       )}
                       {ex.movementPattern && (
                         <>
-                          <span className="text-border">·</span>
+                          <span className="text-muted-foreground" aria-hidden="true">·</span>
                           <span className="text-muted-foreground">{ex.movementPattern}</span>
                         </>
                       )}
