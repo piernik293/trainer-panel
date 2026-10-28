@@ -148,3 +148,8 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 68. **Okrojona baza testowa:** wcześniejsze symulacje szły na 185 ćwiczeniach (katalog aplikacji ma 587), więc kolumna „ile razy brakowało” w pliku przeglądu miała ograniczone pokrycie. Wnioski o decyzjach nie zmieniają się (to nadal Twoje decyzje), ale liczby jakości (np. odmowy 14%) były zawyżone: na pełnym katalogu przed zmianami to 3,6%.
    **ODPOWIEDŹ WŁAŚCICIELA: przyjęte do wiadomości (odmowy liczone teraz na pełnym katalogu).**
 
+
+## Z nocy przed betą — blok 5 (monitoring, gałąź `ops/monitoring`)
+- **N5-1. Straż nie jest włączona w cronie.** Skrypt leży na gałęzi i zadziała po scaleniu; wpis do crona zapisany w `CLAUDE.md`. Mail na `OWNER_NOTIFY_EMAIL` jest skonfigurowany, połączenie SMTP sprawdzone (bez wysyłania). **Czy włączyć po scaleniu?** (Rekomendacja: tak.)
+- **N5-2. Maszyna bywa wyłączona** (uruchomiona od 27.10 23:58; kopia z 27.10 03:15 nie powstała). Wtedy ani kopia, ani straż nie działają. **Do decyzji:** (a) dopisać do crona `@reboot` z kopią „jeśli dziś jeszcze nie było” (bezpłatne), (b) zewnętrzne sprawdzanie dostępności (np. darmowa usługa z limitem — wymaga Twojej zgody, bo to nowa usługa), (c) zostawić.
+- **N5-3. Test przywracania kopii był zbyt surowy** (porównywał liczby z bazą „na żywo”, więc po każdej zmianie schematu dawał błąd). Teraz różnice „baza ma więcej niż kopia” są tylko opisane; błędem jest brak tabeli, pusta tabela kluczowa albo więcej tabel w kopii niż w bazie. To zmiana skryptu testu, nie kopii.

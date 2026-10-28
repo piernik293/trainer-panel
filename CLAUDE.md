@@ -59,6 +59,11 @@ Szczegółowy plan bieżącego etapu jest w `~/etap-1-uruchomienie-i-stabilizacj
 - Zakazane: `git reset --hard`, `git clean`, force push, usuwanie gałęzi.
 - Push i merge do `main` tylko po zgodzie użytkownika.
 
+## Straż (monitoring)
+- `scripts/watchdog.sh` — co 5 minut sprawdza API (`/api/healthz`), panel (23889) i portal (22347). Po **2 kolejnych** nieudanych sprawdzeniach wysyła mail na `OWNER_NOTIFY_EMAIL` (najwyżej 1 na godzinę, potem przypomnienie), a po powrocie usług — mail „Działa znowu”. Nic nie restartuje. Log: `~/logs/watchdog.log`, stan: `~/logs/watchdog.state`. Mail: `scripts/watchdog-mail.mjs` (SMTP z `.env`; `WATCHDOG_MAIL_VERIFY_ONLY=1` sprawdza tylko połączenie bez wysyłania).
+- Test: `scripts/test-watchdog.sh` (atrapa usługi, bez prawdziwej poczty). Uruchom po każdej zmianie straży.
+- Włączenie w cronie (tylko to konto, tylko po zgodzie; wpis zapisz w `docs/POSTEP-GCP.md`): `*/5 * * * * $HOME/trainer-panel/scripts/watchdog.sh`. Uwaga: straż działa na tej samej maszynie — gdy maszyna jest wyłączona, nie ostrzeże (to wymaga zewnętrznego sprawdzania, `docs/DO-DECYZJI.md`).
+
 ## Koszty
 - Żadnych płatnych usług ani płatnych API. Nie uruchamiaj Cloud Build, Cloud Run ani Cloud SQL.
 - Nie dodawaj nowych bibliotek, chyba że nie ma alternatywy. Wtedy uzasadnij wybór.

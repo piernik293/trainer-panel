@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Test przywrócenia: ostatnia kopia dzienna (albo plik z argumentu) → TYMCZASOWY schemat restore_check w bazie trainer_panel_test (tworzony i kasowany
 # przez ten skrypt), porównanie liczby tabel i wierszy kluczowych tabel z bazą aplikacji. Nie dotyka tabel w trainer_panel ani w schemacie public bazy testowej.
-# Kod wyjścia 0 = kopia da się przywrócić i zgadza się z bazą.
+# Kod wyjścia 0 = kopia da się przywrócić. Kopia jest zawsze trochę starsza niż baza (nowe tabele i wiersze po jej wykonaniu), więc różnice
+# „baza ma więcej” są tylko opisane; błędem jest brak tabeli kluczowej, pusta tabela kluczowa przy niepustej bazie albo więcej tabel w kopii niż w bazie.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [ -z "${DATABASE_URL:-}" ]; then set -a; . "$ROOT/.env"; set +a; fi
@@ -20,9 +21,12 @@ src_count() { psql "$DATABASE_URL" -Atc "select count(*) from information_schema
 rows() { psql "$1" -Atc "select count(*) from $2" 2>/dev/null || echo "?"; }
 T_SRC=$(src_count); T_RST=$(count "$SCH")
 echo "Plik: $FILE"; echo "Tabele: baza=$T_SRC, przywrócona=$T_RST"
-ok=1; [ "$T_SRC" = "$T_RST" ] || ok=0
+ok=1; [ "$T_RST" -le "$T_SRC" ] || ok=0
+[ "$T_SRC" = "$T_RST" ] || echo "  uwaga: baza ma $((T_SRC - T_RST)) tabel więcej niż kopia (zmiany po jej wykonaniu)"
 for t in trainers clients surveys exercises workout_plans; do
   a=$(rows "$DATABASE_URL" "$t"); b=$(rows "$TEST_URL" "$SCH.$t"); echo "  $t: baza=$a, przywrócona=$b"
   [ "$b" != "?" ] || ok=0
+  if [ "$b" != "?" ] && [ "$a" != "?" ] && [ "$b" = "0" ] && [ "$a" != "0" ]; then ok=0; fi
+  [ "$a" = "$b" ] || echo "    (różnica: baza zmieniła się po wykonaniu kopii)"
 done
-[ "$ok" = 1 ] && echo "OK: kopia da się przywrócić" || { echo "BŁĄD: przywrócenie nie zgadza się z bazą (szczegóły: /tmp/restore-check.err)" >&2; exit 1; }
+[ "$ok" = 1 ] && echo "OK: kopia da się przywrócić" || { echo "BŁĄD: przywrócenie nieudane (szczegóły: /tmp/restore-check.err)" >&2; exit 1; }
