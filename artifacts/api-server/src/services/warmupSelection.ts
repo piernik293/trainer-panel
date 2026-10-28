@@ -72,10 +72,10 @@ const GENERAL_BIKE = "Rowerek stacjonarny (lekki)";
 
 const JOINT_PATTERNS: [RegExp, string][] = [
   [/kolan|kolano|rzepk|więzadł/i, "Kolano"],
-  [/bark|ramię|ramion|rotator/i, "Bark"],
+  [/bark|ramię|ramion|ramien|rotator/i, "Bark"],
   [/nadgarst|dłoń|dłoni/i, "Nadgarstek"],
   [/lędźw|krzyż|dolny odcinek|odcinek.*(lędźwiow|krzyżow)|ból pleców|kręgosłup|plecy dół|dół pleców/i, "Plecy — dół"],
-  [/bioder|biodro|staw biodrowy/i, "Biodro"],
+  [/biodr|bioder|staw biodrowy/i, "Biodro"], // biodr- covers every case form: biodro, biodra, biodrem, w biodrze, biodrach
   [/łokc|łokieć|tenisist|golfist/i, "Łokieć"],
 ];
 

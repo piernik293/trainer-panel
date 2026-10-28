@@ -737,7 +737,7 @@ router.post(
         computeCompleteness(ex, plyoStats.get(ex.id)).isComplete &&
         compatibilityFilter({
           id: ex.id, trainingLocation: ex.trainingLocation ?? [], equipment: ex.equipment ?? [],
-          requiredEquipmentAll: ex.requiredEquipmentAll ?? [], jointStressAreas: ex.jointStressAreas,
+          requiredEquipmentAll: ex.requiredEquipmentAll ?? [], jointStressAreas: ex.jointStressAreas, jointStress: ex.jointStress,
         }),
       );
       const chosen = selectPlyoBlock(fit, plyoRuleForClient, survey.experienceLevel, alternativeIndex);
