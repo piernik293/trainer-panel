@@ -16,7 +16,7 @@ Szczegółowy plan bieżącego etapu jest w `~/etap-1-uruchomienie-i-stabilizacj
 ## Uruchomienie na GCP
 - Maszyna wirtualna `instance-20261021-155053`, strefa `europe-central2-a`. Porty nie są wystawione na świat, dostęp tylko przez tunel SSH.
 - Zmienne środowiskowe są w `.env` (szablon: `.env.example`). Wczytanie: `set -a; . ./.env; set +a`.
-- Start i stop: `scripts/dev-gcp.sh` / `scripts/stop-gcp.sh` (dodawane w etapie A2).
+- Start i stop: `scripts/dev-gcp.sh` / `scripts/stop-gcp.sh`. Aplikacja działa na OSOBNYM serwerze tmux (gniazdo `trainer-panel-app`; podgląd: `tmux -L trainer-panel-app attach -t trainer-panel`), więc stop nigdy nie rusza domyślnego serwera tmux ani sesji użytkownika (np. `claude`). Zbłąkane procesy na portach są zabijane tylko, jeśli należą do repozytorium. Test: `scripts/test-tmux-izolacja.sh`. Nigdy nie używaj `tmux kill-server` na domyślnym serwerze.
 - Wszystko działa pod jednym adresem, jak w Replit. Vite panelu (23889) przekazuje `/api` → 8080 oraz `/client-landing` → 22347. Linki zaproszeń są budowane z `window.location.origin`.
 - Tunel: `gcloud compute ssh instance-20261021-155053 --zone europe-central2-a -- -L 23889:localhost:23889`, potem otwórz http://localhost:23889.
 - Clerk to instancja development. Role adminów nadaje się przez env (`APP_ADMIN_CLERK_IDS`, `CATALOGUE_ADMIN_CLERK_IDS`), nie przez metadane Clerk.
