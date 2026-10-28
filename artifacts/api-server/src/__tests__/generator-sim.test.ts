@@ -28,11 +28,14 @@ import {
 import { resolveEffectiveLevel } from "@workspace/survey-config";
 import { lacksJointData } from "../services/jointData";
 import { normalizeEquipmentList } from "../services/equipmentNormalizer";
+import { selectWarmup, selectCooldown, type CatalogueWarmupItem } from "../services/warmupSelection";
+import { WARMUP_ROLES } from "../lib/exerciseRoles";
 import { getDayTemplate, recommendSplitType } from "../services/planDraftVolumeDistributionService";
 
 const N = Number(process.env.SIM_N ?? 24);
 const SEED = Number(process.env.SIM_SEED ?? 20261028);
 const REPORT = process.env.SIM_REPORT ?? "";
+const DUMP = process.env.SIM_DUMP ?? ""; // optional: per-day results of the first generation (profile, type, status, exercise ids, warm-up, cool-down) for the catalogue and graphics lists
 
 // ── seeded PRNG ──────────────────────────────────────────────────────────────
 function mulberry32(a: number) {
@@ -73,6 +76,7 @@ interface Profile {
 // ── catalogue snapshot (the oracle reads rows, never the generator's response) ─
 type Ex = typeof exercisesTable.$inferSelect;
 const cat = new Map<number, Ex>();
+let warmCatalogue: CatalogueWarmupItem[] = [];
 const rank = (l: string | null | undefined) => (l ? (LEVELS as readonly string[]).indexOf(l) : -1);
 
 const PUSH = (p: string | null) => !!p && p.startsWith("Pchanie");
@@ -213,6 +217,7 @@ beforeAll(async () => {
   const [g] = await db.select({ id: volumeGuidelineVersionsTable.id }).from(volumeGuidelineVersionsTable).limit(1);
   guidelineId = g.id;
   for (const e of await db.select().from(exercisesTable)) { cat.set(e.id, e); if (!e.hidden) exerciseIds.push(e.id); }
+  warmCatalogue = [...cat.values()].filter((e) => e.isActive && e.role && (WARMUP_ROLES as readonly string[]).includes(e.role)) as unknown as CatalogueWarmupItem[];
 }, 120_000);
 
 afterAll(async () => {
@@ -242,11 +247,20 @@ describe("generator simulation", () => {
     const refusedWhy: Record<string, number> = {}; const refused: Record<string, number> = {}; const dupBy: Record<string, number> = {}; const profilesBy: Record<string, number> = {};
     const byGoalPlyo: Record<string, { plans: number; withPlyo: number }> = {};
     const weekMuscle: Record<string, number[]> = {};
+    const dump: Array<{ p: number; level: string; place: string; t: string; status: number; ids: number[]; warm: number[]; cool: number[] }> = [];
     for (let i = 0; i < N; i++) {
       const p = makeProfile(i);
       const cid = await createClient(p);
       const week = await generateWeek(cid, p);
       stat.profiles++; stat.plans++;
+      if (DUMP) week.forEach((d, di) => {
+        // the warm-up and cool-down of the day, chosen by the same functions as the app
+        const groups = [...new Set(d.exercises.map((e) => cat.get(e.id)?.mainMuscleGroup).filter((g): g is string => !!g))];
+        const place = PLACES.find((x) => x.key === p.place)!;
+        const ctx = { dayGroups: groups, level: p.effective, painAreas: new Set(p.joints), conservative: p.consent === "declined", trainingLocation: place.location, equipmentText: place.equipment, rollerAllowed: di % 2 === 0 };
+        const ok = d.status === 200;
+        dump.push({ p: i, level: p.effective, place: p.place, t: d.type, status: d.status, ids: d.exercises.map((e) => e.id), warm: ok ? selectWarmup(warmCatalogue, ctx).map((x) => x.id) : [], cool: ok ? selectCooldown(warmCatalogue, ctx).map((x) => x.id) : [] });
+      });
       const bucket = `${p.place}|${p.effective}`; profilesBy[bucket] = (profilesBy[bucket] ?? 0) + 1;
       const ids = week.flatMap((d) => d.exercises.map((e) => e.id));
       stat.exercises += ids.length;
@@ -311,6 +325,7 @@ describe("generator simulation", () => {
       goalPlyo: byGoalPlyo, unverifiedInPlansByLevel: unverified, refusedDaysByPlaceLevelType: refused, refusedReasons: refusedWhy, plansWithDuplicatesByPlaceLevel: dupBy, profilesByPlaceLevel: profilesBy,
     };
     if (REPORT) writeFileSync(REPORT, JSON.stringify(report, null, 1));
+    if (DUMP) writeFileSync(DUMP, JSON.stringify(dump));
     expect(stat.wrongRefusalText, "odmowa bez komunikatu dla trenera").toBe(0);
     expect(safety.slice(0, 5), "naruszenia bezpieczeństwa").toEqual([]);
     expect(feas.slice(0, 5), "naruszenia wykonalności").toEqual([]);

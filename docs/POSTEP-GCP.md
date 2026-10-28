@@ -308,3 +308,7 @@
 
 ## 28.10.2026 — poprawki właściciela do danych o stawach (gałąź `fix/stawy-poprawki`, scalona do `main`)
 - Migracja 0060 (z kopią starych wartości, jednorazowa): 10 dipów → Bark, Łokieć, Nadgarstek, Wysokie (w tym dipy na ławce i wspomagane na maszynie); 7 ćwiczeń w zwisie + Bark; 6 ćwiczeń → Średnie. Lista: `docs/STAWY-POPRAWKI.csv`. Symulacja 1000 profili: naruszeń 0, odmowy 2,6% → 2,9%.
+
+## 29.10.2026 — noc przed betą, blok 1: najczęstsze ćwiczenia pod grafiki (gałąź `docs/grafiki-cwiczen`, NIE scalona) — GOTOWE
+- `docs/GRAFIKI-TOP50.csv` (top 50 ćwiczeń, top 20 rozgrzewek, top 20 schłodzeń, pokrycie, opis/wskazówki, grafika/wideo) z symulacji 1000 profili na pełnym katalogu; `scripts/grafiki-top50.py`, opcja `SIM_DUMP` w symulacji (z rozgrzewką i schłodzeniem). Nic nie pobrano ani nie utworzono.
+- Pokrycie: top 50 = 65,6% wszystkich ćwiczeń w planach, top 100 = 86,8%; w planach użyto 250 z 599 aktywnych. Wszystkie top 50 mają opis i wskazówki; żadne nie ma grafiki ani wideo.
