@@ -308,3 +308,7 @@
 
 ## 28.10.2026 — poprawki właściciela do danych o stawach (gałąź `fix/stawy-poprawki`, scalona do `main`)
 - Migracja 0060 (z kopią starych wartości, jednorazowa): 10 dipów → Bark, Łokieć, Nadgarstek, Wysokie (w tym dipy na ławce i wspomagane na maszynie); 7 ćwiczeń w zwisie + Bark; 6 ćwiczeń → Średnie. Lista: `docs/STAWY-POPRAWKI.csv`. Symulacja 1000 profili: naruszeń 0, odmowy 2,6% → 2,9%.
+
+## 28.10.2026 — noc przed betą, blok 7: strona dla trenerów (gałąź `docs/strona-trenerzy`)
+- Statyczny szkic `docs/strona/index.html` (styl B, jasny/ciemny, bez zewnętrznych zasobów): hasło główne + 2 alternatywy w `README.md`, 3 korzyści, 3 kroki, „Dla kogo”, przycisk „Dołącz do bety” (`mailto:`; adres w stałej `OWNER_EMAIL` do uzupełnienia, nie wpisany na stałe). Bez opinii, liczb użytkowników i konkurencji; dopisek, że aplikacja nie zastępuje lekarza.
+- Zrzuty 375 i 1440 px (jasny i ciemny) w `docs/strona/screens/`; brak poziomego przewijania. Nie wdrożona, bez domeny.
