@@ -128,3 +128,7 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 51. **23% dni kończy się błędem (za mało bezpiecznych ćwiczeń, minimum 4).** Rekomendacja: czytelny komunikat dla trenera, co dodać (guma/drążek/hantle), a decyzję o dniu z 3 ćwiczeniami zostawić Tobie. Zmiana wymaga zgody.
 52. **Katalog dla domu bez sprzętu i dla osób nieaktywnych jest za mały:** „Generuj od nowa” daje tam 70–100% powtórzeń (siłownia: 8–25%). Rekomendacja: uzupełnić ćwiczenia bez sprzętu (pomoże kalistenika) i oznaczyć kolejne jako `suitable_for_no_activity`.
 53. **Status „do weryfikacji”** nie jest wymuszany dla początkujących (27% ćwiczeń w ich planach). Włączenie bez uzupełnienia katalogu wyczyściłoby większość puli. Zostawiłem bez zmian.
+
+## Kalistenika (28.10.2026, gałąź `feature/kalistenika`; projekt: `docs/KALISTENIKA.md`)
+54. **Projekt stylu i wersja za przełącznikiem `CALISTHENICS_ENABLED` (wyłączony) są gotowe.** Pytania (z rekomendacjami) są w sekcji 7 dokumentu: kto wybiera styl, czy ławka liczy się jako sprzęt, dzień z 3 ćwiczeniami, uzupełnienie 12 braków w katalogu, ćwiczenia „import” dla P.
+55. **Dziś ok. połowa dni w stylu kalistenicznym jest odmawiana** (za mało zweryfikowanych ćwiczeń, zwłaszcza BA/P i dni „drążek”). Nie włączać flagi dla klientów, dopóki nie zapadnie decyzja o uzupełnieniu katalogu (pkt 4 i 5 w dokumencie).

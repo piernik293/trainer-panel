@@ -1,0 +1,347 @@
+{
+ "aboveLevelNoRule": {
+  "count": 0,
+  "byLevel": {},
+  "samples": []
+ },
+ "style": "calisthenics",
+ "seed": 20261028,
+ "n": 300,
+ "stat": {
+  "profiles": 300,
+  "days": 1135,
+  "daysRefused": 570,
+  "exercises": 3112,
+  "emptyDays": 0,
+  "structuralWarnings": 500,
+  "dupInPlan": 79,
+  "plans": 300
+ },
+ "safetyViolations": 0,
+ "feasibilityViolations": 0,
+ "safetyByRule": {},
+ "feasibilityByRule": {},
+ "samples": {
+  "safety": [],
+  "feasibility": []
+ },
+ "balance": {
+  "totals": {
+   "push": 1679,
+   "pull": 288,
+   "knee": 2663,
+   "hip": 895
+  },
+  "pushToPull": 5.83,
+  "kneeToHip": 2.98,
+  "plansPushPullOutside_0_5_2": 88,
+  "plansWithoutPull": 200
+ },
+ "setsPerSessionMedianByLevel": {
+  "Brak aktywności fizycznej": 15,
+  "Początkujący": 14,
+  "Średniozaawansowany": 18,
+  "Zaawansowany": 18
+ },
+ "timeEstimateToDeclaredMedianByLevel": {
+  "Brak aktywności fizycznej": 0.55,
+  "Początkujący": 0.7,
+  "Średniozaawansowany": 0.89,
+  "Zaawansowany": 0.87
+ },
+ "timeEstimateOver130pct": 87,
+ "timeEstimateUnder60pct": 198,
+ "variety": {
+  "variantShare": 0,
+  "topExercises": [
+   {
+    "id": 105,
+    "name": "Glute bridge",
+    "n": 338,
+    "share": 0.109
+   },
+   {
+    "id": 249,
+    "name": "Skoki pogo",
+    "n": 228,
+    "share": 0.073
+   },
+   {
+    "id": 256,
+    "name": "Nauka lądowania",
+    "n": 202,
+    "share": 0.065
+   },
+   {
+    "id": 90,
+    "name": "Przysiad do skrzyni z masą własnego ciała",
+    "n": 191,
+    "share": 0.061
+   },
+   {
+    "id": 259,
+    "name": "Wspięcia na palce obunóż stojąc",
+    "n": 188,
+    "share": 0.06
+   },
+   {
+    "id": 117,
+    "name": "Pompki klasyczne",
+    "n": 184,
+    "share": 0.059
+   },
+   {
+    "id": 95,
+    "name": "Przysiad wykroczny z podparciem",
+    "n": 172,
+    "share": 0.055
+   },
+   {
+    "id": 116,
+    "name": "Pompki na podwyższeniu",
+    "n": 165,
+    "share": 0.053
+   },
+   {
+    "id": 5,
+    "name": "Plank",
+    "n": 141,
+    "share": 0.045
+   },
+   {
+    "id": 159,
+    "name": "Dead bug",
+    "n": 139,
+    "share": 0.045
+   },
+   {
+    "id": 118,
+    "name": "Pompki na kolanach",
+    "n": 108,
+    "share": 0.035
+   },
+   {
+    "id": 197,
+    "name": "Hollow body hold",
+    "n": 92,
+    "share": 0.03
+   },
+   {
+    "id": 96,
+    "name": "Wykrok w tył",
+    "n": 88,
+    "share": 0.028
+   },
+   {
+    "id": 134,
+    "name": "Wiosłowanie gumą oporową",
+    "n": 86,
+    "share": 0.028
+   },
+   {
+    "id": 211,
+    "name": "Rotacja zewnętrzna barku z gumą oporową",
+    "n": 79,
+    "share": 0.025
+   }
+  ],
+  "medianOverlapWithPreviousPlan": 0.8,
+  "medianOverlapByLevel": {
+   "gym|Brak aktywności fizycznej": 0.8,
+   "dom/plener|Początkujący": 0.64,
+   "dom/plener|Średniozaawansowany": 1,
+   "gym|Zaawansowany": 0.71,
+   "dom/plener|Brak aktywności fizycznej": 0.6,
+   "gym|Początkujący": 0.64,
+   "dom/plener|Zaawansowany": 1,
+   "gym|Średniozaawansowany": 0.58
+  },
+  "overlapAbove50pct": 290,
+  "comparedPlans": 290
+ },
+ "goalPlyo": {
+  "Redukcja tkanki tłuszczowej": {
+   "plans": 58,
+   "withPlyo": 36
+  },
+  "Zwiększenie siły": {
+   "plans": 52,
+   "withPlyo": 43
+  },
+  "Poprawa kondycji": {
+   "plans": 35,
+   "withPlyo": 30
+  },
+  "Cel sportowy": {
+   "plans": 43,
+   "withPlyo": 36
+  },
+  "Budowa sylwetki": {
+   "plans": 54,
+   "withPlyo": 40
+  },
+  "Poprawa sprawności": {
+   "plans": 58,
+   "withPlyo": 45
+  }
+ },
+ "unverifiedInPlansByLevel": {
+  "Brak aktywności fizycznej": {
+   "all": 299,
+   "unverified": 0
+  },
+  "Początkujący": {
+   "all": 1555,
+   "unverified": 0
+  },
+  "Średniozaawansowany": {
+   "all": 780,
+   "unverified": 426
+  },
+  "Zaawansowany": {
+   "all": 478,
+   "unverified": 287
+  }
+ },
+ "refusedDaysByPlaceLevelType": {
+  "gym|Brak aktywności fizycznej|pull": 5,
+  "gym|Brak aktywności fizycznej|push": 5,
+  "gym|Brak aktywności fizycznej|upper": 6,
+  "gym|Brak aktywności fizycznej|full_body": 2,
+  "outdoor|Początkujący|pull": 42,
+  "homeBand|Średniozaawansowany|pull": 6,
+  "homeBand|Średniozaawansowany|upper": 3,
+  "gym|Zaawansowany|pull": 6,
+  "gym|Zaawansowany|upper": 5,
+  "homeBar|Średniozaawansowany|pull": 15,
+  "homeBar|Średniozaawansowany|push": 3,
+  "homeBar|Średniozaawansowany|upper": 12,
+  "home0|Początkujący|push": 6,
+  "home0|Początkujący|upper": 16,
+  "home0|Początkujący|full_body": 4,
+  "home0|Średniozaawansowany|upper": 8,
+  "homeBar|Brak aktywności fizycznej|pull": 9,
+  "homeBar|Brak aktywności fizycznej|push": 9,
+  "homeBar|Początkujący|pull": 30,
+  "homeBand|Początkujący|pull": 12,
+  "homeBand|Początkujący|upper": 18,
+  "outdoor|Początkujący|upper": 37,
+  "gym|Początkujący|pull": 14,
+  "gym|Początkujący|upper": 14,
+  "outdoor|Zaawansowany|pull": 10,
+  "outdoor|Zaawansowany|push": 5,
+  "homeBar|Brak aktywności fizycznej|upper": 13,
+  "outdoor|Początkujący|push": 9,
+  "outdoor|Początkujący|full_body": 5,
+  "homeBar|Początkujący|upper": 28,
+  "gym|Początkujący|push": 5,
+  "gym|Początkujący|full_body": 4,
+  "homeBand|Brak aktywności fizycznej|pull": 5,
+  "homeBand|Brak aktywności fizycznej|push": 5,
+  "homeBand|Zaawansowany|pull": 8,
+  "homeBand|Zaawansowany|upper": 7,
+  "homeBar|Zaawansowany|pull": 6,
+  "homeBar|Zaawansowany|push": 1,
+  "homeBar|Początkujący|push": 2,
+  "homeBar|Początkujący|full_body": 4,
+  "outdoor|Średniozaawansowany|pull": 12,
+  "home0|Brak aktywności fizycznej|push": 10,
+  "home0|Brak aktywności fizycznej|upper": 10,
+  "homeBar|Zaawansowany|upper": 4,
+  "gym|Średniozaawansowany|pull": 8,
+  "homeBand|Brak aktywności fizycznej|upper": 7,
+  "gym|Średniozaawansowany|upper": 5,
+  "home0|Średniozaawansowany|push": 9,
+  "outdoor|Zaawansowany|upper": 6,
+  "homeBand|Początkujący|push": 4,
+  "homeBand|Początkujący|full_body": 2,
+  "gym|Zaawansowany|push": 2,
+  "homeBand|Zaawansowany|push": 2,
+  "outdoor|Brak aktywności fizycznej|pull": 12,
+  "outdoor|Brak aktywności fizycznej|push": 12,
+  "outdoor|Brak aktywności fizycznej|upper": 12,
+  "homeBar|Średniozaawansowany|legs": 1,
+  "outdoor|Średniozaawansowany|legs": 2,
+  "home0|Brak aktywności fizycznej|full_body": 2,
+  "outdoor|Zaawansowany|full_body": 2,
+  "home0|Brak aktywności fizycznej|legs": 2,
+  "outdoor|Średniozaawansowany|push": 1,
+  "outdoor|Średniozaawansowany|upper": 7,
+  "home0|Zaawansowany|upper": 5,
+  "homeBar|Brak aktywności fizycznej|legs": 1,
+  "homeBar|Brak aktywności fizycznej|full_body": 1,
+  "home0|Średniozaawansowany|full_body": 1,
+  "outdoor|Początkujący|legs": 3,
+  "home0|Średniozaawansowany|legs": 1,
+  "outdoor|Zaawansowany|legs": 1,
+  "home0|Zaawansowany|push": 5,
+  "home0|Zaawansowany|full_body": 1,
+  "gym|Średniozaawansowany|push": 1,
+  "gym|Początkujący|legs": 3,
+  "outdoor|Brak aktywności fizycznej|legs": 1,
+  "outdoor|Brak aktywności fizycznej|full_body": 3,
+  "gym|Zaawansowany|legs": 1,
+  "gym|Zaawansowany|full_body": 1,
+  "homeBar|Początkujący|legs": 3
+ },
+ "refusedReasons": {
+  "gym|V0 PULL: minimum 4 exercises required, got 1": 6,
+  "gym|V0 PUSH: minimum 4 exercises required, got 1": 10,
+  "gym|V0 UPPER: minimum 4 exercises required, got 1": 7,
+  "gym|V0 FULL_BODY: minimum 4 exercises required, got 3": 5,
+  "home/outdoor|V0 PULL: minimum 4 exercises required, got 3": 110,
+  "home/outdoor|V0 PULL: minimum 4 exercises required, got 2": 36,
+  "home/outdoor|V0 UPPER: minimum 4 exercises required, got 3": 96,
+  "gym|V0 PULL: minimum 4 exercises required, got 3": 19,
+  "gym|V0 UPPER: minimum 4 exercises required, got 3": 17,
+  "home/outdoor|V0 PULL: minimum 4 exercises required, got 1": 21,
+  "home/outdoor|V0 PUSH: minimum 4 exercises required, got 3": 7,
+  "home/outdoor|V0 PUSH: minimum 4 exercises required, got 1": 64,
+  "home/outdoor|V0 UPPER: minimum 4 exercises required, got 1": 37,
+  "home/outdoor|V0 FULL_BODY: minimum 4 exercises required, got 3": 21,
+  "home/outdoor|V0 UPPER: minimum 4 exercises required, got 2": 60,
+  "gym|V0 PULL: minimum 4 exercises required, got 2": 8,
+  "home/outdoor|V0 PUSH: minimum 4 exercises required, got 2": 12,
+  "gym|V0 PUSH: minimum 4 exercises required, got 3": 2,
+  "home/outdoor|V0 LEGS: minimum 4 exercises required, got 3": 15,
+  "gym|V0 UPPER: minimum 4 exercises required, got 2": 6,
+  "home/outdoor|V0 FULL_BODY: minimum 4 exercises required, got 2": 4,
+  "gym|V0 LEGS: minimum 4 exercises required, got 3": 4,
+  "gym|V0 FULL_BODY: minimum 4 exercises required, got 1": 1,
+  "gym|V0 PUSH: minimum 4 exercises required, got 2": 1,
+  "gym|V0 FULL_BODY: minimum 4 exercises required, got 2": 1
+ },
+ "plansWithDuplicatesByPlaceLevel": {
+  "outdoor|Początkujący": 26,
+  "gym|Początkujący": 4,
+  "homeBar|Brak aktywności fizycznej": 6,
+  "homeBar|Początkujący": 11,
+  "home0|Początkujący": 13,
+  "homeBand|Brak aktywności fizycznej": 3,
+  "homeBand|Początkujący": 8,
+  "outdoor|Brak aktywności fizycznej": 5,
+  "gym|Brak aktywności fizycznej": 3
+ },
+ "profilesByPlaceLevel": {
+  "gym|Brak aktywności fizycznej": 6,
+  "outdoor|Początkujący": 50,
+  "homeBand|Średniozaawansowany": 7,
+  "gym|Zaawansowany": 6,
+  "homeBar|Średniozaawansowany": 19,
+  "home0|Początkujący": 21,
+  "home0|Średniozaawansowany": 9,
+  "homeBar|Brak aktywności fizycznej": 15,
+  "homeBar|Początkujący": 35,
+  "homeBand|Początkujący": 19,
+  "gym|Początkujący": 17,
+  "outdoor|Zaawansowany": 14,
+  "homeBand|Brak aktywności fizycznej": 9,
+  "homeBand|Zaawansowany": 8,
+  "homeBar|Zaawansowany": 6,
+  "outdoor|Średniozaawansowany": 19,
+  "gym|Średniozaawansowany": 10,
+  "home0|Brak aktywności fizycznej": 10,
+  "outdoor|Brak aktywności fizycznej": 15,
+  "home0|Zaawansowany": 5
+ }
+}

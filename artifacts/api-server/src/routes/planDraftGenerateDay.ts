@@ -62,6 +62,10 @@ import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
 import { mainPlanRoleCondition, isGeneratorSafe, preferMainOverVariants } from "../lib/exerciseRoles";
 import { LANDING_ROLE, SPORT_GOAL, isPlyoExercise, plyoRule, selectPlyoBlock } from "../services/plyoBlock";
 import { chooseFreshRun, previousPlanExerciseIds } from "../services/planHistory";
+import {
+  calisthenicsActive, isCalisthenicsExercise, calisthenicsLevelAllows, calisthenicsLadderNames, calisthenicsLadderRows,
+  calisthenicsPlyoRule, capCalisthenicsDay,
+} from "../services/calisthenics";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   authorizeGeneratedDay,
@@ -79,6 +83,8 @@ const ParamsSchema = z.object({
 
 const BodySchema = z.object({
   generationId: z.string().uuid(),
+  /** Training style. "calisthenics" is honoured only behind CALISTHENICS_ENABLED (docs/KALISTENIKA.md); otherwise ignored. */
+  style: z.enum(["standard", "calisthenics"]).optional(),
   generationDayIndex: z.number().int().min(0).max(6),
   expectedDayCount: z.number().int().min(1).max(7),
   /**
@@ -263,7 +269,17 @@ router.post(
 
     // Progression ladders (docs/DRABINKI.md): automatic selection never goes above the client's step; the step of the
     // client's own level is preferred; warm-up-role exercises on a "Brak aktywności" step are allowed for such clients only.
-    const ladder = buildLadderRules( await loadLadderRows(), survey.experienceLevel);
+    const calis = calisthenicsActive(body.data.style);
+    const ladderRows = await loadLadderRows();
+    if (calis) {
+      const named = await db.select({ id: exercisesTable.id, name: exercisesTable.name }).from(exercisesTable)
+        .where(and(inArray(exercisesTable.name, calisthenicsLadderNames()), eq(exercisesTable.isActive, true), eq(exercisesTable.hidden, false)))
+        .orderBy(exercisesTable.id);
+      const idByName = new Map<string, number>();
+      for (const r of named) if (!idByName.has(r.name)) idByName.set(r.name, r.id);
+      ladderRows.push(...calisthenicsLadderRows(idByName));
+    }
+    const ladder = buildLadderRules(ladderRows, survey.experienceLevel);
     const roleCondition = ladder.warmupRoleAllowed.size > 0
       ? or(mainPlanRoleCondition(), and(inArray(exercisesTable.id, [...ladder.warmupRoleAllowed]), eq(exercisesTable.suitableForNoActivity, true)))!
       : mainPlanRoleCondition();
@@ -284,6 +300,7 @@ router.post(
     const completeExercises = exercises.filter((ex) => {
       if (!isGeneratorSafe(ex, survey.experienceLevel)) return false;
       if (solo && !soloAllowsExercise(ex, solo)) return false;
+      if (calis && (!isCalisthenicsExercise(ex) || !calisthenicsLevelAllows(ex, survey.experienceLevel))) return false;
       const stats = statsMap.get(ex.id);
       const { isComplete } = computeCompleteness(ex, stats);
       return isComplete;
@@ -305,7 +322,9 @@ router.post(
     // Jumps never come out of the ordinary slots: they are used only by the plyometric block (below) or a "plyo" day.
     const plyoRuleForClient = v0SessionType === "plyo"
       ? plyoRule({ goal: null, effectiveLevel: null })
-      : plyoRule({ goal: survey.trainingGoal, effectiveLevel: survey.experienceLevel, jumpExperience: survey.jumpExperience });
+      : calis
+        ? calisthenicsPlyoRule({ sessionType: v0SessionType, goal: survey.trainingGoal, effectiveLevel: survey.experienceLevel, jumpExperience: survey.jumpExperience })
+        : plyoRule({ goal: survey.trainingGoal, effectiveLevel: survey.experienceLevel, jumpExperience: survey.jumpExperience });
     // Main exercise by default; a variant only when its main exercise does not fit (equipment of the place, joint, level…).
     // An exercise excluded in the interview is removed FIRST: only that exact position goes (RDL with a barbell out, RDL with dumbbells
     // stays), and its variants are still offered because their main exercise is no longer in the list.
@@ -713,6 +732,9 @@ router.post(
       return;
     }
 
+    // Calisthenics: about 5 exercises per unit (the jump block of the leg day comes on top).
+    if (calis) v0Result = { ...v0Result, exercises: capCalisthenicsDay(v0Result.exercises) as typeof v0Result.exercises };
+
     console.log(
       `SESSION_COMPLETE: ${v0Result.exercises.length} exercises selected for ${v0SessionType.toUpperCase()}`,
     );
@@ -734,6 +756,7 @@ router.post(
       const plyoStats = await fetchMuscleStats(plyoRows.map((e) => e.id));
       const fit = plyoRows.filter((ex) =>
         !avoidedExerciseIds.has(ex.id) &&
+        (!calis || (isCalisthenicsExercise(ex) && calisthenicsLevelAllows(ex, survey.experienceLevel))) &&
         computeCompleteness(ex, plyoStats.get(ex.id)).isComplete &&
         compatibilityFilter({
           id: ex.id, trainingLocation: ex.trainingLocation ?? [], equipment: ex.equipment ?? [],
@@ -823,6 +846,7 @@ router.post(
 
     // 4. Generator notes — contextual decisions surfaced for the trainer
     const generatorNotes: string[] = [];
+    if (calis) generatorNotes.push("Styl treningu: kalistenika (masa ciała, drążek, poręcze, kółka, guma); ok. 5 ćwiczeń na jednostkę, skoki tylko w dniu nóg.");
     if (deprioritizePushUps) {
       generatorNotes.push(
         "Pompki: zepchnięte za wyciskanie sztangą/hantlami — dostępny pełen sprzęt, " +

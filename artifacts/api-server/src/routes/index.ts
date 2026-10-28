@@ -41,6 +41,7 @@ import reportPdfRouter from "./reportPdf";
 import soloRouter from "./solo";
 
 import conditioningRouter from "./conditioning";
+import calisthenicsRouter from "./calisthenics";
 
 const router: IRouter = Router();
 
@@ -86,6 +87,7 @@ router.use(reportPdfRouter);
 router.use(soloRouter);
 
 router.use(conditioningRouter);
+router.use(calisthenicsRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────

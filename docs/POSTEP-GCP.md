@@ -287,3 +287,9 @@
 - Wynik po poprawkach: 0 naruszeń bezpieczeństwa i 0 wykonalności. Naprawione: (1) odmienione nazwy stawów z wywiadu były ignorowane („z biodrem”) — test regresji; (2) blok skoków i zamiana ćwiczenia omijały tryb „brak zgody zdrowotnej” — test regresji. Przy okazji: kruche sprzątanie testu `joint-exclusion`.
 - Do decyzji (DO-DECYZJI 49–53): „ponad poziom” bez twardej reguły, 23% dni odmówionych, mały katalog dla domu/BA, status „do weryfikacji”.
 - Testy: API 130 plików / 2738, bezpieczeństwo generatora 101, typecheck OK.
+
+## 28.10.2026 — noc, blok 2: kalistenika (gałąź `feature/kalistenika`, z `qa/generator-symulacja`, NIE scalona) — GOTOWE
+- 2a: `docs/KALISTENIKA.md` (styl nie cel, wybór przez trenera, szablony dni 2–5, dzień nóg ze skokami wg obowiązujących zasad, 7 drabinek z istniejących ćwiczeń + 12 braków, bezpieczeństwo, 5 pytań).
+- 2b: za flagą `CALISTHENICS_ENABLED=0`: `services/calisthenics.ts`, parametr `style` w `generate-day`, `GET /api/calisthenics/status` i `.../calisthenics-days`, ukryte pole „Styl: kalistenika” w edytorze planu (tylko przy fladze). Bez migracji.
+- Testy: `calisthenics.test.ts` (15), `calisthenics.integration.test.ts` (10: flaga wyłączona = identyczna odpowiedź, włączona = tylko dozwolony sprzęt, ≤5, BA/P, skoki tylko w dniu nóg, zgoda zdrowotna, dni wg stanowisk), panel `step4-calisthenics-option.test.tsx` (3). Symulacja stylu 300 profili: 0 naruszeń; 50% dni odmówionych (braki katalogu) — DO-DECYZJI 54–55.
+- Weryfikacja: API 132 plików / 2763, panel 785, portal 250, bezpieczeństwo generatora 101, typecheck OK.
