@@ -444,9 +444,9 @@ export default function ClientList() {
                           {formatDate(client.createdAt)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                             <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-primary">
-                              <Link href={`/clients/${client.id}/survey`}>
+                              <Link href={`/clients/${client.id}/survey`} aria-label={`Wywiad: ${client.firstName} ${client.lastName}`}>
                                 <FileText size={16} />
                               </Link>
                             </Button>
@@ -454,6 +454,7 @@ export default function ClientList() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              aria-label={`Usuń klienta ${client.firstName} ${client.lastName}`}
                               onClick={() => handleDelete(client.id, `${client.firstName} ${client.lastName}`)}
                               disabled={bulkDeleting}
                             >
@@ -496,7 +497,7 @@ export default function ClientList() {
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-primary">
-                          <Link href={`/clients/${client.id}/survey`}>
+                          <Link href={`/clients/${client.id}/survey`} aria-label={`Wywiad: ${client.firstName} ${client.lastName}`}>
                             <FileText size={16} />
                           </Link>
                         </Button>
@@ -504,6 +505,7 @@ export default function ClientList() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          aria-label={`Usuń klienta ${client.firstName} ${client.lastName}`}
                           onClick={() => handleDelete(client.id, `${client.firstName} ${client.lastName}`)}
                           disabled={bulkDeleting}
                         >

@@ -270,7 +270,7 @@ export default function ExerciseRecommendationsTab({ clientId, hasSurvey }: Prop
                   </div>
 
                   {/* Arrow */}
-                  <Link href={`/exercises/${ex.id}`} className="flex-shrink-0 text-muted-foreground hover:text-foreground">
+                  <Link href={`/exercises/${ex.id}`} aria-label={`Zobacz ćwiczenie: ${ex.name}`} className="flex-shrink-0 text-muted-foreground hover:text-foreground">
                     <ChevronRight size={16} />
                   </Link>
                 </div>

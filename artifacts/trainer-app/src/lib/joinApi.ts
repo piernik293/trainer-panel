@@ -18,9 +18,9 @@ export function useDecideJoinRequest() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: key }); qc.invalidateQueries({ queryKey: ["dashboard-summary"] }); },
   });
 }
+/** Bez własnego odświeżania zapytań: po odłączeniu strona klienta dałaby 404, więc najpierw przechodzimy na listę (patrz DisconnectButton). */
 export function useDisconnectClient(clientId: number) {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: () => customFetch(`/api/clients/${clientId}/disconnect`, { method: "POST" }), onSuccess: () => qc.invalidateQueries() });
+  return useMutation({ mutationFn: () => customFetch(`/api/clients/${clientId}/disconnect`, { method: "POST" }) });
 }
 
 export const NEW_CODE_CONFIRM = "Nowy kod unieważni poprzedni link i kod. Kontynuować?";

@@ -265,3 +265,9 @@
 - Scalone (`--no-ff`) w kolejności z raportu: beta-przygotowanie, generator-priorytety, konta-link-kod, panel-admin, wnioski-trenerow, pakiety-sesje, skrzynka-uwagi, import-excel, raport-pdf, solo, kondycja, docs/kondycja-aktualizacja, docs/raport-wlasciciela. Konflikty tylko tekstowe (lista tras, indeks schematu, importy, POSTEP, trainers.ts) — zachowano zmiany obu stron.
 - Decyzje właściciela wykonane: łagodne interwały dla początkujących (`fix/interwaly-poczatkujacy`), zgoda w wywiadzie wpisywanym przez trenera (`fix/zgoda-wywiad-reczny`), prośba o dołączenie w „Wymaga uwagi” (`fix/prosba-w-wymaga-uwagi`), odpowiedzi w `docs/DO-DECYZJI.md`, cron kopii bazy na `~/trainer-panel`.
 - Flagi `SOLO_ENABLED` i `CONDITIONING_ENABLED` zostają wyłączone. `OWNER_NOTIFY_EMAIL` — adres poda właściciel.
+
+## 27.10.2026 — kontrola jakości przed betą (gałęzie `qa/przeglad-bety`, `qa/bezpieczenstwo`, NIE scalone)
+- `docs/QA-BETA.md` (tabela problemów + zrzuty), `docs/NAZWY-PROPOZYCJA.md` (tylko propozycja), `docs/BEZPIECZENSTWO-BETA.md`, `docs/BETA-START.md`; decyzje 38–48 w `docs/DO-DECYZJI.md`.
+- Znaleziono 1 krytyczny, 13 ważnych, 10 kosmetycznych; naprawiono 1 / 11 / 5 (każda poprawka osobnym commitem z testem tam, gdzie się dało).
+- KRYTYCZNE: start API a konta bez trenera (`lib/migration.ts`) — naprawione; scal przed restartem z `main`.
+- `qa/bezpieczenstwo`: maskowanie tajnych adresów (tokeny i kody) w logach i dzienniku błędów + ta sama poprawka startu API.

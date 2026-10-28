@@ -104,7 +104,7 @@ function Trainers() {
         {data.trainers.map((t) => (
           <li key={t.id} className="p-3 space-y-2" data-testid="admin-trainer">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm font-medium">{t.name ?? "(bez nazwy)"}{t.isAdmin ? " · administrator" : ""}{t.blocked ? " · zablokowane" : ""}</span>
+              <span className="text-sm font-medium">{t.label}{t.isAdmin ? " · administrator" : ""}{t.blocked ? " · zablokowane" : ""}</span>
               <span className="text-xs text-muted-foreground">{t.email ?? "brak e-maila"}</span>
             </div>
             <p className="text-xs text-muted-foreground">Podopieczni: {t.clients} · ostatnia aktywność: {fmt(t.lastActivity)} · założone: {fmt(t.createdAt)}</p>

@@ -7,6 +7,7 @@ import { Loader2, CheckCircle2, ChevronRight, ChevronLeft, Dumbbell, Activity, C
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TodayCard } from "@/components/training/TodayCard";
+import { dayFocusLabel } from "@workspace/survey-config";
 import { StepsTile } from "@/components/StepsTile";
 import { AccountNotice } from "@/components/AccountNotice";
 import { TrainingFlow } from "@/components/training/TrainingFlow";
@@ -347,7 +348,7 @@ function DayPreview({ day, onBack }: { day: PlanDay; onBack: () => void }) {
         </button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{day.dayName ?? `Dzień ${day.dayOrder}`}</h1>
-          {day.subtitle && <p className="text-sm text-muted-foreground">{day.subtitle}</p>}
+          {day.subtitle && <p className="text-sm text-muted-foreground">{dayFocusLabel(day.subtitle)}</p>}
           <p className="mt-1 text-xs text-muted-foreground">Podgląd planu. Trening zaczniesz na ekranie „Dziś”.</p>
         </div>
         <ol className="space-y-2">
@@ -1137,7 +1138,7 @@ export function PlanView({
           <p className="text-sm text-muted-foreground mt-1">Cześć, {client.firstName}!</p>
           {plan.goal && (
             <p className="text-sm text-primary bg-primary/5 border border-primary/10 px-3 py-2 mt-3">
-              Cel: {plan.goal}
+              {/^cel\b/i.test(plan.goal ?? "") ? plan.goal : `Cel: ${plan.goal}`}
             </p>
           )}
           {plan.updatedAt && (
@@ -1174,7 +1175,7 @@ export function PlanView({
                       <span className="font-semibold text-sm">{day.dayName ?? `Dzień ${day.dayOrder}`}</span>
                       {day.subtitle && (
                         <Badge variant="outline" className="text-xs px-1.5 py-0 border-input text-muted-foreground">
-                          {day.subtitle}
+                          {dayFocusLabel(day.subtitle)}
                         </Badge>
                       )}
                     </div>
@@ -1217,6 +1218,8 @@ export default function PlanPortal() {
   const [todayReload, setTodayReload] = useState(0);
   // Backend-decided calendar eligibility for the nav (in_person/hybrid only).
   const [navBookable, setNavBookable] = useState(false);
+  // osoba bez trenera (np. po prośbie o dołączenie): zamiast „skontaktuj się z trenerem” pokazujemy jej własny ekran
+  const [unlinked, setUnlinked] = useState(false);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
@@ -1285,13 +1288,17 @@ export default function PlanPortal() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-6">
         <div className="text-center space-y-2 max-w-sm" role="alert">
-          <Dumbbell className="w-10 h-10 mx-auto text-muted-foreground mb-4" />
-          <p className="font-semibold">{planError ?? "Brak aktywnego planu"}</p>
-          <p className="text-sm text-muted-foreground">
-            Skontaktuj się ze swoim trenerem — musi aktywować Twój plan i powiązać konto z Twoim profilem.
-          </p>
-          <AccountNotice />
-          {planError && (
+          {!unlinked && (
+            <>
+            <Dumbbell className="w-10 h-10 mx-auto text-muted-foreground mb-4" />
+            <p className="font-semibold">{planError ?? "Brak aktywnego planu"}</p>
+            <p className="text-sm text-muted-foreground">
+              Skontaktuj się ze swoim trenerem — musi aktywować Twój plan i powiązać konto z Twoim profilem.
+            </p>
+            </>
+          )}
+          <AccountNotice onStatus={(st) => setUnlinked(!!st && !st.linked)} />
+          {planError && !unlinked && (
             <Button onClick={() => setPlanRetry((c) => c + 1)} className="rounded-lg mt-2">
               Spróbuj ponownie
             </Button>

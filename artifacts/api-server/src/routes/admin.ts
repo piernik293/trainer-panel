@@ -82,7 +82,7 @@ router.get("/admin/trainers", ...admin, async (_req, res): Promise<void> => {
   };
   res.json({
     trainers: trainers.map((t) => ({
-      id: t.id, name: t.displayName, email: t.email, planCode: plan.get(t.id) ?? "FREE", clients: nClients.get(t.id) ?? 0,
+      id: t.id, name: t.displayName, label: t.displayName ?? t.email ?? `Konto …${t.clerkUserId.slice(-6)}`, email: t.email, planCode: plan.get(t.id) ?? "FREE", clients: nClients.get(t.id) ?? 0,
       lastActivity: lastOf(t.id), createdAt: t.createdAt, blocked: t.blockedAt != null, isAdmin: checkIsAppAdmin(t.clerkUserId),
     })),
     howToAddTrainer: "Nowego trenera dopuszcza lista w pliku .env (TRAINER_CLERK_IDS): dopisz jego identyfikator Clerk po przecinku i uruchom ponownie serwer (scripts/stop-gcp.sh && scripts/dev-gcp.sh). Lista nie jest zmieniana z aplikacji.",

@@ -608,3 +608,22 @@ export function methodsAnswerUsable(surveyCreatedAt: string | Date | null | unde
   return new Date(surveyCreatedAt).getTime() >= Date.parse(METHODS_QUESTION_FIXED_AT);
 }
 export * from "./legal";
+
+
+// ─── Etykieta „rodzaju dnia” planu (podtytuł dnia zapisany z kreatora jako klucz techniczny) ───
+
+const DAY_FOCUS_LABELS: Record<string, string> = {
+  upper: "Góra ciała", lower: "Dół ciała", full_body: "Całe ciało", full_body_a: "Całe ciało A", full_body_b: "Całe ciało B",
+  push: "Pchanie", pull: "Ciągnięcie", legs: "Nogi", core: "Brzuch i korpus", cardio: "Cardio", specialization: "Specjalizacja",
+  upper_a: "Góra ciała A", upper_b: "Góra ciała B", lower_a: "Dół ciała A", lower_b: "Dół ciała B",
+};
+
+/** Podtytuł dnia po polsku: znany klucz techniczny (np. „full_body”) → „Całe ciało”; zwykły tekst trenera bez zmian. */
+export function dayFocusLabel(subtitle: string | null | undefined): string | null {
+  const raw = (subtitle ?? "").trim();
+  if (!raw) return null;
+  const key = raw.toLowerCase();
+  if (DAY_FOCUS_LABELS[key]) return DAY_FOCUS_LABELS[key]!;
+  if (/^[a-z]+(_[a-z0-9]+)+$/.test(key)) return key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+  return raw;
+}

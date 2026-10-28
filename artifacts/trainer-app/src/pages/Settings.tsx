@@ -85,7 +85,7 @@ export default function Settings() {
               </p>
               {email && (
                 <p
-                  className="text-sm text-muted-foreground"
+                  className="text-sm text-muted-foreground break-all"
                   data-testid="settings-email"
                 >
                   {email}

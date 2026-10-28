@@ -403,7 +403,8 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
     });
   } catch (err) {
     if (isSubscriptionLimitError(err)) {
-      res.status(409).json(err.toResponse());
+      // Limit pakietu trenera nie jest sprawą osoby wypełniającej wywiad: ona dostaje prosty komunikat (kod błędu zostaje dla aplikacji).
+      res.status(409).json({ ...err.toResponse(), error: "Nie udało się teraz wysłać wywiadu. Napisz do swojego trenera — poprosi Cię o ponowną próbę." });
       return;
     }
     if ((err as { code?: string }).code === "TOKEN_INVALID") {

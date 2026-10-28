@@ -128,7 +128,7 @@ export function SubscriptionSummary({ context = "dashboard" }: { context?: "dash
                     <div>
                       <CardTitle className="text-base">{plan.name}</CardTitle>
                       <CardDescription className="font-medium text-foreground mt-1">
-                        {plan.monthlyPricePln ? `${plan.monthlyPricePln} PLN / miesiąc` : 'Darmowy'}
+                        {plan.monthlyPricePln ? `${String(plan.monthlyPricePln).replace('.', ',')} zł / miesiąc` : 'Darmowy'}
                       </CardDescription>
                     </div>
                     {plan.code === 'UNLIMITED' && (
