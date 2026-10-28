@@ -37,15 +37,17 @@ describe("blockedJointsFrom — sources", () => {
 });
 
 describe("buildCompatibilityFilter — joint exclusion", () => {
-  const base = { trainingLocation: ["Siłownia"], equipment: ["Masa własnego ciała"], requiredEquipmentAll: [] as string[] };
-  it.each(JOINTS)("%s: tagged exercise rejected, other joint / untagged accepted", (j) => {
+  const base = { trainingLocation: ["Siłownia"], equipment: ["Masa własnego ciała"], requiredEquipmentAll: [] as string[], jointStress: "Niskie" };
+  it.each(JOINTS)("%s: tagged exercise rejected, other joint / confirmed-none accepted, unknown rejected (decision 3a)", (j) => {
     const f = buildCompatibilityFilter("Siłownia", null, new Set(), new Set([j]));
     expect(f({ id: 1, ...base, jointStressAreas: [j] })).toBe(false);
     expect(f({ id: 2, ...base, jointStressAreas: ["Kolano", j].sort() })).toBe(false);
     const other = JOINTS.find((x) => x !== j)!;
     expect(f({ id: 3, ...base, jointStressAreas: [other] })).toBe(true);
-    expect(f({ id: 4, ...base, jointStressAreas: [] })).toBe(true);
-    expect(f({ id: 5, ...base, jointStressAreas: null })).toBe(true);
+    expect(f({ id: 4, ...base, jointStressAreas: [] })).toBe(true); // "Niskie" with no joint of the list = confirmed none
+    expect(f({ id: 5, ...base, jointStressAreas: null })).toBe(false); // decision 3a: no joint data is never offered to a client with a reported joint
+    expect(f({ id: 6, ...base, jointStress: null, jointStressAreas: [other] })).toBe(false); // level missing
+    expect(f({ id: 7, ...base, jointStress: "Średnie", jointStressAreas: [] })).toBe(false); // load above "Niskie" but no joint named
   });
   it("no reported joints → filter unchanged", () => {
     const f = buildCompatibilityFilter("Siłownia", null, new Set());

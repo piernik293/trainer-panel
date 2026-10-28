@@ -110,7 +110,8 @@ describe("najostrożniejsze ustawienia bez zgody", () => {
     const base = { trainingLocation: ["Siłownia"], equipment: ["Masa własnego ciała"], requiredEquipmentAll: [] as string[] };
     const f = buildCompatibilityFilter("Siłownia", null, new Set(), new Set(), true);
     expect(f({ id: 1, ...base, jointStress: "Wysokie" })).toBe(false);
-    expect(f({ id: 2, ...base, jointStress: "Niskie" })).toBe(true);
+    expect(f({ id: 2, ...base, jointStress: "Niskie", jointStressAreas: ["Kolano"] })).toBe(true);
+    expect(f({ id: 3, ...base, jointStress: null, jointStressAreas: null })).toBe(false); // decision 3a: no joint data → not in the no-consent mode
     expect(buildCompatibilityFilter("Siłownia", null, new Set())({ id: 1, ...base, jointStress: "Wysokie" })).toBe(true);
   });
 });

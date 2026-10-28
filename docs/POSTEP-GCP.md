@@ -282,6 +282,33 @@
 - Testy (baza testowa): API 128/128 plików, 2727 testów; panel 782; portal 250; bezpieczeństwo generatora 101; typecheck i build OK. `joint-exclusion.integration.test.ts` miał kruche sprzątanie (stali klienci po przerwanym przebiegu blokowali usunięcie trenera) — poprawione.
 - Restart na poprawionych skryptach: sesja tmux `claude` przeżyła. Smoke 131 OK / 0 BŁĄD.
 
+## 28.10.2026 — noc, blok 1: symulacja jakości generatora (gałąź `qa/generator-symulacja`, NIE scalona) — GOTOWE
+- `scripts/generator-sim.sh` + `src/__tests__/generator-sim.test.ts` (1000 losowych profili ręcznie, 24 w zwykłych testach; baza testowa). Raport: `docs/GENERATOR-JAKOSC.md`, surowe dane `docs/generator-sim-report.json`.
+- Wynik po poprawkach: 0 naruszeń bezpieczeństwa i 0 wykonalności. Naprawione: (1) odmienione nazwy stawów z wywiadu były ignorowane („z biodrem”) — test regresji; (2) blok skoków i zamiana ćwiczenia omijały tryb „brak zgody zdrowotnej” — test regresji. Przy okazji: kruche sprzątanie testu `joint-exclusion`.
+- Do decyzji (DO-DECYZJI 49–53): „ponad poziom” bez twardej reguły, 23% dni odmówionych, mały katalog dla domu/BA, status „do weryfikacji”.
+- Testy: API 130 plików / 2738, bezpieczeństwo generatora 101, typecheck OK.
+## 28.10.2026 — noc, blok 3: drobne poprawki z QA (gałąź `fix/qa-drobne`, z `main`, NIE scalona) — GOTOWE
+- C5: linki między dokumentami prawnymi (panel i portal) mają min. 44 px i `aria-current`; C7: „Ewa ” → `clientFullName` (7 miejsc w panelu); C8: separatory „·” czytelne i `aria-hidden`.
+- Zostaje otwarte (poza zakresem: nawigacja/UX): C6 (cele dotyku w menu, kalendarzu, przełącznikach), C10 (dane testowe — tylko za zgodą).
+- Testy: `legal-page-links` (panel i portal), `client-name` (3). Panel 786, portal 251, typecheck OK.
+
+## 28.10.2026 — decyzje właściciela 49–61: kroki 49, 50a, 51 — GOTOWE (50a i 51 na gałęzi, bez scalenia)
+- 49: `qa/generator-symulacja` i `fix/qa-drobne` scalone do `main` (`3111c45`), pełne testy, push, restart, smoke 131/0.
+- 50a, 51 (`fix/trudnosc-ba-p`, z `main`, NIE scalona — czeka na zgodę na scalenie): BA/P bez ćwiczeń o trudności „Zaawansowany” (odmowy 947 → 947; eksperyment pełnej reguły dla BA/P: 940 przypadków „ponad poziom” → 0 przy tych samych 947 odmowach); minimum 3 ćwiczenia z komunikatem dla trenera (`services/dayShortage.ts`, panel): odmowy 947 (23,8%) → 558 (14,0%), 391 dni po 3 ćwiczenia.
+- Testy: API 132 plików / 2748, panel 786, portal 251, bezpieczeństwo generatora 101, typecheck OK.
+
+## 28.10.2026 — katalog po decyzjach właściciela (gałąź `feature/katalog-decyzje-wlasciciela`)
+- Krok 1: `fix/trudnosc-ba-p` scalona do `main` (`2f7b01b`), testy przed (2738) i po (2748), push, restart, smoke 131/0.
+- Kroki 2–4: migracja danych 0057 (81 od BA / 21 od P / 48 od Ś / 0 ukrytych / 11 nowych; wyjątek id 89), reguła 50b, testy (`catalogue-decisions-0057`, `isGeneratorSafe`, symulacja). Backupy: `~/backups/trainer_panel_przed_0057_*.sql.gz`.
+- Krok 5: symulacja na pełnym katalogu (schemat `sim`): ponad poziom 1208 → 0, odmowy 3,6% → 2,3%, naruszeń 0; `docs/GENERATOR-JAKOSC.md`.
+
+## 28.10.2026 — decyzje właściciela 62–68: stawy (gałąź `fix/stawy-uzupelnienie`)
+- 3a: brak danych o stawach = nie dla klienta z bólem ani bez zgody (`services/jointData.ts`, wszystkie ścieżki + rozgrzewka); test regresji `unknown-joint-data`. 3b: uzupełniono 445 ćwiczeń (było 376 bez poziomu, 43 bez stawów), `docs/STAWY-UZUPELNIENIE.csv`, migracja 0059. 3c: sprawdzacz symulacji. 0058: „L-sit z podparciem”.
+- Symulacja 1000 profili: naruszeń 30 647 → 0; odmowy 2,3% → 2,6%.
+
+## 28.10.2026 — poprawki właściciela do danych o stawach (gałąź `fix/stawy-poprawki`, scalona do `main`)
+- Migracja 0060 (z kopią starych wartości, jednorazowa): 10 dipów → Bark, Łokieć, Nadgarstek, Wysokie (w tym dipy na ławce i wspomagane na maszynie); 7 ćwiczeń w zwisie + Bark; 6 ćwiczeń → Średnie. Lista: `docs/STAWY-POPRAWKI.csv`. Symulacja 1000 profili: naruszeń 0, odmowy 2,6% → 2,9%.
+
 ## 28.10.2026 — noc, blok 4: osiągnięcia, podstawa (gałąź `feature/osiagniecia`, z `main`, NIE scalona) — GOTOWE
 - 4a: `docs/OSIAGNIECIA.md` (regularność tygodniowa z ochroną serii i urlopem, rekordy, kamienie milowe, awans na szczebel, kroki, wyzwanie miesięczne; zasady etyczne; 5 pytań).
 - 4b: za flagą `ACHIEVEMENTS_ENABLED=0`: migracja 0056 (`client_achievements`, `client_pauses`; backup przed; zastosowana tylko w bazie testowej), czysty silnik + zapis idempotentny, trasy portalu i trenera (osiągnięcia, przerwy), pole `achievement` w odpowiedzi „zakończ trening” tylko przy fladze.

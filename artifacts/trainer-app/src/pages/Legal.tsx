@@ -9,7 +9,7 @@ export default function Legal() {
     <div className="mx-auto max-w-2xl px-4 py-8">
       <nav className="mb-6 flex flex-wrap gap-x-4 gap-y-1 text-sm" aria-label="Dokumenty">
         {LEGAL_DOCUMENTS.map((d) => (
-          <Link key={d.slug} href={`/legal/${d.slug}`} className={d.slug === slug ? "font-semibold text-foreground" : "text-muted-foreground underline underline-offset-2"}>{d.title}</Link>
+          <Link key={d.slug} href={`/legal/${d.slug}`} aria-current={d.slug === slug ? "page" : undefined} className={`inline-flex min-h-11 items-center ${d.slug === slug ? "font-semibold text-foreground" : "text-muted-foreground underline underline-offset-2"}`}>{d.title}</Link>
         ))}
       </nav>
       {!doc ? <p>Nie znaleziono dokumentu.</p> : (

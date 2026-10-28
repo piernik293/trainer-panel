@@ -62,6 +62,7 @@ import { PRIORITY_ELIGIBLE_EXPERIENCE_LEVELS } from "@workspace/api-zod";
 import { mainPlanRoleCondition, isGeneratorSafe, preferMainOverVariants } from "../lib/exerciseRoles";
 import { LANDING_ROLE, SPORT_GOAL, isPlyoExercise, plyoRule, selectPlyoBlock } from "../services/plyoBlock";
 import { chooseFreshRun, previousPlanExerciseIds } from "../services/planHistory";
+import { dayShortageMessage, FULL_DAY_EXERCISES } from "../services/dayShortage";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   authorizeGeneratedDay,
@@ -702,9 +703,15 @@ router.post(
       }
     }
 
+    const shortage = () => dayShortageMessage({
+      sessionType: v0SessionType, effectiveLevel: survey.experienceLevel, location: survey.trainingLocation, equipmentText: survey.equipment, blockedJoints,
+    });
     if (!v0Result.valid) {
       res.status(422).json({
-        error: v0Result.error,
+        // Plain words for the trainer (decision 51); the engine's own text stays in `engineError`.
+        error: shortage(),
+        code: "TOO_FEW_EXERCISES",
+        engineError: v0Result.error,
         hasProfile: true,
         hasLocationData,
         sessionType: v0SessionType,
@@ -737,7 +744,7 @@ router.post(
         computeCompleteness(ex, plyoStats.get(ex.id)).isComplete &&
         compatibilityFilter({
           id: ex.id, trainingLocation: ex.trainingLocation ?? [], equipment: ex.equipment ?? [],
-          requiredEquipmentAll: ex.requiredEquipmentAll ?? [], jointStressAreas: ex.jointStressAreas,
+          requiredEquipmentAll: ex.requiredEquipmentAll ?? [], jointStressAreas: ex.jointStressAreas, jointStress: ex.jointStress,
         }),
       );
       const chosen = selectPlyoBlock(fit, plyoRuleForClient, survey.experienceLevel, alternativeIndex);
@@ -823,6 +830,9 @@ router.post(
 
     // 4. Generator notes — contextual decisions surfaced for the trainer
     const generatorNotes: string[] = [];
+    // Decision 51: a day of 3 exercises is allowed; say why it is short.
+    const limitedDayNote = v0Result.exercises.length - plyoBlockIds.size < FULL_DAY_EXERCISES ? `Ten dzień ma tylko ${v0Result.exercises.length - plyoBlockIds.size} ćwiczenia. ${shortage()}` : null;
+    if (limitedDayNote) generatorNotes.push(limitedDayNote);
     if (deprioritizePushUps) {
       generatorNotes.push(
         "Pompki: zepchnięte za wyciskanie sztangą/hantlami — dostępny pełen sprzęt, " +
@@ -1151,6 +1161,7 @@ router.post(
       sessionType: v0SessionType,
       exercises: enrichedExercises,
       structuralWarnings: [...(v0Result.warnings ?? []), ...equipmentWarnings],
+      ...(limitedDayNote ? { limitedDayNote } : {}),
       explanation: {
         rationale: explanationRationale,
         preferredExercises: preferredOutcomes,

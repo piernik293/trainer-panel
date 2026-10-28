@@ -8,6 +8,7 @@
  */
 
 import { useParams, Link } from "wouter";
+import { clientFullName } from "@/lib/clientName";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -191,7 +192,7 @@ export default function ClientPortalPreview() {
         <>
           <div>
             <p className="text-sm text-muted-foreground">
-              Podgląd portalu klienta — {data.client.firstName} {data.client.lastName}
+              Podgląd portalu klienta — {clientFullName(data.client)}
             </p>
             <h1 className="text-2xl font-display font-bold tracking-tight mt-1">{data.plan.title}</h1>
             {data.plan.goal && <p className="text-sm text-muted-foreground mt-1">Cel: {data.plan.goal}</p>}
