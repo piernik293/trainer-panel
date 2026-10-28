@@ -113,3 +113,19 @@ describe("migration 0058 (L-sit z podparciem) and 0059 (joint data)", () => {
     expect(sql).not.toMatch(/^\s*(DELETE|TRUNCATE)\b|\b(DROP|RENAME)\b/im);
   });
 });
+
+describe("migration 0060 (owner's corrections to the joint data)", () => {
+  it("every dip: Bark, Łokieć, Nadgarstek and \"Wysokie\"; every hanging exercise has Bark; six exercises at \"Średnie\"", async () => {
+    const rows = await db.select().from(exercisesTable).where(eq(exercisesTable.isActive, true));
+    const dips = rows.filter((r) => /dip(y|ów|ach)/i.test(r.name));
+    expect(dips.length).toBeGreaterThan(0);
+    for (const r of dips) { expect(r.jointStress, r.name).toBe("Wysokie"); expect([...(r.jointStressAreas ?? [])].sort(), r.name).toEqual(["Bark", "Nadgarstek", "Łokieć"].sort()); }
+    for (const r of rows.filter((x) => /zwis|toes to bar|hanging/i.test(x.name) && !/dip(y|ów|ach)/i.test(x.name))) expect(r.jointStressAreas, r.name).toContain("Bark");
+    for (const id of [103, 1314, 137, 115, 1202, 1203]) { const r = rows.find((x) => x.id === id); if (r) expect(r.jointStress, `${id} ${r.name}`).toBe("Średnie"); }
+  });
+  it("one-shot with a backup of the old values; nothing destructive", () => {
+    const sql = readFileSync(join(__dirname, "../../../../lib/db/migrations/0060_stawy_poprawki.sql"), "utf8");
+    expect(sql).toContain("catalogue_joint_backup"); expect(sql).toContain("NOT IN (SELECT exercise_id FROM catalogue_joint_backup WHERE migration = '0060')");
+    expect(sql).not.toMatch(/^\s*(DELETE|TRUNCATE)\b|\b(DROP|RENAME)\b/im);
+  });
+});
