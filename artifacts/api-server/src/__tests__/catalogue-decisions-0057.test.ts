@@ -10,6 +10,7 @@ import { eq } from "drizzle-orm";
 import { db, pool, exercisesTable, exerciseLadderStepsTable } from "@workspace/db";
 import { isGeneratorSafe } from "../lib/exerciseRoles";
 import { buildLadderRules } from "../services/ladderSelection";
+import { lacksJointData } from "../services/jointData";
 
 const SQL = readFileSync(join(__dirname, "../../../../lib/db/migrations/0057_katalog_decyzje.sql"), "utf8");
 const listAfter = (marker: RegExp) => (SQL.split(marker)[1]?.match(/WHERE id IN \(([\d, ]+)\)/)?.[1] ?? "").split(",").map((x) => Number(x.trim())).filter(Boolean);
@@ -84,5 +85,47 @@ describe("migration 0057: the 11 new calisthenics exercises (database)", () => {
       if (step !== "P") expect(rules("Początkujący").allowed(id), `${name} P`).toBe(false);
       if (step === "Z") expect(rules("Średniozaawansowany").allowed(id), `${name} Ś`).toBe(false);
     }
+  });
+});
+
+describe("migration 0058 (L-sit z podparciem) and 0059 (joint data)", () => {
+  it("\"L-sit z podparciem\": from Ś, on the core ladder, approved, not for BA or P", async () => {
+    const [r] = await db.select().from(exercisesTable).where(eq(exercisesTable.slug, "l-sit-z-podparciem"));
+    expect(r, "exists").toBeTruthy();
+    expect(r!.difficultyLevel).toBe("Średniozaawansowany");
+    expect(r!.reviewedByTrainer && r!.verificationStatus === "zweryfikowane" && !r!.hidden && r!.isActive && r!.suitableForNoActivity === false).toBe(true);
+    expect(r!.jointStress).toBeTruthy(); expect(r!.jointStressAreas?.length).toBeGreaterThan(0);
+    const [step] = await db.select().from(exerciseLadderStepsTable).where(eq(exerciseLadderStepsTable.exerciseId, r!.id));
+    expect(step).toMatchObject({ pattern: "Kalistenika: core", level: "Średniozaawansowany" });
+    for (const lvl of LEVELS.slice(0, 2)) expect(isGeneratorSafe(r!, lvl), lvl).toBe(false);
+    for (const lvl of LEVELS.slice(2)) expect(isGeneratorSafe(r!, lvl), lvl).toBe(true);
+  });
+  it("no active exercise lacks joint-load data (decision 3b); missing data never returns unnoticed", async () => {
+    const rows = await db.select().from(exercisesTable).where(eq(exercisesTable.isActive, true));
+    const gaps = rows.filter((r) => lacksJointData(r)).map((r) => `${r.id} ${r.name}`);
+    expect(gaps).toEqual([]);
+  });
+  it("the migration only fills (never overwrites) and keeps a backup of the old values", () => {
+    const sql = readFileSync(join(__dirname, "../../../../lib/db/migrations/0059_stawy_uzupelnienie.sql"), "utf8");
+    expect(sql).toContain("catalogue_joint_backup");
+    expect(sql).toMatch(/COALESCE\(NULLIF\(e\.joint_stress, ''\), f\.lvl\)/);
+    expect(sql).toMatch(/CASE WHEN f\.set_areas THEN f\.areas ELSE e\.joint_stress_areas END/);
+    expect(sql).not.toMatch(/^\s*(DELETE|TRUNCATE)\b|\b(DROP|RENAME)\b/im);
+  });
+});
+
+describe("migration 0060 (owner's corrections to the joint data)", () => {
+  it("every dip: Bark, Łokieć, Nadgarstek and \"Wysokie\"; every hanging exercise has Bark; six exercises at \"Średnie\"", async () => {
+    const rows = await db.select().from(exercisesTable).where(eq(exercisesTable.isActive, true));
+    const dips = rows.filter((r) => /dip(y|ów|ach)/i.test(r.name));
+    expect(dips.length).toBeGreaterThan(0);
+    for (const r of dips) { expect(r.jointStress, r.name).toBe("Wysokie"); expect([...(r.jointStressAreas ?? [])].sort(), r.name).toEqual(["Bark", "Nadgarstek", "Łokieć"].sort()); }
+    for (const r of rows.filter((x) => /zwis|toes to bar|hanging/i.test(x.name) && !/dip(y|ów|ach)/i.test(x.name))) expect(r.jointStressAreas, r.name).toContain("Bark");
+    for (const id of [103, 1314, 137, 115, 1202, 1203]) { const r = rows.find((x) => x.id === id); if (r) expect(r.jointStress, `${id} ${r.name}`).toBe("Średnie"); }
+  });
+  it("one-shot with a backup of the old values; nothing destructive", () => {
+    const sql = readFileSync(join(__dirname, "../../../../lib/db/migrations/0060_stawy_poprawki.sql"), "utf8");
+    expect(sql).toContain("catalogue_joint_backup"); expect(sql).toContain("NOT IN (SELECT exercise_id FROM catalogue_joint_backup WHERE migration = '0060')");
+    expect(sql).not.toMatch(/^\s*(DELETE|TRUNCATE)\b|\b(DROP|RENAME)\b/im);
   });
 });

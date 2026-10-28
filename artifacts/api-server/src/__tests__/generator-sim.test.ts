@@ -26,6 +26,7 @@ import {
   workoutPlansTable, workoutPlanDaysTable, workoutPlanExercisesTable, volumeGuidelineVersionsTable,
 } from "@workspace/db";
 import { resolveEffectiveLevel } from "@workspace/survey-config";
+import { lacksJointData } from "../services/jointData";
 import { normalizeEquipmentList } from "../services/equipmentNormalizer";
 import { calisthenicsDays, stationsFor, isCalisthenicsExercise, isCalisthenicsLegDay } from "../services/calisthenics";
 import { getDayTemplate, recommendSplitType } from "../services/planDraftVolumeDistributionService";
@@ -85,6 +86,7 @@ const HIP = (p: string | null) => p === "Zawias biodrowy";
 
 let ctx = "";
 const styleViolations: Violation[] = [];
+const jointGap = { reportedJoint: 0, noConsent: 0, noReports: 0, total: 0 }; // exercises placed in plans that lack joint-load data, by kind of client
 interface Violation { rule: string; profile: number; level: string; goal: string; place: string; exercise: string; id: number; detail?: string }
 
 function plyoAllowed(ex: Ex, p0: Profile): boolean {
@@ -118,6 +120,9 @@ function checkExercise(ex: Ex, p: Profile, out: Violation[], feas: Violation[]) 
   if (lvl === 0 && ex.suitableForNoActivity !== true) out.push(v("BA bez suitableForNoActivity"));
   if (lvl <= 1 && (ex.learningDifficulty == null)) out.push(v("BA/P bez learningDifficulty"));
   if (lvl <= 1 && ex.reviewedByTrainer === false) out.push(v("BA/P niezatwierdzone przez trenera"));
+  // Decision 3c (owner, 28.10.2026): missing joint-load data is a violation, so the hole stays visible (every client, not only those with a reported joint)
+  if (lacksJointData(ex)) { jointGap.total++; if (p.joints.length) jointGap.reportedJoint++; else if (p.consent === "declined") jointGap.noConsent++; else jointGap.noReports++; }
+  if (lacksJointData(ex)) out.push(v("brak danych o stawach", `poziom: ${ex.jointStress ?? "brak"}, stawy: ${ex.jointStressAreas == null ? "brak" : `[${ex.jointStressAreas.join(",")}]`}; klient: ${p.joints.length ? "zgłoszony staw" : p.consent === "declined" ? "bez zgody" : "bez zgłoszeń"}`));
   if (!plyoAllowed(ex, p)) out.push(v("pliometria wbrew zasadom", `${ex.intensity ?? ex.role}`));
   if (p.avoidIds.includes(ex.id)) out.push(v("wykluczone ćwiczenie"));
   if (p.consent === "declined" && ex.jointStress === "Wysokie") out.push(v("brak zgody zdrowotnej a wysokie obciążenie stawów"));
@@ -321,6 +326,7 @@ describe("generator simulation", () => {
     const aboveLevel = safetyAll.filter((x) => x.rule === "ponad poziom");
     const report = {
       aboveLevel: { count: aboveLevel.length, byLevel: Object.fromEntries([...new Set(aboveLevel.map((x) => x.level))].map((l) => [l, aboveLevel.filter((x) => x.level === l).length])), samples: aboveLevel.slice(0, 12) },
+      missingJointData: jointGap,
       style: STYLE || "standard", seed: SEED, n: N, stat, safetyViolations: safety.length, feasibilityViolations: feas.length,
       safetyByRule: Object.fromEntries([...new Set(safety.map((x) => x.rule))].map((r) => [r, safety.filter((x) => x.rule === r).length])),
       feasibilityByRule: Object.fromEntries([...new Set(feas.map((x) => x.rule))].map((r) => [r, feas.filter((x) => x.rule === r).length])),

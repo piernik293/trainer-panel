@@ -149,3 +149,14 @@ describe("ladders after the catalogue review (28.10.2026)", () => {
     for (const l of CALISTHENICS_LADDERS.filter((x) => /podciąganie|dipy|brzuch w zwisie/.test(x.pattern))) for (const [, lv] of l.steps) expect(lv).not.toBe("Brak aktywności fizycznej");
   });
 });
+
+describe("drabinka core zawiera „L-sit z podparciem” (decyzja 65: od Średniozaawansowanego, przed L-sitem na podłodze)", () => {
+  it("jest na poziomie Ś, bezpośrednio przed „L-sit na podłodze”", () => {
+    const core = CALISTHENICS_LADDERS.find((l) => l.pattern === "Kalistenika: core")!;
+    const names = core.steps.map(([n]) => n);
+    const i = names.indexOf("L-sit z podparciem");
+    expect(i).toBeGreaterThan(-1);
+    expect(core.steps[i]![1]).toBe("Średniozaawansowany");
+    expect(names[i + 1]).toBe("L-sit na podłodze");
+  });
+});

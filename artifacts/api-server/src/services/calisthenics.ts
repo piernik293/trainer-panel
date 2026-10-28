@@ -128,7 +128,7 @@ export const CALISTHENICS_LADDERS: ReadonlyArray<{ pattern: string; steps: Reado
     ["Przysiad wykroczny z podparciem", L.P], ["Wykrok w tył", L.P], ["Przysiad kozacki", L.S], ["Przysiad bułgarski", L.Z], ["Pistol z podparciem", L.Z], ["Przysiad na jednej nodze (Pistol Squat)", L.Z],
   ] },
   { pattern: "Kalistenika: core", steps: [
-    ["Dead bug", L.BA], ["Plank", L.P], ["Plank boczny", L.P], ["Hollow body hold", L.S], ["Scyzoryki (V-up)", L.S], ["L-sit na podłodze", L.Z],
+    ["Dead bug", L.BA], ["Plank", L.P], ["Plank boczny", L.P], ["Hollow body hold", L.S], ["Scyzoryki (V-up)", L.S], ["L-sit z podparciem", L.S], ["L-sit na podłodze", L.Z],
   ] },
 ];
 

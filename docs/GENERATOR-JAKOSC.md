@@ -57,3 +57,17 @@
 | Ćwiczenia „do weryfikacji” w planach P / Ś / Z | 19% / 72% / 74% | **2% / 26% / 28%** |
 
 Mediana powtórzeń całości: 0,44 → 0,33. Wniosek: katalog po przeglądzie daje mniej odmów i większą różnorodność, a reguła 50b nie dodała odmów (usunęła wszystkie przypadki „ponad poziom”).
+
+## Dane o stawach: brak = nie dla klienta z bólem ani bez zgody (decyzja 3, 28.10.2026)
+**Reguła:** ćwiczenie bez kompletnych danych o obciążeniu stawów nie trafia do klienta, który zgłosił staw lub ból, ani w trybie „brak zgody zdrowotnej” (wszystkie ścieżki doboru oraz rozgrzewka i schłodzenie). **Dane:** uzupełniono 445 aktywnych ćwiczeń (`docs/STAWY-UZUPELNIENIE.csv`, migracja 0059). **Sprawdzacz symulacji** traktuje brak danych o stawach jako naruszenie.
+
+| 1000 profili, pełny katalog (schemat `sim`), to samo ziarno | przed | po |
+|---|---|---|
+| Naruszenia bezpieczeństwa (w tym brak danych o stawach) | 30 647 | **0** |
+| … ćwiczenia bez danych u klientów ze zgłoszonym stawem | 11 030 | **0** |
+| … ćwiczenia bez danych u klientów bez zgody | 1 252 | **0** |
+| … ćwiczenia bez danych u pozostałych klientów | 18 365 | **0** |
+| Naruszenia wykonalności; ćwiczenia ponad poziom | 0; 0 | **0; 0** |
+| Odmowy dnia | 90 (2,3%) | 104 (2,6%) |
+| Dni z 3 ćwiczeniami | 62 | 114 |
+Koszt jest mały: po uzupełnieniu część ćwiczeń ma poziom „Wysokie”, który w trybie bez zgody jest odrzucany.

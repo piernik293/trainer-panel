@@ -311,5 +311,12 @@
 - Kroki 2–4: migracja danych 0057 (81 od BA / 21 od P / 48 od Ś / 0 ukrytych / 11 nowych; wyjątek id 89), reguła 50b, testy (`catalogue-decisions-0057`, `isGeneratorSafe`, symulacja). Backupy: `~/backups/trainer_panel_przed_0057_*.sql.gz`.
 - Krok 5: symulacja na pełnym katalogu (schemat `sim`): ponad poziom 1208 → 0, odmowy 3,6% → 2,3%, naruszeń 0; `docs/GENERATOR-JAKOSC.md`.
 
+## 28.10.2026 — decyzje właściciela 62–68: stawy (gałąź `fix/stawy-uzupelnienie`)
+- 3a: brak danych o stawach = nie dla klienta z bólem ani bez zgody (`services/jointData.ts`, wszystkie ścieżki + rozgrzewka); test regresji `unknown-joint-data`. 3b: uzupełniono 445 ćwiczeń (było 376 bez poziomu, 43 bez stawów), `docs/STAWY-UZUPELNIENIE.csv`, migracja 0059. 3c: sprawdzacz symulacji. 0058: „L-sit z podparciem”.
+- Symulacja 1000 profili: naruszeń 30 647 → 0; odmowy 2,3% → 2,6%.
+
+## 28.10.2026 — poprawki właściciela do danych o stawach (gałąź `fix/stawy-poprawki`, scalona do `main`)
+- Migracja 0060 (z kopią starych wartości, jednorazowa): 10 dipów → Bark, Łokieć, Nadgarstek, Wysokie (w tym dipy na ławce i wspomagane na maszynie); 7 ćwiczeń w zwisie + Bark; 6 ćwiczeń → Średnie. Lista: `docs/STAWY-POPRAWKI.csv`. Symulacja 1000 profili: naruszeń 0, odmowy 2,6% → 2,9%.
+
 ## 28.10.2026 — kalistenika po scaleniu katalogu (gałąź `feature/kalistenika`, NIE scalona)
 - Wciągnięty `main` (przegląd katalogu, 50b, migracja 0057); nowe ćwiczenia dopisane do drabinek w kodzie stylu. Symulacja stylu na pełnym katalogu (300 profili): odmowy 4,7% → 2,8%, 0 naruszeń. Flaga wyłączona.

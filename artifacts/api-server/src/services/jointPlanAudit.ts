@@ -33,6 +33,7 @@ export interface CandidateInfo {
   name: string;
   isActive: boolean | null;
   jointStressAreas: string[] | null;
+  jointStress?: string | null;
   suitableForNoActivity: boolean | null;
   learningDifficulty: number | null;
   trainingLocation: string[];
@@ -103,6 +104,7 @@ const CANDIDATE_COLUMNS = {
   name: exercisesTable.name,
   isActive: exercisesTable.isActive,
   jointStressAreas: exercisesTable.jointStressAreas,
+  jointStress: exercisesTable.jointStress,
   suitableForNoActivity: exercisesTable.suitableForNoActivity,
   learningDifficulty: exercisesTable.learningDifficulty,
   trainingLocation: exercisesTable.trainingLocation,
