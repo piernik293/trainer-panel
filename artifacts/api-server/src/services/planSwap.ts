@@ -62,7 +62,7 @@ export function pickSwap(candidates: readonly SwapExercise[], ctx: SwapContext):
       if (!cIsPlyo || selectPlyoBlock([{ ...c, difficultyLevel: c.difficultyLevel }], rule, ctx.level).length !== 1) return false;
     } else {
       if (cIsPlyo || !isMainPlanExercise(c)) return false;
-      if (!isGeneratorSafe({ hidden: c.hidden, reviewedByTrainer: c.reviewedByTrainer, intensity: c.intensity }, ctx.level)) return false;
+      if (!isGeneratorSafe({ hidden: c.hidden, reviewedByTrainer: c.reviewedByTrainer, intensity: c.intensity, difficultyLevel: c.difficultyLevel }, ctx.level)) return false;
     }
     // never a higher step than the client's level
     if (rank !== undefined && (c.difficultyLevel == null || (LADDER_RANK[c.difficultyLevel] ?? 99) > rank)) return false;

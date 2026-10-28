@@ -79,7 +79,7 @@ export function selectPlyoBlock<T extends PlyoCandidate>(
   const lvl = levelRank(effectiveLevel);
   const ok = candidates.filter((ex) => {
     if (!isPlyoExercise(ex)) return false;
-    if (!isGeneratorSafe({ hidden: ex.hidden, reviewedByTrainer: ex.reviewedByTrainer }, effectiveLevel)) return false;
+    if (!isGeneratorSafe({ hidden: ex.hidden, reviewedByTrainer: ex.reviewedByTrainer, difficultyLevel: ex.difficultyLevel }, effectiveLevel)) return false;
     if (levelRank(ex.difficultyLevel) > lvl || !ex.difficultyLevel) return false; // never above the client's level
     if (ex.role === LANDING_ROLE) return rule.landing;
     return !!ex.intensity && (rule.intensities as string[]).includes(ex.intensity);
