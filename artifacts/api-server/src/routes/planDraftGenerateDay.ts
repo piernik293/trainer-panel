@@ -66,6 +66,7 @@ import {
   calisthenicsActive, isCalisthenicsExercise, calisthenicsLevelAllows, calisthenicsLadderNames, calisthenicsLadderRows,
   calisthenicsPlyoRule, capCalisthenicsDay,
 } from "../services/calisthenics";
+import { dayShortageMessage, FULL_DAY_EXERCISES } from "../services/dayShortage";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   authorizeGeneratedDay,
@@ -721,9 +722,15 @@ router.post(
       }
     }
 
+    const shortage = () => dayShortageMessage({
+      sessionType: v0SessionType, effectiveLevel: survey.experienceLevel, location: survey.trainingLocation, equipmentText: survey.equipment, blockedJoints,
+    });
     if (!v0Result.valid) {
       res.status(422).json({
-        error: v0Result.error,
+        // Plain words for the trainer (decision 51); the engine's own text stays in `engineError`.
+        error: shortage(),
+        code: "TOO_FEW_EXERCISES",
+        engineError: v0Result.error,
         hasProfile: true,
         hasLocationData,
         sessionType: v0SessionType,
@@ -847,6 +854,9 @@ router.post(
     // 4. Generator notes — contextual decisions surfaced for the trainer
     const generatorNotes: string[] = [];
     if (calis) generatorNotes.push("Styl treningu: kalistenika (masa ciała, drążek, poręcze, kółka, guma); ok. 5 ćwiczeń na jednostkę, skoki tylko w dniu nóg.");
+    // Decision 51: a day of 3 exercises is allowed; say why it is short.
+    const limitedDayNote = v0Result.exercises.length - plyoBlockIds.size < FULL_DAY_EXERCISES ? `Ten dzień ma tylko ${v0Result.exercises.length - plyoBlockIds.size} ćwiczenia. ${shortage()}` : null;
+    if (limitedDayNote) generatorNotes.push(limitedDayNote);
     if (deprioritizePushUps) {
       generatorNotes.push(
         "Pompki: zepchnięte za wyciskanie sztangą/hantlami — dostępny pełen sprzęt, " +
@@ -1175,6 +1185,7 @@ router.post(
       sessionType: v0SessionType,
       exercises: enrichedExercises,
       structuralWarnings: [...(v0Result.warnings ?? []), ...equipmentWarnings],
+      ...(limitedDayNote ? { limitedDayNote } : {}),
       explanation: {
         rationale: explanationRationale,
         preferredExercises: preferredOutcomes,

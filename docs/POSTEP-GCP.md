@@ -293,3 +293,12 @@
 - 2b: za flagą `CALISTHENICS_ENABLED=0`: `services/calisthenics.ts`, parametr `style` w `generate-day`, `GET /api/calisthenics/status` i `.../calisthenics-days`, ukryte pole „Styl: kalistenika” w edytorze planu (tylko przy fladze). Bez migracji.
 - Testy: `calisthenics.test.ts` (15), `calisthenics.integration.test.ts` (10: flaga wyłączona = identyczna odpowiedź, włączona = tylko dozwolony sprzęt, ≤5, BA/P, skoki tylko w dniu nóg, zgoda zdrowotna, dni wg stanowisk), panel `step4-calisthenics-option.test.tsx` (3). Symulacja stylu 300 profili: 0 naruszeń; 50% dni odmówionych (braki katalogu) — DO-DECYZJI 54–55.
 - Weryfikacja: API 132 plików / 2763, panel 785, portal 250, bezpieczeństwo generatora 101, typecheck OK.
+## 28.10.2026 — noc, blok 3: drobne poprawki z QA (gałąź `fix/qa-drobne`, z `main`, NIE scalona) — GOTOWE
+- C5: linki między dokumentami prawnymi (panel i portal) mają min. 44 px i `aria-current`; C7: „Ewa ” → `clientFullName` (7 miejsc w panelu); C8: separatory „·” czytelne i `aria-hidden`.
+- Zostaje otwarte (poza zakresem: nawigacja/UX): C6 (cele dotyku w menu, kalendarzu, przełącznikach), C10 (dane testowe — tylko za zgodą).
+- Testy: `legal-page-links` (panel i portal), `client-name` (3). Panel 786, portal 251, typecheck OK.
+
+## 28.10.2026 — decyzje właściciela 49–61: kroki 49, 50a, 51 — GOTOWE (50a i 51 na gałęzi, bez scalenia)
+- 49: `qa/generator-symulacja` i `fix/qa-drobne` scalone do `main` (`3111c45`), pełne testy, push, restart, smoke 131/0.
+- 50a, 51 (`fix/trudnosc-ba-p`, z `main`, NIE scalona — czeka na zgodę na scalenie): BA/P bez ćwiczeń o trudności „Zaawansowany” (odmowy 947 → 947; eksperyment pełnej reguły dla BA/P: 940 przypadków „ponad poziom” → 0 przy tych samych 947 odmowach); minimum 3 ćwiczenia z komunikatem dla trenera (`services/dayShortage.ts`, panel): odmowy 947 (23,8%) → 558 (14,0%), 391 dni po 3 ćwiczenia.
+- Testy: API 132 plików / 2748, panel 786, portal 251, bezpieczeństwo generatora 101, typecheck OK.

@@ -114,6 +114,7 @@ function checkExercise(ex: Ex, p: Profile, out: Violation[], feas: Violation[]) 
   const lvl = rank(p.effective);
   if (ex.hidden) out.push(v("ukryte"));
   if (p.joints.length && (ex.jointStressAreas ?? []).some((j) => p.joints.includes(j))) out.push(v("zgłoszony staw", `${(ex.jointStressAreas ?? []).join(",")} | zgłoszono: ${p.joints.join(",")} (${p.viaPain ? "ból" : "wywiad"}) | zgoda: ${p.consent}`));
+  if (lvl <= 1 && ex.difficultyLevel === "Zaawansowany") out.push(v("BA/P: trudność Zaawansowany")); // decision 50a
   if (ex.difficultyLevel && rank(ex.difficultyLevel) > Math.max(lvl, 1)) out.push(v("ponad poziom", `${ex.difficultyLevel} dla ${p.effective}`));
   if (lvl === 0 && ex.suitableForNoActivity !== true) out.push(v("BA bez suitableForNoActivity"));
   if (lvl <= 1 && (ex.learningDifficulty == null)) out.push(v("BA/P bez learningDifficulty"));
@@ -188,7 +189,7 @@ async function createClient(p: Profile): Promise<number> {
   return c.id;
 }
 
-interface DayOut { error?: string; type: string; exercises: Array<{ id: number; sets: number; restSeconds: number; repsLabel: string }>; status: number; warnings: number }
+interface DayOut { error?: string; code?: string; limited?: boolean; type: string; exercises: Array<{ id: number; sets: number; restSeconds: number; repsLabel: string }>; status: number; warnings: number }
 
 async function generateWeek(clientId: number, p: Profile): Promise<DayOut[]> {
   const place = PLACES.find((x) => x.key === p.place)!;
@@ -217,7 +218,7 @@ async function generateWeek(clientId: number, p: Profile): Promise<DayOut[]> {
     }
     for (const e of exs) { used.push(e.id); raw.push({ exerciseId: e.id, sets: e.prescription?.sets ?? 1 }); }
     lastByType[t] = exs.map((e) => ({ id: e.id, equipment: e.equipment ?? [] }));
-    out.push({ error: res.status === 200 ? undefined : String(res.body.error ?? ""), type: t, status: res.status, warnings: (res.body.structuralWarnings ?? []).length, exercises: exs.map((e) => ({ id: e.id, sets: e.prescription?.sets ?? 0, restSeconds: e.prescription?.restSeconds ?? 0, repsLabel: e.prescription?.repsLabel ?? "" })) });
+    out.push({ error: res.status === 200 ? undefined : String(res.body.error ?? ""), code: res.body.code, limited: typeof res.body.limitedDayNote === "string", type: t, status: res.status, warnings: (res.body.structuralWarnings ?? []).length, exercises: exs.map((e) => ({ id: e.id, sets: e.prescription?.sets ?? 0, restSeconds: e.prescription?.restSeconds ?? 0, repsLabel: e.prescription?.repsLabel ?? "" })) });
   }
   return out;
 }
@@ -258,7 +259,7 @@ afterAll(async () => {
 describe("generator simulation", () => {
   it(`${N} random profiles: safety and feasibility violations = 0`, async () => {
     const safetyAll: Violation[] = []; const safety = safetyAll; const feas: Violation[] = [];
-    const stat = { profiles: 0, days: 0, daysRefused: 0, exercises: 0, emptyDays: 0, structuralWarnings: 0, dupInPlan: 0, plans: 0 };
+    const stat = { limitedDays: 0, wrongRefusalText: 0, profiles: 0, days: 0, daysRefused: 0, exercises: 0, emptyDays: 0, structuralWarnings: 0, dupInPlan: 0, plans: 0 };
     const sets = { push: 0, pull: 0, knee: 0, hip: 0 };
     const balance: Array<{ push: number; pull: number; knee: number; hip: number }> = [];
     const perSession: Record<string, number[]> = {}; const timeRatio: Record<string, number[]> = {};
@@ -280,6 +281,8 @@ describe("generator simulation", () => {
       const b = { push: 0, pull: 0, knee: 0, hip: 0 }; let anyPlyo = false;
       for (const d of week) {
         stat.days++;
+        if (d.limited) stat.limitedDays++;
+        if (d.status !== 200 && (d.code !== "TOO_FEW_EXERCISES" || !d.error || /V0|exercises required/.test(d.error))) stat.wrongRefusalText++;
         if (d.status !== 200) { stat.daysRefused++; refused[`${bucket}|${d.type}`] = (refused[`${bucket}|${d.type}`] ?? 0) + 1; const why = `${p.place === "gym" ? "gym" : "home/outdoor"}|${d.error}`; refusedWhy[why] = (refusedWhy[why] ?? 0) + 1; continue; }
         if (d.exercises.length === 0) stat.emptyDays++;
         stat.structuralWarnings += d.warnings;
@@ -336,6 +339,7 @@ describe("generator simulation", () => {
       goalPlyo: byGoalPlyo, unverifiedInPlansByLevel: unverified, refusedDaysByPlaceLevelType: refused, refusedReasons: refusedWhy, plansWithDuplicatesByPlaceLevel: dupBy, profilesByPlaceLevel: profilesBy,
     };
     if (REPORT) writeFileSync(REPORT, JSON.stringify(report, null, 1));
+    expect(stat.wrongRefusalText, "odmowa bez komunikatu dla trenera").toBe(0);
     expect(safety.slice(0, 5), "naruszenia bezpieczeństwa").toEqual([]);
     expect(feas.slice(0, 5), "naruszenia wykonalności").toEqual([]);
   }, 6 * 3_600_000);

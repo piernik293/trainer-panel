@@ -26,10 +26,13 @@ const ADVANCED_LEVELS = ["Średniozaawansowany", "Zaawansowany"];
  * Manual adding by the trainer is not affected (this runs on generator pools only).
  */
 export function isGeneratorSafe(
-  ex: { hidden?: boolean | null; reviewedByTrainer?: boolean | null; intensity?: string | null },
+  ex: { hidden?: boolean | null; reviewedByTrainer?: boolean | null; intensity?: string | null; difficultyLevel?: string | null },
   effectiveLevel: string | null | undefined,
 ): boolean {
   if (ex.hidden) return false;
+  // Owner's decision 50a (28.10.2026): "Brak aktywności" and "Początkujący" never get an exercise whose own difficulty is "Zaawansowany".
+  // The full rule "difficulty <= effective level" waits for the catalogue review (decisions 52-53).
+  if ((effectiveLevel === "Brak aktywności fizycznej" || effectiveLevel === "Początkujący") && ex.difficultyLevel === "Zaawansowany") return false;
   const advancedEnough = !!effectiveLevel && ADVANCED_LEVELS.includes(effectiveLevel);
   if (ex.reviewedByTrainer === false && !advancedEnough) return false;
   if (ex.intensity) {

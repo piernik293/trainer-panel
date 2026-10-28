@@ -11,6 +11,7 @@
  */
 
 import { useState } from "react";
+import { clientFullName } from "@/lib/clientName";
 import { useParams, Link, useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -267,7 +268,7 @@ export default function TrainerLedSession() {
             Trening stacjonarny z trenerem
           </p>
           <h1 className="text-2xl font-display font-bold tracking-tight mt-1">
-            {preview.client.firstName} {preview.client.lastName} — {preview.plan.title}
+            {clientFullName(preview.client)} — {preview.plan.title}
           </h1>
         </div>
         {backLink}

@@ -395,7 +395,7 @@ describe("generate-day V0 final equipment compatibility", () => {
 
     expect(result.valid).toBe(false);
     expect(result.exercises).toEqual([]);
-    expect(result.error).toMatch(/minimum 4 exercises required/);
+    expect(result.error).toMatch(/minimum 3 exercises required/);
   });
 
   it("thin-pool retry reuses the same compatible pool", () => {
