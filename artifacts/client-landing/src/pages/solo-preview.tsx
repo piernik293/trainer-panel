@@ -24,7 +24,7 @@ const hash = (n: number) => { let x = (n + 1) * 2654435761 % 4294967296; x ^= x 
 const ACTIVE_DAYS = Array.from({ length: 330 }, (_, i) => i).filter((i) => !(i > 150 && i < 172) && hash(i) < 0.3).map((i) => shift(TODAY, -i));
 const ago = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
 const ITEMS: AchievementItem[] = [
-  { id: 6, kind: "ladder_step", title: "Nowy szczebel: Pompki klasyczne", body: "Przeszedłeś na wyższy poziom tego ruchu.", earnedAt: ago(1), seen: false },
+  { id: 6, kind: "ladder_step", title: "Nowy szczebel: Pompki klasyczne", body: "Nowy poziom tego ruchu!", earnedAt: ago(1), seen: false },
   { id: 5, kind: "week_streak", title: "4 tygodnie z rzędu", body: "Trenujesz regularnie — tak trzymaj.", earnedAt: ago(3), seen: false },
   { id: 4, kind: "record", title: "Nowy rekord: Przysiad ze sztangą", body: "62,5 kg × 8 (o 2,5 kg więcej niż dotąd)", earnedAt: ago(4), seen: true },
   { id: 3, kind: "milestone", title: "10. trening", body: "Tak trzymaj — to naprawdę się sumuje.", earnedAt: ago(12), seen: true },

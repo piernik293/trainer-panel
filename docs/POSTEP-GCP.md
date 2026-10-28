@@ -298,3 +298,7 @@
 ## 28.10.2026 — decyzje 56–57: osiągnięcia, teksty bez płci (gałąź `feature/osiagniecia`, NIE scalona) — GOTOWE
 - Pięć rekomendacji zatwierdzonych (już tak wdrożone). Teksty portalu bez płci: 8 zmian (wywiad, aktywacja, osiągnięcie), lista w `docs/TEKSTY-PLEC.md`; odpowiedź o skokach neutralna, stare zapisy działają; strażnik `genderNeutralTexts.test.ts` + test tekstów osiągnięć.
 - Migracja 0056 zatwierdzona do scalenia (pg_dump przy scalaniu).
+
+## 28.10.2026 — decyzje 58–61: ekrany (zrzuty) i plan sterownika Solo (gałąź `feature/solo-ekrany`, NIE scalona) — GOTOWE
+- Ostateczne zrzuty `docs/screens/solo/` (375 px, jasny i ciemny): „Dziś” z małym wierszem kroków, „Ty” z jednym napisem i linkami 44 px (skrypt mierzy), teksty bez płci. Wciągnięte `feature/osiagniecia` (decyzje 56–57).
+- 59: `docs/SOLO-STEROWNIK.md` — plan S1–S5 (refaktor dnia → kierowca → wywiad Solo → limity → odbiór), realizacja po przeglądzie katalogu.

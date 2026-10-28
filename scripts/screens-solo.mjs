@@ -31,6 +31,11 @@ for (const theme of ["light", "dark"]) {
     const h = await page.evaluate(() => document.documentElement.scrollHeight);
     await page.setViewportSize({ width: 375, height: Math.max(812, h) });
     await page.waitForTimeout(200);
+    if (screen.startsWith("ty")) { // decision 58: links under "Dokumenty" at least 44 px high
+      const heights = await page.$$eval('[data-testid="legal-links"] a', (as) => as.map((a) => Math.round(a.getBoundingClientRect().height)));
+      if (heights.length === 0 || heights.some((h) => h < 44)) throw new Error(`Dokumenty: linki za niskie ${heights}`);
+      console.log("dokumenty (px):", heights.join(","));
+    }
     await page.screenshot({ path: join(OUT, `${name}-${theme}.png`), fullPage: true });
     console.log("ok", name, theme);
   }

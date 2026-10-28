@@ -129,7 +129,11 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 
 ## Ekrany Solo i „Postępy” (28.10.2026, gałąź `feature/solo-ekrany`; zrzuty: `docs/screens/solo/`)
 58. **Prototyp do oceny**: dolny pasek Dziś · Plan · Postępy · Ty, ekrany Postępy i Ty, start Solo. Za flagami (wyłączone). Wygląd i układ zatwierdzasz Ty — to nowa nawigacja.
+   **ODPOWIEDŹ WŁAŚCICIELA: kierunek zatwierdzony; poprawki wykonane na `feature/solo-ekrany`:** „Dziś” — kroki tylko jako mały wiersz z polem (wykres tylko w „Postępach”); „Ty” — jeden napis „Prowadzę podopiecznych”; linki w „Dokumentach” min. 44 px (zmierzone: 44 px); teksty bez płci (jak 56). Nowe zrzuty w `docs/screens/solo/`. Bez scalania.
 59. **Solo nie jest jeszcze domknięte**: brak serwerowego „sterownika” generowania planu dla osoby bez trenera (opisane w bloku 11), więc po starcie Solo ekran uczciwie mówi „wkrótce” zamiast prowadzić do wywiadu. Reszta (reguły Solo, filtry bezpieczeństwa) jest gotowa.
+   **ODPOWIEDŹ WŁAŚCICIELA: sterownik Solo PO przeglądzie katalogu; teraz tylko krótki plan.** Plan: `docs/SOLO-STEROWNIK.md`.
 60. **Przy włączonej fladze krótki „mignięcie” klasycznego widoku** zanim portal odczyta flagi (jedno zapytanie). Przy wyłączonych flagach nic się nie zmienia. Rekomendacja: zostawić do czasu zatwierdzenia wyglądu; potem flagi czytać razem z planem.
+   **ODPOWIEDŹ WŁAŚCICIELA: zgoda na rekomendację** (flagi czytać razem z planem po zatwierdzeniu wyglądu; do tego czasu bez zmian).
 61. **Drabinki kalisteniczne** (`feature/kalistenika`) dołączą do liczenia awansów po scaleniu obu gałęzi.
+   **ODPOWIEDŹ WŁAŚCICIELA: OK.**
    **ODPOWIEDŹ WŁAŚCICIELA: migracja 0056 przy scaleniu — zgoda (pg_dump przed).** Backup przed scaleniem zrobię przy scalaniu gałęzi; do tej pory migracja tylko w bazie testowej.
