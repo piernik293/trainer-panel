@@ -102,7 +102,6 @@ function checkExercise(ex: Ex, p: Profile, out: Violation[], feas: Violation[]) 
   const lvl = rank(p.effective);
   if (ex.hidden) out.push(v("ukryte"));
   if (p.joints.length && (ex.jointStressAreas ?? []).some((j) => p.joints.includes(j))) out.push(v("zgłoszony staw", `${(ex.jointStressAreas ?? []).join(",")} | zgłoszono: ${p.joints.join(",")} (${p.viaPain ? "ból" : "wywiad"}) | zgoda: ${p.consent}`));
-  if (lvl <= 1 && ex.difficultyLevel === "Zaawansowany") out.push(v("BA/P: trudność Zaawansowany")); // decision 50a
   if (ex.difficultyLevel && rank(ex.difficultyLevel) > Math.max(lvl, 1)) out.push(v("ponad poziom", `${ex.difficultyLevel} dla ${p.effective}`));
   if (lvl === 0 && ex.suitableForNoActivity !== true) out.push(v("BA bez suitableForNoActivity"));
   if (lvl <= 1 && (ex.learningDifficulty == null)) out.push(v("BA/P bez learningDifficulty"));
@@ -283,11 +282,10 @@ describe("generator simulation", () => {
     }
     const med = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)]! : 0);
     const top = [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15).map(([id, n]) => ({ id, name: cat.get(id)!.name, n, share: +(n / total).toFixed(3) }));
-    // "ponad poziom" has no hard rule in the generator (difficulty is only a score; the hard filter exists for plyometrics) → reported, decision pending (docs/DO-DECYZJI.md).
+    // "ponad poziom" is a hard rule since decision 50b (28.10.2026) and counts as a safety violation.
     const aboveLevel = safetyAll.filter((x) => x.rule === "ponad poziom");
-    safety.splice(0, safety.length, ...safetyAll.filter((x) => x.rule !== "ponad poziom"));
     const report = {
-      aboveLevelNoRule: { count: aboveLevel.length, byLevel: Object.fromEntries([...new Set(aboveLevel.map((x) => x.level))].map((l) => [l, aboveLevel.filter((x) => x.level === l).length])), samples: aboveLevel.slice(0, 12) },
+      aboveLevel: { count: aboveLevel.length, byLevel: Object.fromEntries([...new Set(aboveLevel.map((x) => x.level))].map((l) => [l, aboveLevel.filter((x) => x.level === l).length])), samples: aboveLevel.slice(0, 12) },
       seed: SEED, n: N, stat, safetyViolations: safety.length, feasibilityViolations: feas.length,
       safetyByRule: Object.fromEntries([...new Set(safety.map((x) => x.rule))].map((r) => [r, safety.filter((x) => x.rule === r).length])),
       feasibilityByRule: Object.fromEntries([...new Set(feas.map((x) => x.rule))].map((r) => [r, feas.filter((x) => x.rule === r).length])),
