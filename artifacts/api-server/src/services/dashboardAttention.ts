@@ -62,6 +62,8 @@ export interface AttentionInvite {
   intendedEmail: string | null;
   createdAt: Date;
   expiresAt: Date;
+  /** Submission refused by the trainer's package limit (survey_invites.limit_blocked_at). */
+  limitBlockedAt?: Date | null;
 }
 
 export interface AttentionItem {
@@ -254,7 +256,7 @@ export function buildAttention(input: AttentionInput): {
   const inviteItems: Ranked[] = invites
     .filter(
       (i) =>
-        now.getTime() - i.createdAt.getTime() > 3 * DAY_MS && i.expiresAt.getTime() > now.getTime() &&
+        !i.limitBlockedAt && now.getTime() - i.createdAt.getTime() > 3 * DAY_MS && i.expiresAt.getTime() > now.getTime() &&
         !dismissed.has(`invite_pending|${i.clientId ?? 0}:${i.id}`),
     )
     .map((i) => ({
@@ -370,4 +372,22 @@ export function joinRequestItems(requests: readonly PendingJoinRequest[]): Array
     ref: String(r.id),
     sort: r.createdAt.getTime(),
   }));
+}
+
+/** Wywiad nie wszedł przez limit pakietu trenera → pozycja „Wymaga uwagi” (zaproszenie zostaje ważne, osoba może spróbować ponownie). */
+export function limitBlockedInviteItems(invites: ReadonlyArray<AttentionInvite & { clientName?: string | null }>): Array<AttentionItem & { sort: number }> {
+  return invites
+    .filter((i) => i.limitBlockedAt)
+    .map((i) => ({
+      kind: "invite_pending" as const,
+      clientId: i.clientId,
+      name: i.clientName || i.intendedEmail || "Zaproszenie bez adresu",
+      reasonLabel: "Wywiad nie wszedł",
+      description: "Osoba wypełniła wywiad, ale limit pakietu go zatrzymał. Zmień pakiet albo zwolnij miejsce.",
+      at: i.limitBlockedAt!.toISOString(),
+      actionLabel: "Zobacz pakiet",
+      actionHref: "/settings",
+      ref: `limit:${i.id}:${i.limitBlockedAt!.getTime()}`,
+      sort: i.limitBlockedAt!.getTime(),
+    }));
 }

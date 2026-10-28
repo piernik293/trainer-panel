@@ -7,6 +7,13 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [ -z "${DATABASE_URL:-}" ]; then set -a; . "$ROOT/.env"; set +a; fi
+# Dane z przeglądu QA (27.10.2026, docs/QA-BETA.md; decyzja 45): QA=1 dodaje do listy konta QA — trenera-administratora QA (jego klienci
+# „Sportowiec/Poczatkujacy/Nieaktywna QA” znikają kaskadowo razem z planami, sesjami, pakietem i zgłoszeniem bólu), konto „Ewa” (trener)
+# oraz konta klientów „Sportowiec QA”, „Ewa”, „Wnioskodawca”. Domyślnie nadal tylko podgląd; samo QA=1 niczego nie usuwa.
+if [ "${QA:-}" = "1" ]; then
+  DEMO_TRAINER_CLERK_IDS="${DEMO_TRAINER_CLERK_IDS:+$DEMO_TRAINER_CLERK_IDS,}user_3LHUO6KXOQSevNG3I7QV9lJfzWD,user_3LHUOADtmbN7iSqfpnrS9LCYasI"
+  DEMO_CLIENT_CLERK_IDS="${DEMO_CLIENT_CLERK_IDS:+$DEMO_CLIENT_CLERK_IDS,}user_3LHUO8IRjA5hEXNuu0GOlfjFImw,user_3LHUOADtmbN7iSqfpnrS9LCYasI,user_3LHUOEZ6qkZfVUcVupha86r7cY2"
+fi
 T="${DEMO_TRAINER_CLERK_IDS:-}"; C="${DEMO_CLIENT_CLERK_IDS:-}"
 [ -n "$T$C" ] || { echo "Podaj DEMO_TRAINER_CLERK_IDS i/lub DEMO_CLIENT_CLERK_IDS (identyfikatory Clerk po przecinku)." >&2; exit 2; }
 q() { printf "'%s'" "$(echo "$1" | sed "s/'/''/g")"; }

@@ -19,6 +19,7 @@ import {
 import { eq } from "drizzle-orm";
 import { db, trainersTable } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { getTrainerIdentity } from "../services/trainerIdentity";
 
 const router: IRouter = Router();
 
@@ -47,7 +48,18 @@ router.post("/trainer/profile", async (req, res): Promise<void> => {
     res.status(500).json({ error: "Wystąpiły chwilowe problemy techniczne. Spróbuj ponownie za chwilę." });
     return;
   }
-  res.json({ id: trainer.id, displayName: trainer.displayName, email: trainer.email });
+  // Imię i e-mail trenera z Clerka, gdy w bazie ich jeszcze nie ma (lista trenerów w panelu administratora). Nie nadpisuje tego, co już jest.
+  let { displayName, email } = trainer;
+  if (!displayName || !email) {
+    const identity = await getTrainerIdentity(trainer);
+    const patch = { ...(!displayName && identity.fullName ? { displayName: identity.fullName } : {}), ...(!email && identity.email ? { email: identity.email } : {}) };
+    if (Object.keys(patch).length > 0) {
+      await db.update(trainersTable).set(patch).where(eq(trainersTable.id, trainer.id)).catch((err) => logger.warn({ err }, "Trainer identity not saved"));
+      displayName = patch.displayName ?? displayName;
+      email = patch.email ?? email;
+    }
+  }
+  res.json({ id: trainer.id, displayName, email });
 });
 
 export default router;

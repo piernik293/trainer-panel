@@ -403,6 +403,8 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
     });
   } catch (err) {
     if (isSubscriptionLimitError(err)) {
+      // Trener zobaczy to w „Wymaga uwagi” (znacznik na zaproszeniu).
+      await db.update(surveyInvitesTable).set({ limitBlockedAt: new Date() }).where(matchesToken(tokenHash)).catch((e) => logger.warn({ err: e }, "limit_blocked_at not saved"));
       // Limit pakietu trenera nie jest sprawą osoby wypełniającej wywiad: ona dostaje prosty komunikat (kod błędu zostaje dla aplikacji).
       res.status(409).json({ ...err.toResponse(), error: "Nie udało się teraz wysłać wywiadu. Napisz do swojego trenera — poprosi Cię o ponowną próbę." });
       return;

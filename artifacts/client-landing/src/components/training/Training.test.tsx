@@ -140,7 +140,9 @@ describe("TrainingFlow end to end (offline queue)", () => {
 
   it("sets → pain skip → rating → finish (no warm-up or cool-down inside); every write is sent once with its UUID", async () => {
     const onExit = vi.fn();
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
     render(<TrainingFlow day={day()} firstName="Ala" week={{ done: 1, target: 4 }} onExit={onExit} />);
+    expect(errors.mock.calls.filter((c) => String(c[0]).includes("Cannot update a component"))).toEqual([]); // W12: no queue update during render
     expect(screen.queryByText("10 × w każdą stronę")).toBeNull(); // the warm-up has its own tile on "Dziś"
     // exercise 1: three sets
     for (let i = 0; i < 3; i++) fireEvent.click(screen.getByRole("button", { name: "Zapisz serię" }));
@@ -157,6 +159,7 @@ describe("TrainingFlow end to end (offline queue)", () => {
     expect(screen.getByText("Dobra robota, Ala!")).toBeTruthy();
     expect(screen.getByText("3")).toBeTruthy(); // sets
     expect(screen.queryByText(/story/i)).toBeNull(); // no dead "share" button
+    expect(screen.queryByText("maskotka")).toBeNull(); // placeholder circle hidden until the mascot exists
     fireEvent.click(screen.getByRole("radio", { name: "W sam raz" }));
     fireEvent.click(screen.getByRole("button", { name: "Zakończ" }));
     expect(onExit).toHaveBeenCalledWith(true);
@@ -171,6 +174,7 @@ describe("TrainingFlow end to end (offline queue)", () => {
     expect(calls.find((c) => c.url.endsWith("/pain"))!.body).toMatchObject({ area: "Bark", severity: 4, planExerciseId: 12 });
     expect(calls.find((c) => c.url.endsWith("/finish"))!.body).toMatchObject({ status: "completed", rating: "just_right" });
     expect(calls[0]!.url).toBe("/api/client-portal/training/sessions");
+    errors.mockRestore();
   });
 
   it("offline: nothing is lost, everything is sent after the network returns", async () => {

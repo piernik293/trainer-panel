@@ -44,6 +44,8 @@ export const surveyInvitesTable = pgTable("survey_invites", {
   remindedAt: timestamp("reminded_at"),
   /** Hash of the link before the last resend/reminder; that link keeps working. */
   previousTokenHash: text("previous_token_hash"),
+  /** Migration 0055: last time the client's submission was refused because of the trainer's package limit. */
+  limitBlockedAt: timestamp("limit_blocked_at"),
 }, (table) => [
   index("survey_invites_previous_token_hash_idx").on(table.previousTokenHash),
 ]);
