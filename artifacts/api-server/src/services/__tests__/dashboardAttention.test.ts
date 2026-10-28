@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildAttention, buildOnboarding, type AttentionInput, type OnboardingTargets } from "../dashboardAttention";
+import { buildAttention, buildOnboarding, limitBlockedInviteItems, type AttentionInput, type OnboardingTargets } from "../dashboardAttention";
 
 const NOW = new Date("2026-10-22T10:00:00Z");
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
@@ -218,5 +218,25 @@ describe("pain reports in attention", () => {
   });
   it("without the pains input nothing changes", () => {
     expect(buildAttention(base).total).toBe(0);
+  });
+});
+
+describe("wywiad zablokowany limitem pakietu (fix/po-qa)", () => {
+  const inv = (limitBlockedAt: Date | null) => ({ id: 7, clientId: null, intendedEmail: "a@b.pl", createdAt: daysAgo(5), expiresAt: new Date(NOW.getTime() + 86_400_000), limitBlockedAt });
+  it("zablokowane zaproszenie daje jedną pozycję „Wywiad nie wszedł” i nie dubluje się z „Zaproszenie bez odpowiedzi”", () => {
+    const blocked = inv(daysAgo(1));
+    const r = buildAttention(input({ invites: [blocked], extraItems: limitBlockedInviteItems([blocked]) }));
+    expect(r.items.map((i) => i.reasonLabel)).toEqual(["Wywiad nie wszedł"]);
+  });
+  it("bez znacznika limitu nie ma takiej pozycji", () => {
+    expect(limitBlockedInviteItems([inv(null)])).toEqual([]);
+  });
+  it("„Załatwione” ukrywa pozycję, a nowa blokada przywraca ją", () => {
+    const first = inv(daysAgo(2));
+    const ref = limitBlockedInviteItems([first])[0].ref;
+    const again = inv(daysAgo(1));
+    const dismissed = new Set([`invite_pending|${ref}`]);
+    expect(buildAttention(input({ extraItems: limitBlockedInviteItems([first]), dismissed })).total).toBe(0);
+    expect(buildAttention(input({ extraItems: limitBlockedInviteItems([again]), dismissed })).total).toBe(1);
   });
 });

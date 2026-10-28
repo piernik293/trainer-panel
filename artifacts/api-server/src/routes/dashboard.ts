@@ -17,7 +17,7 @@ import {
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { computeSurveyStatus, fetchLatestSurveyPerClient } from "../lib/survey-status";
-import { buildAttention, buildOnboarding, joinRequestItems, ATTENTION_KINDS, type AttentionKind } from "../services/dashboardAttention";
+import { buildAttention, buildOnboarding, joinRequestItems, limitBlockedInviteItems, ATTENTION_KINDS, type AttentionKind } from "../services/dashboardAttention";
 import { usedCounts } from "../services/packages";
 import { z } from "zod";
 
@@ -73,6 +73,8 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
       createdAt: surveyInvitesTable.createdAt,
       expiresAt: surveyInvitesTable.expiresAt,
       usedAt: surveyInvitesTable.usedAt,
+      limitBlockedAt: surveyInvitesTable.limitBlockedAt,
+      clientName: surveyInvitesTable.clientName,
     })
     .from(surveyInvitesTable)
     .where(eq(surveyInvitesTable.trainerId, trainerId));
@@ -119,7 +121,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
     .where(and(eq(trainerJoinRequestsTable.trainerId, trainerId), eq(trainerJoinRequestsTable.status, "pending")));
 
   const attention = buildAttention({
-    extraItems: joinRequestItems(joinRows),
+    extraItems: [...joinRequestItems(joinRows), ...limitBlockedInviteItems(invites.filter((i) => pendingIds.has(i.id) && i.expiresAt.getTime() > now.getTime()))],
     sessions: finishedSessions.map((x) => ({ clientId: x.clientId, id: x.id, date: String(x.date), rating: x.rating })),
     packages: activePackages.map((p) => ({ clientId: p.clientId, id: p.id, totalSessions: p.totalSessions, used: usedByPackage.get(p.id) ?? 0, validUntil: p.validUntil })),
     silenceDays: settings?.silenceDays ?? 7,
