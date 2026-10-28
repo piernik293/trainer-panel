@@ -281,3 +281,9 @@
 - Backup przed 0055: `~/backups/trainer_panel_przed_0055_20261028-0018.sql.gz`; migracja zastosowana przez `db-setup-gcp.sh`.
 - Testy (baza testowa): API 128/128 plików, 2727 testów; panel 782; portal 250; bezpieczeństwo generatora 101; typecheck i build OK. `joint-exclusion.integration.test.ts` miał kruche sprzątanie (stali klienci po przerwanym przebiegu blokowali usunięcie trenera) — poprawione.
 - Restart na poprawionych skryptach: sesja tmux `claude` przeżyła. Smoke 131 OK / 0 BŁĄD.
+
+## 28.10.2026 — noc, blok 1: symulacja jakości generatora (gałąź `qa/generator-symulacja`, NIE scalona) — GOTOWE
+- `scripts/generator-sim.sh` + `src/__tests__/generator-sim.test.ts` (1000 losowych profili ręcznie, 24 w zwykłych testach; baza testowa). Raport: `docs/GENERATOR-JAKOSC.md`, surowe dane `docs/generator-sim-report.json`.
+- Wynik po poprawkach: 0 naruszeń bezpieczeństwa i 0 wykonalności. Naprawione: (1) odmienione nazwy stawów z wywiadu były ignorowane („z biodrem”) — test regresji; (2) blok skoków i zamiana ćwiczenia omijały tryb „brak zgody zdrowotnej” — test regresji. Przy okazji: kruche sprzątanie testu `joint-exclusion`.
+- Do decyzji (DO-DECYZJI 49–53): „ponad poziom” bez twardej reguły, 23% dni odmówionych, mały katalog dla domu/BA, status „do weryfikacji”.
+- Testy: API 130 plików / 2738, bezpieczeństwo generatora 101, typecheck OK.

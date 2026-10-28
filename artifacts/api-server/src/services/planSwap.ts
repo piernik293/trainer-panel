@@ -9,7 +9,7 @@ import {
   db, exercisesTable, surveysTable, workoutPlansTable, workoutPlanDaysTable, workoutPlanExercisesTable, planChangeLogTable,
 } from "@workspace/db";
 import { isGeneratorSafe, isMainPlanExercise } from "../lib/exerciseRoles";
-import { loadBlockedJoints } from "./jointExclusion";
+import { loadBlockedJoints, isConservativeHealth } from "./jointExclusion";
 import { LADDER_RANK, buildLadderRules, loadLadderRows } from "./ladderSelection";
 import { buildCompatibilityFilter } from "./planDraftDayRecommendationsService";
 import { isPlyoExercise, plyoRule, selectPlyoBlock } from "./plyoBlock";
@@ -105,7 +105,7 @@ export async function swapPlanExercise(planId: number, planExerciseId: number, t
     reviewedByTrainer: exercisesTable.reviewedByTrainer, intensity: exercisesTable.intensity, role: exercisesTable.role,
     movementPattern: exercisesTable.movementPattern, mainMuscleGroup: exercisesTable.mainMuscleGroup,
     createdByTrainerId: exercisesTable.createdByTrainerId, equipment: exercisesTable.equipment,
-    trainingLocation: exercisesTable.trainingLocation, requiredEquipmentAll: exercisesTable.requiredEquipmentAll, jointStressAreas: exercisesTable.jointStressAreas,
+    trainingLocation: exercisesTable.trainingLocation, requiredEquipmentAll: exercisesTable.requiredEquipmentAll, jointStressAreas: exercisesTable.jointStressAreas, jointStress: exercisesTable.jointStress,
   };
   const [removedRow] = await db.select(cols).from(exercisesTable).where(eq(exercisesTable.id, slot.exerciseId));
   if (!removedRow) return { ok: false, code: "NO_SLOT" };
@@ -114,7 +114,7 @@ export async function swapPlanExercise(planId: number, planExerciseId: number, t
     ? await db.select().from(surveysTable).where(eq(surveysTable.id, plan.surveyId))
     : [undefined];
   const blocked = await loadBlockedJoints(plan.clientId, survey?.healthLimitations);
-  const filter = buildCompatibilityFilter(survey?.trainingLocation, survey?.equipment, new Set<number>(), blocked);
+  const filter = buildCompatibilityFilter(survey?.trainingLocation, survey?.equipment, new Set<number>(), blocked, isConservativeHealth(survey?.healthConsentStatus));
   const ladder = buildLadderRules(await loadLadderRows(), plan.level);
 
   const pool = await db.select(cols).from(exercisesTable).where(and(
@@ -128,7 +128,7 @@ export async function swapPlanExercise(planId: number, planExerciseId: number, t
     avoided: new Set(survey?.avoidedExerciseIds ?? []),
     compatible: (c) => {
       const full = pool.find((p) => p.id === c.id)!;
-      return filter({ id: full.id, trainingLocation: full.trainingLocation ?? [], equipment: full.equipment ?? [], requiredEquipmentAll: full.requiredEquipmentAll ?? [], jointStressAreas: full.jointStressAreas });
+      return filter({ id: full.id, trainingLocation: full.trainingLocation ?? [], equipment: full.equipment ?? [], requiredEquipmentAll: full.requiredEquipmentAll ?? [], jointStressAreas: full.jointStressAreas, jointStress: full.jointStress });
     },
     ladderAllowed: ladder.allowed,
     plyo: { goal: survey?.trainingGoal ?? null, jumpExperience: survey?.jumpExperience ?? null },

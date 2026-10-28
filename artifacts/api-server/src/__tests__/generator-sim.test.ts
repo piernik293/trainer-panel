@@ -166,7 +166,7 @@ async function createClient(p: Profile): Promise<number> {
   return c.id;
 }
 
-interface DayOut { type: string; exercises: Array<{ id: number; sets: number; restSeconds: number; repsLabel: string }>; status: number; warnings: number }
+interface DayOut { error?: string; type: string; exercises: Array<{ id: number; sets: number; restSeconds: number; repsLabel: string }>; status: number; warnings: number }
 
 async function generateWeek(clientId: number, p: Profile): Promise<DayOut[]> {
   const split = recommendSplitType(p.effective, p.days).recommended ?? "full_body";
@@ -186,7 +186,7 @@ async function generateWeek(clientId: number, p: Profile): Promise<DayOut[]> {
     const exs = ((res.body.exercises ?? []) as Array<{ id: number; equipment: string[]; prescription?: { sets: number; restSeconds: number; repsLabel: string } }>);
     for (const e of exs) { used.push(e.id); raw.push({ exerciseId: e.id, sets: e.prescription?.sets ?? 1 }); }
     lastByType[t] = exs.map((e) => ({ id: e.id, equipment: e.equipment ?? [] }));
-    out.push({ type: t, status: res.status, warnings: (res.body.structuralWarnings ?? []).length, exercises: exs.map((e) => ({ id: e.id, sets: e.prescription?.sets ?? 0, restSeconds: e.prescription?.restSeconds ?? 0, repsLabel: e.prescription?.repsLabel ?? "" })) });
+    out.push({ error: res.status === 200 ? undefined : String(res.body.error ?? ""), type: t, status: res.status, warnings: (res.body.structuralWarnings ?? []).length, exercises: exs.map((e) => ({ id: e.id, sets: e.prescription?.sets ?? 0, restSeconds: e.prescription?.restSeconds ?? 0, repsLabel: e.prescription?.repsLabel ?? "" })) });
   }
   return out;
 }
@@ -231,10 +231,10 @@ describe("generator simulation", () => {
     const sets = { push: 0, pull: 0, knee: 0, hip: 0 };
     const balance: Array<{ push: number; pull: number; knee: number; hip: number }> = [];
     const perSession: Record<string, number[]> = {}; const timeRatio: Record<string, number[]> = {};
-    const freq = new Map<number, number>(); let variants = 0; let total = 0; const overlap: number[] = [];
+    const overlapBy: Record<string, number[]> = {}; const freq = new Map<number, number>(); let variants = 0; let total = 0; const overlap: number[] = [];
     // Informational (not a rule yet — docs/KATALOG-STANDARD.md: "do weryfikacji = niedopuszczone" is not switched on): share of unverified catalogue rows in plans.
     const unverified: Record<string, { all: number; unverified: number }> = {};
-    const refused: Record<string, number> = {}; const dupBy: Record<string, number> = {}; const profilesBy: Record<string, number> = {};
+    const refusedWhy: Record<string, number> = {}; const refused: Record<string, number> = {}; const dupBy: Record<string, number> = {}; const profilesBy: Record<string, number> = {};
     const byGoalPlyo: Record<string, { plans: number; withPlyo: number }> = {};
     const weekMuscle: Record<string, number[]> = {};
     for (let i = 0; i < N; i++) {
@@ -249,7 +249,7 @@ describe("generator simulation", () => {
       const b = { push: 0, pull: 0, knee: 0, hip: 0 }; let anyPlyo = false;
       for (const d of week) {
         stat.days++;
-        if (d.status !== 200) { stat.daysRefused++; refused[`${bucket}|${d.type}`] = (refused[`${bucket}|${d.type}`] ?? 0) + 1; continue; }
+        if (d.status !== 200) { stat.daysRefused++; refused[`${bucket}|${d.type}`] = (refused[`${bucket}|${d.type}`] ?? 0) + 1; const why = `${p.place === "gym" ? "gym" : "home/outdoor"}|${d.error}`; refusedWhy[why] = (refusedWhy[why] ?? 0) + 1; continue; }
         if (d.exercises.length === 0) stat.emptyDays++;
         stat.structuralWarnings += d.warnings;
         let minutes = 6; // warm-up + cool-down allowance
@@ -276,7 +276,7 @@ describe("generator simulation", () => {
       const again = await generateWeek(cid, p);
       for (const d of again) for (const e of d.exercises) { ctx = `generuj od nowa, dzień ${d.type}`; checkExercise(cat.get(e.id)!, p, safety, feas); }
       const prev = new Set(ids); const ids2 = again.flatMap((d) => d.exercises.map((e) => e.id));
-      if (ids2.length) overlap.push(ids2.filter((x) => prev.has(x)).length / ids2.length);
+      if (ids2.length) { const o = ids2.filter((x) => prev.has(x)).length / ids2.length; overlap.push(o); (overlapBy[`${p.place === "gym" ? "gym" : "dom/plener"}|${p.effective}`] ??= []).push(o); }
     }
     const med = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)]! : 0);
     const top = [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15).map(([id, n]) => ({ id, name: cat.get(id)!.name, n, share: +(n / total).toFixed(3) }));
@@ -300,8 +300,8 @@ describe("generator simulation", () => {
       timeEstimateOver130pct: Object.values(timeRatio).flat().filter((x) => x > 1.3).length,
       timeEstimateUnder60pct: Object.values(timeRatio).flat().filter((x) => x < 0.6).length,
       variety: { variantShare: +(variants / Math.max(1, total)).toFixed(3), topExercises: top, medianOverlapWithPreviousPlan: +med(overlap).toFixed(2),
-        overlapAbove50pct: overlap.filter((x) => x > 0.5).length, comparedPlans: overlap.length },
-      goalPlyo: byGoalPlyo, unverifiedInPlansByLevel: unverified, refusedDaysByPlaceLevelType: refused, plansWithDuplicatesByPlaceLevel: dupBy, profilesByPlaceLevel: profilesBy,
+        medianOverlapByLevel: Object.fromEntries(Object.entries(overlapBy).map(([k, v]) => [k, +med(v).toFixed(2)])), overlapAbove50pct: overlap.filter((x) => x > 0.5).length, comparedPlans: overlap.length },
+      goalPlyo: byGoalPlyo, unverifiedInPlansByLevel: unverified, refusedDaysByPlaceLevelType: refused, refusedReasons: refusedWhy, plansWithDuplicatesByPlaceLevel: dupBy, profilesByPlaceLevel: profilesBy,
     };
     if (REPORT) writeFileSync(REPORT, JSON.stringify(report, null, 1));
     expect(safety.slice(0, 5), "naruszenia bezpieczeństwa").toEqual([]);
