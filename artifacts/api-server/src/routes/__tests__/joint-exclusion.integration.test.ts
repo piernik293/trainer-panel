@@ -101,6 +101,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   for (const o of original) await db.update(exercisesTable).set({ jointStressAreas: o.areas }).where(eq(exercisesTable.id, o.id));
+  // Also clients left by an interrupted earlier run (the trainer row is reused through onConflict), not only this run's own.
+  const leftovers = (await db.select({ id: clientsTable.id }).from(clientsTable).where(eq(clientsTable.trainerId, trainerId))).map((r) => r.id);
+  clientIds.push(...leftovers.filter((id) => !clientIds.includes(id)));
   if (clientIds.length) {
     await db.delete(painReportsTable).where(inArray(painReportsTable.clientId, clientIds));
     await db.delete(workoutSessionsTable).where(inArray(workoutSessionsTable.clientId, clientIds));
