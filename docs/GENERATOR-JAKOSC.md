@@ -36,3 +36,24 @@
 2. **Status „do weryfikacji”** nie jest wymuszany dla początkujących (opisane w KATALOG-STANDARD): 27% ćwiczeń w planach P to „do weryfikacji”. Włączenie bez uzupełnienia `suitable_for_no_activity` wyczyściłoby większość katalogu.
 3. **Odmowy dnia**: pozwolić na dzień z 3 ćwiczeniami (z komunikatem dla trenera) zamiast błędu? To zmiana widocznego zachowania. Alternatywa: czytelny komunikat „brakuje bezpiecznych ćwiczeń na plecy — dodaj gumę/drążek”.
 4. **Katalog dla domu bez sprzętu i dla osób nieaktywnych** jest za mały (powtarzalność, odmowy). Kalistenika (blok 2) częściowo to rozwiązuje.
+
+## Po decyzjach właściciela: przegląd katalogu, 50b (28.10.2026)
+**Ważne zastrzeżenie do liczb wyżej.** Wcześniejsze symulacje szły na bazie testowej, która ma tylko 185 ćwiczeń (z zasiewu), a katalog aplikacji ma 587. Dlatego odmowy dnia (23% → 14%) i „brakowało” z pliku przeglądu były zaniżone/zawyżone względem prawdziwego katalogu. Od tej pory symulacja na pełnym katalogu: `SIM_SCHEMA=sim scripts/generator-sim.sh` (schemat `sim` w bazie testowej = kopia bazy aplikacji, patrz `scripts/test-api.sh`, opcja `TEST_DB_OPTIONS`).
+
+**Co zmieniono:** (1) reguła 50b: trudność ćwiczenia nigdy powyżej poziomu efektywnego (BA i P = Początkujący, Ś do Średniozaawansowanego, Z wszystko); (2) migracja danych 0057: 81 ćwiczeń zatwierdzonych od BA, 21 od P, 48 od Ś, 11 nowych ćwiczeń kalistenicznych z drabinkami.
+
+| 1000 profili, ten sam katalog aplikacji (587), to samo ziarno | przed | po |
+|---|---|---|
+| Naruszenia bezpieczeństwa (musi być 0) | 0 | **0** |
+| Naruszenia wykonalności (sprzęt, miejsce) | 0 | **0** |
+| Ćwiczenia ponad poziom (musi być 0) | 1208 (961 u P, 247 u Ś) | **0** |
+| Odmowy dnia | 144 z 3981 (3,6%) | **90 (2,3%)** |
+| Dni z 3 ćwiczeniami | 112 | 62 |
+| Plany z duplikatem w tygodniu | 613 | 540 |
+| „Generuj od nowa”: powtórzenia, BA dom/plener | 0,80 | **0,54** |
+| … BA siłownia | 0,67 | **0,29** |
+| … P dom/plener | 0,56 | **0,43** |
+| … Ś, Z dom/plener | 0,60 / 0,57 | 0,54 / 0,54 |
+| Ćwiczenia „do weryfikacji” w planach P / Ś / Z | 19% / 72% / 74% | **2% / 26% / 28%** |
+
+Mediana powtórzeń całości: 0,44 → 0,33. Wniosek: katalog po przeglądzie daje mniej odmów i większą różnorodność, a reguła 50b nie dodała odmów (usunęła wszystkie przypadki „ponad poziom”).

@@ -306,3 +306,7 @@
 ## 28.10.2026 — decyzje 54–55: kalistenika po odpowiedziach (gałąź `feature/kalistenika`, NIE scalona) — GOTOWE
 - Wciągnięte 50a i 51 (minimum 3 ćwiczenia z komunikatem); ławka/krzesło/ławka w parku dostępna w domu i w plenerze (`calisthenicsEquipmentText`); 13 braków w PRZEGLAD-KATALOGU.csv (sekcja 2). Flaga wyłączona.
 - Symulacja stylu 300 profili: 0 naruszeń; odmowy dnia 50% → 24% (303 dni po 3 ćwiczenia).
+## 28.10.2026 — katalog po decyzjach właściciela (gałąź `feature/katalog-decyzje-wlasciciela`)
+- Krok 1: `fix/trudnosc-ba-p` scalona do `main` (`2f7b01b`), testy przed (2738) i po (2748), push, restart, smoke 131/0.
+- Kroki 2–4: migracja danych 0057 (81 od BA / 21 od P / 48 od Ś / 0 ukrytych / 11 nowych; wyjątek id 89), reguła 50b, testy (`catalogue-decisions-0057`, `isGeneratorSafe`, symulacja). Backupy: `~/backups/trainer_panel_przed_0057_*.sql.gz`.
+- Krok 5: symulacja na pełnym katalogu (schemat `sim`): ponad poziom 1208 → 0, odmowy 3,6% → 2,3%, naruszeń 0; `docs/GENERATOR-JAKOSC.md`.

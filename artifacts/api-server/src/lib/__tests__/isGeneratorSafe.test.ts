@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isGeneratorSafe } from "../exerciseRoles";
+import { isGeneratorSafe, exceedsLevel } from "../exerciseRoles";
 
 const LEVELS = ["Brak aktywności fizycznej", "Początkujący", "Średniozaawansowany", "Zaawansowany"];
 
@@ -29,9 +29,20 @@ describe("preferMainOverVariants", () => {
   it("odmiana odpada, gdy ćwiczenie główne jest w puli", () => { expect(preferMainOverVariants([main, v])).toEqual([main]); });
   it("odmiana zostaje, gdy głównego nie ma w puli (sprzęt miejsca, staw, poziom)", () => { expect(preferMainOverVariants([v, other])).toEqual([v, other]); });
   it("kilka odmian jednego głównego zostaje, gdy głównego brak", () => { const v2 = { id: 4, parentExerciseId: 1 }; expect(preferMainOverVariants([v, v2])).toEqual([v, v2]); });
-  it("decyzja 50a: ćwiczenie o trudności „Zaawansowany” nigdy dla BA i P; reszta poziomów bez zmian", () => {
-    const hard = { reviewedByTrainer: true, difficultyLevel: "Zaawansowany" };
-    expect(LEVELS.map((l) => isGeneratorSafe(hard, l))).toEqual([false, false, true, true]);
-    for (const d of ["Początkujący", "Średniozaawansowany", null]) expect(LEVELS.map((l) => isGeneratorSafe({ reviewedByTrainer: true, difficultyLevel: d }, l))).toEqual([true, true, true, true]);
+  it("decyzja 50b: trudność ćwiczenia nigdy powyżej poziomu efektywnego (BA i P = Początkujący, Ś do Średniozaawansowanego, Z wszystko)", () => {
+    const at = (d: string | null) => LEVELS.map((l) => isGeneratorSafe({ reviewedByTrainer: true, difficultyLevel: d }, l));
+    expect(at("Brak aktywności fizycznej")).toEqual([true, true, true, true]);
+    expect(at("Początkujący")).toEqual([true, true, true, true]);
+    expect(at("Średniozaawansowany")).toEqual([false, false, true, true]);
+    expect(at("Zaawansowany")).toEqual([false, false, false, true]);
+    expect(at(null)).toEqual([true, true, true, true]); // unknown difficulty: the completeness filter decides, not this rule
+    expect(isGeneratorSafe({ reviewedByTrainer: true, difficultyLevel: "Zaawansowany" }, null)).toBe(true); // unknown level: no rule
+  });
+  it("exceedsLevel: ta sama reguła jako funkcja", () => {
+    expect(exceedsLevel("Średniozaawansowany", "Początkujący")).toBe(true);
+    expect(exceedsLevel("Średniozaawansowany", "Brak aktywności fizycznej")).toBe(true);
+    expect(exceedsLevel("Średniozaawansowany", "Średniozaawansowany")).toBe(false);
+    expect(exceedsLevel("Zaawansowany", "Średniozaawansowany")).toBe(true);
+    expect(exceedsLevel("Początkujący", "Zaawansowany")).toBe(false);
   });
 });
