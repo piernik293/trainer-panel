@@ -1,28 +1,12 @@
-# Raport dla właściciela (27.10.2026)
+# Raport poranny — noc 28.10.2026 (max 25 linii)
 
-Nic nie zostało scalone do `main`. Każda gałąź przeszła pełną weryfikację (testy API, bezpieczeństwo generatora 101, panel, portal, typecheck, build, smoke 131/0).
-
-## Część 1 (generator, konta, administrator) — gotowe
-- `feature/generator-priorytety` — wykluczenie dokładnej pozycji; „Generuj od nowa” różni się od poprzedniego planu; „Zamień na inne” bez powtórek; ostrzeżenie „zalecany zakres” dla Ś/Z (BA/P nadal blokada); długość cyklu wg poziomu (BA/P 8–12, Ś 6–8, Z 4–6); cele rozgrzewek (0037); zakładka „Rozgrzewka i rozciąganie” w katalogu.
-- `feature/konta-link-kod` — link i kod trenera, prośby [Odrzuć]/[Akceptuj], odłączenie przez każdą ze stron, konta bez trenera („wkrótce”), limit prób kodu (0038).
-- `feature/panel-admin` — panel administratora: błędy, trenerzy, Solo, abonamenty, dziennik dostępu z powodem, blokada konta, brak limitu generatora (0039).
-- `feature/wnioski-trenerow` (na bazie panelu) — „Prowadzę podopiecznych”, lista wniosków, przełącznik automatyczny (wyłączony), 14 dni do ponownego wniosku (0040).
-- `docs/kondycja-aktualizacja` — `docs/KONDYCJA.md` po Twoich decyzjach.
-
-## Bloki 5 i 7–12 — gotowe (bez ekranów tam, gdzie zaznaczono)
-- `feature/beta-przygotowanie` — nagłówki, limity zapytań, kopie bazy (cron), szkielety prawne, zgoda na dane o zdrowiu, pliki wdrożeniowe.
-- `feature/pakiety-sesje` → `feature/skrzynka-uwagi` (na bazie pakietów) · `feature/import-excel` · `feature/raport-pdf`.
-- `feature/solo` (wyłączone `SOLO_ENABLED`, bez ekranów) · `feature/kondycja` (wyłączone `CONDITIONING_ENABLED`, tylko API).
-
-## Czeka na Twoje „tak” (pełna lista: `docs/DO-DECYZJI.md`, 37 pozycji)
-- Interwały dla początkujących: zostały zabronione (17, 33).
-- Zgoda na dane o zdrowiu po wycofaniu — co z danymi (3) — do prawnika; teksty prawne to szkielety (6).
-- Adres do maili o wnioskach: `OWNER_NOTIFY_EMAIL` w `.env` (35).
-- Formularz wniosku w oknie „Moje konto” (34); limit prób kodu w pamięci (25).
-- Włączenie Solo i kondycji; uruchomienie `usun-konta-demo.sh` — tylko za Twoją zgodą.
-- Niezrobione: ekrany Solo i kondycji; powiadomienie o prośbie o dołączenie w „Wymaga uwagi” (27).
-
-## Proponowana kolejność scalania
-1. `feature/beta-przygotowanie` · 2. `feature/generator-priorytety` · 3. `feature/konta-link-kod` · 4. `feature/panel-admin` · 5. `feature/wnioski-trenerow` · 6. `feature/pakiety-sesje` · 7. `feature/skrzynka-uwagi` · 8. `feature/import-excel` · 9. `feature/raport-pdf` · 10. `feature/solo` · 11. `feature/kondycja` · 12. `docs/kondycja-aktualizacja`.
-Migracje (0037–0040, 0050–0054) mają różne numery i są już zastosowane w bazach. Spodziewane drobne konflikty tekstowe: `docs/POSTEP-GCP.md`, `docs/DO-DECYZJI.md`, `lib/db/src/schema/trainers.ts`, `routes/index.ts`, `requireAuth.ts` (opis w pozycji 37).
-Po scaleniu uruchom `scripts/stop-gcp.sh && scripts/dev-gcp.sh` (API działa ze zbudowanego `dist`).
+**Blok 0 — GOTOWE.** `main` = `9246044` (wypchnięty). Scalone: poprawka tmux (pierwsza, przed restartem), qa/przeglad-bety, qa/bezpieczenstwo, fix/po-qa (decyzje 39, 41, 43, W12, 45; skrypt QA nie uruchamiany). Migracja 0055 zastosowana po backupie. Restart na nowych skryptach: sesja tmux `claude` przeżyła; smoke 131 OK / 0 błędów. Aplikacja działa.
+**Blok 1 — symulacja generatora (`qa/generator-symulacja`).** 1000 losowych profili, 3981 dni: **0 naruszeń bezpieczeństwa i 0 wykonalności** po dwóch poprawkach: (1) odmienione nazwy stawów z wywiadu („z biodrem”, „ból biodra”) były ignorowane, więc generator dawał przysiady i wykroki mimo bólu biodra; (2) blok skoków i zamiana ćwiczenia omijały tryb „brak zgody zdrowotnej”. Oba z testami regresji. `scripts/generator-sim.sh`, raport `docs/GENERATOR-JAKOSC.md`.
+  Jakość do decyzji: 23% dni odmówionych (za mało bezpiecznych ćwiczeń), powtarzalność „Generuj od nowa” 70–100% w domu i u nieaktywnych (siłownia 8–25%), brak twardej reguły „ćwiczenie ponad poziom” (937 przypadków u początkujących, m.in. „Pompki z obciążeniem”).
+**Blok 2 — kalistenika (`feature/kalistenika`).** Projekt `docs/KALISTENIKA.md` (5 pytań) i wersja za `CALISTHENICS_ENABLED=0`: sprzęt, dni wg stanowisk, drabinki, skoki w dniu nóg, ukryta opcja w edytorze. Flaga wyłączona = identyczne zachowanie (test). Symulacja stylu: 0 naruszeń, ale **50% dni odmówionych** (12 braków w katalogu) — nie włączać flagi.
+**Blok 3 — drobne QA (`fix/qa-drobne`).** Linki prawne 44 px na stronach dokumentów, nazwa klienta bez spacji, separatory; testy. Zostaje C6 (cele dotyku w nawigacji — to UX).
+**Blok 4 — osiągnięcia (`feature/osiagniecia`).** `docs/OSIAGNIECIA.md` (5 pytań) i podstawa za `ACHIEVEMENTS_ENABLED=0`: migracja 0056 (po backupie, **tylko w bazie testowej**), silnik idempotentny, ochrona serii, urlop/choroba, zasady etyczne w testach (brak nagród za trening ponad plan i po bólu, brak języka straty).
+**Blok 5 — ekrany (`feature/solo-ekrany`).** Prototyp za obiema flagami: dolny pasek, Postępy, Ty, start Solo; zrzuty 375 px jasny/ciemny w `docs/screens/solo/`. Flagi wyłączone = portal jak dziś (test). Solo bez wywiadu po stronie serwera (uczciwe „wkrótce”).
+**Testy (ostatnia gałąź):** API 130 plików / 2759, panel 782, portal 260, bezpieczeństwo generatora 101, typecheck i build OK.
+**Gałęzie (wypchnięte, NIE scalone):** qa/generator-symulacja → feature/kalistenika; fix/qa-drobne; feature/osiagniecia → feature/solo-ekrany.
+**Do decyzji:** `docs/DO-DECYZJI.md` pkt 49–61 (najważniejsze: 50 ponad poziom, 51 dni odmówione, 55 kalistenika/katalog, 59 Solo, 60 migracja 0056 przy scaleniu).
