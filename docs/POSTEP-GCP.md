@@ -308,3 +308,9 @@
 
 ## 28.10.2026 — poprawki właściciela do danych o stawach (gałąź `fix/stawy-poprawki`, scalona do `main`)
 - Migracja 0060 (z kopią starych wartości, jednorazowa): 10 dipów → Bark, Łokieć, Nadgarstek, Wysokie (w tym dipy na ławce i wspomagane na maszynie); 7 ćwiczeń w zwisie + Bark; 6 ćwiczeń → Średnie. Lista: `docs/STAWY-POPRAWKI.csv`. Symulacja 1000 profili: naruszeń 0, odmowy 2,6% → 2,9%.
+
+## 28.10.2026 — noc przed betą, blok 3: pierwsze minuty (gałąź `qa/pierwsze-minuty`)
+- Osobna baza QA (schemat `qa` w `trainer_panel_test`) i osobny stos (`scripts/qa-stack.sh`: API 18090, panel 23890, portal 22390, bez poczty); baza aplikacji nietknięta; stos zatrzymany po teście.
+- Playwright 375 i 1440 px, konta Clerk dev: A (trener → aktywny plan: 16 ekranów, 14 kliknięć), B (klient → trening: 48 ekranów, 55 kliknięć), C (wywiad wpisany przez trenera: 8 ekranów, 20 kliknięć). Raport: `docs/PIERWSZE-MINUTY.md`, zrzuty `docs/screens/pierwsze-minuty/`.
+- Największe przeszkody: nowe konto trenera bez drogi do dostępu, logowanie panelu po angielsku, limity Free odkrywane w trakcie, brak ekranu „co dalej” po aktywacji planu, plank w powtórzeniach.
+- Poprawki: teksty wywiadu bez form zależnych od płci; „Nowy klient” bez e-maila/telefonu (test `clientPayload`); wywiad trenera dla klienta bez wywiadu otwiera formularz. Testy: panel 788, portal 251, typecheck OK. Decyzje: `docs/DO-DECYZJI.md` (N3-1…N3-5).

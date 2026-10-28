@@ -514,7 +514,7 @@ export default function SurveyWizard({
         );
       case "birth":
         return (
-          <Section id={id} headingRef={heading} title="Kiedy się urodziłeś/-aś?" lead="Wiek wpływa na dobór obciążeń i tempa progresji.">
+          <Section id={id} headingRef={heading} title="Jaka jest Twoja data urodzenia?" lead="Wiek wpływa na dobór obciążeń i tempa progresji.">
             <div className="space-y-1.5">
               <label htmlFor="dob" className="text-sm font-semibold">Data urodzenia</label>
               <DateInput id="dob" value={answers.dateOfBirth} onChange={(v) => set({ dateOfBirth: v })} />
@@ -603,7 +603,7 @@ export default function SurveyWizard({
         );
       case "frequency":
         return (
-          <Section id={id} headingRef={heading} title="Ile treningów tygodniowo chciałbyś wykonywać?" lead={SECTION_TEXT.time}>
+          <Section id={id} headingRef={heading} title="Ile treningów tygodniowo chcesz wykonywać?" lead={SECTION_TEXT.time}>
             <Note>{HINT_TEXT.frequency}</Note>
             {level && TRAINING_FREQUENCY_RECOMMENDATIONS[level] && <Note>{TRAINING_FREQUENCY_RECOMMENDATIONS[level]}</Note>}
             <Field id="freq" label="Liczba treningów w tygodniu" error={err()}>
@@ -761,7 +761,7 @@ export default function SurveyWizard({
         );
       case "additional":
         return (
-          <Section id={id} headingRef={heading} title="Czy jest coś jeszcze, co powinienem wiedzieć?" lead={<><Opt text={SECTION_TEXT.additional} /> {HINT_TEXT.additional}</>}>
+          <Section id={id} headingRef={heading} title="Czy jest coś jeszcze, co warto wiedzieć?" lead={<><Opt text={SECTION_TEXT.additional} /> {HINT_TEXT.additional}</>}>
             <Textarea aria-label="Dodatkowe informacje" value={answers.additionalInfo} onChange={(e) => set({ additionalInfo: e.target.value })} className="min-h-[140px] text-base" />
           </Section>
         );

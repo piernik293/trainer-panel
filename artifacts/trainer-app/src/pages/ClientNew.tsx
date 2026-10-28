@@ -16,6 +16,7 @@ import { ArrowLeft, CheckCircle, Copy, AlertCircle, Mail, ExternalLink, RefreshC
 import { Link } from "wouter";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSubscriptionSummary } from "@/lib/use-subscription-summary";
+import { toCreateClientPayload } from "@/lib/clientPayload";
 
 const clientSchema = z.object({
   firstName: z.string().min(1, "Imię jest wymagane"),
@@ -101,7 +102,7 @@ export default function ClientNew() {
   };
 
   const onSubmit = (data: ClientFormValues) => {
-    createClient.mutate({ data }, {
+    createClient.mutate({ data: toCreateClientPayload(data) }, {
       onSuccess: async (newClient) => {
         queryClient.invalidateQueries({ queryKey: getListClientsQueryKey() });
         try {

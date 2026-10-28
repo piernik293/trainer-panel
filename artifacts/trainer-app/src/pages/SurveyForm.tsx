@@ -198,6 +198,8 @@ export default function SurveyForm() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const [isEditing, setIsEditing] = useState(false);
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
 
   const { data: client, isLoading: clientLoading } = useGetClient(id, {
     query: { enabled: !!id, queryKey: getGetClientQueryKey(id) },
@@ -235,7 +237,8 @@ export default function SurveyForm() {
     );
   }
 
-  if (isEditing) {
+  // Klient bez wywiadu: trener wypełnia go sam (np. gdy klient nie ma telefonu) — od razu pokazujemy formularz.
+  if (isEditing || !survey) {
     return (
       <SurveyFormBody
         key={survey?.id ?? "new"}
@@ -245,19 +248,12 @@ export default function SurveyForm() {
         surveyId={survey?.id}
         avoidedExercisesResolved={avoidedExercisesResolved}
         onSaved={() => {
+          queryClient.invalidateQueries({ queryKey: getGetClientQueryKey(id) });
           refetchSurvey();
           setIsEditing(false);
         }}
-        onCancel={() => setIsEditing(false)}
+        onCancel={() => (survey ? setIsEditing(false) : setLocation(`/clients/${id}`))}
       />
-    );
-  }
-
-  if (!survey) {
-    return (
-      <div className="p-8 text-center text-muted-foreground">
-        Klient nie wypełnił jeszcze wywiadu treningowego.
-      </div>
     );
   }
 
@@ -1029,7 +1025,7 @@ function SurveyFormBody({
 
       <div>
         <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">
-          Wywiad Treningowy — Edycja
+          {surveyId ? "Wywiad Treningowy — Edycja" : "Wywiad Treningowy"}
         </h1>
         <p className="text-muted-foreground mt-1">
           Dla klienta: {client?.firstName} {client?.lastName}
@@ -2317,7 +2313,7 @@ function SurveyFormBody({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Czy jest coś jeszcze, co powinienem wiedzieć?
+                      Czy jest coś jeszcze, co warto wiedzieć?
                     </FormLabel>
                     <Select
                       onValueChange={field.onChange}
@@ -2390,7 +2386,7 @@ function SurveyFormBody({
               className="gap-2"
             >
               <Save size={16} />
-              {isPending ? "Zapisywanie..." : "Zapisz zmiany"}
+              {isPending ? "Zapisywanie..." : (surveyId ? "Zapisz zmiany" : "Zapisz wywiad")}
             </Button>
           </div>
         </form>
