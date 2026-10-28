@@ -1,28 +1,15 @@
-# Raport dla właściciela (27.10.2026)
-
-Nic nie zostało scalone do `main`. Każda gałąź przeszła pełną weryfikację (testy API, bezpieczeństwo generatora 101, panel, portal, typecheck, build, smoke 131/0).
-
-## Część 1 (generator, konta, administrator) — gotowe
-- `feature/generator-priorytety` — wykluczenie dokładnej pozycji; „Generuj od nowa” różni się od poprzedniego planu; „Zamień na inne” bez powtórek; ostrzeżenie „zalecany zakres” dla Ś/Z (BA/P nadal blokada); długość cyklu wg poziomu (BA/P 8–12, Ś 6–8, Z 4–6); cele rozgrzewek (0037); zakładka „Rozgrzewka i rozciąganie” w katalogu.
-- `feature/konta-link-kod` — link i kod trenera, prośby [Odrzuć]/[Akceptuj], odłączenie przez każdą ze stron, konta bez trenera („wkrótce”), limit prób kodu (0038).
-- `feature/panel-admin` — panel administratora: błędy, trenerzy, Solo, abonamenty, dziennik dostępu z powodem, blokada konta, brak limitu generatora (0039).
-- `feature/wnioski-trenerow` (na bazie panelu) — „Prowadzę podopiecznych”, lista wniosków, przełącznik automatyczny (wyłączony), 14 dni do ponownego wniosku (0040).
-- `docs/kondycja-aktualizacja` — `docs/KONDYCJA.md` po Twoich decyzjach.
-
-## Bloki 5 i 7–12 — gotowe (bez ekranów tam, gdzie zaznaczono)
-- `feature/beta-przygotowanie` — nagłówki, limity zapytań, kopie bazy (cron), szkielety prawne, zgoda na dane o zdrowiu, pliki wdrożeniowe.
-- `feature/pakiety-sesje` → `feature/skrzynka-uwagi` (na bazie pakietów) · `feature/import-excel` · `feature/raport-pdf`.
-- `feature/solo` (wyłączone `SOLO_ENABLED`, bez ekranów) · `feature/kondycja` (wyłączone `CONDITIONING_ENABLED`, tylko API).
-
-## Czeka na Twoje „tak” (pełna lista: `docs/DO-DECYZJI.md`, 37 pozycji)
-- Interwały dla początkujących: zostały zabronione (17, 33).
-- Zgoda na dane o zdrowiu po wycofaniu — co z danymi (3) — do prawnika; teksty prawne to szkielety (6).
-- Adres do maili o wnioskach: `OWNER_NOTIFY_EMAIL` w `.env` (35).
-- Formularz wniosku w oknie „Moje konto” (34); limit prób kodu w pamięci (25).
-- Włączenie Solo i kondycji; uruchomienie `usun-konta-demo.sh` — tylko za Twoją zgodą.
-- Niezrobione: ekrany Solo i kondycji; powiadomienie o prośbie o dołączenie w „Wymaga uwagi” (27).
-
-## Proponowana kolejność scalania
-1. `feature/beta-przygotowanie` · 2. `feature/generator-priorytety` · 3. `feature/konta-link-kod` · 4. `feature/panel-admin` · 5. `feature/wnioski-trenerow` · 6. `feature/pakiety-sesje` · 7. `feature/skrzynka-uwagi` · 8. `feature/import-excel` · 9. `feature/raport-pdf` · 10. `feature/solo` · 11. `feature/kondycja` · 12. `docs/kondycja-aktualizacja`.
-Migracje (0037–0040, 0050–0054) mają różne numery i są już zastosowane w bazach. Spodziewane drobne konflikty tekstowe: `docs/POSTEP-GCP.md`, `docs/DO-DECYZJI.md`, `lib/db/src/schema/trainers.ts`, `routes/index.ts`, `requireAuth.ts` (opis w pozycji 37).
-Po scaleniu uruchom `scripts/stop-gcp.sh && scripts/dev-gcp.sh` (API działa ze zbudowanego `dist`).
+# Raport poranny — noc przed betą (28/29.10.2026)
+Nic nie scalono do `main`, żadnej flagi nie włączono, nic nie usunięto; każdy blok na osobnej gałęzi (wypchniętej). Poprzedni raport: `docs/RAPORT-NOC-27-28.md`.
+1. **Top 10 ćwiczeń** (symulacja 1000 profili): Skoki pogo, Glute bridge, Pompki klasyczne, Przeskoki boczne, Wiosłowanie pod sztangą, Przysiad do skrzyni, Wykrok w tył, Ściąganie gumy z góry, Wspięcia na palce, Rotacje rosyjskie. **Top 50 = 65,6% wszystkich wyborów, top 100 = 86,8%**; używane jest 250 z 599 ćwiczeń; żadne z top 50 nie ma zdjęcia ani wideo (`docs/GRAFIKI-TOP50.csv`).
+2. **Opisy:** poprawiono **140** (top 100 + 20 rozgrzewek + 20 schłodzeń), bez żargonu i angielskich słów; zmiana tylko na bazie testowej, „było → jest” w `docs/OPISY-TOP100.csv`. Portal pokazuje w serii tylko instrukcję — proste rozszerzenie opisane w `docs/OPISY-TOP100.md`.
+3. **Pierwsze minuty** (`docs/PIERWSZE-MINUTY.md`): trener → pierwszy aktywny plan **16 ekranów, 14 kliknięć, ok. 8–10 min** (bez rejestracji i czekania na klienta); klient → pierwszy skończony trening **48 ekranów, 55 kliknięć** (wywiad 24 pytania ok. 4–6 min, trening 20–45 min); wywiad wpisany przez trenera 8 ekranów (naprawiony ślepy zaułek).
+4. **Pięć największych przeszkód:** (1) nowe konto trenera bez drogi do dostępu; (2) panel trenera loguje po angielsku; (3) limity Free (1 plan automatyczny/mies., 3 klientów) wychodzą dopiero w trakcie; (4) brak ekranu „co dalej” po aktywacji planu i po wywiadzie klienta; (5) plank jako „12–15 powtórzeń” w planie początkującego.
+5. **Monitoring:** straż gotowa i przetestowana (mail po 2 błędach, max 1/godz., „działa znowu”) — **nie włączona w cronie**. **Kopie:** działa, ale **27.10 nie powstała (maszyna wyłączona)**; test przywrócenia OK. Dysk 39% (18 GB wolne), pamięć 5,6 GB dostępne — wystarczy na lata przy skali bety.
+6. **Gotowe do scalenia** (kolejność w `docs/SCALANIE-PLAN.md`): `feature/kalistenika`, `feature/osiagniecia`, `feature/solo-ekrany` (zaktualizowane o `main`, testy zielone, flagi wyłączone), `feature/zglos-uwage` (flaga `FEEDBACK_ENABLED`), `ops/monitoring`, `qa/pierwsze-minuty`, `docs/*`; `feature/opisy-top100` dopiero po Twojej akceptacji CSV.
+7. Strona dla trenerów: szkic w `docs/strona/` (adres zapisów wpisz w `OWNER_EMAIL`); stan przed betą: `docs/PRZED-BETA-STAN.md`.
+## Do decyzji (`docs/DO-DECYZJI.md`)
+- **N3-2** droga do dostępu dla nowego trenera (adres kontaktowy czy przycisk „Poproś o dostęp”); **N3-1** wywiad wpisywany przez trenera — zostawić poprawkę?
+- **N3-3** dodać polskie napisy Clerk do panelu (zmiana pakietów); **N3-4** czasy dla ćwiczeń izometrycznych; **N3-5** limity Free w becie.
+- **N4-1** włączyć „Zgłoś uwagę” na starcie (rekomendacja: tak); **N4-2/3** słowa zdrowotne i kontakt zwrotny.
+- **N5-1** włączyć straż w cronie; **N5-2** co z wyłączaną maszyną (kopia „po starcie”, zewnętrzne sprawdzanie — nowa usługa, wymaga zgody).
+- Akceptacja `docs/OPISY-TOP100.csv` (odblokowuje scalenie opisów).
