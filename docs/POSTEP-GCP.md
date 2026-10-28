@@ -296,3 +296,8 @@
 - 49: `qa/generator-symulacja` i `fix/qa-drobne` scalone do `main` (`3111c45`), pełne testy, push, restart, smoke 131/0.
 - 50a, 51 (`fix/trudnosc-ba-p`, z `main`, NIE scalona — czeka na zgodę na scalenie): BA/P bez ćwiczeń o trudności „Zaawansowany” (odmowy 947 → 947; eksperyment pełnej reguły dla BA/P: 940 przypadków „ponad poziom” → 0 przy tych samych 947 odmowach); minimum 3 ćwiczenia z komunikatem dla trenera (`services/dayShortage.ts`, panel): odmowy 947 (23,8%) → 558 (14,0%), 391 dni po 3 ćwiczenia.
 - Testy: API 132 plików / 2748, panel 786, portal 251, bezpieczeństwo generatora 101, typecheck OK.
+
+## 28.10.2026 — katalog po decyzjach właściciela (gałąź `feature/katalog-decyzje-wlasciciela`)
+- Krok 1: `fix/trudnosc-ba-p` scalona do `main` (`2f7b01b`), testy przed (2738) i po (2748), push, restart, smoke 131/0.
+- Kroki 2–4: migracja danych 0057 (81 od BA / 21 od P / 48 od Ś / 0 ukrytych / 11 nowych; wyjątek id 89), reguła 50b, testy (`catalogue-decisions-0057`, `isGeneratorSafe`, symulacja). Backupy: `~/backups/trainer_panel_przed_0057_*.sql.gz`.
+- Krok 5: symulacja na pełnym katalogu (schemat `sim`): ponad poziom 1208 → 0, odmowy 3,6% → 2,3%, naruszeń 0; `docs/GENERATOR-JAKOSC.md`.

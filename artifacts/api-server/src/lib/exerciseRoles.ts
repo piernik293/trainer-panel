@@ -18,6 +18,16 @@ export function mainPlanRoleCondition(): SQL {
 
 const ADVANCED_LEVELS = ["Średniozaawansowany", "Zaawansowany"];
 
+/** Difficulty of an exercise: BA 0, P 1, Ś 2, Z 3. The highest difficulty a client may get: BA and P → "Początkujący". */
+const DIFFICULTY_RANK: Record<string, number> = { "Brak aktywności fizycznej": 0, "Początkujący": 1, "Średniozaawansowany": 2, "Zaawansowany": 3 };
+const MAX_DIFFICULTY_FOR_LEVEL: Record<string, number> = { "Brak aktywności fizycznej": 1, "Początkujący": 1, "Średniozaawansowany": 2, "Zaawansowany": 3 };
+/** True when the exercise is harder than the level allows. Unknown level or unknown difficulty → false (other filters decide). */
+export function exceedsLevel(difficulty: string | null | undefined, effectiveLevel: string | null | undefined): boolean {
+  const d = difficulty ? DIFFICULTY_RANK[difficulty] : undefined;
+  const max = effectiveLevel ? MAX_DIFFICULTY_FOR_LEVEL[effectiveLevel] : undefined;
+  return d !== undefined && max !== undefined && d > max;
+}
+
 /**
  * Generator pool safety for imported / reviewed status (owner's decision 25.10.2026):
  *  - hidden exercises are never used (never deleted);
@@ -30,9 +40,9 @@ export function isGeneratorSafe(
   effectiveLevel: string | null | undefined,
 ): boolean {
   if (ex.hidden) return false;
-  // Owner's decision 50a (28.10.2026): "Brak aktywności" and "Początkujący" never get an exercise whose own difficulty is "Zaawansowany".
-  // The full rule "difficulty <= effective level" waits for the catalogue review (decisions 52-53).
-  if ((effectiveLevel === "Brak aktywności fizycznej" || effectiveLevel === "Początkujący") && ex.difficultyLevel === "Zaawansowany") return false;
+  // Owner's decision 50b (28.10.2026): an exercise's own difficulty never exceeds the client's effective level
+  // (BA and P = "Początkujący", Ś up to "Średniozaawansowany", Z everything). Manual adding by the trainer is not affected.
+  if (exceedsLevel(ex.difficultyLevel, effectiveLevel)) return false;
   const advancedEnough = !!effectiveLevel && ADVANCED_LEVELS.includes(effectiveLevel);
   if (ex.reviewedByTrainer === false && !advancedEnough) return false;
   if (ex.intensity) {

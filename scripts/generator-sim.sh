@@ -6,4 +6,6 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export SIM_N="${1:-1000}"
 [ -n "${2:-}" ] && export SIM_SEED="$2"
 export SIM_REPORT="${SIM_REPORT:-$ROOT/docs/generator-sim-report.json}"
+# SIM_SCHEMA=sim: katalog z kopii bazy aplikacji (schemat `sim` w trainer_panel_test) zamiast okrojonego katalogu testowego
+[ -n "${SIM_SCHEMA:-}" ] && export TEST_DB_OPTIONS="?options=-c%20search_path%3D${SIM_SCHEMA}"
 exec "$ROOT/scripts/test-api.sh" src/__tests__/generator-sim.test.ts --testTimeout=21600000
