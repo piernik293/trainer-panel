@@ -124,4 +124,6 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 
 ## Osiągnięcia (28.10.2026, gałąź `feature/osiagniecia`; projekt: `docs/OSIAGNIECIA.md`)
 56. **Projekt i silnik za przełącznikiem `ACHIEVEMENTS_ENABLED` (wyłączony) są gotowe.** Pięć pytań z rekomendacjami jest w sekcji 5 dokumentu: cel tygodnia (wszystkie dni planu), ochrona serii (1 tydzień na 6), urlop/choroba (kto i na ile), wyzwanie miesięczne (opcjonalne, domyślnie wyłączone), powiadomienia poza aplikacją (na razie nie).
+   **ODPOWIEDŹ WŁAŚCICIELA: wszystkie 5 rekomendacji zatwierdzone** (cel tygodnia = wszystkie dni planu; ochrona serii 1 tydzień na 6; urlop/choroba: podopieczny i trener, do 4 tygodni jednorazowo, dłuższe tylko trener; wyzwanie miesięczne opcjonalne i domyślnie wyłączone; powiadomienia poza aplikacją na razie nie) — tak jak wdrożone. **Dodatkowo teksty bez płci:** przejrzane wszystkie teksty portalu, lista zmian w `docs/TEKSTY-PLEC.md`, strażnik w testach.
 57. **Migracja 0056 (dwie nowe tabele) jest zastosowana tylko w bazie testowej** (backup `~/backups/trainer_panel_przed_0056_*`). Do bazy aplikacji trafi przy scaleniu gałęzi.
+   **ODPOWIEDŹ WŁAŚCICIELA: migracja 0056 przy scaleniu — zgoda (pg_dump przed).** Backup przed scaleniem zrobię przy scalaniu gałęzi; do tej pory migracja tylko w bazie testowej.

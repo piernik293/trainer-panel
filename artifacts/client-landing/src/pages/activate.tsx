@@ -213,7 +213,7 @@ export default function ActivatePage() {
       not_found: {
         icon: <AlertCircle className="w-8 h-8 text-destructive" />,
         title: "Nieprawidłowe zaproszenie",
-        body: "Ten link aktywacyjny nie istnieje lub jest nieprawidłowy. Upewnij się, że skopiowałeś pełny link.",
+        body: "Ten link aktywacyjny nie istnieje lub jest nieprawidłowy. Upewnij się, że link jest skopiowany w całości.",
       },
     };
     const c = copy[state.reason];

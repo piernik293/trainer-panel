@@ -286,3 +286,7 @@
 - 4a: `docs/OSIAGNIECIA.md` (regularność tygodniowa z ochroną serii i urlopem, rekordy, kamienie milowe, awans na szczebel, kroki, wyzwanie miesięczne; zasady etyczne; 5 pytań).
 - 4b: za flagą `ACHIEVEMENTS_ENABLED=0`: migracja 0056 (`client_achievements`, `client_pauses`; backup przed; zastosowana tylko w bazie testowej), czysty silnik + zapis idempotentny, trasy portalu i trenera (osiągnięcia, przerwy), pole `achievement` w odpowiedzi „zakończ trening” tylko przy fladze.
 - Testy: `achievements.test.ts` (24), `achievements.integration.test.ts` (7). API 130 plików / 2758, bezpieczeństwo generatora 101, typecheck OK.
+
+## 28.10.2026 — decyzje 56–57: osiągnięcia, teksty bez płci (gałąź `feature/osiagniecia`, NIE scalona) — GOTOWE
+- Pięć rekomendacji zatwierdzonych (już tak wdrożone). Teksty portalu bez płci: 8 zmian (wywiad, aktywacja, osiągnięcie), lista w `docs/TEKSTY-PLEC.md`; odpowiedź o skokach neutralna, stare zapisy działają; strażnik `genderNeutralTexts.test.ts` + test tekstów osiągnięć.
+- Migracja 0056 zatwierdzona do scalenia (pg_dump przy scalaniu).

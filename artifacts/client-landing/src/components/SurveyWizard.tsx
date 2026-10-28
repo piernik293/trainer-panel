@@ -514,7 +514,7 @@ export default function SurveyWizard({
         );
       case "birth":
         return (
-          <Section id={id} headingRef={heading} title="Kiedy się urodziłeś/-aś?" lead="Wiek wpływa na dobór obciążeń i tempa progresji.">
+          <Section id={id} headingRef={heading} title="Data urodzenia" lead="Wiek wpływa na dobór obciążeń i tempa progresji.">
             <div className="space-y-1.5">
               <label htmlFor="dob" className="text-sm font-semibold">Data urodzenia</label>
               <DateInput id="dob" value={answers.dateOfBirth} onChange={(v) => set({ dateOfBirth: v })} />
@@ -543,13 +543,13 @@ export default function SurveyWizard({
         );
       case "sportStatus":
         return (
-          <Section id={id} headingRef={heading} title="Jak uprawiasz sport?" lead="Pytamy o to, bo wybrałeś/-aś cel sportowy.">
+          <Section id={id} headingRef={heading} title="Jak uprawiasz sport?" lead="Pytamy o to, bo celem jest sport.">
             <ChoiceList name="Jak uprawiasz sport" options={ATHLETE_STATUS_OPTIONS.map((v) => ({ value: v, label: v }))} value={answers.athleteStatus} onChange={(v) => choose({ athleteStatus: v })} />
           </Section>
         );
       case "sportNeeds":
         return (
-          <Section id={id} headingRef={heading} title="Co jest dla Ciebie najważniejsze w sporcie?" lead={<>Pytamy o to, bo wybrałeś/-aś cel sportowy. <Opt text={HINT_TEXT.sportNeeds} /></>}>
+          <Section id={id} headingRef={heading} title="Co jest dla Ciebie najważniejsze w sporcie?" lead={<>Pytamy o to, bo celem jest sport. <Opt text={HINT_TEXT.sportNeeds} /></>}>
             <MultiList
               options={SPORT_PERFORMANCE_NEEDS.map((n) => ({ value: n.value, label: n.value, desc: n.desc }))}
               selected={answers.sportPerformanceNeeds}
@@ -559,7 +559,7 @@ export default function SurveyWizard({
         );
       case "jumps":
         return (
-          <Section id={id} headingRef={heading} title={JUMP_EXPERIENCE_QUESTION} lead="Pytamy o to, bo wybrałeś/-aś cel sportowy. Od tego zależy, od jakich skoków zaczniemy.">
+          <Section id={id} headingRef={heading} title={JUMP_EXPERIENCE_QUESTION} lead="Pytamy o to, bo celem jest sport. Od tego zależy, od jakich skoków zaczniemy.">
             <ChoiceList name="Doświadczenie ze skokami" options={JUMP_EXPERIENCE_OPTIONS.map((v) => ({ value: v, label: v }))} value={answers.jumpExperience} onChange={(v) => choose({ jumpExperience: v })} />
           </Section>
         );
@@ -582,7 +582,7 @@ export default function SurveyWizard({
         );
       case "duration":
         return (
-          <Section id={id} headingRef={heading} title="Jak długo trenujesz?" lead="Pytamy o to, bo wskazałeś/-aś doświadczenie treningowe. Pomaga nam dobrać właściwy poziom planu (opcjonalnie).">
+          <Section id={id} headingRef={heading} title="Jak długo trenujesz?" lead="Pytamy o to, bo wskazano doświadczenie treningowe. Pomaga nam dobrać właściwy poziom planu (opcjonalnie).">
             <Input aria-label="Jak długo trenujesz" placeholder="np. 2 lata" value={answers.trainingDuration} onChange={(e) => set({ trainingDuration: e.target.value })} className={bigInput} />
           </Section>
         );
@@ -640,7 +640,7 @@ export default function SurveyWizard({
         );
       case "healthDesc":
         return (
-          <Section id={id} headingRef={heading} title="Opisz zdrowie i ograniczenia" lead="Pytamy o to, bo wskazałeś/-aś ograniczenia.">
+          <Section id={id} headingRef={heading} title="Opisz zdrowie i ograniczenia" lead="Pytamy o to, bo wskazano ograniczenia.">
             <Note>{HINT_TEXT.healthExamples}</Note>
             <Note tone="health">To nie jest diagnoza — opisz własnymi słowami, jak potrafisz.</Note>
             {isBeginnerLevel(level) && <Note>{HINT_TEXT.beginnerHealth}</Note>}
@@ -900,7 +900,7 @@ const LEVEL_SHORT: Record<string, string> = {
 };
 /** Full descriptions (client wording, as in the former form). */
 const LEVEL_FULL: Record<string, string> = {
-  "Brak aktywności fizycznej": "Nie podejmuję regularnej aktywności fizycznej, nigdy wcześniej nie realizowałem/-am uporządkowanego treningu oporowego lub wracam po długiej przerwie. Chcę spokojnie zacząć, nauczyć się podstawowych wzorców ruchowych i stopniowo przygotować organizm do regularnego wysiłku.",
+  "Brak aktywności fizycznej": "Nie podejmuję regularnej aktywności fizycznej, nie mam doświadczenia w uporządkowanym treningu oporowym lub wracam po długiej przerwie. Chcę spokojnie zacząć, nauczyć się podstawowych wzorców ruchowych i stopniowo przygotować organizm do regularnego wysiłku.",
   Początkujący: "Mam niewielkie doświadczenie treningowe. Nadal uczę się podstawowych ćwiczeń, poprawnej techniki oraz zasad treningowych i nie czuję się jeszcze pewnie w samodzielnym planowaniu treningów.",
   Średniozaawansowany: "Trenuję regularnie i swobodnie wykonuję większość podstawowych ćwiczeń. Rozumiem podstawowe zasady treningowe, potrafię kontrolować technikę i świadomie realizuję plan treningowy.",
   Zaawansowany: "Posiadam duże doświadczenie treningowe, bardzo dobrze znam swoje możliwości oraz świadomie wykorzystuję różne metody treningowe do osiągania konkretnych celów.",

@@ -62,7 +62,7 @@ describe("steps", () => {
     fireEvent.click(screen.getByLabelText("Cel sportowy"));
     act(() => { vi.advanceTimersByTime(350); });
     expect(question()).toBe("Jak uprawiasz sport?");
-    expect(screen.getByText("Pytamy o to, bo wybrałeś/-aś cel sportowy.")).toBeTruthy();
+    expect(screen.getByText("Pytamy o to, bo celem jest sport.")).toBeTruthy();
   });
 
   it("multi-choice tiles: aria-pressed and a counter on the button", () => {

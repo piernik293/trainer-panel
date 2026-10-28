@@ -187,7 +187,7 @@ export function computeAchievements(input: AchInput): AchResult {
       const prev = maxStep.get(pattern);
       if (prev !== undefined && b.step > prev) {
         add({
-          kind: "ladder_step", key: `${pattern}:${b.step}`, title: `Nowy szczebel: ${b.name}`, body: "Przeszedłeś na wyższy poziom tego ruchu.",
+          kind: "ladder_step", key: `${pattern}:${b.step}`, title: `Nowy szczebel: ${b.name}`, body: "Nowy poziom tego ruchu!",
           sessionId: s.id, detail: { pattern, step: b.step, exerciseId: b.exerciseId }, priority: 5,
         });
       }
