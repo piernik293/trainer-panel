@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   calisthenicsActive, calisthenicsDays, calisthenicsLadderRows, calisthenicsLevelAllows, calisthenicsPlyoRule, capCalisthenicsDay,
-  isCalisthenicsExercise, stationsFor, CALISTHENICS_LADDERS, NO_PULL_STATION_NOTE,
+  isCalisthenicsExercise, stationsFor, calisthenicsEquipmentText, CALISTHENICS_LADDERS, NO_PULL_STATION_NOTE,
 } from "../calisthenics";
 
 describe("flag", () => {
@@ -120,5 +120,20 @@ describe("day size", () => {
   it("without a core exercise it is a plain cut to 5", () => {
     const day = ["a", "b", "c", "d", "e", "f"].map((n) => ex(n, "Plecy"));
     expect(capCalisthenicsDay(day)).toHaveLength(5);
+  });
+});
+
+describe("bench / chair / park bench (decision 54.2)", () => {
+  it("a bench exercise is allowed in the style", () => {
+    expect(isCalisthenicsExercise({ equipment: ["Ławka"] })).toBe(true);
+    expect(isCalisthenicsExercise({ equipment: ["Ławka", "Hantle"] })).toBe(false); // every implement must still be on the list
+  });
+  it("at home and in the outdoor gym the bench counts as available; at the gym nothing changes", () => {
+    expect(calisthenicsEquipmentText("Dom", "Brak sprzętu")).toBe("Ławeczka treningowa");
+    expect(calisthenicsEquipmentText("Dom", "Gumy oporowe")).toBe("Gumy oporowe, Ławeczka treningowa");
+    expect(calisthenicsEquipmentText("Siłownia plenerowa", "Drążek do podciągania")).toBe("Drążek do podciągania, Ławeczka treningowa");
+    expect(calisthenicsEquipmentText("Dom", "Ławeczka treningowa, Hantle")).toBe("Ławeczka treningowa, Hantle");
+    expect(calisthenicsEquipmentText("Siłownia", "Hantle")).toBe("Hantle");
+    expect(calisthenicsEquipmentText("Siłownia", null)).toBeNull();
   });
 });

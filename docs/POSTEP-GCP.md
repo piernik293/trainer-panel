@@ -302,3 +302,7 @@
 - 49: `qa/generator-symulacja` i `fix/qa-drobne` scalone do `main` (`3111c45`), pełne testy, push, restart, smoke 131/0.
 - 50a, 51 (`fix/trudnosc-ba-p`, z `main`, NIE scalona — czeka na zgodę na scalenie): BA/P bez ćwiczeń o trudności „Zaawansowany” (odmowy 947 → 947; eksperyment pełnej reguły dla BA/P: 940 przypadków „ponad poziom” → 0 przy tych samych 947 odmowach); minimum 3 ćwiczenia z komunikatem dla trenera (`services/dayShortage.ts`, panel): odmowy 947 (23,8%) → 558 (14,0%), 391 dni po 3 ćwiczenia.
 - Testy: API 132 plików / 2748, panel 786, portal 251, bezpieczeństwo generatora 101, typecheck OK.
+
+## 28.10.2026 — decyzje 54–55: kalistenika po odpowiedziach (gałąź `feature/kalistenika`, NIE scalona) — GOTOWE
+- Wciągnięte 50a i 51 (minimum 3 ćwiczenia z komunikatem); ławka/krzesło/ławka w parku dostępna w domu i w plenerze (`calisthenicsEquipmentText`); 13 braków w PRZEGLAD-KATALOGU.csv (sekcja 2). Flaga wyłączona.
+- Symulacja stylu 300 profili: 0 naruszeń; odmowy dnia 50% → 24% (303 dni po 3 ćwiczenia).

@@ -108,7 +108,7 @@ Szczebel wybieramy wg poziomu efektywnego klienta; zamiennik jest na tym samym s
 | Ś | L-sit z podparciem | do uzupełnienia |
 | Z | L-sit na podłodze (id 1640) | import |
 
-**Braki do uzupełnienia: 12 pozycji** (zwis, negatywy podciągnięcia, podciąganie łucznik, negatywy dipów, dipy z gumą, dipy z obciążeniem, pompki łucznik, wiosłowanie nogi proste i wyżej, nogi proste w zwisie, toes to bar, pistol z podparciem, L-sit z podparciem). Generator ich nie wymaga: gdy szczebla brakuje, bierze najbliższy niższy z listy.
+**Braki do uzupełnienia: 13 pozycji** (zwis, negatywy podciągnięcia, podciąganie łucznik, negatywy dipów, dipy z gumą, dipy z obciążeniem, pompki łucznik, wiosłowanie nogi proste i wyżej, nogi proste w zwisie, toes to bar, pistol z podparciem, L-sit z podparciem). Generator ich nie wymaga: gdy szczebla brakuje, bierze najbliższy niższy z listy.
 
 ## 6. Zasady bezpieczeństwa
 - **BA i P:** wyłącznie dolne szczeble (BA: szczeble BA, P: do szczebla P) **i ćwiczenia zweryfikowane i zatwierdzone** przez trenera. Zwis, podciąganie i dipy dla BA — nie (ani przez reguły BA, ani przez drabinkę).
@@ -118,10 +118,12 @@ Szczebel wybieramy wg poziomu efektywnego klienta; zamiennik jest na tym samym s
 - Styl nie zmienia limitów objętości dla poziomu (BA/P nie dostają „więcej, bo kalistenika”).
 
 ## 7. Pytania do właściciela (z rekomendacją)
+**ODPOWIEDZI WŁAŚCICIELA (28.10.2026):** 1 tak, na start styl wybiera tylko trener. 2 tak, ławka, krzesło i ławka w parku liczą się w domu i w plenerze (wdrożone). 3 jak pkt 51: dzień może mieć 3 ćwiczenia z komunikatem dla trenera (wdrożone, ten sam mechanizm). 4 braki dopisane do `docs/PRZEGLAD-KATALOGU.csv` (sekcja 2, **13 pozycji**, nie 12 — lista w sekcji 5 ma 13) i **nie dodane do bazy** do akceptacji. 5 tak, po zatwierdzeniu w przeglądzie. Flaga `CALISTHENICS_ENABLED` zostaje wyłączona.
+
 1. **Kto wybiera styl?** Rekomendacja: na start tylko trener (bez zmiany bazy); pytanie w wywiadzie po uzupełnieniu katalogu (kolumna `training_style`, osobna zgoda).
 2. **Czy podwyższenie/ławka liczy się do sprzętu kalistenicznego** (dipy na ławce, pompki z nogami wyżej, przysiad bułgarski)? Rekomendacja: tak dla Dom i Siłowni plenerowej (krzesło, ławka parkowa); w kodzie dziś te ćwiczenia mają sprzęt „Ławka”, więc **w pierwszej wersji są pominięte**.
 3. **Brak bezpiecznych ćwiczeń na dzień** (dziś błąd, minimum 4): czy dopuścić dzień z 3 ćwiczeniami z komunikatem dla trenera? Rekomendacja: tak, ale osobna zgoda (zmiana widocznego zachowania, patrz DO-DECYZJI 51).
-4. **Uzupełnienie 12 braków** (sekcja 5) jako paczka „do weryfikacji” do przeglądu trenera? Rekomendacja: tak; do planów BA/P dopiero po zatwierdzeniu.
+4. **Uzupełnienie 13 braków** (sekcja 5) jako paczka „do weryfikacji” do przeglądu trenera? Rekomendacja: tak; do planów BA/P dopiero po zatwierdzeniu.
 5. **Ćwiczenia „import” dla P** (dipy na ławce, wiosłowanie australijskie): czy po przeglądzie trenera mogą wejść do planów początkujących? Rekomendacja: tak, po zatwierdzeniu w „Do przeglądu” — nie zmieniamy reguły, zmienia się status ćwiczenia.
 
 ## 8. Co jest zaimplementowane za flagą (blok 2b)
@@ -131,4 +133,4 @@ Szczebel wybieramy wg poziomu efektywnego klienta; zamiennik jest na tym samym s
 - Panel (edytor planu): pole „Styl: kalistenika” widoczne tylko przy włączonej fladze i pustym planie. Karty dni zostają z rozkładu objętości, zmienia się typ sesji wysyłany do generatora.
 - Nic nie jest zapisywane w bazie (brak migracji). Styl nie jest jeszcze pamiętany w planie ani w wywiadzie (patrz sekcja 2).
 
-**Symulacja stylu** (`scripts/generator-sim.sh 300 20261028 calisthenics`, 300 profili, 1135 dni): **0 naruszeń** bezpieczeństwa i wykonalności (sprzęt tylko z listy, najwyżej 5 ćwiczeń, skoki tylko w dniu nóg i najwyżej 2, BA/P tylko zweryfikowani i bez górnych szczebli). **Ale 570 z 1135 dni (50%) kończy się odmową** (za mało bezpiecznych ćwiczeń): przede wszystkim dni „drążek” i „góra” oraz poziomy BA/P. Przyczyna to braki w katalogu (sekcja 5) i wymóg „tylko zweryfikowane” dla BA/P — dopóki katalog nie zostanie uzupełniony, styl nadaje się do ręcznego użycia przez trenera dla Ś/Z i dla dni pchania/nóg, a nie do masowego włączenia. Raport: `docs/generator-sim-report-calisthenics.json`.
+**Symulacja stylu** (`scripts/generator-sim.sh 300 20261028 calisthenics`, 1135 dni, po decyzjach 51 i 54): **0 naruszeń** bezpieczeństwa i wykonalności. **Odmowy dnia: 277 z 1135 (24%)**, wcześniej 50%; 303 dni ma 3 ćwiczenia z komunikatem dla trenera. Pozostałe odmowy to głównie dni „drążek” i „góra” u BA/P oraz przy zgłoszonym barku lub łokciu (braki w katalogu, patrz PRZEGLAD-KATALOGU). Raport: `docs/generator-sim-report-calisthenics.json`.

@@ -133,7 +133,7 @@ function checkExercise(ex: Ex, p: Profile, out: Violation[], feas: Violation[]) 
   // feasibility
   const place = PLACES.find((x) => x.key === p.place)!;
   if (place.allowed) {
-    const have = new Set<string>([...place.allowed, "Masa własnego ciała", "Brak sprzętu"]);
+    const have = new Set<string>([...place.allowed, "Masa własnego ciała", "Brak sprzętu", ...(STYLE === "calisthenics" ? ["Ławeczka treningowa"] : [])]); // decision 54.2: bench / chair counts at home and outdoors in the calisthenics style
     const eq = normalizeEquipmentList((ex.equipment ?? []).join(","));
     const okAny = eq.length === 0 || eq.some((e) => have.has(e));
     const all = normalizeEquipmentList((ex.requiredEquipmentAll ?? []).join(","));

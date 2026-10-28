@@ -189,4 +189,18 @@ describe("flag ON", () => {
     expect((await request(app).get(`/api/clients/${withBar}/plan-draft/calisthenics-days?days=3`)).status).toBe(404);
     expect((await request(app).get(`/api/clients/${withBar}/plan-draft/calisthenics-days?days=0`)).status).toBe(400);
   }, 120_000);
+
+  it("decision 54.2: at home without any equipment a bench / chair exercise may appear (and stays within the style's equipment)", async () => {
+    vi.stubEnv("CALISTHENICS_ENABLED", "1");
+    const cid = await mkClient({ level: "Zaawansowany", location: "Dom", equipment: "Brak sprzętu" });
+    let withBench = 0;
+    for (const t of ["push", "upper", "legs", "full_body", "lower"]) for (const alt of [0, 1, 2, 3]) {
+      const r = await day(cid, t, "calisthenics", alt);
+      for (const e of (r.body.exercises ?? []) as Out[]) {
+        expect(isCalisthenicsExercise(cat.get(e.id)!), e.name).toBe(true);
+        if ((cat.get(e.id)!.equipment ?? []).includes("Ławka") && !(cat.get(e.id)!.equipment ?? []).includes("Masa własnego ciała")) withBench++;
+      }
+    }
+    expect(withBench).toBeGreaterThan(0);
+  }, 180_000);
 });

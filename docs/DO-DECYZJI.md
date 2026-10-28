@@ -134,4 +134,6 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 
 ## Kalistenika (28.10.2026, gałąź `feature/kalistenika`; projekt: `docs/KALISTENIKA.md`)
 54. **Projekt stylu i wersja za przełącznikiem `CALISTHENICS_ENABLED` (wyłączony) są gotowe.** Pytania (z rekomendacjami) są w sekcji 7 dokumentu: kto wybiera styl, czy ławka liczy się jako sprzęt, dzień z 3 ćwiczeniami, uzupełnienie 12 braków w katalogu, ćwiczenia „import” dla P.
+   **ODPOWIEDŹ WŁAŚCICIELA: 1 tak (styl wybiera tylko trener); 2 tak, ławka/krzesło/ławka w parku liczy się w domu i w plenerze; 3 jak pkt 51; 4 braki w `docs/PRZEGLAD-KATALOGU.csv` (sekcja 2, 13 pozycji, bez dodawania do bazy); 5 tak, po zatwierdzeniu.** Wdrożone na `feature/kalistenika` (ławka, minimum 3). Symulacja stylu: odmowy dnia 50% → 24%, 0 naruszeń.
 55. **Dziś ok. połowa dni w stylu kalistenicznym jest odmawiana** (za mało zweryfikowanych ćwiczeń, zwłaszcza BA/P i dni „drążek”). Nie włączać flagi dla klientów, dopóki nie zapadnie decyzja o uzupełnieniu katalogu (pkt 4 i 5 w dokumencie).
+   **ODPOWIEDŹ WŁAŚCICIELA: flaga zostaje wyłączona — zgoda.**

@@ -22,7 +22,17 @@ export const calisthenicsActive = (style: string | null | undefined, env: NodeJS
 // ─── Equipment ────────────────────────────────────────────────────────────────
 
 const BODYWEIGHT = ["Masa własnego ciała", "Brak sprzętu"];
-const ALLOWED_EQUIPMENT = new Set<string>([...BODYWEIGHT, "Drążek do podciągania", "Poręcze", "Kółka gimnastyczne", "Gumy oporowe"]);
+// "Ławeczka treningowa" = a bench, a chair or a park bench (owner's decision 54.2, 28.10.2026): at home and outdoors it always counts as available.
+const ALLOWED_EQUIPMENT = new Set<string>([...BODYWEIGHT, "Drążek do podciągania", "Poręcze", "Kółka gimnastyczne", "Gumy oporowe", "Ławeczka treningowa"]);
+const BENCH = "Ławeczka treningowa";
+
+/** Equipment text the compatibility filter should see in this style: at home and in the outdoor gym a bench / chair / park bench is added. */
+export function calisthenicsEquipmentText(location: string | null | undefined, equipmentText: string | null | undefined): string | null {
+  const loc = (location ?? "").trim().toLowerCase();
+  if (loc !== "dom" && loc !== "siłownia plenerowa") return equipmentText ?? null;
+  const have = normalizeEquipmentList(equipmentText);
+  return have.includes(BENCH) ? (equipmentText ?? null) : [...have.filter((e) => !BODYWEIGHT.includes(e)), BENCH].join(", ");
+}
 
 /**
  * Can the exercise be done with body weight / bar / parallel bars / rings / bands only? Mirrors the catalogue's "any of" equipment model:

@@ -64,7 +64,7 @@ import { LANDING_ROLE, SPORT_GOAL, isPlyoExercise, plyoRule, selectPlyoBlock } f
 import { chooseFreshRun, previousPlanExerciseIds } from "../services/planHistory";
 import {
   calisthenicsActive, isCalisthenicsExercise, calisthenicsLevelAllows, calisthenicsLadderNames, calisthenicsLadderRows,
-  calisthenicsPlyoRule, capCalisthenicsDay,
+  calisthenicsPlyoRule, capCalisthenicsDay, calisthenicsEquipmentText,
 } from "../services/calisthenics";
 import { dayShortageMessage, FULL_DAY_EXERCISES } from "../services/dayShortage";
 import { requireAuth } from "../middlewares/requireAuth";
@@ -315,7 +315,7 @@ router.post(
     const blockedJoints = await loadBlockedJoints(clientId, survey.healthLimitations);
     const compatibilityFilter = buildCompatibilityFilter(
       survey.trainingLocation,
-      survey.equipment,
+      calis ? calisthenicsEquipmentText(survey.trainingLocation, survey.equipment) : survey.equipment,
       new Set<number>(),
       blockedJoints,
       isConservativeHealth(survey.healthConsentStatus),
