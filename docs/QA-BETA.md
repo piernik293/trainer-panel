@@ -40,10 +40,10 @@ Zrzut „przed” = `przed/…`, „po” = plik w `docs/screens/qa/`.
 | C2 | Panel: okno raportu | Słowo „Wrapped” w opisie | kosmetyczny | naprawione | `klient-raport-pdf-375-light.png` |
 | C3 | Panel: Ustawienia, ceny pakietów | „14.99 PLN / miesiąc” (kropka i PLN), a w panelu administratora „zł” | kosmetyczny | naprawione („14,99 zł / miesiąc”) | `panel-settings-1440-dark.png` |
 | C4 | Portal: plan | „Cel: Cel sportowy” (powtórzone słowo) | kosmetyczny | naprawione | `portal-client_landing_plan-375-light.png` |
-| C5 | Stopki wszystkich ekranów (375 px) | Linki prawne miały 16 px wysokości | kosmetyczny | naprawione w stopkach (min. 44 px); na samych stronach dokumentów nadal 20 px | `panel-root-375-light.png` |
+| C5 | Stopki wszystkich ekranów (375 px) | Linki prawne miały 16 px wysokości | kosmetyczny | naprawione w stopkach i na stronach dokumentów (min. 44 px, `aria-current` na otwartym dokumencie; 28.10.2026, test) | `panel-root-375-light.png` |
 | C6 | Wszystkie ekrany 375 px | Mniejsze cele dotyku niż 44 px: „Otwórz menu” (38 px), przełączniki Online/Stacjonarnie (32 px), dni kalendarza (38×56), wybór pakietu administratora (27 px), pola wyboru w tabelach (16 px) | kosmetyczny | otwarte — wymaga przeglądu nawigacji i układu (poza zakresem: nowa nawigacja/UX) | `panel-calendar-375-light.png` |
-| C7 | Klient po akceptacji prośby | Nazwa „Ewa ” (brak nazwiska, spacja na końcu) | kosmetyczny | otwarte — dane wpisane przez osobę | `klient-ewa-375-light.png` |
-| C8 | Zakładka Rekomendacje | Separatory „·” o niskim kontraście (dekoracja) | kosmetyczny | otwarte — dekoracyjne, bez znaczenia | `klient-zakladka-Rekomendacje-1440-dark.png` |
+| C7 | Klient po akceptacji prośby | Nazwa „Ewa ” (brak nazwiska, spacja na końcu) | kosmetyczny | naprawione w wyświetlaniu (jedna funkcja `clientFullName` zamiast „{imię} {nazwisko}” w 7 miejscach panelu; 28.10.2026, test) | `klient-ewa-375-light.png` |
+| C8 | Zakładka Rekomendacje | Separatory „·” o niskim kontraście (dekoracja) | kosmetyczny | naprawione (kolor tekstu pomocniczego, `aria-hidden`; 28.10.2026) | `klient-zakladka-Rekomendacje-1440-dark.png` |
 | C9 | Pola dat | W Chromium bezgłowym format „mm/dd/yyyy” — zależy od ustawień przeglądarki, nie aplikacji | kosmetyczny | nie jest błędem aplikacji | `plan-131-aktywacja-1440-light.png` |
 | C10 | Dane testowe w bazie aplikacji | Fikstury testów („Fikstury testów (techniczny)”, 21 klientów) i konta QA widoczne w panelu administratora | kosmetyczny | do usunięcia przed betą — tylko za zgodą właściciela (`docs/BETA-START.md`, pkt 10) | `admin-Trenerzy-1440-dark.png` |
 

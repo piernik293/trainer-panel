@@ -12,6 +12,7 @@
  */
 
 import { blockDurationRange } from "@workspace/survey-config";
+import { clientFullName } from "@/lib/clientName";
 import { StepHint } from "@/components/dashboard/StepHint";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { humanizeError } from "@/lib/userError";
@@ -537,7 +538,7 @@ function Step1Summary({
           <div className="px-4 py-2">
           <div className="flex items-start justify-between gap-2 py-2 border-b border-border/40">
             <span className="text-sm text-muted-foreground w-44 shrink-0">Klient</span>
-            <span className="text-sm font-medium text-right">{data.client.firstName} {data.client.lastName}</span>
+            <span className="text-sm font-medium text-right">{clientFullName(data.client)}</span>
           </div>
           {data.surveyId && (
             <div className="flex items-start justify-between gap-2 py-2">

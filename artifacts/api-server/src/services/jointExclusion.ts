@@ -54,5 +54,7 @@ export function jointWarningMessage(joints: readonly string[]): string {
  */
 export const CONSERVATIVE_CONSENT_STATUSES: ReadonlySet<string> = new Set(["declined", "withdrawn"]);
 export const isConservativeHealth = (status: string | null | undefined): boolean => status != null && CONSERVATIVE_CONSENT_STATUSES.has(status);
+export { lacksJointData, withheldForUnknownJoints } from "./jointData";
+
 export const violatesConservative = (ex: { jointStress?: string | null }, conservative: boolean): boolean => conservative && ex.jointStress === "Wysokie";
 export const CONSERVATIVE_NOTE = "Brak zgody na dane o zdrowiu — plan przygotowano z najostrożniejszymi ustawieniami (bez ćwiczeń o wysokim obciążeniu stawów). Zapytaj o zdrowie osobiście.";
