@@ -121,3 +121,7 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 46. **Zmiany pakietów i uprawnień kont testowych nie wykonywałem** (zabezpieczenie STOP-7 zablokowało próbę); rolę administratora konta QA nadałem wyłącznie w osobnych procesach QA przez zmienną środowiskową, bez zmiany `.env`.
 47. **Cele dotyku < 44 px** (menu, kalendarz, przełączniki) wymagają przeglądu nawigacji i układu na telefonie — to zakres „nowa nawigacja/UX”, którego nie ruszałem.
 48. **Nazwy ćwiczeń** — konwencja i lista „stara → nowa” w `docs/NAZWY-PROPOZYCJA.md` (propozycja; baza bez zmian). **Bezpieczeństwo** — przegląd w `docs/BEZPIECZENSTWO-BETA.md`; otwarte: kopie bazy tylko na tej samej maszynie, limity zapytań w pamięci, CSP w trybie „tylko raport”.
+
+## Osiągnięcia (28.10.2026, gałąź `feature/osiagniecia`; projekt: `docs/OSIAGNIECIA.md`)
+56. **Projekt i silnik za przełącznikiem `ACHIEVEMENTS_ENABLED` (wyłączony) są gotowe.** Pięć pytań z rekomendacjami jest w sekcji 5 dokumentu: cel tygodnia (wszystkie dni planu), ochrona serii (1 tydzień na 6), urlop/choroba (kto i na ile), wyzwanie miesięczne (opcjonalne, domyślnie wyłączone), powiadomienia poza aplikacją (na razie nie).
+57. **Migracja 0056 (dwie nowe tabele) jest zastosowana tylko w bazie testowej** (backup `~/backups/trainer_panel_przed_0056_*`). Do bazy aplikacji trafi przy scaleniu gałęzi.

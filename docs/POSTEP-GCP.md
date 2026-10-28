@@ -281,3 +281,8 @@
 - Backup przed 0055: `~/backups/trainer_panel_przed_0055_20261028-0018.sql.gz`; migracja zastosowana przez `db-setup-gcp.sh`.
 - Testy (baza testowa): API 128/128 plików, 2727 testów; panel 782; portal 250; bezpieczeństwo generatora 101; typecheck i build OK. `joint-exclusion.integration.test.ts` miał kruche sprzątanie (stali klienci po przerwanym przebiegu blokowali usunięcie trenera) — poprawione.
 - Restart na poprawionych skryptach: sesja tmux `claude` przeżyła. Smoke 131 OK / 0 BŁĄD.
+
+## 28.10.2026 — noc, blok 4: osiągnięcia, podstawa (gałąź `feature/osiagniecia`, z `main`, NIE scalona) — GOTOWE
+- 4a: `docs/OSIAGNIECIA.md` (regularność tygodniowa z ochroną serii i urlopem, rekordy, kamienie milowe, awans na szczebel, kroki, wyzwanie miesięczne; zasady etyczne; 5 pytań).
+- 4b: za flagą `ACHIEVEMENTS_ENABLED=0`: migracja 0056 (`client_achievements`, `client_pauses`; backup przed; zastosowana tylko w bazie testowej), czysty silnik + zapis idempotentny, trasy portalu i trenera (osiągnięcia, przerwy), pole `achievement` w odpowiedzi „zakończ trening” tylko przy fladze.
+- Testy: `achievements.test.ts` (24), `achievements.integration.test.ts` (7). API 130 plików / 2758, bezpieczeństwo generatora 101, typecheck OK.
