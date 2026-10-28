@@ -83,7 +83,7 @@ async function sendNotificationEmail(
       `,
     });
 
-    logger.info({ adminEmail, clientName }, "Notification email sent");
+    logger.info("Notification email sent");
   } catch (err) {
     logger.error({ err }, "Failed to send notification email");
   }

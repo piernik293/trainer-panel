@@ -7,6 +7,7 @@ import crypto from "node:crypto";
 import { and, eq, lt, sql } from "drizzle-orm";
 import { db, appErrorsTable, appErrorUsersTable } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { maskSecretsInPath } from "../lib/maskUrl";
 
 export const ERROR_RETENTION_DAYS = 90;
 const MAX_MESSAGE = 300;
@@ -17,7 +18,7 @@ const HEALTH_WORDS = /\b(ból|bol|bóle|kontuzj\w*|chor\w*|zdrow\w*|lek\w*|leki|
 /** Czysta funkcja: usuwa z tekstu wszystko, co mogłoby być sekretem lub daną osobową. */
 export function scrubMessage(raw: unknown): string {
   let s = typeof raw === "string" ? raw : raw instanceof Error ? `${raw.name}: ${raw.message}` : String(raw ?? "");
-  s = s.replace(/\s+/g, " ").trim();
+  s = maskSecretsInPath(s.replace(/\s+/g, " ").trim());
   if (HEALTH_WORDS.test(s)) return "[treść ukryta — mogła zawierać dane zdrowotne]";
   s = s
     .replace(/\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]+/gi, "$1 [ukryte]")
@@ -34,7 +35,7 @@ export function scrubMessage(raw: unknown): string {
 
 /** Miejsce błędu: ścieżka bez parametrów, identyfikatory zamienione na :id. */
 export function normalizePlace(raw: unknown): string {
-  const s = String(raw ?? "").split(/[?#]/)[0] ?? "";
+  const s = maskSecretsInPath(String(raw ?? "").split(/[?#]/)[0] ?? "");
   const out = s
     .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, ":id")
     .replace(/\/[A-Za-z0-9_-]{24,}(?=\/|$)/g, "/:id")

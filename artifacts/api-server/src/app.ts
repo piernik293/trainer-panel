@@ -10,6 +10,7 @@ import {
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { maskSecretsInPath } from "./lib/maskUrl";
 import { securityHeaders } from "./middlewares/securityHeaders";
 import { rateLimit, LIMITS } from "./middlewares/rateLimit";
 
@@ -44,7 +45,7 @@ app.use(
         return {
           id: req.id,
           method: req.method,
-          url: req.url?.split("?")[0],
+          url: maskSecretsInPath(req.url?.split("?")[0]),
         };
       },
       res(res) {
@@ -102,7 +103,7 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
       errName: err instanceof Error ? err.name : typeof err,
       errMessage: err instanceof Error ? err.message : String(err),
       stack: err instanceof Error ? err.stack : undefined,
-      route: `${req.method} ${req.originalUrl?.split("?")[0]}`,
+      route: `${req.method} ${maskSecretsInPath(req.originalUrl?.split("?")[0])}`,
       reference,
     },
     err instanceof Error ? `${err.name}: ${err.message}` : "Unhandled non-Error thrown",
