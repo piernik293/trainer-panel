@@ -305,3 +305,6 @@
 ## 28.10.2026 — decyzje właściciela 62–68: stawy (gałąź `fix/stawy-uzupelnienie`)
 - 3a: brak danych o stawach = nie dla klienta z bólem ani bez zgody (`services/jointData.ts`, wszystkie ścieżki + rozgrzewka); test regresji `unknown-joint-data`. 3b: uzupełniono 445 ćwiczeń (było 376 bez poziomu, 43 bez stawów), `docs/STAWY-UZUPELNIENIE.csv`, migracja 0059. 3c: sprawdzacz symulacji. 0058: „L-sit z podparciem”.
 - Symulacja 1000 profili: naruszeń 30 647 → 0; odmowy 2,3% → 2,6%.
+
+## 28.10.2026 — poprawki właściciela do danych o stawach (gałąź `fix/stawy-poprawki`, scalona do `main`)
+- Migracja 0060 (z kopią starych wartości, jednorazowa): 10 dipów → Bark, Łokieć, Nadgarstek, Wysokie (w tym dipy na ławce i wspomagane na maszynie); 7 ćwiczeń w zwisie + Bark; 6 ćwiczeń → Średnie. Lista: `docs/STAWY-POPRAWKI.csv`. Symulacja 1000 profili: naruszeń 0, odmowy 2,6% → 2,9%.
