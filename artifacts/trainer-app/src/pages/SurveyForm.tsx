@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { clientFullName } from "@/lib/clientName";
 import { useParams, Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -455,7 +456,7 @@ function SurveyReadonlyPreview({
             Wywiad Treningowy
           </h1>
           <p className="text-muted-foreground mt-1">
-            Dla klienta: {client.firstName} {client.lastName}
+            Dla klienta: {clientFullName(client)}
           </p>
         </div>
         <EditBtn />

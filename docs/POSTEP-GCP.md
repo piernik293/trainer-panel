@@ -281,3 +281,8 @@
 - Backup przed 0055: `~/backups/trainer_panel_przed_0055_20261028-0018.sql.gz`; migracja zastosowana przez `db-setup-gcp.sh`.
 - Testy (baza testowa): API 128/128 plików, 2727 testów; panel 782; portal 250; bezpieczeństwo generatora 101; typecheck i build OK. `joint-exclusion.integration.test.ts` miał kruche sprzątanie (stali klienci po przerwanym przebiegu blokowali usunięcie trenera) — poprawione.
 - Restart na poprawionych skryptach: sesja tmux `claude` przeżyła. Smoke 131 OK / 0 BŁĄD.
+
+## 28.10.2026 — noc, blok 3: drobne poprawki z QA (gałąź `fix/qa-drobne`, z `main`, NIE scalona) — GOTOWE
+- C5: linki między dokumentami prawnymi (panel i portal) mają min. 44 px i `aria-current`; C7: „Ewa ” → `clientFullName` (7 miejsc w panelu); C8: separatory „·” czytelne i `aria-hidden`.
+- Zostaje otwarte (poza zakresem: nawigacja/UX): C6 (cele dotyku w menu, kalendarzu, przełącznikach), C10 (dane testowe — tylko za zgodą).
+- Testy: `legal-page-links` (panel i portal), `client-name` (3). Panel 786, portal 251, typecheck OK.

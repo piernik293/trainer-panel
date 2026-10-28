@@ -1,4 +1,5 @@
 import { useState, useId } from "react";
+import { clientFullName } from "@/lib/clientName";
 import { StepHint } from "@/components/dashboard/StepHint";
 import { DisconnectButton } from "@/components/DisconnectButton";
 import { humanizeError } from "@/lib/userError";
@@ -448,7 +449,7 @@ export default function ClientDetail() {
             Powrót do listy
           </Link>
           <h1 className="text-3xl font-display font-bold tracking-tight text-foreground flex items-center gap-3 flex-wrap">
-            {client.firstName} {client.lastName}
+            {clientFullName(client)}
             <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-transparent text-xs font-medium py-1">
               {surveyStatusLabel(client.surveyStatus)}
             </Badge>

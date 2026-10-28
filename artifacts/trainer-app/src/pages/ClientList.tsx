@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { clientFullName } from "@/lib/clientName";
 import { Link } from "wouter";
 import { useListClients, getListClientsQueryKey, useDeleteClient } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -393,7 +394,7 @@ export default function ClientList() {
                               <AlertTriangle size={14} className="text-destructive shrink-0" />
                             )}
                             <Link href={`/clients/${client.id}`} className="hover:underline">
-                              {client.firstName} {client.lastName}
+                              {clientFullName(client)}
                             </Link>
                           </div>
                         </TableCell>
@@ -491,7 +492,7 @@ export default function ClientList() {
                             <AlertTriangle size={14} className="text-destructive shrink-0" />
                           )}
                           <Link href={`/clients/${client.id}`} className="font-medium hover:underline truncate">
-                            {client.firstName} {client.lastName}
+                            {clientFullName(client)}
                           </Link>
                         </div>
                       </div>
