@@ -1,0 +1,446 @@
+﻿id;nazwa;stawy;poziom obciążenia;powód
+5;Plank;Plecy — dół, Bark, Nadgarstek;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+88;Przysiad goblet z hantlem;Kolano, Biodro;Średnie;stawy: z wzorca ruchu i nazwy | było: poziom=Średnie, stawy=brak
+90;Przysiad do skrzyni z masą własnego ciała;Kolano, Biodro;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+95;Przysiad wykroczny z podparciem;Kolano, Biodro;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+98;Wejście na podest;Kolano, Biodro;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+103;Martwy ciąg z kettlebell;Biodro, Plecy — dół;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+105;Glute bridge;Biodro, Plecy — dół;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+106;Uginanie nóg siedząc na maszynie;Kolano;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+107;Uginanie nóg leżąc na maszynie;Kolano;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+109;Wspięcia na palce stojąc;Kolano;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+110;Wspięcia na palce siedząc;Kolano;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+115;Wyciskanie na maszynie siedząc;Bark, Łokieć, Nadgarstek;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+123;Ściąganie drążka wyciągu górnego chwytem neutralnym;Bark, Łokieć;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+124;Ściąganie drążka wyciągu górnego szerokim nachwytem;Bark, Łokieć;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+128;Wiosłowanie siedząc na wyciągu chwytem neutralnym;Bark, Łokieć;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+130;Wiosłowanie na maszynie;Bark, Łokieć;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+133;Wiosłowanie na TRX;Bark, Łokieć;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+134;Wiosłowanie gumą oporową;Bark, Łokieć;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+136;Face pull;Bark, Łokieć;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+137;Wyciskanie na maszynie nad głowę;Bark, Łokieć;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+142;Unoszenie ramion bokiem na maszynie;Bark;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+159;Dead bug;Plecy — dół, Bark, Nadgarstek;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+160;Bird dog;Plecy — dół, Bark, Nadgarstek;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+161;Plank boczny;Plecy — dół, Bark, Nadgarstek;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+162;Pallof press;Plecy — dół;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+163;Spięcia brzucha na wyciągu;Plecy — dół;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+165;Unoszenie kolan w zwisie;Plecy — dół;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+166;Ab wheel rollout;Plecy — dół;Wysokie;stawy: z wzorca ruchu i nazwy | było: poziom=Wysokie, stawy=brak
+167;Spacer farmera;Kolano, Biodro, Bark;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+168;Spacer walizkowy;Kolano, Biodro, Bark;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+169;Bear crawl;Bark, Nadgarstek;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+184;Szrugowanie ze sztangą;Bark;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+185;Wiosłowanie leżąc przodem z hantlami;Bark, Łokieć;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+193;Uginanie nóg na wyciągu stojąc;Kolano;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+194;Odwodzenie nogi w tył z wykorzystaniem linki wyciągu dolnego;Biodro, Plecy — dół;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+197;Hollow body hold;Plecy — dół;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+200;Unoszenie nóg w leżeniu;Plecy — dół;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+212;Katana Extension;Łokieć;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+222;Szrugsy z hantlami;Bark;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+223;Szrugsy na suwnicy Smitha;Bark;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+256;Nauka lądowania;Kolano, Biodro;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+259;Wspięcia na palce obunóż stojąc;Kolano;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+260;Wejście na niskie podwyższenie z podparciem;Kolano, Biodro;Niskie;stawy: z wzorca ruchu i nazwy | było: poziom=Niskie, stawy=brak
+1068;Rozciąganie klatki z rękami za głową;Bark;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1069;Rozciąganie nóg na krześle;Kolano, Biodro;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1070;Rozciąganie dolnych pleców na krześle;Plecy — dół;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1071;Rozciąganie górnej części ciała na krześle;Plecy — dół, Bark;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1072;Przyciąganie kolan do klatki piersiowej (rozciąganie);Kolano, Bark;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1073;Rozciąganie przedramienia w klęku;Łokieć, Nadgarstek;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1074;Rozciąganie tylnej części uda leżąc;Biodro;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1075;Rozciąganie z rękami wyciągniętymi nad głowę;Bark;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1076;Rozciąganie przedniej części barku siedząc;Bark;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1077;Rozciąganie boczne leżąc na podłodze;Plecy — dół;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1078;Rozciąganie kręgosłupa;Plecy — dół;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1079;Rozciąganie płaszczki i ścięgna Achillesa;brak (rozciąganie bez stawów z listy);Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=[]"
+1080;Rozciąganie górnej części pleców;Plecy — dół;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1081;Krążenia kostek;brak (rozciąganie bez stawów z listy);Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=[]"
+1082;Dynamiczne rozciąganie pleców;Plecy — dół;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1083;Dynamiczne rozciąganie klatki;Bark;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1084;Inchworm (przejście w podpór);Plecy — dół, Bark, Nadgarstek;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1085;Halo z kettlebell (mobilizacja barków);Biodro, Plecy — dół, Bark;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1086;Krążenia kolan;Kolano;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1087;Najlepsze rozciąganie świata (mobilizacja całego ciała);Biodro, Plecy — dół, Bark;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1088;Podciąganie podchwytem (chin-up);Bark, Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1089;Wiosłowanie w zwisie pod sztangą (australijskie podciąganie);Bark, Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark', 'Łokieć']
+1090;Przysiad z masą własnego ciała;Kolano, Biodro;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Kolano', 'Biodro']
+1091;Łokieć do kolana (skłon skośny stojąc);Plecy — dół;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Plecy — dół']
+1092;Przysiad split (bułgarski bez podwyższenia);Kolano, Biodro;Wysokie;"trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1093;Dipy na ławce;Łokieć, Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć', 'Bark']
+1094;Nożyce poziome (flutter kicks);Plecy — dół;Średnie;"zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1095;Skip na niskie podwyższenie;Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1096;Kroki bokiem z krzyżowaniem (carioca);Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1097;Skoki z piętami do pośladków;Kolano;Wysokie;"pliometria; trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano']"
+1098;Skip A (szybki bieg z wysokim kolanem);Kolano, Biodro;Wysokie;"pliometria; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1099;Wspinaczka w podporze (mountain climbers);Bark, Nadgarstek;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Nadgarstek']"
+1100;Skok „gwiazda”;Kolano;Wysokie;"pliometria; trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano']"
+1101;Unoszenie nogi w bok leżąc na boku;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1102;Łopatkowe podciągnięcia w zwisie (scapular pull-up);Bark, Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark', 'Łokieć']
+1103;Przysiad z wyskokiem;Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1104;Wypad skokowy (zmiana nóg w powietrzu);Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1105;Wyciskanie francuskie z masą własnego ciała;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1106;Uginanie nóg na podłodze (glute-ham raise);Kolano;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Kolano']"
+1107;Uginanie nóg siedząc z gumą oporową;Kolano;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Kolano']
+1108;Brzuszki;Plecy — dół;Średnie;"zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1109;Brzuszki skośne;Plecy — dół;Średnie;"zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1110;Brzuszki z unoszeniem tułowia (sit-up);Plecy — dół;Średnie;"zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1111;Monster walk z gumą oporową;Kolano, Biodro;Niskie;"poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1112;Wyciskanie nad głowę na wyciągu;Bark, Łokieć;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1113;Wyciskanie nad głowę z gumą oporową;Bark, Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark', 'Łokieć']
+1114;Wyciskanie kettlebell nad głowę oburącz;Bark, Łokieć;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1115;Wyciskanie hantli wąskim chwytem;Bark, Łokieć, Nadgarstek;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Nadgarstek']"
+1116;Wyciskanie hantli leżąc na podłodze;Bark, Łokieć, Nadgarstek;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Nadgarstek']"
+1117;Wyciskanie sztangi leżąc z podłogi;Bark, Łokieć, Nadgarstek;Średnie;"trudność Średniozaawansowany; sztanga, ruch złożony; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Nadgarstek']"
+1118;Wyciskanie na wyciągu na ławce skośnej;Bark, Łokieć, Nadgarstek;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Nadgarstek']"
+1119;Pompki na TRX;Bark, Łokieć, Nadgarstek;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Nadgarstek']"
+1120;Pullover z hantlem na zgiętych ramionach;Bark, Łokieć;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1121;Renegade row (wiosłowanie w podporze);Bark, Łokieć;Wysokie;"trudność Zaawansowany; złożone z obciążeniem; trudność uczenia 4; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1122;Wiosłowanie dwoma hantlami w opadzie;Bark, Łokieć;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1123;Krzyżowanie ramion z gumami oporowymi;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1124;Rotacja wewnętrzna barku na wyciągu;Plecy — dół;Średnie;"zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1125;Dzień dobry z gumą oporową (good morning);Biodro, Plecy — dół;Średnie;"nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']"
+1126;Martwy ciąg na wyciągu dolnym;Biodro, Plecy — dół;Średnie;"złożone z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']"
+1127;Dzień dobry ze sztangą (good morning);Biodro, Plecy — dół;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']"
+1128;Wyprost biodra z gumą oporową;Biodro, Plecy — dół;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']
+1129;Martwy ciąg na maszynie;Biodro, Plecy — dół;Średnie;"złożone z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']"
+1130;Glute-ham raise na maszynie;Kolano;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Kolano']"
+1131;Zgięcie biodra z gumą oporową;Plecy — dół;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Plecy — dół']
+1132;Scaption (unoszenie hantli w płaszczyźnie łopatki);Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1133;Unoszenie ramion bokiem z gumą oporową;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1134;Podanie piłki lekarskiej z klatki;Bark, Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1135;Wiosłowanie kettlebell naprzemiennie;Bark, Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1136;Przywodzenie bioder z gumą oporową;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1137;Przywodzenie nogi na wyciągu dolnym;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1138;Rozpiętki na wyciągu leżąc na ławce;Bark;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1139;Rozpiętki na wyciągu na ławce skośnej;Bark;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1140;Rotacja wewnętrzna barku z gumą oporową;Plecy — dół;Średnie;"zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1141;Fallout na TRX;Plecy — dół;Średnie;"trudność Średniozaawansowany; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1142;Wspięcia na palce na suwnicy;Kolano;Niskie;"poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1143;Wspięcia na palce z gumą oporową;Kolano;Niskie;"poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1144;Wspięcia na palce siedząc jednonóż z hantlem;Kolano;Niskie;"poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1145;Prostowanie ramion z hantlami leżąc;Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Łokieć']"
+1146;Prostowanie ramion na maszynie;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1147;Szrugsy na wyciągu;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1148;Szrugsy na maszynie;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1149;Wyrzut piłki lekarskiej za siebie;Biodro, Plecy — dół;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']"
+1150;Wyrzut piłki lekarskiej z dołu do przodu;Biodro, Plecy — dół;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']"
+1151;Odwrotne wyprosty tułowia na maszynie;Biodro, Plecy — dół;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']"
+1152;Uginanie nóg z piłką;Kolano;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Kolano']
+1153;Spięcia brzucha na maszynie;Plecy — dół;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1154;Rzut piłką lekarską o ziemię znad głowy;Bark, Plecy — dół;Średnie;"trudność Średniozaawansowany; zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Plecy — dół']"
+1155;Odwrotne spięcia brzucha na TRX;Plecy — dół;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Plecy — dół']
+1156;Uginanie ramion na maszynie;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1157;Uginanie nadgarstków na wyciągu;Nadgarstek;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Nadgarstek']
+1158;Uginanie palców ze sztangą (chwyt);Nadgarstek;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Nadgarstek']
+1159;Podciąganie z gumą wspomagającą;Bark, Łokieć;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1160;Ab rollout ze sztangą;Plecy — dół;Średnie;"trudność Średniozaawansowany; sztanga, ruch złożony; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1161;Wspięcia na palce siedząc ze sztangą;Kolano;Niskie;"poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1162;Wejście na podest ze sztangą;Kolano, Biodro;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1163;Wykroki chodzone ze sztangą;Kolano, Biodro;Wysokie;"sztanga, ruch złożony; jednostronne z obciążeniem; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1164;Prostowanie ramion na wyciągu leżąc;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1165;Odwrotne spięcia brzucha na wyciągu;Plecy — dół;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Plecy — dół']
+1166;Rotacje rosyjskie na wyciągu;Plecy — dół;Średnie;"zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1167;Wspięcia na palce na maszynie (calf press);Kolano;Niskie;"poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1168;Przysiad do krzesła;Kolano, Biodro;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Kolano', 'Biodro']
+1169;Odwodzenie nogi w tył na czworakach;Biodro, Plecy — dół;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']
+1170;Wyprosty tułowia na ławce rzymskiej;Biodro, Plecy — dół;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']
+1171;Martwy ciąg jednonóż z kettlebell;Biodro, Plecy — dół;Wysokie;"trudność Średniozaawansowany; złożone z obciążeniem; jednostronne z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']"
+1172;Prostowanie ramion znad głowy z kettlebell;Łokieć;Średnie;poziom: Średnie | było: poziom=brak, stawy=['Łokieć']
+1173;Przysiad na jednej nodze z kettlebell;Kolano, Biodro;Wysokie;"trudność Zaawansowany; złożone z obciążeniem; jednostronne z obciążeniem; trudność uczenia 4; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1174;Uginanie ramion na modlitewniku na maszynie;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1175;Wiosłowanie kettlebell jednorącz;Bark, Łokieć;Wysokie;"trudność Średniozaawansowany; złożone z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1176;Odwodzenie nogi w tył na wyciągu jednonóż;Biodro, Plecy — dół;Średnie;"trudność Średniozaawansowany; jednostronne z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']"
+1177;Uginanie ramion nachwytem na wyciągu;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1178;Dipy na kółkach gimnastycznych;Bark, Łokieć, Nadgarstek;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Nadgarstek']"
+1179;Wyciskanie na wyciągu siedząc nad głowę;Bark, Łokieć;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1180;Mostek pośladkowy jednonóż;Biodro, Plecy — dół;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']
+1181;Wspięcia na palce na suwnicy Smitha;Kolano;Niskie;"poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1182;Wyciskanie wąskim chwytem na suwnicy Smitha;Bark, Łokieć, Nadgarstek;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Nadgarstek']"
+1183;Wspięcia na palce stojąc ze sztangą;Kolano;Niskie;"poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1184;Uginanie ramion z hantlami nachwytem;Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Łokieć']"
+1185;Uginanie nóg stojąc na maszynie;Kolano;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Kolano']
+1186;Prostowanie ramion ze sztangą nad głową stojąc;Łokieć;Średnie;poziom: Średnie | było: poziom=brak, stawy=['Łokieć']
+1187;Rozciąganie ramienia i barku jednorącz przy ścianie;Bark;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1188;Uginanie nóg naturalne (natural GHR);Kolano;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Kolano']"
+1189;Wyciskanie sztangi leżąc szerokim chwytem;Bark;Średnie;"trudność Średniozaawansowany; sztanga, ruch złożony; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1190;Martwy ciąg rumuński z deficytu;Biodro, Plecy — dół;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; poziom: Wysokie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']"
+1191;Martwy ciąg na prostych nogach ze sztangą;Biodro, Plecy — dół;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']"
+1192;Martwy ciąg na prostych nogach w szerokiej postawie;Biodro, Plecy — dół;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']"
+1193;Glute bridge ze sztangą;Biodro, Plecy — dół;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; poziom: Wysokie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1194;Mostek biodrowy z piłką pod stopami;Biodro, Plecy — dół;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1195;Pull-through z gumą oporową;Biodro;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Biodro']
+1196;Wspięcia na palce stojąc ze stopą na hantlu;Kolano;Niskie;"poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1197;Wyciskanie hantli na ławce skośnej chwytem neutralnym;Bark;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1198;Wyciskanie na maszynie dźwigniowej w dół;Bark, Łokieć, Nadgarstek;Średnie;"złożone z obciążeniem; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1199;Wyciskanie na maszynie dźwigniowej pod górę;Bark, Łokieć, Nadgarstek;Średnie;"złożone z obciążeniem; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1200;Pompki na podwyższeniu wąskim chwytem;Bark, Nadgarstek;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark', 'Nadgarstek']
+1201;Pompki na podwyższeniu szerokim chwytem;Bark, Nadgarstek;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark', 'Nadgarstek']
+1202;Pompki szerokim chwytem;Bark, Nadgarstek;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark', 'Nadgarstek']
+1203;Pompki wąskim chwytem (akcent triceps);Bark, Nadgarstek;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark', 'Nadgarstek']
+1204;Rozpiętki jednorącz na wyciągu;Bark;Średnie;"nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1205;Ściąganie drążka wyciągu górnego wąskim nachwytem;Bark, Łokieć;Średnie;"złożone z obciążeniem; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1206;Wiosłowanie na wyciągu górnym w klęku;Bark, Łokieć;Średnie;"złożone z obciążeniem; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1207;Wiosłowanie siedząc na wyciągu jednorącz;Bark, Łokieć;Średnie;"złożone z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1208;Wiosłowanie na maszynie z wysokim torem ruchu;Bark, Łokieć;Średnie;"złożone z obciążeniem; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1209;Wiosłowanie na maszynie jednorącz;Bark, Łokieć;Średnie;"złożone z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1210;Ściąganie prostych ramion na wyciągu z liną;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1211;Wiosłowanie liną na tylną część barku na wyciągu;Bark, Łokieć;Średnie;"złożone z obciążeniem; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1212;Arnold press z kettlebell;Bark;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1213;Unoszenie hantla bokiem leżąc na boku;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1214;Unoszenie hantla bokiem jednorącz na ławce skośnej;Bark;Średnie;"nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1215;Unoszenie hantla bokiem jednorącz;Bark;Średnie;"nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1216;Unoszenie hantli bokiem siedząc;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1217;Unoszenie ramienia bokiem na wyciągu siedząc;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1218;Odwrotne rozpiętki z gumą oporową;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1219;Odwrotne rozpiętki z hantlami z podparciem głowy;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1220;Odwrotne rozpiętki jednorącz leżąc przodem;Bark;Średnie;"nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1221;Odwrotne rozpiętki leżąc przodem na ławce;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1222;Odwrotne rozpiętki z rotacją zewnętrzną;Bark;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1223;Odwrotne rozpiętki siedząc w pochyleniu;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1224;Naprzemienne unoszenie hantli w przód;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1225;Unoszenie ramienia w przód na wyciągu;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1226;Unoszenie hantli w przód leżąc przodem na ławce skośnej;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1227;Unoszenie talerza w przód;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1228;Uginanie sztangi leżąc przodem na ławce skośnej;Nadgarstek, Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Nadgarstek', 'Łokieć']
+1229;Uginanie ramion ze sztangą wąskim chwytem;Nadgarstek, Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Nadgarstek', 'Łokieć']
+1230;Uginanie ramion sztangą wzdłuż tułowia (drag curl);Nadgarstek, Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Nadgarstek', 'Łokieć']"
+1231;Uginanie ramion ze sztangą szerokim chwytem;Nadgarstek, Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Nadgarstek', 'Łokieć']
+1232;Uginanie ramion ze sztangą EZ wąskim chwytem;Nadgarstek, Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Nadgarstek', 'Łokieć']
+1233;Uginanie ramion z hantlami naprzemiennie;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1234;Uginanie ramion z hantlami siedząc;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1235;Uginanie młotkowe naprzemienne;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1236;Uginanie młotkowe w poprzek ciała;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1237;Uginanie ramion naprzemiennie na ławce skośnej;Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Łokieć']"
+1238;Uginanie młotkowe na ławce skośnej;Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Łokieć']"
+1239;Uginanie ramienia z hantlem na modlitewniku;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1240;Uginanie młotkowe na modlitewniku;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1241;Uginanie ramion nachwytem ze sztangą na modlitewniku;Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Łokieć']"
+1242;Uginanie młotkowe z liną na wyciągu;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1243;Uginanie ramion na wyciągu górnym;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1244;Uginanie ramion na wyciągu leżąc;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1245;Uginanie ramion na wyciągu z rękami nad głową;Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Łokieć']"
+1246;Uginanie ramienia na wyciągu stojąc jednorącz;Łokieć;Średnie;"nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Łokieć']"
+1247;Prostowanie ramienia z linką na wyciągu jednorącz;Łokieć;Średnie;"nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Łokieć']"
+1248;Prostowanie ramion na wyciągu w pochyleniu;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1249;Prostowanie ramion na wyciągu podchwytem;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1250;Prostowanie ramion nad głową z liną leżąc na ławce skośnej;Łokieć;Średnie;poziom: Średnie | było: poziom=brak, stawy=['Łokieć']
+1251;Prostowanie ramion nad głową z liną w klęku;Łokieć;Średnie;poziom: Średnie | było: poziom=brak, stawy=['Łokieć']
+1252;Wyciskanie francuskie z gumą oporową;Bark, Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1253;Wyciskanie francuskie sztangą EZ na ławce ujemnej;Bark, Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1254;Wyciskanie francuskie sztangą na ławce skośnej;Bark, Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1255;Wyciskanie sztangi EZ wąskim chwytem;Bark, Łokieć;Średnie;"trudność Średniozaawansowany; sztanga, ruch złożony; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1256;Pallof press z rotacją;Plecy — dół;Średnie;"trudność Średniozaawansowany; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1257;Spięcia brzucha na wyciągu siedząc;Plecy — dół;Niskie;"poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1258;Spięcia brzucha na wyciągu w klęku ze skrętem;Plecy — dół;Średnie;"trudność Średniozaawansowany; zgięcie/rotacja tułowia; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1259;Spięcia brzucha z liną na stojąco;Plecy — dół;Niskie;"poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1260;Odwrotne spięcia brzucha na ławce ujemnej;Plecy — dół;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Plecy — dół']
+1261;Podciąganie kolan w leżeniu na ławce;Plecy — dół;Średnie;"zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1262;Unoszenie prostych nóg w zwisie;Plecy — dół;Średnie;"trudność Średniozaawansowany; trudność uczenia 4; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1263;Wyciskanie hantli leżąc chwytem neutralnym;Bark;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1264;Wyciskanie hantla leżąc jednorącz;Bark;Wysokie;"trudność Średniozaawansowany; złożone z obciążeniem; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Bark']"
+1265;Wyciskanie na suwnicy Smitha na ławce ujemnej;Bark;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1266;Wyciskanie na suwnicy Smitha na ławce skośnej;Bark;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1267;Dipy na poręczach (akcent triceps);Bark, Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1268;Rozpiętki z hantlami na ławce ujemnej;Bark;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1269;Rozpiętki z hantlem jednorącz leżąc;Bark;Wysokie;"trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Bark']"
+1270;Wiosłowanie sztangą szerokim chwytem (tył barku);Plecy — dół;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; jak podobne ćwiczenia (Wysokie); poziom: Wysokie | było: poziom=brak, stawy=['Plecy — dół']"
+1271;Martwy ciąg z deficytu;Biodro, Plecy — dół;Wysokie;"trudność Zaawansowany; sztanga, ruch złożony; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']"
+1272;Martwy ciąg z podwyższenia (rack pull);Biodro, Plecy — dół;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']"
+1273;Wiosłowanie sztangą leżąc przodem na ławce skośnej;Bark, Łokieć;Średnie;"sztanga, ruch złożony; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1274;Wyciskanie sztangi nad głowę siedząc;Bark;Średnie;"trudność Średniozaawansowany; sztanga, ruch złożony; trudność uczenia 4; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1275;Wyciskanie nad głowę na suwnicy Smitha;Bark;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; trudność uczenia 4; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1276;Uginanie koncentryczne stojąc;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1277;Prostowanie ramienia z hantlem nad głową stojąc jednorącz;Łokieć;Średnie;"nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Łokieć']"
+1278;Przysiad ze sztangą z przodu do ławki;Kolano, Plecy — dół;Wysokie;"trudność Zaawansowany; sztanga, ruch złożony; trudność uczenia 5; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Plecy — dół']"
+1279;Woodchop na wyciągu z dołu do góry;Plecy — dół;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1280;Podciąganie z obciążeniem;Bark, Łokieć;Wysokie;"trudność Zaawansowany; złożone z obciążeniem; trudność uczenia 4; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1281;Unoszenie nóg leżąc na ławce;Plecy — dół;Średnie;"zgięcie/rotacja tułowia; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1282;Uginanie nadgarstków z hantlami podchwytem;Nadgarstek;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Nadgarstek']
+1283;Prostowanie nadgarstków z hantlami nachwytem;Nadgarstek;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Nadgarstek']
+1284;Ściąganie jednorącz wyciągu górnego w klęku;Bark;Wysokie;"trudność Średniozaawansowany; złożone z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Bark']"
+1285;Odwodzenie ramienia w tył na wyciągu dolnym w pochyleniu;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1286;Rotacja zewnętrzna barku z hantlem leżąc na boku;Bark;Średnie;"zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1287;Wyciskanie na wyciągu oburącz;Bark;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1288;Szrugsy z hantlami z akcentem na środek pleców;Plecy — dół, Bark;Niskie;"poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1289;Skłony boczne na wyciągu jednorącz;Plecy — dół;Średnie;"nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1290;Przysiad ze sztangą wąską postawą;Kolano, Plecy — dół;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Plecy — dół']"
+1291;Przysiad ze sztangą szeroką postawą;Kolano, Plecy — dół;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Plecy — dół']"
+1292;Rozciąganie klatki i przodu barku;Bark;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1293;Rozciąganie przodu uda na czworakach;Biodro;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1294;Rozciąganie przodu uda leżąc przodem;Biodro;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1295;Rozciąganie przodu uda leżąc na boku;Biodro;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1296;Rozciąganie tyłu uda i łydki siedząc;Biodro;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1297;Rozciąganie tyłu uda i łydki stojąc;Biodro;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1298;Rozciąganie pośladka i zewnętrznej strony uda;Biodro;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1299;Rozciąganie pośladka siedząc;Biodro;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1300;Rozciąganie łydki siedząc;brak (rozciąganie bez stawów z listy);Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=[]"
+1301;Rozciąganie wewnętrznej strony ud;Biodro;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1302;Rozciąganie wewnętrznej strony ud i pleców;Biodro, Plecy — dół;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1303;Rozciąganie wewnętrznej strony ud leżąc;Biodro;Niskie;"rozciąganie/mobilizacja; poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1304;Rozciąganie przodu biodra stojąc;Kolano;Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=['Kolano']"
+1305;Wyciskanie hantla nad głowę jednorącz;Bark;Średnie;"złożone z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1306;Wyciskanie hantli nad głowę naprzemiennie stojąc;Bark;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1307;Wyciskanie hantli nad głowę chwytem neutralnym stojąc;Bark;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1308;Przysiad z hantlami przy bokach;Kolano, Biodro;Średnie;"złożone z obciążeniem; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1309;Przysiad przedni z dwoma kettlebell;Kolano, Biodro;Wysokie;"trudność Średniozaawansowany; złożone z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Wysokie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1310;Przysiad sumo z hantlem;Kolano, Biodro;Średnie;"złożone z obciążeniem; poziom: Średnie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1311;Hack squat wąską postawą;Kolano;Wysokie;"trudność Średniozaawansowany; złożone z obciążeniem; jak podobne ćwiczenia (Wysokie); poziom: Wysokie | było: poziom=brak, stawy=['Kolano']"
+1312;Wypychanie nóg na suwnicy wąską postawą;Kolano;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Kolano']"
+1313;Wykrok w przód ze sztangą;Biodro, Kolano;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; poziom: Wysokie | było: poziom=brak, stawy=['Biodro', 'Kolano']"
+1314;Wykrok skrzyżny w tył;Biodro, Kolano;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Biodro', 'Kolano']
+1315;Wykrok w przód z hantlami;Biodro, Kolano;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Biodro', 'Kolano']"
+1316;Wykrok w tył z podwyższenia;Biodro, Kolano;Wysokie;"trudność Zaawansowany; sztanga, ruch złożony; trudność uczenia 4; poziom: Wysokie | było: poziom=brak, stawy=['Biodro', 'Kolano']"
+1317;Wejście na podest z unoszeniem kolana;Kolano, Biodro;Niskie;"poziom: Niskie; stawy: z wzorca ruchu i nazwy | było: poziom=brak, stawy=[]"
+1318;Prostowanie nogi na maszynie jednonóż;Kolano;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Kolano']
+1319;Brzuszki na ławce ujemnej;Plecy — dół;Średnie;"zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1320;Brzuszki z obciążeniem;Plecy — dół;Średnie;"zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1321;Dipy na ławce z obciążeniem;Łokieć, Bark;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Łokieć', 'Bark']"
+1322;Podanie piłki lekarskiej z klatki leżąc;Bark, Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1323;Prostowanie ramion z hantlami leżąc na ławce ujemnej;Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Łokieć']"
+1324;Prostowanie ramion z hantlami leżąc nachwytem;Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Łokieć']"
+1325;Prostowanie ramienia z hantlem leżąc jednorącz nachwytem;Łokieć;Wysokie;"trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Łokieć']"
+1326;Przysiad split z hantlami;Kolano, Biodro;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; jednostronne z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1327;Pullover z hantlem na prostych ramionach;Bark, Łokieć;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1328;Rzut piłką lekarską o ziemię jednorącz;Bark, Plecy — dół;Wysokie;"trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Plecy — dół']"
+1329;Wiosłowanie dwoma hantlami w opadzie chwytem neutralnym;Bark, Łokieć;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1330;Wyciskanie kettlebell leżąc na podłodze naprzemiennie;Bark, Łokieć, Nadgarstek;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Nadgarstek']"
+1331;Wyciskanie kettlebell leżąc na podłodze jednorącz;Bark, Łokieć, Nadgarstek;Wysokie;"trudność Średniozaawansowany; złożone z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Nadgarstek']"
+1332;Wyciskanie kettlebell nad głowę naprzemiennie;Bark, Łokieć;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1333;Wyciskanie kettlebell nad głowę siedząc;Bark, Łokieć;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1334;Wyciskanie nad głowę na wyciągu naprzemiennie;Bark, Łokieć;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1335;Swing kettlebell oburącz;Plecy — dół, Biodro;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół', 'Biodro']"
+1338;Turkish get-up z kettlebell (przez wykrok);Bark, Biodro, Kolano;Wysokie;"trudność Zaawansowany; trudność uczenia 5; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Biodro', 'Kolano']"
+1339;Zarzut kettlebell z zawisu;Plecy — dół, Bark;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; jednostronne z obciążeniem; trudność uczenia 4; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół', 'Bark']"
+1340;Push press z kettlebell jednorącz;Bark, Łokieć, Plecy — dół;Wysokie;"trudność Średniozaawansowany; złożone z obciążeniem; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Plecy — dół']"
+1341;Thruster z kettlebell;Kolano, Bark, Plecy — dół;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; trudność uczenia 4; poziom: Średnie | było: poziom=brak, stawy=['Kolano', 'Bark', 'Plecy — dół']"
+1342;Windmill z kettlebell;Bark, Plecy — dół, Biodro;Średnie;"trudność Średniozaawansowany; trudność uczenia 4; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Plecy — dół', 'Biodro']"
+1343;Ósemka z kettlebell;Plecy — dół;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1344;Zarzut sztangi z zawisu;Plecy — dół, Bark, Nadgarstek;Wysokie;"trudność Zaawansowany; sztanga, ruch złożony; trudność uczenia 5; poziom: Wysokie | było: poziom=brak, stawy=['Plecy — dół', 'Bark', 'Nadgarstek']"
+1345;Zarzut sztangi (power clean);Plecy — dół, Bark, Nadgarstek;Wysokie;"trudność Zaawansowany; sztanga, ruch złożony; trudność uczenia 5; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Plecy — dół', 'Bark', 'Nadgarstek']"
+1346;Push press ze sztangą;Bark, Łokieć, Plecy — dół;Wysokie;"trudność Zaawansowany; sztanga, ruch złożony; trudność uczenia 4; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Plecy — dół']"
+1347;Bieg skokowy po przekątnej (bounds);Kolano, Biodro;Wysokie;"pliometria; trudność Zaawansowany; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1348;Szybkie wejścia na ławkę (bench sprint);Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1349;Zeskok ze skrzyni z wyskokiem w dal;Kolano, Biodro;Wysokie;"pliometria; trudność Zaawansowany; trudność uczenia 5; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1350;Pompki z zeskoku na podwyższenia;Bark, Nadgarstek, Łokieć;Wysokie;"pliometria; trudność Zaawansowany; trudność uczenia 5; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Nadgarstek', 'Łokieć']"
+1351;Wyskok na skrzynię z siadu z hantlem;Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; złożone z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1352;Skoki żabie;Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1353;Skoki obunóż przez płotki;Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1354;Pompki z zeskoku ze skrzyni (stopy na skrzyni);Bark, Nadgarstek, Łokieć;Wysokie;"pliometria; trudność Zaawansowany; trudność uczenia 5; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Nadgarstek', 'Łokieć']"
+1355;Wyskok z podciągnięciem kolan;Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1356;Praca ramion w klęku (technika biegu);Bark;Wysokie;"pliometria; trudność Średniozaawansowany; poziom: Wysokie | było: poziom=brak, stawy=['Bark']"
+1357;Wyskok boczny na skrzynię;Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1358;Skoki boczne przez stożki;Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1359;Start sprinterski w trzech fazach;Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1360;Ćwiczenie przyspieszenia przy ścianie (wall drill);Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1361;Seria „pazura” w ruchu (technika biegu);Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1362;Pompki z wybiciem z kettlebell;Bark, Nadgarstek, Łokieć;Wysokie;"pliometria; trudność Zaawansowany; złożone z obciążeniem; trudność uczenia 5; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Nadgarstek', 'Łokieć']"
+1363;Pompki z wybiciem;Bark, Nadgarstek, Łokieć;Wysokie;"pliometria; trudność Średniozaawansowany; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Nadgarstek', 'Łokieć']"
+1364;Szybki wskok na skrzynię;Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1365;Odbicie piłki lekarskiej z postawy (z partnerem);Bark;Wysokie;"pliometria; trudność Średniozaawansowany; złożone z obciążeniem; poziom: Wysokie | było: poziom=brak, stawy=['Bark']"
+1366;Skoki boczne i sprint;Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1367;Przeskoki z boku na bok przez skrzynię;Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1368;Skoki jednonóż z piętą do pośladka;Kolano;Wysokie;"pliometria; trudność Zaawansowany; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano']"
+1369;Odbicie jednonóż ze skrzyni;Kolano, Biodro;Wysokie;"pliometria; trudność Zaawansowany; trudność uczenia 4; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1370;Praca nóg wokół stożka (cone drill);Kolano, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1371;Wyskok jednonóż ze skrzyni z wyniesieniem kolana;Kolano, Biodro;Wysokie;"pliometria; trudność Zaawansowany; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1372;Uderzenia młotem w oponę;Bark, Plecy — dół;Wysokie;"pliometria; trudność Średniozaawansowany; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Plecy — dół']"
+1373;Wyskok ze skrzyni ze zmianą nogi;Kolano, Biodro;Wysokie;"pliometria; trudność Zaawansowany; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1374;Pionowy swing z hantlem;Plecy — dół, Biodro;Wysokie;"pliometria; trudność Średniozaawansowany; złożone z obciążeniem; poziom: Wysokie | było: poziom=brak, stawy=['Plecy — dół', 'Biodro']"
+1375;Pchnięcia worka bokserskiego z rotacją;Bark;Wysokie;"pliometria; trudność Średniozaawansowany; zgięcie/rotacja tułowia; poziom: Wysokie | było: poziom=brak, stawy=['Bark']"
+1376;Chwyt i rzut piłki lekarskiej znad głowy;Bark, Plecy — dół;Średnie;"trudność Średniozaawansowany; zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Plecy — dół']"
+1377;Pełny skręt z piłką lekarską;Plecy — dół, Bark;Średnie;"trudność Średniozaawansowany; zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół', 'Bark']"
+1378;Rzut piłki lekarskiej oburącz znad głowy stojąc;Bark, Plecy — dół;Średnie;"trudność Średniozaawansowany; zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Plecy — dół']"
+1379;Rzut piłki lekarskiej jednorącz znad głowy leżąc;Bark;Wysokie;"trudność Średniozaawansowany; nazwa: ruch wysokiego ryzyka; zgięcie/rotacja tułowia; poziom: Wysokie | było: poziom=brak, stawy=['Bark']"
+1380;Rzut piłki lekarskiej oburącz znad głowy leżąc;Bark;Średnie;"trudność Średniozaawansowany; zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1381;Rolowanie przodu uda na rollerze;Kolano, Biodro;Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1382;Rolowanie tyłu uda na rollerze;Kolano, Biodro;Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1383;Rolowanie łydek na rollerze;Kolano;Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=['Kolano']"
+1384;Rolowanie zewnętrznej strony uda na rollerze;Biodro, Kolano;Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=['Biodro', 'Kolano']"
+1385;Rolowanie boku pleców na rollerze;Bark;Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=['Bark']"
+1386;Rolowanie pośladka na rollerze;Biodro;Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=['Biodro']"
+1387;Wiosłowanie jednorącz z landmine w opadzie;Plecy — dół, Łokieć;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Plecy — dół', 'Łokieć']"
+1388;Obroty sztangi landmine (180s);Plecy — dół, Bark;Średnie;"trudność Średniozaawansowany; sztanga, ruch złożony; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół', 'Bark']"
+1389;Wyciskanie landmine oburącz (linear jammer);Bark, Plecy — dół;Średnie;"trudność Średniozaawansowany; sztanga, ruch złożony; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Plecy — dół']"
+1390;Wyciskanie landmine jednorącz (linear jammer);Bark, Plecy — dół;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Plecy — dół']"
+1391;Pompki w staniu na rękach;Bark, Nadgarstek, Łokieć;Wysokie;"trudność Zaawansowany; trudność uczenia 5; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Nadgarstek', 'Łokieć']"
+1392;Muscle-up na drążku (bez wymachu);Bark, Łokieć, Nadgarstek;Wysokie;"trudność Zaawansowany; złożone z obciążeniem; trudność uczenia 5; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Nadgarstek']"
+1393;Składanie ciała w zwisie (hanging pike);Bark;Wysokie;"trudność Zaawansowany; trudność uczenia 5; poziom: Wysokie | było: poziom=brak, stawy=['Bark']"
+1394;Pompka jednorącz;Bark, Nadgarstek, Łokieć;Wysokie;"trudność Zaawansowany; trudność uczenia 5; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Nadgarstek', 'Łokieć']"
+1395;Wiosłowanie do brody szerokim chwytem;Bark;Średnie;"trudność Średniozaawansowany; sztanga, ruch złożony; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1396;Rozciąganie karku z brodą do klatki;Plecy — dół;Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=['Plecy — dół']"
+1397;Rozciąganie boku szyi;Bark;Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=['Bark']"
+1398;Swing kettlebell jednorącz;Plecy — dół, Biodro;Wysokie;"trudność Średniozaawansowany; złożone z obciążeniem; jednostronne z obciążeniem; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Plecy — dół', 'Biodro']"
+1399;Wiosłowanie jednorącz z landmine;Plecy — dół, Łokieć;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Plecy — dół', 'Łokieć']"
+1400;Wiosłowanie do brody na wyciągu szerokim chwytem;Bark;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1401;Pompki z biodrami w górze (pike);Bark, Nadgarstek, Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Nadgarstek', 'Łokieć']"
+1402;Przywodzenie nogi leżąc na boku;Biodro;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Biodro']
+1403;Uginanie ramion z ręcznikiem (opór własnej siły);Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1404;Deska z dotknięciem barku;Bark, Nadgarstek;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark', 'Nadgarstek']
+1405;Uginanie ramion z gumą oporową;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1406;Pallof press z gumą oporową;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1407;Oddech przeponowy leżąc;brak (rozciąganie bez stawów z listy);Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=[]"
+1408;Oddech pudełkowy siedząc (4-4-4-4);brak (rozciąganie bez stawów z listy);Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=[]"
+1409;Wydłużony wydech siedząc;brak (rozciąganie bez stawów z listy);Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=[]"
+1536;Burpees;Nadgarstek, Bark, Kolano;Wysokie;"trudność Średniozaawansowany; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Nadgarstek', 'Bark', 'Kolano']"
+1537;Krzesełko przy ścianie (wall sit);Kolano;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Kolano']
+1538;Pajacyki (jumping jacks);Kolano;Średnie;"rozgrzewka z elementem skoku/biegu; poziom: Średnie | było: poziom=brak, stawy=['Kolano']"
+1539;Nordic curl (uginanie nóg nordyckie);Kolano;Wysokie;"trudność Zaawansowany; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano']"
+1594;Ściąganie gumy oporowej z góry;Bark, Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark', 'Łokieć']
+1595;Wiosłowanie Pendlaya;Plecy — dół, Łokieć, Bark;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; trudność uczenia 4; jak podobne ćwiczenia (Wysokie); poziom: Wysokie | było: poziom=brak, stawy=['Plecy — dół', 'Łokieć', 'Bark']"
+1596;Unoszenie Y leżąc na ławce skośnej;Bark;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1597;Wiosłowanie australijskie z ugiętymi nogami;Łokieć, Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć', 'Bark']
+1598;Rozciąganie najszerszego grzbietu w klęku;Bark;Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=['Bark']"
+1599;Wyprosty tułowia na maszynie;Plecy — dół;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Plecy — dół']
+1600;Wyciskanie gumy oporowej przed siebie;Bark, Łokieć, Nadgarstek;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Nadgarstek']
+1601;Pompki łopatkowe;Nadgarstek, Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Nadgarstek', 'Bark']
+1602;Pompki plus;Nadgarstek, Bark, Łokieć;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Nadgarstek', 'Bark', 'Łokieć']"
+1603;Unoszenie palców stóp (tibialis raise);Kolano;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Kolano']
+1604;Wspięcia na palce na stopniu;Kolano;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Kolano']
+1605;Face pull z gumą oporową;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1606;Unoszenie Y z gumą oporową;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1607;Spacer z hantlem nad głową;Bark, Nadgarstek, Plecy — dół;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Nadgarstek', 'Plecy — dół']"
+1608;Kickback na wyciągu;Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Łokieć']
+1609;Pompki wąskie na kolanach;Nadgarstek, Łokieć, Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Nadgarstek', 'Łokieć', 'Bark']
+1610;Przysiad z gumą oporową;Kolano, Biodro, Plecy — dół;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Kolano', 'Biodro', 'Plecy — dół']
+1611;Martwy ciąg rumuński z gumą oporową;Plecy — dół, Biodro;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Plecy — dół', 'Biodro']
+1612;Wykrok w bok;Kolano, Biodro;Średnie;"złożone z obciążeniem; jednostronne z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1613;Martwy ciąg jednonóż z hantlami;Plecy — dół, Biodro, Kolano;Wysokie;"trudność Średniozaawansowany; złożone z obciążeniem; jednostronne z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Plecy — dół', 'Biodro', 'Kolano']"
+1614;Mostek biodrowy z marszem;Plecy — dół;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Plecy — dół']
+1615;Odwodzenie bioder z gumą siedząc;Biodro, Kolano;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Biodro', 'Kolano']
+1616;Plank boczny z przywodzeniem nogi;Bark, Nadgarstek;Średnie;"trudność Średniozaawansowany; trudność uczenia 4; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Nadgarstek']"
+1617;Przysiad kozacki;Kolano, Biodro;Średnie;"trudność Średniozaawansowany; trudność uczenia 4; poziom: Średnie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1618;Rowerek (brzuszki rowerowe);Plecy — dół;Średnie;"zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1619;Scyzoryki (V-up);Plecy — dół;Średnie;"trudność Średniozaawansowany; zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1620;Curl-up (brzuszek McGilla);Plecy — dół;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Plecy — dół']
+1621;Plank z dotykaniem barków na kolanach;Nadgarstek, Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Nadgarstek', 'Bark']
+1622;Przechylanie miednicy leżąc;Plecy — dół;Niskie;"rozciąganie/mobilizacja; poziom: Niskie | było: poziom=brak, stawy=['Plecy — dół']"
+1623;Wiosłowanie siedząc na wyciągu szerokim chwytem;Plecy — dół, Łokieć, Bark;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół', 'Łokieć', 'Bark']"
+1624;Pullover na maszynie;Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark']
+1625;Podciąganie na drążku szerokim chwytem;Bark, Łokieć;Wysokie;"trudność Zaawansowany; złożone z obciążeniem; trudność uczenia 4; poziom: Wysokie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1626;Thruster ze sztangą;Kolano, Bark, Plecy — dół, Nadgarstek;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; trudność uczenia 4; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Bark', 'Plecy — dół', 'Nadgarstek']"
+1627;Unoszenie hantla bokiem jednorącz w odchyleniu;Bark;Średnie;"nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1628;Rotacja zewnętrzna barku w odwiedzeniu 90° z hantlem;Bark, Łokieć;Średnie;"trudność Średniozaawansowany; zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1629;Dipy na podłodze;Bark, Łokieć, Nadgarstek;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Nadgarstek']"
+1630;Wyciskanie hantli wąsko (hantle złączone);Bark, Łokieć, Nadgarstek;Średnie;"trudność Średniozaawansowany; złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Nadgarstek']"
+1631;Prostowanie ramion z hantlami na ławce skośnej dodatniej;Łokieć, Bark;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Łokieć', 'Bark']"
+1632;Odwodzenie nogi w tył z gumą w opadzie;Biodro, Plecy — dół;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Biodro', 'Plecy — dół']
+1633;Przysiad ze sztangą nisko na plecach (low bar);Kolano, Biodro, Plecy — dół;Wysokie;"trudność Średniozaawansowany; sztanga, ruch złożony; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro', 'Plecy — dół']"
+1634;Martwy ciąg z hantlami;Plecy — dół, Biodro, Kolano, Nadgarstek;Średnie;"złożone z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół', 'Biodro', 'Kolano', 'Nadgarstek']"
+1635;Uginanie nóg leżąc z hantlem;Kolano;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Kolano']
+1636;Mostek biodrowy ze stopami na ławce;Plecy — dół, Biodro;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Plecy — dół', 'Biodro']
+1637;Wypychanie nóg na suwnicy jednonóż;Kolano, Biodro;Wysokie;"trudność Średniozaawansowany; złożone z obciążeniem; jednostronne z obciążeniem; jak podobne ćwiczenia (Wysokie); poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1638;Wypychanie nóg na suwnicy szeroką postawą;Kolano, Biodro;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1639;Plank boczny na podwyższeniu;Bark, Nadgarstek;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark', 'Nadgarstek']
+1640;L-sit na podłodze;Nadgarstek, Bark, Plecy — dół;Wysokie;"trudność Zaawansowany; trudność uczenia 5; poziom: Wysokie | było: poziom=brak, stawy=['Nadgarstek', 'Bark', 'Plecy — dół']"
+1641;V-sit na podłodze;Plecy — dół, Nadgarstek;Wysokie;"trudność Zaawansowany; trudność uczenia 5; poziom: Wysokie | było: poziom=brak, stawy=['Plecy — dół', 'Nadgarstek']"
+1642;Rotacje rosyjskie z obciążeniem;Plecy — dół;Średnie;"trudność Średniozaawansowany; zgięcie/rotacja tułowia; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół']"
+1643;Wiosłowanie jednorącz z wyciągu dolnego w opadzie;Plecy — dół, Łokieć;Wysokie;"trudność Średniozaawansowany; złożone z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Plecy — dół', 'Łokieć']"
+1644;Ściąganie na maszynie z wolnym obciążeniem;Bark, Łokieć;Średnie;"złożone z obciążeniem; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1645;Przysiad bułgarski na suwnicy Smitha;Kolano, Biodro;Wysokie;"trudność Średniozaawansowany; złożone z obciążeniem; jednostronne z obciążeniem; trudność uczenia 4; nazwa: ruch wysokiego ryzyka; poziom: Wysokie | było: poziom=brak, stawy=['Kolano', 'Biodro']"
+1646;Ściąganie gumy oporowej z góry jednorącz w klęku;Bark, Łokieć;Średnie;"nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Bark', 'Łokieć']"
+1647;Ściąganie gumy oporowej z góry podchwytem;Bark, Łokieć;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark', 'Łokieć']
+1648;Unoszenie T leżąc na ławce skośnej;Bark;Średnie;"trudność Średniozaawansowany; poziom: Średnie | było: poziom=brak, stawy=['Bark']"
+1649;Wyciskanie gumy oporowej siedząc;Bark, Łokieć, Nadgarstek;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Bark', 'Łokieć', 'Nadgarstek']
+1650;Pompki łopatkowe na podwyższeniu;Nadgarstek, Bark;Niskie;poziom: Niskie | było: poziom=brak, stawy=['Nadgarstek', 'Bark']
+1651;Martwy ciąg jednonóż z hantlem z podparciem;Plecy — dół, Biodro, Kolano;Średnie;"złożone z obciążeniem; jednostronne z obciążeniem; nazwa: ruch wysokiego ryzyka; poziom: Średnie | było: poziom=brak, stawy=['Plecy — dół', 'Biodro', 'Kolano']"

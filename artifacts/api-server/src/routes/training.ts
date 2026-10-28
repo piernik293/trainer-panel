@@ -34,6 +34,7 @@ import { requireClientAuth } from "../middlewares/requireClientAuth";
 import { determineDayType, buildShortWarmup } from "../services/rampWarmup";
 import { getCooldown } from "../services/cooldown";
 import { WARMUP_ROLES } from "../lib/exerciseRoles";
+import { isConservativeHealth } from "../services/jointExclusion";
 import { estimateMinutes, formatAmount, isRollerDay, reportedJoints, selectCooldown, selectWarmup, type CatalogueWarmupItem } from "../services/warmupSelection";
 import {
   weightStepFor, exerciseRoleFor, restFor, formatRest, recordGain, bestSet, compactHistory, nextDayIndex,
@@ -161,7 +162,7 @@ const repsText = (e: { repType: string | null; repsExact: number | null; repRang
 async function buildWarmupAndCooldown(opts: { clientId: number; level: string | null; dayType: ReturnType<typeof determineDayType>; dayGroups: string[]; dayIndex: number; totalDays: number }) {
   const catalogue = (await db.select().from(exercisesTable).where(and(eq(exercisesTable.isActive, true), inArray(exercisesTable.role, [...WARMUP_ROLES])))) as unknown as CatalogueWarmupItem[];
   const [survey] = await db
-    .select({ equipment: surveysTable.equipment, trainingLocation: surveysTable.trainingLocation, healthLimitations: surveysTable.healthLimitations })
+    .select({ equipment: surveysTable.equipment, trainingLocation: surveysTable.trainingLocation, healthLimitations: surveysTable.healthLimitations, healthConsentStatus: surveysTable.healthConsentStatus })
     .from(surveysTable).where(eq(surveysTable.clientId, opts.clientId)).orderBy(desc(surveysTable.createdAt)).limit(1);
   const [setting] = await db.select({ breathing: clientsTable.breathingCooldown }).from(clientsTable).where(eq(clientsTable.id, opts.clientId));
   const since = new Date(Date.now() - 30 * 86_400_000);
@@ -170,6 +171,7 @@ async function buildWarmupAndCooldown(opts: { clientId: number; level: string | 
   const ctx = {
     dayGroups: opts.dayGroups, level: opts.level,
     painAreas: reportedJoints(survey?.healthLimitations, pains.map((p) => p.area)),
+    conservative: isConservativeHealth(survey?.healthConsentStatus),
     trainingLocation: survey?.trainingLocation ?? null, equipmentText: survey?.equipment ?? null,
     breathing: setting?.breathing === true, rollerAllowed: isRollerDay(opts.dayIndex, opts.totalDays),
   };

@@ -15,6 +15,7 @@
  * breathing exercise at the end ONLY when the client switched that on (default off).
  */
 import { PAIN_AREAS } from "@workspace/db";
+import { withheldForUnknownJoints } from "./jointData";
 
 export interface CatalogueWarmupItem {
   id: number;
@@ -27,6 +28,8 @@ export interface CatalogueWarmupItem {
   suitableForNoActivity: boolean | null;
   verificationStatus: string | null;
   jointStressAreas: string[] | null;
+  /** level of the joint load (Niskie / Średnie / Wysokie); absent in fixtures */
+  jointStress?: string | null;
   equipment: string[];
   equipmentDetail: string[] | null;
   trainingLocation: string[];
@@ -46,6 +49,8 @@ export interface SelectionContext {
   level: string | null | undefined;
   /** joints the client reported pain in (values of PAIN_AREAS) */
   painAreas: ReadonlySet<string>;
+  /** no health consent (declined / withdrawn): the cautious mode of decision 3a also applies to the warm-up and cool-down */
+  conservative?: boolean;
   trainingLocation?: string | null;
   /** the survey's free-text equipment list */
   equipmentText?: string | null;
@@ -106,6 +111,7 @@ function eligible(it: CatalogueWarmupItem, ctx: SelectionContext): boolean {
     if (it.verificationStatus === "do_weryfikacji") return false;
   }
   if ((it.jointStressAreas ?? []).some((j) => ctx.painAreas.has(j))) return false;
+  if (withheldForUnknownJoints(it, ctx.painAreas, ctx.conservative === true)) return false; // no joint data → not for a client with pain / without consent
   if (ctx.trainingLocation && it.trainingLocation.length > 0 && !it.trainingLocation.includes(ctx.trainingLocation)) return false;
   const eq = (ctx.equipmentText ?? "").toLowerCase();
   const needsBands = it.equipment.includes("Gumy oporowe");

@@ -301,3 +301,7 @@
 - Krok 1: `fix/trudnosc-ba-p` scalona do `main` (`2f7b01b`), testy przed (2738) i po (2748), push, restart, smoke 131/0.
 - Kroki 2–4: migracja danych 0057 (81 od BA / 21 od P / 48 od Ś / 0 ukrytych / 11 nowych; wyjątek id 89), reguła 50b, testy (`catalogue-decisions-0057`, `isGeneratorSafe`, symulacja). Backupy: `~/backups/trainer_panel_przed_0057_*.sql.gz`.
 - Krok 5: symulacja na pełnym katalogu (schemat `sim`): ponad poziom 1208 → 0, odmowy 3,6% → 2,3%, naruszeń 0; `docs/GENERATOR-JAKOSC.md`.
+
+## 28.10.2026 — decyzje właściciela 62–68: stawy (gałąź `fix/stawy-uzupelnienie`)
+- 3a: brak danych o stawach = nie dla klienta z bólem ani bez zgody (`services/jointData.ts`, wszystkie ścieżki + rozgrzewka); test regresji `unknown-joint-data`. 3b: uzupełniono 445 ćwiczeń (było 376 bez poziomu, 43 bez stawów), `docs/STAWY-UZUPELNIENIE.csv`, migracja 0059. 3c: sprawdzacz symulacji. 0058: „L-sit z podparciem”.
+- Symulacja 1000 profili: naruszeń 30 647 → 0; odmowy 2,3% → 2,6%.

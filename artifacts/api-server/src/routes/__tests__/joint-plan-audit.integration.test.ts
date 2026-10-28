@@ -24,7 +24,7 @@ import type { LadderRow } from "../../services/ladderSelection";
 // ─── Pure rules ───────────────────────────────────────────────────────────────
 
 const cand = (id: number, o: Partial<CandidateInfo> = {}): CandidateInfo => ({
-  id, name: `E${id}`, isActive: true, jointStressAreas: [], suitableForNoActivity: true, learningDifficulty: 1,
+  id, name: `E${id}`, isActive: true, jointStressAreas: [], jointStress: "Niskie", suitableForNoActivity: true, learningDifficulty: 1,
   trainingLocation: [], equipment: [], requiredEquipmentAll: [], ...o,
 });
 const L: LadderRow[] = [
@@ -113,7 +113,8 @@ beforeAll(async () => {
   otherTrainerId = (await db.insert(trainersTable).values({ clerkUserId: OTHER_TRAINER }).returning())[0].id;
   const ex = (id: number, name: string, equipment: string[], joints: string[]) => ({
     id, name, slug: `joint-audit-${id}`, mainMuscleGroup: "Barki", equipment, trainingLocation: ["Siłownia"],
-    jointStressAreas: joints, suitableForNoActivity: true, learningDifficulty: 1,
+    jointStressAreas: joints, jointStress: joints.length ? "Średnie" : "Niskie", // complete joint data (decision 3a: without it a replacement is not proposed)
+    suitableForNoActivity: true, learningDifficulty: 1,
   });
   await db.insert(exercisesTable).values([
     ex(IDS.easy, "Fixture audyt — szczebel 1 bez stawu", ["Masa własnego ciała"], []),
