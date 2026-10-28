@@ -308,3 +308,8 @@
 
 ## 28.10.2026 — poprawki właściciela do danych o stawach (gałąź `fix/stawy-poprawki`, scalona do `main`)
 - Migracja 0060 (z kopią starych wartości, jednorazowa): 10 dipów → Bark, Łokieć, Nadgarstek, Wysokie (w tym dipy na ławce i wspomagane na maszynie); 7 ćwiczeń w zwisie + Bark; 6 ćwiczeń → Średnie. Lista: `docs/STAWY-POPRAWKI.csv`. Symulacja 1000 profili: naruszeń 0, odmowy 2,6% → 2,9%.
+
+## 28.10.2026 — noc przed betą, blok 6: gałęzie za flagami po aktualizacji (plan: `docs/SCALANIE-PLAN.md`, gałąź `docs/scalanie-plan`)
+- Do `feature/kalistenika`, `feature/osiagniecia` i `feature/solo-ekrany` wciągnięto `main` (zwykłe scalenia, konflikty: obie strony zostawione); wszystkie wypchnięte; **nic nie scalono do `main`**, flagi wyłączone.
+- Kalistenika: „L-sit z podparciem” w drabince core w kodzie (+ test); symulacja stylu 300 profili: 0 naruszeń bezpieczeństwa i wykonalności, odmowy 3,8% dni; jeden fałszywy alarm sprawdzacza poprawiony. Pełne testy zielone na każdej gałęzi (API 2802–2805, typecheck OK).
+- Kolejność scalania, migracje (0056, 0061, 0062), ryzyka i lista kontrolna: `docs/SCALANIE-PLAN.md`.
