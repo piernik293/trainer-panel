@@ -271,3 +271,7 @@
 - Znaleziono 1 krytyczny, 13 ważnych, 10 kosmetycznych; naprawiono 1 / 11 / 5 (każda poprawka osobnym commitem z testem tam, gdzie się dało).
 - KRYTYCZNE: start API a konta bez trenera (`lib/migration.ts`) — naprawione; scal przed restartem z `main`.
 - `qa/bezpieczenstwo`: maskowanie tajnych adresów (tokeny i kody) w logach i dzienniku błędów + ta sama poprawka startu API.
+
+## 28.10.2026 — start i stop aplikacji nie ruszają sesji użytkownika (gałąź `fix/tmux-izolacja`)
+- Sesja tmux „claude” została zamknięta przy restarcie aplikacji. `dev-gcp.sh` i `stop-gcp.sh` używają teraz osobnego serwera tmux (gniazdo `trainer-panel-app`); `stop-gcp.sh` zamyka tylko ten serwer, starą sesję „trainer-panel” po dokładnej nazwie i procesy na portach aplikacji, które należą do repozytorium (nigdy przodków skryptu, tmux, claude).
+- Test: `scripts/test-tmux-izolacja.sh` (atrapa serwera użytkownika z sesją „claude”, atrapy aplikacji, obcy proces na porcie) — wszystko OK.
