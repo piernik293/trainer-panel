@@ -32,6 +32,7 @@ import { getDayTemplate, recommendSplitType } from "../services/planDraftVolumeD
 const N = Number(process.env.SIM_N ?? 24);
 const SEED = Number(process.env.SIM_SEED ?? 20261028);
 const REPORT = process.env.SIM_REPORT ?? "";
+const DUMP = process.env.SIM_DUMP ?? ""; // optional: per-day results of the first generation (profile, type, status, exercise ids) for the catalogue review
 
 // ── seeded PRNG ──────────────────────────────────────────────────────────────
 function mulberry32(a: number) {
@@ -238,11 +239,13 @@ describe("generator simulation", () => {
     const refusedWhy: Record<string, number> = {}; const refused: Record<string, number> = {}; const dupBy: Record<string, number> = {}; const profilesBy: Record<string, number> = {};
     const byGoalPlyo: Record<string, { plans: number; withPlyo: number }> = {};
     const weekMuscle: Record<string, number[]> = {};
+    const dump: Array<{ p: number; level: string; place: string; t: string; status: number; ids: number[] }> = [];
     for (let i = 0; i < N; i++) {
       const p = makeProfile(i);
       const cid = await createClient(p);
       const week = await generateWeek(cid, p);
       stat.profiles++; stat.plans++;
+      if (DUMP) for (const d of week) dump.push({ p: i, level: p.effective, place: p.place, t: d.type, status: d.status, ids: d.exercises.map((e) => e.id) });
       const bucket = `${p.place}|${p.effective}`; profilesBy[bucket] = (profilesBy[bucket] ?? 0) + 1;
       const ids = week.flatMap((d) => d.exercises.map((e) => e.id));
       stat.exercises += ids.length;
@@ -307,6 +310,7 @@ describe("generator simulation", () => {
       goalPlyo: byGoalPlyo, unverifiedInPlansByLevel: unverified, refusedDaysByPlaceLevelType: refused, refusedReasons: refusedWhy, plansWithDuplicatesByPlaceLevel: dupBy, profilesByPlaceLevel: profilesBy,
     };
     if (REPORT) writeFileSync(REPORT, JSON.stringify(report, null, 1));
+    if (DUMP) writeFileSync(DUMP, JSON.stringify(dump));
     expect(stat.wrongRefusalText, "odmowa bez komunikatu dla trenera").toBe(0);
     expect(safety.slice(0, 5), "naruszenia bezpieczeństwa").toEqual([]);
     expect(feas.slice(0, 5), "naruszenia wykonalności").toEqual([]);
