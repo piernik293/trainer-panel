@@ -423,11 +423,13 @@ export default function Step4Exercises({
               "Nie można rozpocząć kolejnego automatycznego planu w bieżącym okresie.";
             break;
           }
-          errors.push(`Dzień ${day.dayIndex + 1}: nie udało się przygotować ćwiczeń.`);
+          // Decision 51: the API says in plain words what is missing and what helps.
+          errors.push(`Dzień ${day.dayIndex + 1}: ${errData.code === "TOO_FEW_EXERCISES" && errData.error ? errData.error : "nie udało się przygotować ćwiczeń."}`);
           continue;
         }
 
         const data = await resp.json() as {
+          limitedDayNote?: string;
           exercises: Array<{
             id: number;
             name: string;
@@ -441,6 +443,7 @@ export default function Step4Exercises({
           explanation?: GeneratedDayExplanation;
         };
         console.log(`[GenerateDay] Day ${day.dayIndex}: ${data.exercises.length} exercises received`);
+        if (data.limitedDayNote) errors.push(`Dzień ${day.dayIndex + 1}: ${data.limitedDayNote}`);
         dayResults.push({ dayIndex: day.dayIndex, exercises: data.exercises, explanation: data.explanation });
 
         // Add this day's exercise IDs to the cross-session exclusion list.

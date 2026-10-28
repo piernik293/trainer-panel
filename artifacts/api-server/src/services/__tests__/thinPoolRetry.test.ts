@@ -101,7 +101,7 @@ const FULL_UPPER_POOL: ScoredAndFilteredExercise[] = [
 
 // ─── Test 1: Full-week exclusion with only Upper-B exercises remaining ─────────
 describe("V0 upper session — thin-pool retry", () => {
-  it("1. with ALL prior exercises excluded, upper-A + lower/FB leaves only 3 upper-B → engine fails", () => {
+  it("1. with ALL prior exercises excluded, upper-A + lower/FB leaves only 3 upper-B → a 3-exercise day (decision 51: minimum 3)", () => {
     // Exclude everything except chestB, backB, shoulderB (only 3 upper-B exercises — armsB excluded too)
     const allExcept3 = new Set<string>(
       [chestA, backA, shoulderA, armsA, squat, rdl, glute, ohpFull, curlFull, armsB].map(
@@ -119,8 +119,15 @@ describe("V0 upper session — thin-pool retry", () => {
       { alternativeIndex: 1 },
     );
 
+    expect(result.valid).toBe(true);
+    expect(result.exercises).toHaveLength(3);
+  });
+
+  it("1b. with only 2 exercises left the day is still refused (minimum 3)", () => {
+    const exclude = new Set<string>([chestA, backA, shoulderA, armsA, squat, rdl, glute, ohpFull, curlFull, armsB, shoulderB].map((e) => String(e.id)));
+    const result = runExerciseSelectionEngineV0(FULL_UPPER_POOL.filter((e) => e.id !== armsB.id && e.id !== shoulderB.id), "upper", exclude, INTERMEDIATE_CTX, { alternativeIndex: 1 });
     expect(result.valid).toBe(false);
-    expect(result.error).toMatch(/minimum 4 exercises required, got 3/);
+    expect(result.error).toMatch(/minimum 3 exercises required, got 2/);
     expect(result.exercises).toHaveLength(0);
   });
 

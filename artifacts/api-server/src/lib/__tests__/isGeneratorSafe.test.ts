@@ -29,4 +29,9 @@ describe("preferMainOverVariants", () => {
   it("odmiana odpada, gdy ćwiczenie główne jest w puli", () => { expect(preferMainOverVariants([main, v])).toEqual([main]); });
   it("odmiana zostaje, gdy głównego nie ma w puli (sprzęt miejsca, staw, poziom)", () => { expect(preferMainOverVariants([v, other])).toEqual([v, other]); });
   it("kilka odmian jednego głównego zostaje, gdy głównego brak", () => { const v2 = { id: 4, parentExerciseId: 1 }; expect(preferMainOverVariants([v, v2])).toEqual([v, v2]); });
+  it("decyzja 50a: ćwiczenie o trudności „Zaawansowany” nigdy dla BA i P; reszta poziomów bez zmian", () => {
+    const hard = { reviewedByTrainer: true, difficultyLevel: "Zaawansowany" };
+    expect(LEVELS.map((l) => isGeneratorSafe(hard, l))).toEqual([false, false, true, true]);
+    for (const d of ["Początkujący", "Średniozaawansowany", null]) expect(LEVELS.map((l) => isGeneratorSafe({ reviewedByTrainer: true, difficultyLevel: d }, l))).toEqual([true, true, true, true]);
+  });
 });

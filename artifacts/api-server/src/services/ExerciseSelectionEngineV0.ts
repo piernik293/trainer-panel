@@ -225,7 +225,7 @@ export interface V0EngineOptions {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 /** Session types with a minimum of 4 exercises required for a valid session. */
-const MIN_EXERCISES = 4;
+const MIN_EXERCISES = 3; // decision 51 (28.10.2026): was 4; a 3-exercise day is returned with a note for the trainer (routes/planDraftGenerateDay.ts)
 
 /** Band size for protected main-lift slots — variety stays within the same stimulus family. */
 const BAND_MAIN = 3;
