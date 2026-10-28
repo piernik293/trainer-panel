@@ -129,6 +129,21 @@ describe("joint exclusion — every joint × every level × every selection path
     }
   }
 
+  // Regression (generator simulation, 28.10.2026): "problem z biodrem" was not recognised (pattern knew only "biodro"/"bioder"), so hip-loading
+  // exercises reached the plan. Every joint is also covered through the interview text in inflected forms — the loop above uses the text for half of them only.
+  const INFLECTED: Record<string, string> = {
+    Kolano: "problem z kolanami", Biodro: "problem z biodrem", "Plecy — dół": "boli mnie w odcinku lędźwiowym",
+    Bark: "ból w ramieniu", Łokieć: "bolący łokciem", Nadgarstek: "ból w nadgarstkach",
+  };
+  for (const joint of JOINTS) {
+    it(`${joint} reported as inflected interview text blocks every path`, async () => {
+      const cid = await mkClient("Średniozaawansowany", INFLECTED[joint]!, null);
+      const offered = await runAllPaths(cid);
+      expect(offered.length).toBeGreaterThan(0);
+      expect(offered.filter((id) => (tagById.get(id) ?? []).includes(joint))).toEqual([]);
+    }, 120_000);
+  }
+
   it("control: without pain the same catalogue DOES offer tagged exercises (the test is not vacuous)", async () => {
     const cid = await mkClient("Średniozaawansowany", null, null);
     const offered = await runAllPaths(cid);

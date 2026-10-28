@@ -132,6 +132,10 @@ describe("joint pain: the exercise is never offered (interview or a report durin
     expect(jointsFromText("Ból kolan przy schodzeniu, bark po urazie, czasem nadgarstki")).toEqual(expect.arrayContaining(["Kolano", "Bark", "Nadgarstek"]));
     expect(jointsFromText("ból odcinka lędźwiowego")).toContain("Plecy — dół");
     expect(jointsFromText("brak")).toEqual([]);
+  });
+  it("hip and shoulder are recognised in every case form (regression: \"problem z biodrem\" was ignored, so hip-loading lunges reached the plan)", () => {
+    for (const t of ["problem z biodrem", "ból biodra", "boli mnie w biodrze", "bóle w biodrach", "staw biodrowy", "operacja biodra"]) expect(jointsFromText(t), t).toContain("Biodro");
+    for (const t of ["ból w ramieniu", "ból ramienia", "boli barku", "problem z barkiem"]) expect(jointsFromText(t), t).toContain("Bark");
     const set = reportedJoints("problem z kolanami", ["Bark", "Inne"]);
     expect([...set].sort()).toEqual(["Bark", "Kolano"]);
   });
