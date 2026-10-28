@@ -125,3 +125,9 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 ## Osiągnięcia (28.10.2026, gałąź `feature/osiagniecia`; projekt: `docs/OSIAGNIECIA.md`)
 56. **Projekt i silnik za przełącznikiem `ACHIEVEMENTS_ENABLED` (wyłączony) są gotowe.** Pięć pytań z rekomendacjami jest w sekcji 5 dokumentu: cel tygodnia (wszystkie dni planu), ochrona serii (1 tydzień na 6), urlop/choroba (kto i na ile), wyzwanie miesięczne (opcjonalne, domyślnie wyłączone), powiadomienia poza aplikacją (na razie nie).
 57. **Migracja 0056 (dwie nowe tabele) jest zastosowana tylko w bazie testowej** (backup `~/backups/trainer_panel_przed_0056_*`). Do bazy aplikacji trafi przy scaleniu gałęzi.
+
+## Ekrany Solo i „Postępy” (28.10.2026, gałąź `feature/solo-ekrany`; zrzuty: `docs/screens/solo/`)
+58. **Prototyp do oceny**: dolny pasek Dziś · Plan · Postępy · Ty, ekrany Postępy i Ty, start Solo. Za flagami (wyłączone). Wygląd i układ zatwierdzasz Ty — to nowa nawigacja.
+59. **Solo nie jest jeszcze domknięte**: brak serwerowego „sterownika” generowania planu dla osoby bez trenera (opisane w bloku 11), więc po starcie Solo ekran uczciwie mówi „wkrótce” zamiast prowadzić do wywiadu. Reszta (reguły Solo, filtry bezpieczeństwa) jest gotowa.
+60. **Przy włączonej fladze krótki „mignięcie” klasycznego widoku** zanim portal odczyta flagi (jedno zapytanie). Przy wyłączonych flagach nic się nie zmienia. Rekomendacja: zostawić do czasu zatwierdzenia wyglądu; potem flagi czytać razem z planem.
+61. **Drabinki kalisteniczne** (`feature/kalistenika`) dołączą do liczenia awansów po scaleniu obu gałęzi.

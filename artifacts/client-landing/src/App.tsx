@@ -20,6 +20,7 @@ import ActivatePage from '@/pages/activate';
 import JoinPage from '@/pages/join';
 import BookingPreviewPage from '@/pages/booking-preview';
 import PortalPreviewPage from '@/pages/portal-preview';
+import SoloPreviewPage from '@/pages/solo-preview';
 
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so
 // the same build serves multiple Clerk custom domains. Do not inline the env var.
@@ -142,6 +143,8 @@ function readOfflineResume() {
 }
 
 function App() {
+  // Dev-only: visual preview of the new shell and the Solo screens, outside Clerk, with mocked API (docs/screens/solo/).
+  if (import.meta.env.DEV && window.location.pathname.endsWith('/solo-preview')) return <SoloPreviewPage />;
   const [resume] = useState(readOfflineResume);
   if (resume) {
     return (

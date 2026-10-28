@@ -286,3 +286,9 @@
 - 4a: `docs/OSIAGNIECIA.md` (regularność tygodniowa z ochroną serii i urlopem, rekordy, kamienie milowe, awans na szczebel, kroki, wyzwanie miesięczne; zasady etyczne; 5 pytań).
 - 4b: za flagą `ACHIEVEMENTS_ENABLED=0`: migracja 0056 (`client_achievements`, `client_pauses`; backup przed; zastosowana tylko w bazie testowej), czysty silnik + zapis idempotentny, trasy portalu i trenera (osiągnięcia, przerwy), pole `achievement` w odpowiedzi „zakończ trening” tylko przy fladze.
 - Testy: `achievements.test.ts` (24), `achievements.integration.test.ts` (7). API 130 plików / 2758, bezpieczeństwo generatora 101, typecheck OK.
+
+## 28.10.2026 — noc, blok 5: ekrany Solo i „Postępy” (gałąź `feature/solo-ekrany`, z `feature/osiagniecia`, NIE scalona) — GOTOWE (prototyp)
+- Za flagami `SOLO_ENABLED` i `ACHIEVEMENTS_ENABLED` (obie wyłączone): dolny pasek Dziś · Plan · Postępy · Ty (`components/shell/*`, podpięty w `pages/plan.tsx`), Postępy (regularność, mapa roku, rekordy, kroki, osiągnięcia; tylko to, co zdobyte, bez rankingów i języka straty), Ty (profil, trener / kod, ustawienia, „Prowadzę podopiecznych”, dokumenty, wyloguj), start Solo. Nowa trasa API `GET /client-portal/activity` (za flagą osiągnięć). Bez zmian w panelu trenera.
+- Zrzuty 375 px jasny/ciemny: `docs/screens/solo/` (skrypt `scripts/screens-solo.mjs`, strona `/solo-preview` tylko DEV).
+- Testy: portal 260 (w tym „flagi wyłączone = portal jak dziś”, „flaga włączona = dolny pasek”), API 2759 (activity), panel 782, bezpieczeństwo generatora 101, typecheck i build OK.
+- Nie zrobione (zależy od decyzji): wywiad i plan Solo po stronie serwera (DO-DECYZJI 59), ekran końca treningu z osiągnięciem (pole `achievement` jest w odpowiedzi API, UI czeka na akceptację wyglądu).

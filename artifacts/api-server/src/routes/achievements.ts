@@ -3,14 +3,15 @@
  *  GET    /achievements/status                      { enabled }
  *  GET    /client-portal/achievements               own awards (newest first) + current streak in weeks (only a positive number, never a loss)
  *  POST   /client-portal/achievements/seen          marks all awards as seen
+ *  GET    /client-portal/activity                   days with a completed training in the last 365 days (the "map of the year"; dates only)
  *  GET    /client-portal/pauses · POST · DELETE /:id   own holiday / illness periods (neutral weeks for the streak)
  *  GET    /clients/:clientId/pauses · POST · DELETE /:id   the same for the trainer's own client
  * No rankings, no comparisons between people: every query is scoped to one client.
  */
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, or } from "drizzle-orm";
 import { z } from "zod";
-import { db, clientsTable, clientAchievementsTable, clientPausesTable } from "@workspace/db";
+import { db, clientsTable, clientAchievementsTable, clientPausesTable, workoutSessionsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireClientAuth } from "../middlewares/requireClientAuth";
 import { achievementsEnabled } from "../services/achievements";
@@ -39,6 +40,16 @@ router.get("/client-portal/achievements", gate, requireClientAuth, async (req, r
 router.post("/client-portal/achievements/seen", gate, requireClientAuth, async (req, res): Promise<void> => {
   await db.update(clientAchievementsTable).set({ seenAt: new Date() }).where(and(eq(clientAchievementsTable.clientId, req.client!.id), isNull(clientAchievementsTable.seenAt)));
   res.json({ ok: true });
+});
+
+router.get("/client-portal/activity", gate, requireClientAuth, async (req, res): Promise<void> => {
+  const since = shiftDate(todayWarsaw(), -365);
+  const rows = await db.select({ d: workoutSessionsTable.sessionDate }).from(workoutSessionsTable).where(and(
+    eq(workoutSessionsTable.clientId, req.client!.id),
+    or(eq(workoutSessionsTable.status, "completed"), and(isNull(workoutSessionsTable.status), eq(workoutSessionsTable.isCompleted, true))),
+    gte(workoutSessionsTable.sessionDate, since),
+  ));
+  res.json({ days: [...new Set(rows.map((r) => String(r.d)))].sort() });
 });
 
 // ─── Pauses ───────────────────────────────────────────────────────────────────

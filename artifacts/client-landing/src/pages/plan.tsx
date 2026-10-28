@@ -48,6 +48,11 @@ const BOOKING_MOCK =
   typeof window !== "undefined" &&
   new URLSearchParams(window.location.search).has("mockBooking");
 
+import { usePortalFlags, shellEnabled } from "@/lib/shell/flags";
+import { PortalShell } from "@/components/shell/PortalShell";
+import type { ShellTab } from "@/components/shell/BottomBar";
+import { ProgressContainer, YouContainer, SoloGate } from "@/components/shell/ShellContainers";
+
 async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
   if (BOOKING_MOCK && path.startsWith("/client-portal/booking")) {
     return mockBookingApi<T>(path, opts);
@@ -1115,17 +1120,20 @@ export function PlanView({
   plan,
   onSelectDay,
   today,
+  embedded = false,
 }: {
   client: ClientInfo;
   plan: Plan;
   onSelectDay: (day: PlanDay) => void;
   /** "Dziś" card — the start of the portal. */
   today?: React.ReactNode;
+  /** Inside the new portal shell (flags on): no page wrapper of its own. */
+  embedded?: boolean;
 }) {
   const cardio = parseCardioData(plan.cardioRecommendation);
   return (
-    <div className="min-h-screen bg-background text-foreground pb-16">
-      <div className="max-w-2xl mx-auto px-4 pt-10 space-y-8">
+    <div className={embedded ? "text-foreground" : "min-h-screen bg-background text-foreground pb-16"}>
+      <div className={embedded ? "space-y-8" : "max-w-2xl mx-auto px-4 pt-10 space-y-8"}>
         <div>
           <p className="text-xs uppercase tracking-[0.06em] font-bold text-muted-foreground mb-2">Plan treningowy</p>
           <div className="flex items-center gap-2 flex-wrap">
@@ -1220,6 +1228,9 @@ export default function PlanPortal() {
   const [navBookable, setNavBookable] = useState(false);
   // osoba bez trenera (np. po prośbie o dołączenie): zamiast „skontaktuj się z trenerem” pokazujemy jej własny ekran
   const [unlinked, setUnlinked] = useState(false);
+  // New portal shell (bottom bar) — only when SOLO_ENABLED or ACHIEVEMENTS_ENABLED is on; both off = the portal as before.
+  const { ready: flagsReady, flags } = usePortalFlags();
+  const [tab, setTab] = useState<ShellTab>("dzis");
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
@@ -1297,7 +1308,9 @@ export default function PlanPortal() {
             </p>
             </>
           )}
-          <AccountNotice onStatus={(st) => setUnlinked(!!st && !st.linked)} />
+          {flagsReady && flags.solo
+            ? <SoloGate onStatus={(st) => setUnlinked(!!st && !st.linked)} />
+            : <AccountNotice onStatus={(st) => setUnlinked(!!st && !st.linked)} />}
           {planError && !unlinked && (
             <Button onClick={() => setPlanRetry((c) => c + 1)} className="rounded-lg mt-2">
               Spróbuj ponownie
@@ -1361,6 +1374,37 @@ export default function PlanPortal() {
     );
   }
 
+  const todayBlock = (
+    <>
+      <TodayCard
+        reloadKey={todayReload}
+        onStart={(day, ctx) => setTraining({ day, firstName: ctx.client.firstName, week: ctx.week })}
+        onRamp={(kind, planDayId, items) => setRamp({ kind, planDayId, items })}
+      />
+      <StepsTile />
+      <PackageTile />
+    </>
+  );
+
+  if (flagsReady && shellEnabled(flags)) {
+    return (
+      <PortalShell tab={tab} onTab={(t) => { setTab(t); window.scrollTo({ top: 0 }); }}>
+        {tab === "dzis" && (
+          <div className="space-y-6">
+            <div>
+              <p className="section-label">Dziś</p>
+              <h1 className="text-2xl font-bold tracking-tight">Cześć, {client.firstName}!</h1>
+            </div>
+            {todayBlock}
+          </div>
+        )}
+        {tab === "plan" && <PlanView client={client} plan={plan} onSelectDay={setSelectedDay} embedded />}
+        {tab === "postepy" && <ProgressContainer achievementsOn={flags.achievements} />}
+        {tab === "ty" && <YouContainer firstName={client.firstName} lastName={client.lastName} />}
+      </PortalShell>
+    );
+  }
+
   return (
     <>
       {nav}
@@ -1368,17 +1412,7 @@ export default function PlanPortal() {
         client={client}
         plan={plan}
         onSelectDay={setSelectedDay}
-        today={
-          <>
-            <TodayCard
-              reloadKey={todayReload}
-              onStart={(day, ctx) => setTraining({ day, firstName: ctx.client.firstName, week: ctx.week })}
-              onRamp={(kind, planDayId, items) => setRamp({ kind, planDayId, items })}
-            />
-            <StepsTile />
-            <PackageTile />
-          </>
-        }
+        today={todayBlock}
       />
       <LegalLinks className="py-6 pb-24" />
     </>
