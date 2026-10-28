@@ -10,6 +10,7 @@ import { getInitials } from "@/components/layout/AccountMenu";
 import { SubscriptionSummary } from "@/components/subscription/SubscriptionSummary";
 import { ThemeSelect } from "@/components/ThemeSelect";
 import { JoinCard } from "@/components/JoinCard";
+import { FeedbackCard } from "@/components/FeedbackCard";
 
 export default function Settings() {
   const { user, isLoaded } = useUser();
@@ -157,6 +158,8 @@ export default function Settings() {
           <ThemeSelect />
         </CardContent>
       </Card>
+
+      <FeedbackCard />
     </div>
   );
 }

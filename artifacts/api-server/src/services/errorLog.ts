@@ -16,10 +16,11 @@ const MAX_PLACE = 120;
 const HEALTH_WORDS = /\b(ból|bol|bóle|kontuzj\w*|chor\w*|zdrow\w*|lek\w*|leki|ciąż\w*|operacj\w*|uraz\w*|diagnoz\w*|schorzen\w*|alergi\w*|cukrzyc\w*|ciśnien\w*)\b/i;
 
 /** Czysta funkcja: usuwa z tekstu wszystko, co mogłoby być sekretem lub daną osobową. */
-export function scrubMessage(raw: unknown): string {
+export const HEALTH_HIDDEN_TEXT = "[treść ukryta — mogła zawierać dane zdrowotne]";
+export function scrubMessage(raw: unknown, max: number = MAX_MESSAGE): string {
   let s = typeof raw === "string" ? raw : raw instanceof Error ? `${raw.name}: ${raw.message}` : String(raw ?? "");
   s = maskSecretsInPath(s.replace(/\s+/g, " ").trim());
-  if (HEALTH_WORDS.test(s)) return "[treść ukryta — mogła zawierać dane zdrowotne]";
+  if (HEALTH_WORDS.test(s)) return HEALTH_HIDDEN_TEXT;
   s = s
     .replace(/\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]+/gi, "$1 [ukryte]")
     .replace(/\b(authorization|password|passwd|haslo|hasło|token|secret|api[_-]?key|apikey|key|cookie|session)\b\s*[:=]\s*\S+/gi, "$1=[ukryte]")
@@ -30,7 +31,7 @@ export function scrubMessage(raw: unknown): string {
     .replace(/\b[A-Fa-f0-9]{24,}\b/g, "[token]")
     .replace(/\b[A-Za-z0-9_-]{32,}\b/g, "[token]")
     .replace(/\+?\d[\d\s-]{6,}\d/g, "[liczba]");
-  return s.length > MAX_MESSAGE ? `${s.slice(0, MAX_MESSAGE)}…` : s;
+  return s.length > max ? `${s.slice(0, max)}…` : s;
 }
 
 /** Miejsce błędu: ścieżka bez parametrów, identyfikatory zamienione na :id. */

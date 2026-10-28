@@ -148,3 +148,10 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 68. **Okrojona baza testowa:** wcześniejsze symulacje szły na 185 ćwiczeniach (katalog aplikacji ma 587), więc kolumna „ile razy brakowało” w pliku przeglądu miała ograniczone pokrycie. Wnioski o decyzjach nie zmieniają się (to nadal Twoje decyzje), ale liczby jakości (np. odmowy 14%) były zawyżone: na pełnym katalogu przed zmianami to 3,6%.
    **ODPOWIEDŹ WŁAŚCICIELA: przyjęte do wiadomości (odmowy liczone teraz na pełnym katalogu).**
 
+
+## Z nocy przed betą — blok 4 („Zgłoś uwagę”, gałąź `feature/zglos-uwage`)
+- **N4-1. Flaga `FEEDBACK_ENABLED` jest wyłączona** (nie włączałem). Po scaleniu: migracja 0062 (nowa tabela `user_feedback`) zastosuje się sama przy `scripts/db-setup-gcp.sh` (addytywna; przed nią backup). Do włączenia w becie: `FEEDBACK_ENABLED=1` w `.env` + restart API. **Czy włączyć na start bety?** (Rekomendacja: tak — to najtańszy sposób na zbieranie uwag.)
+- **N4-2. Uwaga ze słowami o zdrowiu jest odrzucana** (jak w dzienniku błędów — ochrona danych): komunikat „Wygląda na to, że uwaga zawiera dane zdrowotne. Opisz sprawę bez nich.” Lista słów jest szeroka (np. „lekko”, „ból”); możliwe fałszywe odrzucenia. **Akceptujesz, czy zawęzić listę?**
+- **N4-3. Brak kontaktu zwrotnego:** zapisujemy tylko skrót autora i rolę, bez e-maila — nie da się odpowiedzieć osobie. **Czy dodać opcjonalne pole „Chcę odpowiedź” (zapisuje e-mail z konta)?**
+- **N4-4. Limit:** 5 uwag na godzinę na osobę (próby odrzucone też się liczą). **Czy wystarczy?**
+- **N4-5. Mail do właściciela** idzie na `OWNER_NOTIFY_EMAIL`, a gdy pusty — `ADMIN_EMAIL`. Bez SMTP nie jest wysyłany (uwagi są i tak w panelu administratora). Mail nie zawiera adresu autora.

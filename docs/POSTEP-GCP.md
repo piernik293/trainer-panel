@@ -308,3 +308,9 @@
 
 ## 28.10.2026 — poprawki właściciela do danych o stawach (gałąź `fix/stawy-poprawki`, scalona do `main`)
 - Migracja 0060 (z kopią starych wartości, jednorazowa): 10 dipów → Bark, Łokieć, Nadgarstek, Wysokie (w tym dipy na ławce i wspomagane na maszynie); 7 ćwiczeń w zwisie + Bark; 6 ćwiczeń → Średnie. Lista: `docs/STAWY-POPRAWKI.csv`. Symulacja 1000 profili: naruszeń 0, odmowy 2,6% → 2,9%.
+
+## 28.10.2026 — noc przed betą, blok 4: „Zgłoś uwagę” (gałąź `feature/zglos-uwage`, za flagą `FEEDBACK_ENABLED`, domyślnie wyłączona)
+- Migracja 0062 (nowa tabela `user_feedback`, tylko dodawanie) zastosowana **wyłącznie na bazie testowej** (kopia `~/backups/trainer_panel_test_przed_0062_*`); baza aplikacji nietknięta.
+- API: `GET /api/feedback/status`, `POST /api/feedback` (limit 5/godz. na osobę), `GET /api/admin/feedback`, `POST /api/admin/feedback/:id/read`. Flaga wyłączona = 404. Treść oczyszczana jak w dzienniku błędów (e-maile, tokeny, numery), dane zdrowotne odrzucane; zapisujemy ścieżkę bez parametrów, wersję i skrót autora — bez zrzutu ekranu. Mail do właściciela, jeśli SMTP działa.
+- UI: karta „Zgłoś uwagę” w Ustawieniach panelu i w „Moje konto” portalu (nie na ekranie treningu); zakładka „Uwagi” (nowe/przeczytane) w administracji.
+- Testy: `feedback.test.ts` (12: flaga, oczyszczanie, limit, izolacja, status), testy formularza w panelu i portalu; pełne: API 136 plików / 2784, panel 789, portal 254, typecheck OK. Decyzje: `docs/DO-DECYZJI.md` (N4-1…N4-5).
