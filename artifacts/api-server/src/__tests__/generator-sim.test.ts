@@ -131,7 +131,7 @@ function checkExercise(ex: Ex, p: Profile, out: Violation[], feas: Violation[]) 
     if (!isCalisthenicsExercise(ex)) out.push(v("kalistenika: sprzęt spoza listy", (ex.equipment ?? []).join("/")));
     if (lvl <= 1 && (ex.verificationStatus !== "zweryfikowane" || ex.reviewedByTrainer === false)) out.push(v("kalistenika: BA/P niezweryfikowane"));
     // P: only the lower rungs (bench dips, australian rows, hang, scapular pull-ups are P rungs approved by the owner 28.10.2026); the upper rungs never
-    if (lvl === 1 && /^Podciąganie|^Dipy na poręczach|^Dipy na kółkach|^Dipy z |Muscle-up|jednorącz|Pistol|w staniu na rękach|łucznik|^Negatywy|Toes to bar|Unoszenie (kolan|prostych nóg) w zwisie|hanging pike|nogi proste|nogi wyżej/i.test(ex.name)) out.push(v("kalistenika: P górny szczebel", ex.name));
+    if (lvl === 1 && /^Podciąganie(?! kolan)|^Dipy na poręczach|^Dipy na kółkach|^Dipy z |Muscle-up|jednorącz|Pistol|w staniu na rękach|łucznik|^Negatywy|Toes to bar|Unoszenie (kolan|prostych nóg) w zwisie|hanging pike|nogi proste|nogi wyżej/i.test(ex.name)) out.push(v("kalistenika: P górny szczebel", ex.name));
     // BA: nothing on the bar or the parallel bars, no hanging
     if (lvl === 0 && /zwis|podciąg|dipy|negatywy|muscle-up|toes to bar|australijsk/i.test(ex.name)) out.push(v("kalistenika: BA zwis/drążek/poręcze", ex.name));
     if (lvl === 0 && /zwis|podciąg|dipy/i.test(ex.name)) out.push(v("kalistenika: BA zwis/podciąganie/dipy", ex.name));
