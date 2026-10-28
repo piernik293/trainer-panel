@@ -67,9 +67,8 @@ function FinishScreen({ firstName, day, run, week, onFeedback, onFinish }: {
   return (
     <div className="space-y-5">
       <div className="text-center">
-        {/* Mascot slot: a victory gesture will go here (later). */}
-        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border border-dashed border-border bg-muted text-xs text-muted-foreground" aria-hidden>maskotka</div>
-        <h2 ref={h} tabIndex={-1} className="mt-3 text-2xl font-bold outline-none">Trening ukończony</h2>
+        {/* Mascot slot (hidden until the mascot exists): a victory gesture will go here. */}
+        <h2 ref={h} tabIndex={-1} className="text-2xl font-bold outline-none">Trening ukończony</h2>
         <p className="text-muted-foreground">Dobra robota{firstName ? `, ${firstName}` : ""}!</p>
       </div>
       <dl className="grid grid-cols-3 gap-2 text-center">
@@ -113,11 +112,10 @@ export function TrainingFlow({ day, firstName, week, onExit }: {
   const [run, dispatch] = useReducer(runReducer, undefined, () => {
     const saved = loadRun(day.planDayId);
     if (saved && saved.stage !== "done") return saved;
-    const fresh = newRun(day, newUuid());
-    queue.enqueue({ id: fresh.sessionUuid, kind: "start", sessionUuid: fresh.sessionUuid, body: { clientUuid: fresh.sessionUuid, planDayId: day.planDayId } });
-    return fresh;
+    return newRun(day, newUuid());
   });
-  // A run restored from storage whose `start` is unknown to the queue (cleared storage): send it again — the server answers by UUID, so it is safe.
+  // The `start` of a new run — or of a run restored from storage that the queue does not know (cleared storage) — is queued after render
+  // (never inside the reducer initializer: the queue notifies SyncBadge, which React flags as an update during render). The server answers by UUID, so resending is safe.
   useEffect(() => {
     if (!queue.knowsSession(run.sessionUuid)) {
       queue.enqueue({ id: run.sessionUuid, kind: "start", sessionUuid: run.sessionUuid, body: { clientUuid: run.sessionUuid, planDayId: day.planDayId } });
