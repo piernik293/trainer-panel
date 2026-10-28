@@ -292,3 +292,6 @@
 - Zrzuty 375 px jasny/ciemny: `docs/screens/solo/` (skrypt `scripts/screens-solo.mjs`, strona `/solo-preview` tylko DEV).
 - Testy: portal 260 (w tym „flagi wyłączone = portal jak dziś”, „flaga włączona = dolny pasek”), API 2759 (activity), panel 782, bezpieczeństwo generatora 101, typecheck i build OK.
 - Nie zrobione (zależy od decyzji): wywiad i plan Solo po stronie serwera (DO-DECYZJI 59), ekran końca treningu z osiągnięciem (pole `achievement` jest w odpowiedzi API, UI czeka na akceptację wyglądu).
+
+## 28.10.2026 — decyzja 58: poprawki ekranów (gałąź `feature/solo-ekrany`, NIE scalona) — kod GOTOWY, zrzuty po kroku 56
+- „Dziś”: kroki tylko jako mały wiersz z polem (`StepsTile compact`); wykres, średnia i cel tylko w „Postępach”. „Ty”: jeden napis „Prowadzę podopiecznych” (karta ma własny tytuł). Linki w „Dokumentach” min. 44 px (test klasy `min-h-11`). Testy: portal +4.

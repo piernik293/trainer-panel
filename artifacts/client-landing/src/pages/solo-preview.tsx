@@ -84,7 +84,7 @@ export default function SoloPreviewPage() {
         <div className="space-y-6">
           <div><p className="section-label">Dziś</p><h1 className="text-2xl font-bold tracking-tight">Cześć, Anna!</h1></div>
           <TodayCard reloadKey={0} onStart={() => {}} onRamp={() => {}} />
-          <StepsTile />
+          <StepsTile compact />
         </div>
       )}
       {tab === "plan" && <PlanView client={{ id: 1, firstName: "Anna", lastName: "Testowa" } as never} plan={PLAN} onSelectDay={() => {}} embedded />}

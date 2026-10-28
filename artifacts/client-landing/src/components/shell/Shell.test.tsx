@@ -7,6 +7,8 @@ import { ProgressScreen } from "./ProgressScreen";
 import { BottomBar } from "./BottomBar";
 import { SoloStart } from "./SoloStart";
 import { YouScreen } from "./YouScreen";
+import { LegalLinks } from "@/components/LegalLinks";
+import { LEGAL_DOCUMENTS } from "@workspace/survey-config";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
@@ -96,5 +98,13 @@ describe("bottom bar and screens", () => {
     rerender(<YouScreen {...base} trainerName="Marek" />);
     expect(screen.queryByLabelText("Kod trenera")).toBeNull();
     expect(screen.getByText("Marek")).toBeTruthy();
+  });
+  it("Ty: \"Prowadzę podopiecznych\" appears once (the card has its own title); document links are at least 44 px high", () => {
+    const card = <div data-testid="trainer-apply"><p>Prowadzę podopiecznych</p></div>;
+    const { container } = render(<YouScreen firstName="A" lastName="B" email="" settings={null} trainerApply={card} legal={<LegalLinks className="justify-start" />} trainerName="M" onSignOut={() => {}} onJoin={() => {}} />);
+    expect((container.textContent ?? "").split("Prowadzę podopiecznych").length - 1).toBe(1);
+    const links = [...container.querySelectorAll('[data-testid="legal-links"] a')];
+    expect(links).toHaveLength(LEGAL_DOCUMENTS.length);
+    for (const a of links) expect(a.className).toContain("min-h-11");
   });
 });

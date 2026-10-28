@@ -60,10 +60,8 @@ export function YouScreen({ firstName, lastName, email, trainerName, pendingTrai
         <div className="space-y-4 rounded-lg border border-border bg-card p-4">{settings}</div>
       </section>
 
-      <section className="space-y-2" aria-labelledby="coach-h">
-        <h2 id="coach-h" className="section-label">Prowadzę podopiecznych</h2>
-        {trainerApply}
-      </section>
+      {/* the card carries its own title "Prowadzę podopiecznych" — no second heading above it */}
+      <section aria-label="Prowadzę podopiecznych">{trainerApply}</section>
 
       <section className="space-y-1" aria-labelledby="docs-h">
         <h2 id="docs-h" className="section-label">Dokumenty</h2>

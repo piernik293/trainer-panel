@@ -1374,14 +1374,14 @@ export default function PlanPortal() {
     );
   }
 
-  const todayBlock = (
+  const todayBlock = (compactSteps = false) => (
     <>
       <TodayCard
         reloadKey={todayReload}
         onStart={(day, ctx) => setTraining({ day, firstName: ctx.client.firstName, week: ctx.week })}
         onRamp={(kind, planDayId, items) => setRamp({ kind, planDayId, items })}
       />
-      <StepsTile />
+      <StepsTile compact={compactSteps} />
       <PackageTile />
     </>
   );
@@ -1395,7 +1395,7 @@ export default function PlanPortal() {
               <p className="section-label">Dziś</p>
               <h1 className="text-2xl font-bold tracking-tight">Cześć, {client.firstName}!</h1>
             </div>
-            {todayBlock}
+            {todayBlock(true)}
           </div>
         )}
         {tab === "plan" && <PlanView client={client} plan={plan} onSelectDay={setSelectedDay} embedded />}
@@ -1412,7 +1412,7 @@ export default function PlanPortal() {
         client={client}
         plan={plan}
         onSelectDay={setSelectedDay}
-        today={todayBlock}
+        today={todayBlock()}
       />
       <LegalLinks className="py-6 pb-24" />
     </>

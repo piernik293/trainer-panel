@@ -68,3 +68,19 @@ describe("StepsTile", () => {
     expect(screen.queryByRole("progressbar")).toBeNull();
   });
 });
+
+describe("StepsTile compact (the \"Dziś\" tab)", () => {
+  it("only a small row with the entry field: no chart, no average, no goal picker; the full tile still has them", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(summary()), { status: 200 })));
+    const { unmount } = render(<StepsTile compact />);
+    await waitFor(() => expect(screen.getByTestId("steps-today").textContent).toContain("4"));
+    expect(screen.getByTestId("steps-input")).toBeTruthy();
+    expect(screen.queryByTestId("steps-week")).toBeNull();
+    expect(screen.queryByTestId("steps-average")).toBeNull();
+    expect(screen.queryByText("Zmień cel")).toBeNull();
+    unmount();
+    render(<StepsTile />);
+    await waitFor(() => expect(screen.getByTestId("steps-week")).toBeTruthy());
+    expect(screen.getByTestId("steps-average")).toBeTruthy();
+  });
+});
