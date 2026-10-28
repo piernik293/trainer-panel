@@ -18,6 +18,14 @@ let mockUserId: string | null = null;
 vi.mock("@clerk/express", () => ({
   clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
   getAuth: () => ({ userId: mockUserId }),
+  clerkClient: {
+    users: {
+      getUser: async (id: string) =>
+        id === "trainer_profile_test_new"
+          ? { firstName: "Anna", lastName: "Trener", primaryEmailAddress: { emailAddress: "anna.trener@example.invalid" } }
+          : Promise.reject(new Error("clerk unavailable")),
+    },
+  },
 }));
 
 vi.mock("@clerk/shared/keys", () => ({
@@ -84,6 +92,9 @@ describe("new account in the trainer app", () => {
     const res = await request(app).post("/api/trainer/profile");
     expect(res.status).toBe(200);
     expect(typeof res.body.id).toBe("number");
+    // Imię i e-mail z Clerka trafiają do bazy (lista trenerów w panelu administratora).
+    expect(res.body).toMatchObject({ displayName: "Anna Trener", email: "anna.trener@example.invalid" });
+    expect((await trainerRows(NEW_TRAINER))[0]).toMatchObject({ displayName: "Anna Trener", email: "anna.trener@example.invalid" });
     for (const path of TRAINER_ENDPOINTS) {
       expect((await request(app).get(path)).status, path).toBe(200);
     }
