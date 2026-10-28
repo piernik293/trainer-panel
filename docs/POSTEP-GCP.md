@@ -308,3 +308,6 @@
 
 ## 28.10.2026 — poprawki właściciela do danych o stawach (gałąź `fix/stawy-poprawki`, scalona do `main`)
 - Migracja 0060 (z kopią starych wartości, jednorazowa): 10 dipów → Bark, Łokieć, Nadgarstek, Wysokie (w tym dipy na ławce i wspomagane na maszynie); 7 ćwiczeń w zwisie + Bark; 6 ćwiczeń → Średnie. Lista: `docs/STAWY-POPRAWKI.csv`. Symulacja 1000 profili: naruszeń 0, odmowy 2,6% → 2,9%.
+
+## 28.10.2026 — noc przed betą, blok 8: stan przed betą (gałąź `docs/przed-beta-stan`)
+- `docs/PRZED-BETA-STAN.md`: punkty `BETA-START.md` (gotowe/czekają, czas i koszt), konta i dane testowe do usunięcia (nic nie usunięto), gałęzie scalone i niescalone (nic nie usunięto), stan flag i rekomendacja, otwarte pozycje `DO-DECYZJI.md`.
