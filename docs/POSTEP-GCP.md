@@ -310,3 +310,6 @@
 - Krok 1: `fix/trudnosc-ba-p` scalona do `main` (`2f7b01b`), testy przed (2738) i po (2748), push, restart, smoke 131/0.
 - Kroki 2–4: migracja danych 0057 (81 od BA / 21 od P / 48 od Ś / 0 ukrytych / 11 nowych; wyjątek id 89), reguła 50b, testy (`catalogue-decisions-0057`, `isGeneratorSafe`, symulacja). Backupy: `~/backups/trainer_panel_przed_0057_*.sql.gz`.
 - Krok 5: symulacja na pełnym katalogu (schemat `sim`): ponad poziom 1208 → 0, odmowy 3,6% → 2,3%, naruszeń 0; `docs/GENERATOR-JAKOSC.md`.
+
+## 28.10.2026 — kalistenika po scaleniu katalogu (gałąź `feature/kalistenika`, NIE scalona)
+- Wciągnięty `main` (przegląd katalogu, 50b, migracja 0057); nowe ćwiczenia dopisane do drabinek w kodzie stylu. Symulacja stylu na pełnym katalogu (300 profili): odmowy 4,7% → 2,8%, 0 naruszeń. Flaga wyłączona.

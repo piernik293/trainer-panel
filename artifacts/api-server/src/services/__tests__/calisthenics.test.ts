@@ -137,3 +137,15 @@ describe("bench / chair / park bench (decision 54.2)", () => {
     expect(calisthenicsEquipmentText("Siłownia", null)).toBeNull();
   });
 });
+
+describe("ladders after the catalogue review (28.10.2026)", () => {
+  it("every step name is unique; new exercises sit at the owner's levels; nothing on the bar, rings or parallel bars is at the BA level", () => {
+    const names = CALISTHENICS_LADDERS.flatMap((l) => l.steps.map(([n]) => n));
+    expect(new Set(names).size).toBe(names.length);
+    const level = (n: string) => CALISTHENICS_LADDERS.flatMap((l) => l.steps).find(([x]) => x === n)![1];
+    expect(level("Zwis na drążku")).toBe("Początkujący");
+    for (const n of ["Negatywy podciągnięcia", "Negatywy dipów", "Dipy z gumą", "Wiosłowanie australijskie — nogi proste", "Unoszenie prostych nóg w zwisie"]) expect(level(n), n).toBe("Średniozaawansowany");
+    for (const n of ["Podciąganie łucznik (archer)", "Pompki łucznik (archer)", "Dipy z obciążeniem", "Toes to bar", "Pistol z podparciem", "Wiosłowanie australijskie — nogi wyżej lub na kółkach"]) expect(level(n), n).toBe("Zaawansowany");
+    for (const l of CALISTHENICS_LADDERS.filter((x) => /podciąganie|dipy|brzuch w zwisie/.test(x.pattern))) for (const [, lv] of l.steps) expect(lv).not.toBe("Brak aktywności fizycznej");
+  });
+});

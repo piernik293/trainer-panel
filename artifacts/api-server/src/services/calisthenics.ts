@@ -104,20 +104,28 @@ const L = { BA: "Brak aktywności fizycznej", P: "Początkujący", S: "Średnioz
 
 export const CALISTHENICS_LADDERS: ReadonlyArray<{ pattern: string; steps: ReadonlyArray<readonly [name: string, level: LadderLevel]> }> = [
   { pattern: "Kalistenika: podciąganie", steps: [
-    ["Łopatkowe podciągnięcia w zwisie (scapular pull-up)", L.P], ["Podciąganie z gumą wspomagającą", L.S], ["Podciąganie podchwytem (chin-up)", L.S],
-    ["Podciąganie na drążku", L.Z], ["Podciąganie na drążku chwytem neutralnym", L.Z], ["Podciąganie z obciążeniem", L.Z], ["Muscle-up na drążku (bez wymachu)", L.Z],
+    ["Zwis na drążku", L.P], ["Łopatkowe podciągnięcia w zwisie (scapular pull-up)", L.P], ["Negatywy podciągnięcia", L.S], ["Podciąganie z gumą wspomagającą", L.S],
+    ["Podciąganie podchwytem (chin-up)", L.S], ["Podciąganie na drążku", L.Z], ["Podciąganie na drążku chwytem neutralnym", L.Z], ["Podciąganie łucznik (archer)", L.Z],
+    ["Podciąganie z obciążeniem", L.Z], ["Muscle-up na drążku (bez wymachu)", L.Z],
   ] },
-  { pattern: "Kalistenika: dipy", steps: [["Dipy na ławce", L.P], ["Dipy na poręczach", L.S], ["Dipy na kółkach gimnastycznych", L.Z]] },
+  { pattern: "Kalistenika: dipy", steps: [
+    ["Dipy na ławce", L.P], ["Negatywy dipów", L.S], ["Dipy z gumą", L.S], ["Dipy na poręczach", L.S], ["Dipy na kółkach gimnastycznych", L.Z], ["Dipy z obciążeniem", L.Z],
+  ] },
   { pattern: "Kalistenika: pompki", steps: [
     ["Pompki ścienne", L.BA], ["Pompki na podwyższeniu", L.P], ["Pompki na kolanach", L.P], ["Pompki klasyczne", L.P],
     ["Pompki z nogami na podwyższeniu", L.S], ["Pompki z gumą oporową", L.S], ["Pompki plus", L.S], ["Pompki z biodrami w górze (pike)", L.S], ["Pompki z wybiciem", L.S],
-    ["Pompka jednorącz", L.Z], ["Pompki na kółkach gimnastycznych", L.Z], ["Pompki w staniu na rękach", L.Z],
+    ["Pompki łucznik (archer)", L.Z], ["Pompka jednorącz", L.Z], ["Pompki na kółkach gimnastycznych", L.Z], ["Pompki w staniu na rękach", L.Z],
   ] },
-  { pattern: "Kalistenika: wiosłowanie", steps: [["Wiosłowanie gumą oporową", L.BA], ["Wiosłowanie w zwisie pod sztangą (australijskie podciąganie)", L.P]] },
-  { pattern: "Kalistenika: brzuch w zwisie", steps: [["Unoszenie kolan w zwisie", L.S], ["Składanie ciała w zwisie (hanging pike)", L.Z]] },
+  { pattern: "Kalistenika: wiosłowanie", steps: [
+    ["Wiosłowanie gumą oporową", L.BA], ["Wiosłowanie w zwisie pod sztangą (australijskie podciąganie)", L.P], ["Wiosłowanie australijskie — nogi proste", L.S],
+    ["Wiosłowanie australijskie — nogi wyżej lub na kółkach", L.Z],
+  ] },
+  { pattern: "Kalistenika: brzuch w zwisie", steps: [
+    ["Unoszenie kolan w zwisie", L.S], ["Unoszenie prostych nóg w zwisie", L.S], ["Składanie ciała w zwisie (hanging pike)", L.Z], ["Toes to bar", L.Z],
+  ] },
   { pattern: "Kalistenika: nogi", steps: [
     ["Przysiad do skrzyni z masą własnego ciała", L.BA], ["Wejście na niskie podwyższenie z podparciem", L.BA], ["Przysiad z masą własnego ciała", L.P],
-    ["Przysiad wykroczny z podparciem", L.P], ["Wykrok w tył", L.P], ["Przysiad kozacki", L.S], ["Przysiad bułgarski", L.Z], ["Przysiad na jednej nodze (Pistol Squat)", L.Z],
+    ["Przysiad wykroczny z podparciem", L.P], ["Wykrok w tył", L.P], ["Przysiad kozacki", L.S], ["Przysiad bułgarski", L.Z], ["Pistol z podparciem", L.Z], ["Przysiad na jednej nodze (Pistol Squat)", L.Z],
   ] },
   { pattern: "Kalistenika: core", steps: [
     ["Dead bug", L.BA], ["Plank", L.P], ["Plank boczny", L.P], ["Hollow body hold", L.S], ["Scyzoryki (V-up)", L.S], ["L-sit na podłodze", L.Z],

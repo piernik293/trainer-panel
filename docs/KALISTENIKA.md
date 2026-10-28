@@ -108,7 +108,7 @@ Szczebel wybieramy wg poziomu efektywnego klienta; zamiennik jest na tym samym s
 | Ś | L-sit z podparciem | do uzupełnienia |
 | Z | L-sit na podłodze (id 1640) | import |
 
-**Braki do uzupełnienia: 13 pozycji** (zwis, negatywy podciągnięcia, podciąganie łucznik, negatywy dipów, dipy z gumą, dipy z obciążeniem, pompki łucznik, wiosłowanie nogi proste i wyżej, nogi proste w zwisie, toes to bar, pistol z podparciem, L-sit z podparciem). Generator ich nie wymaga: gdy szczebla brakuje, bierze najbliższy niższy z listy.
+**Braki: dodane 28.10.2026 (11 nowych ćwiczeń + istniejące id 1262), patrz niżej. Pozostaje „L-sit z podparciem” (brak decyzji w pliku)** (zwis, negatywy podciągnięcia, podciąganie łucznik, negatywy dipów, dipy z gumą, dipy z obciążeniem, pompki łucznik, wiosłowanie nogi proste i wyżej, nogi proste w zwisie, toes to bar, pistol z podparciem, L-sit z podparciem). Generator ich nie wymaga: gdy szczebla brakuje, bierze najbliższy niższy z listy.
 
 ## 6. Zasady bezpieczeństwa
 - **BA i P:** wyłącznie dolne szczeble (BA: szczeble BA, P: do szczebla P) **i ćwiczenia zweryfikowane i zatwierdzone** przez trenera. Zwis, podciąganie i dipy dla BA — nie (ani przez reguły BA, ani przez drabinkę).
@@ -133,4 +133,6 @@ Szczebel wybieramy wg poziomu efektywnego klienta; zamiennik jest na tym samym s
 - Panel (edytor planu): pole „Styl: kalistenika” widoczne tylko przy włączonej fladze i pustym planie. Karty dni zostają z rozkładu objętości, zmienia się typ sesji wysyłany do generatora.
 - Nic nie jest zapisywane w bazie (brak migracji). Styl nie jest jeszcze pamiętany w planie ani w wywiadzie (patrz sekcja 2).
 
-**Symulacja stylu** (`scripts/generator-sim.sh 300 20261028 calisthenics`, 1135 dni, po decyzjach 51 i 54): **0 naruszeń** bezpieczeństwa i wykonalności. **Odmowy dnia: 277 z 1135 (24%)**, wcześniej 50%; 303 dni ma 3 ćwiczenia z komunikatem dla trenera. Pozostałe odmowy to głównie dni „drążek” i „góra” u BA/P oraz przy zgłoszonym barku lub łokciu (braki w katalogu, patrz PRZEGLAD-KATALOGU). Raport: `docs/generator-sim-report-calisthenics.json`.
+**Po przeglądzie katalogu (28.10.2026):** dodano 11 ćwiczeń (zwis, negatywy podciągnięcia, podciąganie łucznik, negatywy dipów, dipy z gumą, dipy z obciążeniem, pompki łucznik, wiosłowanie australijskie nogi proste i nogi wyżej/kółka, toes to bar, pistol z podparciem) i podpięto je do drabinek (w bazie i w kodzie stylu); „Unoszenie prostych nóg w zwisie” już istniało (id 1262). Zwis jest od P, negatywy i dipy z gumą od Ś, ćwiczenia o trudności Zaawansowany tylko dla Z; BA nie dostaje żadnego z nich.
+
+**Symulacja stylu** (`SIM_SCHEMA=sim scripts/generator-sim.sh 300 20261028 calisthenics`, 1135 dni, pełny katalog 587): **0 naruszeń** bezpieczeństwa i wykonalności, **0 ćwiczeń ponad poziom**. Odmowy dnia: **53 (4,7%) → 32 (2,8%)**; dni po 3 ćwiczenia 58 → 32 (przed = ten sam kod, katalog sprzed decyzji). Wcześniejsze „50% → 24%” dotyczyło okrojonej bazy testowej (185 ćwiczeń) i nie jest porównywalne. Flaga `CALISTHENICS_ENABLED` nadal wyłączona. Raport: `docs/generator-sim-report-calisthenics.json`.
