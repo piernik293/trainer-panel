@@ -275,3 +275,9 @@
 ## 28.10.2026 — start i stop aplikacji nie ruszają sesji użytkownika (gałąź `fix/tmux-izolacja`)
 - Sesja tmux „claude” została zamknięta przy restarcie aplikacji. `dev-gcp.sh` i `stop-gcp.sh` używają teraz osobnego serwera tmux (gniazdo `trainer-panel-app`); `stop-gcp.sh` zamyka tylko ten serwer, starą sesję „trainer-panel” po dokładnej nazwie i procesy na portach aplikacji, które należą do repozytorium (nigdy przodków skryptu, tmux, claude).
 - Test: `scripts/test-tmux-izolacja.sh` (atrapa serwera użytkownika z sesją „claude”, atrapy aplikacji, obcy proces na porcie) — wszystko OK.
+
+## 28.10.2026 — noc, blok 0: scalenia i restart — GOTOWE
+- Do `main` scalone: `fix/tmux-izolacja` (PIERWSZA, przed restartem; `d01c03d`), `qa/przeglad-bety` i `qa/bezpieczenstwo` (były już w main), `fix/po-qa` (39 ukryta „maskotka”, 41 „Wymaga uwagi” przy limicie pakietu + migracja 0055, 43 imię i e-mail trenera, W12 ostrzeżenie Reacta, 45 dane QA w `usun-konta-demo.sh` — nieuruchamiane).
+- Backup przed 0055: `~/backups/trainer_panel_przed_0055_20261028-0018.sql.gz`; migracja zastosowana przez `db-setup-gcp.sh`.
+- Testy (baza testowa): API 128/128 plików, 2727 testów; panel 782; portal 250; bezpieczeństwo generatora 101; typecheck i build OK. `joint-exclusion.integration.test.ts` miał kruche sprzątanie (stali klienci po przerwanym przebiegu blokowali usunięcie trenera) — poprawione.
+- Restart na poprawionych skryptach: sesja tmux `claude` przeżyła. Smoke 131 OK / 0 BŁĄD.
