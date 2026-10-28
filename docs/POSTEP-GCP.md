@@ -295,3 +295,6 @@
 
 ## 28.10.2026 — decyzja 58: poprawki ekranów (gałąź `feature/solo-ekrany`, NIE scalona) — kod GOTOWY, zrzuty po kroku 56
 - „Dziś”: kroki tylko jako mały wiersz z polem (`StepsTile compact`); wykres, średnia i cel tylko w „Postępach”. „Ty”: jeden napis „Prowadzę podopiecznych” (karta ma własny tytuł). Linki w „Dokumentach” min. 44 px (test klasy `min-h-11`). Testy: portal +4.
+## 28.10.2026 — decyzje 56–57: osiągnięcia, teksty bez płci (gałąź `feature/osiagniecia`, NIE scalona) — GOTOWE
+- Pięć rekomendacji zatwierdzonych (już tak wdrożone). Teksty portalu bez płci: 8 zmian (wywiad, aktywacja, osiągnięcie), lista w `docs/TEKSTY-PLEC.md`; odpowiedź o skokach neutralna, stare zapisy działają; strażnik `genderNeutralTexts.test.ts` + test tekstów osiągnięć.
+- Migracja 0056 zatwierdzona do scalenia (pg_dump przy scalaniu).

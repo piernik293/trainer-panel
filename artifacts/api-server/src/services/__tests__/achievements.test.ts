@@ -204,4 +204,14 @@ describe("idempotence and choice of what to show", () => {
     expect(pickCelebration(earned)!.id).toBe("ladder");
     expect(pickCelebration([])).toBeNull();
   });
+
+  it("decision 56: every award text is gender-neutral (no -łeś/-łaś forms, no slashes)", () => {
+    const ss = [...Array.from({ length: 12 }, (_, w) => week(w, 3)).flat()];
+    const sets = [set(ss[0]!, 7, 1, 50, 8), set(ss[5]!, 7, 1, 55, 8), set(ss[9]!, 10, 1, 0, 8, 3, "Pompki na kolanach"), set(ss[20]!, 11, 1, 0, 8, 3, "Pompki klasyczne")];
+    const ladder = [{ exerciseId: 10, pattern: "Pompki", stepOrder: 1 }, { exerciseId: 11, pattern: "Pompki", stepOrder: 2 }];
+    const r = computeAchievements(base(ss, { sets, ladder, monthlyChallenge: true, stepsGoal: 5000, steps: Array.from({ length: 6 }, (_, i) => ({ day: shiftDate(MON, i), steps: 9000 })) }));
+    const kinds = new Set(r.candidates.map((c) => c.kind));
+    for (const k of ["week_streak", "record", "milestone", "first_month", "ladder_step", "steps_week"]) expect(kinds.has(k as never), k).toBe(true);
+    for (const c of r.candidates) expect(`${c.title} ${c.body ?? ""}`, c.kind).not.toMatch(/\p{L}+(?:łeś|łaś|łem|łam)\b|\/-?(?:aś|am)\b|\(a\)/u);
+  });
 });
