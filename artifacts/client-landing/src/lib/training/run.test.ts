@@ -43,7 +43,7 @@ describe("run state", () => {
   });
   it("restores sets from the server's active session", () => {
     const d = { planDayId: 7, activeSession: { id: 1, pain: [], sets: [{ planExerciseId: 3, setNumber: 2, weightKg: 40, reps: 10, rir: 2, skipped: false }] } } as unknown as TrainingDay;
-    expect(newRun(d, "u").sets[3]![2]).toEqual({ weightKg: 40, reps: 10, rir: 2, skipped: false });
+    expect(newRun(d, "u").sets[3]![2]).toEqual({ weightKg: 40, reps: 10, durationSeconds: null, rir: 2, skipped: false });
   });
   it("persists in storage and survives broken storage", () => {
     const st = mem();

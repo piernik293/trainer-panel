@@ -75,3 +75,16 @@ describe("record rule (same cases as the server)", () => {
     expect(recordGain(hist, { weightKg: null, reps: 10, rir: null })).toBeNull();
   });
 });
+
+describe("ćwiczenia na czas (izometria)", () => {
+  const plank = ex({ name: "Plank", timed: true, seconds: 20, reps: "20 s", repMin: null, repMax: null, showWeight: false, weightStepKg: null });
+  it("start: czas z planu; potem czas ostatnio wpisany w tym treningu; potem poprzedni trening", () => {
+    expect(startValues(plank, 1, {})).toEqual({ weightKg: null, reps: null, durationSeconds: 20, rir: null });
+    expect(startValues(plank, 2, { 1: { weightKg: null, reps: null, durationSeconds: 15, rir: null } }).durationSeconds).toBe(15);
+    expect(startValues({ ...plank, previous: [{ setNumber: 1, weightKg: null, reps: null, durationSeconds: 25, rir: null }] }, 1, {}).durationSeconds).toBe(25);
+  });
+  it("wynik serii pokazuje sekundy, a zwykłe serie bez zmian", () => {
+    expect(formatSetResult({ weightKg: null, reps: null, durationSeconds: 30 }, false)).toBe("30 s");
+    expect(formatSetResult({ weightKg: 60, reps: 8 })).toBe("60 kg × 8");
+  });
+});

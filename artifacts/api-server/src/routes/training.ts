@@ -56,6 +56,8 @@ const SetBody = z.object({
   setNumber: z.number().int().min(1).max(20),
   weightKg: z.number().min(0).max(1000).nullable().optional(),
   reps: z.number().int().min(0).max(200).nullable().optional(),
+  /** Czas serii w sekundach — ćwiczenia izometryczne (zamiast powtórzeń) */
+  durationSeconds: z.number().int().min(0).max(3600).nullable().optional(),
   rir: z.number().int().min(0).max(4).nullable().optional(),
   skipped: z.boolean().optional(),
 });
@@ -96,6 +98,7 @@ async function loadHistory(clientId: number, exerciseIds: number[], excludeSessi
       setNumber: setLogsTable.setNumber,
       weightKg: setLogsTable.weightKg,
       reps: setLogsTable.reps,
+      durationSeconds: setLogsTable.durationSeconds,
       rir: setLogsTable.rir,
       at: sql<Date>`coalesce(${workoutSessionsTable.endedAt}, ${workoutSessionsTable.startedAt}, ${workoutSessionsTable.createdAt})`,
     })
@@ -128,8 +131,8 @@ async function loadHistory(clientId: number, exerciseIds: number[], excludeSessi
         excludeSessionId ? ne(exerciseExecutionLogsTable.sessionId, excludeSessionId) : undefined,
       ),
     );
-  type H = { sessionId: number; exerciseId: number; setNumber: number; weightKg: number | null; reps: number | null; rir: number | null; at: number };
-  const out: H[] = rows.map((r) => ({ sessionId: r.sessionId, exerciseId: r.exerciseId, setNumber: r.setNumber, weightKg: num(r.weightKg), reps: r.reps, rir: r.rir, at: new Date(r.at).getTime() }));
+  type H = { sessionId: number; exerciseId: number; setNumber: number; weightKg: number | null; reps: number | null; durationSeconds?: number | null; rir: number | null; at: number };
+  const out: H[] = rows.map((r) => ({ sessionId: r.sessionId, exerciseId: r.exerciseId, setNumber: r.setNumber, weightKg: num(r.weightKg), reps: r.reps, durationSeconds: r.durationSeconds, rir: r.rir, at: new Date(r.at).getTime() }));
   for (const l of legacy) {
     if (l.exerciseId == null) continue;
     // Older flow stored one aggregate per exercise — expand to identical sets.
@@ -148,7 +151,7 @@ function previousSetsFor(history: Awaited<ReturnType<typeof loadHistory>>, exerc
   return mine
     .filter((h) => h.sessionId === latest.sessionId)
     .sort((a, b) => a.setNumber - b.setNumber)
-    .map((h) => ({ setNumber: h.setNumber, weightKg: h.weightKg, reps: h.reps, rir: h.rir }));
+    .map((h) => ({ setNumber: h.setNumber, weightKg: h.weightKg, reps: h.reps, durationSeconds: h.durationSeconds ?? null, rir: h.rir }));
 }
 
 const repsText = (e: { repType: string | null; repsExact: number | null; repRangeMin: number | null; repRangeMax: number | null; repTimeSeconds: number | null; repOpenInstruction: string | null }) => {
@@ -253,6 +256,7 @@ router.get("/client-portal/training/today", requireClientAuth, async (req, res):
       name: exercisesTable.name,
       mainMuscleGroup: exercisesTable.mainMuscleGroup,
       exerciseType: exercisesTable.exerciseType,
+      isTimed: exercisesTable.isTimed,
       equipment: exercisesTable.equipment,
       executionInstructions: exercisesTable.executionInstructions,
       coachingTips: exercisesTable.coachingTips,
@@ -292,6 +296,8 @@ router.get("/client-portal/training/today", requireClientAuth, async (req, res):
       equipment: e.equipment,
       sets: e.workingSets,
       reps: repsText(e),
+      timed: e.isTimed || e.repType === "time",
+      seconds: e.repTimeSeconds ?? null,
       repMin: e.repRangeMin ?? e.repsExact ?? null,
       repMax: e.repRangeMax ?? e.repsExact ?? null,
       rir: e.rir,
@@ -322,7 +328,7 @@ router.get("/client-portal/training/today", requireClientAuth, async (req, res):
     const pain = await db.select({ id: painReportsTable.id, exerciseId: painReportsTable.exerciseId }).from(painReportsTable).where(eq(painReportsTable.sessionId, inProgress.id));
     active = {
       id: inProgress.id,
-      sets: sets.map((s) => ({ planExerciseId: s.planExerciseId, exerciseId: s.exerciseId, setNumber: s.setNumber, weightKg: num(s.weightKg), reps: s.reps, rir: s.rir, skipped: s.skipped })),
+      sets: sets.map((s) => ({ planExerciseId: s.planExerciseId, exerciseId: s.exerciseId, setNumber: s.setNumber, weightKg: num(s.weightKg), reps: s.reps, durationSeconds: s.durationSeconds, rir: s.rir, skipped: s.skipped })),
       pain,
     };
   }
@@ -426,7 +432,7 @@ router.put("/client-portal/training/sessions/:sessionId/sets", requireClientAuth
 
   const values = {
     planExerciseId: pe.id, exerciseNameSnapshot: pe.name,
-    weightKg: b.weightKg == null ? null : String(b.weightKg), reps: b.reps ?? null, rir: b.rir ?? null,
+    weightKg: b.weightKg == null ? null : String(b.weightKg), reps: b.reps ?? null, durationSeconds: b.durationSeconds ?? null, rir: b.rir ?? null,
     skipped: b.skipped ?? false, clientUuid: b.clientUuid, updatedAt: new Date(),
   };
   // One row per (session, exercise, set number): a correction replaces the earlier entry.
@@ -597,7 +603,7 @@ router.get("/clients/:clientId/training-sessions/:sessionId", requireAuth, async
     : [];
   res.json({
     session: { ...session, legacy: session.status == null },
-    sets: sets.map((s) => ({ exerciseId: s.exerciseId, name: s.exerciseNameSnapshot, setNumber: s.setNumber, weightKg: num(s.weightKg), reps: s.reps, rir: s.rir, skipped: s.skipped })),
+    sets: sets.map((s) => ({ exerciseId: s.exerciseId, name: s.exerciseNameSnapshot, setNumber: s.setNumber, weightKg: num(s.weightKg), reps: s.reps, durationSeconds: s.durationSeconds, rir: s.rir, skipped: s.skipped })),
     pain,
     legacyLogs,
   });

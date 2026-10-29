@@ -1,6 +1,6 @@
 import type { ExerciseInfo, PrevSet } from "./types";
 
-export interface LoggedSet { weightKg: number | null; reps: number | null; rir: number | null; skipped?: boolean }
+export interface LoggedSet { weightKg: number | null; reps: number | null; durationSeconds?: number | null; rir: number | null; skipped?: boolean }
 
 /** Round to 2 decimals (avoids 0.1 + 0.2 artefacts when stepping by 2.5 / 1 kg). */
 export const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -33,6 +33,12 @@ export function parseIntStrict(raw: string): number | null {
  */
 export function startValues(ex: ExerciseInfo, setNumber: number, today: Record<number, LoggedSet | undefined>): LoggedSet {
   const before = today[setNumber - 1];
+  if (ex.timed) {
+    // Ćwiczenie na czas: czas z planu (albo ostatnio wykonany), klient tylko potwierdza.
+    const prevT: PrevSet | undefined = ex.previous.find((p) => p.setNumber === setNumber) ?? ex.previous[ex.previous.length - 1];
+    const sec = (before && !before.skipped ? before.durationSeconds : null) ?? prevT?.durationSeconds ?? ex.seconds ?? null;
+    return { weightKg: null, reps: null, durationSeconds: sec, rir: null };
+  }
   if (before && !before.skipped && (before.reps != null || before.weightKg != null)) {
     return { weightKg: before.weightKg, reps: before.reps, rir: null };
   }
@@ -44,7 +50,8 @@ export function startValues(ex: ExerciseInfo, setNumber: number, today: Record<n
 export function formatKg(n: number | null): string {
   return n == null ? "–" : `${String(round2(n)).replace(".", ",")} kg`;
 }
-export function formatSetResult(s: { weightKg: number | null; reps: number | null }, showWeight = true): string {
+export function formatSetResult(s: { weightKg: number | null; reps: number | null; durationSeconds?: number | null }, showWeight = true): string {
+  if (s.durationSeconds != null && s.reps == null) return `${s.durationSeconds} s`;
   if (s.reps == null && s.weightKg == null) return "–";
   const w = showWeight && s.weightKg ? `${formatKg(s.weightKg)} × ` : "";
   return `${w}${s.reps ?? "–"}`;

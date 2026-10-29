@@ -32,7 +32,7 @@ export function newRun(day: TrainingDay, sessionUuid: string, now = new Date()):
   const sets: RunState["sets"] = {};
   for (const s of day.activeSession?.sets ?? []) {
     if (s.planExerciseId == null) continue;
-    (sets[s.planExerciseId] ??= {})[s.setNumber] = { weightKg: s.weightKg, reps: s.reps, rir: s.rir, skipped: s.skipped };
+    (sets[s.planExerciseId] ??= {})[s.setNumber] = { weightKg: s.weightKg, reps: s.reps, durationSeconds: s.durationSeconds ?? null, rir: s.rir, skipped: s.skipped };
   }
   return {
     v: 1, planDayId: day.planDayId, sessionUuid, startedAt: now.toISOString(), stage: "exercises",
