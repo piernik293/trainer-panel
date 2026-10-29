@@ -74,6 +74,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { isJustSaved } from "@/lib/planJustSaved";
 import { PlanActiveDialog } from "@/components/PlanActiveDialog";
 import { customFetch } from "@workspace/api-client-react";
 import {
@@ -1782,6 +1783,7 @@ export default function PlanEditor() {
   const canActivate = plan.status === "draft" && !hasAbsoluteViolation && !hasUnassignedExercises;
   const canEdit = plan.status === "draft";
 
+  const [justSaved, setJustSaved] = useState(() => typeof window !== "undefined" && isJustSaved(window.location.search));
   const [accessOpen, setAccessOpen] = useState(false);
   const [accessClient, setAccessClient] = useState<{ id: number; firstName: string; email: string | null } | null>(null);
   const handleActivate = () => setConfirmActivate(true);
@@ -1790,6 +1792,7 @@ export default function PlanEditor() {
     activatePlan.mutate(undefined, {
       onSuccess: (res) => {
         const notice = (res as { volumeNotice?: { status: string; text: string } }).volumeNotice;
+        setJustSaved(false);
         toast({ title: "Plan aktywowany!", description: notice?.status === "above_range" ? notice.text : undefined });
         // B5: jeśli klient nie ma jeszcze dostępu do aplikacji — od razu propozycja wysłania (kopiuj link / mail)
         const cid = plan.clientId;
@@ -1905,6 +1908,23 @@ export default function PlanEditor() {
           <ArrowLeft size={16} />
           Powrót do klienta
         </Link>
+
+        {justSaved && plan.status === "draft" && (
+          <Card className="border-success/40 bg-success-soft" data-testid="just-saved">
+            <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-semibold">Plan zapisany.</p>
+                <p className="text-sm text-muted-foreground">
+                  {canActivate ? "Przejrzyj go poniżej. Możesz aktywować go od razu albo jeszcze poprawić." : "Przejrzyj go poniżej. Aktywacja jest zablokowana — popraw plan (powód przy przycisku „Aktywuj plan”)."}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleActivate} disabled={!canActivate || activatePlan.isPending}>Aktywuj teraz</Button>
+                <Button variant="outline" onClick={() => setJustSaved(false)}>Jeszcze poprawię</Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <StepHint step={5}>
           Sprawdź plan i kliknij „Aktywuj plan” (przycisk po prawej). Aktywny plan klient zobaczy w portalu.
