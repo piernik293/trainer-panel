@@ -171,6 +171,15 @@ export default function Step4Exercises({
 
   const { data: avoidedExercises = [] } = useGetClientAvoidedExercises(clientId);
 
+  // Hidden style option (docs/KALISTENIKA.md): shown only when the API says CALISTHENICS_ENABLED is on. Off by default → nothing changes.
+  const [calisthenicsAvailable, setCalisthenicsAvailable] = useState(false);
+  const [useCalisthenics, setUseCalisthenics] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/calisthenics/status").then((r) => (r.ok ? r.json() : null)).then((d) => { if (!cancelled && d?.enabled === true) setCalisthenicsAvailable(true); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   /** Add an exercise chosen from the recommendation panel (no full Exercise type needed). */
   const handleAddFromRecommendation = useCallback(
     (dayIndex: number, payload: AddFromRecommendationPayload) => {
@@ -342,14 +351,29 @@ export default function Step4Exercises({
         )
         .map((m) => m.muscleName) ?? [];
 
+    // Calisthenics style: the cards stay as they are, only the session type of each day follows the stations (bar / parallel bars / legs and core).
+    let calisthenicsTypes: Map<number, string> | null = null;
+    if (calisthenicsAvailable && useCalisthenics) {
+      try {
+        const resp = await fetch(`/api/clients/${clientId}/plan-draft/calisthenics-days?days=${distributionResult.days.length}`);
+        if (resp.ok) {
+          const data = await resp.json() as { days: Array<{ dayType: string }>; warnings?: string[] };
+          const ordered = [...distributionResult.days].sort((a, b) => a.dayIndex - b.dayIndex);
+          calisthenicsTypes = new Map(ordered.map((d, i) => [d.dayIndex, data.days[Math.min(i, data.days.length - 1)]?.dayType ?? "full_body"]));
+          for (const w of data.warnings ?? []) errors.push(w);
+        }
+      } catch { /* the standard layout is used */ }
+    }
+    const dayTypeOf = (d: { dayIndex: number; dayType?: string | null }) => calisthenicsTypes?.get(d.dayIndex) ?? d.dayType?.toLowerCase() ?? "";
+
     // Pre-count eligible days so we know the full generation succeeded later.
     const eligibleDayCount = distributionResult.days.filter(
-      (d) => V0_SESSION_TYPES.has(d.dayType?.toLowerCase() ?? ""),
+      (d) => V0_SESSION_TYPES.has(dayTypeOf(d)),
     ).length;
     let generationDayIndex = 0;
 
     for (const day of distributionResult.days) {
-      const rawSessionType = day.dayType?.toLowerCase() ?? "";
+      const rawSessionType = dayTypeOf(day);
       if (!V0_SESSION_TYPES.has(rawSessionType)) {
         console.log(`[GenerateDay] Skipping day ${day.dayIndex} — unsupported dayType: "${day.dayType}"`);
         continue;
@@ -376,7 +400,7 @@ export default function Step4Exercises({
                 const d = distributionResult.days.find(
                   (dd) => dd.dayIndex === r.dayIndex,
                 );
-                return normSessionType(d?.dayType?.toLowerCase() ?? "") === sessionType;
+                return normSessionType(d ? dayTypeOf(d) : "") === sessionType;
               });
               return (prev?.exercises ?? []).map((ex) => ({
                 id: ex.id,
@@ -393,6 +417,7 @@ export default function Step4Exercises({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             generationId,
+            ...(calisthenicsTypes ? { style: "calisthenics" } : {}),
             generationDayIndex: sessionDayIndex,
             expectedDayCount: eligibleDayCount,
             v0SessionType: sessionType,
@@ -612,7 +637,7 @@ export default function Step4Exercises({
       ),
       limitWarnings: [...errors, ...balanceWarnings],
     });
-  }, [distributionResult, exerciseDraft, clientId, onDraftChange]);
+  }, [distributionResult, exerciseDraft, clientId, onDraftChange, calisthenicsAvailable, useCalisthenics]);
 
   const handleAutoFill = useCallback(async () => {
     // ── Empty-session branch: use the new true generator ─────────────────────
@@ -859,6 +884,12 @@ export default function Step4Exercises({
             ? "Uzupełnij brakujące ćwiczenia"
             : "Ułóż wstępną propozycję całego planu"}
         </Button>
+        {calisthenicsAvailable && !hasAnyExercise && (
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <input type="checkbox" checked={useCalisthenics} onChange={(e) => setUseCalisthenics(e.target.checked)} />
+            Styl: kalistenika
+          </label>
+        )}
         {(autoFillState === "success" || autoFillState === "error") && (
           <Button
             variant="ghost"

@@ -1,0 +1,265 @@
+{
+ "aboveLevel": {
+  "count": 0,
+  "byLevel": {},
+  "samples": []
+ },
+ "style": "calisthenics",
+ "seed": 20261028,
+ "n": 300,
+ "stat": {
+  "limitedDays": 32,
+  "wrongRefusalText": 0,
+  "profiles": 300,
+  "days": 1135,
+  "daysRefused": 32,
+  "exercises": 5821,
+  "emptyDays": 0,
+  "structuralWarnings": 452,
+  "dupInPlan": 103,
+  "plans": 300
+ },
+ "safetyViolations": 0,
+ "feasibilityViolations": 0,
+ "safetyByRule": {},
+ "feasibilityByRule": {},
+ "samples": {
+  "safety": [],
+  "feasibility": []
+ },
+ "balance": {
+  "totals": {
+   "push": 2913,
+   "pull": 2591,
+   "knee": 2988,
+   "hip": 1134
+  },
+  "pushToPull": 1.12,
+  "kneeToHip": 2.63,
+  "plansPushPullOutside_0_5_2": 79,
+  "plansWithoutPull": 24
+ },
+ "setsPerSessionMedianByLevel": {
+  "Brak aktywności fizycznej": 12,
+  "Początkujący": 15,
+  "Średniozaawansowany": 16,
+  "Zaawansowany": 16
+ },
+ "timeEstimateToDeclaredMedianByLevel": {
+  "Brak aktywności fizycznej": 0.55,
+  "Początkujący": 0.64,
+  "Średniozaawansowany": 0.8,
+  "Zaawansowany": 0.74
+ },
+ "timeEstimateOver130pct": 131,
+ "timeEstimateUnder60pct": 455,
+ "variety": {
+  "variantShare": 0.07,
+  "topExercises": [
+   {
+    "id": 134,
+    "name": "Wiosłowanie gumą oporową",
+    "n": 252,
+    "share": 0.043
+   },
+   {
+    "id": 256,
+    "name": "Nauka lądowania",
+    "n": 237,
+    "share": 0.041
+   },
+   {
+    "id": 105,
+    "name": "Glute bridge",
+    "n": 230,
+    "share": 0.04
+   },
+   {
+    "id": 1093,
+    "name": "Dipy na ławce",
+    "n": 212,
+    "share": 0.036
+   },
+   {
+    "id": 117,
+    "name": "Pompki klasyczne",
+    "n": 208,
+    "share": 0.036
+   },
+   {
+    "id": 249,
+    "name": "Skoki pogo",
+    "n": 207,
+    "share": 0.036
+   },
+   {
+    "id": 90,
+    "name": "Przysiad do skrzyni z masą własnego ciała",
+    "n": 199,
+    "share": 0.034
+   },
+   {
+    "id": 95,
+    "name": "Przysiad wykroczny z podparciem",
+    "n": 197,
+    "share": 0.034
+   },
+   {
+    "id": 259,
+    "name": "Wspięcia na palce obunóż stojąc",
+    "n": 197,
+    "share": 0.034
+   },
+   {
+    "id": 1405,
+    "name": "Uginanie ramion z gumą oporową",
+    "n": 196,
+    "share": 0.034
+   },
+   {
+    "id": 116,
+    "name": "Pompki na podwyższeniu",
+    "n": 195,
+    "share": 0.033
+   },
+   {
+    "id": 159,
+    "name": "Dead bug",
+    "n": 184,
+    "share": 0.032
+   },
+   {
+    "id": 211,
+    "name": "Rotacja zewnętrzna barku z gumą oporową",
+    "n": 182,
+    "share": 0.031
+   },
+   {
+    "id": 1594,
+    "name": "Ściąganie gumy oporowej z góry",
+    "n": 180,
+    "share": 0.031
+   },
+   {
+    "id": 214,
+    "name": "Francuskie prostowanie ramion gumą oporową zza głowy",
+    "n": 177,
+    "share": 0.03
+   }
+  ],
+  "medianOverlapWithPreviousPlan": 0.44,
+  "medianOverlapByLevel": {
+   "gym|Brak aktywności fizycznej": 0.64,
+   "dom/plener|Początkujący": 0.45,
+   "dom/plener|Średniozaawansowany": 0.44,
+   "gym|Zaawansowany": 0.44,
+   "dom/plener|Brak aktywności fizycznej": 0.38,
+   "gym|Początkujący": 0.46,
+   "dom/plener|Zaawansowany": 0.44,
+   "gym|Średniozaawansowany": 0.41
+  },
+  "overlapAbove50pct": 86,
+  "comparedPlans": 300
+ },
+ "goalPlyo": {
+  "Redukcja tkanki tłuszczowej": {
+   "plans": 58,
+   "withPlyo": 35
+  },
+  "Zwiększenie siły": {
+   "plans": 52,
+   "withPlyo": 36
+  },
+  "Poprawa kondycji": {
+   "plans": 35,
+   "withPlyo": 28
+  },
+  "Cel sportowy": {
+   "plans": 43,
+   "withPlyo": 36
+  },
+  "Budowa sylwetki": {
+   "plans": 54,
+   "withPlyo": 38
+  },
+  "Poprawa sprawności": {
+   "plans": 58,
+   "withPlyo": 42
+  }
+ },
+ "unverifiedInPlansByLevel": {
+  "Brak aktywności fizycznej": {
+   "all": 866,
+   "unverified": 0
+  },
+  "Początkujący": {
+   "all": 2914,
+   "unverified": 0
+  },
+  "Średniozaawansowany": {
+   "all": 1214,
+   "unverified": 153
+  },
+  "Zaawansowany": {
+   "all": 827,
+   "unverified": 127
+  }
+ },
+ "refusedDaysByPlaceLevelType": {
+  "homeBar|Średniozaawansowany|upper": 2,
+  "home0|Średniozaawansowany|upper": 3,
+  "homeBar|Brak aktywności fizycznej|push": 1,
+  "home0|Brak aktywności fizycznej|push": 4,
+  "home0|Brak aktywności fizycznej|upper": 10,
+  "home0|Początkujący|upper": 4,
+  "outdoor|Zaawansowany|pull": 1,
+  "outdoor|Zaawansowany|push": 1,
+  "home0|Początkujący|push": 2,
+  "home0|Zaawansowany|upper": 1,
+  "outdoor|Początkujący|push": 1,
+  "outdoor|Brak aktywności fizycznej|push": 1,
+  "homeBand|Zaawansowany|upper": 1
+ },
+ "refusedReasons": {
+  "home/outdoor|Zgłoszony ból (bark) ogranicza wybór ćwiczeń w tym dniu. Dodaj ćwiczenia ręcznie albo poczekaj z tym dniem, a plan będzie pełniejszy.": 7,
+  "home/outdoor|Mało ćwiczeń na plecy bez sprzętu. Dodaj gumę albo drążek, a plan będzie pełniejszy.": 18,
+  "home/outdoor|Zgłoszony ból (nadgarstek, łokieć) ogranicza wybór ćwiczeń w tym dniu. Dodaj ćwiczenia ręcznie albo poczekaj z tym dniem, a plan będzie pełniejszy.": 1,
+  "home/outdoor|Zgłoszony ból (bark, łokieć) ogranicza wybór ćwiczeń w tym dniu. Dodaj ćwiczenia ręcznie albo poczekaj z tym dniem, a plan będzie pełniejszy.": 3,
+  "home/outdoor|Zgłoszony ból (nadgarstek) ogranicza wybór ćwiczeń w tym dniu. Dodaj ćwiczenia ręcznie albo poczekaj z tym dniem, a plan będzie pełniejszy.": 2,
+  "home/outdoor|Zgłoszony ból (łokieć, bark) ogranicza wybór ćwiczeń w tym dniu. Dodaj ćwiczenia ręcznie albo poczekaj z tym dniem, a plan będzie pełniejszy.": 1
+ },
+ "plansWithDuplicatesByPlaceLevel": {
+  "gym|Brak aktywności fizycznej": 5,
+  "home0|Początkujący": 15,
+  "homeBar|Brak aktywności fizycznej": 8,
+  "outdoor|Początkujący": 26,
+  "gym|Początkujący": 9,
+  "homeBar|Początkujący": 15,
+  "home0|Brak aktywności fizycznej": 3,
+  "homeBand|Brak aktywności fizycznej": 3,
+  "homeBand|Początkujący": 9,
+  "outdoor|Brak aktywności fizycznej": 10
+ },
+ "profilesByPlaceLevel": {
+  "gym|Brak aktywności fizycznej": 6,
+  "outdoor|Początkujący": 50,
+  "homeBand|Średniozaawansowany": 7,
+  "gym|Zaawansowany": 6,
+  "homeBar|Średniozaawansowany": 19,
+  "home0|Początkujący": 21,
+  "home0|Średniozaawansowany": 9,
+  "homeBar|Brak aktywności fizycznej": 15,
+  "homeBar|Początkujący": 35,
+  "homeBand|Początkujący": 19,
+  "gym|Początkujący": 17,
+  "outdoor|Zaawansowany": 14,
+  "homeBand|Brak aktywności fizycznej": 9,
+  "homeBand|Zaawansowany": 8,
+  "homeBar|Zaawansowany": 6,
+  "outdoor|Średniozaawansowany": 19,
+  "gym|Średniozaawansowany": 10,
+  "home0|Brak aktywności fizycznej": 10,
+  "outdoor|Brak aktywności fizycznej": 15,
+  "home0|Zaawansowany": 5
+ }
+}

@@ -28,8 +28,11 @@ import {
 import { resolveEffectiveLevel } from "@workspace/survey-config";
 import { lacksJointData } from "../services/jointData";
 import { normalizeEquipmentList } from "../services/equipmentNormalizer";
+import { calisthenicsDays, stationsFor, isCalisthenicsExercise, isCalisthenicsLegDay } from "../services/calisthenics";
 import { getDayTemplate, recommendSplitType } from "../services/planDraftVolumeDistributionService";
 
+const STYLE = process.env.SIM_STYLE ?? ""; // "" = standard, "calisthenics" = docs/KALISTENIKA.md (forces the flag on for this run)
+if (STYLE === "calisthenics") process.env.CALISTHENICS_ENABLED = "1";
 const N = Number(process.env.SIM_N ?? 24);
 const SEED = Number(process.env.SIM_SEED ?? 20261028);
 const REPORT = process.env.SIM_REPORT ?? "";
@@ -62,6 +65,7 @@ const PLACES = [
   { key: "home0", location: "Dom", equipment: "Brak sprzętu", allowed: [] as string[], exLoc: "Dom" },
   { key: "homeBand", location: "Dom", equipment: "Gumy oporowe", allowed: ["Gumy oporowe"], exLoc: "Dom" },
   { key: "homeDb", location: "Dom", equipment: "Hantle", allowed: ["Hantle"], exLoc: "Dom" },
+  { key: "homeBar", location: "Dom", equipment: "Drążek do podciągania, Gumy oporowe", allowed: ["Drążek do podciągania", "Gumy oporowe"], exLoc: "Dom" },
   { key: "outdoor", location: "Siłownia plenerowa", equipment: "Drążek do podciągania, Uchwyty do pompek", allowed: ["Drążek do podciągania", "Uchwyty do pompek", "Gumy oporowe"], exLoc: "Plener" },
 ] as const;
 
@@ -81,10 +85,18 @@ const KNEE = (p: string | null) => p === "Przysiad" || p === "Wykrok" || p === "
 const HIP = (p: string | null) => p === "Zawias biodrowy";
 
 let ctx = "";
+const styleViolations: Violation[] = [];
 const jointGap = { reportedJoint: 0, noConsent: 0, noReports: 0, total: 0 }; // exercises placed in plans that lack joint-load data, by kind of client
 interface Violation { rule: string; profile: number; level: string; goal: string; place: string; exercise: string; id: number; detail?: string }
 
-function plyoAllowed(ex: Ex, p: Profile): boolean {
+function plyoAllowed(ex: Ex, p0: Profile): boolean {
+  let p = p0;
+  if (STYLE === "calisthenics") {
+    // docs/KALISTENIKA.md: jumps only on the leg day, whatever the goal; the lower of level and experience (no question outside the sport goal = "Nie")
+    const legDay = /dzień (legs|lower)/.test(ctx);
+    if (!legDay) { const plyo = !!ex.intensity && ex.role !== "technika biegu" || ex.role === "przygotowanie do skoków"; if (plyo) return false; }
+    p = { ...p0, goal: "Cel sportowy", jump: p0.goal === "Cel sportowy" ? p0.jump : null };
+  }
   const isLanding = ex.role === "przygotowanie do skoków";
   const isPlyo = isLanding || (!!ex.intensity && ex.role !== "technika biegu" && !(ex.equipment ?? []).some((e) => e === "Worek bokserski" || e === "Młot i opona"));
   if (!isPlyo) return true;
@@ -114,10 +126,21 @@ function checkExercise(ex: Ex, p: Profile, out: Violation[], feas: Violation[]) 
   if (!plyoAllowed(ex, p)) out.push(v("pliometria wbrew zasadom", `${ex.intensity ?? ex.role}`));
   if (p.avoidIds.includes(ex.id)) out.push(v("wykluczone ćwiczenie"));
   if (p.consent === "declined" && ex.jointStress === "Wysokie") out.push(v("brak zgody zdrowotnej a wysokie obciążenie stawów"));
+  if (STYLE === "calisthenics") {
+    const inBlock = ctx.includes("blok");
+    if (!isCalisthenicsExercise(ex)) out.push(v("kalistenika: sprzęt spoza listy", (ex.equipment ?? []).join("/")));
+    if (lvl <= 1 && (ex.verificationStatus !== "zweryfikowane" || ex.reviewedByTrainer === false)) out.push(v("kalistenika: BA/P niezweryfikowane"));
+    // P: only the lower rungs (bench dips, australian rows, hang, scapular pull-ups are P rungs approved by the owner 28.10.2026); the upper rungs never
+    if (lvl === 1 && /^Podciąganie(?! kolan)|^Dipy na poręczach|^Dipy na kółkach|^Dipy z |Muscle-up|jednorącz|Pistol|w staniu na rękach|łucznik|^Negatywy|Toes to bar|Unoszenie (kolan|prostych nóg) w zwisie|hanging pike|nogi proste|nogi wyżej/i.test(ex.name)) out.push(v("kalistenika: P górny szczebel", ex.name));
+    // BA: nothing on the bar or the parallel bars, no hanging
+    if (lvl === 0 && /zwis|podciąg|dipy|negatywy|muscle-up|toes to bar|australijsk/i.test(ex.name)) out.push(v("kalistenika: BA zwis/drążek/poręcze", ex.name));
+    if (lvl === 0 && /zwis|podciąg|dipy/i.test(ex.name)) out.push(v("kalistenika: BA zwis/podciąganie/dipy", ex.name));
+    void inBlock;
+  }
   // feasibility
   const place = PLACES.find((x) => x.key === p.place)!;
   if (place.allowed) {
-    const have = new Set<string>([...place.allowed, "Masa własnego ciała", "Brak sprzętu"]);
+    const have = new Set<string>([...place.allowed, "Masa własnego ciała", "Brak sprzętu", ...(STYLE === "calisthenics" ? ["Ławeczka treningowa"] : [])]); // decision 54.2: bench / chair counts at home and outdoors in the calisthenics style
     const eq = normalizeEquipmentList((ex.equipment ?? []).join(","));
     const okAny = eq.length === 0 || eq.some((e) => have.has(e));
     const all = normalizeEquipmentList((ex.requiredEquipmentAll ?? []).join(","));
@@ -138,7 +161,9 @@ function makeProfile(i: number): Profile {
   const trainingDuration = level === "Średniozaawansowany" || level === "Zaawansowany" ? pick(["3 lata", "5 lat", "1 rok", "6 lat"]) : pick(["3 miesiące", "pół roku", ""]);
   const effective = resolveEffectiveLevel(level, trainingDuration).effective ?? level;
   const goal = pick(GOALS);
-  const place = weighted([["gym", 5], ["home0", 2], ["homeBand", 2], ["homeDb", 2], ["outdoor", 2]] as const);
+  const place = STYLE === "calisthenics"
+    ? weighted([["gym", 2], ["home0", 2], ["homeBand", 2], ["homeBar", 3], ["outdoor", 4]] as const)
+    : weighted([["gym", 5], ["home0", 2], ["homeBand", 2], ["homeDb", 2], ["outdoor", 2]] as const);
   const joints = chance(0.35) ? [pick(JOINTS), ...(chance(0.3) ? [pick(JOINTS)] : [])].filter((j, k, a) => a.indexOf(j) === k) : [];
   const avoidIds = chance(0.2) ? Array.from({ length: 1 + Math.floor(rnd() * 3) }, () => pick(exerciseIds)) : [];
   return {
@@ -174,8 +199,11 @@ async function createClient(p: Profile): Promise<number> {
 interface DayOut { error?: string; code?: string; limited?: boolean; type: string; exercises: Array<{ id: number; sets: number; restSeconds: number; repsLabel: string }>; status: number; warnings: number }
 
 async function generateWeek(clientId: number, p: Profile): Promise<DayOut[]> {
+  const place = PLACES.find((x) => x.key === p.place)!;
   const split = recommendSplitType(p.effective, p.days).recommended ?? "full_body";
-  const template = getDayTemplate(split, p.days);
+  const template = STYLE === "calisthenics"
+    ? calisthenicsDays(p.days, stationsFor(place.location, place.equipment)).days
+    : getDayTemplate(split, p.days);
   const gid = randomUUID();
   const used: number[] = []; const raw: Array<{ exerciseId: number; sets: number }> = [];
   const typeCount: Record<string, number> = {}; const lastByType: Record<string, Array<{ id: number; equipment: string[] }>> = {};
@@ -185,10 +213,16 @@ async function generateWeek(clientId: number, p: Profile): Promise<DayOut[]> {
   for (const t of types) {
     const alt = typeCount[t] ?? 0; typeCount[t] = alt + 1;
     const res = await request(app).post(`/api/clients/${clientId}/plan-draft/generate-day`).send({
-      generationId: gid, generationDayIndex: idx++, expectedDayCount: types.length, v0SessionType: t, alternativeIndex: alt,
+      generationId: gid, ...(STYLE ? { style: STYLE } : {}), generationDayIndex: idx++, expectedDayCount: types.length, v0SessionType: t, alternativeIndex: alt,
       weekUsedExerciseIds: [...used], sameTypePreviousExercises: lastByType[t] ?? [], weekExercisesRaw: t === "full_body" ? raw : [],
     });
-    const exs = ((res.body.exercises ?? []) as Array<{ id: number; equipment: string[]; prescription?: { sets: number; restSeconds: number; repsLabel: string } }>);
+    const exs = ((res.body.exercises ?? []) as Array<{ id: number; equipment: string[]; matchReasons?: string[]; prescription?: { sets: number; restSeconds: number; repsLabel: string } }>);
+    if (STYLE === "calisthenics") {
+      const main = exs.filter((e) => !(e.matchReasons ?? []).includes("Blok pliometryczny")).length;
+      const jumps = exs.length - main;
+      if (main > 5) styleViolations.push({ rule: "kalistenika: więcej niż 5 ćwiczeń", profile: -1, level: "", goal: "", place: "", exercise: t, id: 0, detail: String(main) });
+      if (jumps > 2 || (jumps > 0 && !isCalisthenicsLegDay(t))) styleViolations.push({ rule: "kalistenika: skoki poza dniem nóg lub więcej niż 2", profile: -1, level: "", goal: "", place: "", exercise: t, id: 0, detail: String(jumps) });
+    }
     for (const e of exs) { used.push(e.id); raw.push({ exerciseId: e.id, sets: e.prescription?.sets ?? 1 }); }
     lastByType[t] = exs.map((e) => ({ id: e.id, equipment: e.equipment ?? [] }));
     out.push({ error: res.status === 200 ? undefined : String(res.body.error ?? ""), code: res.body.code, limited: typeof res.body.limitedDayNote === "string", type: t, status: res.status, warnings: (res.body.structuralWarnings ?? []).length, exercises: exs.map((e) => ({ id: e.id, sets: e.prescription?.sets ?? 0, restSeconds: e.prescription?.restSeconds ?? 0, repsLabel: e.prescription?.repsLabel ?? "" })) });
@@ -287,12 +321,13 @@ describe("generator simulation", () => {
     }
     const med = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)]! : 0);
     const top = [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15).map(([id, n]) => ({ id, name: cat.get(id)!.name, n, share: +(n / total).toFixed(3) }));
-    // "ponad poziom" is a hard rule since decision 50b (28.10.2026) and counts as a safety violation.
+    // "ponad poziom" is a hard rule since decision 50b (28.10.2026) and counts as a safety violation (together with the style checks).
+    safetyAll.push(...styleViolations);
     const aboveLevel = safetyAll.filter((x) => x.rule === "ponad poziom");
     const report = {
       aboveLevel: { count: aboveLevel.length, byLevel: Object.fromEntries([...new Set(aboveLevel.map((x) => x.level))].map((l) => [l, aboveLevel.filter((x) => x.level === l).length])), samples: aboveLevel.slice(0, 12) },
       missingJointData: jointGap,
-      seed: SEED, n: N, stat, safetyViolations: safety.length, feasibilityViolations: feas.length,
+      style: STYLE || "standard", seed: SEED, n: N, stat, safetyViolations: safety.length, feasibilityViolations: feas.length,
       safetyByRule: Object.fromEntries([...new Set(safety.map((x) => x.rule))].map((r) => [r, safety.filter((x) => x.rule === r).length])),
       feasibilityByRule: Object.fromEntries([...new Set(feas.map((x) => x.rule))].map((r) => [r, feas.filter((x) => x.rule === r).length])),
       samples: {

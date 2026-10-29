@@ -287,6 +287,12 @@
 - Wynik po poprawkach: 0 naruszeń bezpieczeństwa i 0 wykonalności. Naprawione: (1) odmienione nazwy stawów z wywiadu były ignorowane („z biodrem”) — test regresji; (2) blok skoków i zamiana ćwiczenia omijały tryb „brak zgody zdrowotnej” — test regresji. Przy okazji: kruche sprzątanie testu `joint-exclusion`.
 - Do decyzji (DO-DECYZJI 49–53): „ponad poziom” bez twardej reguły, 23% dni odmówionych, mały katalog dla domu/BA, status „do weryfikacji”.
 - Testy: API 130 plików / 2738, bezpieczeństwo generatora 101, typecheck OK.
+
+## 28.10.2026 — noc, blok 2: kalistenika (gałąź `feature/kalistenika`, z `qa/generator-symulacja`, NIE scalona) — GOTOWE
+- 2a: `docs/KALISTENIKA.md` (styl nie cel, wybór przez trenera, szablony dni 2–5, dzień nóg ze skokami wg obowiązujących zasad, 7 drabinek z istniejących ćwiczeń + 12 braków, bezpieczeństwo, 5 pytań).
+- 2b: za flagą `CALISTHENICS_ENABLED=0`: `services/calisthenics.ts`, parametr `style` w `generate-day`, `GET /api/calisthenics/status` i `.../calisthenics-days`, ukryte pole „Styl: kalistenika” w edytorze planu (tylko przy fladze). Bez migracji.
+- Testy: `calisthenics.test.ts` (15), `calisthenics.integration.test.ts` (10: flaga wyłączona = identyczna odpowiedź, włączona = tylko dozwolony sprzęt, ≤5, BA/P, skoki tylko w dniu nóg, zgoda zdrowotna, dni wg stanowisk), panel `step4-calisthenics-option.test.tsx` (3). Symulacja stylu 300 profili: 0 naruszeń; 50% dni odmówionych (braki katalogu) — DO-DECYZJI 54–55.
+- Weryfikacja: API 132 plików / 2763, panel 785, portal 250, bezpieczeństwo generatora 101, typecheck OK.
 ## 28.10.2026 — noc, blok 3: drobne poprawki z QA (gałąź `fix/qa-drobne`, z `main`, NIE scalona) — GOTOWE
 - C5: linki między dokumentami prawnymi (panel i portal) mają min. 44 px i `aria-current`; C7: „Ewa ” → `clientFullName` (7 miejsc w panelu); C8: separatory „·” czytelne i `aria-hidden`.
 - Zostaje otwarte (poza zakresem: nawigacja/UX): C6 (cele dotyku w menu, kalendarzu, przełącznikach), C10 (dane testowe — tylko za zgodą).
@@ -297,6 +303,9 @@
 - 50a, 51 (`fix/trudnosc-ba-p`, z `main`, NIE scalona — czeka na zgodę na scalenie): BA/P bez ćwiczeń o trudności „Zaawansowany” (odmowy 947 → 947; eksperyment pełnej reguły dla BA/P: 940 przypadków „ponad poziom” → 0 przy tych samych 947 odmowach); minimum 3 ćwiczenia z komunikatem dla trenera (`services/dayShortage.ts`, panel): odmowy 947 (23,8%) → 558 (14,0%), 391 dni po 3 ćwiczenia.
 - Testy: API 132 plików / 2748, panel 786, portal 251, bezpieczeństwo generatora 101, typecheck OK.
 
+## 28.10.2026 — decyzje 54–55: kalistenika po odpowiedziach (gałąź `feature/kalistenika`, NIE scalona) — GOTOWE
+- Wciągnięte 50a i 51 (minimum 3 ćwiczenia z komunikatem); ławka/krzesło/ławka w parku dostępna w domu i w plenerze (`calisthenicsEquipmentText`); 13 braków w PRZEGLAD-KATALOGU.csv (sekcja 2). Flaga wyłączona.
+- Symulacja stylu 300 profili: 0 naruszeń; odmowy dnia 50% → 24% (303 dni po 3 ćwiczenia).
 ## 28.10.2026 — katalog po decyzjach właściciela (gałąź `feature/katalog-decyzje-wlasciciela`)
 - Krok 1: `fix/trudnosc-ba-p` scalona do `main` (`2f7b01b`), testy przed (2738) i po (2748), push, restart, smoke 131/0.
 - Kroki 2–4: migracja danych 0057 (81 od BA / 21 od P / 48 od Ś / 0 ukrytych / 11 nowych; wyjątek id 89), reguła 50b, testy (`catalogue-decisions-0057`, `isGeneratorSafe`, symulacja). Backupy: `~/backups/trainer_panel_przed_0057_*.sql.gz`.
@@ -326,3 +335,5 @@
 - API: `GET /api/feedback/status`, `POST /api/feedback` (limit 5/godz. na osobę), `GET /api/admin/feedback`, `POST /api/admin/feedback/:id/read`. Flaga wyłączona = 404. Treść oczyszczana jak w dzienniku błędów (e-maile, tokeny, numery), dane zdrowotne odrzucane; zapisujemy ścieżkę bez parametrów, wersję i skrót autora — bez zrzutu ekranu. Mail do właściciela, jeśli SMTP działa.
 - UI: karta „Zgłoś uwagę” w Ustawieniach panelu i w „Moje konto” portalu (nie na ekranie treningu); zakładka „Uwagi” (nowe/przeczytane) w administracji.
 - Testy: `feedback.test.ts` (12: flaga, oczyszczanie, limit, izolacja, status), testy formularza w panelu i portalu; pełne: API 136 plików / 2784, panel 789, portal 254, typecheck OK. Decyzje: `docs/DO-DECYZJI.md` (N4-1…N4-5).
+## 28.10.2026 — kalistenika po scaleniu katalogu (gałąź `feature/kalistenika`, NIE scalona)
+- Wciągnięty `main` (przegląd katalogu, 50b, migracja 0057); nowe ćwiczenia dopisane do drabinek w kodzie stylu. Symulacja stylu na pełnym katalogu (300 profili): odmowy 4,7% → 2,8%, 0 naruszeń. Flaga wyłączona.
