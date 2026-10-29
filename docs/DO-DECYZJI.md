@@ -210,3 +210,7 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 1. **Flagi włączone w `.env`:** `FEEDBACK_ENABLED=1`, `BETA_NO_LIMITS=1`, `CALISTHENICS_ENABLED=1`, `ACHIEVEMENTS_ENABLED=1`. **Zostają wyłączone:** `SOLO_ENABLED`, `CONDITIONING_ENABLED`. Kopia `.env` sprzed zmiany: `~/backups/env-przed-flagami-*.bak` (prawa 600).
 2. **N5-2:** wpis `@reboot` w cronie → `scripts/backup-if-missing.sh` (po 2 min od startu, jeśli dziś nie ma kopii dziennej, robi ją `backup-db.sh`). Bez nowych usług.
 3. **N3-2:** adres kontaktowy w konfiguracji (`CONTACT_EMAIL` w `.env`, teraz `TU_ADRES`), pokazywany na ekranie „Poproś o dostęp trenera” przez `GET /api/contact`; wartość bez „@” = nieustawiony (nic się nie pokazuje). **Do uzupełnienia:** wpisz prawdziwy adres w `.env` i zrestartuj API.
+
+### Potwierdzenie decyzji (29.10.2026, druga wiadomość)
+- Pkt 1 (flagi) i 2 (`@reboot` z kopią) — wykonane wcześniej, bez zmian.
+- **N3-2 zmiana:** `CONTACT_EMAIL` w `.env` jest **pusty** (zamiast szablonu `TU_ADRES`); wtedy ekran „Poproś o dostęp trenera” pokazuje tylko przycisk. Adres właściciel poda później — wpisać w `.env` i zrestartować API.
