@@ -180,3 +180,21 @@ describe("flag ON", () => {
     expect((await request(app).delete(`/api/client-portal/pauses/${ok.body.id}`)).status).toBe(200);
   }, 60_000);
 });
+
+describe("activity (map of the year)", () => {
+  it("flag ON: only the own completed training days, deduplicated and sorted; flag OFF: 404", async () => {
+    vi.stubEnv("ACHIEVEMENTS_ENABLED", "");
+    expect((await request(app).get("/api/client-portal/activity")).status).toBe(404);
+    vi.stubEnv("ACHIEVEMENTS_ENABLED", "1");
+    const c = await mkClient("Mapa", "ach_client_map");
+    const p = await mkPlan(c);
+    await mkSession(c, p.planId, p.dayId, 3); await mkSession(c, p.planId, p.dayId, 3); await mkSession(c, p.planId, p.dayId, 10);
+    await mkSession(c, p.planId, p.dayId, 1, "in_progress");
+    auth.userId = "ach_client_map";
+    const r = await request(app).get("/api/client-portal/activity");
+    expect(r.status).toBe(200);
+    expect(r.body.days).toEqual([iso(10), iso(3)]);
+    auth.userId = "ach_client_b";
+    expect((await request(app).get("/api/client-portal/activity")).body.days).toEqual([]);
+  }, 60_000);
+});

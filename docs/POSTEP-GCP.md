@@ -345,3 +345,18 @@
 ## 28.10.2026 — decyzje 56–57: osiągnięcia, teksty bez płci (gałąź `feature/osiagniecia`, NIE scalona) — GOTOWE
 - Pięć rekomendacji zatwierdzonych (już tak wdrożone). Teksty portalu bez płci: 8 zmian (wywiad, aktywacja, osiągnięcie), lista w `docs/TEKSTY-PLEC.md`; odpowiedź o skokach neutralna, stare zapisy działają; strażnik `genderNeutralTexts.test.ts` + test tekstów osiągnięć.
 - Migracja 0056 zatwierdzona do scalenia (pg_dump przy scalaniu).
+## 28.10.2026 — noc, blok 5: ekrany Solo i „Postępy” (gałąź `feature/solo-ekrany`, z `feature/osiagniecia`, NIE scalona) — GOTOWE (prototyp)
+- Za flagami `SOLO_ENABLED` i `ACHIEVEMENTS_ENABLED` (obie wyłączone): dolny pasek Dziś · Plan · Postępy · Ty (`components/shell/*`, podpięty w `pages/plan.tsx`), Postępy (regularność, mapa roku, rekordy, kroki, osiągnięcia; tylko to, co zdobyte, bez rankingów i języka straty), Ty (profil, trener / kod, ustawienia, „Prowadzę podopiecznych”, dokumenty, wyloguj), start Solo. Nowa trasa API `GET /client-portal/activity` (za flagą osiągnięć). Bez zmian w panelu trenera.
+- Zrzuty 375 px jasny/ciemny: `docs/screens/solo/` (skrypt `scripts/screens-solo.mjs`, strona `/solo-preview` tylko DEV).
+- Testy: portal 260 (w tym „flagi wyłączone = portal jak dziś”, „flaga włączona = dolny pasek”), API 2759 (activity), panel 782, bezpieczeństwo generatora 101, typecheck i build OK.
+- Nie zrobione (zależy od decyzji): wywiad i plan Solo po stronie serwera (DO-DECYZJI 59), ekran końca treningu z osiągnięciem (pole `achievement` jest w odpowiedzi API, UI czeka na akceptację wyglądu).
+
+## 28.10.2026 — decyzja 58: poprawki ekranów (gałąź `feature/solo-ekrany`, NIE scalona) — kod GOTOWY, zrzuty po kroku 56
+- „Dziś”: kroki tylko jako mały wiersz z polem (`StepsTile compact`); wykres, średnia i cel tylko w „Postępach”. „Ty”: jeden napis „Prowadzę podopiecznych” (karta ma własny tytuł). Linki w „Dokumentach” min. 44 px (test klasy `min-h-11`). Testy: portal +4.
+## 28.10.2026 — decyzje 56–57: osiągnięcia, teksty bez płci (gałąź `feature/osiagniecia`, NIE scalona) — GOTOWE
+- Pięć rekomendacji zatwierdzonych (już tak wdrożone). Teksty portalu bez płci: 8 zmian (wywiad, aktywacja, osiągnięcie), lista w `docs/TEKSTY-PLEC.md`; odpowiedź o skokach neutralna, stare zapisy działają; strażnik `genderNeutralTexts.test.ts` + test tekstów osiągnięć.
+- Migracja 0056 zatwierdzona do scalenia (pg_dump przy scalaniu).
+
+## 28.10.2026 — decyzje 58–61: ekrany (zrzuty) i plan sterownika Solo (gałąź `feature/solo-ekrany`, NIE scalona) — GOTOWE
+- Ostateczne zrzuty `docs/screens/solo/` (375 px, jasny i ciemny): „Dziś” z małym wierszem kroków, „Ty” z jednym napisem i linkami 44 px (skrypt mierzy), teksty bez płci. Wciągnięte `feature/osiagniecia` (decyzje 56–57).
+- 59: `docs/SOLO-STEROWNIK.md` — plan S1–S5 (refaktor dnia → kierowca → wywiad Solo → limity → odbiór), realizacja po przeglądzie katalogu.

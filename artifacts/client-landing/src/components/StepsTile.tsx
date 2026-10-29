@@ -16,7 +16,7 @@ export function parseSteps(raw: string): number | null {
 }
 
 /** "Kroki dziś" — manual entry, goal bar, 7 days and the weekly average. Works offline (queue like the workout sets). */
-export function StepsTile() {
+export function StepsTile({ compact = false }: { compact?: boolean } = {}) {
   const q = stepsQueue();
   const pending = useSyncExternalStore((cb) => q.subscribe(cb), () => q.count());
   const [data, setData] = useState<StepsSummary | null>(() => readCachedSummary());
@@ -51,6 +51,29 @@ export function StepsTile() {
   }
   async function pickGoal(goal: number | null) {
     try { const s = await saveGoal(goal); cacheSummary(s); setData(s); setEditingGoal(false); } catch { setError("Nie udało się zapisać celu. Spróbuj, gdy wróci sieć."); }
+  }
+
+  // "Dziś" (new shell): just a small row with the entry field; the 7-day chart, average and goal live in "Postępy".
+  if (compact) {
+    return (
+      <section aria-label="Kroki dziś" data-testid="steps-tile" className="rounded-xl border border-border bg-card p-3">
+        <div className="flex items-center gap-2">
+          <Footprints className="h-4 w-4 text-primary" aria-hidden />
+          <p className="text-xs font-bold uppercase tracking-[0.06em] text-muted-foreground">Kroki dziś</p>
+          <p className="ml-auto text-lg font-bold tabular-nums" data-testid="steps-today">{shown === null ? "—" : nf(shown)}{data.goal ? <span className="ml-1 text-sm font-medium text-muted-foreground">/ {nf(data.goal)}</span> : null}</p>
+        </div>
+        {pending > 0 && <p className="mt-1 text-xs text-muted-foreground" data-testid="steps-pending">Zapisane w telefonie — wyślę po odzyskaniu sieci</p>}
+        <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); submit(); }}>
+          <input
+            inputMode="numeric" pattern="[0-9]*" autoComplete="off" value={value} onChange={(e) => setValue(e.target.value)}
+            aria-label="Liczba kroków" placeholder="Wpisz kroki, np. 7500" data-testid="steps-input"
+            className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-base"
+          />
+          <button type="submit" className="h-11 rounded-xl bg-primary px-4 text-base font-bold text-primary-foreground">Zapisz</button>
+        </form>
+        {error && <p role="alert" className="mt-1 text-sm text-destructive">{error}</p>}
+      </section>
+    );
   }
 
   return (
