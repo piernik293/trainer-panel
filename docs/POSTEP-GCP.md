@@ -405,3 +405,6 @@
 
 ## 29.10.2026 — D1/D2: beta bez limitów (gałąź `feature/beta-bez-limitow`)
 - `BETA_NO_LIMITS` (wyłączona): `ensureSubscription` zwraca plan bez limitów, podsumowanie `noLimits: true`, UI „Wersja beta”; testy `beta-no-limits` (3). D2: karta z uprzedzeniem o limitach Free na pulpicie (tylko gdy flaga wyłączona), `limitsNotice` + test.
+
+## 29.10.2026 — poprawka krytyczna: podgląd Solo psuł `fetch` w całym portalu (gałąź `fix/solo-preview-fetch`)
+- Przyczyna i skutek: patrz `docs/DO-DECYZJI.md` (PILNE). Poprawka + test źródłowy; portal 277 testów OK, typecheck OK. Portal działa z drzewa roboczego (Vite), więc po scaleniu naprawia się od razu.

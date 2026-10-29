@@ -62,13 +62,18 @@ const ROUTES: Record<string, unknown> = {
   "/api/client-portal/history": { items: [], hasMore: false, offset: 0, limit: 12 },
   "/api/client-portal/package": null,
 };
-const realFetch = window.fetch.bind(window);
-window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-  const url = (typeof input === "string" ? input : input instanceof URL ? input.pathname : input.url).split("?")[0]!;
-  if (url in ROUTES && ROUTES[url] !== null) return new Response(JSON.stringify(ROUTES[url]), { status: 200, headers: { "Content-Type": "application/json" } });
-  if (url.startsWith("/api/")) return new Response("{}", { status: 404 });
-  return realFetch(input, init);
-}) as typeof window.fetch;
+// Atrapa API TYLKO na stronie podglądu (dev, /solo-preview). Ten moduł jest importowany przez App.tsx, więc podmiana fetch
+// nie może wykonywać się przy samym imporcie — inaczej psuje wszystkie wywołania API w całym portalu (także w produkcji).
+export const isSoloPreviewPath = () => import.meta.env.DEV && typeof window !== "undefined" && window.location.pathname.endsWith("/solo-preview");
+if (isSoloPreviewPath()) {
+  const realFetch = window.fetch.bind(window);
+  window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = (typeof input === "string" ? input : input instanceof URL ? input.pathname : input.url).split("?")[0]!;
+    if (url in ROUTES && ROUTES[url] !== null) return new Response(JSON.stringify(ROUTES[url]), { status: 200, headers: { "Content-Type": "application/json" } });
+    if (url.startsWith("/api/")) return new Response("{}", { status: 404 });
+    return realFetch(input, init);
+  }) as typeof window.fetch;
+}
 
 const params = new URLSearchParams(window.location.search);
 const SCREEN = params.get("screen") ?? "dzis";
