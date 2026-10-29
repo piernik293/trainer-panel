@@ -13,6 +13,7 @@ import { useClerk } from "@clerk/react";
 import { Loader2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ErrorState";
+import { AccessRequestCard } from "@/components/AccessRequestCard";
 import { humanizeError } from "@/lib/userError";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -78,7 +79,8 @@ export function TrainerProfileGate({ children }: { children: ReactNode }) {
         <div className="min-h-screen flex items-center justify-center px-4">
           <div role="alert" className="max-w-md text-center space-y-4">
             <p className="text-lg font-semibold">To konto nie ma jeszcze dostępu trenera</p>
-            <p className="text-sm text-muted-foreground">{err.message}</p>
+            <p className="text-sm text-muted-foreground">Dostęp do panelu przyznajemy po zgłoszeniu. Wyślij wniosek, a my go rozpatrzymy.</p>
+            <AccessRequestCard />
             <Button variant="outline" className="gap-1.5" onClick={() => void signOut()}>
               <LogOut size={14} />
               Wyloguj się

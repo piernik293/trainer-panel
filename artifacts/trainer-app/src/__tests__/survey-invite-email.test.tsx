@@ -88,7 +88,7 @@ describe("Nowe zaproszenie", () => {
     fireEvent.click(screen.getByTestId("send-invite-email"));
     const result = await screen.findByTestId("invite-result");
     expect(result.textContent).toContain("Zaproszenie wysłane do Marta");
-    expect(result.textContent).toContain("Wolisz Messengera albo WhatsAppa?");
+    expect(result.textContent).toContain("Możesz też wysłać go sam");
     expect(screen.getByTestId("copy-link")).toBeTruthy();
     expect(document.body.textContent).not.toContain(TOKEN);
     const post = calls.find((c) => c.method === "POST")!;
@@ -100,6 +100,7 @@ describe("Nowe zaproszenie", () => {
     fill("Marta", "marta@example.com");
     fireEvent.click(screen.getByTestId("create-link"));
     expect((await screen.findByTestId("invite-result")).textContent).toContain("Link gotowy dla Marta");
+    expect(screen.getByTestId("invite-next-step").textContent).toContain("poczekaj, aż klient wypełni wywiad");
     expect(calls.find((c) => c.method === "POST")!.body).toMatchObject({ sendEmail: false });
   });
 

@@ -1,3 +1,4 @@
+import { plPL } from "@clerk/localizations";
 import Legal from "@/pages/Legal";
 import { useEffect, useRef } from "react";
 import { AppHero } from "@workspace/design-tokens/hero";
@@ -337,8 +338,11 @@ function ClerkProviderWithRoutes() {
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
       localization={{
+        ...plPL,
         signIn: {
+          ...plPL.signIn,
           start: {
+            ...plPL.signIn?.start,
             title: "Zaloguj się",
             subtitle: isTrainerAuthRoute
               ? "Zaloguj się do Panelu Trenera"
@@ -346,7 +350,9 @@ function ClerkProviderWithRoutes() {
           },
         },
         signUp: {
+          ...plPL.signUp,
           start: {
+            ...plPL.signUp?.start,
             title: "Utwórz konto",
             subtitle: "Zacznij korzystać z Panelu Trenera",
           },

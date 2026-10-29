@@ -378,3 +378,13 @@
 - Kopie bazy aplikacji przed migracjami: `~/backups/trainer_panel_przed_0061_20261029-1223`, `trainer_panel_przed_0056-0062_20261029-1240`. Migracje 0056, 0061, 0062 zastosowane na bazie aplikacji.
 - Testy: typecheck OK, API 141 plików / 2852, panel 794, portal 269, build OK; po restarcie smoke 131 OK / 0; wszystkie flagi wyłączone (`/api/feedback/status` = false).
 - Straż wpisana do crona (`*/5 * * * *`, tylko to konto), mail testowy „Strażnik działa” wysłany na `OWNER_NOTIFY_EMAIL`.
+
+## 29.10.2026 — część B: poprawki „łatwe” B1–B7 (gałąź `fix/latwe-b1-b7`)
+- B1: ekran konta bez dostępu trenera ma przycisk „Poproś o dostęp trenera” → wniosek → „Wniosek wysłany. Odpowiemy zwykle w ciągu 24 godzin.”; `/api/account/status` dla konta bez klienta zwraca 200 (niepołączone) zamiast 404, więc karta wniosku działa też w portalu; konto nadal nie jest trenerem bez akceptacji (test `access-request`).
+- B2: polskie napisy logowania Clerk w panelu (`@clerk/localizations`, jak w portalu; zmiana `package.json` i lockfile za zgodą).
+- B3: wniosek zapisuje imię i e-mail z konta Clerk; zakładka „Wnioski” pokazuje „imię · e-mail”.
+- B4: po „Utwórz link”: „Skopiowano link do schowka.” i „Dalej: poczekaj, aż klient wypełni wywiad. Dostaniesz powiadomienie.”
+- B5: po aktywacji planu okno „Plan aktywny” (gdy klient nie ma jeszcze konta): „Kopiuj link” i „Wyślij mailem” (mailto; bez wysyłki z serwera).
+- B6: „Pierwsze kroki”: link tylko przy następnym i ukończonych krokach; pozostałe z dopiskiem „Najpierw zrób poprzedni krok.”
+- B7: po wywiadzie klient widzi „Dziękujemy! Trener przygotuje Twój plan, zwykle w ciągu 1–2 dni. Dostaniesz link do aplikacji.”
+- Testy: typecheck OK, API 142 / 2855, panel 797, portal 269.

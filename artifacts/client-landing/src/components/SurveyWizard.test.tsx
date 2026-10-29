@@ -180,7 +180,8 @@ describe("summary", () => {
     cleanup();
     mount();
     fireEvent.click(screen.getByRole("button", { name: "Wyślij trenerowi" }));
-    await screen.findByText("Krok pierwszy zrobiony.");
+    await screen.findByText("Dziękujemy!");
+    expect(screen.getByText(/zwykle w ciągu 1–2 dni/)).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
     expect(body).toMatchObject({ trainingGoal: "Budowa sylwetki", injuryStatus: "Brak", healthConsent: true, firstName: "Marta", athleteStatus: "Nie" });

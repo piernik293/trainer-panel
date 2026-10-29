@@ -82,7 +82,8 @@ router.get("/account/status", async (req, res): Promise<void> => {
   const userId = getAuth(req)?.userId;
   if (!userId) { res.status(401).json({ error: "Twoja sesja wygasła. Zaloguj się ponownie." }); return; }
   const [c] = await db.select({ id: clientsTable.id, trainerId: clientsTable.trainerId }).from(clientsTable).where(eq(clientsTable.clerkUserId, userId));
-  if (!c) { res.status(404).json({ error: "Brak konta." }); return; }
+  // Nowe konto bez wiersza klienta (np. ktoś, kto dopiero prosi o dostęp trenera): nie jest błędem — po prostu nie jest połączone.
+  if (!c) { res.json({ linked: false, trainerName: null, pendingTrainerName: null }); return; }
   const linkedTrainer = c.trainerId != null
     ? (await db.select({ name: trainersTable.displayName }).from(trainersTable).where(eq(trainersTable.id, c.trainerId)))[0]
     : undefined;

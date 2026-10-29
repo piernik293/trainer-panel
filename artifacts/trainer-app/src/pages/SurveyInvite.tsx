@@ -147,7 +147,7 @@ function InviteResult({ name, token, email }: { name: string; token: string; ema
           {email.message ?? "Nie udało się wysłać e-maila."}
         </p>
       )}
-      <p className="text-sm text-foreground">Wolisz Messengera albo WhatsAppa? Wyślij ten sam link:</p>
+      <p className="text-sm text-foreground">{sent ? "Klient dostał link e-mailem. Możesz też wysłać go sam:" : "Wyślij ten link klientowi (Messenger, WhatsApp, SMS):"}</p>
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={copy} data-testid="copy-link">
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -163,6 +163,8 @@ function InviteResult({ name, token, email }: { name: string; token: string; ema
           </Button>
         )}
       </div>
+      {copied && <p className="text-sm font-medium text-success" role="status">Skopiowano link do schowka.</p>}
+      <p className="text-sm text-muted-foreground" data-testid="invite-next-step">Dalej: poczekaj, aż klient wypełni wywiad. Dostaniesz powiadomienie.</p>
     </div>
   );
 }
