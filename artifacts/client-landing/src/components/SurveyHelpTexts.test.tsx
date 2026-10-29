@@ -23,6 +23,7 @@ const norm = (s: string) => s.replace(/\s+/g, " ").replace(/[’]/g, "'").trim()
 
 /** Removed on purpose — each with the decision that removed it. */
 const DROPPED: Record<string, string> = {
+  "Możesz wskazać ćwiczenia, które lubisz, ale trener może wybrać prostsze": "29.10 (C3): ekran preferowanych ćwiczeń jest pomijany dla „Brak aktywności” i „Początkujący”, więc ta podpowiedź dla początkujących nie ma już gdzie się pokazać",
   "Podpowiedź: BMI wskazuje": "decyzja 23.10: BMI i podpowiedź o BMI widzi tylko trener (profil klienta)",
   "Na tym etapie nie musisz wybierać konkretnych priorytetów": "decyzja 23.10 (pkt 6): początkujący wybiera jedną partię; tekst „Wybierz jedną partię, na której chcesz się skupić. Plan i tak rozwinie całe ciało.”",
   "Na początku łatwo pochopnie ocenić": "decyzja 23.10 (pkt 6): zastąpione tym samym nowym tekstem pod pytaniem",
@@ -35,7 +36,7 @@ const base: Answers = { ...EMPTY_ANSWERS, healthConsent: true, firstName: "Ala",
 const PROFILES: Answers[] = [
   { ...base, trainingGoal: "Redukcja tkanki tłuszczowej", experienceLevel: "Początkujący", trainingLocation: "Dom", injuryStatus: "Tak", activityLevel: "Siedzący", cardioPreference: "Tylko niezbędne minimum", planStylePreference: "Prosty i łatwy do utrzymania" },
   { ...base, trainingGoal: "Cel sportowy", athleteStatus: "Hobbystycznie", experienceLevel: "Zaawansowany", trainingLocation: "Siłownia plenerowa", injuryStatus: "Nie", avoidsAdvancedMethods: "Tak", cardioPreference: "Tak, uwzględnij cardio w planie" },
-  { ...base, trainingGoal: "Budowa sylwetki", experienceLevel: "Średniozaawansowany", trainingLocation: "Siłownia", injuryStatus: "Nie", avoidsAdvancedMethods: "Nie" },
+  { ...base, trainingGoal: "Budowa sylwetki", experienceLevel: "Średniozaawansowany", trainingDuration: "3 lata", trainingLocation: "Siłownia", injuryStatus: "Nie", avoidsAdvancedMethods: "Nie", cardioPreference: "Tylko niezbędne minimum" },
   { ...base, trainingGoal: "Poprawa kondycji", experienceLevel: "Brak aktywności fizycznej", trainingLocation: "Siłownia", injuryStatus: "Nie" },
 ];
 

@@ -530,12 +530,20 @@ export default function SurveyWizard({
       case "body":
         return (
           <Section id={id} headingRef={heading} title="Wzrost i waga" lead="Wzrost i waga pomagają dobrać obciążenia i tempo progresji.">
+            {!answers.skipBody && (
+              <>
             <Field id="height" label="Wzrost" unit="cm" error={touched.height || (answers.heightCm !== undefined && String(answers.heightCm).length >= 3) ? heightError(answers.heightCm) : null}>
               <Input id="height" type="number" inputMode="numeric" min={SURVEY_LIMITS.heightMin} max={SURVEY_LIMITS.heightMax} value={answers.heightCm ?? ""} onBlur={() => touch("height")} aria-describedby="height-error" onChange={(e) => set({ heightCm: e.target.value === "" ? undefined : parseInt(e.target.value) })} className={bigInput} />
             </Field>
             <Field id="weight" label="Waga" unit="kg" error={touched.weight || answers.weightKg.length >= 2 ? weightError(parseWeight(answers.weightKg)) : null}>
               <Input id="weight" inputMode="decimal" placeholder="np. 75,5" onBlur={() => touch("weight")} aria-describedby="weight-error" value={answers.weightKg} onChange={(e) => set({ weightKg: e.target.value.replace(",", ".") })} className={bigInput} />
             </Field>
+              </>
+            )}
+            <label className="flex min-h-11 items-center gap-3 text-sm font-medium">
+              <input type="checkbox" className="h-5 w-5 shrink-0" checked={!!answers.skipBody} onChange={(e) => set({ skipBody: e.target.checked })} />
+              Wolę nie podawać wzrostu i wagi
+            </label>
           </Section>
         );
       case "goal":
@@ -928,7 +936,7 @@ export function summaryText(id: StepId, a: Answers): string {
     case "name": return [a.firstName, a.lastName].filter(Boolean).join(" ");
     case "contact": return [a.email, a.phone].filter(Boolean).join(", ");
     case "birth": return [a.dateOfBirth ? a.dateOfBirth.split("-").reverse().join(".") : "", a.gender].filter(Boolean).join(", ");
-    case "body": return a.heightCm ? `${a.heightCm} cm, ${a.weightKg.replace(".", ",")} kg` : "";
+    case "body": return a.skipBody ? "Wolę nie podawać" : a.heightCm ? `${a.heightCm} cm, ${a.weightKg.replace(".", ",")} kg` : "";
     case "goal": return a.trainingGoal;
     case "sportStatus": return a.athleteStatus;
     case "sportNeeds": return a.sportPerformanceNeeds.join(", ");

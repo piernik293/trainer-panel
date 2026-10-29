@@ -10,7 +10,7 @@ import { render, screen, fireEvent, cleanup, within, act } from "@testing-librar
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import SurveyWizard from "@/components/SurveyWizard";
-import { draftKey, EMPTY_ANSWERS, buildSurveyPayload, normalizeAnswers, visibleSteps, type Answers } from "@/lib/surveyWizard";
+import { draftKey, EMPTY_ANSWERS, buildSurveyPayload, normalizeAnswers, visibleSteps, isStepVisible, type Answers } from "@/lib/surveyWizard";
 import { birthDateBounds, getLocalDateString } from "@workspace/survey-config";
 
 vi.mock("@/components/AvoidedExercisesPicker", () => ({ AvoidedExercisesPicker: () => <div data-testid="avoided-picker" /> }));
@@ -361,17 +361,12 @@ describe("goals with descriptions, recommended session length, priority groups (
     expect(radios.every((r) => !r.disabled)).toBe(true);
   });
 
-  it("priority groups: beginners get one with the new text, advanced up to three", () => {
-    open("priority", { experienceLevel: "Początkujący" });
-    expect(screen.getByText(/Wybierz jedną partię, na której chcesz się skupić\. Plan i tak rozwinie całe ciało\./)).toBeTruthy();
-    expect(screen.getAllByText(/^Priorytet \d$/)).toHaveLength(1);
-    cleanup();
+  it("priority groups: skipped for beginners (C3), advanced get up to three", () => {
+    expect(isStepVisible("priority", { ...EMPTY_ANSWERS, experienceLevel: "Początkujący" })).toBe(false);
+    expect(isStepVisible("priority", { ...EMPTY_ANSWERS, experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok" })).toBe(false); // effective = beginner
     open("priority", { experienceLevel: "Zaawansowany" });
     expect(screen.getByText(/Wybierz do 3 partii mięśniowych/)).toBeTruthy();
     expect(screen.getAllByText(/^Priorytet \d$/)).toHaveLength(3);
-    cleanup();
-    open("priority", { experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok" }); // effective = beginner
-    expect(screen.getAllByText(/^Priorytet \d$/)).toHaveLength(1);
   });
 
   it("cardio: two options only", () => {

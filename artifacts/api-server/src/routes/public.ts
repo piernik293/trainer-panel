@@ -276,7 +276,8 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
     return;
   }
   // Same limits as the interview screens (lib/survey-config): age 16–90, height 120–230 cm, weight 35–250 kg.
-  const bodyError = birthDateError(dateOfBirthDate.toISOString().slice(0, 10)) ?? heightError(heightCm) ?? weightError(weightKg);
+  // Wzrost i waga są opcjonalne („Wolę nie podawać”): sprawdzamy je tylko, gdy podano.
+  const bodyError = birthDateError(dateOfBirthDate.toISOString().slice(0, 10)) ?? (heightCm != null ? heightError(heightCm) : null) ?? (weightKg != null ? weightError(weightKg) : null);
   if (bodyError) {
     res.status(400).json({ error: bodyError });
     return;

@@ -86,13 +86,13 @@ describe("cardio preference in drafts and priority muscles by effective level", 
     expect(normalizeAnswers(A({ cardioPreference: "Wolę ograniczyć cardio do niezbędnego minimum" })).cardioPreference).toBe("Tylko niezbędne minimum");
     expect(normalizeAnswers(A({ cardioPreference: "" })).cardioPreference).toBe("");
   });
-  it("beginners keep one priority group, others three", () => {
+  it("beginners have no priority groups (screen skipped, C3), others three", () => {
     const three = { priorityMuscle1: "Barki", priorityMuscle2: "Plecy", priorityMuscle3: "Pośladki" };
     for (const experienceLevel of ["Brak aktywności fizycznej", "Początkujący"]) {
-      expect(normalizeAnswers(A({ experienceLevel, ...three }))).toMatchObject({ priorityMuscle1: "Barki", priorityMuscle2: "", priorityMuscle3: "" });
+      expect(normalizeAnswers(A({ experienceLevel, ...three }))).toMatchObject({ priorityMuscle1: "", priorityMuscle2: "", priorityMuscle3: "" });
     }
-    // effective level: intermediate chosen, but only 1 year of training → one group
-    expect(normalizeAnswers(A({ experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok", ...three }))).toMatchObject({ priorityMuscle2: "", priorityMuscle3: "" });
+    // effective level: intermediate chosen, but only 1 year of training → treated as a beginner
+    expect(normalizeAnswers(A({ experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok", ...three }))).toMatchObject({ priorityMuscle1: "", priorityMuscle2: "", priorityMuscle3: "" });
     expect(normalizeAnswers(A({ experienceLevel: "Średniozaawansowany", trainingDuration: "3 lata", ...three }))).toMatchObject(three);
     expect(normalizeAnswers(A({ experienceLevel: "Zaawansowany", ...three }))).toMatchObject(three);
   });

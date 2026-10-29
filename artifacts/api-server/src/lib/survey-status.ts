@@ -6,12 +6,11 @@ export type SurveyStatusValue = "not_started" | "incomplete" | "completed";
 // Fields required for a public survey submission (see PublicSurveySubmission in
 // the OpenAPI spec). Used to decide whether a client's latest survey counts as
 // fully "Completed" or only "Incomplete". Tolerant of legacy records: any of
+// Wzrost i waga nie są wymagane („Wolę nie podawać”) — nie wpływają na status.
 // these fields being null/undefined/empty just means "incomplete", never a crash.
 const REQUIRED_FIELDS: (keyof Survey)[] = [
   "dateOfBirth",
   "gender",
-  "heightCm",
-  "weightKg",
   "experienceLevel",
   "activityLevel",
   "sleepHours",

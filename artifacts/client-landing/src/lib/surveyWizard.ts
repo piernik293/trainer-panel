@@ -60,6 +60,8 @@ export interface Answers {
   dateOfBirth: string;
   gender: string;
   heightCm?: number;
+  /** „Wolę nie podawać” wzrostu i wagi — generator działa bez nich. */
+  skipBody?: boolean;
   /** Dot-normalised text while typing ("75.5"). */
   weightKg: string;
   trainingGoal: string;
@@ -178,6 +180,12 @@ export function isStepVisible(id: StepId, a: Answers, prefill: Prefill = {}): bo
     case "healthDesc":
       return a.healthConsent && a.injuryStatus === "Tak";
     // Intermediate / advanced by the EFFECTIVE level (the choice capped by training time).
+    // Krótszy wywiad dla „Brak aktywności” i „Początkujący” (poziom efektywny): bez preferowanych ćwiczeń,
+    // partii priorytetowych i drugiego ekranu o cardio — generator wybiera sam (cardio: domyślnie w planie).
+    case "favorite":
+    case "priority":
+    case "cardioPref":
+      return !isBeginnerLevel(resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective ?? undefined);
     case "avoided":
     case "methodsList":
       return isIntermediateOrAdvancedLevel(resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective ?? undefined);
@@ -213,6 +221,9 @@ export function normalizeAnswers(input: Answers, prefill: Prefill = {}): Answers
   if (a.equipmentItems.includes(NO_EQUIPMENT)) a.equipmentOther = "";
   if (!isStepVisible("duration", a, prefill)) a.trainingDuration = "";
   if (!isStepVisible("cardioType", a, prefill)) a.preferredCardioType = "";
+  if (!isStepVisible("favorite", a, prefill)) a.favoriteExercises = [];
+  if (!isStepVisible("priority", a, prefill)) { a.priorityMuscle1 = ""; a.priorityMuscle2 = ""; a.priorityMuscle3 = ""; }
+  if (!isStepVisible("cardioPref", a, prefill)) a.cardioPreference = "";
   if (!isStepVisible("equipment", a, prefill)) {
     a.equipmentItems = [];
     a.equipmentOther = "";
@@ -271,6 +282,7 @@ export function validateStep(id: StepId, a: Answers): string | null {
       return null;
     }
     case "body": {
+      if (a.skipBody) return null;
       const hErr = heightError(a.heightCm);
       if (hErr) return hErr;
       return weightError(parseWeight(a.weightKg));
@@ -381,8 +393,8 @@ export function buildSurveyPayload(raw: Answers, prefill: Prefill = {}): Record<
     phone: (prefill.existingClient ? prefill.phone : a.phone) ?? a.phone,
     dateOfBirth: a.dateOfBirth,
     gender: a.gender,
-    heightCm: a.heightCm,
-    weightKg: parseWeight(a.weightKg),
+    heightCm: a.skipBody ? undefined : a.heightCm,
+    weightKg: a.skipBody ? undefined : parseWeight(a.weightKg),
     trainingGoal: a.trainingGoal,
     experienceLevel: a.experienceLevel,
     trainingDuration: a.trainingDuration,
@@ -425,6 +437,7 @@ export function buildSurveyPayload(raw: Answers, prefill: Prefill = {}): Record<
 // ─── Misc helpers ─────────────────────────────────────────────────────────────
 
 export function bmiOf(a: Answers): number | undefined {
+  if (a.skipBody) return undefined;
   return calculateBmi(a.heightCm, parseWeight(a.weightKg));
 }
 

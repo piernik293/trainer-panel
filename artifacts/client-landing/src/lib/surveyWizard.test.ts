@@ -107,7 +107,8 @@ const paths: Record<string, Answers> = {
 describe("payload identical to the old form, for every path from the inventory", () => {
   for (const [name, answers] of Object.entries(paths)) {
     it(name, () => {
-      const { values, extra, age } = toOld(answers);
+      // Początkujący i brak aktywności: preferowane ćwiczenia, partie priorytetowe i pytanie o cardio w planie są pominięte (C3) — porównujemy z odpowiedziami po normalizacji.
+      const { values, extra, age } = toOld(normalizeAnswers(answers));
       const expected = oldPayload(values, extra, age);
       const actual = buildSurveyPayload(answers);
       // Same keys with the same values (old form also sent `hasAdditionalInfo`, not stored by the API).
@@ -208,8 +209,9 @@ describe("question count (before = after)", () => {
     const all = STAGES.flatMap((s) => s.steps);
     expect(new Set(all).size).toBe(all.length);
     expect(STAGES).toHaveLength(9);
-    // beginner / gym / no injury: 22 of the 28 screens (the former yes/no "methods" screen is merged into "Metody do unikania")
-    expect(visibleSteps(base)).toHaveLength(22);
+    // beginner / gym / no injury: 19 screens (C3: no "favorite", "priority", "cardioPref" for beginners; the former yes/no "methods" screen is merged into "Metody do unikania")
+    expect(visibleSteps(base)).toHaveLength(19);
+    expect(visibleSteps({ ...base, experienceLevel: "Średniozaawansowany", trainingDuration: "3 lata" })).toEqual(expect.arrayContaining(["favorite", "priority", "cardioPref"]));
     // the longest path (sport goal, home, injury): 29 screens — "jumps" (experience with jumps) exists only with "Cel sportowy"
     expect(visibleSteps({ ...base, experienceLevel: "Zaawansowany", trainingLocation: "Dom", injuryStatus: "Tak", trainingGoal: "Cel sportowy", trainingDuration: "5 lat" })).toHaveLength(29);
   });
@@ -285,4 +287,29 @@ describe("consent to process health data", () => {
     expect((buildSurveyPayload({ ...a, injuryStatus: "Nie" }) as Record<string, unknown>).healthConsent).toBe(true);
   });
   it("the checkbox is not ticked by default", () => { expect(EMPTY_ANSWERS.healthConsent).toBe(false); });
+});
+
+describe("krótszy wywiad dla „Brak aktywności” i „Początkujący” (C3)", () => {
+  const skipped = ["favorite", "priority", "cardioPref"] as StepId[];
+  it("pomija preferowane ćwiczenia, partie priorytetowe i drugi ekran o cardio — także przy poziomie efektywnym początkującego", () => {
+    for (const experienceLevel of ["Brak aktywności fizycznej", "Początkujący"]) for (const id of skipped) expect(visibleSteps({ ...base, experienceLevel }), `${experienceLevel}/${id}`).not.toContain(id);
+    for (const id of skipped) expect(visibleSteps({ ...base, experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok" })).not.toContain(id);
+  });
+  it("pytania o zdrowie, ból, stawy i zgodę zostają", () => {
+    expect(visibleSteps({ ...base, experienceLevel: "Początkujący", injuryStatus: "Tak" })).toEqual(expect.arrayContaining(["injury", "healthDesc"]));
+  });
+  it("odpowiedzi z ukrytych ekranów nie trafiają do wysyłki", () => {
+    const p = buildSurveyPayload({ ...base, experienceLevel: "Początkujący", priorityMuscle1: "barki", favoriteExercises: [{ id: 1, name: "Przysiad" }], cardioPreference: "Tylko niezbędne minimum" });
+    expect(p.priorityMuscle1 ?? "").toBe("");
+    expect(p.favoriteExercises ?? "").toBe("");
+    expect(p.cardioPreference ?? "").toBe("");
+  });
+  it("„Wolę nie podawać”: wzrost i waga nie są wymagane ani wysyłane", () => {
+    const a = { ...base, heightCm: undefined, weightKg: "", skipBody: true };
+    expect(validateStep("body", a)).toBeNull();
+    const p = buildSurveyPayload(a);
+    expect(p.heightCm).toBeUndefined();
+    expect(p.weightKg).toBeUndefined();
+    expect(validateStep("body", { ...a, skipBody: false })).toBeTruthy();
+  });
 });

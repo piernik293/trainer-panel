@@ -392,3 +392,7 @@
 ## 29.10.2026 — C1: ćwiczenia izometryczne na czas (gałąź `feature/izometria`)
 - Migracja 0063 (kolumny `is_timed`, `duration_seconds`, wyzwalacz, kopia `isometry_backup`), lista `docs/IZOMETRIA.csv`, API (`timed`, `seconds`, zapis `durationSeconds`), portal: pole „Czas” z odliczaniem zamiast powtórzeń, potwierdzenie jednym kliknięciem.
 - Testy: `izometria.test.ts` (6), logika portalu; pełne: typecheck OK, API 143 / 2861, panel 797, portal 271.
+
+## 29.10.2026 — C3: krótszy wywiad dla BA i P (gałąź `feature/wywiad-krotszy`)
+- Pominięte ekrany: preferowane ćwiczenia, partie priorytetowe, drugi ekran o cardio (22 → 19 ekranów); „Wolę nie podawać” przy wzroście i wadze (API i status ankiety zmienione); zdrowie/ból/stawy/zgoda bez zmian.
+- Symulacja generatora po C1 i C3 (300 profili, ziarno 11, pełny katalog): 0 naruszeń bezpieczeństwa, 0 wykonalności, odmowy 2,3% dni (27/1200), 0 pustych dni.
