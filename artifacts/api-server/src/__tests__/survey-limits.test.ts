@@ -84,9 +84,12 @@ describe("POST /public/survey/:token — body data limits", () => {
     expect(low.body.error).toBe("Waga musi być między 35 a 250 kg.");
     expect((await submit({ weightKg: 251 })).status).toBe(400);
   });
-  it("height and weight are required", async () => {
-    expect((await submit({ heightCm: undefined })).status).toBe(400);
-    expect((await submit({ weightKg: undefined })).status).toBe(400);
+  it("height and weight are optional (\"Wolę nie podawać\", C3) — but when given the limits still apply", async () => {
+    expect((await submit({ heightCm: undefined, weightKg: undefined })).status).toBe(201);
+    expect((await submit({ heightCm: undefined })).status).toBe(201);
+    expect((await submit({ weightKg: undefined })).status).toBe(201);
+    expect((await submit({ heightCm: undefined, weightKg: 20 })).status).toBe(400);
+    expect((await submit({ heightCm: 300, weightKg: undefined })).status).toBe(400);
   });
   it("'Brak sprzętu' together with other equipment is rejected; alone it is fine", async () => {
     const bad = await submit({ trainingLocation: "Dom", equipment: "Hantle, Brak sprzętu" });
