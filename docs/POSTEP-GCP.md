@@ -399,3 +399,6 @@
 
 ## 29.10.2026 — C4: trening z wartościami z planu (gałąź `feature/trening-z-planu`)
 - Ekran serii: powtórzenia wstawione z planu (dolny koniec zakresu), ciężar z poprzedniego treningu (ta sama seria albo ostatnia), seria zapisywana jednym kliknięciem; podpowiedź „Wpisane z planu — zmień tylko, jeśli zrobiono inaczej.”; „Coś boli?” bez zmian. Ćwiczenia na czas (C1) startują od czasu z planu. Testy portalu 275 OK.
+
+## 29.10.2026 — C2: po zapisie planu od razu podgląd z „Aktywuj teraz” (gałąź `feature/aktywuj-po-zapisie`)
+- Kreator po zapisie szkicu przechodzi od razu do planu (`/plans/:id?po-zapisie=1`); u góry karta „Plan zapisany.” z przyciskami „Aktywuj teraz” (to samo potwierdzenie i te same blokady/ostrzeżenia co zwykła aktywacja, przycisk nieaktywny przy blokadzie) i „Jeszcze poprawię”. Po aktywacji okno B5 z linkiem dla klienta. Testy: panel 798, typecheck OK.

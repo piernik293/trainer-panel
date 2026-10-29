@@ -15,6 +15,7 @@ import { blockDurationRange } from "@workspace/survey-config";
 import { clientFullName } from "@/lib/clientName";
 import { StepHint } from "@/components/dashboard/StepHint";
 import { useState, useMemo, useEffect, useRef } from "react";
+import { planUrlAfterSave } from "@/lib/planJustSaved";
 import { humanizeError } from "@/lib/userError";
 import { useParams, Link, useLocation } from "wouter";
 import {
@@ -1665,6 +1666,13 @@ function Step3Volume({
 
 // ─── Main wizard component ────────────────────────────────────────────────────
 
+/** Po zapisie szkicu: przejście do podglądu planu (C2). */
+function RedirectToPlan({ planId }: { planId: number }) {
+  const [, navigate] = useLocation();
+  useEffect(() => { navigate(planUrlAfterSave(planId), { replace: true }); }, [planId, navigate]);
+  return null;
+}
+
 export default function PlanDraftWizard() {
   const params = useParams<{ id: string }>();
   const clientId = Number(params.id);
@@ -1951,6 +1959,7 @@ export default function PlanDraftWizard() {
   // ── Success state — evaluated BEFORE showPlanReadySummary so saving from either
   // path (Step 5 preview or PlanReadySummary screen) shows the confirmation card.
   if (saveDraftPlan.data && effectivePrefs) {
+    // C2: od razu do podglądu planu z „Aktywuj teraz” / „Jeszcze poprawię” (karta poniżej to tylko chwilowy stan przed przejściem).
     const splitLabel = (SPLIT_TYPE_LABELS as Record<string, string>)[effectivePrefs.splitType] ?? effectivePrefs.splitType;
     return (
       <div className="space-y-6 max-w-3xl pb-12 animate-in fade-in duration-300">
@@ -1961,6 +1970,7 @@ export default function PlanDraftWizard() {
           <ArrowLeft size={16} />
           Powrót do klienta
         </Link>
+        <RedirectToPlan planId={saveDraftPlan.data.id} />
         <Card className="border-emerald-300 bg-emerald-50/50 shadow-sm">
           <CardContent className="py-10 text-center">
             <CheckCircle2 className="w-10 h-10 mx-auto mb-3 text-emerald-600" />
