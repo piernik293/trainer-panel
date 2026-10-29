@@ -15,7 +15,7 @@ const sents = (t: string) => t.trim().split(/(?<=[.!?])\s+/).filter(Boolean);
 const EN = /\b(core|range of motion|ROM|tempo|reps|sets?|bar|rack|press|pull|push|swing|squat|deadlift|row|cable|lockout|spotter|hip|glute|lats|warm-?up|cool-?down|brace|grip|kettlebell|dumbbell|band)\b/i;
 const JARGON = /excentry|koncentry|izometry|\bROM\b|zakres ruchu|stabilizacj|aktywacj|mobilizacj|izolacj|\bRIR\b|\bRPE\b|latissimus|naramienn|czworogłow|kulszowo/i;
 const NOUNS = new Set(["tyłem", "krzesłem", "ciałem", "stołem", "kołem", "hasłem", "łokciem"]);
-const gendered = (t: string) => (t.match(/\p{L}+/gu) ?? []).some((w) => /(łeś|łaś|łem|łam|łbyś|łabyś|łbym|łabym)$/i.test(w) && w.length > 5 && !NOUNS.has(w.toLowerCase()));
+const gendered = (t: string) => Array.from(t.matchAll(/\p{L}+/gu), (m) => m[0]).some((w) => /(łeś|łaś|łem|łam|łbyś|łabyś|łbym|łabym)$/i.test(w) && w.length > 5 && !NOUNS.has(w.toLowerCase()));
 
 afterAll(async () => { await pool.end(); });
 
