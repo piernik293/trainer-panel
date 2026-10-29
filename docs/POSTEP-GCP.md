@@ -372,3 +372,9 @@
 - Do `feature/kalistenika`, `feature/osiagniecia` i `feature/solo-ekrany` wciągnięto `main` (zwykłe scalenia, konflikty: obie strony zostawione); wszystkie wypchnięte; **nic nie scalono do `main`**, flagi wyłączone.
 - Kalistenika: „L-sit z podparciem” w drabince core w kodzie (+ test); symulacja stylu 300 profili: 0 naruszeń bezpieczeństwa i wykonalności, odmowy 3,8% dni; jeden fałszywy alarm sprawdzacza poprawiony. Pełne testy zielone na każdej gałęzi (API 2802–2805, typecheck OK).
 - Kolejność scalania, migracje (0056, 0061, 0062), ryzyka i lista kontrolna: `docs/SCALANIE-PLAN.md`.
+
+## 29.10.2026 — część A: scalenia do `main` (ZGODA właściciela)
+- Scalone `--no-ff`: `feature/opisy-top100` (0061 na bazie aplikacji: 140 pozycji, kopia starych wartości w `catalogue_text_backup`), `qa/pierwsze-minuty`, `ops/monitoring`, `feature/zglos-uwage` (0062), `feature/kalistenika`, `feature/osiagniecia` (0056), `feature/solo-ekrany`, cztery gałęzie `docs/*`. Konflikty: dokumenty (obie strony), `routes/index.ts` (importy), `SurveyWizard.tsx` (tytuł daty urodzenia — wersja z decyzji 56), `generator-sim.test.ts`.
+- Kopie bazy aplikacji przed migracjami: `~/backups/trainer_panel_przed_0061_20261029-1223`, `trainer_panel_przed_0056-0062_20261029-1240`. Migracje 0056, 0061, 0062 zastosowane na bazie aplikacji.
+- Testy: typecheck OK, API 141 plików / 2852, panel 794, portal 269, build OK; po restarcie smoke 131 OK / 0; wszystkie flagi wyłączone (`/api/feedback/status` = false).
+- Straż wpisana do crona (`*/5 * * * *`, tylko to konto), mail testowy „Strażnik działa” wysłany na `OWNER_NOTIFY_EMAIL`.

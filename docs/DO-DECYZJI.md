@@ -185,3 +185,7 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 61. **Drabinki kalisteniczne** (`feature/kalistenika`) dołączą do liczenia awansów po scaleniu obu gałęzi.
    **ODPOWIEDŹ WŁAŚCICIELA: OK.**
    **ODPOWIEDŹ WŁAŚCICIELA: migracja 0056 przy scaleniu — zgoda (pg_dump przed).** Backup przed scaleniem zrobię przy scalaniu gałęzi; do tej pory migracja tylko w bazie testowej.
+
+## Decyzje właściciela po raporcie „Pierwsze minuty” i scaleniach (29.10.2026)
+**ZGODA:** scalenie gotowych gałęzi (A1–A6): opisy 140 ćwiczeń (0061 zatwierdzone), `qa/pierwsze-minuty` w tym N3-1, `ops/monitoring` + wpis straży do crona + 1 mail testowy, `feature/zglos-uwage` (flaga `FEEDBACK_ENABLED` wyłączona), kalistenika/osiągnięcia/Solo (0056; flagi wyłączone), dokumenty. Poprawki „łatwe” B1–B7, „średnie” C1–C4 (ćwiczenia na czas, aktywacja po zapisie, krótszy wywiad dla BA/P, wartości z planu w treningu), D1–D2 (flaga `BETA_NO_LIMITS`, domyślnie wyłączona; uprzedzenie o limitach tylko gdy wyłączona). Na później (nie robić): propozycje 5, 8, 10, krótszy kreator. Nie wolno: włączać flag, usuwać danych/kont/gałęzi, zmieniać nazw ćwiczeń ani `suitable_for_no_activity`, ponosić kosztów, publikować strony.
+- Odpowiedzi na pozycje z nocy: N3-1 zgoda (zostaje); N3-2 → B1 (przycisk „Poproś o dostęp trenera”); N3-3 → B2; N3-4 → C1; N3-5 → D1/D2; N4-1 flaga zostaje wyłączona; N5-1 zgoda (straż w cronie, wpisana 29.10 12:40).
