@@ -13,9 +13,14 @@ export function AccessRequestCard() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [contact, setContact] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`${BASE}/api/account/roles`, { credentials: "include" }).then((r) => (r.ok ? (r.json() as Promise<AccessRoles>) : null)).then(setRoles).catch(() => setRoles(null));
+  }, []);
+
+  useEffect(() => {
+    fetch(`${BASE}/api/contact`).then((r) => (r.ok ? r.json() : null)).then((b: { email?: string | null } | null) => setContact(b?.email ?? null)).catch(() => setContact(null));
   }, []);
 
   const send = async () => {
@@ -30,7 +35,8 @@ export function AccessRequestCard() {
   };
 
   const view = accessView(roles, sent);
-  if (view === "sent") return <p className="text-sm font-medium" role="status" data-testid="access-sent">{ACCESS_SENT_TEXT}</p>;
+  const contactLine = contact ? <p className="text-sm text-muted-foreground">Pytania? Napisz: <a className="underline" href={`mailto:${contact}`}>{contact}</a></p> : null;
+  if (view === "sent") return <div className="space-y-1"><p className="text-sm font-medium" role="status" data-testid="access-sent">{ACCESS_SENT_TEXT}</p>{contactLine}</div>;
   if (view === "rejected_wait") return <p className="text-sm text-muted-foreground">Poprzedni wniosek nie został przyjęty. Nowy możesz wysłać za kilka dni.</p>;
   return open ? (
     <div className="space-y-2 text-left">
@@ -39,6 +45,6 @@ export function AccessRequestCard() {
       <Button onClick={send} disabled={busy}>{busy ? "Wysyłanie…" : "Wyślij wniosek"}</Button>
     </div>
   ) : (
-    <Button onClick={() => setOpen(true)}>Poproś o dostęp trenera</Button>
+    <div className="space-y-2"><Button onClick={() => setOpen(true)}>Poproś o dostęp trenera</Button>{contactLine}</div>
   );
 }
