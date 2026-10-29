@@ -411,3 +411,6 @@
 
 ## 29.10.2026 — ponowny pomiar „pierwszych minut” (po B/C/D)
 - Trener: dostęp 3 ekrany / 2 kliknięcia (przed: ślepy zaułek); zaproszenie → aktywny plan + link 16/14 → 15/13. Klient: wywiad → trening 48/55 → 44/49 (wywiad 26/35/15 → 22/29/13). Wywiad trenera 8/20/5 bez zmian. Pomiar znalazł i pozwolił naprawić usterkę podglądu Solo (`fix/solo-preview-fetch`). Tabela: `docs/PIERWSZE-MINUTY.md`.
+
+## 29.10.2026 — decyzje właściciela: flagi, @reboot z kopią, adres kontaktowy
+- Flagi (feedback, beta bez limitów, kalistenika, osiągnięcia) włączone, Solo i kondycja wyłączone; cron `@reboot` z `scripts/backup-if-missing.sh`; `CONTACT_EMAIL` (szablon `TU_ADRES`) → `/api/contact` → ekran prośby o dostęp. Szczegóły: `docs/DO-DECYZJI.md`.

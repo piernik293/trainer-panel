@@ -205,3 +205,8 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 
 ### PILNE: poprawka po scaleniu `feature/solo-ekrany` (29.10.2026)
 - Strona podglądu Solo (`pages/solo-preview.tsx`) podmieniała `window.fetch` już przy imporcie, a `App.tsx` importuje ją zawsze — po scaleniu wszystkie wywołania `/api/*` w portalu klienta zwracały atrapę 404 (portal był niesprawny dla klientów od scalenia do tej poprawki; testy API i test dymny tego nie wykrywają, bo nie uruchamiają przeglądarki). Wykryte przy ponownym pomiarze „pierwszych minut”. Poprawka: podmiana tylko na ścieżce `/solo-preview` w trybie dev + test pilnujący tego. Błąd był w gałęzi `feature/solo-ekrany` z nocy (nie w dzisiejszych zmianach).
+
+## Decyzje właściciela z 29.10.2026 (po scaleniach)
+1. **Flagi włączone w `.env`:** `FEEDBACK_ENABLED=1`, `BETA_NO_LIMITS=1`, `CALISTHENICS_ENABLED=1`, `ACHIEVEMENTS_ENABLED=1`. **Zostają wyłączone:** `SOLO_ENABLED`, `CONDITIONING_ENABLED`. Kopia `.env` sprzed zmiany: `~/backups/env-przed-flagami-*.bak` (prawa 600).
+2. **N5-2:** wpis `@reboot` w cronie → `scripts/backup-if-missing.sh` (po 2 min od startu, jeśli dziś nie ma kopii dziennej, robi ją `backup-db.sh`). Bez nowych usług.
+3. **N3-2:** adres kontaktowy w konfiguracji (`CONTACT_EMAIL` w `.env`, teraz `TU_ADRES`), pokazywany na ekranie „Poproś o dostęp trenera” przez `GET /api/contact`; wartość bez „@” = nieustawiony (nic się nie pokazuje). **Do uzupełnienia:** wpisz prawdziwy adres w `.env` i zrestartuj API.
