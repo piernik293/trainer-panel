@@ -363,3 +363,6 @@
 ## 29.10.2026 — noc przed betą, blok 1: najczęstsze ćwiczenia pod grafiki (gałąź `docs/grafiki-cwiczen`, NIE scalona) — GOTOWE
 - `docs/GRAFIKI-TOP50.csv` (top 50 ćwiczeń, top 20 rozgrzewek, top 20 schłodzeń, pokrycie, opis/wskazówki, grafika/wideo) z symulacji 1000 profili na pełnym katalogu; `scripts/grafiki-top50.py`, opcja `SIM_DUMP` w symulacji (z rozgrzewką i schłodzeniem). Nic nie pobrano ani nie utworzono.
 - Pokrycie: top 50 = 65,6% wszystkich ćwiczeń w planach, top 100 = 86,8%; w planach użyto 250 z 599 aktywnych. Wszystkie top 50 mają opis i wskazówki; żadne nie ma grafiki ani wideo.
+## 28.10.2026 — noc przed betą, blok 7: strona dla trenerów (gałąź `docs/strona-trenerzy`)
+- Statyczny szkic `docs/strona/index.html` (styl B, jasny/ciemny, bez zewnętrznych zasobów): hasło główne + 2 alternatywy w `README.md`, 3 korzyści, 3 kroki, „Dla kogo”, przycisk „Dołącz do bety” (`mailto:`; adres w stałej `OWNER_EMAIL` do uzupełnienia, nie wpisany na stałe). Bez opinii, liczb użytkowników i konkurencji; dopisek, że aplikacja nie zastępuje lekarza.
+- Zrzuty 375 i 1440 px (jasny i ciemny) w `docs/strona/screens/`; brak poziomego przewijania. Nie wdrożona, bez domeny.

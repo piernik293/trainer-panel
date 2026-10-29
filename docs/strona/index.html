@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Optimatren — plany treningowe dla trenerów</title>
+<meta name="description" content="Plan treningowy w 2 minuty, z uwzględnieniem bólu, stawów i poziomu klienta. Aplikacja dla klienta w telefonie. Zapisy do bety.">
+<style>
+  /* Kolory z tokenów „Styl B — Energia” (lib/design-tokens/src/tokens.css). Bez zewnętrznych czcionek i skryptów. */
+  :root {
+    --bg:#fafaf9; --surface:#ffffff; --surface-2:#f0efed; --border:#e7e5e4; --text:#1c1917; --text-muted:#57534e;
+    --accent:#c2410c; --accent-hover:#9a330a; --accent-soft:#fff1ea; --accent-text:#ffffff;
+    --font:'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; --radius:8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#121212; --surface:#1c1b1a; --surface-2:#262524; --border:#2e2c2a; --text:#f5f5f4; --text-muted:#a8a29e;
+      --accent:#f26b2a; --accent-hover:#ff8a4c; --accent-soft:#3a2116; --accent-text:#1c1917; }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:var(--font); line-height:1.55; -webkit-text-size-adjust:100%; }
+  .wrap { max-width:1040px; margin:0 auto; padding:0 16px; }
+  header.top { border-bottom:1px solid var(--border); background:var(--surface); }
+  header.top .wrap { display:flex; align-items:center; justify-content:space-between; min-height:60px; gap:12px; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.01em; }
+  .mark { width:32px; height:32px; border-radius:8px; background:var(--accent); color:var(--accent-text); display:grid; place-items:center; font-weight:800; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; min-height:48px; padding:0 22px; border-radius:var(--radius); background:var(--accent); color:var(--accent-text);
+    font:inherit; font-weight:700; text-decoration:none; border:1px solid transparent; }
+  .btn:hover { background:var(--accent-hover); }
+  .btn:focus-visible, a:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+  .btn.ghost { background:transparent; color:var(--text); border-color:var(--border); min-height:44px; padding:0 16px; }
+  .btn.ghost:hover { background:var(--surface-2); }
+  .hero { padding:48px 0 40px; }
+  .eyebrow { font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; font-weight:800; color:var(--accent); margin:0 0 12px; }
+  h1 { font-size:clamp(2rem, 6.2vw, 3.4rem); line-height:1.08; letter-spacing:-.02em; margin:0 0 16px; font-weight:800; max-width:18ch; }
+  .lead { font-size:clamp(1.05rem, 2.4vw, 1.25rem); color:var(--text-muted); max-width:56ch; margin:0 0 24px; }
+  .cta { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  .note { font-size:.9rem; color:var(--text-muted); margin:12px 0 0; }
+  section { padding:40px 0; }
+  h2 { font-size:clamp(1.5rem, 4vw, 2.1rem); line-height:1.15; letter-spacing:-.01em; margin:0 0 24px; font-weight:800; }
+  .cards { display:grid; gap:16px; grid-template-columns:1fr; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+  .card h3 { margin:12px 0 8px; font-size:1.15rem; }
+  .card p { margin:0; color:var(--text-muted); }
+  .card ul { margin:8px 0 0; padding-left:1.1em; color:var(--text-muted); }
+  .ico { width:44px; height:44px; border-radius:8px; background:var(--accent-soft); color:var(--accent); display:grid; place-items:center; }
+  .ico svg { width:24px; height:24px; }
+  ol.steps { list-style:none; counter-reset:s; padding:0; margin:0; display:grid; gap:16px; grid-template-columns:1fr; }
+  ol.steps li { counter-increment:s; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px 20px 20px 72px; position:relative; }
+  ol.steps li::before { content:counter(s); position:absolute; left:20px; top:18px; width:36px; height:36px; border-radius:8px; background:var(--accent); color:var(--accent-text); display:grid; place-items:center; font-weight:800; }
+  ol.steps strong { display:block; margin-bottom:4px; font-size:1.1rem; }
+  ol.steps span { color:var(--text-muted); }
+  .who { display:grid; gap:12px; grid-template-columns:1fr; padding:0; margin:0; list-style:none; }
+  .who li { background:var(--surface-2); border-radius:var(--radius); padding:16px 18px; font-weight:600; }
+  .band { background:var(--surface); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+  .final { text-align:center; }
+  .final h2 { margin-inline:auto; max-width:20ch; }
+  .fine { font-size:.88rem; color:var(--text-muted); max-width:62ch; margin:16px auto 0; }
+  footer { padding:28px 0 40px; font-size:.88rem; color:var(--text-muted); border-top:1px solid var(--border); }
+  @media (min-width:720px) {
+    .hero { padding:80px 0 64px; }
+    .cards { grid-template-columns:repeat(3, 1fr); }
+    ol.steps { grid-template-columns:repeat(3, 1fr); }
+    ol.steps li { padding:72px 20px 20px; }
+    ol.steps li::before { top:20px; }
+    .who { grid-template-columns:repeat(3, 1fr); }
+    section { padding:56px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } }
+</style>
+</head>
+<body>
+<!--
+  WERSJA ROBOCZA (nie wdrażać, bez domeny).
+  Hasło główne: „Plan, który sam pilnuje bólu i poziomu klienta”.
+  Alternatywy do wyboru:
+   B) „Plan treningowy w 2 minuty — i dopasowany do poziomu klienta”
+   C) „Układasz plan szybciej, a aplikacja uwzględnia ból i poziom klienta”
+  Adres do zapisów: wpisz poniżej w OWNER_EMAIL (nie wpisujemy go na stałe w treści).
+-->
+<script>
+  // ← UZUPEŁNIJ: adres, na który trafią zgłoszenia do bety (np. "adres@twojadomena.pl"). Puste = otwiera pustą wiadomość bez adresata.
+  const OWNER_EMAIL = "";
+  document.addEventListener("DOMContentLoaded", function () {
+    var subject = encodeURIComponent("Chcę dołączyć do bety");
+    var body = encodeURIComponent("Cześć! Chcę dołączyć do bety.\n\nPracuję jako trener (krótko: z kim, ilu klientów):\n");
+    document.querySelectorAll("[data-join]").forEach(function (a) { a.href = "mailto:" + OWNER_EMAIL + "?subject=" + subject + "&body=" + body; });
+  });
+</script>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><span class="mark" aria-hidden="true">O</span> Optimatren</div>
+    <a class="btn ghost" data-join href="mailto:?subject=Chc%C4%99%20do%C5%82%C4%85czy%C4%87%20do%20bety">Dołącz do bety</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Dla trenerów personalnych</p>
+      <h1>Plan, który sam pilnuje bólu i poziomu klienta</h1>
+      <p class="lead">Klient wypełnia krótki wywiad w telefonie, a Ty dostajesz gotową propozycję planu. Aplikacja uwzględnia zgłoszony ból, stawy i poziom doświadczenia — Ty zatwierdzasz i zmieniasz, co chcesz.</p>
+      <div class="cta">
+        <a class="btn" data-join href="mailto:?subject=Chc%C4%99%20do%C5%82%C4%85czy%C4%87%20do%20bety">Dołącz do bety</a>
+        <a class="btn ghost" href="#jak-dziala">Zobacz, jak to działa</a>
+      </div>
+      <p class="note">Beta jest zamknięta — zgłoś się, a odezwiemy się z dalszymi krokami.</p>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="korzysci">
+    <div class="wrap">
+      <h2 id="korzysci">Trzy rzeczy, które zyskujesz</h2>
+      <div class="cards">
+        <article class="card">
+          <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 3h6"/></svg></div>
+          <h3>Plan w 2 minuty</h3>
+          <p>Wywiad klienta zamienia się w propozycję całego planu. Sprawdzasz, poprawiasz ćwiczenia i aktywujesz — zamiast układać wszystko od zera.</p>
+        </article>
+        <article class="card">
+          <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h3>Bezpieczeństwo wbudowane</h3>
+          <p>Plan uwzględnia:</p>
+          <ul><li>ból zgłoszony w wywiadzie i w trakcie treningu,</li><li>obciążenie stawów,</li><li>poziom doświadczenia klienta.</li></ul>
+        </article>
+        <article class="card">
+          <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></div>
+          <h3>Aplikacja dla klienta</h3>
+          <p>Klient w telefonie widzi trening na dziś i zapisuje serie. Gdy coś boli, jednym przyciskiem „Coś boli?” daje Ci znać. Może też śledzić dzienne kroki.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="jak-dziala" aria-labelledby="jak">
+    <div class="wrap">
+      <h2 id="jak">Jak to działa — trzy kroki</h2>
+      <ol class="steps">
+        <li><strong>Zaproś klienta</strong><span>Wpisz imię i wyślij link. Klient odpowiada na pytania w telefonie, bez zakładania konta.</span></li>
+        <li><strong>Zatwierdź plan</strong><span>Aplikacja układa propozycję na podstawie wywiadu. Zmieniasz, co chcesz, i aktywujesz plan.</span></li>
+        <li><strong>Prowadź i obserwuj</strong><span>Klient trenuje według planu, a Ty widzisz wykonane serie i zgłoszenia bólu.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="dla-kogo">
+    <div class="wrap">
+      <h2 id="dla-kogo">Dla kogo</h2>
+      <ul class="who">
+        <li>Dla trenerów, którzy pracują z początkującymi</li>
+        <li>Dla trenerów, którzy prowadzą osoby wracające po przerwie</li>
+        <li>Dla trenerów, których klienci zgłaszają ból</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="final" aria-labelledby="beta">
+    <div class="wrap">
+      <h2 id="beta">Sprawdź to na własnych klientach</h2>
+      <a class="btn" data-join href="mailto:?subject=Chc%C4%99%20do%C5%82%C4%85czy%C4%87%20do%20bety">Dołącz do bety</a>
+      <p class="fine">Aplikacja pomaga ułożyć i prowadzić trening; nie zastępuje lekarza ani fizjoterapeuty. Wartości takie jak BMI czy zapotrzebowanie kaloryczne są tylko szacunkami.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">Optimatren — wersja robocza strony. Zapisy do bety trwają.</div>
+</footer>
+</body>
+</html>
