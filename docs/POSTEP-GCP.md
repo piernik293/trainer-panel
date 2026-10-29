@@ -308,3 +308,7 @@
 
 ## 28.10.2026 — poprawki właściciela do danych o stawach (gałąź `fix/stawy-poprawki`, scalona do `main`)
 - Migracja 0060 (z kopią starych wartości, jednorazowa): 10 dipów → Bark, Łokieć, Nadgarstek, Wysokie (w tym dipy na ławce i wspomagane na maszynie); 7 ćwiczeń w zwisie + Bark; 6 ćwiczeń → Średnie. Lista: `docs/STAWY-POPRAWKI.csv`. Symulacja 1000 profili: naruszeń 0, odmowy 2,6% → 2,9%.
+
+## 29.10.2026 — noc przed betą, blok 2: opisy i wskazówki top 100 (gałąź `feature/opisy-top100`, NIE scalona) — GOTOWE
+- Przepisane teksty (opis, instrukcja, wskazówki, błąd) dla 140 pozycji: 100 ćwiczeń + 20 rozgrzewek + 20 schłodzeń. Migracja danych 0061 (kopia starych tekstów, jednorazowa, po `slug`), zastosowana **tylko na bazie testowej** (backup `~/backups/trainer_panel_test_przed_0061_*`). `docs/OPISY-TOP100.csv` („było → jest”) i `docs/OPISY-TOP100.md` do akceptacji.
+- Portal w serii pokazuje tylko instrukcję; propozycja pokazania wskazówek i błędu: jedna zmiana w `routes/training.ts` (opis w `OPISY-TOP100.md`). Test `opisy-top100.test.ts`.
