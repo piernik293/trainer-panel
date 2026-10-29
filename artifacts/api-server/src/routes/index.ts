@@ -30,6 +30,7 @@ import healthConsentRouter from "./healthConsent";
 import joinRequestsRouter from "./joinRequests";
 
 import adminRouter from "./admin";
+import feedbackRouter from "./feedback";
 import trainerApplicationsRouter from "./trainerApplications";
 
 import packagesRouter from "./packages";
@@ -75,6 +76,7 @@ router.use(healthConsentRouter);
 router.use(joinRequestsRouter);
 
 router.use(adminRouter);
+router.use(feedbackRouter);
 router.use(trainerApplicationsRouter);
 
 router.use(packagesRouter);

@@ -65,3 +65,12 @@ export function useHasOwnTraining(): boolean {
   }, []);
   return has;
 }
+
+export interface AdminFeedback { id: number; createdAt: string; source: "panel" | "portal"; role: "trener" | "klient"; category: "blad" | "pomysl" | "niejasne"; message: string; page: string; appVersion: string; status: "new" | "read"; readAt: string | null }
+export const useAdminFeedback = (status: "new" | "read" | "all", enabled: boolean) =>
+  useQuery<{ feedback: AdminFeedback[] }>({ queryKey: ["admin-feedback", status], enabled, retry: false, queryFn: () => customFetch(`/api/admin/feedback${status === "all" ? "" : `?status=${status}`}`) });
+export function useFeedbackRead() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: number) => customFetch(`/api/admin/feedback/${id}/read`, { method: "POST" }), onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-feedback"] }) });
+}
+export const FEEDBACK_CATEGORY_LABEL: Record<AdminFeedback["category"], string> = { blad: "Błąd", pomysl: "Pomysł", niejasne: "Niejasne" };

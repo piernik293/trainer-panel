@@ -31,3 +31,23 @@ export const adminAccessLogTable = pgTable("admin_access_log", {
   reason: text("reason").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => [index("admin_access_log_created_idx").on(t.createdAt)]);
+
+/** „Zgłoś uwagę” (migracja 0062, za flagą FEEDBACK_ENABLED). Treść oczyszczona; bez zrzutów ekranu; autor tylko jako skrót. */
+export const userFeedbackTable = pgTable("user_feedback", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  /** 'panel' | 'portal' */
+  source: text("source").notNull(),
+  /** 'trener' | 'klient' */
+  authorRole: text("author_role").notNull(),
+  /** 'blad' | 'pomysl' | 'niejasne' */
+  category: text("category").notNull(),
+  message: text("message").notNull(),
+  /** ścieżka strony bez parametrów */
+  page: text("page").notNull(),
+  appVersion: text("app_version").notNull(),
+  authorHash: text("author_hash").notNull(),
+  /** 'new' | 'read' */
+  status: text("status").notNull().default("new"),
+  readAt: timestamp("read_at"),
+}, (t) => [index("user_feedback_status_created_idx").on(t.status, t.createdAt), index("user_feedback_author_created_idx").on(t.authorHash, t.createdAt)]);

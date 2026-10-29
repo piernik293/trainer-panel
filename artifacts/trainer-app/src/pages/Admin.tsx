@@ -1,4 +1,4 @@
-/** Panel administratora (blok 3): Błędy · Trenerzy · Solo · Abonamenty i limity · Dziennik dostępu. Tylko dla administratora z listy w .env. */
+/** Panel administratora (blok 3): Błędy · Wnioski · Trenerzy · Solo · Abonamenty i limity · Uwagi · Dziennik dostępu. Tylko dla administratora z listy w .env. */
 import { useState } from "react";
 import { Redirect } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -7,13 +7,13 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { humanizeError } from "@/lib/userError";
 import {
-  AUTO_ACCEPT_CONFIRM, BLOCK_CONFIRM, SOURCE_LABEL, useApplicationActions, useAutoAccept, useTrainerApplications, useAccessLog, useAdminAction, useAdminErrors, useAdminSolo, useAdminSubscriptions, useAdminTrainers, useIsAdmin,
+  AUTO_ACCEPT_CONFIRM, BLOCK_CONFIRM, FEEDBACK_CATEGORY_LABEL, useAdminFeedback, useFeedbackRead, SOURCE_LABEL, useApplicationActions, useAutoAccept, useTrainerApplications, useAccessLog, useAdminAction, useAdminErrors, useAdminSolo, useAdminSubscriptions, useAdminTrainers, useIsAdmin,
 } from "@/lib/adminApi";
 
-type Tab = "errors" | "applications" | "trainers" | "solo" | "subs" | "log";
+type Tab = "errors" | "applications" | "trainers" | "solo" | "subs" | "feedback" | "log";
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: "errors", label: "Błędy" }, { id: "applications", label: "Wnioski" }, { id: "trainers", label: "Trenerzy" }, { id: "solo", label: "Solo" },
-  { id: "subs", label: "Abonamenty i limity" }, { id: "log", label: "Dziennik dostępu" },
+  { id: "subs", label: "Abonamenty i limity" }, { id: "feedback", label: "Uwagi" }, { id: "log", label: "Dziennik dostępu" },
 ];
 const fmt = (d: string | null) => (d ? new Date(d).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" }) : "—");
 const lim = (n: number | null) => (n === null ? "bez limitu" : String(n));
@@ -39,6 +39,35 @@ function Errors() {
               </div>
               <p className="text-sm text-muted-foreground break-words">{e.message}</p>
               {e.status === "new" && <Button size="sm" variant="outline" onClick={() => review.mutate(e.id)}>Oznacz jako przejrzany</Button>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function Feedback() {
+  const [filter, setFilter] = useState<"new" | "read" | "all">("new");
+  const { data, isLoading, isError } = useAdminFeedback(filter, true);
+  const read = useFeedbackRead();
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        {(["new", "read", "all"] as const).map((f) => (
+          <Button key={f} size="sm" variant={filter === f ? "default" : "outline"} onClick={() => setFilter(f)}>{f === "new" ? "Nowe" : f === "read" ? "Przeczytane" : "Wszystkie"}</Button>
+        ))}
+      </div>
+      {isLoading ? <div className="h-16 bg-muted animate-pulse rounded" /> : isError ? <p className="text-sm text-muted-foreground">Uwagi są wyłączone. Włącz je na serwerze (FEEDBACK_ENABLED=1).</p> : !data?.feedback.length ? <p className="text-sm text-muted-foreground">Brak uwag.</p> : (
+        <ul className="divide-y rounded-md border">
+          {data.feedback.map((f) => (
+            <li key={f.id} className="p-3 space-y-1" data-testid="admin-feedback">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm font-medium">{FEEDBACK_CATEGORY_LABEL[f.category]} · {f.source === "panel" ? "Panel" : "Portal"} · {f.role}</span>
+                <span className="text-xs text-muted-foreground">{fmt(f.createdAt)} · {f.page} · wersja {f.appVersion}</span>
+              </div>
+              <p className="text-sm break-words whitespace-pre-wrap">{f.message}</p>
+              {f.status === "new" && <Button size="sm" variant="outline" onClick={() => read.mutate(f.id)}>Oznacz jako przeczytane</Button>}
             </li>
           ))}
         </ul>
@@ -219,6 +248,7 @@ export default function Admin() {
       {tab === "trainers" && <Trainers />}
       {tab === "solo" && <Solo />}
       {tab === "subs" && <Subs />}
+      {tab === "feedback" && <Feedback />}
       {tab === "log" && <Log />}
     </div>
   );
