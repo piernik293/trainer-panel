@@ -34,6 +34,9 @@ import { requireClientAuth } from "../middlewares/requireClientAuth";
 import { determineDayType, buildShortWarmup } from "../services/rampWarmup";
 import { getCooldown } from "../services/cooldown";
 import { WARMUP_ROLES } from "../lib/exerciseRoles";
+import { logger } from "../lib/logger";
+import { achievementsEnabled, pickCelebration } from "../services/achievements";
+import { evaluateAndStore } from "../services/achievementsStore";
 import { isConservativeHealth } from "../services/jointExclusion";
 import { estimateMinutes, formatAmount, isRollerDay, reportedJoints, selectCooldown, selectWarmup, type CatalogueWarmupItem } from "../services/warmupSelection";
 import {
@@ -532,9 +535,21 @@ router.post("/client-portal/training/sessions/:sessionId/finish", requireClientA
     .where(and(eq(workoutSessionsTable.clientId, clientId), eq(workoutSessionsTable.status, "completed"), sql`${workoutSessionsTable.completedAt} >= ${startOfWeek(new Date())}`));
 
   const minutes = fresh.startedAt && fresh.endedAt ? Math.max(1, Math.round((fresh.endedAt.getTime() - fresh.startedAt.getTime()) / 60000)) : null;
+  // Achievements (behind ACHIEVEMENTS_ENABLED): at most ONE award is shown after the session; never breaks finishing; absent when the flag is off.
+  let achievement: { kind: string; title: string; body: string | null } | null | undefined;
+  if (achievementsEnabled() && fresh.status === "completed") {
+    try {
+      const { earned } = await evaluateAndStore(clientId);
+      const top = pickCelebration(earned);
+      achievement = top ? { kind: top.kind, title: top.title, body: top.body } : null;
+    } catch (err) {
+      logger.warn({ err }, "achievements not evaluated");
+    }
+  }
   res.json({
     id: fresh.id, status: fresh.status, minutes, sets: sets.length,
     week: { done: weekRows.length, target: days?.n ?? 0 }, records,
+    ...(achievement !== undefined ? { achievement } : {}),
   });
 });
 

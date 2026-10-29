@@ -280,9 +280,10 @@ export function goalIsSport(trainingGoal: string | undefined): boolean {
 // ─── Jump experience (only with the goal "Cel sportowy") ──────────────────────
 
 export const JUMP_EXPERIENCE_QUESTION = "Czy masz doświadczenie ze skokami (np. skakanie na skrzynię, przeskoki)?";
+const LEGACY_JUMP_SOME = "Trochę — robiłem/am okazjonalnie";
 export const JUMP_EXPERIENCE_OPTIONS = [
   "Nie — dopiero zaczynam",
-  "Trochę — robiłem/am okazjonalnie",
+  "Trochę — okazjonalnie",
   "Tak — robię regularnie",
 ] as const;
 export type JumpExperienceCode = "nie" | "troche" | "tak";
@@ -294,7 +295,8 @@ export function showJumpExperience(trainingGoal: string | undefined | null): boo
 
 /** Stored answer (one of JUMP_EXPERIENCE_OPTIONS) → code; anything else (including no answer) → null. */
 export function jumpExperienceCode(value: string | undefined | null): JumpExperienceCode | null {
-  const i = JUMP_EXPERIENCE_OPTIONS.findIndex((o) => o === value);
+  // "Trochę — robiłem/am okazjonalnie" was the wording before 28.10.2026 (gendered); answers already stored with it still count.
+  const i = value === LEGACY_JUMP_SOME ? 1 : JUMP_EXPERIENCE_OPTIONS.findIndex((o) => o === value);
   return i === 0 ? "nie" : i === 1 ? "troche" : i === 2 ? "tak" : null;
 }
 

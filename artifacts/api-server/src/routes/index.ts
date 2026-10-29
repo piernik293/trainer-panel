@@ -43,6 +43,7 @@ import soloRouter from "./solo";
 
 import conditioningRouter from "./conditioning";
 import calisthenicsRouter from "./calisthenics";
+import achievementsRouter from "./achievements";
 
 const router: IRouter = Router();
 
@@ -90,6 +91,7 @@ router.use(soloRouter);
 
 router.use(conditioningRouter);
 router.use(calisthenicsRouter);
+router.use(achievementsRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────

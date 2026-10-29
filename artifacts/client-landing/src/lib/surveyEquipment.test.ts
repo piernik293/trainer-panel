@@ -83,7 +83,7 @@ describe("pytanie o doświadczenie ze skokami (5b)", () => {
   const a = (over: Partial<Answers>): Answers => ({ ...EMPTY_ANSWERS, ...over });
   it("treść pytania i odpowiedzi dokładnie jak w decyzji", () => {
     expect(JUMP_EXPERIENCE_QUESTION).toBe("Czy masz doświadczenie ze skokami (np. skakanie na skrzynię, przeskoki)?");
-    expect([...JUMP_EXPERIENCE_OPTIONS]).toEqual(["Nie — dopiero zaczynam", "Trochę — robiłem/am okazjonalnie", "Tak — robię regularnie"]);
+    expect([...JUMP_EXPERIENCE_OPTIONS]).toEqual(["Nie — dopiero zaczynam", "Trochę — okazjonalnie", "Tak — robię regularnie"]);
   });
   it("widoczne tylko przy celu „Cel sportowy”, tuż po pytaniach o sport", () => {
     for (const goal of GOALS) expect(isStepVisible("jumps", a({ trainingGoal: goal }))).toBe(goal === "Cel sportowy");
@@ -104,5 +104,15 @@ describe("pytanie o doświadczenie ze skokami (5b)", () => {
     expect(jumpExperienceCode(undefined)).toBeNull();
     expect(showJumpExperience("Cel sportowy")).toBe(true);
     expect(showJumpExperience("Poprawa sprawności")).toBe(false);
+  });
+});
+
+describe("odpowiedź o skokach: nowe brzmienie bez płci i zgodność z zapisanym starym", () => {
+  it("stare „Trochę — robiłem/am okazjonalnie” nadal znaczy „trochę”", () => {
+    expect(jumpExperienceCode("Trochę — okazjonalnie")).toBe("troche");
+    expect(jumpExperienceCode("Trochę — robiłem/am okazjonalnie")).toBe("troche");
+    expect(jumpExperienceCode("Nie — dopiero zaczynam")).toBe("nie");
+    expect(jumpExperienceCode("Tak — robię regularnie")).toBe("tak");
+    expect(jumpExperienceCode("coś innego")).toBeNull();
   });
 });
