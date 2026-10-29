@@ -360,3 +360,6 @@
 ## 28.10.2026 — decyzje 58–61: ekrany (zrzuty) i plan sterownika Solo (gałąź `feature/solo-ekrany`, NIE scalona) — GOTOWE
 - Ostateczne zrzuty `docs/screens/solo/` (375 px, jasny i ciemny): „Dziś” z małym wierszem kroków, „Ty” z jednym napisem i linkami 44 px (skrypt mierzy), teksty bez płci. Wciągnięte `feature/osiagniecia` (decyzje 56–57).
 - 59: `docs/SOLO-STEROWNIK.md` — plan S1–S5 (refaktor dnia → kierowca → wywiad Solo → limity → odbiór), realizacja po przeglądzie katalogu.
+## 29.10.2026 — noc przed betą, blok 1: najczęstsze ćwiczenia pod grafiki (gałąź `docs/grafiki-cwiczen`, NIE scalona) — GOTOWE
+- `docs/GRAFIKI-TOP50.csv` (top 50 ćwiczeń, top 20 rozgrzewek, top 20 schłodzeń, pokrycie, opis/wskazówki, grafika/wideo) z symulacji 1000 profili na pełnym katalogu; `scripts/grafiki-top50.py`, opcja `SIM_DUMP` w symulacji (z rozgrzewką i schłodzeniem). Nic nie pobrano ani nie utworzono.
+- Pokrycie: top 50 = 65,6% wszystkich ćwiczeń w planach, top 100 = 86,8%; w planach użyto 250 z 599 aktywnych. Wszystkie top 50 mają opis i wskazówki; żadne nie ma grafiki ani wideo.
