@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { useUser } from "@clerk/react";
 import { AlertTriangle, CalendarCheck, FileText, Users } from "lucide-react";
@@ -10,6 +12,7 @@ import { humanizeError } from "@/lib/userError";
 import { useDashboardSummary, type DashboardSummary } from "@/lib/dashboardApi";
 import { formatPolishDate, headerSentence } from "@/lib/dashboardFormat";
 import { useSubscriptionSummary } from "@/lib/use-subscription-summary";
+import { LIMITS_NOTICE_KEY, LIMITS_NOTICE_TEXT, showLimitsNotice } from "@/lib/limitsNotice";
 import { AttentionList } from "@/components/dashboard/AttentionList";
 import { RecentEventsCard, TodayCard } from "@/components/dashboard/SideColumn";
 import { ExcelCard, FirstStepsCard, WillAppearCard } from "@/components/dashboard/FirstDay";
@@ -28,6 +31,18 @@ function Tile({ label, value, icon: Icon }: { label: string; value: number; icon
   );
 }
 
+function LimitsNotice() {
+  const { data } = useSubscriptionSummary();
+  const [seen, setSeen] = useState(() => { try { return window.localStorage.getItem(LIMITS_NOTICE_KEY) === "1"; } catch { return false; } });
+  if (!showLimitsNotice(data, seen)) return null;
+  return (
+    <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted px-4 py-3 text-sm" data-testid="limits-notice">
+      <span>{LIMITS_NOTICE_TEXT}</span>
+      <Button size="sm" variant="outline" className="min-h-11" onClick={() => { try { window.localStorage.setItem(LIMITS_NOTICE_KEY, "1"); } catch { /* bez zapisu */ } setSeen(true); }}>Rozumiem</Button>
+    </div>
+  );
+}
+
 function LimitBar() {
   const { data } = useSubscriptionSummary();
   const clients = data?.usage.clients;
@@ -40,7 +55,7 @@ function LimitBar() {
     >
       <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
       <span className="font-medium">
-        Osiągnąłeś limit klientów w planie {data?.plan.name ?? "Free"} ({clients.used}/{clients.limit}).
+        Osiągnięto limit klientów w planie {data?.plan.name ?? "Free"} ({clients.used}/{clients.limit}).
       </span>
       <Link href="/settings#plan-i-limity" className="inline-flex min-h-11 items-center font-semibold underline">
         Plan i limity
@@ -133,6 +148,7 @@ export default function Dashboard() {
     return (
       <div className="space-y-6 animate-in fade-in duration-500" data-testid="dashboard-empty-state">
         <Greeting summary={data} welcome />
+        <LimitsNotice />
         <LimitBar />
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">

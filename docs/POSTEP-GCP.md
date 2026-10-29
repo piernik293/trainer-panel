@@ -402,3 +402,6 @@
 
 ## 29.10.2026 — C2: po zapisie planu od razu podgląd z „Aktywuj teraz” (gałąź `feature/aktywuj-po-zapisie`)
 - Kreator po zapisie szkicu przechodzi od razu do planu (`/plans/:id?po-zapisie=1`); u góry karta „Plan zapisany.” z przyciskami „Aktywuj teraz” (to samo potwierdzenie i te same blokady/ostrzeżenia co zwykła aktywacja, przycisk nieaktywny przy blokadzie) i „Jeszcze poprawię”. Po aktywacji okno B5 z linkiem dla klienta. Testy: panel 798, typecheck OK.
+
+## 29.10.2026 — D1/D2: beta bez limitów (gałąź `feature/beta-bez-limitow`)
+- `BETA_NO_LIMITS` (wyłączona): `ensureSubscription` zwraca plan bez limitów, podsumowanie `noLimits: true`, UI „Wersja beta”; testy `beta-no-limits` (3). D2: karta z uprzedzeniem o limitach Free na pulpicie (tylko gdy flaga wyłączona), `limitsNotice` + test.

@@ -78,6 +78,17 @@ export function SubscriptionSummary({ context = "dashboard" }: { context?: "dash
     );
   }
 
+  if (data.noLimits) {
+    return (
+      <Card className="border-border/50 shadow-sm" data-testid={`subscription-summary-${context}`}>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Wersja beta</CardTitle>
+          <CardDescription>W becie nie ma limitów klientów, planów ani własnych ćwiczeń.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   const isFree = data.plan.code === "FREE";
   
   return (

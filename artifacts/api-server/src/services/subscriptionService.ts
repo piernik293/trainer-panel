@@ -28,6 +28,9 @@ type PlanDefinition = {
   benefits: string[];
 };
 
+/** Beta bez limitów (flaga BETA_NO_LIMITS, domyślnie wyłączona): każdy trener ma limity Unlimited. Administrator bez zmian. */
+export const betaNoLimits = (env: NodeJS.ProcessEnv = process.env) => env["BETA_NO_LIMITS"] === "1";
+
 export const SUBSCRIPTION_PLANS: Record<PlanCode, PlanDefinition> = {
   FREE: {
     code: "FREE",
@@ -64,6 +67,8 @@ export const SUBSCRIPTION_PLANS: Record<PlanCode, PlanDefinition> = {
     ],
   },
 };
+
+const BETA_PLAN: PlanDefinition = { ...SUBSCRIPTION_PLANS.UNLIMITED, name: "Beta" };
 
 const METRIC_LABELS: Record<SubscriptionMetric, string> = {
   clients: "Klienci",
@@ -173,6 +178,7 @@ async function ensureSubscription(
     })
     .from(trainerSubscriptionsTable)
     .where(eq(trainerSubscriptionsTable.trainerId, trainerId));
+  if (betaNoLimits()) return BETA_PLAN;
   const planCode = normalizePlanCode(subscription?.planCode ?? "FREE", subscription?.status ?? "active");
   return SUBSCRIPTION_PLANS[planCode];
 }
@@ -326,7 +332,8 @@ export async function getSubscriptionSummary(trainerId: number) {
         ),
       },
       resetsAt,
-      availablePlans: Object.values(SUBSCRIPTION_PLANS).map(
+      noLimits: betaNoLimits(),
+      availablePlans: betaNoLimits() ? [] : Object.values(SUBSCRIPTION_PLANS).map(
         ({ code, name, monthlyPricePln, benefits }) => ({
           code,
           name,
