@@ -147,7 +147,7 @@ describe("Pulpit z klientami", () => {
     mockSub = { plan: { name: "Free" }, usage: { clients: { used: 3, limit: 3, atLimit: true } } };
     render(<Dashboard />);
     const bar = screen.getByTestId("limit-bar");
-    expect(bar.textContent).toContain("Osiągnąłeś limit klientów w planie Free");
+    expect(bar.textContent).toContain("Osiągnięto limit klientów w planie Free");
     expect(within(bar).getByRole("link", { name: "Plan i limity" }).getAttribute("href")).toBe("/settings#plan-i-limity");
     expect(screen.queryByTestId("subscription-summary-dashboard")).toBeNull();
   });

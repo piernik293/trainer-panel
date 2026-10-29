@@ -22,6 +22,8 @@ export interface SubscriptionSummaryData {
     planGenerations: UsageStat;
   };
   resetsAt: string;
+  /** Beta bez limitów (BETA_NO_LIMITS): ukrywamy teksty o limitach */
+  noLimits?: boolean;
   availablePlans: Array<{
     code: string;
     name: string;
