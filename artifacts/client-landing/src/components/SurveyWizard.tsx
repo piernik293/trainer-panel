@@ -514,7 +514,6 @@ export default function SurveyWizard({
         );
       case "birth":
         return (
-          <Section id={id} headingRef={heading} title="Jaka jest Twoja data urodzenia?" lead="Wiek wpływa na dobór obciążeń i tempa progresji.">
           <Section id={id} headingRef={heading} title="Data urodzenia" lead="Wiek wpływa na dobór obciążeń i tempa progresji.">
             <div className="space-y-1.5">
               <label htmlFor="dob" className="text-sm font-semibold">Data urodzenia</label>
