@@ -366,3 +366,5 @@
 ## 28.10.2026 — noc przed betą, blok 7: strona dla trenerów (gałąź `docs/strona-trenerzy`)
 - Statyczny szkic `docs/strona/index.html` (styl B, jasny/ciemny, bez zewnętrznych zasobów): hasło główne + 2 alternatywy w `README.md`, 3 korzyści, 3 kroki, „Dla kogo”, przycisk „Dołącz do bety” (`mailto:`; adres w stałej `OWNER_EMAIL` do uzupełnienia, nie wpisany na stałe). Bez opinii, liczb użytkowników i konkurencji; dopisek, że aplikacja nie zastępuje lekarza.
 - Zrzuty 375 i 1440 px (jasny i ciemny) w `docs/strona/screens/`; brak poziomego przewijania. Nie wdrożona, bez domeny.
+## 28.10.2026 — noc przed betą, blok 8: stan przed betą (gałąź `docs/przed-beta-stan`)
+- `docs/PRZED-BETA-STAN.md`: punkty `BETA-START.md` (gotowe/czekają, czas i koszt), konta i dane testowe do usunięcia (nic nie usunięto), gałęzie scalone i niescalone (nic nie usunięto), stan flag i rekomendacja, otwarte pozycje `DO-DECYZJI.md`.
