@@ -148,3 +148,10 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 68. **Okrojona baza testowa:** wcześniejsze symulacje szły na 185 ćwiczeniach (katalog aplikacji ma 587), więc kolumna „ile razy brakowało” w pliku przeglądu miała ograniczone pokrycie. Wnioski o decyzjach nie zmieniają się (to nadal Twoje decyzje), ale liczby jakości (np. odmowy 14%) były zawyżone: na pełnym katalogu przed zmianami to 3,6%.
    **ODPOWIEDŹ WŁAŚCICIELA: przyjęte do wiadomości (odmowy liczone teraz na pełnym katalogu).**
 
+
+## Z nocy przed betą — blok 3 (`qa/pierwsze-minuty`)
+- **N3-1. Wywiad wpisywany przez trenera (ścieżka C) był ślepym zaułkiem:** „Rozpocznij Wywiad” / „Wypełnij Wywiad Treningowy” prowadziły do pustego ekranu „Klient nie wypełnił jeszcze wywiadu treningowego.”. Na gałęzi: dla klienta bez wywiadu od razu otwiera się formularz (tytuł „Wywiad Treningowy”, przycisk „Zapisz wywiad”). Mała zmiana zachowania widoczna dla trenera, odwracalna. **Czy zostawić?** (Rekomendacja: tak.)
+- **N3-2. Nowe konto trenera nie ma drogi do dostępu** (ekran „To konto nie ma jeszcze dostępu trenera… Napisz do nas” bez adresu i przycisku; portal dla konta bez klienta nie pokazuje karty „Prowadzę podopiecznych”). Nie zmieniałem. **Do decyzji:** w becie zamkniętej konta trenerów zakłada właściciel (wtedy wystarczy dopisać adres kontaktowy do tego ekranu — jaki?), czy mamy dodać przycisk „Poproś o dostęp”?
+- **N3-3. Panel trenera ma logowanie po angielsku.** Poprawka = dodanie `@clerk/localizations` do panelu (pakiet już jest w portalu; zmiana `package.json`/lockfile). Nie robiłem (zmiana pakietów). **Czy dodać?**
+- **N3-4. Plank i inne ćwiczenia izometryczne w planie jako „12–15 powtórzeń”** (brak `default_duration_seconds` w danych). Dane katalogu — nie zmieniałem. **Czy uzupełnić czasy?** (osobna migracja danych z kopią.)
+- **N3-5. Limity planu Free w becie:** 1 automatyczny plan miesięcznie i 3 klientów. Trener to odkrywa dopiero przy drugim kliencie. Nie zmieniałem limitów. **Czy beta ma dostać wyższy limit albo ostrzeżenie na starcie?**

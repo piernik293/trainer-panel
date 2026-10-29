@@ -312,3 +312,8 @@
 ## 29.10.2026 — noc przed betą, blok 2: opisy i wskazówki top 100 (gałąź `feature/opisy-top100`, NIE scalona) — GOTOWE
 - Przepisane teksty (opis, instrukcja, wskazówki, błąd) dla 140 pozycji: 100 ćwiczeń + 20 rozgrzewek + 20 schłodzeń. Migracja danych 0061 (kopia starych tekstów, jednorazowa, po `slug`), zastosowana **tylko na bazie testowej** (backup `~/backups/trainer_panel_test_przed_0061_*`). `docs/OPISY-TOP100.csv` („było → jest”) i `docs/OPISY-TOP100.md` do akceptacji.
 - Portal w serii pokazuje tylko instrukcję; propozycja pokazania wskazówek i błędu: jedna zmiana w `routes/training.ts` (opis w `OPISY-TOP100.md`). Test `opisy-top100.test.ts`.
+## 28.10.2026 — noc przed betą, blok 3: pierwsze minuty (gałąź `qa/pierwsze-minuty`)
+- Osobna baza QA (schemat `qa` w `trainer_panel_test`) i osobny stos (`scripts/qa-stack.sh`: API 18090, panel 23890, portal 22390, bez poczty); baza aplikacji nietknięta; stos zatrzymany po teście.
+- Playwright 375 i 1440 px, konta Clerk dev: A (trener → aktywny plan: 16 ekranów, 14 kliknięć), B (klient → trening: 48 ekranów, 55 kliknięć), C (wywiad wpisany przez trenera: 8 ekranów, 20 kliknięć). Raport: `docs/PIERWSZE-MINUTY.md`, zrzuty `docs/screens/pierwsze-minuty/`.
+- Największe przeszkody: nowe konto trenera bez drogi do dostępu, logowanie panelu po angielsku, limity Free odkrywane w trakcie, brak ekranu „co dalej” po aktywacji planu, plank w powtórzeniach.
+- Poprawki: teksty wywiadu bez form zależnych od płci; „Nowy klient” bez e-maila/telefonu (test `clientPayload`); wywiad trenera dla klienta bez wywiadu otwiera formularz. Testy: panel 788, portal 251, typecheck OK. Decyzje: `docs/DO-DECYZJI.md` (N3-1…N3-5).
