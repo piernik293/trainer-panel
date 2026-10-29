@@ -109,3 +109,16 @@ Zmian przebiegu (kolejność ekranów, kreator, zaproszenia, limity, rejestracja
 - Prawdziwa rejestracja Clerk (anty-bot w trybie bez głowy) — kroki oszacowane.
 - Wysyłka e-maili z zaproszeniami (QA bez poczty) — tylko wariant „link do skopiowania”.
 - Ścieżka C przy 1440 px: formularz wywiadu zmierzony, formularz „Nowy klient” tylko zrzut (konto testowe wyczerpało limit 3 klientów planu Free — sama ta blokada to przeszkoda 3).
+
+## Pomiar po zmianach (29.10.2026, po poprawkach B1–B7, C1–C4, D1–D2)
+
+Ten sam sposób pomiaru (Playwright 375 i 1440 px, osobna baza QA, konta Clerk dev, nowi trenerzy na planie Free); wyniki 375 i 1440 px są identyczne. Zrzuty: `docs/screens/pierwsze-minuty/N-*`. Pomiar wykrył też poważną usterkę po scaleniu `feature/solo-ekrany` (podgląd Solo psuł `fetch` w całym portalu) — naprawioną tego samego dnia (`docs/DO-DECYZJI.md`, „PILNE”).
+
+| Ścieżka | Przed (ekrany / kliknięcia / pola) | Po (ekrany / kliknięcia / pola) | Co się zmieniło |
+|---|---|---|---|
+| **Nowe konto trenera → dostęp** | ślepy zaułek („Napisz do nas”) | **3 / 2 / 0** („Poproś o dostęp trenera” → „Wyślij wniosek” → „Wniosek wysłany…”) | B1; po akceptacji administratora (imię i e-mail we wniosku, B3) trener wchodzi do panelu |
+| **A. Zaproszenie → aktywny plan + link dla klienta** | 16 / 14 / 1 (link do portalu osobno: ok. +2 kliknięcia) | **15 / 13 / 1** (link w oknie po aktywacji) | C2: po zapisie od razu podgląd z „Aktywuj teraz”; B5: okno z linkiem; krok „Otwórz plan” → „Edytuj” znika |
+| **B. Klient: wywiad → pierwszy skończony trening** | 48 / 55 / 16 | **44 / 49 / 14** (wywiad 26 → 22 ekrany, 35 → 29 kliknięć, 15 → 13 pól; trening bez zmian: 20 / 20 / 1) | C3: pominięte preferowane ćwiczenia, partie priorytetowe, drugi ekran o cardio (19 pytań zamiast 22); „Wolę nie podawać” przy wzroście i wadze |
+| **C. Trener wpisuje wywiad klientowi bez telefonu** | 8 / 20 / 5 po poprawce z nocy (przed nią ślepy zaułek) | **8 / 20 / 5** | bez zmian (formularz trenera ma 37 pól — propozycja 10 „na później”) |
+
+Zmiany, których nie widać w tych liczbach: ćwiczenia izometryczne (plank itp.) mają w planie czas, a w portalu odliczanie z potwierdzeniem jednym kliknięciem (C1); seria w treningu ma powtórzenia z planu i ciężar z poprzedniego treningu wpisane z góry (C4); logowanie panelu jest po polsku (B2); „Pierwsze kroki” prowadzą jednym następnym krokiem (B6); klient po wywiadzie widzi, co dalej (B7).
