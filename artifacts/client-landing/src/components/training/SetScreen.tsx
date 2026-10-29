@@ -1,10 +1,29 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ListChecks, HelpCircle, Trophy, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ExerciseInfo } from "@/lib/training/types";
 import { formatSetResult, formatTarget, parseDecimal, parseIntStrict, startValues, type LoggedSet } from "@/lib/training/logic";
 import { activeSetNumber } from "@/lib/training/run";
 import { NumberField, RirPicker } from "./TrainingUi";
+
+/** Odliczanie czasu dla ćwiczenia izometrycznego: tylko pomoc — zapisuje się wartość z pola „Czas”. */
+export function HoldTimer({ seconds }: { seconds: number }) {
+  const [left, setLeft] = useState<number | null>(null);
+  useEffect(() => {
+    if (left == null || left <= 0) return;
+    const t = setTimeout(() => setLeft((l) => (l == null ? l : l - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [left]);
+  if (left == null) {
+    return <button type="button" onClick={() => setLeft(seconds)} className="min-h-11 w-full rounded-lg border border-border text-sm font-semibold">Odliczaj {seconds} s</button>;
+  }
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2" role="timer" aria-live="off">
+      <span className="text-2xl font-bold tabular-nums">{left > 0 ? `${left} s` : "Koniec czasu"}</span>
+      <button type="button" onClick={() => setLeft(null)} className="min-h-11 px-3 text-sm font-semibold text-muted-foreground">{left > 0 ? "Zatrzymaj" : "Gotowe"}</button>
+    </div>
+  );
+}
 
 /** Per-set logging for one exercise: table (Seria / Poprzednio / Dziś / RIR) + editor of the active set. */
 export function SetScreen({
@@ -34,7 +53,9 @@ export function SetScreen({
   const [extra, setExtra] = useState(false);
 
   const save = () => {
-    onSave(current, { weightKg: ex.showWeight || extra ? v.weightKg : null, reps: v.reps, rir: v.rir });
+    onSave(current, ex.timed
+      ? { weightKg: null, reps: null, durationSeconds: v.durationSeconds ?? null, rir: v.rir }
+      : { weightKg: ex.showWeight || extra ? v.weightKg : null, reps: v.reps, rir: v.rir });
     setEditing(null);
   };
 
@@ -114,6 +135,13 @@ export function SetScreen({
       {!skipped && !allDone && (
         <div className="space-y-4 rounded-xl border border-primary/30 bg-card p-3">
           <p className="text-sm font-bold">{editing ? `Popraw serię ${current}` : `Seria ${current} z ${ex.sets}`}</p>
+          {ex.timed ? (
+            <>
+              <NumberField label="Czas" unit="s" decimal={false} step={5} value={v.durationSeconds ?? null} onChange={(r) => set({ durationSeconds: r })} parse={parseIntStrict} format={(n) => (n == null ? "" : String(n))} />
+              <HoldTimer seconds={ex.seconds ?? v.durationSeconds ?? 20} />
+            </>
+          ) : (
+            <>
           {ex.showWeight ? (
             <NumberField label="Ciężar" unit="kg" decimal step={ex.weightStepKg ?? 2.5} value={v.weightKg} onChange={(w) => set({ weightKg: w })} parse={parseDecimal} format={(n) => (n == null ? "" : String(n).replace(".", ","))} />
           ) : extra ? (
@@ -122,8 +150,10 @@ export function SetScreen({
             <button type="button" onClick={() => setExtra(true)} className="min-h-11 text-sm font-semibold text-primary">+ Dodatkowe obciążenie (opcjonalnie)</button>
           )}
           <NumberField label="Powtórzenia" decimal={false} step={1} value={v.reps} onChange={(r) => set({ reps: r })} parse={parseIntStrict} format={(n) => (n == null ? "" : String(n))} />
+            </>
+          )}
           <RirPicker value={v.rir} onChange={(r) => set({ rir: r })} />
-          <button type="button" onClick={save} disabled={v.reps == null} className="h-14 w-full rounded-xl bg-primary text-base font-bold text-primary-foreground disabled:opacity-50">
+          <button type="button" onClick={save} disabled={ex.timed ? v.durationSeconds == null : v.reps == null} className="h-14 w-full rounded-xl bg-primary text-base font-bold text-primary-foreground disabled:opacity-50">
             {editing ? "Zapisz zmianę" : "Zapisz serię"}
           </button>
           {editing && <button type="button" onClick={() => setEditing(null)} className="h-11 w-full text-sm font-semibold text-muted-foreground">Anuluj poprawkę</button>}

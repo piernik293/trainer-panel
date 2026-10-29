@@ -130,6 +130,7 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     equipmentDetail: null,
     defaultReps: null,
     defaultDurationSeconds: null,
+    isTimed: false,
     perSide: null,
     parentExerciseId: null,
     variantGrip: null,

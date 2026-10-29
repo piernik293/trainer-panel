@@ -1,4 +1,4 @@
-export interface PrevSet { setNumber: number; weightKg: number | null; reps: number | null; rir: number | null }
+export interface PrevSet { setNumber: number; weightKg: number | null; reps: number | null; durationSeconds?: number | null; rir: number | null }
 export interface ExerciseInfo {
   planExerciseId: number;
   exerciseId: number;
@@ -7,6 +7,9 @@ export interface ExerciseInfo {
   equipment: string[];
   sets: number;
   reps: string;
+  /** ćwiczenie izometryczne: w planie czas w sekundach zamiast powtórzeń */
+  timed?: boolean;
+  seconds?: number | null;
   repMin: number | null;
   repMax: number | null;
   rir: number | null;
@@ -39,7 +42,7 @@ export interface TrainingDay {
   warmupMinutes?: number;
   cooldownMinutes?: number;
   cooldown: RampItem[];
-  activeSession: { id: number; sets: { planExerciseId: number | null; setNumber: number; weightKg: number | null; reps: number | null; rir: number | null; skipped: boolean }[]; pain: { id: number; exerciseId: number | null }[] } | null;
+  activeSession: { id: number; sets: { planExerciseId: number | null; setNumber: number; weightKg: number | null; reps: number | null; durationSeconds?: number | null; rir: number | null; skipped: boolean }[]; pain: { id: number; exerciseId: number | null }[] } | null;
 }
 export interface TodayResponse {
   client: { firstName: string };

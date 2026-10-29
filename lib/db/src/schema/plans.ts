@@ -331,6 +331,8 @@ export const setLogsTable = pgTable("set_logs", {
   /** kg; NULL for bodyweight exercises (extra load optional) */
   weightKg: numeric("weight_kg", { precision: 6, scale: 2 }),
   reps: integer("reps"),
+  /** Czas serii w sekundach (ćwiczenia izometryczne; wtedy reps = NULL) */
+  durationSeconds: integer("duration_seconds"),
   /** 0–4, where 4 means "4+" */
   rir: integer("rir"),
   skipped: boolean("skipped").notNull().default(false),

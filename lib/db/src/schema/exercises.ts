@@ -76,6 +76,8 @@ export const exercisesTable = pgTable("exercises", {
   /** Amount shown to the client for warm-up / stretching exercises: repetitions or seconds. */
   defaultReps: integer("default_reps"),
   defaultDurationSeconds: integer("default_duration_seconds"),
+  /** Ćwiczenie izometryczne: w planie ma czas (sekundy), nie powtórzenia (migracja 0063; wyzwalacz w bazie pilnuje reguły). */
+  isTimed: boolean("is_timed").notNull().default(false),
   perSide: boolean("per_side"),
 
   // ── Origin (migration 0021) — nullable; existing exercises are 'own' ──

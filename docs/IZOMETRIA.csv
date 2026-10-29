@@ -1,0 +1,21 @@
+id (baza aplikacji),nazwa,partia,jednostka w planie,BA [s],P [s],Ś [s],Z [s],uwaga
+5,Plank,Brzuch,na czas,15,20,30,45,
+161,Plank boczny,Brzuch,na czas,15,20,30,45,
+1639,Plank boczny na podwyższeniu,Brzuch,na czas,15,20,30,45,
+197,Hollow body hold,Brzuch,na czas,15,20,30,45,
+1537,Krzesełko przy ścianie (wall sit),Mięśnie czworogłowe uda,na czas,15,20,30,45,
+1640,L-sit na podłodze,Brzuch,na czas,15,15,15,15,domyślny czas 15 s ogranicza serię
+2500,L-sit z podparciem,Brzuch,na czas,10,10,10,10,domyślny czas 10 s ogranicza serię
+1641,V-sit na podłodze,Brzuch,na czas,15,15,15,15,domyślny czas 15 s ogranicza serię
+2462,Zwis na drążku,Plecy,na czas,15,20,30,45,
+1621,Plank z dotykaniem barków na kolanach,Brzuch,powtórzenia,,,,,ruch (dotykanie barków) — zostaje na powtórzenia
+1616,Plank boczny z przywodzeniem nogi,Przywodziciele,powtórzenia,,,,,ruch (przywodzenie nogi) — zostaje na powtórzenia
+160,Bird dog,Brzuch,powtórzenia,,,,,naprzemienne ruchy — powtórzenia
+201,Superman,Plecy,powtórzenia,,,,,ruch — powtórzenia (i tak blokowany przez silnik)
+159,Dead bug,Brzuch,powtórzenia,,,,,ruch — powtórzenia
+165,Unoszenie kolan w zwisie,Brzuch,powtórzenia,,,,,ruch — powtórzenia
+1262,Unoszenie prostych nóg w zwisie,Brzuch,powtórzenia,,,,,ruch — powtórzenia
+1393,Składanie ciała w zwisie (hanging pike),Brzuch,powtórzenia,,,,,ruch — powtórzenia
+320,Mostek pośladkowy,Pośladki,powtórzenia,,,,,ruch — powtórzenia
+162,Pallof press,Brzuch,powtórzenia,,,,,ruch (wyciskanie i powrót) — powtórzenia
+1102,Łopatkowe podciągnięcia w zwisie (scapular pull-up),Plecy,powtórzenia,,,,,ruch — powtórzenia

@@ -131,11 +131,11 @@ export function TrainingFlow({ day, firstName, week, onExit }: {
   const ex = day.exercises[run.exerciseIndex];
   const dayOf = useCallback((a: Parameters<typeof dispatch>[0]) => dispatch(a), []);
 
-  const saveSet = (planExerciseId: number, setNumber: number, value: { weightKg: number | null; reps: number | null; rir: number | null }) => {
+  const saveSet = (planExerciseId: number, setNumber: number, value: { weightKg: number | null; reps: number | null; durationSeconds?: number | null; rir: number | null }) => {
     dayOf({ type: "saveSet", planExerciseId, setNumber, value });
     const id = newUuid();
     queue.enqueue({ id, kind: "set", sessionUuid: run.sessionUuid, slot: `${planExerciseId}:${setNumber}`,
-      body: { clientUuid: id, planExerciseId, setNumber, weightKg: value.weightKg, reps: value.reps, rir: value.rir, skipped: false } });
+      body: { clientUuid: id, planExerciseId, setNumber, weightKg: value.weightKg, reps: value.reps, durationSeconds: value.durationSeconds ?? null, rir: value.rir, skipped: false } });
   };
 
   const submitPain = (p: PainInput) => {

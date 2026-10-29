@@ -388,3 +388,7 @@
 - B6: „Pierwsze kroki”: link tylko przy następnym i ukończonych krokach; pozostałe z dopiskiem „Najpierw zrób poprzedni krok.”
 - B7: po wywiadzie klient widzi „Dziękujemy! Trener przygotuje Twój plan, zwykle w ciągu 1–2 dni. Dostaniesz link do aplikacji.”
 - Testy: typecheck OK, API 142 / 2855, panel 797, portal 269.
+
+## 29.10.2026 — C1: ćwiczenia izometryczne na czas (gałąź `feature/izometria`)
+- Migracja 0063 (kolumny `is_timed`, `duration_seconds`, wyzwalacz, kopia `isometry_backup`), lista `docs/IZOMETRIA.csv`, API (`timed`, `seconds`, zapis `durationSeconds`), portal: pole „Czas” z odliczaniem zamiast powtórzeń, potwierdzenie jednym kliknięciem.
+- Testy: `izometria.test.ts` (6), logika portalu; pełne: typecheck OK, API 143 / 2861, panel 797, portal 271.
