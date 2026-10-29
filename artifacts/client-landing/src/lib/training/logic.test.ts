@@ -37,19 +37,20 @@ describe("exact input", () => {
   });
 });
 
-describe("start values: previous set today > previous session > plan", () => {
+describe("start values: previous set today > (reps from plan, weight from previous session)", () => {
   it("uses the plan when there is no history (reps = lower end, weight empty)", () => {
     expect(startValues(ex(), 1, {})).toEqual({ weightKg: null, reps: 8, rir: null });
   });
-  it("uses the same set of the previous session, or its last set", () => {
+  it("weight from the same set of the previous session (or its last set), reps from the plan", () => {
     const e = ex({ previous: [{ setNumber: 1, weightKg: 60, reps: 8, rir: 2 }, { setNumber: 2, weightKg: 62.5, reps: 7, rir: 1 }] });
-    expect(startValues(e, 2, {})).toMatchObject({ weightKg: 62.5, reps: 7 });
-    expect(startValues(e, 3, {})).toMatchObject({ weightKg: 62.5, reps: 7 });
+    expect(startValues(e, 2, {})).toMatchObject({ weightKg: 62.5, reps: 8 });
+    expect(startValues(e, 3, {})).toMatchObject({ weightKg: 62.5, reps: 8 });
+    expect(startValues(ex({ repMin: null, previous: e.previous }), 1, {})).toMatchObject({ weightKg: 60, reps: 8 }); // plan without reps: fall back to the previous session
   });
   it("prefers the set just saved today", () => {
     const e = ex({ previous: [{ setNumber: 2, weightKg: 50, reps: 10, rir: 2 }] });
     expect(startValues(e, 2, { 1: { weightKg: 65, reps: 8, rir: 2 } })).toMatchObject({ weightKg: 65, reps: 8 });
-    expect(startValues(e, 2, { 1: { weightKg: null, reps: null, rir: null, skipped: true } })).toMatchObject({ weightKg: 50 });
+    expect(startValues(e, 2, { 1: { weightKg: null, reps: null, rir: null, skipped: true } })).toMatchObject({ weightKg: 50, reps: 8 });
   });
 });
 

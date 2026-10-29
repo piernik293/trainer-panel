@@ -396,3 +396,6 @@
 ## 29.10.2026 — C3: krótszy wywiad dla BA i P (gałąź `feature/wywiad-krotszy`)
 - Pominięte ekrany: preferowane ćwiczenia, partie priorytetowe, drugi ekran o cardio (22 → 19 ekranów); „Wolę nie podawać” przy wzroście i wadze (API i status ankiety zmienione); zdrowie/ból/stawy/zgoda bez zmian.
 - Symulacja generatora po C1 i C3 (300 profili, ziarno 11, pełny katalog): 0 naruszeń bezpieczeństwa, 0 wykonalności, odmowy 2,3% dni (27/1200), 0 pustych dni.
+
+## 29.10.2026 — C4: trening z wartościami z planu (gałąź `feature/trening-z-planu`)
+- Ekran serii: powtórzenia wstawione z planu (dolny koniec zakresu), ciężar z poprzedniego treningu (ta sama seria albo ostatnia), seria zapisywana jednym kliknięciem; podpowiedź „Wpisane z planu — zmień tylko, jeśli zrobiono inaczej.”; „Coś boli?” bez zmian. Ćwiczenia na czas (C1) startują od czasu z planu. Testy portalu 275 OK.
