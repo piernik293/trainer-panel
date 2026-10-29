@@ -58,7 +58,7 @@ export function FirstStepsCard({ onboarding }: { onboarding: DashboardSummary["o
                   {step.done ? <Check className="h-3.5 w-3.5" /> : i + 1}
                 </span>
                 <div className="min-w-0 flex-1">
-                  {step.href ? (
+                  {step.href && (step.done || isNext) ? (
                     <Link
                       href={step.href}
                       className={cn(
@@ -69,7 +69,10 @@ export function FirstStepsCard({ onboarding }: { onboarding: DashboardSummary["o
                       {title}
                     </Link>
                   ) : (
-                    <p className={cn("font-medium", step.done && "text-muted-foreground")}>{title}</p>
+                    <p className={cn("font-medium", (step.done || !isNext) && "text-muted-foreground")}>
+                      {title}
+                      {!step.done && !isNext && <span className="block text-xs font-normal">Najpierw zrób poprzedni krok.</span>}
+                    </p>
                   )}
                   {help && step.href && (
                     <>

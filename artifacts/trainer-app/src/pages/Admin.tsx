@@ -16,6 +16,8 @@ const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: "subs", label: "Abonamenty i limity" }, { id: "feedback", label: "Uwagi" }, { id: "log", label: "Dziennik dostępu" },
 ];
 const fmt = (d: string | null) => (d ? new Date(d).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" }) : "—");
+/** Wnioskodawca: imię i e-mail (gdy znane), inaczej „(bez imienia)”. */
+export const applicantLabel = (a: { name: string | null; email: string | null }) => [a.name, a.email].filter(Boolean).join(" · ") || "(bez imienia)";
 const lim = (n: number | null) => (n === null ? "bez limitu" : String(n));
 
 function Errors() {
@@ -99,7 +101,7 @@ function Applications() {
             {pending.map((a) => (
               <li key={a.id} className="p-3 space-y-1" data-testid="admin-application">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-sm font-medium">{a.name ?? "(bez imienia)"}</span>
+                  <span className="text-sm font-medium">{applicantLabel(a)}</span>
                   <span className="text-xs text-muted-foreground">{fmt(a.createdAt)}</span>
                 </div>
                 {a.note && <p className="text-sm text-muted-foreground break-words">{a.note}</p>}
@@ -114,7 +116,7 @@ function Applications() {
       </div>
       {decided.length > 0 && (
         <ul className="text-xs text-muted-foreground space-y-1">
-          {decided.map((a) => <li key={a.id}>{a.name ?? "(bez imienia)"} — {a.status === "accepted" ? "przyjęty" : "odrzucony"} {fmt(a.decidedAt)}</li>)}
+          {decided.map((a) => <li key={a.id}>{applicantLabel(a)} — {a.status === "accepted" ? "przyjęty" : "odrzucony"} {fmt(a.decidedAt)}</li>)}
         </ul>
       )}
     </div>

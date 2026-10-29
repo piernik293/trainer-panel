@@ -9,7 +9,7 @@
  * Tożsamość wnioskodawcy tylko z sesji Clerk. Maile (do właściciela i do wnioskodawcy) tylko jeśli skonfigurowano pocztę.
  */
 import { Router, type IRouter } from "express";
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, clientsTable, trainersTable, trainerApplicationsTable, appSettingsTable } from "@workspace/db";
@@ -74,7 +74,16 @@ router.post("/trainer-applications", async (req, res): Promise<void> => {
     return;
   }
   const [c] = await db.select({ firstName: clientsTable.firstName, email: clientsTable.email }).from(clientsTable).where(eq(clientsTable.clerkUserId, userId));
-  const [created] = await db.insert(trainerApplicationsTable).values({ clerkUserId: userId, displayName: c?.firstName ?? null, email: c?.email ?? null, note: body.data.note ?? null })
+  // Imię i e-mail do podglądu wniosku w panelu administratora: z wiersza klienta albo z konta (Clerk); brak = puste, wniosek i tak się zapisuje.
+  let displayName = c?.firstName ?? null, email = c?.email ?? null;
+  if (!displayName || !email) {
+    try {
+      const u = await clerkClient.users.getUser(userId);
+      displayName = displayName ?? ([u.firstName, u.lastName].filter(Boolean).join(" ") || null);
+      email = email ?? u.primaryEmailAddress?.emailAddress ?? null;
+    } catch { /* bez danych z konta */ }
+  }
+  const [created] = await db.insert(trainerApplicationsTable).values({ clerkUserId: userId, displayName, email, note: body.data.note ?? null })
     .onConflictDoNothing().returning();
   if (!created) { res.status(409).json({ error: "Twój wniosek czeka na rozpatrzenie.", code: "PENDING" }); return; }
   if (await autoAcceptOn()) {

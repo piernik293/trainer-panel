@@ -324,6 +324,9 @@ function Section({
 }
 
 
+/** Tekst po wysłaniu wywiadu (B7): kto, kiedy i co dalej. */
+export const SURVEY_DONE_TEXT = "Trener przygotuje Twój plan, zwykle w ciągu 1–2 dni. Dostaniesz link do aplikacji.";
+
 export default function SurveyWizard({
   inviteToken,
   prefill = {},
@@ -455,7 +458,7 @@ export default function SurveyWizard({
     },
     onSuccess: (res) => {
       clearDraft(inviteToken);
-      setDone(res.message || "Dziękuję za wypełnienie wywiadu treningowego. Przeanalizuję Twoje odpowiedzi i przygotuję indywidualny plan treningowy.");
+      setDone(SURVEY_DONE_TEXT);
     },
   });
 
@@ -463,7 +466,7 @@ export default function SurveyWizard({
     return (
       <div className="mx-auto flex max-w-[560px] flex-col items-center rounded-lg border border-border bg-card px-6 py-16 text-center" role="status">
         <CheckCircle2 className="mb-6 h-12 w-12 text-primary" aria-hidden="true" />
-        <h2 className="mb-3 text-3xl font-extrabold tracking-tight">Krok pierwszy zrobiony.</h2>
+        <h2 className="mb-3 text-3xl font-extrabold tracking-tight">Dziękujemy!</h2>
         <p className="text-muted-foreground">{done}</p>
       </div>
     );

@@ -192,14 +192,14 @@ describe("Pulpit: pierwszy dzień (bez klientów)", () => {
     expect(screen.queryByTestId("dashboard-tiles")).toBeNull();
   });
 
-  it("every step except the account is a link to where it is done; no strikethrough", () => {
+  it("only the next step (and done ones) link to where it is done; later steps wait; no strikethrough", () => {
     mockData = empty;
     render(<Dashboard />);
     const step = (k: string) => screen.getByTestId(`first-step-${k}`);
     expect(within(step("invite")).getAllByRole("link")[0].getAttribute("href")).toBe("/survey-invite?krok=2");
-    expect(within(step("interview")).getByRole("link").getAttribute("href")).toBe("/clients?krok=3");
-    expect(within(step("plan")).getByRole("link").getAttribute("href")).toBe("/clients?krok=4");
-    expect(within(step("share")).getByRole("link").getAttribute("href")).toBe("/clients?krok=5");
+    // later steps are not links until the previous one is done (B6)
+    for (const k of ["interview", "plan", "share"]) expect(within(step(k)).queryByRole("link")).toBeNull();
+    expect(within(step("interview")).getByText("Najpierw zrób poprzedni krok.")).toBeTruthy();
     expect(within(step("account")).queryByRole("link")).toBeNull();
     expect(document.querySelector(".line-through")).toBeNull();
     // only the next step carries the button and the "how to" sentence

@@ -74,6 +74,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { PlanActiveDialog } from "@/components/PlanActiveDialog";
+import { customFetch } from "@workspace/api-client-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1780,6 +1782,8 @@ export default function PlanEditor() {
   const canActivate = plan.status === "draft" && !hasAbsoluteViolation && !hasUnassignedExercises;
   const canEdit = plan.status === "draft";
 
+  const [accessOpen, setAccessOpen] = useState(false);
+  const [accessClient, setAccessClient] = useState<{ id: number; firstName: string; email: string | null } | null>(null);
   const handleActivate = () => setConfirmActivate(true);
 
   const doActivate = () => {
@@ -1787,6 +1791,14 @@ export default function PlanEditor() {
       onSuccess: (res) => {
         const notice = (res as { volumeNotice?: { status: string; text: string } }).volumeNotice;
         toast({ title: "Plan aktywowany!", description: notice?.status === "above_range" ? notice.text : undefined });
+        // B5: jeśli klient nie ma jeszcze dostępu do aplikacji — od razu propozycja wysłania (kopiuj link / mail)
+        const cid = plan.clientId;
+        void Promise.all([
+          customFetch<{ accountStatus: string }>(`/api/clients/${cid}/invite/status`),
+          customFetch<{ firstName: string; email: string | null }>(`/api/clients/${cid}`),
+        ]).then(([st, c]) => {
+          if (st.accountStatus !== "active") { setAccessClient({ id: cid, firstName: c.firstName, email: c.email }); setAccessOpen(true); }
+        }).catch(() => undefined);
       },
       onError: (err) => {
         const detail = (err as any)?.data;
@@ -2082,6 +2094,7 @@ export default function PlanEditor() {
         </div>
       </div>
 
+      {accessClient && <PlanActiveDialog open={accessOpen} onOpenChange={setAccessOpen} clientId={accessClient.id} firstName={accessClient.firstName} email={accessClient.email} />}
       <AlertDialog open={confirmActivate} onOpenChange={setConfirmActivate}>
         <AlertDialogContent>
           <AlertDialogHeader>
