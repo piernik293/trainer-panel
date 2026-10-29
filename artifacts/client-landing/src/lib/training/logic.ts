@@ -27,9 +27,8 @@ export function parseIntStrict(raw: string): number | null {
 }
 
 /**
- * Starting values of a set: the set already saved just before it today, else the same set
- * of the previous session (or its last set), else the plan (lower end of the rep range,
- * weight empty — the plan carries no kilograms).
+ * Starting values of a set: the set already saved just before it today; else reps from the plan (lower end of the
+ * range) and weight from the previous session (the same set, or its last one) — the plan carries no kilograms.
  */
 export function startValues(ex: ExerciseInfo, setNumber: number, today: Record<number, LoggedSet | undefined>): LoggedSet {
   const before = today[setNumber - 1];
@@ -42,9 +41,9 @@ export function startValues(ex: ExerciseInfo, setNumber: number, today: Record<n
   if (before && !before.skipped && (before.reps != null || before.weightKg != null)) {
     return { weightKg: before.weightKg, reps: before.reps, rir: null };
   }
+  // Powtórzenia z planu (dolny koniec zakresu), ciężar z poprzedniego treningu (ta sama seria albo ostatnia) — klient zmienia tylko, gdy zrobił inaczej.
   const prev: PrevSet | undefined = ex.previous.find((p) => p.setNumber === setNumber) ?? ex.previous[ex.previous.length - 1];
-  if (prev) return { weightKg: prev.weightKg, reps: prev.reps, rir: null };
-  return { weightKg: null, reps: ex.repMin, rir: null };
+  return { weightKg: prev?.weightKg ?? null, reps: ex.repMin ?? prev?.reps ?? null, rir: null };
 }
 
 export function formatKg(n: number | null): string {

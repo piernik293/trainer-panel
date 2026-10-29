@@ -152,6 +152,7 @@ export function SetScreen({
           <NumberField label="Powtórzenia" decimal={false} step={1} value={v.reps} onChange={(r) => set({ reps: r })} parse={parseIntStrict} format={(n) => (n == null ? "" : String(n))} />
             </>
           )}
+          {!editing && <p className="text-xs text-muted-foreground" data-testid="prefilled-hint">Wpisane z planu — zmień tylko, jeśli zrobiono inaczej.</p>}
           <RirPicker value={v.rir} onChange={(r) => set({ rir: r })} />
           <button type="button" onClick={save} disabled={ex.timed ? v.durationSeconds == null : v.reps == null} className="h-14 w-full rounded-xl bg-primary text-base font-bold text-primary-foreground disabled:opacity-50">
             {editing ? "Zapisz zmianę" : "Zapisz serię"}
