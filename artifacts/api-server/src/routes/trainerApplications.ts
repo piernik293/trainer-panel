@@ -16,7 +16,7 @@ import { db, clientsTable, trainersTable, trainerApplicationsTable, appSettingsT
 import { requireAuth, checkIsAppAdmin, provisionTrainer, canBecomeTrainer } from "../middlewares/requireAuth";
 import { ensureSoloClient, soloEnabled } from "../services/solo";
 import { ensureSelfClient } from "../services/selfTraining";
-import { sendPlainEmail } from "../services/inviteEmail";
+import { mailApplicationAccepted, mailApplicationRejected, notifyOwnerNewApplication } from "../services/applicationMail";
 import { AUTO_ACCEPT_KEY, REAPPLY_LATER_MESSAGE, canApplyNow, nextApplyAt } from "../services/trainerApplications";
 
 const router: IRouter = Router();
@@ -84,7 +84,7 @@ async function grantTrainer(app: { id: number; clerkUserId: string; displayName:
   }
   if (trainer) await ensureSelfClient({ id: trainer.id, clerkUserId: trainer.clerkUserId, email: trainer.email ?? app.email });
   await db.update(trainerApplicationsTable).set({ status: "accepted", decidedAt: new Date(), decidedBy }).where(eq(trainerApplicationsTable.id, app.id));
-  await sendPlainEmail({ to: app.email, subject: "Twój wniosek o konto trenera został przyjęty", text: "Masz teraz dostęp do panelu trenera. Zaloguj się tym samym kontem." });
+  await mailApplicationAccepted(app.email);
 }
 
 router.post("/trainer-applications", async (req, res): Promise<void> => {
@@ -119,8 +119,7 @@ router.post("/trainer-applications", async (req, res): Promise<void> => {
     res.status(201).json({ status: "accepted" });
     return;
   }
-  const owner = process.env["OWNER_NOTIFY_EMAIL"];
-  if (owner) await sendPlainEmail({ to: owner, subject: "Nowy wniosek o konto trenera", text: `Nowy wniosek od: ${c?.firstName ?? "osoba"}. Rozpatrz go w panelu administratora.` });
+  await notifyOwnerNewApplication({ name: displayName, email, note: body.data.note ?? null });
   res.status(201).json({ status: "pending" });
 });
 
@@ -141,7 +140,7 @@ async function decide(req: import("express").Request, res: import("express").Res
   if (accept) await grantTrainer(a, req.clerkUserId!);
   else {
     await db.update(trainerApplicationsTable).set({ status: "rejected", decidedAt: new Date(), decidedBy: req.clerkUserId! }).where(eq(trainerApplicationsTable.id, id));
-    await sendPlainEmail({ to: a.email, subject: "Wniosek o konto trenera", text: "Twój wniosek o konto trenera został odrzucony. Możesz złożyć nowy po 14 dniach." });
+    await mailApplicationRejected(a.email);
   }
   res.json({ ok: true });
 }

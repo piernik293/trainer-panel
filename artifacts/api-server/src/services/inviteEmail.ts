@@ -214,7 +214,7 @@ export async function sendPlainEmail(opts: { to: string | null | undefined; subj
   const host = process.env["SMTP_HOST"];
   const user = process.env["SMTP_USER"];
   const pass = process.env["SMTP_PASS"];
-  if (!opts.to || !host || !user || !pass) return false;
+  if (!opts.to || !host || !user || !pass) { logger.warn({ hasTo: !!opts.to, hasSmtp: !!(host && user && pass) }, "Mail pominięty: brak odbiorcy albo ustawień SMTP"); return false; }
   const port = parseInt(process.env["SMTP_PORT"] ?? "587", 10);
   try {
     const nodemailer = await import("nodemailer");

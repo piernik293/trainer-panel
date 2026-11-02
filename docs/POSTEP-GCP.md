@@ -431,3 +431,6 @@
 
 ## 3.11.2026 — blok 0: domknięcie Solo (gałąź `fix/solo-domkniecie`)
 - Ukrywanie historii Solo na wszystkich trasach odczytu (plany, sesje, rekordy, kroki, kondycja, przerwy, raport PDF, pulpit, administrator) + testy izolacji; globalSetup testów usuwa „Mój trening” z bazy testowej; odpowiedzi właściciela w `docs/DO-DECYZJI.md`.
+
+## 3.11.2026 — blok 1: maile przy wniosku trenera (gałąź `fix/maile-wnioski`)
+- `services/applicationMail.ts` (logowanie wyniku, wiadomości do właściciela i wnioskodawcy), licznik „Wnioski (N)” w administracji, testy `application-mail` (atrapa SMTP) i `admin-tab-label`; 1 mail testowy wysłany.
