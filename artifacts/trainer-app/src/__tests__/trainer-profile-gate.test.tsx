@@ -46,16 +46,28 @@ describe("TrainerProfileGate", () => {
     expect(init.method).toBe("POST");
   });
 
-  it("client account: shows the Polish message and never renders trainer screens", async () => {
-    stubFetch(403, {
-      code: "CLIENT_ACCOUNT",
-      error: "To konto należy do klienta. Zaloguj się w portalu klienta albo użyj konta trenera.",
-    });
+  it("konto bez roli trenera (klient, nowe konto, Solo): bez ślepego ekranu — od razu przejście do portalu, ekranów trenera nie widać", async () => {
+    const replace = vi.fn();
+    vi.stubGlobal("location", { ...window.location, replace });
+    for (const code of ["CLIENT_ACCOUNT", "TRAINER_NOT_APPROVED", "TRAINER_PROFILE_REQUIRED"]) {
+      replace.mockClear();
+      stubFetch(403, { code, error: "x" });
+      const { unmount } = renderGate();
+      await vi.waitFor(() => expect(replace).toHaveBeenCalledWith("/client-landing/plan"));
+      expect(screen.queryByText("Panel trenera")).toBeNull();
+      expect(screen.queryByText(/nie ma jeszcze dostępu trenera/)).toBeNull();
+      unmount();
+    }
+    vi.unstubAllGlobals();
+  });
+
+  it("konto zablokowane: jedyny ekran z komunikatem i wylogowaniem", async () => {
+    stubFetch(403, { code: "ACCOUNT_BLOCKED", error: "x" });
     renderGate();
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("portalu klienta");
-    expect(screen.queryByText("Panel trenera")).toBeNull();
+    expect(alert.textContent).toContain("To konto jest zablokowane");
     expect(screen.getByText("Wyloguj się")).toBeTruthy();
+    expect(screen.queryByText("Panel trenera")).toBeNull();
   });
 
   it("other failures: error state with retry, no trainer screens", async () => {

@@ -22,3 +22,11 @@ Generator planu jest dziś sterowany z kreatora trenera: panel woła kolejno roz
 1. Limit planów dla Solo: 1 na 4 tygodnie? Rekomendacja: tak.
 2. Co przy odmowie dnia: pokazać krótszy dzień (min. 3, jak pkt 51) czy zawsze proponować kontakt z trenerem? Rekomendacja: min. 3 + zachęta do połączenia z trenerem.
 3. Czy Solo może włączyć kalistenikę sam (styl bez trenera)? Rekomendacja: dopiero po przeglądzie katalogu kalistenicznego.
+
+## Wykonanie (2.11.2026, gałąź `feature/solo-baza`)
+Zrobione zgodnie z planem, z jednym uproszczeniem wersji 1: dawkowanie (serie, powtórzenia, przerwy) bierze z silnika (`prescribeExercise`), bez ręcznego bilansu objętości z kreatora trenera.
+- **S1 (wydzielenie dnia):** `planDraftGenerateDay.ts` — handler wyciągnięty jako `generateDayHandler` (zachowanie dla trenera bez zmian, ten sam kod); tryb Solo (`soloClientId`, ustawiany tylko przez serwer) pomija pakiet trenera. Blok pliometryczny też podlega regułom Solo (znalezione przez symulację).
+- **S2 (kierowca):** `services/soloPlanDriver.ts` — poziom efektywny → liczba dni (2–5, BA ≤3, P ≤4) → podział → dni z pamięcią tygodnia → plan AKTYWNY (`created_by='solo'`), cykl: BA i P 4 tyg., Ś 6, Z 8; dzień odrzucony (za mało bezpiecznych ćwiczeń) jest pomijany, plan ma krótszy tydzień; 0 dni = komunikat „Połącz się z trenerem”.
+- **S3 (wywiad):** `POST /api/solo/survey` (to samo wejście co wywiad z zaproszenia, wspólny zapis `services/surveyInsert.ts`), `POST /api/solo/plan`.
+- **S4 (limity):** 1 nowy plan na 14 dni; przy `BETA_NO_LIMITS=1` bez limitu. Nowy plan archiwizuje poprzedni.
+- **S5 (odbiór):** symulacja 500 profili w trybie Solo (`SIM_SOLO=1`): 0 naruszeń bezpieczeństwa i wykonalności; 71 z 1996 dni odrzuconych (3,6%).

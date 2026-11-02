@@ -31,10 +31,14 @@ import { normalizeEquipmentList } from "../services/equipmentNormalizer";
 import { calisthenicsDays, stationsFor, isCalisthenicsExercise, isCalisthenicsLegDay } from "../services/calisthenics";
 import { selectWarmup, selectCooldown, type CatalogueWarmupItem } from "../services/warmupSelection";
 import { WARMUP_ROLES } from "../lib/exerciseRoles";
+import { generateDayHandler, type GenerateDayReq } from "../routes/planDraftGenerateDay";
+import { isSoloPlyoOrOlympic } from "../services/solo";
 import { getDayTemplate, recommendSplitType } from "../services/planDraftVolumeDistributionService";
 
 const STYLE = process.env.SIM_STYLE ?? ""; // "" = standard, "calisthenics" = docs/KALISTENIKA.md (forces the flag on for this run)
 if (STYLE === "calisthenics") process.env.CALISTHENICS_ENABLED = "1";
+const SOLO = process.env.SIM_SOLO === "1"; // osoba bez trenera: reguły Solo (docs/SOLO-STEROWNIK.md), generator wołany jak przez kierowcę Solo
+if (SOLO) process.env.SOLO_ENABLED = "1";
 const N = Number(process.env.SIM_N ?? 24);
 const SEED = Number(process.env.SIM_SEED ?? 20261028);
 const REPORT = process.env.SIM_REPORT ?? "";
@@ -124,6 +128,11 @@ function checkExercise(ex: Ex, p: Profile, out: Violation[], feas: Violation[]) 
   if (lvl === 0 && ex.suitableForNoActivity !== true) out.push(v("BA bez suitableForNoActivity"));
   if (lvl <= 1 && (ex.learningDifficulty == null)) out.push(v("BA/P bez learningDifficulty"));
   if (lvl <= 1 && ex.reviewedByTrainer === false) out.push(v("BA/P niezatwierdzone przez trenera"));
+  if (SOLO) {
+    // reguły Solo (docs/SOLO-STEROWNIK.md): tylko zatwierdzone ćwiczenia na każdym poziomie; skoki i podrzuty tylko przy „Tak” i od Ś
+    if (ex.reviewedByTrainer !== true) out.push(v("Solo: ćwiczenie niezatwierdzone"));
+    if (isSoloPlyoOrOlympic(ex as never) && !(/^tak/i.test((p.jump ?? "").trim()) && lvl >= 2)) out.push(v("Solo: skoki bez doświadczenia i poziomu Ś", `${ex.intensity ?? ex.role ?? ex.name}`));
+  }
   // Decision 3c (owner, 28.10.2026): missing joint-load data is a violation, so the hole stays visible (every client, not only those with a reported joint)
   if (lacksJointData(ex)) { jointGap.total++; if (p.joints.length) jointGap.reportedJoint++; else if (p.consent === "declined") jointGap.noConsent++; else jointGap.noReports++; }
   if (lacksJointData(ex)) out.push(v("brak danych o stawach", `poziom: ${ex.jointStress ?? "brak"}, stawy: ${ex.jointStressAreas == null ? "brak" : `[${ex.jointStressAreas.join(",")}]`}; klient: ${p.joints.length ? "zgłoszony staw" : p.consent === "declined" ? "bez zgody" : "bez zgłoszeń"}`));
@@ -179,7 +188,7 @@ function makeProfile(i: number): Profile {
 
 async function createClient(p: Profile): Promise<number> {
   const place = PLACES.find((x) => x.key === p.place)!;
-  const [c] = await db.insert(clientsTable).values({ firstName: "Sym", lastName: "gensim", trainerId, status: "active" }).returning();
+  const [c] = await db.insert(clientsTable).values({ firstName: "Sym", lastName: "gensim", trainerId: SOLO ? null : trainerId, status: "active" }).returning();
   clientIds.push(c.id);
   const text = p.joints.length && !p.viaPain ? p.joints.map((j) => JOINT_TEXT[j]).join(", ") : null;
   const [sv] = await db.insert(surveysTable).values({
@@ -202,6 +211,14 @@ async function createClient(p: Profile): Promise<number> {
 
 interface DayOut { error?: string; code?: string; limited?: boolean; type: string; exercises: Array<{ id: number; sets: number; restSeconds: number; repsLabel: string }>; status: number; warnings: number }
 
+/** Wywołanie silnika dnia tak, jak robi to kierowca Solo (bez trenera, bez sesji generowania). */
+async function soloCall(clientId: number, body: unknown): Promise<{ status: number; body: any }> { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const out: { status: number; body: any } = { status: 200, body: undefined }; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const res = { status(c: number) { out.status = c; return res; }, json(b: unknown) { out.body = b; return res; }, sendStatus(c: number) { out.status = c; return res; } };
+  await generateDayHandler({ params: { clientId: String(clientId) }, body, soloClientId: clientId } as unknown as GenerateDayReq, res as never);
+  return out;
+}
+
 async function generateWeek(clientId: number, p: Profile): Promise<DayOut[]> {
   const place = PLACES.find((x) => x.key === p.place)!;
   const split = recommendSplitType(p.effective, p.days).recommended ?? "full_body";
@@ -216,10 +233,11 @@ async function generateWeek(clientId: number, p: Profile): Promise<DayOut[]> {
   let idx = 0;
   for (const t of types) {
     const alt = typeCount[t] ?? 0; typeCount[t] = alt + 1;
-    const res = await request(app).post(`/api/clients/${clientId}/plan-draft/generate-day`).send({
+    const dayBody = {
       generationId: gid, ...(STYLE ? { style: STYLE } : {}), generationDayIndex: idx++, expectedDayCount: types.length, v0SessionType: t, alternativeIndex: alt,
       weekUsedExerciseIds: [...used], sameTypePreviousExercises: lastByType[t] ?? [], weekExercisesRaw: t === "full_body" ? raw : [],
-    });
+    };
+    const res = SOLO ? await soloCall(clientId, dayBody) : await request(app).post(`/api/clients/${clientId}/plan-draft/generate-day`).send(dayBody);
     const exs = ((res.body.exercises ?? []) as Array<{ id: number; equipment: string[]; matchReasons?: string[]; prescription?: { sets: number; restSeconds: number; repsLabel: string } }>);
     if (STYLE === "calisthenics") {
       const main = exs.filter((e) => !(e.matchReasons ?? []).includes("Blok pliometryczny")).length;

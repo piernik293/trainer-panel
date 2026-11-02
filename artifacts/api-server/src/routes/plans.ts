@@ -6,6 +6,7 @@
  * every mutating operation so the frontend always has up-to-date state.
  */
 
+import { historyCutoff, afterCutoff } from "../services/soloHistory";
 import { Router, type IRouter } from "express";
 import type { Request, Response } from "express";
 import { eq, and, inArray, sql, max, desc } from "drizzle-orm";
@@ -931,10 +932,11 @@ router.get("/clients/:clientId/plans", requireAuth, async (req, res): Promise<vo
 
   if (!(await verifyClientOwner(req, res, clientId))) return;
 
+  const cutoff = await historyCutoff(clientId);
   const plans = await db
     .select()
     .from(workoutPlansTable)
-    .where(eq(workoutPlansTable.clientId, clientId))
+    .where(and(eq(workoutPlansTable.clientId, clientId), afterCutoff(workoutPlansTable.createdAt, cutoff)))
     .orderBy(workoutPlansTable.createdAt);
 
   res.json(plans);
@@ -1036,7 +1038,9 @@ router.get("/plans/:id", requireAuth, async (req, res): Promise<void> => {
   if (!(await loadPlanAndVerifyOwner(req, res, planId))) return;
 
   const full = await getPlanFull(planId);
-  if (!full) {
+  // plan ułożony w okresie Solo, którego osoba nie udostępniła trenerowi, dla trenera nie istnieje
+  const planCutoff = full ? await historyCutoff(full.clientId) : null;
+  if (!full || (planCutoff && new Date(full.createdAt) < planCutoff)) {
     res.status(404).json({ error: "Plan nie znaleziony" });
     return;
   }

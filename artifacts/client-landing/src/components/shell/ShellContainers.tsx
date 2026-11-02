@@ -12,6 +12,7 @@ import type { AccountStatus } from "@/components/AccountNotice";
 import { ProgressScreen, type AchievementItem } from "./ProgressScreen";
 import { YouScreen } from "./YouScreen";
 import { SoloStart } from "./SoloStart";
+import { RoleRows } from "./RoleRows";
 
 const todayWarsaw = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Warsaw", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const base = () => import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -50,13 +51,11 @@ export function YouContainer({ firstName, lastName }: { firstName: string; lastN
   return (
     <YouScreen
       firstName={firstName} lastName={lastName} email={user?.primaryEmailAddress?.emailAddress ?? ""}
-      trainerName={status?.linked ? status.trainerName ?? "Twój trener" : null} pendingTrainerName={status?.pendingTrainerName ?? null}
+      accountRows={<RoleRows trainerName={status?.linked ? status.trainerName ?? "Twój trener" : null} pendingTrainerName={status?.pendingTrainerName ?? null} onJoin={(path) => window.location.assign(`${base()}${path}`)} />}
       settings={<><ThemeSelect /><BreathingSetting /><HealthConsentSetting /></>}
-      trainerApply={<TrainerApplyCard />}
       legal={<LegalLinks className="justify-start" />}
       signingOut={signingOut}
       onSignOut={async () => { if (signingOut) return; setSigningOut(true); try { await signOut({ redirectUrl: `${import.meta.env.BASE_URL}plan` }); } finally { setSigningOut(false); } }}
-      onJoin={(path) => window.location.assign(`${base()}${path}`)}
     />
   );
 }

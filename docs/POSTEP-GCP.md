@@ -424,3 +424,7 @@
 
 ## 2.11.2026 — logowanie bez zniechęcania i tryb podglądu (gałąź `feature/logowanie-latwe`)
 - Diagnoza kodu Clerk (`docs/LOGOWANIE.md`), nowe teksty i układ strony logowania, `GET /api/guest-demo/status`, strona `/client-landing/demo` (bez zapytań zapisujących, test), link na stronie logowania tylko przy włączonej fladze. Testy: API 2882, panel 801, portal 280, typecheck OK.
+
+## 2.11.2026 — Solo jako podstawa każdego konta (gałąź `feature/solo-baza`)
+- Migracja 0065 (kolumny `workout_plans.created_by`, `clients.history_visible_from`, `trainer_join_requests.share_history`), kierowca Solo (`soloPlanDriver`), `/api/solo/survey`, `/api/solo/plan`, auto-Solo przy pierwszym wejściu, ekran „Dziś” z kartą planu, wiersze rang w „Ty”, zgoda na historię, przekierowanie starego adresu panelu, ekran tylko dla zablokowanego.
+- Testy: `solo-baza` (13), zmodyfikowane gate/rows/shell; symulacja Solo 500 profili: 0 naruszeń; scenariusz przeglądarkowy 375 px na bazie QA: 0 błędów; zrzuty `docs/screens/solo-baza/`.

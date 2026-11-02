@@ -16,11 +16,13 @@
  * Nieistniejący, zmieniony lub błędny kod → zawsze to samo 404 (bez zgadywania).
  */
 import { isSelfTraining } from "../services/selfTraining";
+import { hideSoloHistory, restoreSoloHistory } from "../services/soloHistory";
+import { ensureSoloClient, soloEnabled } from "../services/solo";
 import { Router, type IRouter } from "express";
 import { getAuth } from "@clerk/express";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
-import { db, clientsTable, trainersTable, trainerJoinRequestsTable, clientLinkEventsTable } from "@workspace/db";
+import { db, clientsTable, trainersTable, trainerJoinRequestsTable, clientLinkEventsTable, surveysTable, workoutPlansTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { appPublicUrl, sendPlainEmail } from "../services/inviteEmail";
 import { allowJoinAttempt, generateJoinCode, normalizeJoinCode } from "../services/joinCode";
@@ -47,7 +49,7 @@ router.get("/join/:code", async (req, res): Promise<void> => {
   res.json({ trainerName: t.displayName ?? "Twój trener" });
 });
 
-const RequestBody = z.object({ firstName: z.string().trim().min(1).max(60).optional() });
+const RequestBody = z.object({ firstName: z.string().trim().min(1).max(60).optional(), shareHistory: z.boolean().optional() });
 
 router.post("/join/:code/request", async (req, res): Promise<void> => {
   const userId = getAuth(req)?.userId;
@@ -75,14 +77,16 @@ router.post("/join/:code/request", async (req, res): Promise<void> => {
     [client] = await db.insert(clientsTable).values({ trainerId: null, firstName: body.data.firstName, lastName: "", status: "active", clerkUserId: userId })
       .returning({ id: clientsTable.id, trainerId: clientsTable.trainerId });
   }
-  await db.insert(trainerJoinRequestsTable).values({ trainerId: trainer.id, clientId: client!.id }).onConflictDoNothing();
+  await db.insert(trainerJoinRequestsTable).values({ trainerId: trainer.id, clientId: client!.id, shareHistory: body.data.shareHistory === true }).onConflictDoNothing();
   res.status(201).json({ ok: true, trainerName: trainer.displayName ?? "Twój trener" });
 });
 
 router.get("/account/status", async (req, res): Promise<void> => {
   const userId = getAuth(req)?.userId;
   if (!userId) { res.status(401).json({ error: "Twoja sesja wygasła. Zaloguj się ponownie." }); return; }
-  const [c] = await db.select({ id: clientsTable.id, trainerId: clientsTable.trainerId }).from(clientsTable).where(eq(clientsTable.clerkUserId, userId));
+  // Każde konto jest od razu Solo (gdy włączone SOLO_ENABLED): osoba bez roli trenera dostaje wiersz klienta bez trenera.
+  if (soloEnabled()) await ensureSoloClient(userId);
+  const [c] = await db.select({ id: clientsTable.id, trainerId: clientsTable.trainerId, firstName: clientsTable.firstName }).from(clientsTable).where(eq(clientsTable.clerkUserId, userId));
   // Nowe konto bez wiersza klienta (np. ktoś, kto dopiero prosi o dostęp trenera): nie jest błędem — po prostu nie jest połączone.
   if (!c) { res.json({ linked: false, trainerName: null, pendingTrainerName: null }); return; }
   const linkedTrainer = c.trainerId != null
@@ -92,9 +96,12 @@ router.get("/account/status", async (req, res): Promise<void> => {
     .innerJoin(trainersTable, eq(trainersTable.id, trainerJoinRequestsTable.trainerId))
     .where(and(eq(trainerJoinRequestsTable.clientId, c.id), eq(trainerJoinRequestsTable.status, "pending")))
     .orderBy(desc(trainerJoinRequestsTable.createdAt)).limit(1);
+  const [sv] = await db.select({ id: surveysTable.id }).from(surveysTable).where(eq(surveysTable.clientId, c.id)).limit(1);
+  const [pl] = await db.select({ id: workoutPlansTable.id }).from(workoutPlansTable).where(and(eq(workoutPlansTable.clientId, c.id), eq(workoutPlansTable.status, "active"))).limit(1);
   res.json({
-    linked: c.trainerId != null, trainerName: linkedTrainer ? (linkedTrainer.name ?? "Twój trener") : null,
+    linked: c.trainerId != null && !(await isSelfTraining(c.id)), trainerName: linkedTrainer ? (linkedTrainer.name ?? "Twój trener") : null,
     pendingTrainerName: pending ? (pending.name ?? "Twój trener") : null,
+    firstName: c.firstName, hasSurvey: !!sv, hasPlan: !!pl,
   });
 });
 
@@ -106,6 +113,7 @@ async function disconnect(clientId: number, trainerId: number, by: "trainer" | "
       .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, trainerId))).returning({ id: clientsTable.id });
     if (r.length === 0) return false;
     await tx.insert(clientLinkEventsTable).values({ clientId, trainerId, kind: "disconnected", bySide: by });
+    await restoreSoloHistory(tx, clientId);
     return true;
   });
   if (!done) return false;
@@ -196,6 +204,8 @@ async function decide(req: import("express").Request, res: import("express").Res
       const upd = await tx.update(clientsTable).set({ trainerId: req.trainer!.id, updatedAt: new Date() })
         .where(and(eq(clientsTable.id, r.clientId), isNull(clientsTable.trainerId))).returning({ id: clientsTable.id });
       if (upd.length === 0) return false;
+      // Bez zgody osoby trener nie dostaje wcześniejszej historii (wywiady i bóle z okresu Solo idą do archiwum, reszta jest widoczna od teraz).
+      if (!r.shareHistory) await hideSoloHistory(tx, r.clientId); else await tx.update(clientsTable).set({ historyVisibleFrom: null }).where(eq(clientsTable.id, r.clientId));
       await tx.update(trainerJoinRequestsTable).set({ status: "accepted", decidedAt: new Date() }).where(eq(trainerJoinRequestsTable.id, id));
       await tx.insert(clientLinkEventsTable).values({ clientId: r.clientId, trainerId: req.trainer!.id, kind: "joined", bySide: "client" });
       // pozostałe prośby tej osoby do innych trenerów wygasają

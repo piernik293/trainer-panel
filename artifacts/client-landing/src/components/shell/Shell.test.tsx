@@ -7,6 +7,7 @@ import { ProgressScreen } from "./ProgressScreen";
 import { BottomBar } from "./BottomBar";
 import { SoloStart } from "./SoloStart";
 import { YouScreen } from "./YouScreen";
+import { RoleRows } from "./RoleRows";
 import { LegalLinks } from "@/components/LegalLinks";
 import { LEGAL_DOCUMENTS } from "@workspace/survey-config";
 
@@ -86,25 +87,33 @@ describe("bottom bar and screens", () => {
     expect(screen.queryByRole("button")).toBeNull();
     expect(screen.getByRole("status").textContent).toContain("wkrótce");
   });
-  it("Ty: without a trainer a code connects; with a trainer the code field is gone; sign-out is there", () => {
+  it("Ty: bez trenera wiersz „Mój trener — Wpisz kod trenera” rozwija się i łączy kodem; z trenerem wiersz pokazuje jego imię; wylogowanie jest", () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ isTrainer: false, isClient: true, application: null }) })));
     const onJoin = vi.fn(); const onSignOut = vi.fn();
-    const base = { firstName: "Anna", lastName: "T", email: "a@b.pl", settings: null, trainerApply: null, legal: null, onSignOut, onJoin };
-    const { rerender } = render(<YouScreen {...base} trainerName={null} />);
+    const base = { firstName: "Anna", lastName: "T", email: "a@b.pl", settings: null, legal: null, onSignOut };
+    const { rerender } = render(<YouScreen {...base} accountRows={<RoleRows trainerName={null} onJoin={onJoin} />} />);
+    expect(screen.getByText("Mój trener")).toBeTruthy();
+    expect(screen.queryByLabelText("Kod trenera")).toBeNull(); // dyskretnie: pole dopiero po kliknięciu wiersza
+    fireEvent.click(screen.getByText("Mój trener"));
     fireEvent.change(screen.getByLabelText("Kod trenera"), { target: { value: "abcde-fghij" } });
-    fireEvent.click(screen.getByRole("button", { name: "Połącz" }));
+    fireEvent.click(screen.getByRole("button", { name: "Dalej" }));
     expect(onJoin).toHaveBeenCalledWith("/join/ABCDEFGHIJ");
     fireEvent.click(screen.getByRole("button", { name: /Wyloguj/ }));
     expect(onSignOut).toHaveBeenCalled();
-    rerender(<YouScreen {...base} trainerName="Marek" />);
+    rerender(<YouScreen {...base} accountRows={<RoleRows trainerName="Marek" onJoin={onJoin} />} />);
     expect(screen.queryByLabelText("Kod trenera")).toBeNull();
     expect(screen.getByText("Marek")).toBeTruthy();
+    vi.unstubAllGlobals();
   });
-  it("Ty: \"Prowadzę podopiecznych\" appears once (the card has its own title); document links are at least 44 px high", () => {
-    const card = <div data-testid="trainer-apply"><p>Prowadzę podopiecznych</p></div>;
-    const { container } = render(<YouScreen firstName="A" lastName="B" email="" settings={null} trainerApply={card} legal={<LegalLinks className="justify-start" />} trainerName="M" onSignOut={() => {}} onJoin={() => {}} />);
+  it("Ty: „Prowadzę podopiecznych” to zwykły wiersz (raz, bez karty), a po wniosku w tym samym wierszu jest „Wniosek wysłany — odpowiemy zwykle w ciągu 24 godzin”; linki do dokumentów mają min. 44 px", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ isTrainer: false, isClient: true, application: { status: "pending", canApply: false } }) })));
+    const { container } = render(<YouScreen firstName="A" lastName="B" email="" settings={null} accountRows={<RoleRows trainerName="M" onJoin={() => {}} />} legal={<LegalLinks className="justify-start" />} onSignOut={() => {}} />);
+    await waitFor(() => expect(screen.getByTestId("row-apply").textContent).toContain("Wniosek wysłany — odpowiemy zwykle w ciągu 24 godzin"));
     expect((container.textContent ?? "").split("Prowadzę podopiecznych").length - 1).toBe(1);
+    expect(container.querySelector('[data-testid="row-apply"] button')).toBeNull(); // nic do kliknięcia, gdy wniosek czeka
     const links = [...container.querySelectorAll('[data-testid="legal-links"] a')];
     expect(links).toHaveLength(LEGAL_DOCUMENTS.length);
     for (const a of links) expect(a.className).toContain("min-h-11");
+    vi.unstubAllGlobals();
   });
 });

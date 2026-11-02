@@ -43,6 +43,11 @@ export const clientsTable = pgTable("clients", {
    * "Początkujący" when training experience is under 2 years).
    */
   experienceLevelOverride: text("experience_level_override"),
+  /**
+   * Migracja 0065: od kiedy prowadzący trener widzi dane osoby (wywiady, plany, treningi). NULL = od początku (cała historia).
+   * Ustawiane przy akceptacji połączenia, gdy osoba z konta Solo NIE zgodziła się na udostępnienie wcześniejszej historii.
+   */
+  historyVisibleFrom: timestamp("history_visible_from"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

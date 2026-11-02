@@ -25,7 +25,7 @@
 import { Router, type IRouter } from "express";
 import type { Request, Response } from "express";
 import crypto from "crypto";
-import { eq, and, isNull, gt, desc } from "drizzle-orm";
+import { eq, and, isNull, gt, desc, sql } from "drizzle-orm";
 import {
   db,
   clientsTable,
@@ -37,6 +37,16 @@ import { requireAuth } from "../middlewares/requireAuth";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
+
+/** Usuwa wiersz Solo (bez trenera), jeśli nie ma w nim żadnych danych; w innym razie nic nie robi. */
+async function dropEmptySoloClient(clientId: number): Promise<boolean> {
+  const [c] = await db.select({ trainerId: clientsTable.trainerId }).from(clientsTable).where(eq(clientsTable.id, clientId));
+  if (!c || c.trainerId !== null) return false;
+  const [d] = await db.execute(sql`select (select count(*) from surveys where client_id = ${clientId}) + (select count(*) from workout_plans where client_id = ${clientId}) + (select count(*) from workout_sessions where client_id = ${clientId}) as n`).then((r) => r.rows as Array<{ n: string }>);
+  if (Number(d?.n ?? 1) > 0) return false;
+  await db.delete(clientsTable).where(and(eq(clientsTable.id, clientId), isNull(clientsTable.trainerId)));
+  return true;
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -405,11 +415,17 @@ router.post("/client-invitations/:token/activate", async (req, res): Promise<voi
     if (alreadyLinked.id === invite.clientId) {
       // Idempotent: same user, same client — treat as success.
       res.json({ message: "Konto jest już aktywne." });
-    } else {
-      // This Clerk account is linked to a DIFFERENT client — block.
-      res.status(409).json({ error: "To konto Clerk jest już powiązane z innym profilem klienta." });
+      return;
     }
-    return;
+    // Każde konto jest od razu Solo. Puste konto Solo (bez wywiadu, planu i treningów) ustępuje miejsca profilowi z zaproszenia od trenera —
+    // dzięki temu link od trenera łączy automatycznie, także osobę, która zdążyła już się zalogować.
+    if (await dropEmptySoloClient(alreadyLinked.id)) {
+      logger.info({ clerkUserId, removedSoloClientId: alreadyLinked.id }, "Empty Solo profile replaced by trainer invitation");
+    } else {
+      // Konto ma własne dane Solo albo jest powiązane z innym klientem — nie nadpisujemy ich.
+      res.status(409).json({ error: "To konto ma już własny trening. Połącz się z trenerem kodem w zakładce „Ty”.", code: "SOLO_HAS_DATA" });
+      return;
+    }
   }
 
   // Guard: client is already linked to a different Clerk user.

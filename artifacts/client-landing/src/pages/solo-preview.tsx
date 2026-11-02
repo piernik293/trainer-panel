@@ -7,12 +7,12 @@ import { PortalShell } from "@/components/shell/PortalShell";
 import { SoloStart } from "@/components/shell/SoloStart";
 import { ProgressScreen, type AchievementItem } from "@/components/shell/ProgressScreen";
 import { YouScreen } from "@/components/shell/YouScreen";
+import { RoleRows } from "@/components/shell/RoleRows";
 import type { ShellTab } from "@/components/shell/BottomBar";
 import { TodayCard } from "@/components/training/TodayCard";
 import { StepsTile } from "@/components/StepsTile";
 import { ThemeSelect } from "@/components/ThemeSelect";
 import { BreathingSetting } from "@/components/BreathingSetting";
-import { TrainerApplyCard } from "@/components/TrainerApplyCard";
 import { LegalLinks } from "@/components/LegalLinks";
 import { PlanView } from "./plan";
 
@@ -100,9 +100,10 @@ export default function SoloPreviewPage() {
       )}
       {tab === "ty" && (
         <YouScreen
-          firstName="Anna" lastName="Testowa" email="anna@example.com" trainerName={SCREEN === "ty-solo" ? null : "Marek Nowak"}
-          settings={<><ThemeSelect /><BreathingSetting /></>} trainerApply={<TrainerApplyCard />} legal={<LegalLinks className="justify-start" />}
-          onSignOut={() => {}} onJoin={() => {}}
+          firstName="Anna" lastName="Testowa" email="anna@example.com"
+          accountRows={<RoleRows trainerName={SCREEN === "ty-solo" ? null : "Marek Nowak"} onJoin={() => {}} />}
+          settings={<><ThemeSelect /><BreathingSetting /></>} legal={<LegalLinks className="justify-start" />}
+          onSignOut={() => {}}
         />
       )}
     </PortalShell>

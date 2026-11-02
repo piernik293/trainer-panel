@@ -228,3 +228,12 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 - Diagnoza w `docs/LOGOWANIE.md`: kod przy logowaniu hasłem pojawia się na NOWYM urządzeniu (Clerk Client Trust / Device Trust) — to właściciel wyłącza w dashboardzie Clerk (instrukcja w pliku; ustawień Clerk nie zmieniałem). Rejestracja e-mailem: kod raz (zostaje).
 - Zmiany: Google jako pierwszy i największy przycisk, krótkie teksty, zdanie o kodzie przy rejestracji, „Nie pamiętam hasła”. Tryb podglądu bez konta za flagą `GUEST_DEMO_ENABLED` — **włączona w `.env`** (ZGODA właściciela do testów); kopia `.env` w `~/backups/env-przed-demo-*.bak`.
 - **Do decyzji:** po wyłączeniu Client Trust zostaje ryzyko samego hasła (opisane w 1 zdaniu w `docs/LOGOWANIE.md`).
+
+## Solo jako podstawa konta (2.11.2026) — decyzje i do potwierdzenia
+- **Limit planów Solo:** 1 nowy plan na 14 dni (rozsądny limit zgodnie z poleceniem; zapis w `workout_plans.created_by='solo'`); przy `BETA_NO_LIMITS=1` bez limitu. **Czy 14 dni?**
+- **Dawkowanie Solo v1** z silnika, bez ręcznego bilansu objętości trenera (uproszczenie opisane w `docs/SOLO-STEROWNIK.md`).
+- **Odmowa dnia:** dzień bez wystarczającej liczby bezpiecznych ćwiczeń jest pomijany (plan ma krótszy tydzień); gdy żaden dzień się nie uda: „Połącz się z trenerem — ułoży plan ręcznie”. W symulacji 3,6% dni.
+- **Zgoda na historię:** domyślnie niezaznaczona; mechanizm (archiwum wywiadów i bólów + data widoczności planów i treningów) — patrz `docs/KONTA.md`; do dokończenia pełny przegląd tras trenera.
+- **Konto Solo z danymi + link od trenera:** nie łączy automatycznie (żeby nie zgubić danych) — dostaje wskazówkę o kodzie; konto puste łączy się samo.
+- **S6: `SOLO_ENABLED=1` włączone w `.env`** (ZGODA właściciela po zielonych testach). `CONDITIONING_ENABLED` zostaje wyłączone.
+- Uwaga operacyjna: uruchamianie `scripts/db-setup-gcp.sh` na bazie TESTOWEJ wykonuje migracje danych (0064) na pozostałych fixturach i psuje testy — po takim uruchomieniu skasuj wiersze „Mój trening” w bazie testowej.

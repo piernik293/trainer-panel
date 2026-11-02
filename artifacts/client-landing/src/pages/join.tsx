@@ -41,6 +41,8 @@ export default function JoinPage() {
   const [trainer, setTrainer] = useState<{ name: string } | null | "loading">("loading");
   const [mode, setMode] = useState<"signup" | "signin">("signup");
   const [firstName, setFirstName] = useState("");
+  // Zgoda na udostępnienie trenerowi wywiadu i historii treningów — domyślnie NIE (bez zgody trener widzi tylko imię)
+  const [shareHistory, setShareHistory] = useState(false);
   const [phase, setPhase] = useState<"form" | "sending" | "done" | "error">("form");
   const [message, setMessage] = useState("");
 
@@ -55,7 +57,7 @@ export default function JoinPage() {
   const send = async () => {
     setPhase("sending");
     try {
-      await apiFetch(`/join/${encodeURIComponent(code)}/request`, { method: "POST", body: JSON.stringify({ firstName: firstName.trim() || undefined }) });
+      await apiFetch(`/join/${encodeURIComponent(code)}/request`, { method: "POST", body: JSON.stringify({ firstName: firstName.trim() || undefined, shareHistory }) });
       setPhase("done");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Nie udało się wysłać prośby.");
@@ -110,6 +112,10 @@ export default function JoinPage() {
       <h1 className="text-2xl font-bold">Dołącz do: {trainer.name}</h1>
       <p className="text-muted-foreground">Trener zobaczy Twoje dane dopiero po zaakceptowaniu prośby.</p>
       <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Twoje imię" aria-label="Twoje imię" maxLength={60} />
+      <label className="flex min-h-11 items-start gap-3 text-left text-sm" data-testid="share-history">
+        <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0" checked={shareHistory} onChange={(e) => setShareHistory(e.target.checked)} />
+        <span><span className="font-semibold">Udostępnij trenerowi wywiad i historię treningów.</span> Jeśli nie zaznaczysz, trener zobaczy tylko Twoje imię i sam zrobi z Tobą wywiad.</span>
+      </label>
       {phase === "error" && <p className="text-sm text-destructive" role="alert">{message}</p>}
       <Button onClick={send} disabled={phase === "sending"} className="min-h-12">{phase === "sending" ? "Wysyłanie…" : "Poproś o dołączenie"}</Button>
     </Shell>

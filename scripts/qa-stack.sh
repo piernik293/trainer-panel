@@ -21,6 +21,8 @@ case "${1:-}" in
     : > "$PIDS"
     QAENV="export DATABASE_URL='$QA_DB' APP_ADMIN_CLERK_IDS='$ADMIN' TRAINER_CLERK_IDS='' TRAINER_SIGNUP_OPEN='' SMTP_HOST='' SMTP_USER='' SMTP_PASS='' SMTP_FROM='' ADMIN_EMAIL='' OWNER_NOTIFY_EMAIL='' \
       LOCAL_API_SERVER_URL=http://localhost:18090 LOCAL_CLIENT_PORTAL_DEV_URL=http://localhost:22390 LOCAL_TRAINER_APP_ORIGIN=http://localhost:23890 LOCAL_CLIENT_PORTAL_ORIGIN=http://localhost:23890 NODE_ENV=development"
+    # Flagi funkcji tylko dla procesów QA, np. QA_FLAGS="SOLO_ENABLED=1 ACHIEVEMENTS_ENABLED=1 BETA_NO_LIMITS=1"
+    QAENV="$QAENV; export ${QA_FLAGS:-QA_FLAGS_NONE=1}"
     cd "$ROOT"
     nohup bash -c "$QAENV; HOST=127.0.0.1 PORT=18090 node --enable-source-maps artifacts/api-server/dist/index.mjs" >"$LOG/api.log" 2>&1 & echo $! >> "$PIDS"
     nohup bash -c "$QAENV; cd artifacts/client-landing && PORT=22390 BASE_PATH=/client-landing/ pnpm exec vite --config vite.config.ts --host 127.0.0.1" >"$LOG/portal.log" 2>&1 & echo $! >> "$PIDS"
