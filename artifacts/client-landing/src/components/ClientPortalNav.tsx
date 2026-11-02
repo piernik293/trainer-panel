@@ -9,6 +9,7 @@ import { ThemeSelect } from "@/components/ThemeSelect";
 import { BreathingSetting } from "@/components/BreathingSetting";
 import { HealthConsentSetting } from "@/components/HealthConsentSetting";
 import { FeedbackCard } from "@/components/FeedbackCard";
+import { RoleSwitch } from "@/components/RoleSwitch";
 import { BrandMark } from "@/components/BrandMark";
 import { TrainerApplyCard } from "@/components/TrainerApplyCard";
 import { useState } from "react";
@@ -112,6 +113,8 @@ export function ClientPortalNav({ firstName, lastName, showCalendar, onNavigate 
           ))}
         </nav>
 
+        <RoleSwitch className="hidden w-64 md:flex" />
+
         {/* Desktop account menu */}
         <div className="hidden md:block">
           <DropdownMenu>
@@ -154,6 +157,7 @@ export function ClientPortalNav({ firstName, lastName, showCalendar, onNavigate 
                 <p className="text-sm font-semibold truncate">{fullName}</p>
                 {email && <p className="text-xs text-muted-foreground truncate">{email}</p>}
               </div>
+              <div className="px-4 pt-3"><RoleSwitch /></div>
               <nav aria-label="Nawigacja portalu" className="flex flex-col p-2">
                 <Button variant="ghost" className="justify-start h-12" onClick={() => go("plan")}>
                   <Dumbbell className="w-4 h-4 mr-2" />

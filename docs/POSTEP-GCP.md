@@ -414,3 +414,7 @@
 
 ## 29.10.2026 — decyzje właściciela: flagi, @reboot z kopią, adres kontaktowy
 - Flagi (feedback, beta bez limitów, kalistenika, osiągnięcia) włączone, Solo i kondycja wyłączone; cron `@reboot` z `scripts/backup-if-missing.sh`; `CONTACT_EMAIL` (szablon `TU_ADRES`) → `/api/contact` → ekran prośby o dostęp. Szczegóły: `docs/DO-DECYZJI.md`.
+
+## 2.11.2026 — jedno logowanie, jedno konto (gałąź `feature/jedno-logowanie`)
+- `GET /api/account/home` (panel / portal / blocked, bez skutków ubocznych), strona `/auth/redirect`, wspólne logowanie z tłem-zdjęciem i formularzem na środku, przekierowania starych adresów, ekran powitalny dla konta bez trenera, przełącznik [Mój trening] [Podopieczni], poprawka `POST /trainer/profile` dla trenera z własnym treningiem. Opis i plan domeny: `docs/KONTA.md`; zrzuty przed/po: `docs/screens/logowanie/`.
+- Testy: `account-home` (8), `authHome`, scenariusz przeglądarkowy na bazie QA (podopieczny, bez trenera, nowe konto, trener, administrator, zablokowany, trener+trening, stare adresy, linki zaproszeń; 375 i 1440 px, jasny i ciemny) — 0 błędów.

@@ -31,7 +31,9 @@ describe("ekran osoby bez trenera", () => {
     const seen: Array<boolean | null> = [];
     render(<AccountNotice onStatus={(s) => seen.push(s ? s.linked : null)} />);
     await waitFor(() => expect(screen.getByTestId("account-notice")).toBeTruthy());
-    expect(screen.getByText("Trening samodzielny — wkrótce")).toBeTruthy();
+    expect(screen.getByText("Witaj w Optimatren")).toBeTruthy();
+    expect(screen.getByText(/Połącz się z trenerem/)).toBeTruthy();
+    expect(screen.queryByText(/Klient nie znaleziony/)).toBeNull();
     await waitFor(() => expect(screen.getByTestId("trainer-apply")).toBeTruthy());
     expect(screen.getByText("Prowadzę podopiecznych")).toBeTruthy();
     expect(seen).toContain(false);

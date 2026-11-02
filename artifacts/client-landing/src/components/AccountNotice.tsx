@@ -29,18 +29,20 @@ export function AccountNotice({ onStatus }: { onStatus?: (s: AccountStatus | nul
   const path = joinPathFromCode(code);
   return (
     <div className="rounded-lg border border-border p-4 text-left space-y-3" data-testid="account-notice">
-      <p className="font-semibold">Trening samodzielny — wkrótce</p>
+      <p className="text-lg font-semibold">Witaj w Optimatren</p>
+      <p className="text-sm text-muted-foreground">Połącz się z trenerem, żeby zobaczyć swój plan treningowy.</p>
       {status.pendingTrainerName ? (
         <p className="text-sm text-muted-foreground">Prośba do: {status.pendingTrainerName}. Czeka na akceptację.</p>
       ) : (
         <>
-          <p className="text-sm text-muted-foreground">Masz kod od trenera? Wpisz go tutaj.</p>
+          <p className="text-sm text-muted-foreground">Masz kod od trenera? Wpisz go tutaj. Link od trenera możesz po prostu otworzyć.</p>
           <div className="flex gap-2">
             <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Kod trenera" aria-label="Kod trenera" maxLength={14} />
             <Button disabled={!path} onClick={() => { if (path) window.location.assign(`${import.meta.env.BASE_URL.replace(/\/$/, "")}${path}`); }}>Dalej</Button>
           </div>
         </>
       )}
+      <p className="text-xs text-muted-foreground">Trening samodzielny, bez trenera, pojawi się wkrótce.</p>
       {/* Osoba bez trenera nie ma planu, więc nie ma też menu konta — wniosek o konto trenera musi być osiągalny tutaj */}
       <TrainerApplyCard />
     </div>

@@ -52,10 +52,10 @@ describe("SessionProblemGuard", () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it("no browser session + 401 → redirect to the trainer sign-in page", async () => {
+  it("no browser session + 401 → redirect to the sign-in page", async () => {
     signedIn = false;
     renderWith(401);
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/trainer/sign-in"));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/sign-in"));
     expect(screen.queryByRole("alert")).toBeNull();
   });
 

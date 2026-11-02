@@ -1,5 +1,7 @@
 import { plPL } from "@clerk/localizations";
 import Legal from "@/pages/Legal";
+import AuthRedirectPage from "@/components/AuthRedirectPage";
+import { AUTH_REDIRECT_PATH } from "@/lib/authHome";
 import { useEffect, useRef } from "react";
 import { AppHero } from "@workspace/design-tokens/hero";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from "@clerk/react";
@@ -50,7 +52,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 // Client portal lives in a separate artifact (client-landing) — navigating
 // there requires a full page load, not an SPA route change.
-const CLIENT_PORTAL_PATH = "/client-landing/plan";
+const CLIENT_PORTAL_PATH = "/client-landing/";
 
 // Clerk passes full paths to routerPush/routerReplace, but wouter's
 // setLocation prepends the base — strip it to avoid doubling.
@@ -160,106 +162,43 @@ function ClerkQueryClientCacheInvalidator() {
 function AuthShell({
   title,
   description,
-  helper,
-  switchLink,
   children,
 }: {
   title: string;
   description: string;
-  helper?: string;
-  switchLink: { text: string; label: string; href: string };
   children: React.ReactNode;
 }) {
+  // Jedno wejście dla wszystkich (U1/U2): zdjęcie jako przyciemnione tło całej strony, formularz na środku, logo i nazwa nad nim.
   return (
-    <div className="relative flex min-h-[100dvh] flex-col items-center md:pr-[50%] bg-background">
-      <AppHero variant="login" />
-      <div className="flex w-full flex-1 flex-col items-center justify-center px-4 py-8">
-      {/* Optimatren branding above the Clerk card */}
-      <div className="flex flex-col items-center text-center mb-6 max-w-full">
-        <BrandMark className="h-12 w-12 text-2xl" />
-        <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">Optimatren</p>
-        <p className="mt-1 text-base font-semibold text-foreground">{title}</p>
-        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>
-        {helper && (
-          <p className="mt-2 max-w-sm text-xs text-muted-foreground">{helper}</p>
-        )}
-      </div>
-      {children}
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        {switchLink.text}{" "}
-        <Link
-          href={switchLink.href}
-          className="inline-block py-2 font-medium text-primary underline underline-offset-2 hover:text-brand-hover"
-        >
-          {switchLink.label}
-        </Link>
-      </p>
+    <div className="relative flex min-h-[100dvh] flex-col items-center justify-center bg-neutral-950 px-4 py-8" data-testid="auth-shell">
+      <AppHero variant="login-full" tone="dark" />
+      <div className="relative z-10 flex w-full flex-col items-center">
+        <div className="mb-6 flex max-w-full flex-col items-center text-center text-white">
+          <BrandMark className="h-12 w-12 text-2xl" />
+          <p className="mt-2 text-2xl font-bold tracking-tight">Optimatren</p>
+          <p className="mt-1 text-base font-semibold">{title}</p>
+          <p className="mt-1 max-w-sm text-sm text-white/85">{description}</p>
+        </div>
+        {children}
       </div>
     </div>
   );
 }
 
-// Default public entry — client-facing login. Role is NOT derived from the
-// login page used: after auth the client portal's own role checks apply.
-function ClientSignInPage() {
+// Jedna strona logowania dla wszystkich. Dokąd trafia osoba po zalogowaniu, decyduje serwer (/auth/redirect → GET /api/account/home).
+function SignInPage() {
   return (
-    <AuthShell
-      title="Zaloguj się do portalu klienta"
-      description="Zobacz swój plan treningowy, historię treningów i zapisuj ciężary."
-      helper="Użyj tego samego konta Google, na które otrzymałeś zaproszenie od trenera."
-      switchLink={{
-        text: "Jesteś trenerem?",
-        label: "Przejdź do Panelu Trenera",
-        href: "/trainer/sign-in",
-      }}
-    >
-      <SignIn
-        routing="path"
-        path={`${basePath}/sign-in`}
-        signUpUrl={`${basePath}/sign-up`}
-        forceRedirectUrl={CLIENT_PORTAL_PATH}
-      />
-    </AuthShell>
-  );
-}
-
-function TrainerSignInPage() {
-  return (
-    <AuthShell
-      title="Zaloguj się do Panelu Trenera"
-      description="Zarządzaj klientami, planami treningowymi i postępami."
-      switchLink={{
-        text: "Jesteś klientem?",
-        label: "Przejdź do portalu klienta",
-        href: "/sign-in",
-      }}
-    >
-      <SignIn
-        routing="path"
-        path={`${basePath}/trainer/sign-in`}
-        signUpUrl={`${basePath}/sign-up`}
-        forceRedirectUrl={basePath || "/"}
-      />
+    <AuthShell title="Zaloguj się do Optimatren" description="Wejdź na swoje konto, żeby zobaczyć plan, postępy i klientów.">
+      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} forceRedirectUrl={`${basePath}${AUTH_REDIRECT_PATH}`} />
     </AuthShell>
   );
 }
 
 function SignUpPage() {
   return (
-    <div className="relative flex min-h-[100dvh] flex-col items-center md:pr-[50%] bg-background">
-      <AppHero variant="login" />
-      <div className="flex w-full flex-1 flex-col items-center justify-center px-4 py-8">
-      {/* Optimatren branding above the Clerk card */}
-      <div className="flex flex-col items-center text-center mb-6 max-w-full">
-        <BrandMark className="h-12 w-12 text-2xl" />
-        <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">Optimatren</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Zarządzaj klientami, planami i postępami
-        </p>
-      </div>
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
-      </div>
-    </div>
+    <AuthShell title="Załóż konto w Optimatren" description="Jedno konto do wszystkiego. Link od trenera działa tak samo jak dotąd.">
+      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} forceRedirectUrl={`${basePath}${AUTH_REDIRECT_PATH}`} />
+    </AuthShell>
   );
 }
 
@@ -270,7 +209,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
         <Component />
       </Show>
       <Show when="signed-out">
-        <Redirect to="/trainer/sign-in" />
+        <Redirect to="/sign-in" />
       </Show>
     </>
   );
@@ -318,7 +257,7 @@ function AppContent() {
         </SessionProblemGuard>
       </Show>
       <Show when="signed-out">
-        <Redirect to="/trainer/sign-in" />
+        <Redirect to="/sign-in" />
       </Show>
     </>
   );
@@ -327,8 +266,6 @@ function AppContent() {
 function ClerkProviderWithRoutes() {
   const [location, setLocation] = useLocation();
 
-  // The client login page must not show trainer copy inside the Clerk card.
-  const isTrainerAuthRoute = location.startsWith("/trainer/sign-in");
 
   return (
     <ClerkProvider
@@ -344,9 +281,7 @@ function ClerkProviderWithRoutes() {
           start: {
             ...plPL.signIn?.start,
             title: "Zaloguj się",
-            subtitle: isTrainerAuthRoute
-              ? "Zaloguj się do Panelu Trenera"
-              : "Zaloguj się do portalu klienta",
+            subtitle: "Użyj konta Google albo adresu e-mail",
           },
         },
         signUp: {
@@ -354,7 +289,7 @@ function ClerkProviderWithRoutes() {
           start: {
             ...plPL.signUp?.start,
             title: "Utwórz konto",
-            subtitle: "Zacznij korzystać z Panelu Trenera",
+            subtitle: "Zacznij korzystać z Optimatren",
           },
         },
       }}
@@ -374,8 +309,10 @@ function ClerkProviderWithRoutes() {
           <Switch>
             {/* Sign-in / sign-up — accessible without auth */}
             {/* REQUIRED — copy "/sign-in/*?" and "/sign-up/*?" verbatim */}
-            <Route path="/sign-in/*?" component={ClientSignInPage} />
-            <Route path="/trainer/sign-in/*?" component={TrainerSignInPage} />
+            <Route path="/sign-in/*?" component={SignInPage} />
+            {/* Stary adres logowania trenera → jedno wejście */}
+            <Route path="/trainer/sign-in/*?">{() => <Redirect to="/sign-in" />}</Route>
+            <Route path={AUTH_REDIRECT_PATH} component={AuthRedirectPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
             <Route path="/legal/:slug" component={Legal} />
             {/* Dev-only visual preview of the calendar (mocked data via ?mockCalendar=1).

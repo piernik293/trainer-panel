@@ -13,7 +13,7 @@ import { getAuth, clerkClient } from "@clerk/express";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, clientsTable, trainersTable, trainerApplicationsTable, appSettingsTable } from "@workspace/db";
-import { requireAuth, checkIsAppAdmin, provisionTrainer } from "../middlewares/requireAuth";
+import { requireAuth, checkIsAppAdmin, provisionTrainer, canBecomeTrainer } from "../middlewares/requireAuth";
 import { sendPlainEmail } from "../services/inviteEmail";
 import { AUTO_ACCEPT_KEY, REAPPLY_LATER_MESSAGE, canApplyNow, nextApplyAt } from "../services/trainerApplications";
 
@@ -46,6 +46,29 @@ router.get("/account/roles", async (req, res): Promise<void> => {
     isTrainer: !!t, isClient: !!c,
     application: last ? { status: last.status, canApply: last.status === "rejected" ? canApplyNow(last.decidedAt) : false, applyAgainFrom: until && until.getTime() > Date.now() ? until : null } : null,
   });
+});
+
+/**
+ * Dokąd skierować osobę po zalogowaniu — decyduje serwer, nie przeglądarka:
+ *  panel   — konto trenera (także administrator),
+ *  portal  — wszyscy pozostali: podopieczny trenera albo konto bez trenera (ekran „Połącz się z trenerem”),
+ *  blocked — trener zablokowany przez administratora.
+ * Samo wywołanie niczego nie tworzy (konto nie staje się trenerem bez akceptacji wniosku).
+ */
+router.get("/account/home", async (req, res): Promise<void> => {
+  const userId = getAuth(req)?.userId;
+  if (!userId) { res.status(401).json({ error: "Twoja sesja wygasła. Zaloguj się ponownie." }); return; }
+  const [t] = await db.select({ id: trainersTable.id, blockedAt: trainersTable.blockedAt }).from(trainersTable).where(eq(trainersTable.clerkUserId, userId));
+  const [c] = await db.select({ id: clientsTable.id, trainerId: clientsTable.trainerId }).from(clientsTable).where(eq(clientsTable.clerkUserId, userId));
+  const isTrainer = !!t, isClient = !!c;
+  // Konto zatwierdzone przez administratora (lista w .env / administrator), któremu panel dopiero utworzy profil trenera.
+  if (!t && canBecomeTrainer(userId)) { res.json({ destination: "panel", isTrainer: false, isClient }); return; }
+  if (t) {
+    if (t.blockedAt && !checkIsAppAdmin(userId)) { res.json({ destination: "blocked", isTrainer, isClient }); return; }
+    res.json({ destination: "panel", isTrainer, isClient });
+    return;
+  }
+  res.json({ destination: "portal", isTrainer, isClient, linked: !!c && c.trainerId != null });
 });
 
 const ApplyBody = z.object({ note: z.string().trim().max(500).optional() });

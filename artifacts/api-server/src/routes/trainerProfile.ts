@@ -30,13 +30,13 @@ router.post("/trainer/profile", async (req, res): Promise<void> => {
     return;
   }
 
-  if (await isClientAccount(userId)) {
+  // Konto, które ma już profil trenera (np. podopieczny zaakceptowany jako trener przez administratora), dostaje go z powrotem —
+  // trener może mieć też własny trening. Nowy profil nie powstaje dla konta połączonego z klientem ani niezatwierdzonego.
+  const [existing] = await db.select({ id: trainersTable.id }).from(trainersTable).where(eq(trainersTable.clerkUserId, userId));
+  if (!existing && await isClientAccount(userId)) {
     res.status(403).json({ error: CLIENT_ACCOUNT_MESSAGE, code: "CLIENT_ACCOUNT" });
     return;
   }
-
-  // A new trainer profile only for accounts the administrator approved; an existing trainer just gets the row back.
-  const [existing] = await db.select({ id: trainersTable.id }).from(trainersTable).where(eq(trainersTable.clerkUserId, userId));
   if (!existing && !canBecomeTrainer(userId)) {
     res.status(403).json({ error: TRAINER_NOT_APPROVED_MESSAGE, code: "TRAINER_NOT_APPROVED" });
     return;

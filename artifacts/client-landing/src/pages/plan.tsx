@@ -2,7 +2,7 @@ import { LegalLinks } from "@/components/LegalLinks";
 
 import { PackageTile } from "@/components/PackageTile";
 import { useState, useEffect, useCallback } from "react";
-import { useUser, SignIn } from "@clerk/react";
+import { useUser } from "@clerk/react";
 import { Loader2, CheckCircle2, ChevronRight, ChevronLeft, Dumbbell, Activity, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -323,19 +323,12 @@ function formatPrescription(ex: PlanExercise): string {
 // Shown when the client is not signed in. Uses Clerk's embedded sign-in
 // component so clients authenticate before their plan is fetched.
 
+/** Jedno logowanie: portal nie ma własnego formularza — niezalogowaną osobę przenosimy na wspólną stronę logowania. */
 function SignInGate() {
+  useEffect(() => { window.location.replace("/sign-in"); }, []);
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 bg-primary/10 flex items-center justify-center mx-auto mb-6">
-            <Dumbbell className="w-8 h-8 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Portal klienta</h1>
-          <p className="text-sm text-muted-foreground">Zaloguj się, aby zobaczyć swój plan treningowy.</p>
-        </div>
-        <SignIn routing="hash" />
-      </div>
+    <div className="min-h-screen bg-background flex items-center justify-center" role="status">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
     </div>
   );
 }
@@ -1316,19 +1309,6 @@ export default function PlanPortal() {
               Spróbuj ponownie
             </Button>
           )}
-          {/* Wrong-login-page recovery: a trainer who signed in through the
-              client entry has no linked client account — offer the way back.
-              Full page load (separate artifact), deliberately not auto-redirect
-              so an unlinked client is never silently sent into the trainer app. */}
-          <p className="text-sm text-muted-foreground pt-2">
-            Jesteś trenerem?{" "}
-            <a
-              href="/"
-              className="inline-block py-2 font-medium text-primary underline underline-offset-2"
-            >
-              Przejdź do Panelu Trenera
-            </a>
-          </p>
         </div>
       </div>
     );
