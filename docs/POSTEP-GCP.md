@@ -421,3 +421,6 @@
 
 ## 2.11.2026 — „Mój trening” dla trenerów (gałąź `feature/moj-trening`)
 - Serwis `selfTraining`, tworzenie przy akceptacji / wejściu do panelu, migracja 0064 (po `pg_dump`), wyłączenie z limitu klientów i z pulpitu, blokada odłączenia i usunięcia, testy izolacji `self-training` (8).
+
+## 2.11.2026 — logowanie bez zniechęcania i tryb podglądu (gałąź `feature/logowanie-latwe`)
+- Diagnoza kodu Clerk (`docs/LOGOWANIE.md`), nowe teksty i układ strony logowania, `GET /api/guest-demo/status`, strona `/client-landing/demo` (bez zapytań zapisujących, test), link na stronie logowania tylko przy włączonej fladze. Testy: API 2882, panel 801, portal 280, typecheck OK.

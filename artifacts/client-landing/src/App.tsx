@@ -20,6 +20,7 @@ import ActivatePage from '@/pages/activate';
 import JoinPage from '@/pages/join';
 import BookingPreviewPage from '@/pages/booking-preview';
 import PortalPreviewPage from '@/pages/portal-preview';
+import DemoPage from '@/pages/demo';
 import SoloPreviewPage, { isSoloPreviewPath } from '@/pages/solo-preview';
 
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so
@@ -103,6 +104,8 @@ function Router() {
       <Route path="/invite/:token" component={ActivatePage} />
       {/* Link / kod trenera: prośba o dołączenie (blok 2) */}
       <Route path="/join/:code" component={JoinPage} />
+      {/* Tryb podglądu bez konta (flaga GUEST_DEMO_ENABLED): dane przykładowe, bez zapisu */}
+      <Route path="/demo" component={DemoPage} />
       <Route component={NotFound} />
     </Switch>
   );
