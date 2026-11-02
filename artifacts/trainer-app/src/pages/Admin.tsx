@@ -126,7 +126,7 @@ function Applications() {
 function Trainers() {
   const { toast } = useToast();
   const { data, isLoading } = useAdminTrainers();
-  const { setPlan, block } = useAdminAction();
+  const { setPlan, block, extendTrial } = useAdminAction();
   if (isLoading || !data) return <div className="h-16 bg-muted animate-pulse rounded" />;
   const onErr = (e: unknown) => toast({ title: humanizeError(e), variant: "destructive" });
   return (
@@ -140,12 +140,16 @@ function Trainers() {
             </div>
             <p className="text-xs text-muted-foreground">Podopieczni: {t.clients} · ostatnia aktywność: {fmt(t.lastActivity)} · założone: {fmt(t.createdAt)}</p>
             <div className="flex flex-wrap items-center gap-2">
-              <label className="text-xs">Pakiet:
+              <label className="text-xs">Ustaw pakiet:
                 <select className="ml-1 rounded border bg-background px-1 py-0.5 text-sm" value={t.planCode} aria-label={`Pakiet trenera ${t.id}`}
                   onChange={(e) => setPlan.mutate({ id: t.id, planCode: e.target.value }, { onError: onErr })}>
                   <option value="FREE">Free</option><option value="PRO">Pro</option><option value="UNLIMITED">Unlimited</option>
                 </select>
               </label>
+              <span className="text-xs text-muted-foreground" data-testid="admin-trial-end">
+                Okres próbny do: {t.trialEndsAt ? fmt(t.trialEndsAt) : "—"}{t.trial?.state === "ended" ? " (minął)" : ""}
+              </span>
+              <Button size="sm" variant="outline" onClick={() => extendTrial.mutate(t.id, { onError: onErr })}>Przedłuż o 14 dni</Button>
               {!t.isAdmin && (
                 <Button size="sm" variant="outline" className={t.blocked ? "" : "text-destructive"}
                   onClick={() => { if (t.blocked || window.confirm(BLOCK_CONFIRM)) block.mutate({ id: t.id, blocked: !t.blocked }, { onError: onErr }); }}>

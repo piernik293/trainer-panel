@@ -11,6 +11,9 @@ export const trainersTable = pgTable("trainers", {
 
   /** Blokada konta przez administratora (migration 0039); NULL = konto aktywne. */
   blockedAt: timestamp("blocked_at"),
+  /** Migracja 0066: okres próbny (14 dni z pełnym dostępem); po nim obowiązuje plan trenera (domyślnie Free). */
+  trialStartedAt: timestamp("trial_started_at"),
+  trialEndsAt: timestamp("trial_ends_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

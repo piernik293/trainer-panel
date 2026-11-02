@@ -24,6 +24,8 @@ export interface SubscriptionSummaryData {
   resetsAt: string;
   /** Beta bez limitów (BETA_NO_LIMITS): ukrywamy teksty o limitach */
   noLimits?: boolean;
+  /** Okres próbny trenera (14 dni po akceptacji wniosku) */
+  trial?: { state: "active" | "ended" | "none"; daysLeft: number; endsAt: string | null; showEnded: boolean };
   availablePlans: Array<{
     code: string;
     name: string;

@@ -1,3 +1,4 @@
+import { trialInfo, type TrialInfo } from "./trial";
 import { createHash } from "node:crypto";
 import {
   clientsTable,
@@ -69,6 +70,7 @@ export const SUBSCRIPTION_PLANS: Record<PlanCode, PlanDefinition> = {
 };
 
 const BETA_PLAN: PlanDefinition = { ...SUBSCRIPTION_PLANS.UNLIMITED, name: "Beta" };
+const TRIAL_PLAN: PlanDefinition = { ...SUBSCRIPTION_PLANS.UNLIMITED, name: "Okres próbny" };
 
 const METRIC_LABELS: Record<SubscriptionMetric, string> = {
   clients: "Klienci",
@@ -180,6 +182,11 @@ async function ensureSubscription(
     .where(eq(trainerSubscriptionsTable.trainerId, trainerId));
   if (betaNoLimits()) return BETA_PLAN;
   const planCode = normalizePlanCode(subscription?.planCode ?? "FREE", subscription?.status ?? "active");
+  // Okres próbny (14 dni po akceptacji wniosku): pełny dostęp, jeśli trener nie ma wybranego płatnego pakietu; potem plan Free.
+  if (planCode === "FREE") {
+    const [t] = await tx.select({ endsAt: trainersTable.trialEndsAt }).from(trainersTable).where(eq(trainersTable.id, trainerId));
+    if (trialInfo(t?.endsAt).state === "active") return TRIAL_PLAN;
+  }
   return SUBSCRIPTION_PLANS[planCode];
 }
 
@@ -304,6 +311,13 @@ function usageStat(label: string, used: number, limit: number | null) {
   };
 }
 
+async function trialSummary(tx: SubscriptionTransaction, trainerId: number, planCode: PlanCode): Promise<TrialInfo & { showEnded: boolean }> {
+  const [t] = await tx.select({ endsAt: trainersTable.trialEndsAt }).from(trainersTable).where(eq(trainersTable.id, trainerId));
+  const info = trialInfo(t?.endsAt);
+  // komunikat „Okres próbny minął” tylko, gdy trener faktycznie jest na planie Free (nie ma pakietu ustawionego przez administratora)
+  return { ...info, showEnded: info.state === "ended" && planCode === "FREE" };
+}
+
 export async function getSubscriptionSummary(trainerId: number) {
   return db.transaction(async (tx) => {
     const plan = await ensureSubscription(tx, trainerId);
@@ -334,6 +348,7 @@ export async function getSubscriptionSummary(trainerId: number) {
       },
       resetsAt,
       noLimits: betaNoLimits(),
+      trial: await trialSummary(tx, trainerId, plan.code),
       availablePlans: betaNoLimits() ? [] : Object.values(SUBSCRIPTION_PLANS).map(
         ({ code, name, monthlyPricePln, benefits }) => ({
           code,

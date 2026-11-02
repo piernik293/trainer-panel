@@ -434,3 +434,6 @@
 
 ## 3.11.2026 — blok 1: maile przy wniosku trenera (gałąź `fix/maile-wnioski`)
 - `services/applicationMail.ts` (logowanie wyniku, wiadomości do właściciela i wnioskodawcy), licznik „Wnioski (N)” w administracji, testy `application-mail` (atrapa SMTP) i `admin-tab-label`; 1 mail testowy wysłany.
+
+## 3.11.2026 — blok 7: okres próbny trenera (gałąź `fix/okres-probny`)
+- Migracja 0066 (kopia `~/backups/trainer_panel_przed_0066_*`), `services/trial.ts`, plan „Okres próbny” w `ensureSubscription`, `trial` w podsumowaniu subskrypcji, `POST /admin/trainers/:id/trial/extend`, baner na pulpicie, kolumna i przycisk w administracji, komunikat limitu planu Solo; testy `okres-probny` + poprawione założenia 3 testów limitów.

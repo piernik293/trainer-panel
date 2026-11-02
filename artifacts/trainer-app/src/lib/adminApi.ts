@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 
 export interface AdminError { id: number; source: "api" | "panel" | "portal"; place: string; message: string; occurrences: number; users: number; status: "new" | "reviewed"; firstSeen: string; lastSeen: string }
-export interface AdminTrainer { id: number; name: string | null; label: string; email: string | null; planCode: "FREE" | "PRO" | "UNLIMITED"; clients: number; lastActivity: string | null; createdAt: string; blocked: boolean; isAdmin: boolean }
+export interface AdminTrainer { id: number; name: string | null; label: string; email: string | null; planCode: "FREE" | "PRO" | "UNLIMITED"; clients: number; lastActivity: string | null; createdAt: string; blocked: boolean; trialEndsAt: string | null; trial?: { state: "active" | "ended" | "none"; daysLeft: number }; isAdmin: boolean }
 export interface AdminUsage { trainerId: number; name: string | null; email: string | null; planCode: string; limits: Limits; used: Limits }
 export interface Limits { clients: number | null; customExercises: number | null; planGenerations: number | null }
 export interface AccessEntry { id: number; at: string; action: string; clientId: number | null; reason: string; admin: string }
@@ -34,6 +34,7 @@ export function useAdminAction() {
   return {
     review: useMutation({ mutationFn: (id: number) => customFetch(`/api/admin/errors/${id}/reviewed`, { method: "POST" }), onSuccess: done }),
     setPlan: useMutation({ mutationFn: (v: { id: number; planCode: string }) => customFetch(`/api/admin/trainers/${v.id}/plan`, { method: "PATCH", body: JSON.stringify({ planCode: v.planCode }) }), onSuccess: done }),
+    extendTrial: useMutation({ mutationFn: (id: number) => customFetch(`/api/admin/trainers/${id}/trial/extend`, { method: "POST" }), onSuccess: done }),
     block: useMutation({ mutationFn: (v: { id: number; blocked: boolean }) => customFetch(`/api/admin/trainers/${v.id}/block`, { method: "POST", body: JSON.stringify({ blocked: v.blocked, confirm: true }) }), onSuccess: done }),
     access: useMutation({ mutationFn: (v: { clientId: number; reason: string }) => customFetch<Record<string, unknown>>("/api/admin/access/client", { method: "POST", body: JSON.stringify(v) }), onSuccess: done }),
   };

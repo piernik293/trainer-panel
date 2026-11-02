@@ -100,6 +100,7 @@ describe("izolacja i zasady", () => {
   });
   it("nie liczy się do limitu klientów planu Free (3 zwykłych klientów mieści się obok niego)", async () => {
     const [tr] = await db.select().from(trainersTable).where(eq(trainersTable.clerkUserId, NEWBIE));
+    await db.update(trainersTable).set({ trialEndsAt: new Date(Date.now() - 86_400_000) }).where(eq(trainersTable.id, tr!.id)); // limity Free działają po okresie próbnym
     await db.insert(trainerSubscriptionsTable).values({ trainerId: tr!.id, planCode: "FREE", status: "active" }).onConflictDoNothing();
     for (const email of EMAILS) await runWithSubscriptionLimit(tr!.id, "clients", async (tx) => { await tx.insert(clientsTable).values({ firstName: "Zwykły", lastName: "Klient", email, trainerId: tr!.id }); });
     await expect(runWithSubscriptionLimit(tr!.id, "clients", async () => "ok")).rejects.toSatisfy(isSubscriptionLimitError);

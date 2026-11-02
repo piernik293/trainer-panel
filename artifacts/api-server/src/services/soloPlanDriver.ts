@@ -59,7 +59,8 @@ export async function generateSoloPlan(clientId: number, now: Date = new Date())
       .where(and(eq(workoutPlansTable.clientId, clientId), eq(workoutPlansTable.createdBy, "solo"), gte(workoutPlansTable.createdAt, since))).orderBy(desc(workoutPlansTable.createdAt)).limit(1);
     if (last) {
       const next = isoDay(addDays(last.createdAt, SOLO_PLAN_COOLDOWN_DAYS));
-      return { ok: false, code: "PLAN_LIMIT", message: `Nowy plan możesz ułożyć raz na ${SOLO_PLAN_COOLDOWN_DAYS} dni. Następny: ${next}.`, retryAfter: next };
+      const daysLeft = Math.max(1, Math.ceil((addDays(last.createdAt, SOLO_PLAN_COOLDOWN_DAYS).getTime() - Date.now()) / 86_400_000));
+      return { ok: false, code: "PLAN_LIMIT", message: `Nowy plan możesz ułożyć za ${daysLeft} ${daysLeft === 1 ? "dzień" : "dni"} — ciało potrzebuje czasu na efekty.`, retryAfter: next };
     }
   }
 
