@@ -128,7 +128,7 @@ export type StepId =
   | "frequency" | "session"
   | "injury" | "healthDesc"
   | "activity" | "sleep" | "stress"
-  | "cardioPref" | "cardioFreq" | "cardioType"
+  | "cardioPref" | "cardioType"
   | "planStyle" | "avoided" | "favorite" | "priority" | "methodsList" | "additional";
 
 export interface Stage {
@@ -146,7 +146,7 @@ export const STAGES: Stage[] = [
   { id: "time", name: "Czas i częstotliwość", steps: ["frequency", "session"] },
   { id: "health", name: "Zdrowie i ograniczenia", steps: ["injury", "healthDesc"] },
   { id: "life", name: "Styl życia", steps: ["activity", "sleep", "stress"] },
-  { id: "cardio", name: "Cardio", steps: ["cardioFreq", "cardioPref", "cardioType"] },
+  { id: "cardio", name: "Cardio", steps: ["cardioPref", "cardioType"] },
   { id: "prefs", name: "Preferencje planu", steps: ["planStyle", "avoided", "favorite", "priority", "methodsList", "additional"] },
 ];
 
@@ -172,7 +172,7 @@ export function isStepVisible(id: StepId, a: Answers, prefill: Prefill = {}): bo
       return showJumpExperience(a.trainingGoal);
     case "duration":
       return showTrainingDurationField(a.experienceLevel);
-    // The cardio form is asked only when the client wants cardio in the plan ("Tak"); "minimum" skips it.
+    // The cardio form is asked only when the client wants cardio in the plan ("Tak"); "Nie" skips it.
     case "cardioType":
       return normalizeCardioPreference(a.cardioPreference) === "include";
     case "equipment":
@@ -249,7 +249,7 @@ export function normalizeAnswers(input: Answers, prefill: Prefill = {}): Answers
   // The removed answer "Cardio może być dodatkiem do planu" (and earlier wordings) map to the two current ones.
   const cardio = normalizeCardioPreference(a.cardioPreference);
   if (cardio === "include") a.cardioPreference = CARDIO_PREFERENCE_OPTIONS[0];
-  else if (cardio === "minimum") a.cardioPreference = CARDIO_PREFERENCE_OPTIONS[1];
+  else if (cardio === "none") a.cardioPreference = CARDIO_PREFERENCE_OPTIONS[1];
   a.avoidsAdvancedMethods = ""; // legacy draft field — derived from the methods list in the payload
   if (!isStepVisible("methodsList", a, prefill)) a.advancedMethodsToAvoid = [];
   return a;

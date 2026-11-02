@@ -61,7 +61,7 @@ const base: Answers = {
   experienceLevel: "Początkujący", trainingLocation: "Siłownia",
   desiredWeeklyFrequency: 3, sessionDuration: "45–60 min",
   injuryStatus: "Nie", activityLevel: "Siedzący", sleepHours: "7–8 godzin", stressLevel: 4,
-  cardioPreference: "Tak, uwzględnij cardio w planie", cardioFrequency: "1 raz w tygodniu", preferredCardioType: "Marsz",
+  cardioPreference: "Tak", cardioFrequency: "", preferredCardioType: "Marsz",
   planStylePreference: "Balans efektywności i wygody", favoriteExercises: [{ id: 1, name: "Przysiad" }, { id: 2, name: "Wiosłowanie" }],
   priorityMuscle1: "barki", additionalInfo: "Pracuję zmianowo",
 };
@@ -209,11 +209,11 @@ describe("question count (before = after)", () => {
     const all = STAGES.flatMap((s) => s.steps);
     expect(new Set(all).size).toBe(all.length);
     expect(STAGES).toHaveLength(9);
-    // beginner / gym / no injury: 19 screens (C3: no "favorite", "priority", "cardioPref" for beginners; the former yes/no "methods" screen is merged into "Metody do unikania")
-    expect(visibleSteps(base)).toHaveLength(19);
+    // beginner / gym / no injury: 18 screens (cardio frequency question removed) (C3: no "favorite", "priority", "cardioPref" for beginners; the former yes/no "methods" screen is merged into "Metody do unikania")
+    expect(visibleSteps(base)).toHaveLength(18);
     expect(visibleSteps({ ...base, experienceLevel: "Średniozaawansowany", trainingDuration: "3 lata" })).toEqual(expect.arrayContaining(["favorite", "priority", "cardioPref"]));
-    // the longest path (sport goal, home, injury): 29 screens — "jumps" (experience with jumps) exists only with "Cel sportowy"
-    expect(visibleSteps({ ...base, experienceLevel: "Zaawansowany", trainingLocation: "Dom", injuryStatus: "Tak", trainingGoal: "Cel sportowy", trainingDuration: "5 lat" })).toHaveLength(29);
+    // the longest path (sport goal, home, injury): 28 screens — "jumps" (experience with jumps) exists only with "Cel sportowy"
+    expect(visibleSteps({ ...base, experienceLevel: "Zaawansowany", trainingLocation: "Dom", injuryStatus: "Tak", trainingGoal: "Cel sportowy", trainingDuration: "5 lat" })).toHaveLength(28);
   });
 });
 
@@ -229,7 +229,7 @@ describe("validation as in the old form", () => {
     expect(validateStep("frequency", { ...base, desiredWeeklyFrequency: 8 })).toBeTruthy();
     expect(validateStep("equipment", { ...base, equipmentItems: [], equipmentOther: "" })).toBeTruthy();
     expect(validateStep("equipment", { ...base, equipmentOther: "Piłka" })).toBeNull();
-    for (const optional of ["motivation", "duration", "stress", "cardioPref", "cardioFreq", "cardioType", "avoided", "favorite", "priority", "methodsList", "additional"] as StepId[]) {
+    for (const optional of ["motivation", "duration", "stress", "cardioPref", "cardioType", "avoided", "favorite", "priority", "methodsList", "additional"] as StepId[]) {
       expect(validateStep(optional, EMPTY_ANSWERS), optional).toBeNull();
     }
   });
@@ -299,7 +299,7 @@ describe("krótszy wywiad dla „Brak aktywności” i „Początkujący” (C3)
     expect(visibleSteps({ ...base, experienceLevel: "Początkujący", injuryStatus: "Tak" })).toEqual(expect.arrayContaining(["injury", "healthDesc"]));
   });
   it("odpowiedzi z ukrytych ekranów nie trafiają do wysyłki", () => {
-    const p = buildSurveyPayload({ ...base, experienceLevel: "Początkujący", priorityMuscle1: "barki", favoriteExercises: [{ id: 1, name: "Przysiad" }], cardioPreference: "Tylko niezbędne minimum" });
+    const p = buildSurveyPayload({ ...base, experienceLevel: "Początkujący", priorityMuscle1: "barki", favoriteExercises: [{ id: 1, name: "Przysiad" }], cardioPreference: "Nie" });
     expect(p.priorityMuscle1 ?? "").toBe("");
     expect(p.favoriteExercises ?? "").toBe("");
     expect(p.cardioPreference ?? "").toBe("");

@@ -28,15 +28,18 @@ const DROPPED: Record<string, string> = {
   "Na tym etapie nie musisz wybierać konkretnych priorytetów": "decyzja 23.10 (pkt 6): początkujący wybiera jedną partię; tekst „Wybierz jedną partię, na której chcesz się skupić. Plan i tak rozwinie całe ciało.”",
   "Na początku łatwo pochopnie ocenić": "decyzja 23.10 (pkt 6): zastąpione tym samym nowym tekstem pod pytaniem",
   "💡 Ta informacja pomoże": "decyzja 23.10 (pkt 9): zdanie bez emoji i bez słowa „treningowy”, tylko na ekranie „Jak często wykonujesz cardio?”",
+  "Pomaga dobrać ilość aktywności": "blok 2 (4.11.2026): jedno pytanie „Czy chcesz uwzględnić cardio w planie?” z odpowiedzią Tak/Nie, bez opisu",
+  "💡 Przy tym celu treningi cardio": "blok 2 (4.11.2026): bez namawiania — tylko „Możesz to zmienić później.”",
+  "👍 To nie problem": "blok 2 (4.11.2026): bez namawiania i uspokajania po odpowiedzi „Nie”",
   "Zaznacz tylko te metody": "decyzja 23.10 (pkt 8): pytanie odwrócone na „Metody do unikania” (stary tekst opisywał metody, które klient CHCE stosować, a zapisywał je jako unikane)",
   "Nie kieruj się wyłącznie liczbą lat treningu": "decyzja 23.10: kłóci się z regułą 2 lat; zastąpione zdaniem „Wybierz opis, który najlepiej do Ciebie pasuje…”",
 };
 
 const base: Answers = { ...EMPTY_ANSWERS, healthConsent: true, firstName: "Ala", lastName: "T", email: "a@example.com", dateOfBirth: "1992-05-10", gender: "Kobieta", heightCm: 168, weightKg: "62", sessionDuration: "45–60 min", desiredWeeklyFrequency: 3 };
 const PROFILES: Answers[] = [
-  { ...base, trainingGoal: "Redukcja tkanki tłuszczowej", experienceLevel: "Początkujący", trainingLocation: "Dom", injuryStatus: "Tak", activityLevel: "Siedzący", cardioPreference: "Tylko niezbędne minimum", planStylePreference: "Prosty i łatwy do utrzymania" },
-  { ...base, trainingGoal: "Cel sportowy", athleteStatus: "Hobbystycznie", experienceLevel: "Zaawansowany", trainingLocation: "Siłownia plenerowa", injuryStatus: "Nie", avoidsAdvancedMethods: "Tak", cardioPreference: "Tak, uwzględnij cardio w planie" },
-  { ...base, trainingGoal: "Budowa sylwetki", experienceLevel: "Średniozaawansowany", trainingDuration: "3 lata", trainingLocation: "Siłownia", injuryStatus: "Nie", avoidsAdvancedMethods: "Nie", cardioPreference: "Tylko niezbędne minimum" },
+  { ...base, trainingGoal: "Redukcja tkanki tłuszczowej", experienceLevel: "Początkujący", trainingLocation: "Dom", injuryStatus: "Tak", activityLevel: "Siedzący", cardioPreference: "Nie", planStylePreference: "Prosty i łatwy do utrzymania" },
+  { ...base, trainingGoal: "Cel sportowy", athleteStatus: "Hobbystycznie", experienceLevel: "Zaawansowany", trainingLocation: "Siłownia plenerowa", injuryStatus: "Nie", avoidsAdvancedMethods: "Tak", cardioPreference: "Tak" },
+  { ...base, trainingGoal: "Budowa sylwetki", experienceLevel: "Średniozaawansowany", trainingDuration: "3 lata", trainingLocation: "Siłownia", injuryStatus: "Nie", avoidsAdvancedMethods: "Nie", cardioPreference: "Nie" },
   { ...base, trainingGoal: "Poprawa kondycji", experienceLevel: "Brak aktywności fizycznej", trainingLocation: "Siłownia", injuryStatus: "Nie" },
 ];
 

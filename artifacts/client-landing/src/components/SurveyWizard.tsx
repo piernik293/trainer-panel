@@ -12,7 +12,6 @@ import { SECTION_TEXT, HINT_TEXT, LOCATION_DESC, PLAN_STYLE_DESC } from "@/lib/s
 import {
   ADVANCED_METHODS,
   ACTIVITY_LEVEL_OPTIONS,
-  CARDIO_AVOID_REASSURANCE_TEXT,
   birthDateBounds,
   birthDateError,
   heightError,
@@ -29,9 +28,9 @@ import {
   resolveEffectiveLevel,
   NO_EQUIPMENT,
   SURVEY_LIMITS,
-  CARDIO_FREQUENCY_OPTIONS,
   CARDIO_PREFERENCE_OPTIONS,
-  CARDIO_RECOMMENDATION_TEXT,
+  CARDIO_QUESTION,
+  CARDIO_QUESTION_HINT,
   equipmentOptionsFor,
   JUMP_EXPERIENCE_OPTIONS,
   JUMP_EXPERIENCE_QUESTION,
@@ -51,7 +50,6 @@ import {
   calculateAge,
   getLocalDateString,
   isBeginnerLevel,
-  isCardioRelevant,
 } from "@workspace/survey-config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -696,21 +694,13 @@ export default function SurveyWizard({
         );
       case "cardioPref":
         return (
-          <Section id={id} headingRef={heading} title="Jak uwzględnić cardio w planie?" lead={<Opt text={SECTION_TEXT.cardio} />}>
-            {isCardioRelevant(answers.trainingGoal, answers.activityLevel) && <Note>{CARDIO_RECOMMENDATION_TEXT}</Note>}
+          <Section id={id} headingRef={heading} title={CARDIO_QUESTION} lead={CARDIO_QUESTION_HINT}>
             <ChoiceList
               name="Cardio w planie"
               options={CARDIO_PREFERENCE_OPTIONS.map((v) => ({ value: v, label: v }))}
               value={answers.cardioPreference}
               onChange={(v) => choose({ cardioPreference: v })}
             />
-            {normalizeCardioPreference(answers.cardioPreference) === "minimum" && <Note>{CARDIO_AVOID_REASSURANCE_TEXT}</Note>}
-          </Section>
-        );
-      case "cardioFreq":
-        return (
-          <Section id={id} headingRef={heading} title="Jak często wykonujesz cardio?" lead={<Opt text={HINT_TEXT.cardioFreq} />}>
-            <ChoiceList name="Częstotliwość cardio" options={CARDIO_FREQUENCY_OPTIONS.map((v) => ({ value: v, label: v }))} value={answers.cardioFrequency} onChange={(v) => choose({ cardioFrequency: v })} />
           </Section>
         );
       case "cardioType": {
@@ -963,7 +953,6 @@ export function summaryText(id: StepId, a: Answers): string {
     case "sleep": return a.sleepHours;
     case "stress": return a.stressLevel !== undefined ? `stres ${a.stressLevel}/10` : "";
     case "cardioPref": return a.cardioPreference;
-    case "cardioFreq": return a.cardioFrequency;
     case "cardioType": return a.preferredCardioType;
     case "planStyle": return a.planStylePreference;
     case "avoided": return [...a.avoidedExercises.map((e) => e.name), a.avoidedOtherText].filter(Boolean).join(", ");

@@ -170,7 +170,7 @@ describe("summary", () => {
     mount();
     expect(question()).toBe("Sprawdź swoje odpowiedzi");
     const rows = screen.getAllByTestId("summary-stage");
-    expect(rows).toHaveLength(9);
+    expect(rows).toHaveLength(8); // stage "Cardio" is hidden for beginners (no questions left in it)
     fireEvent.click(within(rows[1]).getByRole("button", { name: /Zmień/ }));
     expect(question()).toBe("Jaki jest Twój cel treningowy?");
     fireEvent.click(screen.getByLabelText("Wstecz"));
@@ -372,7 +372,11 @@ describe("goals with descriptions, recommended session length, priority groups (
   it("cardio: two options only", () => {
     open("cardioPref");
     const group = screen.getByRole("radiogroup", { name: "Cardio w planie" });
-    expect(within(group).getAllByRole("radio").map((r) => (r as HTMLInputElement).value)).toEqual(["Tak, uwzględnij cardio w planie", "Tylko niezbędne minimum"]);
+    expect(within(group).getAllByRole("radio").map((r) => (r as HTMLInputElement).value)).toEqual(["Tak", "Nie"]);
+    expect(question()).toBe("Czy chcesz uwzględnić cardio w planie?");
+    expect(document.body.textContent).toContain("Możesz to zmienić później.");
+    expect(document.body.textContent).not.toContain("Tylko niezbędne minimum");
+    expect(document.body.textContent).not.toContain("często wspierają");
     expect(screen.queryByText(/dodatkiem do planu/)).toBeNull();
   });
 });
@@ -387,19 +391,19 @@ describe("cardio: no instant advance, silent 20 s countdown cancelled by any int
 
   it("does not move on after the choice; the hint stays readable; moves on after 20 s", () => {
     open();
-    choose("Tylko niezbędne minimum");
+    choose("Nie");
     idle(1000);
-    expect(question()).toBe("Jak uwzględnić cardio w planie?");
-    expect(screen.getByText(/To nie problem/)).toBeTruthy(); // the reassurance under the choice
+    expect(question()).toBe("Czy chcesz uwzględnić cardio w planie?");
+    expect(document.body.textContent).not.toContain("To nie problem"); // no persuasion under the choice
     idle(18_000);
-    expect(question()).toBe("Jak uwzględnić cardio w planie?"); // 19 s: still here
+    expect(question()).toBe("Czy chcesz uwzględnić cardio w planie?"); // 19 s: still here
     idle(1500);
     expect(question()).toBe("Jaki styl planu Ci odpowiada?"); // "minimum": the form-of-activity screen is skipped
   });
 
   it("no visible counter", () => {
     open();
-    choose("Tak, uwzględnij cardio w planie");
+    choose("Tak");
     expect(document.body.textContent).not.toMatch(/\b\d+\s*s\b|za \d+|sekund|odliczani/i);
   });
 
@@ -411,22 +415,22 @@ describe("cardio: no instant advance, silent 20 s countdown cancelled by any int
     ["the pointer", () => fireEvent.pointerDown(document.body)],
   ])("%s cancels the countdown — then only 'Dalej' moves on", (_n, interact) => {
     open();
-    choose("Tak, uwzględnij cardio w planie");
+    choose("Tak");
     idle(2000);
     interact();
     idle(60_000);
-    expect(question()).toBe("Jak uwzględnić cardio w planie?");
+    expect(question()).toBe("Czy chcesz uwzględnić cardio w planie?");
     fireEvent.click(screen.getByTestId("next"));
     expect(question()).toBe("Jaka forma aktywności tlenowej najbardziej Ci odpowiada?"); // "Tak": the form screen follows
   });
 
   it("changing the answer cancels it too", () => {
     open();
-    choose("Tak, uwzględnij cardio w planie");
+    choose("Tak");
     idle(500);
-    choose("Tylko niezbędne minimum");
+    choose("Nie");
     idle(60_000);
-    expect(question()).toBe("Jak uwzględnić cardio w planie?");
+    expect(question()).toBe("Czy chcesz uwzględnić cardio w planie?");
   });
 
   it("other single-choice questions keep the short auto-advance", () => {
@@ -479,37 +483,31 @@ describe("Cardio stage: frequency → inclusion → form (only for 'Tak') (23.10
   };
   const HINT = "Ta informacja pomoże lepiej dopasować plan do celu oraz preferencji. Cardio nie jest obowiązkowym elementem każdego planu.";
 
-  it("order of the screens and the hint only on 'Jak często wykonujesz cardio?'", () => {
-    const ids = visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Tak, uwzględnij cardio w planie" }).filter((i) => i.startsWith("cardio"));
-    expect(ids).toEqual(["cardioFreq", "cardioPref", "cardioType"]);
-    open("cardioFreq");
-    expect(question()).toBe("Jak często wykonujesz cardio?");
-    expect(document.body.textContent!.split(HINT).length - 1).toBe(1); // once
-    cleanup();
+  it("the question about current cardio frequency is gone; one question, then the form", () => {
+    const ids = visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Tak" }).filter((i) => i.startsWith("cardio"));
+    expect(ids).toEqual(["cardioPref", "cardioType"]);
     open("cardioPref");
-    expect(document.body.textContent).not.toContain("Ta informacja pomoże");
-    cleanup();
-    open("cardioType", { cardioPreference: "Tak, uwzględnij cardio w planie" });
+    expect(document.body.textContent).not.toContain("Jak często wykonujesz cardio");
     expect(document.body.textContent).not.toContain("Ta informacja pomoże");
   });
 
   it("'Tak' → the form-of-activity screen is shown", () => {
-    const ids = visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Tak, uwzględnij cardio w planie" });
+    const ids = visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Tak" });
     expect(ids).toContain("cardioType");
   });
   it("'minimum' (or no answer) → the screen is skipped and the answer cleared", () => {
-    expect(visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Tylko niezbędne minimum" })).not.toContain("cardioType");
+    expect(visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Nie" })).not.toContain("cardioType");
     expect(visibleSteps({ ...EMPTY_ANSWERS })).not.toContain("cardioType");
-    expect(normalizeAnswers({ ...EMPTY_ANSWERS, cardioPreference: "Tylko niezbędne minimum", preferredCardioType: "Bieganie" }).preferredCardioType).toBe("");
+    expect(normalizeAnswers({ ...EMPTY_ANSWERS, cardioPreference: "Nie", preferredCardioType: "Bieganie" }).preferredCardioType).toBe("");
     // a legacy "dodatek" answer counts as "Tak"
     expect(visibleSteps({ ...EMPTY_ANSWERS, cardioPreference: "Cardio może być dodatkiem do planu" })).toContain("cardioType");
   });
   it("payload for 'Tak' keeps the form; for 'minimum' the form is empty", () => {
-    const base: Answers = { ...EMPTY_ANSWERS, firstName: "A", lastName: "B", email: "a@b.pl", cardioFrequency: "1 raz w tygodniu" };
-    const yes = buildSurveyPayload({ ...base, cardioPreference: "Tak, uwzględnij cardio w planie", preferredCardioType: "Rower" });
-    expect(yes).toMatchObject({ cardioPreference: "Tak, uwzględnij cardio w planie", cardioFrequency: "1 raz w tygodniu", preferredCardioType: "Rower" });
-    const min = buildSurveyPayload({ ...base, cardioPreference: "Tylko niezbędne minimum", preferredCardioType: "Rower" });
-    expect(min["cardioPreference"]).toBe("Tylko niezbędne minimum");
+    const base: Answers = { ...EMPTY_ANSWERS, firstName: "A", lastName: "B", email: "a@b.pl", cardioFrequency: "" };
+    const yes = buildSurveyPayload({ ...base, cardioPreference: "Tak", preferredCardioType: "Rower" });
+    expect(yes).toMatchObject({ cardioPreference: "Tak", cardioFrequency: "", preferredCardioType: "Rower" });
+    const min = buildSurveyPayload({ ...base, cardioPreference: "Nie", preferredCardioType: "Rower" });
+    expect(min["cardioPreference"]).toBe("Nie");
     expect(min["preferredCardioType"] ?? "").toBe("");
   });
   it("footer: '© rok Optimatren', no old brand text", () => {

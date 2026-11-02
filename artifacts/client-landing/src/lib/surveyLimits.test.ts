@@ -80,10 +80,10 @@ describe("hint next to the disabled 'Dalej' says what to fill in", () => {
 
 describe("cardio preference in drafts and priority muscles by effective level", () => {
   const A = (over: Partial<Answers>): Answers => ({ ...EMPTY_ANSWERS, ...over });
-  it("an older draft with the removed answer is shown as 'Tak, uwzględnij cardio w planie'", () => {
-    expect(normalizeAnswers(A({ cardioPreference: "Cardio może być dodatkiem do planu" })).cardioPreference).toBe("Tak, uwzględnij cardio w planie");
-    expect(normalizeAnswers(A({ cardioPreference: "Chętnie uwzględnię cardio w planie" })).cardioPreference).toBe("Tak, uwzględnij cardio w planie");
-    expect(normalizeAnswers(A({ cardioPreference: "Wolę ograniczyć cardio do niezbędnego minimum" })).cardioPreference).toBe("Tylko niezbędne minimum");
+  it("an older draft with the removed answer is shown as 'Tak'", () => {
+    expect(normalizeAnswers(A({ cardioPreference: "Cardio może być dodatkiem do planu" })).cardioPreference).toBe("Tak");
+    expect(normalizeAnswers(A({ cardioPreference: "Chętnie uwzględnię cardio w planie" })).cardioPreference).toBe("Tak");
+    expect(normalizeAnswers(A({ cardioPreference: "Wolę ograniczyć cardio do niezbędnego minimum" })).cardioPreference).toBe("Nie");
     expect(normalizeAnswers(A({ cardioPreference: "" })).cardioPreference).toBe("");
   });
   it("beginners have no priority groups (screen skipped, C3), others three", () => {

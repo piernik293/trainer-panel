@@ -437,3 +437,6 @@
 
 ## 3.11.2026 — blok 7: okres próbny trenera (gałąź `fix/okres-probny`)
 - Migracja 0066 (kopia `~/backups/trainer_panel_przed_0066_*`), `services/trial.ts`, plan „Okres próbny” w `ensureSubscription`, `trial` w podsumowaniu subskrypcji, `POST /admin/trainers/:id/trial/extend`, baner na pulpicie, kolumna i przycisk w administracji, komunikat limitu planu Solo; testy `okres-probny` + poprawione założenia 3 testów limitów.
+
+## 4.11.2026 — blok 2: wywiad, cardio (gałąź `fix/wywiad-cardio`)
+- Jedno pytanie Tak/Nie w portalu i w formularzu trenera; `wantsCardio` w `lib/survey-config`; generator rekomendacji cardio (panel) i `planDraftInputService` (serwer) respektują „Nie”; testy `cardio-nie`, `cardio-preference`, zaktualizowane testy kreatora.
