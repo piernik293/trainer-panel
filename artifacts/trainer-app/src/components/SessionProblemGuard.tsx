@@ -29,7 +29,7 @@ export function SessionProblemGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     const on401 = () => {
       if (isSignedIn) setRejected(true);
-      else navigate("/trainer/sign-in");
+      else navigate("/sign-in");
     };
     const unsubQueries = queryClient.getQueryCache().subscribe((event) => {
       if (event.type === "updated" && event.action.type === "error" && isUnauthorized(event.action.error)) on401();

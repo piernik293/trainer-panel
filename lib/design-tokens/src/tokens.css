@@ -332,6 +332,11 @@
   }
 }
 
+/* login-full: photo as the dim background of the whole page; the form is centred above it (same look in panel and portal) */
+.app-hero--login-full { position: fixed; inset: 0; z-index: 0; }
+.app-hero--login-full .app-hero__img { object-position: 60% 50%; }
+.app-hero--login-full .app-hero__scrim { background: rgba(14, 12, 11, .66); }
+
 /* portal welcome: header band, text on a dark scrim from the left */
 .app-hero--portal-welcome { display: flex; align-items: center; min-height: 7.5rem; padding: 1rem 1.5rem; }
 .app-hero--portal-welcome .app-hero__scrim {

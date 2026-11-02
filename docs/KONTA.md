@@ -78,3 +78,20 @@ Tabela rola × zasób: klient A1 nie widzi danych A2 ani B1; trener A nie widzi 
 - **Odłączenie.** Może każda strona (`POST /clients/:id/disconnect`, `POST /client-portal/disconnect`); mail do drugiej strony (jeśli skonfigurowano pocztę); `trainer_id` = NULL, historia treningów zostaje u osoby, trener traci dostęp. Zdarzenia zapisują się w `client_link_events`.
 - **Ekran bez trenera.** W portalu osoba bez trenera widzi „Trening samodzielny — wkrótce” (bez martwych przycisków) i pole na kod trenera.
 - **Ponowny wniosek o konto trenera (2e) — tylko model, panel po becie.** Odrzucony wniosek można ponowić po 14 dniach od odrzucenia. Model: tabela `trainer_applications` (clerk_user_id, status pending/accepted/rejected, created_at, decided_at, opcjonalna notka); reguła: nowy wniosek dozwolony, gdy brak wniosku `pending` i `decided_at` starsze niż 14 dni. Akceptacja nadaje rolę trenera (rekord `trainers`); `TRAINER_CLERK_IDS` zostaje jako lista awaryjna. Nie zbudowane w tej gałęzi (blok 6).
+
+## Jedno logowanie, jedno konto (wdrożone 2.11.2026, gałąź `feature/jedno-logowanie`)
+
+**Dla użytkownika.** Jest jedna strona logowania „Zaloguj się do Optimatren” (adres `/sign-in`, rejestracja `/sign-up`), bez słów „trener” i „klient” i bez linków do drugiego wejścia. Stare adresy działają: `/trainer/sign-in` przekierowuje na `/sign-in`, a portal bez sesji (`/client-landing/…`) odsyła na tę samą stronę. Linki z zaproszeń (`/client-landing/survey/…`, `/invite/…`, `/join/…`) działają jak dotąd, z własnym ekranem.
+
+**Kto dokąd trafia (decyduje serwer).** Po zalogowaniu strona `/auth/redirect` pyta `GET /api/account/home`:
+| Konto | Wynik | Gdzie |
+|---|---|---|
+| trener (także administrator i konto zatwierdzone w `.env`) | `panel` | `/` |
+| podopieczny trenera | `portal` (połączony) | `/client-landing/plan` („Dziś”) |
+| konto bez trenera i bez roli trenera (także zupełnie nowe) | `portal` (niepołączone) | ekran „Witaj w Optimatren — Połącz się z trenerem” (kod lub link; przy `SOLO_ENABLED` start Solo), zamiast „Klient nie znaleziony” |
+| trener zablokowany przez administratora | `blocked` | komunikat „To konto jest zablokowane” + „Wyloguj się” |
+Samo wywołanie niczego nie tworzy. Konto **nigdy nie staje się trenerem bez akceptacji administratora** (wniosek: „Ty” → „Prowadzę podopiecznych”; ekran „Poproś o dostęp trenera” w panelu zostaje jako zabezpieczenie dla kogoś, kto wejdzie na stary adres). Trener nie widzi danych osoby bez akceptacji połączenia (bez zmian).
+
+**Trener z własnym treningiem.** Konto zaakceptowane jako trener może być jednocześnie kontem podopiecznego (własny trening, połączony z trenerem albo bez). W panelu (menu boczne) i w portalu (nagłówek, menu mobilne) jest przełącznik **[Mój trening] [Podopieczni]**. Poprawka przy okazji: `POST /api/trainer/profile` zwraca istniejący profil trenera także dla konta, które ma wiersz klienta (wcześniej taki trener dostawał „To konto należy do klienta”).
+
+**Po przejściu na domenę (np. `app.twojadomena.pl`).** Panel i portal mogą zostać dwiema aplikacjami za jednym adresem: panel pod `/` (albo `/trener`), portal pod `/client-landing/` (albo `/app`), API pod `/api` — tak jak dziś w Vite i jak w `deploy/Caddyfile.example`. Sesja Clerk jest **wspólna**, bo obie aplikacje działają na tym samym hoście i tym samym kluczu Clerk (ciasteczko sesji dotyczy hosta, nie ścieżki). Zmiana ścieżek (`/app`, `/trener`) wymaga tylko `BASE_PATH` obu aplikacji, stałych `PORTAL_HOME_PATH` / `AUTH_REDIRECT_PATH` (`trainer-app/src/lib/authHome.ts`) i przekierowania w `SignInGate` portalu. Bez wspólnej domeny (np. panel i portal na różnych subdomenach) trzeba ustawić Clerk na domenę nadrzędną, żeby sesja była wspólna.

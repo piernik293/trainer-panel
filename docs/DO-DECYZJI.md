@@ -214,3 +214,8 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 ### Potwierdzenie decyzji (29.10.2026, druga wiadomość)
 - Pkt 1 (flagi) i 2 (`@reboot` z kopią) — wykonane wcześniej, bez zmian.
 - **N3-2 zmiana:** `CONTACT_EMAIL` w `.env` jest **pusty** (zamiast szablonu `TU_ADRES`); wtedy ekran „Poproś o dostęp trenera” pokazuje tylko przycisk. Adres właściciel poda później — wpisać w `.env` i zrestartować API.
+
+## Jedno logowanie (U1/U2) — wykonane 2.11.2026, gałąź `feature/jedno-logowanie`
+- Stare → nowe: dwa wejścia („Panel trenera” i „Portal klienta”) → jedna strona „Zaloguj się do Optimatren” (`/sign-in`); po zalogowaniu serwer kieruje wg roli (panel / portal / zablokowany); konto bez trenera zamiast „Klient nie znaleziony” widzi „Witaj w Optimatren — połącz się z trenerem”; przełącznik [Mój trening] [Podopieczni] w panelu i portalu. Wygląd: zdjęcie siłowni jako przyciemnione tło całej strony, formularz na środku (także 1440 px), logo i nazwa nad nim.
+- Poprawka błędu znalezionego w teście: podopieczny zaakceptowany jako trener nie mógł otworzyć panelu (`CLIENT_ACCOUNT`) — teraz może (zasada „bez akceptacji nie ma trenera” bez zmian).
+- **Do decyzji:** (1) trener bez własnego konta podopiecznego nie ma co przełączać — przełącznik pokazuje się dopiero, gdy ma wiersz klienta (przy włączonym Solo można mu go zakładać automatycznie; teraz Solo jest wyłączone); (2) strona rejestracji jest wspólna — ludzie z linku od trenera nadal najlepiej rejestrują się przez link (ekran zaproszenia), nie przez `/sign-up`.

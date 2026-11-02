@@ -10,13 +10,15 @@ import dark1600 from "./hero-dark-1600.webp";
  *
  *  - "login": right half of the screen on desktop, a narrow strip on top on phones.
  *    The parent must be `position: relative`.
+ *  - "login-full": the whole page (fixed, behind everything) with a dark scrim — the shared sign-in look: the form sits
+ *    in the middle of the screen on every width. Use with tone="dark".
  *  - "portal-welcome": short header band; `children` is the text laid over the
  *    photo (the scrim on the text side keeps contrast >= 4.5:1).
  *
  * The photo is decorative (alt=""). Layout and the fade-in are plain CSS in
  * tokens.css (.app-hero*), the fade only runs for prefers-reduced-motion: no-preference.
  */
-export type AppHeroVariant = "login" | "portal-welcome";
+export type AppHeroVariant = "login" | "portal-welcome" | "login-full";
 
 const SOURCES = {
   duotone: { small: duotone800, large: duotone1600 },
@@ -49,7 +51,7 @@ export function AppHero({
         sizes={variant === "login" ? "(min-width: 768px) 50vw, 100vw" : "100vw"}
         alt=""
         decoding="async"
-        fetchPriority={variant === "login" ? "high" : undefined}
+        fetchPriority={variant !== "portal-welcome" ? "high" : undefined}
         onLoad={(e) => e.currentTarget.classList.add("is-loaded")}
         ref={(el) => {
           if (el?.complete) el.classList.add("is-loaded");

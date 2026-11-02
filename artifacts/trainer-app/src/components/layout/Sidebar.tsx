@@ -10,6 +10,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { AccountMenu } from "./AccountMenu";
+import { RoleSwitch } from "@/components/RoleSwitch";
 
 const navItems = [
   { href: "/", label: "Pulpit", icon: LayoutDashboard },
@@ -58,7 +59,8 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
       </div>
 
       <div className="mt-auto border-t border-sidebar-border/50">
-        <div className="p-3">
+        <div className="space-y-2 p-3">
+          <RoleSwitch />
           <AccountMenu />
         </div>
         <div className="px-4 pb-4">
