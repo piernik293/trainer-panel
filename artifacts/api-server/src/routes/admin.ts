@@ -20,6 +20,7 @@ import {
 } from "@workspace/db";
 import { requireAuth, checkIsAppAdmin } from "../middlewares/requireAuth";
 import { recordError } from "../services/errorLog";
+import { trialInfo, extendedTrialEnd } from "../services/trial";
 import { SUBSCRIPTION_PLANS, getSubscriptionPeriod, type PlanCode } from "../services/subscriptionService";
 
 const router: IRouter = Router();
@@ -83,7 +84,7 @@ router.get("/admin/trainers", ...admin, async (_req, res): Promise<void> => {
   res.json({
     trainers: trainers.map((t) => ({
       id: t.id, name: t.displayName, label: t.displayName ?? t.email ?? `Konto …${t.clerkUserId.slice(-6)}`, email: t.email, planCode: plan.get(t.id) ?? "FREE", clients: nClients.get(t.id) ?? 0,
-      lastActivity: lastOf(t.id), createdAt: t.createdAt, blocked: t.blockedAt != null, isAdmin: checkIsAppAdmin(t.clerkUserId),
+      lastActivity: lastOf(t.id), createdAt: t.createdAt, blocked: t.blockedAt != null, trialEndsAt: t.trialEndsAt, trial: trialInfo(t.trialEndsAt), isAdmin: checkIsAppAdmin(t.clerkUserId),
     })),
     howToAddTrainer: "Nowego trenera dopuszcza lista w pliku .env (TRAINER_CLERK_IDS): dopisz jego identyfikator Clerk po przecinku i uruchom ponownie serwer (scripts/stop-gcp.sh && scripts/dev-gcp.sh). Lista nie jest zmieniana z aplikacji.",
   });
@@ -98,6 +99,16 @@ router.patch("/admin/trainers/:id/plan", ...admin, async (req, res): Promise<voi
   await db.insert(trainerSubscriptionsTable).values({ trainerId: id, planCode: body.data.planCode, status: "active" })
     .onConflictDoUpdate({ target: trainerSubscriptionsTable.trainerId, set: { planCode: body.data.planCode, status: "active", updatedAt: new Date() } });
   res.json({ ok: true, planCode: body.data.planCode });
+});
+
+router.post("/admin/trainers/:id/trial/extend", ...admin, async (req, res): Promise<void> => {
+  const id = idParam(req.params["id"]);
+  if (!id) { res.status(400).json({ error: "Nieprawidłowe dane." }); return; }
+  const [t] = await db.select({ endsAt: trainersTable.trialEndsAt, startedAt: trainersTable.trialStartedAt }).from(trainersTable).where(eq(trainersTable.id, id));
+  if (!t) { res.status(404).json({ error: "Nie znaleziono trenera." }); return; }
+  const endsAt = extendedTrialEnd(t.endsAt);
+  await db.update(trainersTable).set({ trialEndsAt: endsAt, trialStartedAt: t.startedAt ?? new Date() }).where(eq(trainersTable.id, id));
+  res.json({ ok: true, trialEndsAt: endsAt, trial: trialInfo(endsAt) });
 });
 
 router.post("/admin/trainers/:id/block", ...admin, async (req, res): Promise<void> => {

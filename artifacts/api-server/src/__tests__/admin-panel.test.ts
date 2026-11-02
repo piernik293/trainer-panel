@@ -25,6 +25,7 @@ beforeAll(async () => {
   process.env.APP_ADMIN_CLERK_IDS = ADMIN;
   const a = (await provisionTrainer(ADMIN))!, t = (await provisionTrainer(TR))!;
   adminId = a.id; trId = t.id;
+  await db.update(trainersTable).set({ trialEndsAt: new Date(Date.now() - 86_400_000) }).where(eq(trainersTable.id, trId)); // plan Free bez okresu próbnego
   await db.update(trainersTable).set({ blockedAt: null }).where(inArray(trainersTable.id, [adminId, trId]));
   await db.delete(clientsTable).where(inArray(clientsTable.email, EMAILS));
   await db.delete(clientsTable).where(inArray(clientsTable.clerkUserId, [CL, SOLO]));

@@ -11,6 +11,7 @@
  * signed session token, accessed via getAuth(req).
  */
 
+import { newTrialDates } from "../services/trial";
 import type { Request, Response, NextFunction } from "express";
 import { getAuth } from "@clerk/express";
 import { db } from "@workspace/db";
@@ -91,7 +92,7 @@ export async function provisionTrainer(clerkUserId: string): Promise<Trainer | n
     // Attempt insert — silently ignored on duplicate clerk_user_id.
     await tx
       .insert(trainersTable)
-      .values({ clerkUserId })
+      .values({ clerkUserId, ...newTrialDates() })
       .onConflictDoNothing();
 
     // Always SELECT after — returns the row whether it was just inserted or

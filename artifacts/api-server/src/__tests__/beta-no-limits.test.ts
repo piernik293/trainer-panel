@@ -24,6 +24,7 @@ beforeAll(async () => {
   delete process.env.BETA_NO_LIMITS;
   const t = (await provisionTrainer(TR))!; trainerId = t.id;
   await db.delete(clientsTable).where(inArray(clientsTable.email, EMAILS));
+  await db.update(trainersTable).set({ trialEndsAt: new Date(Date.now() - 86_400_000) }).where(eq(trainersTable.id, trainerId)); // limity Free działają po okresie próbnym
   await db.insert(trainerSubscriptionsTable).values({ trainerId, planCode: "FREE", status: "active" }).onConflictDoNothing();
   for (const email of EMAILS) await db.insert(clientsTable).values({ firstName: "Beta", lastName: "Limit", email, trainerId });
 });

@@ -12,7 +12,7 @@ import { humanizeError } from "@/lib/userError";
 import { useDashboardSummary, type DashboardSummary } from "@/lib/dashboardApi";
 import { formatPolishDate, headerSentence } from "@/lib/dashboardFormat";
 import { useSubscriptionSummary } from "@/lib/use-subscription-summary";
-import { LIMITS_NOTICE_KEY, LIMITS_NOTICE_TEXT, showLimitsNotice } from "@/lib/limitsNotice";
+import { LIMITS_NOTICE_KEY, LIMITS_NOTICE_TEXT, showLimitsNotice, trialNotice } from "@/lib/limitsNotice";
 import { AttentionList } from "@/components/dashboard/AttentionList";
 import { RecentEventsCard, TodayCard } from "@/components/dashboard/SideColumn";
 import { ExcelCard, FirstStepsCard, WillAppearCard } from "@/components/dashboard/FirstDay";
@@ -33,7 +33,16 @@ function Tile({ label, value, icon: Icon }: { label: string; value: number; icon
 
 function LimitsNotice() {
   const { data } = useSubscriptionSummary();
+  const trial = trialNotice(data);
   const [seen, setSeen] = useState(() => { try { return window.localStorage.getItem(LIMITS_NOTICE_KEY) === "1"; } catch { return false; } });
+  if (trial) {
+    return (
+      <div role="status" data-testid="trial-notice"
+        className={`rounded-lg border px-4 py-3 text-sm ${trial.urgent ? "border-warning/40 bg-warning-soft text-warning font-medium" : "border-border bg-muted"}`}>
+        {trial.text}
+      </div>
+    );
+  }
   if (!showLimitsNotice(data, seen)) return null;
   return (
     <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted px-4 py-3 text-sm" data-testid="limits-notice">

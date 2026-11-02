@@ -14,3 +14,18 @@ describe("uprzedzenie o limitach (D2)", () => {
     expect(LIMITS_NOTICE_TEXT).not.toMatch(/(łeś|łaś)\b/);
   });
 });
+
+import { trialNotice, TRIAL_ENDED_TEXT } from "../limitsNotice";
+describe("komunikat okresu próbnego", () => {
+  const t = (state: "active" | "ended" | "none", daysLeft: number, showEnded = false) => ({ trial: { state, daysLeft, showEnded } });
+  it("spokojny do 4 dni, wyraźniejszy w ostatnich 3", () => {
+    expect(trialNotice(t("active", 10))).toEqual({ text: "Okres próbny: zostało 10 dni", urgent: false });
+    expect(trialNotice(t("active", 3))?.urgent).toBe(true);
+    expect(trialNotice(t("active", 1))?.text).toBe("Okres próbny: zostało 1 dzień");
+  });
+  it("po terminie: komunikat o planie Free; ukryty przy beta bez limitów i bez planu Free", () => {
+    expect(trialNotice(t("ended", 0, true))?.text).toBe(TRIAL_ENDED_TEXT);
+    expect(trialNotice(t("ended", 0, false))).toBeNull();
+    expect(trialNotice({ ...t("active", 5), noLimits: true })).toBeNull();
+  });
+});
