@@ -98,3 +98,23 @@ Samo wywołanie niczego nie tworzy. Konto **nigdy nie staje się trenerem bez ak
 
 ### „Mój trening” (wdrożone 2.11.2026, gałąź `feature/moj-trening`)
 Każdy trener ma własny profil podopiecznego „Mój trening”: wiersz klienta z tym samym kontem Clerk i `trainer_id` = on sam (bez osobnego trenera prowadzącego). Plan układa sobie w panelu jak każdemu klientowi (wywiad → plan → aktywacja), a portal pokazuje mu „Dziś” — dlatego przełącznik [Mój trening] [Podopieczni] jest zawsze widoczny. Powstaje przy akceptacji wniosku, przy pierwszym wejściu do panelu (`POST /api/trainer/profile`) i w migracji 0064 (obecni trenerzy). Zasady: nie liczy się do limitu klientów i do liczników pulpitu, nie da się go odłączyć ani usunąć (409 `SELF_TRAINING`), inny trener go nie widzi. Trenera, który ma już konto podopiecznego u innego trenera, nie ruszamy (jego „Mój trening” to ten trening).
+
+## Solo jako podstawa każdego konta (wdrożone 2.11.2026, gałąź `feature/solo-baza`)
+**Zasada.** Jedno konto. Każdy nowy użytkownik jest od razu Solo (wiersz klienta bez trenera, powstaje przy pierwszym wejściu do portalu; nigdy nie tworzy trenera). Rangi dochodzą: **podopieczny** — gdy Solo wpisze kod/link trenera i trener zaakceptuje; **trener** — gdy Solo wyśle wniosek („Ty” → „Prowadzę podopiecznych”) i administrator zaakceptuje (albo automat, jeśli włączony). „Mój trening” trenera to jego konto Solo (jeden wiersz, bez duplikatów) — plan może mu ułożyć serwer (Solo) albo on sam w panelu.
+
+**Stany i ekrany (stare → nowe).**
+| Stan | Było | Jest |
+|---|---|---|
+| Nowe konto | „Klient nie znaleziony” / „Napisz do nas” | „Dziś” z dolnym paskiem Dziś·Plan·Postępy·Ty i jedną kartą „Ułóż swój plan (ok. 3 min)”; wywiad dopiero po kliknięciu |
+| Solo bez wywiadu | — | ta sama karta |
+| Solo z planem | — | normalne „Dziś” (trening, kroki), w „Plan” przycisk „Ułóż nowy plan” (limit: 1 na 14 dni) |
+| Wniosek o trenera | karta w „Ty” | zwykły wiersz w „Ty”; po wysłaniu w tym samym wierszu: „Wniosek wysłany — odpowiemy zwykle w ciągu 24 godzin”; odrzucony: ponownie po 14 dniach |
+| Podopieczny (bez planu) | pełnoekranowy komunikat | ten sam portal z paskiem; na „Dziś”: „<Trener> układa Twój plan…” |
+| Trener | panel | panel + przełącznik [Mój trening] [Podopieczni] |
+| Odłączony | — | wraca do Solo, historia zostaje, trener traci dostęp |
+| Zablokowany | błąd | jedyny ekran „To konto jest zablokowane” |
+| Stary adres panelu (konto bez roli trenera) | ekran „brak dostępu” | przekierowanie do portalu, bez komunikatu |
+
+**Połączenie z trenerem (zgoda).** Ekran kodu/linku ma pole „Udostępnij trenerowi wywiad i historię treningów” — domyślnie NIEzaznaczone. Bez zgody: wywiady i zgłoszenia bólu z okresu Solo trafiają do ukrytego archiwum osoby (`services/soloHistory.ts`; wracają po odłączeniu), a trener widzi plany i treningi tylko od chwili akceptacji (`clients.history_visible_from`). Plan Solo osoby trafia do archiwum, gdy trener aktywuje swój. Link od trenera łączy automatycznie jak dotąd; puste konto Solo ustępuje miejsca profilowi z zaproszenia, a konto Solo z własnymi danymi dostaje wskazówkę o kodzie.
+
+**Ograniczenie znane.** Ukrywanie historii obejmuje wywiady, bóle, plany i treningi (trasy trenera: wywiady, plany, treningi, rekordy, zgłoszenia bólu). Pozostałe odczyty trenera nie czytają danych z okresu Solo (powstają one tylko przy planach/treningach), ale pełny przegląd każdej trasy trenera jest do zrobienia przed otwarciem rejestracji.

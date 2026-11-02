@@ -7,17 +7,16 @@
  * portal) are refused with 403 CLIENT_ACCOUNT and see where to go instead.
  */
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useClerk } from "@clerk/react";
 import { Loader2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ErrorState";
-import { AccessRequestCard } from "@/components/AccessRequestCard";
 import { humanizeError } from "@/lib/userError";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-const CLIENT_PORTAL_PATH = "/client-landing/";
+const CLIENT_PORTAL_PATH = "/client-landing/plan";
 
 interface ProfileError extends Error {
   status?: number;
@@ -34,6 +33,16 @@ async function ensureTrainerProfile(): Promise<{ id: number }> {
     }) as ProfileError;
   }
   return body as { id: number };
+}
+
+function PortalRedirect() {
+  useEffect(() => { window.location.replace(CLIENT_PORTAL_PATH); }, []);
+  return (
+    <div className="min-h-screen flex items-center justify-center gap-2 text-muted-foreground" role="status">
+      <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+      Przechodzimy do Twojego konta…
+    </div>
+  );
 }
 
 export function TrainerProfileGate({ children }: { children: ReactNode }) {
@@ -55,32 +64,16 @@ export function TrainerProfileGate({ children }: { children: ReactNode }) {
 
   if (isError) {
     const err = error as ProfileError;
-    if (err.code === "CLIENT_ACCOUNT") {
-      return (
-        <div className="min-h-screen flex items-center justify-center px-4">
-          <div role="alert" className="max-w-md text-center space-y-4">
-            <p className="text-lg font-semibold">To konto należy do klienta</p>
-            <p className="text-sm text-muted-foreground">{err.message}</p>
-            <div className="flex flex-col sm:flex-row gap-2 justify-center">
-              <Button onClick={() => window.location.assign(CLIENT_PORTAL_PATH)}>
-                Przejdź do portalu klienta
-              </Button>
-              <Button variant="outline" className="gap-1.5" onClick={() => void signOut()}>
-                <LogOut size={14} />
-                Wyloguj się
-              </Button>
-            </div>
-          </div>
-        </div>
-      );
+    // Osoba bez roli trenera (nowe konto, podopieczny, Solo) nie dostaje ślepego ekranu: od razu trafia do portalu („Dziś”).
+    if (err.code === "CLIENT_ACCOUNT" || err.code === "TRAINER_NOT_APPROVED" || err.code === "TRAINER_PROFILE_REQUIRED") {
+      return <PortalRedirect />;
     }
-    if (err.code === "TRAINER_NOT_APPROVED") {
+    if (err.code === "ACCOUNT_BLOCKED") {
       return (
         <div className="min-h-screen flex items-center justify-center px-4">
           <div role="alert" className="max-w-md text-center space-y-4">
-            <p className="text-lg font-semibold">To konto nie ma jeszcze dostępu trenera</p>
-            <p className="text-sm text-muted-foreground">Dostęp do panelu przyznajemy po zgłoszeniu. Wyślij wniosek, a my go rozpatrzymy.</p>
-            <AccessRequestCard />
+            <p className="text-lg font-semibold">To konto jest zablokowane</p>
+            <p className="text-sm text-muted-foreground">Skontaktuj się z administratorem.</p>
             <Button variant="outline" className="gap-1.5" onClick={() => void signOut()}>
               <LogOut size={14} />
               Wyloguj się

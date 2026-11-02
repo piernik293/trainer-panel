@@ -14,6 +14,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, clientsTable, trainersTable, trainerApplicationsTable, appSettingsTable } from "@workspace/db";
 import { requireAuth, checkIsAppAdmin, provisionTrainer, canBecomeTrainer } from "../middlewares/requireAuth";
+import { ensureSoloClient, soloEnabled } from "../services/solo";
 import { ensureSelfClient } from "../services/selfTraining";
 import { sendPlainEmail } from "../services/inviteEmail";
 import { AUTO_ACCEPT_KEY, REAPPLY_LATER_MESSAGE, canApplyNow, nextApplyAt } from "../services/trainerApplications";
@@ -69,7 +70,9 @@ router.get("/account/home", async (req, res): Promise<void> => {
     res.json({ destination: "panel", isTrainer, isClient });
     return;
   }
-  res.json({ destination: "portal", isTrainer, isClient, linked: !!c && c.trainerId != null });
+  // Każde konto jest od razu Solo (SOLO_ENABLED): osoba bez roli trenera i bez klienta dostaje konto Solo — nigdy trenera.
+  if (!c && soloEnabled()) await ensureSoloClient(userId);
+  res.json({ destination: "portal", isTrainer, isClient: isClient || (!c && soloEnabled()), linked: !!c && c.trainerId != null });
 });
 
 const ApplyBody = z.object({ note: z.string().trim().max(500).optional() });

@@ -50,6 +50,8 @@ const BOOKING_MOCK =
 
 import { usePortalFlags, shellEnabled } from "@/lib/shell/flags";
 import { PortalShell } from "@/components/shell/PortalShell";
+import { SoloEntry } from "@/components/shell/SoloEntry";
+import { SoloNewPlan } from "@/components/shell/SoloToday";
 import type { ShellTab } from "@/components/shell/BottomBar";
 import { ProgressContainer, YouContainer, SoloGate } from "@/components/shell/ShellContainers";
 
@@ -1289,7 +1291,7 @@ export default function PlanPortal() {
 
   // Signed in but no active plan linked to this Clerk account.
   if (planError || !client || !plan) {
-    return (
+    const noPlanView = (
       <div className="min-h-screen bg-background flex items-center justify-center px-6">
         <div className="text-center space-y-2 max-w-sm" role="alert">
           {!unlinked && (
@@ -1312,6 +1314,9 @@ export default function PlanPortal() {
         </div>
       </div>
     );
+    // Solo (SOLO_ENABLED): osoba bez trenera dostaje pełny portal z dolnym paskiem i kartą „Ułóż swój plan”; z trenerem — komunikat powyżej.
+    if (flagsReady && flags.solo) return <SoloEntry achievementsOn={flags.achievements} onPlanReady={() => setPlanRetry((c) => c + 1)} fallback={noPlanView} />;
+    return noPlanView;
   }
 
   const nav = (
@@ -1375,10 +1380,11 @@ export default function PlanPortal() {
               <p className="section-label">Dziś</p>
               <h1 className="text-2xl font-bold tracking-tight">Cześć, {client.firstName}!</h1>
             </div>
+            {flags.solo && (plan as { endDate?: string | null }).endDate && (plan as { endDate: string }).endDate < new Date().toISOString().slice(0, 10) && <SoloNewPlan endDate={(plan as { endDate: string }).endDate} onPlanReady={() => setPlanRetry((c) => c + 1)} />}
             {todayBlock(true)}
           </div>
         )}
-        {tab === "plan" && <PlanView client={client} plan={plan} onSelectDay={setSelectedDay} embedded />}
+        {tab === "plan" && (<><PlanView client={client} plan={plan} onSelectDay={setSelectedDay} embedded />{flags.solo && <div className="mt-6"><SoloNewPlan endDate={(plan as { endDate?: string | null }).endDate} onPlanReady={() => setPlanRetry((c) => c + 1)} /></div>}</>)}
         {tab === "postepy" && <ProgressContainer achievementsOn={flags.achievements} />}
         {tab === "ty" && <YouContainer firstName={client.firstName} lastName={client.lastName} />}
       </PortalShell>

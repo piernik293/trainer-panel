@@ -11,6 +11,7 @@
  * then never blocks the next attempt. Use `status` (not is_completed) to tell
  * completed from aborted; status NULL = session from the older per-exercise flow.
  */
+import { historyCutoff, afterCutoff } from "../services/soloHistory";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { and, asc, desc, eq, gte, inArray, isNull, ne, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
@@ -575,6 +576,7 @@ async function ownClient(req: Request, res: Response): Promise<number | null> {
 router.get("/clients/:clientId/training-sessions", requireAuth, async (req, res): Promise<void> => {
   const clientId = await ownClient(req, res);
   if (clientId == null) return;
+  const cutoff = await historyCutoff(clientId);
   const rows = await db
     .select({
       id: workoutSessionsTable.id, status: workoutSessionsTable.status, isCompleted: workoutSessionsTable.isCompleted,
@@ -586,7 +588,7 @@ router.get("/clients/:clientId/training-sessions", requireAuth, async (req, res)
     })
     .from(workoutSessionsTable)
     .leftJoin(workoutPlanDaysTable, eq(workoutSessionsTable.planDayId, workoutPlanDaysTable.id))
-    .where(eq(workoutSessionsTable.clientId, clientId))
+    .where(and(eq(workoutSessionsTable.clientId, clientId), afterCutoff(workoutSessionsTable.createdAt, cutoff)))
     .orderBy(desc(workoutSessionsTable.createdAt));
   res.json(rows.map((r) => ({ ...r, legacy: r.status == null })));
 });
@@ -595,7 +597,8 @@ router.get("/clients/:clientId/training-sessions/:sessionId", requireAuth, async
   const clientId = await ownClient(req, res);
   if (clientId == null) return;
   const session = await loadSession(Number(req.params["sessionId"]), clientId);
-  if (!session) { res.status(404).json({ error: "Sesja nie znaleziona." }); return; }
+  const cutoffD = await historyCutoff(clientId);
+  if (!session || (cutoffD && session.createdAt < cutoffD)) { res.status(404).json({ error: "Sesja nie znaleziona." }); return; }
   const sets = await db.select().from(setLogsTable).where(eq(setLogsTable.sessionId, session.id)).orderBy(asc(setLogsTable.exerciseId), asc(setLogsTable.setNumber));
   const pain = await db.select().from(painReportsTable).where(eq(painReportsTable.sessionId, session.id)).orderBy(asc(painReportsTable.createdAt));
   const legacyLogs = session.status == null
@@ -612,11 +615,12 @@ router.get("/clients/:clientId/training-sessions/:sessionId", requireAuth, async
 router.get("/clients/:clientId/training-records", requireAuth, async (req, res): Promise<void> => {
   const clientId = await ownClient(req, res);
   if (clientId == null) return;
+  const cutoffR = await historyCutoff(clientId);
   const rows = await db
     .select({ exerciseId: setLogsTable.exerciseId, name: setLogsTable.exerciseNameSnapshot, weightKg: setLogsTable.weightKg, reps: setLogsTable.reps, at: workoutSessionsTable.endedAt })
     .from(setLogsTable)
     .innerJoin(workoutSessionsTable, eq(setLogsTable.sessionId, workoutSessionsTable.id))
-    .where(and(eq(workoutSessionsTable.clientId, clientId), eq(workoutSessionsTable.status, "completed"), eq(setLogsTable.skipped, false)));
+    .where(and(eq(workoutSessionsTable.clientId, clientId), eq(workoutSessionsTable.status, "completed"), eq(setLogsTable.skipped, false), afterCutoff(workoutSessionsTable.createdAt, cutoffR)));
   const byEx = new Map<number, { exerciseId: number; name: string | null; weightKg: number; reps: number; at: Date | null }>();
   for (const r of rows) {
     const w = num(r.weightKg);
@@ -630,7 +634,8 @@ router.get("/clients/:clientId/training-records", requireAuth, async (req, res):
 router.get("/clients/:clientId/pain-reports", requireAuth, async (req, res): Promise<void> => {
   const clientId = await ownClient(req, res);
   if (clientId == null) return;
-  const rows = await db.select().from(painReportsTable).where(eq(painReportsTable.clientId, clientId)).orderBy(desc(painReportsTable.createdAt));
+  const cutoffP = await historyCutoff(clientId);
+  const rows = await db.select().from(painReportsTable).where(and(eq(painReportsTable.clientId, clientId), afterCutoff(painReportsTable.createdAt, cutoffP))).orderBy(desc(painReportsTable.createdAt));
   res.json(rows);
 });
 

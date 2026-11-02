@@ -13,6 +13,7 @@ import {
   CLIENT_ACCOUNT_MESSAGE,
   TRAINER_NOT_APPROVED_MESSAGE,
   canBecomeTrainer,
+  checkIsAppAdmin,
   isClientAccount,
   provisionTrainer,
 } from "../middlewares/requireAuth";
@@ -33,7 +34,11 @@ router.post("/trainer/profile", async (req, res): Promise<void> => {
 
   // Konto, które ma już profil trenera (np. podopieczny zaakceptowany jako trener przez administratora), dostaje go z powrotem —
   // trener może mieć też własny trening. Nowy profil nie powstaje dla konta połączonego z klientem ani niezatwierdzonego.
-  const [existing] = await db.select({ id: trainersTable.id }).from(trainersTable).where(eq(trainersTable.clerkUserId, userId));
+  const [existing] = await db.select({ id: trainersTable.id, blockedAt: trainersTable.blockedAt }).from(trainersTable).where(eq(trainersTable.clerkUserId, userId));
+  if (existing?.blockedAt && !checkIsAppAdmin(userId)) {
+    res.status(403).json({ error: "To konto jest zablokowane. Skontaktuj się z administratorem.", code: "ACCOUNT_BLOCKED" });
+    return;
+  }
   if (!existing && await isClientAccount(userId)) {
     res.status(403).json({ error: CLIENT_ACCOUNT_MESSAGE, code: "CLIENT_ACCOUNT" });
     return;

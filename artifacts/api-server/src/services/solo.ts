@@ -12,7 +12,9 @@
  * so Solo data is invisible to every trainer. The accounts block (`accounts`) will later hold the person's profile and the optional link to a trainer.
  */
 import { and, eq, gte, isNotNull } from "drizzle-orm";
-import { db, painReportsTable } from "@workspace/db";
+import { clerkClient } from "@clerk/express";
+import { db, painReportsTable, clientsTable, trainersTable, clientAchievementsTable } from "@workspace/db";
+import { achievementsEnabled } from "./achievements";
 
 export const SOLO_PAIN_MESSAGE = "Skonsultuj się ze specjalistą.";
 export const SOLO_PAIN_EXCLUSION_DAYS = 90;
@@ -54,4 +56,31 @@ export async function soloPainExcludedIds(clientId: number, now: Date = new Date
   const rows = await db.select({ id: painReportsTable.exerciseId }).from(painReportsTable)
     .where(and(eq(painReportsTable.clientId, clientId), isNotNull(painReportsTable.exerciseId), gte(painReportsTable.createdAt, since)));
   return new Set(rows.map((r) => r.id!).filter((x): x is number => typeof x === "number"));
+}
+
+/**
+ * Każde konto jest od razu Solo: osoba bez roli trenera i bez wiersza klienta dostaje wiersz klienta bez trenera (clients.trainer_id = NULL).
+ * Nigdy nie tworzy trenera. Konto trenera ma już swój wiersz „Mój trening” (services/selfTraining.ts). Przy włączonych osiągnięciach
+ * dostaje pierwsze: „Witaj w Optimatren”. Bezpieczne przy równoległych wywołaniach (unikalne clerk_user_id).
+ */
+export async function ensureSoloClient(userId: string): Promise<{ id: number; created: boolean } | null> {
+  const [trainer] = await db.select({ id: trainersTable.id }).from(trainersTable).where(eq(trainersTable.clerkUserId, userId));
+  if (trainer) return null;
+  const [existing] = await db.select({ id: clientsTable.id }).from(clientsTable).where(eq(clientsTable.clerkUserId, userId));
+  if (existing) return { id: existing.id, created: false };
+  let firstName = "Ty"; let email: string | null = null;
+  try {
+    const u = await clerkClient.users.getUser(userId);
+    firstName = (u.firstName ?? u.primaryEmailAddress?.emailAddress?.split("@")[0] ?? "Ty").slice(0, 60) || "Ty";
+    email = u.primaryEmailAddress?.emailAddress ?? null;
+  } catch { /* bez danych z konta: „Ty” */ }
+  const [c] = await db.insert(clientsTable).values({ trainerId: null, firstName, lastName: "", email, status: "active", clerkUserId: userId }).onConflictDoNothing().returning({ id: clientsTable.id });
+  if (!c) {
+    const [again] = await db.select({ id: clientsTable.id }).from(clientsTable).where(eq(clientsTable.clerkUserId, userId));
+    return again ? { id: again.id, created: false } : null;
+  }
+  if (achievementsEnabled()) {
+    await db.insert(clientAchievementsTable).values({ clientId: c.id, kind: "milestone", key: "welcome", title: "Witaj w Optimatren", body: "Pierwszy krok zrobiony." }).onConflictDoNothing().catch(() => undefined);
+  }
+  return { id: c.id, created: true };
 }

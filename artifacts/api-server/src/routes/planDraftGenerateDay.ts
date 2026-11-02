@@ -25,12 +25,12 @@
  *   { hasProfile, hasLocationData, sessionType, exercises: DayRecommendationExercise[] }
  */
 
-import { isSoloClient, soloAllowsExercise, soloEnabled, soloPainExcludedIds } from "../services/solo";
+import { soloAllowsExercise, soloEnabled, soloPainExcludedIds } from "../services/solo";
 import { buildLadderRules, loadLadderRows } from "../services/ladderSelection";
 import { loadBlockedJoints, isConservativeHealth, CONSERVATIVE_NOTE } from "../services/jointExclusion";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
-import { Router, type IRouter } from "express";
-import { eq, sql, and, or, inArray, isNotNull } from "drizzle-orm";
+import { Router, type IRouter, type Request, type Response } from "express";
+import { eq, sql, and, or, inArray, isNotNull, isNull } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   db,
@@ -185,10 +185,11 @@ const BodySchema = z.object({
   ).optional().default([]),
 });
 
-router.post(
-  "/clients/:clientId/plan-draft/generate-day",
-  requireAuth,
-  async (req, res): Promise<void> => {
+/** Wywołanie dla osoby Solo (bez trenera): `soloClientId` ustawia wyłącznie serwerowy kierowca Solo (services/soloPlanDriver.ts), nigdy żądanie HTTP. */
+export type GenerateDayReq = Request & { soloClientId?: number };
+
+export async function generateDayHandler(req: GenerateDayReq, res: Response): Promise<void> {
+    const soloCtx = req.soloClientId;
     // ── Parse + validate inputs ────────────────────────────────────────────────
     const params = ParamsSchema.safeParse(req.params);
     if (!params.success) {
@@ -212,7 +213,11 @@ router.post(
     const [client] = await db
       .select({ id: clientsTable.id, adaptiveStartDecision: clientsTable.adaptiveStartDecision, experienceLevelOverride: clientsTable.experienceLevelOverride })
       .from(clientsTable)
-      .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
+      .where(soloCtx !== undefined
+        ? and(eq(clientsTable.id, clientId), eq(clientsTable.id, soloCtx),
+            // osoba bez trenera albo „Mój trening” trenera (to samo konto, trener prowadzący = on sam)
+            or(isNull(clientsTable.trainerId), sql`${clientsTable.clerkUserId} = (select t.clerk_user_id from trainers t where t.id = ${clientsTable.trainerId})`))
+        : and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
 
     if (!client) {
       res.status(404).json({ error: "Klient nie znaleziony" });
@@ -237,7 +242,8 @@ router.post(
     // Reserve/validate the monthly generation session before running the
     // selection engine. A failed attempt can be retried with the exact same
     // day payload, but cannot be changed into another plan under the same ID.
-    try {
+    // Solo nie ma pakietu trenera ani sesji generowania w jego limitach — własne zasady Solo (services/soloPlanDriver.ts).
+    if (soloCtx === undefined) try {
       await authorizeGeneratedDay({
         trainerId: req.trainer!.id,
         clientId,
@@ -295,7 +301,7 @@ router.post(
     // ── Filter to complete exercises ───────────────────────────────────────────
     const statsMap = await fetchMuscleStats(exercises.map((e) => e.id));
     // Solo (a person without a trainer, behind SOLO_ENABLED): stricter rules — verified only, jumps only with experience, no exercise they felt pain on.
-    const solo = soloEnabled() && isSoloClient({ trainerId: req.trainer?.id ?? null })
+    const solo = soloEnabled() && soloCtx !== undefined
       ? { effectiveLevel: survey.experienceLevel, jumpExperience: survey.jumpExperience, painExcludedIds: await soloPainExcludedIds(clientId) }
       : null;
     const completeExercises = exercises.filter((ex) => {
@@ -763,6 +769,8 @@ router.post(
       const plyoStats = await fetchMuscleStats(plyoRows.map((e) => e.id));
       const fit = plyoRows.filter((ex) =>
         !avoidedExerciseIds.has(ex.id) &&
+        // Solo: blok pliometryczny też podlega regułom Solo (tylko zatwierdzone, skoki tylko przy „Tak” i od Ś, bez ćwiczeń z zgłoszonym bólem)
+        (!solo || soloAllowsExercise(ex, solo)) &&
         (!calis || (isCalisthenicsExercise(ex) && calisthenicsLevelAllows(ex, survey.experienceLevel))) &&
         computeCompleteness(ex, plyoStats.get(ex.id)).isComplete &&
         compatibilityFilter({
@@ -1163,7 +1171,7 @@ router.post(
       generatorNotes.push(`⚠️ ${msg}`);
     }
 
-    try {
+    if (soloCtx === undefined) try {
       await recordGeneratedDayOutput({
         trainerId: req.trainer!.id,
         clientId,
@@ -1193,7 +1201,8 @@ router.post(
         notes: generatorNotes,
       },
     });
-  },
-);
+}
+
+router.post("/clients/:clientId/plan-draft/generate-day", requireAuth, generateDayHandler);
 
 export default router;

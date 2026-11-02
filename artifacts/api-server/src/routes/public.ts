@@ -8,6 +8,7 @@
  * POST /public/survey/:token   Submit the survey, create the client, consume the token.
  */
 
+import { surveyInsertValues } from "../services/surveyInsert";
 import { HEALTH_CONSENT_VERSION } from "@workspace/survey-config";
 import { Router, type IRouter } from "express";
 import crypto from "crypto";
@@ -336,55 +337,7 @@ router.post("/public/survey/:token", async (req, res): Promise<void> => {
         await tx.update(surveyInvitesTable).set({ clientId }).where(eq(surveyInvitesTable.id, consumed.id));
       }
 
-      await tx.insert(surveysTable).values({
-        clientId,
-        trainingGoal,
-        trainingGoalOther,
-        experienceLevel,
-        trainingDuration,
-        healthLimitations,
-        injuryStatus: injuryStatus ?? null,
-        healthConsentStatus: parsed.data.healthConsent === true ? "given" : parsed.data.healthConsent === false ? "declined" : null,
-        healthConsentAt: parsed.data.healthConsent === undefined ? null : new Date(),
-        healthConsentVersion: parsed.data.healthConsent === undefined ? null : HEALTH_CONSENT_VERSION,
-        athleteStatus: athleteStatus ?? null,
-        sportDiscipline: sportDiscipline ?? null,
-        sportPerformanceNeeds: sportPerformanceNeeds ?? [],
-        weeklyFrequency,
-        desiredWeeklyFrequency,
-        sessionDuration,
-        preferredMuscles,
-        avoidedMuscles,
-        avoidedExercises,
-        favoriteExercises,
-        advancedMethodsToAvoid: advancedMethodsToAvoid ?? [],
-        additionalInfo,
-        age: calculatedAge,
-        dateOfBirth: dateOfBirthDate.toISOString().split("T")[0],
-        gender,
-        heightCm,
-        weightKg,
-        activityLevel,
-        sleepHours,
-        stressLevel,
-        planStylePreference,
-        priorityMuscle1,
-        priorityMuscle2,
-        priorityMuscle3,
-        trainingLocation,
-        equipment,
-        cardioPreference,
-        cardioFrequency,
-        preferredCardioType,
-        jumpExperience: goalIsSport(trainingGoal) ? jumpExperience ?? null : null,
-        trainingMotivation,
-        sportsPriorities: sportsPriorities ?? [],
-        avoidsAdvancedMethods,
-        avoidedExerciseIds: avoidedExerciseIds ?? [],
-        avoidedExerciseReasons: avoidedExerciseReasons ?? {},
-        avoidedExerciseOtherText: avoidedExerciseOtherText ?? null,
-        avoidedExerciseOtherReason: avoidedExerciseOtherReason ?? null,
-      });
+      await tx.insert(surveysTable).values(surveyInsertValues(clientId, parsed.data, { age: calculatedAge, dobIso: dateOfBirthDate.toISOString().split("T")[0]! }));
 
       logger.info({ clientId, trainerId, inviteId: consumed.id }, "Survey invite submission processed");
       return { clientId, firstName, lastName, trainingGoal };

@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, pgTable, serial, integer, text, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { trainersTable } from "./trainers";
 import { clientsTable } from "./clients";
@@ -10,6 +10,8 @@ export const trainerJoinRequestsTable = pgTable("trainer_join_requests", {
   clientId: integer("client_id").notNull().references(() => clientsTable.id, { onDelete: "cascade" }),
   /** 'pending' | 'accepted' | 'rejected' */
   status: text("status").notNull().default("pending"),
+  /** Migracja 0065: zgoda osoby na udostępnienie trenerowi wywiadu i historii treningów (domyślnie NIE). */
+  shareHistory: boolean("share_history").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   decidedAt: timestamp("decided_at"),
 }, (t) => [

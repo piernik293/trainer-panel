@@ -327,12 +327,20 @@ function Section({
 /** Tekst po wysłaniu wywiadu (B7): kto, kiedy i co dalej. */
 export const SURVEY_DONE_TEXT = "Trener przygotuje Twój plan, zwykle w ciągu 1–2 dni. Dostaniesz link do aplikacji.";
 
+/** Tekst po wysłaniu wywiadu Solo: plan układa serwer, bez trenera. */
+export const SOLO_DONE_TEXT = "Układamy Twój plan. To potrwa chwilę.";
+
 export default function SurveyWizard({
   inviteToken,
   prefill = {},
+  submitUrl,
+  onSubmitted,
 }: {
   inviteToken: string;
   prefill?: Prefill;
+  /** Solo: wywiad bez zaproszenia trenera — zapis na własny adres (z sesją), a po sukcesie `onSubmitted` (np. ułożenie planu). */
+  submitUrl?: string;
+  onSubmitted?: () => void;
 }) {
   const initial = useMemo(() => {
     const base: Answers = {
@@ -442,10 +450,10 @@ export default function SurveyWizard({
 
   const mutation = useMutation({
     mutationFn: async (payload: unknown) => {
-      const res = await fetch(`/api/public/survey/${encodeURIComponent(inviteToken)}`, {
+      const res = await fetch(submitUrl ?? `/api/public/survey/${encodeURIComponent(inviteToken)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "omit",
+        credentials: submitUrl ? "include" : "omit",
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
@@ -458,7 +466,8 @@ export default function SurveyWizard({
     },
     onSuccess: (res) => {
       clearDraft(inviteToken);
-      setDone(SURVEY_DONE_TEXT);
+      setDone(submitUrl ? SOLO_DONE_TEXT : SURVEY_DONE_TEXT);
+      onSubmitted?.();
     },
   });
 

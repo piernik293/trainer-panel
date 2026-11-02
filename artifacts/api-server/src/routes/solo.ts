@@ -10,7 +10,13 @@ import { getAuth } from "@clerk/express";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, clientsTable, trainersTable } from "@workspace/db";
-import { isSoloClient, soloEnabled } from "../services/solo";
+import { clerkClient } from "@clerk/express";
+import { SubmitPublicSurveyBody } from "@workspace/api-zod";
+import { isSoloClient, soloEnabled, ensureSoloClient } from "../services/solo";
+import { isSelfTraining } from "../services/selfTraining";
+import { generateSoloPlan } from "../services/soloPlanDriver";
+import { surveyInsertValues, validateSurveyAnswers } from "../services/surveyInsert";
+import { surveysTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -44,6 +50,46 @@ router.get("/solo/me", gate, async (req, res): Promise<void> => {
   const [c] = await db.select({ id: clientsTable.id, firstName: clientsTable.firstName, trainerId: clientsTable.trainerId }).from(clientsTable).where(eq(clientsTable.clerkUserId, userId));
   if (!c || !isSoloClient(c)) { res.status(404).json({ error: "Brak konta Solo." }); return; }
   res.json({ clientId: c.id, firstName: c.firstName });
+});
+
+/** Osoba, która może sama układać sobie plan: bez trenera albo „Mój trening” trenera. */
+async function soloActor(userId: string): Promise<{ id: number; firstName: string } | null> {
+  await ensureSoloClient(userId);
+  const [c] = await db.select({ id: clientsTable.id, firstName: clientsTable.firstName, trainerId: clientsTable.trainerId }).from(clientsTable).where(eq(clientsTable.clerkUserId, userId));
+  if (!c) return null;
+  return c.trainerId === null || (await isSelfTraining(c.id)) ? { id: c.id, firstName: c.firstName } : null;
+}
+
+const calcAge = (dob: Date) => { const t = new Date(); let a = t.getUTCFullYear() - dob.getUTCFullYear(); if (t.getUTCMonth() - dob.getUTCMonth() < 0 || (t.getUTCMonth() === dob.getUTCMonth() && t.getUTCDate() < dob.getUTCDate())) a--; return a; };
+
+/** Wywiad Solo: ten sam formularz co z zaproszenia trenera, zapis do `surveys` osoby; bez tokenu i bez e-maila w formularzu. */
+router.post("/solo/survey", gate, async (req, res): Promise<void> => {
+  const userId = getAuth(req)?.userId;
+  if (!userId) { res.status(401).json({ error: "Twoja sesja wygasła. Zaloguj się ponownie." }); return; }
+  const actor = await soloActor(userId);
+  if (!actor) { res.status(403).json({ error: "Wywiad dla trenera wypełnia Twój trener.", code: "NOT_SOLO" }); return; }
+  let email = "brak-adresu@optimatren.invalid";
+  try { email = (await clerkClient.users.getUser(userId)).primaryEmailAddress?.emailAddress ?? email; } catch { /* bez adresu */ }
+  const parsed = SubmitPublicSurveyBody.safeParse({ ...(req.body ?? {}), firstName: req.body?.firstName || actor.firstName, lastName: req.body?.lastName || "-", email });
+  if (!parsed.success) { res.status(400).json({ error: "Uzupełnij odpowiedzi w wywiadzie." }); return; }
+  const check = validateSurveyAnswers(parsed.data);
+  if (check.error) { res.status(400).json({ error: check.error }); return; }
+  await db.insert(surveysTable).values(surveyInsertValues(actor.id, parsed.data, { age: calcAge(new Date(check.dobIso)), dobIso: check.dobIso }) as never);
+  // imię z wywiadu zastępuje to z konta (tylko u osoby bez trenera; „Mój trening” trenera zostaje jak jest)
+  const [c] = await db.select({ trainerId: clientsTable.trainerId }).from(clientsTable).where(eq(clientsTable.id, actor.id));
+  if (c?.trainerId === null && parsed.data.firstName) await db.update(clientsTable).set({ firstName: parsed.data.firstName, lastName: req.body?.lastName ? parsed.data.lastName : "", updatedAt: new Date() }).where(eq(clientsTable.id, actor.id));
+  res.status(201).json({ success: true });
+});
+
+/** Ułóż (albo ułóż od nowa) plan Solo. Limit: 1 nowy plan na 14 dni, chyba że beta bez limitów. */
+router.post("/solo/plan", gate, async (req, res): Promise<void> => {
+  const userId = getAuth(req)?.userId;
+  if (!userId) { res.status(401).json({ error: "Twoja sesja wygasła. Zaloguj się ponownie." }); return; }
+  const actor = await soloActor(userId);
+  if (!actor) { res.status(403).json({ error: "Plan układa Twój trener.", code: "NOT_SOLO" }); return; }
+  const r = await generateSoloPlan(actor.id);
+  if (r.ok) { res.status(201).json(r); return; }
+  res.status(r.code === "PLAN_LIMIT" ? 429 : r.code === "NO_SURVEY" ? 409 : r.code === "NOT_SOLO" ? 403 : 422).json({ error: r.message, code: r.code, retryAfter: r.retryAfter ?? null });
 });
 
 export default router;

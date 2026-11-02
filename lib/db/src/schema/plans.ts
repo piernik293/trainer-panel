@@ -84,6 +84,8 @@ export const volumeGuidelinesTable = pgTable("volume_guidelines", {
 
 export const workoutPlansTable = pgTable("workout_plans", {
   id: serial("id").primaryKey(),
+  /** Migracja 0065: 'solo' = plan ułożony automatycznie dla osoby bez trenera (generator Solo); NULL = plan trenera. */
+  createdBy: text("created_by"),
   clientId: integer("client_id")
     .notNull()
     .references(() => clientsTable.id, { onDelete: "cascade" }),
