@@ -8,6 +8,7 @@
  *  GET    /clients/:clientId/pauses · POST · DELETE /:id   the same for the trainer's own client
  * No rankings, no comparisons between people: every query is scoped to one client.
  */
+import { historyCutoff } from "../services/soloHistory";
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { and, desc, eq, gte, isNull, or } from "drizzle-orm";
 import { z } from "zod";
@@ -96,7 +97,8 @@ async function ownClient(req: Request, res: Response): Promise<number | null> {
 }
 router.get("/clients/:clientId/pauses", gate, requireAuth, async (req, res): Promise<void> => {
   const id = await ownClient(req, res); if (id == null) return;
-  res.json({ items: await listPauses(id) });
+  const cutoffP = await historyCutoff(id);
+  res.json({ items: (await listPauses(id)).filter((x) => !cutoffP || x.startDate > cutoffP.toISOString().slice(0, 10)) });
 });
 router.post("/clients/:clientId/pauses", gate, requireAuth, async (req, res): Promise<void> => {
   const id = await ownClient(req, res); if (id == null) return;
