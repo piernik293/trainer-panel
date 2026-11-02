@@ -4,6 +4,7 @@
  * Not a "Wrapped" (that comes later with the mascot). Pain: only the NUMBER of reports; area/date/severity/description only when the trainer
  * ticks "include pain details" — and the description of a report is shown only then.
  */
+import { historyCutoff } from "./soloHistory";
 import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
 import {
   db, clientsTable, trainersTable, workoutSessionsTable, workoutPlansTable, workoutPlanDaysTable, setLogsTable, exercisesTable, painReportsTable, dailyStepsTable,
@@ -94,7 +95,12 @@ export async function loadReportModel(clientId: number, trainerId: number, month
     .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, trainerId)));
   if (!client) return null;
   const [trainer] = await db.select({ name: trainersTable.displayName }).from(trainersTable).where(eq(trainersTable.id, trainerId));
-  const { first, last } = monthRange(month);
+  const range = monthRange(month);
+  // okres Solo, którego osoba nie udostępniła trenerowi, nie wchodzi do raportu: początek zakresu przesuwamy na datę widoczności
+  const cutoffAt = await historyCutoff(clientId);
+  const cutoffDay = cutoffAt ? new Date(cutoffAt.getTime() + 86_400_000).toISOString().slice(0, 10) : null; // od następnego dnia (dane dzienne nie mają godziny)
+  const first = cutoffDay && cutoffDay > range.first ? cutoffDay : range.first;
+  const last = range.last;
 
   const sessRows = await db.select({ id: workoutSessionsTable.id, date: workoutSessionsTable.sessionDate, planDayId: workoutSessionsTable.planDayId, rating: workoutSessionsTable.sessionRating })
     .from(workoutSessionsTable)

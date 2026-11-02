@@ -4,8 +4,9 @@
  *  - trainer: GET /clients/:clientId/steps, PUT /clients/:clientId/steps-goal (client must belong to the trainer).
  * No integration with Apple Health / Google Health Connect (needs a native app — see docs/ROADMAP.md).
  */
+import { historyCutoff } from "../services/soloHistory";
 import { Router, type IRouter } from "express";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gt, gte, lte } from "drizzle-orm";
 import { z } from "zod";
 import { db, clientsTable, dailyStepsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
@@ -20,11 +21,12 @@ const StepsBody = z.object({
 });
 const GoalBody = z.object({ goal: z.number().int().min(MIN_GOAL).max(MAX_STEPS).nullable() });
 
-async function loadSummary(clientId: number) {
+// Dane dzienne nie mają godziny: trener widzi dni od następnego po dniu połączenia (gdy osoba nie udostępniła historii Solo).
+async function loadSummary(clientId: number, cutoff: Date | null = null) {
   const today = todayWarsaw();
   const [client] = await db.select({ goal: clientsTable.stepsGoal }).from(clientsTable).where(eq(clientsTable.id, clientId));
   const rows = await db.select({ day: dailyStepsTable.day, steps: dailyStepsTable.steps }).from(dailyStepsTable)
-    .where(and(eq(dailyStepsTable.clientId, clientId), gte(dailyStepsTable.day, shiftDate(today, -6)), lte(dailyStepsTable.day, today)));
+    .where(and(eq(dailyStepsTable.clientId, clientId), gte(dailyStepsTable.day, shiftDate(today, -6)), lte(dailyStepsTable.day, today), cutoff ? gt(dailyStepsTable.day, cutoff.toISOString().slice(0, 10)) : undefined));
   return summarize(rows, client?.goal ?? null, today);
 }
 
@@ -62,7 +64,7 @@ async function ownClient(clientId: number, trainerId: number): Promise<boolean> 
 router.get("/clients/:clientId/steps", requireAuth, async (req, res): Promise<void> => {
   const clientId = Number(req.params.clientId);
   if (!Number.isInteger(clientId) || clientId <= 0 || !(await ownClient(clientId, req.trainer!.id))) { res.status(404).json({ error: "Klient nie znaleziony" }); return; }
-  res.json(await loadSummary(clientId));
+  res.json(await loadSummary(clientId, await historyCutoff(clientId)));
 });
 
 router.put("/clients/:clientId/steps-goal", requireAuth, async (req, res): Promise<void> => {
@@ -71,7 +73,7 @@ router.put("/clients/:clientId/steps-goal", requireAuth, async (req, res): Promi
   const body = GoalBody.safeParse(req.body);
   if (!body.success) { res.status(400).json({ error: "Cel kroków: liczba od 1 000 do 100 000 albo brak celu." }); return; }
   await db.update(clientsTable).set({ stepsGoal: body.data.goal }).where(eq(clientsTable.id, clientId));
-  res.json(await loadSummary(clientId));
+  res.json(await loadSummary(clientId, await historyCutoff(clientId)));
 });
 
 export default router;

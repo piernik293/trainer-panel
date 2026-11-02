@@ -11,6 +11,7 @@ export default defineConfig({
     conditions: ["workspace", "import", "require"],
   },
   test: {
+    globalSetup: ["./src/lib/testGlobalSetup.ts"],
     environment: "node",
     globals: false,
     // Run each test file in its own worker process so the DB pool in

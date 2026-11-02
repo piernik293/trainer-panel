@@ -15,6 +15,7 @@
  *   requireAuth (trainer Clerk session) + verifyClientBelongsToTrainer.
  */
 
+import { historyCutoff, afterCutoff } from "../services/soloHistory";
 import { Router, type IRouter } from "express";
 import type { Request, Response } from "express";
 import { eq, and, desc, inArray } from "drizzle-orm";
@@ -913,6 +914,7 @@ router.get("/clients/:clientId/workout-sessions", requireAuth, async (req, res):
 
   const ok = await verifyClientBelongsToTrainer(req, res, clientId);
   if (!ok) return;
+  const cutoff = await historyCutoff(clientId);
 
   const sessions = await db
     .select({
@@ -934,7 +936,7 @@ router.get("/clients/:clientId/workout-sessions", requireAuth, async (req, res):
     .from(workoutSessionsTable)
     .innerJoin(workoutPlansTable, eq(workoutSessionsTable.planId, workoutPlansTable.id))
     .innerJoin(workoutPlanDaysTable, eq(workoutSessionsTable.planDayId, workoutPlanDaysTable.id))
-    .where(eq(workoutSessionsTable.clientId, clientId))
+    .where(and(eq(workoutSessionsTable.clientId, clientId), afterCutoff(workoutSessionsTable.createdAt, cutoff)))
     .orderBy(desc(workoutSessionsTable.sessionDate));
 
   res.json(sessions);
@@ -971,7 +973,7 @@ router.get("/clients/:clientId/workout-sessions/:sessionId", requireAuth, async 
     .from(workoutSessionsTable)
     .innerJoin(workoutPlansTable, eq(workoutSessionsTable.planId, workoutPlansTable.id))
     .innerJoin(workoutPlanDaysTable, eq(workoutSessionsTable.planDayId, workoutPlanDaysTable.id))
-    .where(and(eq(workoutSessionsTable.id, sessionId), eq(workoutSessionsTable.clientId, clientId)));
+    .where(and(eq(workoutSessionsTable.id, sessionId), eq(workoutSessionsTable.clientId, clientId), afterCutoff(workoutSessionsTable.createdAt, await historyCutoff(clientId))));
 
   if (!session) { res.status(404).json({ error: "Sesja nie znaleziona." }); return; }
 
@@ -1042,7 +1044,7 @@ router.get("/clients/:clientId/portal-preview", requireAuth, async (req, res): P
   const [activePlan] = await db
     .select({ id: workoutPlansTable.id })
     .from(workoutPlansTable)
-    .where(and(eq(workoutPlansTable.clientId, clientId), eq(workoutPlansTable.status, "active")))
+    .where(and(eq(workoutPlansTable.clientId, clientId), eq(workoutPlansTable.status, "active"), afterCutoff(workoutPlansTable.createdAt, await historyCutoff(clientId))))
     .orderBy(desc(workoutPlansTable.activatedAt))
     .limit(1);
 

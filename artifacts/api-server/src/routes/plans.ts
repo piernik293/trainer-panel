@@ -71,6 +71,8 @@ async function loadPlanAndVerifyOwner(
       and(
         eq(workoutPlansTable.id, planId),
         eq(clientsTable.trainerId, req.trainer!.id),
+        // plan z okresu Solo, którego osoba nie udostępniła trenerowi, dla trenera nie istnieje
+        sql`(${clientsTable.historyVisibleFrom} is null or ${workoutPlansTable.createdAt} >= ${clientsTable.historyVisibleFrom})`,
       ),
     );
   if (!row) {

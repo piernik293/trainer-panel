@@ -41,17 +41,21 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
       firstName: clientsTable.firstName,
       lastName: clientsTable.lastName,
       status: clientsTable.status,
+      visibleFrom: clientsTable.historyVisibleFrom,
     })
     .from(clientsTable)
     // pulpit liczy podopiecznych trenera — bez jego własnego profilu „Mój trening” (to samo konto), który ma swoją pozycję w liście klientów
     .where(and(eq(clientsTable.trainerId, trainerId), sql`${clientsTable.clerkUserId} is distinct from ${req.trainer!.clerkUserId}`));
   const clientIds = clients.map((c) => c.id);
+  // dane z okresu Solo, których osoba nie udostępniła, nie wchodzą na pulpit (plany, treningi, zgłoszenia bólu)
+  const visibleFromOf = new Map(clients.filter((c) => c.visibleFrom).map((c) => [c.id, c.visibleFrom as Date]));
+  const visibleAt = (clientId: number, at: Date | string) => { const v = visibleFromOf.get(clientId); return !v || new Date(at) >= v; };
   const nameOf = new Map(clients.map((c) => [c.id, `${c.firstName} ${c.lastName}`.trim()]));
 
   const latest = await fetchLatestSurveyPerClient(clientIds.length > 0 ? clientIds : null);
   const latestSurveys = clientIds.length > 0 ? [...latest.values()].filter((s) => nameOf.has(s.clientId)) : [];
 
-  const plans =
+  const plansAll =
     clientIds.length > 0
       ? await db
           .select({
@@ -65,6 +69,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
           .from(workoutPlansTable)
           .where(inArray(workoutPlansTable.clientId, clientIds))
       : [];
+  const plans = plansAll.filter((p) => visibleAt(p.clientId, p.createdAt));
 
   const invites = await db
     .select({
@@ -92,16 +97,17 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
     );
   const pendingIds = new Set(pendingInvites.map((i) => i.id));
 
-  const unreadPains =
+  const unreadPainsAll =
     clientIds.length > 0
       ? await db
           .select({ clientId: painReportsTable.clientId, createdAt: painReportsTable.createdAt, area: painReportsTable.area, severity: painReportsTable.severity })
           .from(painReportsTable)
           .where(and(inArray(painReportsTable.clientId, clientIds), isNull(painReportsTable.readByTrainerAt)))
       : [];
+  const unreadPains = unreadPainsAll.filter((p) => visibleAt(p.clientId, p.createdAt));
 
   // Finished sessions (newest first, enough to judge "za ciężko 2×" and the last training day), active packages, dismissals, threshold.
-  const finishedSessions =
+  const finishedSessionsAll =
     clientIds.length > 0
       ? await db
           .select({ clientId: workoutSessionsTable.clientId, id: workoutSessionsTable.id, date: workoutSessionsTable.sessionDate, rating: workoutSessionsTable.sessionRating })
@@ -110,6 +116,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
           .orderBy(desc(workoutSessionsTable.sessionDate), desc(workoutSessionsTable.id))
           .limit(2000)
       : [];
+  const finishedSessions = finishedSessionsAll.filter((x) => visibleAt(x.clientId, String(x.date)));
   const activePackages = await db.select().from(clientPackagesTable).where(and(eq(clientPackagesTable.trainerId, trainerId), eq(clientPackagesTable.status, "active")));
   const usedByPackage = await usedCounts(activePackages.map((p) => p.id));
   const dismissedRows = await db.select({ kind: attentionDismissalsTable.kind, ref: attentionDismissalsTable.ref }).from(attentionDismissalsTable).where(eq(attentionDismissalsTable.trainerId, trainerId));

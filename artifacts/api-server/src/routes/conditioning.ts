@@ -10,6 +10,7 @@
  *           POST /client-portal/conditioning/checkin              cotygodniowy check-in — tylko podopieczny trenera
  * Identyfikator klienta/trenera tylko z sesji lub z własności (klient musi należeć do trenera).
  */
+import { historyCutoff, afterCutoff } from "../services/soloHistory";
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { getAuth } from "@clerk/express";
 import { and, asc, desc, eq, gte } from "drizzle-orm";
@@ -112,8 +113,9 @@ router.post("/clients/:clientId/plans/:planId/conditioning-days", gate, requireA
 
 router.get("/clients/:clientId/conditioning/logs", gate, requireAuth, async (req, res): Promise<void> => {
   const clientId = await ownClient(req, res); if (!clientId) return;
-  const logs = await db.select().from(conditioningLogsTable).where(eq(conditioningLogsTable.clientId, clientId)).orderBy(desc(conditioningLogsTable.loggedOn), desc(conditioningLogsTable.id)).limit(60);
-  const checkins = await db.select().from(conditioningCheckinsTable).where(eq(conditioningCheckinsTable.clientId, clientId)).orderBy(desc(conditioningCheckinsTable.weekStart)).limit(12);
+  const cutoff = await historyCutoff(clientId);
+  const logs = await db.select().from(conditioningLogsTable).where(and(eq(conditioningLogsTable.clientId, clientId), afterCutoff(conditioningLogsTable.createdAt, cutoff))).orderBy(desc(conditioningLogsTable.loggedOn), desc(conditioningLogsTable.id)).limit(60);
+  const checkins = await db.select().from(conditioningCheckinsTable).where(and(eq(conditioningCheckinsTable.clientId, clientId), afterCutoff(conditioningCheckinsTable.createdAt, cutoff))).orderBy(desc(conditioningCheckinsTable.weekStart)).limit(12);
   res.json({ logs, checkins });
 });
 

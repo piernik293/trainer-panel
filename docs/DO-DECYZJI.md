@@ -237,3 +237,8 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 - **Konto Solo z danymi + link od trenera:** nie łączy automatycznie (żeby nie zgubić danych) — dostaje wskazówkę o kodzie; konto puste łączy się samo.
 - **S6: `SOLO_ENABLED=1` włączone w `.env`** (ZGODA właściciela po zielonych testach). `CONDITIONING_ENABLED` zostaje wyłączone.
 - Uwaga operacyjna: uruchamianie `scripts/db-setup-gcp.sh` na bazie TESTOWEJ wykonuje migracje danych (0064) na pozostałych fixturach i psuje testy — po takim uruchomieniu skasuj wiersze „Mój trening” w bazie testowej.
+
+## Odpowiedzi właściciela po Solo (3.11.2026)
+- **Limit planów Solo 1 na 14 dni — ZATWIERDZONY.** **Dawkowanie Solo v1 z silnika — ZATWIERDZONE.** **Link od trenera dla konta Solo z danymi: zostaje podpowiedź kodu, bez automatycznego łączenia — ZATWIERDZONE.**
+- **Ukrywanie historii — DOKOŃCZONE (blok 0, `fix/solo-domkniecie`).** Przegląd wszystkich odczytów trenera i administratora. Bez zgody niewidoczne: wywiady i zgłoszenia bólu (archiwum), plany (lista, szczegóły i wszystkie podtrasy przez wspólne sprawdzenie planu, historia, ostrzeżenia stawów, podgląd portalu), treningi (dwa widoki sesji, rekordy), kroki, kondycja (logi i check-iny), przerwy, raport miesięczny (PDF), pulpit i skrzynka uwag, wgląd administratora. Dane dzienne (kroki, przerwy, raport) są widoczne od dnia następnego po połączeniu (nie mają godziny). Test izolacji dla każdej trasy: `solo-historia.test.ts`.
+- **Testy odporne na „Mój trening” z migracji 0064:** `globalSetup` testów API czyści te wiersze w bazie testowej przed przebiegiem (tylko `*_test`), więc `db-setup-gcp.sh` na bazie testowej nic nie psuje.
