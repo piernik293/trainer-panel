@@ -223,3 +223,8 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 ## Decyzje właściciela z 2.11.2026: „Mój trening” i rejestracja
 1. Po akceptacji wniosku trener automatycznie dostaje profil „Mój trening” (własny podopieczny, bez trenera prowadzącego); dotyczy też obecnych trenerów (migracja 0064 po `pg_dump`). Szczegóły i zasady: `docs/KONTA.md`. Uwaga: panel administratora w liczbie klientów trenera pokazuje też ten profil (do poprawienia, jeśli będzie przeszkadzać).
 2. Rejestracja zostaje jak jest (wspólne `/sign-up`).
+
+## Logowanie bez zniechęcania + „Zobacz, jak to działa” (2.11.2026)
+- Diagnoza w `docs/LOGOWANIE.md`: kod przy logowaniu hasłem pojawia się na NOWYM urządzeniu (Clerk Client Trust / Device Trust) — to właściciel wyłącza w dashboardzie Clerk (instrukcja w pliku; ustawień Clerk nie zmieniałem). Rejestracja e-mailem: kod raz (zostaje).
+- Zmiany: Google jako pierwszy i największy przycisk, krótkie teksty, zdanie o kodzie przy rejestracji, „Nie pamiętam hasła”. Tryb podglądu bez konta za flagą `GUEST_DEMO_ENABLED` — **włączona w `.env`** (ZGODA właściciela do testów); kopia `.env` w `~/backups/env-przed-demo-*.bak`.
+- **Do decyzji:** po wyłączeniu Client Trust zostaje ryzyko samego hasła (opisane w 1 zdaniu w `docs/LOGOWANIE.md`).

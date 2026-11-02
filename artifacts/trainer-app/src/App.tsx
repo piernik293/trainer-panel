@@ -2,7 +2,7 @@ import { plPL } from "@clerk/localizations";
 import Legal from "@/pages/Legal";
 import AuthRedirectPage from "@/components/AuthRedirectPage";
 import { AUTH_REDIRECT_PATH } from "@/lib/authHome";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppHero } from "@workspace/design-tokens/hero";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
@@ -70,6 +70,9 @@ const clerkAppearance = {
   theme: shadcn,
   cssLayerName: "clerk",
   options: {
+    // „Kontynuuj z Google” jako pierwszy i największy przycisk, pod nim e-mail i hasło
+    socialButtonsPlacement: "top" as const,
+    socialButtonsVariant: "blockButton" as const,
     // Branding lives above the card (see SignInPage) — no logo inside the card.
     logoPlacement: "none" as const,
     logoLinkUrl: basePath || "/",
@@ -105,7 +108,7 @@ const clerkAppearance = {
     logoBox: "flex justify-center",
     logoImage: "h-10 w-auto",
     socialButtonsBlockButton:
-      "!border !border-input !bg-card !shadow-none hover:!bg-muted min-h-11 " +
+      "!border !border-input !bg-card !shadow-none hover:!bg-muted min-h-14 !text-base !font-semibold " +
       "focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 !opacity-100",
     socialButtonsProviderIcon: "!opacity-100 !brightness-100 !saturate-100",
     formButtonPrimary: "bg-primary hover:bg-brand-hover text-primary-foreground min-h-11",
@@ -187,9 +190,16 @@ function AuthShell({
 
 // Jedna strona logowania dla wszystkich. Dokąd trafia osoba po zalogowaniu, decyduje serwer (/auth/redirect → GET /api/account/home).
 function SignInPage() {
+  const [demo, setDemo] = useState(false);
+  useEffect(() => { fetch(`${basePath}/api/guest-demo/status`).then((r) => (r.ok ? r.json() : null)).then((b: { enabled?: boolean } | null) => setDemo(!!b?.enabled)).catch(() => setDemo(false)); }, []);
   return (
-    <AuthShell title="Zaloguj się do Optimatren" description="Wejdź na swoje konto, żeby zobaczyć plan, postępy i klientów.">
+    <AuthShell title="Zaloguj się do Optimatren" description="Wejdź na swoje konto, żeby zobaczyć plan i postępy.">
       <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} forceRedirectUrl={`${basePath}${AUTH_REDIRECT_PATH}`} />
+      {demo && (
+        <a href="/client-landing/demo" data-testid="guest-demo-link" className="mt-5 inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-white underline underline-offset-4">
+          Zobacz, jak to działa (bez konta)
+        </a>
+      )}
     </AuthShell>
   );
 }
@@ -281,15 +291,28 @@ function ClerkProviderWithRoutes() {
           start: {
             ...plPL.signIn?.start,
             title: "Zaloguj się",
-            subtitle: "Użyj konta Google albo adresu e-mail",
+            subtitle: "Najszybciej przez Google",
+          },
+          password: {
+            ...plPL.signIn?.password,
+            actionLink: "Nie pamiętam hasła",
+          },
+          emailCode: {
+            ...plPL.signIn?.emailCode,
+            resendButton: "Nie dotarł kod? Wyślij ponownie",
           },
         },
         signUp: {
           ...plPL.signUp,
           start: {
             ...plPL.signUp?.start,
-            title: "Utwórz konto",
-            subtitle: "Zacznij korzystać z Optimatren",
+            title: "Załóż konto — to zajmie minutę",
+            subtitle: "Najszybciej przez Google",
+          },
+          emailCode: {
+            ...plPL.signUp?.emailCode,
+            formSubtitle: "Wysłaliśmy kod na Twój e-mail — to tylko raz, przy zakładaniu konta.",
+            resendButton: "Nie dotarł kod? Wyślij ponownie",
           },
         },
       }}
