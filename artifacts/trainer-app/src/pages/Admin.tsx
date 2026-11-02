@@ -234,24 +234,32 @@ function Log() {
   );
 }
 
+/** Etykieta karty z licznikiem nowych wniosków („Wnioski (2)”). */
+export const tabLabel = (t: { id: Tab; label: string }, pendingApplications: number) => (t.id === "applications" && pendingApplications > 0 ? `${t.label} (${pendingApplications})` : t.label);
+
 export default function Admin() {
   const { data, isLoading } = useIsAdmin();
   const [tab, setTab] = useState<Tab>("errors");
+  const [tabPicked, setTabPicked] = useState(false);
+  const apps = useTrainerApplications();
+  const pendingApplications = (apps.data?.applications ?? []).filter((a) => a.status === "pending").length;
+  // Po wejściu od razu widać nowe wnioski: gdy są, zaczynamy od karty „Wnioski”, dopóki ktoś nie wybierze innej.
+  const activeTab: Tab = !tabPicked && pendingApplications > 0 ? "applications" : tab;
   if (isLoading) return <div className="h-16 bg-muted animate-pulse rounded" />;
   if (!data?.isAdmin) return <Redirect to="/" />;
   return (
     <div className="space-y-4 max-w-4xl">
       <h1 className="text-2xl font-semibold tracking-tight">Panel administratora</h1>
       <div role="tablist" className="flex flex-wrap gap-2">
-        {TABS.map((t) => <Button key={t.id} role="tab" aria-selected={tab === t.id} size="sm" variant={tab === t.id ? "default" : "outline"} onClick={() => setTab(t.id)}>{t.label}</Button>)}
+        {TABS.map((t) => <Button key={t.id} role="tab" aria-selected={activeTab === t.id} size="sm" variant={activeTab === t.id ? "default" : "outline"} onClick={() => { setTabPicked(true); setTab(t.id); }}>{tabLabel(t, pendingApplications)}</Button>)}
       </div>
-      {tab === "errors" && <Errors />}
-      {tab === "applications" && <Applications />}
-      {tab === "trainers" && <Trainers />}
-      {tab === "solo" && <Solo />}
-      {tab === "subs" && <Subs />}
-      {tab === "feedback" && <Feedback />}
-      {tab === "log" && <Log />}
+      {activeTab === "errors" && <Errors />}
+      {activeTab === "applications" && <Applications />}
+      {activeTab === "trainers" && <Trainers />}
+      {activeTab === "solo" && <Solo />}
+      {activeTab === "subs" && <Subs />}
+      {activeTab === "feedback" && <Feedback />}
+      {activeTab === "log" && <Log />}
     </div>
   );
 }
