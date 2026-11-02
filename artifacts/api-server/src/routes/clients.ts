@@ -1,3 +1,4 @@
+import { isOwnTrainingOf } from "../services/selfTraining";
 import { Router, type IRouter } from "express";
 import { eq, desc, and } from "drizzle-orm";
 import crypto from "crypto";
@@ -358,6 +359,11 @@ router.delete("/clients/:id", requireAuth, async (req, res): Promise<void> => {
   }
 
   const trainerId = req.trainer!.id;
+
+  if (await isOwnTrainingOf(params.data.id, req.trainer!)) {
+    res.status(409).json({ error: "To Twój własny trening — nie można go usunąć.", code: "SELF_TRAINING" });
+    return;
+  }
 
   const [client] = await db
     .delete(clientsTable)

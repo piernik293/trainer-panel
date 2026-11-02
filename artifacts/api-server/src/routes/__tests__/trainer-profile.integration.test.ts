@@ -54,6 +54,7 @@ async function trainerRows(clerkUserId: string) {
 
 beforeAll(async () => {
   await db.delete(clientsTable).where(eq(clientsTable.email, CLIENT_EMAIL));
+  await db.delete(clientsTable).where(inArray(clientsTable.clerkUserId, ALL)); // „Mój trening” trenerów z testu
   await db.delete(trainersTable).where(inArray(trainersTable.clerkUserId, ALL));
   const [owner] = await db.insert(trainersTable).values({ clerkUserId: OWNER }).returning();
   await db.insert(clientsTable).values({
@@ -72,6 +73,7 @@ afterEach(() => {
 
 afterAll(async () => {
   await db.delete(clientsTable).where(eq(clientsTable.email, CLIENT_EMAIL));
+  await db.delete(clientsTable).where(inArray(clientsTable.clerkUserId, ALL)); // „Mój trening” trenerów z testu
   await db.delete(trainersTable).where(inArray(trainersTable.clerkUserId, ALL));
   await pool.end();
 });
@@ -183,11 +185,13 @@ describe("only the administrator can make someone a trainer (closed sign-up)", (
     expect(res.body.code).toBe("CLIENT_ACCOUNT");
   });
   it("TRAINER_SIGNUP_OPEN=1 (development / smoke test) opens sign-up; without it the default is closed", async () => {
+    await db.delete(clientsTable).where(eq(clientsTable.clerkUserId, UNAPPROVED));
     await db.delete(trainersTable).where(eq(trainersTable.clerkUserId, UNAPPROVED));
     mockUserId = UNAPPROVED;
     process.env.TRAINER_SIGNUP_OPEN = "1";
     try { expect((await request(app).post("/api/trainer/profile")).status).toBe(200); }
     finally { delete process.env.TRAINER_SIGNUP_OPEN; }
+    await db.delete(clientsTable).where(eq(clientsTable.clerkUserId, UNAPPROVED));
     await db.delete(trainersTable).where(eq(trainersTable.clerkUserId, UNAPPROVED));
     expect((await request(app).post("/api/trainer/profile")).status).toBe(403);
   });

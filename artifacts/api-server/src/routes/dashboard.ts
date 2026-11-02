@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq, gte, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import {
   db,
   bookingsTable,
@@ -43,7 +43,8 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
       status: clientsTable.status,
     })
     .from(clientsTable)
-    .where(eq(clientsTable.trainerId, trainerId));
+    // pulpit liczy podopiecznych trenera — bez jego własnego profilu „Mój trening” (to samo konto), który ma swoją pozycję w liście klientów
+    .where(and(eq(clientsTable.trainerId, trainerId), sql`${clientsTable.clerkUserId} is distinct from ${req.trainer!.clerkUserId}`));
   const clientIds = clients.map((c) => c.id);
   const nameOf = new Map(clients.map((c) => [c.id, `${c.firstName} ${c.lastName}`.trim()]));
 

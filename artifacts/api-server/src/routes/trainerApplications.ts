@@ -14,6 +14,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, clientsTable, trainersTable, trainerApplicationsTable, appSettingsTable } from "@workspace/db";
 import { requireAuth, checkIsAppAdmin, provisionTrainer, canBecomeTrainer } from "../middlewares/requireAuth";
+import { ensureSelfClient } from "../services/selfTraining";
 import { sendPlainEmail } from "../services/inviteEmail";
 import { AUTO_ACCEPT_KEY, REAPPLY_LATER_MESSAGE, canApplyNow, nextApplyAt } from "../services/trainerApplications";
 
@@ -78,6 +79,7 @@ async function grantTrainer(app: { id: number; clerkUserId: string; displayName:
   if (trainer && (app.displayName || app.email)) {
     await db.update(trainersTable).set({ displayName: trainer.displayName ?? app.displayName, email: trainer.email ?? app.email }).where(eq(trainersTable.id, trainer.id));
   }
+  if (trainer) await ensureSelfClient({ id: trainer.id, clerkUserId: trainer.clerkUserId, email: trainer.email ?? app.email });
   await db.update(trainerApplicationsTable).set({ status: "accepted", decidedAt: new Date(), decidedBy }).where(eq(trainerApplicationsTable.id, app.id));
   await sendPlainEmail({ to: app.email, subject: "Twój wniosek o konto trenera został przyjęty", text: "Masz teraz dostęp do panelu trenera. Zaloguj się tym samym kontem." });
 }
