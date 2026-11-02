@@ -21,6 +21,7 @@ const as = (u: string | null) => { authUser = u; };
 
 async function cleanup() {
   await db.delete(trainerApplicationsTable).where(inArray(trainerApplicationsTable.clerkUserId, USERS));
+  await db.delete(clientsTable).where(inArray(clientsTable.clerkUserId, USERS)); // m.in. „Mój trening” powstały przy akceptacji
   await db.delete(trainersTable).where(inArray(trainersTable.clerkUserId, USERS));
   await db.delete(clientsTable).where(inArray(clientsTable.clerkUserId, USERS));
   await db.delete(appSettingsTable).where(eq(appSettingsTable.key, "trainer_auto_accept"));

@@ -15,6 +15,7 @@
  * trener widzi dane osoby dopiero po akceptacji i traci je po odłączeniu (clients.trainer_id = NULL); historia treningów zostaje u osoby.
  * Nieistniejący, zmieniony lub błędny kod → zawsze to samo 404 (bez zgadywania).
  */
+import { isSelfTraining } from "../services/selfTraining";
 import { Router, type IRouter } from "express";
 import { getAuth } from "@clerk/express";
 import { and, desc, eq, isNull } from "drizzle-orm";
@@ -126,6 +127,7 @@ router.post("/clients/:clientId/disconnect", requireAuth, async (req, res): Prom
   const [c] = await db.select({ id: clientsTable.id, clerkUserId: clientsTable.clerkUserId }).from(clientsTable)
     .where(and(eq(clientsTable.id, clientId), eq(clientsTable.trainerId, req.trainer!.id)));
   if (!c) { res.status(404).json({ error: "Klient nie znaleziony." }); return; }
+  if (await isSelfTraining(clientId)) { res.status(409).json({ error: "To Twój własny trening — nie można go odłączyć.", code: "SELF_TRAINING" }); return; }
   if (!c.clerkUserId) { res.status(409).json({ error: "Ten klient nie ma konta w aplikacji. Możesz go zarchiwizować.", code: "NO_ACCOUNT" }); return; }
   await disconnect(clientId, req.trainer!.id, "trainer");
   res.json({ ok: true });
@@ -137,6 +139,7 @@ router.post("/client-portal/disconnect", async (req, res): Promise<void> => {
   const [c] = await db.select({ id: clientsTable.id, trainerId: clientsTable.trainerId }).from(clientsTable).where(eq(clientsTable.clerkUserId, userId));
   if (!c) { res.status(404).json({ error: "Brak konta." }); return; }
   if (c.trainerId == null) { res.status(409).json({ error: "Nie jesteś połączony z trenerem.", code: "NOT_LINKED" }); return; }
+  if (await isSelfTraining(c.id)) { res.status(409).json({ error: "To Twój własny trening — nie można go odłączyć.", code: "SELF_TRAINING" }); return; }
   await disconnect(c.id, c.trainerId, "client");
   res.json({ ok: true });
 });

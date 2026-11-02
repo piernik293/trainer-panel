@@ -19,6 +19,7 @@ import {
 import { eq } from "drizzle-orm";
 import { db, trainersTable } from "@workspace/db";
 import { logger } from "../lib/logger";
+import { ensureSelfClient } from "../services/selfTraining";
 import { getTrainerIdentity } from "../services/trainerIdentity";
 
 const router: IRouter = Router();
@@ -59,6 +60,7 @@ router.post("/trainer/profile", async (req, res): Promise<void> => {
       email = patch.email ?? email;
     }
   }
+  await ensureSelfClient({ id: trainer.id, clerkUserId: trainer.clerkUserId, email }).catch((err) => logger.warn({ err }, "Self-training profile not created"));
   res.json({ id: trainer.id, displayName, email });
 });
 

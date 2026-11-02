@@ -418,3 +418,6 @@
 ## 2.11.2026 — jedno logowanie, jedno konto (gałąź `feature/jedno-logowanie`)
 - `GET /api/account/home` (panel / portal / blocked, bez skutków ubocznych), strona `/auth/redirect`, wspólne logowanie z tłem-zdjęciem i formularzem na środku, przekierowania starych adresów, ekran powitalny dla konta bez trenera, przełącznik [Mój trening] [Podopieczni], poprawka `POST /trainer/profile` dla trenera z własnym treningiem. Opis i plan domeny: `docs/KONTA.md`; zrzuty przed/po: `docs/screens/logowanie/`.
 - Testy: `account-home` (8), `authHome`, scenariusz przeglądarkowy na bazie QA (podopieczny, bez trenera, nowe konto, trener, administrator, zablokowany, trener+trening, stare adresy, linki zaproszeń; 375 i 1440 px, jasny i ciemny) — 0 błędów.
+
+## 2.11.2026 — „Mój trening” dla trenerów (gałąź `feature/moj-trening`)
+- Serwis `selfTraining`, tworzenie przy akceptacji / wejściu do panelu, migracja 0064 (po `pg_dump`), wyłączenie z limitu klientów i z pulpitu, blokada odłączenia i usunięcia, testy izolacji `self-training` (8).

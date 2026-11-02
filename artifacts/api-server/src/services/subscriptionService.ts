@@ -226,7 +226,8 @@ async function countUsage(
     const [row] = await tx
       .select({ value: count() })
       .from(clientsTable)
-      .where(eq(clientsTable.trainerId, trainerId));
+      // „Mój trening” (własny profil trenera) nie liczy się do limitu klientów
+      .where(and(eq(clientsTable.trainerId, trainerId), sql`${clientsTable.clerkUserId} is distinct from (select t.clerk_user_id from trainers t where t.id = ${trainerId})`));
     return Number(row?.value ?? 0);
   }
   if (metric === "customExercises") {
