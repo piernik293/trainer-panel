@@ -59,7 +59,6 @@ import {
   JUMP_EXPERIENCE_OPTIONS,
   showJumpExperience,
   CARDIO_PREFERENCE_OPTIONS,
-  CARDIO_FREQUENCY_OPTIONS,
   PREFERRED_CARDIO_TYPE_OPTIONS,
   ACTIVITY_LEVEL_OPTIONS,
   SLEEP_HOURS_OPTIONS,
@@ -67,8 +66,8 @@ import {
   ADVANCED_METHODS,
   TRAINING_FREQUENCY_RECOMMENDATIONS,
   BMI_RECOMMENDATION_TEXT,
-  CARDIO_RECOMMENDATION_TEXT,
-  CARDIO_AVOID_REASSURANCE_TEXT,
+  CARDIO_QUESTION,
+  CARDIO_QUESTION_HINT,
   API_TO_ATHLETE_STATUS,
   ATHLETE_STATUS_TO_API,
   calculateBmi,
@@ -87,7 +86,6 @@ import {
   showTrainingDurationField,
   showEquipmentField,
   showCardioRecommendation,
-  isCardioRelevant,
 } from "@workspace/survey-config";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
@@ -605,12 +603,8 @@ function SurveyReadonlyPreview({
         </CardHeader>
         <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Field
-            label="Preferencja cardio"
+            label="Cardio w planie"
             value={survey.cardioPreference}
-          />
-          <Field
-            label="Aktywność tlenowa obecnie"
-            value={survey.cardioFrequency}
           />
           <Field
             label="Preferowana forma cardio"
@@ -738,7 +732,7 @@ function SurveyFormBody({
       // An earlier answer ("Cardio może być dodatkiem do planu" etc.) is shown as one of the two current ones.
       cardioPreference: (() => {
         const k = normalizeCardioPreference(survey?.cardioPreference as string | undefined);
-        return k === "include" ? CARDIO_PREFERENCE_OPTIONS[0] : k === "minimum" ? CARDIO_PREFERENCE_OPTIONS[1] : "";
+        return k === "include" ? CARDIO_PREFERENCE_OPTIONS[0] : k === "none" ? CARDIO_PREFERENCE_OPTIONS[1] : "";
       })(),
       cardioFrequency: (survey?.cardioFrequency as string) ?? "",
       preferredCardioType: (survey?.preferredCardioType as string) ?? "",
@@ -757,7 +751,6 @@ function SurveyFormBody({
   const activityLevel = form.watch("activityLevel");
   const injuryStatus = form.watch("injuryStatus");
   const hasAdditionalInfo = form.watch("hasAdditionalInfo");
-  const cardioPreference = form.watch("cardioPreference");
 
   const isSportGoal = goalIsSport(trainingGoal);
   const isIntermAdv = isIntermediateOrAdvancedLevel(experienceLevel);
@@ -768,7 +761,6 @@ function SurveyFormBody({
   const showTrainingDuration = showTrainingDurationField(experienceLevel);
   const showEquipment = showEquipmentField(trainingLocation);
   const showCardioRec = showCardioRecommendation(trainingGoal);
-  const cardioRelevant = isCardioRelevant(trainingGoal, activityLevel);
 
   const calculatedAge = calculateAge(dateOfBirth) ?? watchedAge;
   const bmi = calculateBmi(heightCm, weightKg);
@@ -2191,19 +2183,14 @@ function SurveyFormBody({
               <CardTitle>Aktywność tlenowa i cardio</CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
-              {cardioRelevant && (
-                <p className="text-xs text-primary bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm -mt-2">
-                  {CARDIO_RECOMMENDATION_TEXT}
-                </p>
-              )}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="cardioPreference"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Jak klient chce uwzględnić cardio w planie?
+                        {CARDIO_QUESTION}
                       </FormLabel>
                       <Select
                         onValueChange={field.onChange}
@@ -2224,43 +2211,7 @@ function SurveyFormBody({
                           ))}
                         </SelectContent>
                       </Select>
-                      {normalizeCardioPreference(cardioPreference) === "minimum" && (
-                        <FormDescription className="text-xs text-primary bg-primary/5 border border-primary/10 px-3 py-2 rounded-sm">
-                          {CARDIO_AVOID_REASSURANCE_TEXT}
-                        </FormDescription>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="cardioFrequency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Jak wygląda aktywność tlenowa klienta obecnie?
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value ?? ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Wybierz...">
-                              {field.value || undefined}
-                            </SelectValue>
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {CARDIO_FREQUENCY_OPTIONS.map((opt) => (
-                            <SelectItem key={opt} value={opt}>
-                              {opt}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormDescription className="text-xs">{CARDIO_QUESTION_HINT}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

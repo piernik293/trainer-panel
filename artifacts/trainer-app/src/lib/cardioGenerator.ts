@@ -6,7 +6,7 @@
  * default recommendation when the trainer has not yet saved an override.
  */
 
-import { normalizeCardioPreference } from "@workspace/survey-config";
+import { wantsCardio } from "@workspace/survey-config";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,7 +27,7 @@ export interface CardioRecommendationData {
 }
 
 export interface CardioInputs {
-  /** "Tak, uwzględnij cardio w planie" | "Tylko niezbędne minimum" | earlier wordings | null */
+  /** "Tak" | "Nie" | earlier wordings | null */
   cardioPreference: string | null;
   /** "0" | "1-2" | "3-4" | "4+" | null — current weekly cardio frequency */
   cardioFrequency: string | null;
@@ -50,12 +50,6 @@ function isBeginner(level: string | null): boolean {
   return !!level && BEGINNER_LEVELS.has(level);
 }
 
-// The interview stores "Tylko niezbędne minimum" (earlier: "Wolę ograniczyć cardio do niezbędnego
-// minimum"); the former check compared with one wording only, so "minimum" was never honoured.
-function isMinimum(pref: string | null): boolean {
-  return normalizeCardioPreference(pref) === "minimum";
-}
-
 function isAlreadyVeryActive(freq: string | null): boolean {
   return freq === "4+";
 }
@@ -72,11 +66,9 @@ function selectActivity(inputs: CardioInputs): string {
   const inactive =
     inputs.activityLevel === "Siedzący" ||
     inputs.experienceLevel === "Brak aktywności fizycznej";
-  const minimum = isMinimum(inputs.cardioPreference);
 
-  // Do not push running on inactive / beginner / minimum clients unless they
-  // explicitly chose it.
-  if ((beginner || inactive || minimum) && pref !== "Bieganie") {
+  // Do not push running on inactive / beginner clients unless they explicitly chose it.
+  if ((beginner || inactive) && pref !== "Bieganie") {
     // Honor their non-running preference; otherwise default to Marsz.
     if (pref && pref !== "Bieganie") return pref;
     return "Marsz";
@@ -92,7 +84,6 @@ function selectActivity(inputs: CardioInputs): string {
 // ─── Session count ────────────────────────────────────────────────────────────
 
 function selectSessionCount(inputs: CardioInputs): number {
-  const minimum = isMinimum(inputs.cardioPreference);
   const beginner = isBeginner(inputs.experienceLevel);
   const alreadyVeryActive = isAlreadyVeryActive(inputs.cardioFrequency);
   const alreadyActive = isAlreadyActive(inputs.cardioFrequency);
@@ -102,9 +93,6 @@ function selectSessionCount(inputs: CardioInputs): number {
 
   // Client already does 4+ cardio sessions — do not pile on.
   if (alreadyVeryActive) return 2;
-
-  // Minimum preference → conservative 1–2.
-  if (minimum) return beginner ? 1 : 2;
 
   // Already active (3-4×) → maintain, no addition.
   if (alreadyActive) return 2;
@@ -119,12 +107,11 @@ function selectSessionCount(inputs: CardioInputs): number {
 
 function selectDuration(inputs: CardioInputs, sessionsPerWeek: number): number {
   const beginner = isBeginner(inputs.experienceLevel);
-  const minimum = isMinimum(inputs.cardioPreference);
   const veryActiveLifestyle =
     inputs.activityLevel === "Bardzo aktywny" ||
     inputs.activityLevel === "Praca fizyczna";
 
-  if (beginner || minimum) return 20;
+  if (beginner) return 20;
   if (veryActiveLifestyle && sessionsPerWeek >= 3) return 30;
   return 25;
 }
@@ -271,9 +258,11 @@ function buildPreSessionNote(activity: string): string {
 
 // ─── Main generator ───────────────────────────────────────────────────────────
 
+/** Zwraca null, gdy klient odpowiedział „Nie” na „Czy chcesz uwzględnić cardio w planie?” (także w starszych wywiadach). */
 export function generateCardioRecommendation(
   inputs: CardioInputs,
-): CardioRecommendationData {
+): CardioRecommendationData | null {
+  if (!wantsCardio(inputs.cardioPreference, inputs.cardioFrequency)) return null;
   const activity = selectActivity(inputs);
   const sessionsPerWeek = selectSessionCount(inputs);
   const durationMinutes = selectDuration(inputs, sessionsPerWeek);

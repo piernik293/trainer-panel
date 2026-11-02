@@ -124,24 +124,40 @@ export const EQUIPMENT_OPTIONS = [
 // ─── Cardio ───────────────────────────────────────────────────────────────────
 
 /**
- * Two answers only. Older interviews may hold "Chętnie uwzględnię cardio w planie",
- * "Cardio może być dodatkiem do planu" (both mean "include") or
- * "Wolę ograniczyć cardio do niezbędnego minimum" — see normalizeCardioPreference().
+ * One question: "Czy chcesz uwzględnić cardio w planie?" — Tak / Nie.
+ * Older interviews may hold "Tak, uwzględnij cardio w planie", "Chętnie uwzględnię cardio w planie",
+ * "Cardio może być dodatkiem do planu" (all mean "include") or "Tylko niezbędne minimum" /
+ * "Wolę ograniczyć cardio do niezbędnego minimum" (both mean "none") — see normalizeCardioPreference().
  */
-export const CARDIO_PREFERENCE_OPTIONS = [
-  "Tak, uwzględnij cardio w planie",
-  "Tylko niezbędne minimum",
-] as const;
+export const CARDIO_PREFERENCE_OPTIONS = ["Tak", "Nie"] as const;
 
-export type CardioPreferenceKind = "include" | "minimum";
+export type CardioPreferenceKind = "include" | "none";
+
+export const CARDIO_QUESTION = "Czy chcesz uwzględnić cardio w planie?";
+export const CARDIO_QUESTION_HINT = "Możesz to zmienić później.";
 
 /** Maps any stored answer (current or earlier wording) to what the generator needs. */
 export function normalizeCardioPreference(raw: string | null | undefined): CardioPreferenceKind | null {
   if (!raw) return null;
   const t = raw.trim().toLowerCase();
-  if (t.includes("niezbędn") || t.includes("ograniczyć")) return "minimum";
+  if (t === "nie") return "none";
+  if (t === "tak") return "include";
+  if (t.includes("niezbędn") || t.includes("ograniczyć")) return "none";
   if (t.includes("uwzględn") || t.includes("dodatk")) return "include";
   return null;
+}
+
+/**
+ * Final yes/no for cardio. The explicit new answers ("Tak"/"Nie") win. In older interviews the answer
+ * "Nie wykonuję cardio" (removed question about current frequency) also means "Nie"; everything else — "Tak"
+ * (also when nothing was answered: beginners are not asked, cardio stays in the plan as before).
+ */
+export function wantsCardio(pref: string | null | undefined, legacyFrequency?: string | null): boolean {
+  const t = (pref ?? "").trim().toLowerCase();
+  if (t === "tak") return true;
+  if (t === "nie") return false;
+  if (normalizeCardioPreference(pref) === "none") return false;
+  return !(legacyFrequency ?? "").trim().toLowerCase().startsWith("nie wykonuj");
 }
 
 export const CARDIO_FREQUENCY_OPTIONS = [
@@ -261,15 +277,6 @@ export const TRAINING_FREQUENCY_RECOMMENDATIONS: Record<string, string> = {
 
 export const BMI_RECOMMENDATION_TEXT =
   "BMI jest powyżej 25. To wartość orientacyjna — nie rozróżnia tkanki tłuszczowej od mięśniowej, więc traktuj ją razem z resztą wywiadu.";
-
-export const CARDIO_RECOMMENDATION_TEXT =
-  "💡 Przy tym celu treningi cardio często wspierają osiąganie lepszych efektów. Ostateczna ilość zostanie indywidualnie dopasowana do możliwości, preferencji oraz planu treningowego.";
-
-export const CARDIO_AVOID_REASSURANCE_TEXT =
-  "👍 To nie problem. W miarę możliwości plan zostanie przygotowany tak, aby ograniczyć ilość cardio lub zastąpić je innymi formami aktywności, jeśli będzie to zgodne z celem treningowym.";
-
-export const CARDIO_FREQUENCY_HELPER_TEXT =
-  "💡 Ta informacja pomoże lepiej dopasować plan treningowy do celu oraz preferencji. Cardio nie jest obowiązkowym elementem każdego planu.";
 
 // ─── Conditional logic predicates (source of truth for both forms) ────────────
 

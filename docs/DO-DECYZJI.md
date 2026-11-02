@@ -252,3 +252,9 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 - Pakiet ustawiony ręcznie przez administratora (Pro/Unlimited) wyłącza okres próbny i jego komunikaty. `BETA_NO_LIMITS=1` nadal znosi wszystkie limity, komunikaty o okresie próbnym są wtedy ukryte.
 - Administrator: w zakładce Trenerzy widać datę końca okresu próbnego, przycisk „Przedłuż o 14 dni” (od końca, jeśli trwa; od dziś, jeśli minął) i „Ustaw pakiet”.
 - **Wybrałem (do potwierdzenia):** dni liczone w górę (ostatni dzień = „1 dzień”); w ostatnich 3 dniach komunikat w ciepłym, nie czerwonym kolorze. Solo: bez żadnych tekstów o płatności; limit planu to „Nowy plan możesz ułożyć za X dni — ciało potrzebuje czasu na efekty.”
+
+## Wywiad: cardio (blok 2, 4.11.2026)
+- Jedno pytanie „Czy chcesz uwzględnić cardio w planie?” — Tak / Nie, pod spodem tylko „Możesz to zmienić później.” Usunięte: „Jak często wykonujesz cardio?”, „Tylko niezbędne minimum” i teksty namawiające/uspokajające. To samo w wywiadzie wpisywanym przez trenera.
+- **Nie** = brak rekomendacji cardio, kroków i elementów kondycyjnych, także przy celu Redukcja (trener może dodać ręcznie). **Tak** = jak dotąd.
+- Starsze wywiady: „Tylko niezbędne minimum” / „Wolę ograniczyć…” / „Nie wykonuję cardio” → Nie; reszta → Tak; nowa odpowiedź Tak/Nie ma pierwszeństwo przed starym polem częstotliwości. Dane w bazie nie są zmieniane (mapowanie przy odczycie, `wantsCardio` w `lib/survey-config`).
+- **Do potwierdzenia:** osoby początkujące i bez aktywności nadal nie widzą tego pytania (skrócony wywiad), więc u nich cardio zostaje domyślnie „Tak”, jak dotąd.

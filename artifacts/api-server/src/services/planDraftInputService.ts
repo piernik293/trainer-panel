@@ -8,6 +8,7 @@
  * This service NEVER generates exercises, allocates volume, or saves plans.
  */
 
+import { wantsCardio } from "@workspace/survey-config";
 import { blockDurationRange, isBeginnerLevel } from "@workspace/survey-config";
 import { effectiveLevelWarning, resolveEffectiveLevel, withEffectiveLevel } from "../lib/effectiveLevel";
 import { eq, desc } from "drizzle-orm";
@@ -419,15 +420,16 @@ export async function loadPlanDraftInput(clientId: number): Promise<PlanDraftInp
     ? getHealthAlertState(survey.healthLimitations, survey.injuryStatus)
     : null;
 
-  const cardioRecommendation: CardioRecommendationType | null = getCardioRecommendation(
-    trainingGoal,
-    dailyActivity,
-    availableDays,
-    rawLevel,
-  );
+  // Odpowiedź „Nie” na „Czy chcesz uwzględnić cardio w planie?” (także starsze wywiady: „Nie wykonuję cardio”, „minimum”):
+  // bez cardio i bez elementów kondycyjnych — także przy celu Redukcja (kroki są tylko dodatkiem, nie są narzucane).
+  const wantsCardioInPlan = wantsCardio(survey?.cardioPreference, survey?.cardioFrequency);
+  const cardioRecommendation: CardioRecommendationType | null = wantsCardioInPlan
+    ? getCardioRecommendation(trainingGoal, dailyActivity, availableDays, rawLevel)
+    : null;
 
-  const conditioningRecommendation: ConditioningRecommendationType | null =
-    getConditioningRecommendation(trainingGoal, availableDays);
+  const conditioningRecommendation: ConditioningRecommendationType | null = wantsCardioInPlan
+    ? getConditioningRecommendation(trainingGoal, availableDays)
+    : null;
 
   const athleteRecommendation: AthleteRecommendationResult | null = getAthleteRecommendation(
     survey?.athleteStatus,
