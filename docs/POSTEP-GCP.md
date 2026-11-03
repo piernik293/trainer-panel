@@ -449,3 +449,6 @@
 
 ## 4.11.2026 — blok 5: projekt metod intensyfikacji (gałąź `docs/metody`)
 - `docs/METODY.md`: pytanie i kafelki, tabela reguł metod, „Dobierz za mnie”, teksty „Dlaczego?”, opis zmian i 5 pytań do właściciela. Sam dokument scalony do `main`; wdrożenie to blok 6 (gałąź `feature/metody`, nie scalana).
+
+## 4.11.2026 — raport poranny (gałąź `docs/raport-rano`)
+- `docs/RAPORT-DLA-WLASCICIELA.md` i `~/RAPORT-RANO.md` (kopia).
