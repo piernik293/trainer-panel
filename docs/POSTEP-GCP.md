@@ -443,3 +443,6 @@
 
 ## 4.11.2026 — blok 3: partie priorytetowe jako kafelki (gałąź `fix/wywiad-partie`)
 - `PRIORITY_TILES`, `priorityGroupsOf`, `toPriorityTiles` w `lib/survey-config`; rozwijanie w `planDraftVolumeDecisionService`, `recommendation-engine`, `planDraftGenerateDay`, `planDraftDayRecommendations`; kafelki w portalu i formularzu trenera; testy `priorityTiles`, `surveyLimits`, kreatora.
+
+## 4.11.2026 — blok 4: jakość planu (gałąź `fix/plan-jakosc`)
+- `exerciseFamily` (jeden wzorzec na dzień, silnik wyboru + powtórzenia bezpieczne), metryka symulacji, `refinePrescription`, `dayNaming` (nazwy dni Solo), poprawka kolejki zapisów w portalu (`startAutoRetry`, odznaka); testy `exerciseFamily`, `prescriptionRefine`, `dayNaming`, `queue`, `SyncBadge`.

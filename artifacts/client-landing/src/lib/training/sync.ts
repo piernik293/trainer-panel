@@ -1,4 +1,4 @@
-import { createQueue, type QueueOp, type SendResult, type TrainingQueue } from "./queue";
+import { createQueue, startAutoRetry, type QueueOp, type SendResult, type TrainingQueue } from "./queue";
 
 /** Absolute /api path, Clerk cookie (same as the rest of the portal). */
 async function send(op: QueueOp, sessionId: number | null): Promise<SendResult> {
@@ -32,6 +32,9 @@ export function trainingQueue(): TrainingQueue {
     });
     if (typeof window !== "undefined") {
       window.addEventListener("online", () => void queue!.flush());
+      // wracamy do aplikacji (telefon był zablokowany) albo mija czas: ponów to, co nadal czeka
+      document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") void queue!.flush(); });
+      startAutoRetry(queue);
       void queue.flush();
     }
   }

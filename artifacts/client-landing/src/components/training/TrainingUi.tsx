@@ -1,5 +1,5 @@
 import { useEffect, useId, useState, useSyncExternalStore } from "react";
-import { Minus, Plus, WifiOff, CheckCircle2 } from "lucide-react";
+import { Minus, Plus, WifiOff, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trainingQueue } from "@/lib/training/sync";
 
@@ -127,10 +127,25 @@ export function SyncBadge() {
     return undefined;
   }, [pending, hadPending]);
 
-  if (!online || pending > 0) {
+  // Online with something waiting: a spinner (not the "no network" icon); after a while say that we are retrying.
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!online || pending === 0) { setSlow(false); return undefined; }
+    const t = window.setTimeout(() => setSlow(true), 20_000);
+    return () => window.clearTimeout(t);
+  }, [online, pending]);
+
+  if (!online) {
     return (
       <span role="status" className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2.5 py-1 text-xs font-semibold text-warning">
-        <WifiOff className="h-3.5 w-3.5" aria-hidden /> {online ? "Zapisywanie…" : "Offline — zapisane na telefonie"}
+        <WifiOff className="h-3.5 w-3.5" aria-hidden /> Offline — zapisane na telefonie
+      </span>
+    );
+  }
+  if (pending > 0) {
+    return (
+      <span role="status" className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2.5 py-1 text-xs font-semibold text-warning">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> {slow ? "Ponawiam zapis — dane są bezpieczne na telefonie" : "Zapisywanie…"}
       </span>
     );
   }

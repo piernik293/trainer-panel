@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { createQueue, type QueueOp, type SendResult } from "./queue";
+import { describe, it, expect, vi } from "vitest";
+import { createQueue, startAutoRetry, type QueueOp, type SendResult } from "./queue";
 
 const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), m }; };
 const op = (kind: QueueOp["kind"], id: string, extra: Partial<QueueOp> = {}): QueueOp => ({ id, kind, sessionUuid: "S1", body: { clientUuid: id }, ...extra });
@@ -83,5 +83,32 @@ describe("offline queue", () => {
     const broken = { getItem: () => { throw new Error("x"); }, setItem: () => { throw new Error("x"); } };
     const q = createQueue({ storage: broken, send: async () => ({ ok: true, data: { id: 1 } }) });
     q.enqueue(op("start", "S1")); await q.flush(); expect(q.pending()).toBe(0);
+  });
+});
+
+describe("automatic retry (the 'Zapisywanie…' label must not stay forever)", () => {
+  it("after a temporary failure the queue is retried while online and empties when the server recovers", async () => {
+    vi.useFakeTimers();
+    let serverUp = false; const sent: string[] = [];
+    const q = createQueue({ storage: mem(), send: async (o): Promise<SendResult> => { if (!serverUp) return { ok: false, permanent: false }; sent.push(o.id); return { ok: true, data: { id: 1 } }; } });
+    q.enqueue(op("start", "S1")); await q.flush();
+    expect(q.pending()).toBe(1); // stuck: no event would flush it again
+    const stop = startAutoRetry(q, { intervalMs: 1000, isOnline: () => true });
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(q.pending()).toBe(1); // still down: retries but keeps the data
+    serverUp = true;
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(q.pending()).toBe(0); expect(sent).toEqual(["S1"]);
+    stop(); vi.useRealTimers();
+  });
+  it("does not try while offline", async () => {
+    vi.useFakeTimers();
+    let calls = 0;
+    const q = createQueue({ storage: mem(), send: async (): Promise<SendResult> => { calls++; return { ok: true, data: { id: 1 } }; } });
+    q.enqueue(op("start", "S1"));
+    const stop = startAutoRetry(q, { intervalMs: 1000, isOnline: () => false });
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(calls).toBe(0); expect(q.pending()).toBe(1);
+    stop(); vi.useRealTimers();
   });
 });

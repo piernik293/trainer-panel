@@ -25,6 +25,7 @@
  *   { hasProfile, hasLocationData, sessionType, exercises: DayRecommendationExercise[] }
  */
 
+import { usedEquipment } from "../services/dayNaming";
 import { priorityGroupsOf } from "@workspace/survey-config";
 import { soloAllowsExercise, soloEnabled, soloPainExcludedIds } from "../services/solo";
 import { buildLadderRules, loadLadderRows } from "../services/ladderSelection";
@@ -56,6 +57,7 @@ import {
 import { buildGoalProfile } from "../services/goalProfileService";
 import {
   deriveExerciseClassForOutput,
+  refinePrescription,
   sessionOrderRank,
   prescribeExercise,
 } from "../services/exercisePrescriptionService.js";
@@ -860,7 +862,11 @@ export async function generateDayHandler(req: GenerateDayReq, res: Response): Pr
 
     // 4. Generator notes — contextual decisions surfaced for the trainer
     const generatorNotes: string[] = [];
-    if (calis) generatorNotes.push("Styl treningu: kalistenika (masa ciała, drążek, poręcze, kółka, guma); ok. 5 ćwiczeń na jednostkę, skoki tylko w dniu nóg.");
+    if (calis) {
+      // sprzęt w nagłówku = tylko ten, który ten dzień naprawdę wykorzystuje
+      const gear = usedEquipment(v0Result.exercises.map((e) => ({ name: e.name, equipment: e.equipment })));
+      generatorNotes.push(`Styl treningu: kalistenika (${["masa ciała", ...gear.map((g) => g.toLowerCase())].join(", ")}); ok. 5 ćwiczeń na jednostkę, skoki tylko w dniu nóg.`);
+    }
     // Decision 51: a day of 3 exercises is allowed; say why it is short.
     const limitedDayNote = v0Result.exercises.length - plyoBlockIds.size < FULL_DAY_EXERCISES ? `Ten dzień ma tylko ${v0Result.exercises.length - plyoBlockIds.size} ćwiczenia. ${shortage()}` : null;
     if (limitedDayNote) generatorNotes.push(limitedDayNote);
@@ -918,7 +924,7 @@ export async function generateDayHandler(req: GenerateDayReq, res: Response): Pr
         // prescription rather than main_compound — they are fallbacks, not anchors.
         const isBodyweightInGym =
           deprioritizePushUps && ex.name.trim().toLowerCase().startsWith("pompki");
-        const prescription = prescribeExercise(exerciseClass, goalBias, isBodyweightInGym);
+        const prescription = refinePrescription(ex, exerciseClass, prescribeExercise(exerciseClass, goalBias, isBodyweightInGym));
         // restrictionLabel is already set on DayRecommendationExercise by the
         // V0 engine (Step 5) when the exercise was chosen for a confirmed
         // restriction with action = "regression".  Just spread it through.
