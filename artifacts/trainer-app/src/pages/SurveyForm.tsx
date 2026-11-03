@@ -74,6 +74,11 @@ import {
   methodsAnswerUsable,
   normalizeCardioPreference,
   PRIORITY_TILES,
+  METHOD_AUTO,
+  METHOD_SELF,
+  METHOD_HINT,
+  METHOD_QUESTION,
+  methodTilesForTrainerForm,
   PRIORITY_TILES_MAX,
   toPriorityTiles,
   birthDateError,
@@ -148,6 +153,7 @@ const surveySchema = z.object({
   planStylePreference: z.string().optional(),
   avoidsAdvancedMethods: z.string().optional(),
   advancedMethodsToAvoid: z.array(z.string()).default([]),
+  preferredMethods: z.array(z.string()).default([]),
   hasAdditionalInfo: z.enum(["Tak", "Nie"]).optional(),
   additionalInfo: z.string().optional(),
   priorityMuscle1: z.string().optional(),
@@ -561,6 +567,7 @@ function SurveyReadonlyPreview({
             label="Metody intensyfikacji w planie"
             value={avoidsAdvancedMethodsLabel}
           />
+          <ArrayField label="Metody w planie (wybór klienta)" values={((survey as { preferredMethods?: string[] }).preferredMethods ?? []) as string[]} />
           <ArrayField
             label="Metody do unikania"
             values={advancedMethods}
@@ -721,6 +728,7 @@ function SurveyFormBody({
         : survey?.avoidsAdvancedMethods === false
         ? "Nie"
         : "",
+      preferredMethods: ((survey as { preferredMethods?: string[] } | undefined)?.preferredMethods ?? []) as string[],
       advancedMethodsToAvoid: methodsAnswerUsable((survey as { createdAt?: string } | undefined)?.createdAt)
         ? ((survey?.advancedMethodsToAvoid as string[]) ?? [])
         : [],
@@ -746,6 +754,16 @@ function SurveyFormBody({
   // ── Derived watch values ──
   const experienceLevel = form.watch("experienceLevel");
   const avoidsAdvancedMethods = form.watch("avoidsAdvancedMethods");
+  // Metody intensyfikacji (docs/METODY.md) — kafelki tylko, gdy serwer ma włączoną flagę METHODS_V2_ENABLED
+  const [methodsV2, setMethodsV2] = useState(false);
+  useEffect(() => { void fetch("/api/methods/status").then((r) => (r.ok ? r.json() : null)).then((b: { enabled?: boolean } | null) => setMethodsV2(b?.enabled === true)).catch(() => undefined); }, []);
+  const preferredMethods = form.watch("preferredMethods") ?? [];
+  const toggleMethod = (tile: string) => {
+    const has = preferredMethods.includes(tile);
+    const exclusive = tile === METHOD_AUTO || tile === METHOD_SELF;
+    const next = has ? preferredMethods.filter((m) => m !== tile) : exclusive ? [tile] : [...preferredMethods.filter((m) => m !== METHOD_AUTO && m !== METHOD_SELF), tile];
+    form.setValue("preferredMethods", next, { shouldDirty: true });
+  };
   const dateOfBirth = form.watch("dateOfBirth");
   const watchedAge = form.watch("age");
   const heightCm = form.watch("heightCm");
@@ -986,6 +1004,7 @@ function SurveyFormBody({
       avoidsAdvancedMethods: avoidsAdvancedMethodsBool,
       advancedMethodsToAvoid:
         avoidsAdvancedMethodsBool === true ? data.advancedMethodsToAvoid : [],
+      preferredMethods: methodsV2 && !isBeginner ? data.preferredMethods : [],
       healthConsent: surveyId && !healthConsentTouched ? undefined : healthConsent,
       favoriteExercises: favoritesString,
       avoidedExercises: avoidedString,
@@ -1749,6 +1768,19 @@ function SurveyFormBody({
                   })}
                 </div>
               </div>
+
+              {methodsV2 && !isBeginner && experienceLevel && (
+                <div data-testid="methods-picker">
+                  <p className="text-sm font-medium mb-1">{METHOD_QUESTION}</p>
+                  <p className="text-xs text-muted-foreground mb-3">{METHOD_HINT}</p>
+                  <div className="flex flex-wrap gap-2" role="group" aria-label="Metody w planie">
+                    {methodTilesForTrainerForm(experienceLevel).map((tile) => {
+                      const on = preferredMethods.includes(tile);
+                      return <Button key={tile} type="button" size="sm" variant={on ? "default" : "outline"} aria-pressed={on} onClick={() => toggleMethod(tile)}>{tile}</Button>;
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <p className="text-sm font-medium leading-none">Ulubione ćwiczenia</p>

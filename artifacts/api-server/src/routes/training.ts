@@ -11,6 +11,7 @@
  * then never blocks the next attempt. Use `status` (not is_completed) to tell
  * completed from aborted; status NULL = session from the older per-exercise flow.
  */
+import { isPairMethod } from "../services/methods";
 import { variationSeed } from "./../services/variation";
 import { historyCutoff, afterCutoff } from "../services/soloHistory";
 import { Router, type IRouter, type Request, type Response } from "express";
@@ -277,6 +278,9 @@ router.get("/client-portal/training/today", requireClientAuth, async (req, res):
       rir: workoutPlanExercisesTable.rir,
       restSeconds: workoutPlanExercisesTable.restSeconds,
       clientInstructions: workoutPlanExercisesTable.clientInstructions,
+      method: workoutPlanExercisesTable.method,
+      methodGroup: workoutPlanExercisesTable.methodGroup,
+      methodNote: workoutPlanExercisesTable.methodNote,
     })
     .from(workoutPlanExercisesTable)
     .innerJoin(exercisesTable, eq(workoutPlanExercisesTable.exerciseId, exercisesTable.id))
@@ -289,6 +293,10 @@ router.get("/client-portal/training/today", requireClientAuth, async (req, res):
     const step = weightStepFor(e.equipment);
     const role = exerciseRoleFor(e.exerciseType, e.repRangeMax ?? e.repsExact);
     const rest = restFor({ level: plan.level, role, sessionMinutes: targetDay.estimatedDurationMinutes, trainerRestSeconds: e.restSeconds });
+    // Para (dwa ćwiczenia jedno po drugim): pierwsze ćwiczenie bez przerwy, od razu partner; drugie z normalną przerwą.
+    const pairMates = e.methodGroup != null && isPairMethod(e.method) ? exRows.filter((o) => o.methodGroup === e.methodGroup && o.id !== e.id) : [];
+    const partner = pairMates[0] ?? null;
+    const firstOfPair = partner != null && e.orderInDay < partner.orderInDay;
     const hist: PerformedSet[] = history.filter((h) => h.exerciseId === e.exerciseId);
     const best = bestSet(hist);
     return {
@@ -304,7 +312,10 @@ router.get("/client-portal/training/today", requireClientAuth, async (req, res):
       repMin: e.repRangeMin ?? e.repsExact ?? null,
       repMax: e.repRangeMax ?? e.repsExact ?? null,
       rir: e.rir,
-      restText: formatRest(rest),
+      restText: firstOfPair ? `bez przerwy — od razu: ${partner!.name}` : formatRest(rest),
+      method: e.method ?? null,
+      methodNote: e.methodNote ?? null,
+      pair: partner ? { partnerName: partner.name, first: firstOfPair } : null,
       restSource: rest.source,
       weightStepKg: step.stepKg,
       showWeight: step.showWeight,

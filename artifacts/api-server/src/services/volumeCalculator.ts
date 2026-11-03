@@ -17,6 +17,7 @@
  * exactly one place.
  */
 
+import { volumeSets } from "./methods";
 import { eq, inArray, and } from "drizzle-orm";
 import {
   db,
@@ -512,6 +513,7 @@ export async function calculatePlanVolume(
         dayId: workoutPlanExercisesTable.dayId,
         exerciseId: workoutPlanExercisesTable.exerciseId,
         workingSets: workoutPlanExercisesTable.workingSets,
+        method: workoutPlanExercisesTable.method,
         orderInDay: workoutPlanExercisesTable.orderInDay,
         dayName: workoutPlanDaysTable.dayName,
         dayOrder: workoutPlanDaysTable.dayOrder,
@@ -535,7 +537,7 @@ export async function calculatePlanVolume(
     dayOrder: pe.dayOrder,
     exerciseId: pe.exerciseId,
     exerciseName: pe.exerciseName,
-    workingSets: pe.workingSets,
+    workingSets: volumeSets(pe.workingSets, pe.method), // metody z dodatkową serią liczą się jako +1 seria efektywna (docs/METODY.md)
   }));
 
   const coreResults = computeVolumeCore(

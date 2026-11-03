@@ -23,6 +23,8 @@ export interface MethodCtx {
   weekDays?: Partial<Record<MethodKey, number>>;
   /** „Metody do unikania” z wywiadu (etykiety lub starsze nazwy): te metody nigdy nie są stosowane */
   avoid?: readonly string[];
+  /** Deklarowany czas treningu z wywiadu (np. „30–45 min”) */
+  sessionDuration?: string | null;
 }
 export interface MethodAssignment { exerciseId: number; method: MethodKey; group: number | null; note: string }
 
@@ -38,7 +40,7 @@ const lc = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
 const has = (e: MethodExercise, ...g: string[]) => (e.equipment ?? []).some((x) => g.map(lc).includes(lc(x)));
 const isIso = (e: MethodExercise) => lc(e.exerciseType) === "izolowane";
 const NEVER = /martwy ciąg|przysiad ze sztang|sztang\w* (nad głow|żołnierski)|wyciskanie (żołnierskie|sztangi nad)/i;
-const eligible = (e: MethodExercise) => e.verified !== false && !e.avoided && !NEVER.test(e.name);
+const eligible = (e: MethodExercise) => e.verified !== false && !e.avoided && !NEVER.test(e.name) && !(has(e, "Sztanga") && /nad głow/i.test(e.name));
 const heavyCompound = (e: MethodExercise) => !isIso(e) && (e.exercisePriority === "Bardzo wysoki");
 const machineLike = (e: MethodExercise) => has(e, "Maszyna", "Wyciąg");
 const dropFriendly = (e: MethodExercise) => isIso(e) && has(e, "Maszyna", "Wyciąg", "Hantle") && !has(e, "Sztanga");
@@ -46,7 +48,13 @@ const dropFriendly = (e: MethodExercise) => isIso(e) && has(e, "Maszyna", "Wyci�
 const ANTAGONISTS: Array<[string, string]> = [["biceps", "triceps"], ["klatka piersiowa", "plecy"]];
 const ARM_SHOULDER = new Set(["biceps", "triceps", "barki"]);
 
-function pickPair(day: readonly MethodExercise[], used: Set<number>, same: boolean, armsOnly: boolean): [MethodExercise, MethodExercise] | null {
+/** Czas krótszy niż ok. 45 min („30–45 min”, „do 45 min”). */
+export function isShortSession(text: string | null | undefined): boolean {
+  const nums = (text ?? "").match(/\d+/g)?.map(Number) ?? [];
+  return nums.length > 0 && Math.max(...nums) <= 45;
+}
+
+function pickPair(day: readonly MethodExercise[], used: Set<number>, same: boolean, armsOnly: boolean, accessoryOnly = false): [MethodExercise, MethodExercise] | null {
   const pool = day.filter((e) => eligible(e) && !used.has(e.id));
   if (same) {
     for (const a of pool) {
@@ -59,13 +67,13 @@ function pickPair(day: readonly MethodExercise[], used: Set<number>, same: boole
     if (armsOnly && !(ARM_SHOULDER.has(g1) && ARM_SHOULDER.has(g2))) continue;
     const a = pool.find((e) => lc(e.mainMuscleGroup) === g1 && !heavyCompound(e));
     const b = pool.find((e) => lc(e.mainMuscleGroup) === g2 && !heavyCompound(e));
-    if (a && b && (isIso(a) || isIso(b))) return [a, b];
+    if (a && b && (accessoryOnly ? isIso(a) && isIso(b) : isIso(a) || isIso(b))) return [a, b];
   }
   return null;
 }
 
 /** Które metody (z limitami na dzień) wolno zastosować: z kafelków klienta albo z reguł „Dobierz za mnie”. */
-type Planned = Array<{ method: MethodKey; perDay: number; armsOnly?: boolean; weekDaysMax: number }>;
+type Planned = Array<{ method: MethodKey; perDay: number; armsOnly?: boolean; accessoryOnly?: boolean; weekDaysMax: number }>;
 export function plannedMethods(ctx: MethodCtx): Planned {
   const avoided = new Set((ctx.avoid ?? []).map(methodTileOf).filter((t): t is MethodTile => t != null));
   const tileOfMethod: Record<MethodKey, MethodTile> = { superserie: "Superserie", serie_zlozone: "Serie złożone", drop_set: "Drop sety", rest_pause: "Rest-pause", upadek: "Serie do upadku mięśniowego" };
@@ -77,8 +85,8 @@ function plannedAll(ctx: MethodCtx): Planned {
   if (level !== "Średniozaawansowany" && !z) return [];
   const tiles = ctx.choices.map(methodTileOf).filter((t): t is MethodTile => t != null);
   if (tiles.length === 0) return [];
-  const out: Array<{ method: MethodKey; perDay: number; armsOnly?: boolean; weekDaysMax: number }> = [];
-  const add = (method: MethodKey, perDay: number, weekDaysMax: number, armsOnly = false) => { if (!out.some((o) => o.method === method)) out.push({ method, perDay, armsOnly, weekDaysMax }); };
+  const out: Planned = [];
+  const add = (method: MethodKey, perDay: number, weekDaysMax: number, armsOnly = false, accessoryOnly = false) => { if (!out.some((o) => o.method === method)) out.push({ method, perDay, armsOnly, accessoryOnly, weekDaysMax }); };
   if (tiles.includes(METHOD_AUTO)) {
     const goal = ctx.goal ?? "";
     if (goal === "Budowa sylwetki") {
@@ -86,6 +94,7 @@ function plannedAll(ctx: MethodCtx): Planned {
       add("drop_set", z ? 2 : 1, 2);
       if (z && !ctx.solo) add("rest_pause", 1, 1);
     } else if (goal === "Redukcja tkanki tłuszczowej") add("superserie", z ? 2 : 1, 2);
+    else if (goal === "Zwiększenie siły" && isShortSession(ctx.sessionDuration)) add("superserie", 1, 2, false, true); // Siła: bez metod, wyjątek — krótki czas, tylko ćwiczenia dodatkowe
     return out;
   }
   if (tiles.includes("Superserie")) add("superserie", z ? 2 : 1, 2);
@@ -109,7 +118,7 @@ export function chooseMethods(day: readonly MethodExercise[], ctx: MethodCtx): M
     if (p.method === "superserie" || p.method === "serie_zlozone") {
       let pairs = 0;
       while (pairs < Math.max(1, Math.floor(p.perDay / 1)) && room() >= 2 && pairs < (p.method === "superserie" ? (ctx.level === "Zaawansowany" ? 2 : 1) : 1)) {
-        const pair = pickPair(day, used, p.method === "serie_zlozone", !!p.armsOnly);
+        const pair = pickPair(day, used, p.method === "serie_zlozone", !!p.armsOnly, !!p.accessoryOnly);
         if (!pair) break;
         for (const e of pair) { used.add(e.id); out.push({ exerciseId: e.id, method: p.method, group, note: METHOD_NOTES[p.method] }); }
         group++; pairs++;
@@ -138,3 +147,11 @@ export function orderForMethods<T extends { id: number }>(items: readonly T[], a
   }
   return out;
 }
+
+/** Serie liczone do objętości: drop set i rest-pause dodają 1 efektywną serię na ćwiczenie; pozostałe metody bez zmian. */
+export function volumeSets(workingSets: number, method: string | null | undefined): number {
+  return workingSets + (method === "drop_set" || method === "rest_pause" ? 1 : 0);
+}
+
+/** Metody, w których dwa ćwiczenia idą parami (jedno po drugim). */
+export const isPairMethod = (m: string | null | undefined) => m === "superserie" || m === "serie_zlozone";

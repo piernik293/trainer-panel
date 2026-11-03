@@ -1146,7 +1146,7 @@ export async function generateDayHandler(req: GenerateDayReq, res: Response): Pr
       const full = v0Result.exercises as unknown as Array<MethodExercise & { id: number }>;
       const assignments = chooseMethods(
         enrichedExercises.map((e) => ({ ...(full.find((f) => f.id === e.id) ?? {}), id: e.id, name: e.name, mainMuscleGroup: e.mainMuscleGroup, exerciseType: e.exerciseType, exercisePriority: e.exercisePriority, equipment: e.equipment, avoided: e.isAvoided }) as MethodExercise),
-        { level: survey.experienceLevel, goal: survey.trainingGoal, solo: !!solo, choices: (survey as { preferredMethods?: string[] | null }).preferredMethods ?? [], weekDays: body.data.weekMethodDays, avoid: (survey as { advancedMethodsToAvoid?: string[] | null }).advancedMethodsToAvoid ?? [] },
+        { level: survey.experienceLevel, goal: survey.trainingGoal, solo: !!solo, choices: (survey as { preferredMethods?: string[] | null }).preferredMethods ?? [], weekDays: body.data.weekMethodDays, sessionDuration: survey.sessionDuration, avoid: (survey as { advancedMethodsToAvoid?: string[] | null }).advancedMethodsToAvoid ?? [] },
       );
       if (assignments.length > 0) {
         const byId = new Map(assignments.map((a) => [a.exerciseId, a]));

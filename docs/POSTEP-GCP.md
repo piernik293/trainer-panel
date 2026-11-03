@@ -458,3 +458,6 @@
 
 ## 4.11.2026 — zmienność planów i zamiana ćwiczenia w Solo (gałąź `feature/zmiennosc-zamiana`)
 - `services/variation.ts`, ziarno w silniku wyboru i w rozgrzewce/schłodzeniu, tryb `SIM_PAIRS=1` w symulacji; `services/soloSwap.ts`, migracja 0068 (kopia bazy przed: `~/backups/trainer_panel_przed_0068_*`), przycisk w portalu; testy `variation`, `solo-zamiana`.
+
+## 4.11.2026 — blok 6 dokończony i scalony (gałąź `feature/metody-final`), flaga METHODS_V2_ENABLED=1
+- Formularz trenera, edytor planu, para w „Dziś”, korekta objętości, symulacja z flagą (SIM_METHODS=1).

@@ -209,8 +209,8 @@ describe("question count (before = after)", () => {
     const all = STAGES.flatMap((s) => s.steps);
     expect(new Set(all).size).toBe(all.length);
     expect(STAGES).toHaveLength(9);
-    // beginner / gym / no injury: 18 screens (cardio frequency question removed) (C3: no "favorite", "priority", "cardioPref" for beginners; the former yes/no "methods" screen is merged into "Metody do unikania")
-    expect(visibleSteps(base)).toHaveLength(18);
+    // beginner / gym / no injury: 18 screens (cardio frequency question removed; cardioPref for everyone) (C3: no "favorite", "priority", "cardioPref" for beginners; the former yes/no "methods" screen is merged into "Metody do unikania")
+    expect(visibleSteps(base)).toHaveLength(19);
     expect(visibleSteps({ ...base, experienceLevel: "Średniozaawansowany", trainingDuration: "3 lata" })).toEqual(expect.arrayContaining(["favorite", "priority", "cardioPref"]));
     // the longest path (sport goal, home, injury): 28 screens — "jumps" (experience with jumps) exists only with "Cel sportowy"
     expect(visibleSteps({ ...base, experienceLevel: "Zaawansowany", trainingLocation: "Dom", injuryStatus: "Tak", trainingGoal: "Cel sportowy", trainingDuration: "5 lat" })).toHaveLength(28);
@@ -290,7 +290,7 @@ describe("consent to process health data", () => {
 });
 
 describe("krótszy wywiad dla „Brak aktywności” i „Początkujący” (C3)", () => {
-  const skipped = ["favorite", "priority", "cardioPref"] as StepId[];
+  const skipped = ["favorite", "priority"] as StepId[];
   it("pomija preferowane ćwiczenia, partie priorytetowe i drugi ekran o cardio — także przy poziomie efektywnym początkującego", () => {
     for (const experienceLevel of ["Brak aktywności fizycznej", "Początkujący"]) for (const id of skipped) expect(visibleSteps({ ...base, experienceLevel }), `${experienceLevel}/${id}`).not.toContain(id);
     for (const id of skipped) expect(visibleSteps({ ...base, experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok" })).not.toContain(id);
@@ -302,7 +302,7 @@ describe("krótszy wywiad dla „Brak aktywności” i „Początkujący” (C3)
     const p = buildSurveyPayload({ ...base, experienceLevel: "Początkujący", priorityMuscle1: "barki", favoriteExercises: [{ id: 1, name: "Przysiad" }], cardioPreference: "Nie" });
     expect(p.priorityMuscle1 ?? "").toBe("");
     expect(p.favoriteExercises ?? "").toBe("");
-    expect(p.cardioPreference ?? "").toBe("");
+    expect(p.cardioPreference).toBe("Nie"); // pytanie o cardio widzą wszyscy (decyzja 4.11)
   });
   it("„Wolę nie podawać”: wzrost i waga nie są wymagane ani wysyłane", () => {
     const a = { ...base, heightCm: undefined, weightKg: "", skipBody: true };

@@ -716,3 +716,10 @@ export function methodTileOf(raw: string | null | undefined): MethodTile | null 
   if (t.startsWith("serie do upadku")) return "Serie do upadku mięśniowego";
   return null;
 }
+
+/** Formularz trenera: ta sama lista co w wywiadzie klienta plus „Dobiorę sam” (generator nie dodaje metod, trener robi to w edytorze). */
+export const METHOD_SELF = "Dobiorę sam";
+export const methodTilesForTrainerForm = (effectiveLevel: string | null | undefined): string[] => {
+  const t = methodTilesFor(effectiveLevel, "trainer");
+  return t.length ? [...t, METHOD_SELF] : [];
+};

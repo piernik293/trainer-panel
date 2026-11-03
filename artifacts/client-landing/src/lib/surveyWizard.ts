@@ -191,10 +191,9 @@ export function isStepVisible(id: StepId, a: Answers, prefill: Prefill = {}): bo
       return a.healthConsent && a.injuryStatus === "Tak";
     // Intermediate / advanced by the EFFECTIVE level (the choice capped by training time).
     // Krótszy wywiad dla „Brak aktywności” i „Początkujący” (poziom efektywny): bez preferowanych ćwiczeń,
-    // partii priorytetowych i drugiego ekranu o cardio — generator wybiera sam (cardio: domyślnie w planie).
+    // partii priorytetowych — generator wybiera sam (cardio: domyślnie w planie).
     case "favorite":
     case "priority":
-    case "cardioPref":
       return !isBeginnerLevel(resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective ?? undefined);
     case "avoided":
       return isIntermediateOrAdvancedLevel(resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective ?? undefined);

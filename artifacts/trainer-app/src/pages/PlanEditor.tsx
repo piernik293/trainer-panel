@@ -178,6 +178,8 @@ const VOLUME_STATUS_COLOR: Record<string, string> = {
 
 // ─── Format helpers ───────────────────────────────────────────────────────────
 
+export const METHOD_LABELS: Record<string, string> = { superserie: "Superseria", serie_zlozone: "Seria złożona", drop_set: "Drop set", rest_pause: "Rest-pause", upadek: "Do upadku" };
+
 function formatRep(ex: PlanExercise): string {
   const t = ex.repType;
   if (t === "exact" && ex.repsExact) return `${ex.repsExact} pow.`;
@@ -447,6 +449,9 @@ function ExerciseEditForm({
     restSeconds: ex.restSeconds != null ? String(ex.restSeconds) : "",
     notes: ex.notes ?? "",
     clientInstructions: ex.clientInstructions ?? "",
+    method: ex.method ?? "",
+    methodGroup: ex.methodGroup != null ? String(ex.methodGroup) : "",
+    methodNote: ex.methodNote ?? "",
   });
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -479,6 +484,9 @@ function ExerciseEditForm({
         restSeconds: form.restSeconds ? parseInt(form.restSeconds) : null,
         notes: form.notes || null,
         clientInstructions: form.clientInstructions || null,
+        method: form.method || null,
+        methodGroup: form.method && form.methodGroup ? parseInt(form.methodGroup) || null : null,
+        methodNote: form.method ? (form.methodNote || null) : null,
       },
       {
         onSuccess: onSaved,
@@ -641,6 +649,29 @@ function ExerciseEditForm({
           <Label className="text-xs">Przerwa (sek.)</Label>
           <Input type="number" min={1} value={form.restSeconds} onChange={set("restSeconds")} className="h-8 text-sm" placeholder="np. 90" />
         </div>
+      </div>
+
+      {/* Metoda intensyfikacji (docs/METODY.md) */}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" data-testid="method-editor">
+        <div className="space-y-1">
+          <Label className="text-xs">Metoda</Label>
+          <select className="h-8 w-full rounded border bg-background px-2 text-sm" aria-label="Metoda" value={form.method} onChange={(e) => setForm((f) => ({ ...f, method: e.target.value }))}>
+            <option value="">Brak</option>
+            {Object.entries(METHOD_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </div>
+        {(form.method === "superserie" || form.method === "serie_zlozone") && (
+          <div className="space-y-1">
+            <Label className="text-xs">Para (ten sam numer = razem)</Label>
+            <Input type="number" min={1} value={form.methodGroup} onChange={set("methodGroup")} className="h-8 text-sm" placeholder="np. 1" />
+          </div>
+        )}
+        {form.method && (
+          <div className="space-y-1 sm:col-span-1">
+            <Label className="text-xs">Dlaczego? (widzi klient)</Label>
+            <Input value={form.methodNote} onChange={set("methodNote")} className="h-8 text-sm" maxLength={300} placeholder="krótki opis metody" />
+          </div>
+        )}
       </div>
 
       {/* Notes */}

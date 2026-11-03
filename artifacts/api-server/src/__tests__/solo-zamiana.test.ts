@@ -43,8 +43,8 @@ describe("Solo: Zamień na inne", () => {
 
     const before = new Set(rows.map((r) => r.exerciseId));
     const swapped: number[] = [];
-    for (let i = 0; i < 3; i++) {
-      const target = rows.filter((r) => !swapped.includes(r.id))[i]!;
+    for (const target of rows) {
+      if (swapped.length >= 3) break;
       const r = await request(app).post(`/api/solo/plan-exercises/${target.id}/swap`);
       if (r.status === 422) { expect(r.body.code).toBe("NO_ALTERNATIVE"); continue; } // brak bezpiecznego zamiennika to poprawny wynik
       expect(r.status).toBe(200);

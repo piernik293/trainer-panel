@@ -170,7 +170,7 @@ describe("summary", () => {
     mount();
     expect(question()).toBe("Sprawdź swoje odpowiedzi");
     const rows = screen.getAllByTestId("summary-stage");
-    expect(rows).toHaveLength(8); // stage "Cardio" is hidden for beginners (no questions left in it)
+    expect(rows).toHaveLength(9); // pytanie o cardio widzą wszyscy (decyzja 4.11)
     fireEvent.click(within(rows[1]).getByRole("button", { name: /Zmień/ }));
     expect(question()).toBe("Jaki jest Twój cel treningowy?");
     fireEvent.click(screen.getByLabelText("Wstecz"));

@@ -24,6 +24,10 @@ export interface ExerciseInfo {
   record: { weightKg: number | null; reps: number | null } | null;
   /** heaviest weight per number of repetitions in earlier sessions (offline record check) */
   history: { weightKg: number; reps: number }[];
+  /** metoda intensyfikacji (docs/METODY.md): nazwa klucza, opis „Dlaczego?” i partner pary */
+  method?: string | null;
+  methodNote?: string | null;
+  pair?: { partnerName: string; first: boolean } | null;
 }
 /** `joints`: joints the exercise stresses — skipped for the rest of the workout after a pain report there */
 export interface RampItem { name: string; detail: string; description: string; joints?: string[] }

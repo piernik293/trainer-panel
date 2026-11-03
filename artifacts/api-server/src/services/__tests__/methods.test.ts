@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { chooseMethods, orderForMethods, plannedMethods, methodsV2Enabled, type MethodExercise } from "../methods";
+import { volumeSets, chooseMethods, orderForMethods, plannedMethods, methodsV2Enabled, type MethodExercise } from "../methods";
 import { methodTilesFor, methodTileOf, METHOD_AUTO } from "@workspace/survey-config";
 
 const ex = (id: number, name: string, group: string, type: "Izolowane" | "Złożone", equipment: string[], pri = "Średni"): MethodExercise =>
@@ -56,6 +56,10 @@ describe("metody intensyfikacji (docs/METODY.md)", () => {
   });
   it("„Dobierz za mnie”: Siła i kondycja bez metod; Budowa sylwetki z metodami; limit tygodniowy", () => {
     expect(chooseMethods(day, { ...base, goal: "Zwiększenie siły", choices: [METHOD_AUTO] })).toEqual([]);
+    expect(chooseMethods(day, { ...base, goal: "Zwiększenie siły", choices: [METHOD_AUTO], sessionDuration: "60–90 min" })).toEqual([]);
+    const shortSila = chooseMethods(day, { ...base, goal: "Zwiększenie siły", choices: [METHOD_AUTO], sessionDuration: "30–45 min" });
+    expect(shortSila.map((x) => x.exerciseId).sort()).toEqual([3, 4]); // tylko ćwiczenia dodatkowe (izolowane)
+    expect(shortSila.every((x) => x.method === "superserie")).toBe(true);
     expect(chooseMethods(day, { ...base, goal: "Poprawa kondycji", choices: [METHOD_AUTO] })).toEqual([]);
     expect(chooseMethods(day, { ...base, choices: [METHOD_AUTO] }).length).toBeGreaterThan(0);
     expect(chooseMethods(day, { ...base, choices: ["Superserie"], weekDays: { superserie: 2 } })).toEqual([]);
@@ -68,5 +72,12 @@ describe("metody intensyfikacji (docs/METODY.md)", () => {
     expect(chooseMethods(day.slice(0, 3), { ...base, choices: ["Superserie"] })).toEqual([]);
     const avoided = day.map((e) => (e.id === 3 ? { ...e, avoided: true } : e));
     expect(chooseMethods(avoided, { ...base, choices: ["Superserie"] }).some((x) => x.exerciseId === 3)).toBe(false);
+  });
+});
+
+describe("objętość", () => {
+  it("drop set i rest-pause = +1 seria efektywna, superserie bez zmian", () => {
+    expect(volumeSets(3, "drop_set")).toBe(4); expect(volumeSets(3, "rest_pause")).toBe(4);
+    expect(volumeSets(3, "superserie")).toBe(3); expect(volumeSets(3, null)).toBe(3);
   });
 });

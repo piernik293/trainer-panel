@@ -42,6 +42,8 @@ if (STYLE === "calisthenics") process.env.CALISTHENICS_ENABLED = "1";
 const SOLO = process.env.SIM_SOLO === "1"; // osoba bez trenera: reguły Solo (docs/SOLO-STEROWNIK.md), generator wołany jak przez kierowcę Solo
 if (SOLO) process.env.SOLO_ENABLED = "1";
 const N = Number(process.env.SIM_N ?? 24);
+const METHODS = process.env.SIM_METHODS === "1"; // metody intensyfikacji (docs/METODY.md): flaga włączona, profile z wyborem kafelków
+if (METHODS) process.env.METHODS_V2_ENABLED = "1";
 const PAIRS = process.env.SIM_PAIRS === "1"; // pary identycznych profili na różnych kontach (zmienność planów)
 const pairStats = { ex: [] as number[], warm: [] as number[], cool: [] as number[], day: [] as number[] };
 const SEED = Number(process.env.SIM_SEED ?? 20261028);
@@ -190,6 +192,8 @@ function makeProfile(i: number): Profile {
   };
 }
 
+const pickMethods = (): string[] => [["Dobierz za mnie"], ["Superserie"], ["Drop sety"], ["Superserie", "Drop sety"], ["Serie złożone", "Rest-pause", "Serie do upadku mięśniowego"], []][Math.floor(rnd() * 6)]!;
+
 async function createClient(p: Profile): Promise<number> {
   const place = PLACES.find((x) => x.key === p.place)!;
   const [c] = await db.insert(clientsTable).values({ firstName: "Sym", lastName: "gensim", trainerId: SOLO ? null : trainerId, status: "active" }).returning();
@@ -203,6 +207,8 @@ async function createClient(p: Profile): Promise<number> {
     desiredWeeklyFrequency: p.days, weeklyFrequency: p.days, avoidedExerciseIds: p.avoidIds, healthConsentStatus: p.consent,
     athleteStatus: p.goal === "Cel sportowy" ? "Tak — amatorsko" : "Nie", sportDiscipline: p.goal === "Cel sportowy" ? "piłka nożna" : null,
     sportPerformanceNeeds: p.goal === "Cel sportowy" ? ["Dynamika"] : [],
+    preferredMethods: METHODS ? pickMethods() : [],
+    advancedMethodsToAvoid: METHODS && chance(0.15) ? ["Superserie"] : [],
   } as never).returning();
   if (p.viaPain) {
     const [plan] = await db.insert(workoutPlansTable).values({ clientId: c.id, surveyId: sv.id, guidelineVersionId: guidelineId, experienceLevelUsed: p.level, title: "gensim-pain" } as never).returning();
@@ -213,7 +219,7 @@ async function createClient(p: Profile): Promise<number> {
   return c.id;
 }
 
-interface DayOut { error?: string; code?: string; limited?: boolean; type: string; exercises: Array<{ id: number; sets: number; restSeconds: number; repsLabel: string }>; status: number; warnings: number }
+interface DayOut { error?: string; code?: string; limited?: boolean; type: string; exercises: Array<{ id: number; sets: number; restSeconds: number; repsLabel: string; method?: string | null; methodGroup?: number | null }>; status: number; warnings: number }
 
 /** Wywołanie silnika dnia tak, jak robi to kierowca Solo (bez trenera, bez sesji generowania). */
 async function soloCall(clientId: number, body: unknown): Promise<{ status: number; body: any }> { // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -251,7 +257,7 @@ async function generateWeek(clientId: number, p: Profile): Promise<DayOut[]> {
     }
     for (const e of exs) { used.push(e.id); raw.push({ exerciseId: e.id, sets: e.prescription?.sets ?? 1 }); }
     lastByType[t] = exs.map((e) => ({ id: e.id, equipment: e.equipment ?? [] }));
-    out.push({ error: res.status === 200 ? undefined : String(res.body.error ?? ""), code: res.body.code, limited: typeof res.body.limitedDayNote === "string", type: t, status: res.status, warnings: (res.body.structuralWarnings ?? []).length, exercises: exs.map((e) => ({ id: e.id, sets: e.prescription?.sets ?? 0, restSeconds: e.prescription?.restSeconds ?? 0, repsLabel: e.prescription?.repsLabel ?? "" })) });
+    out.push({ error: res.status === 200 ? undefined : String(res.body.error ?? ""), code: res.body.code, limited: typeof res.body.limitedDayNote === "string", type: t, status: res.status, warnings: (res.body.structuralWarnings ?? []).length, exercises: exs.map((e) => ({ method: (e as { method?: string | null }).method ?? null, methodGroup: (e as { methodGroup?: number | null }).methodGroup ?? null, id: e.id, sets: e.prescription?.sets ?? 0, restSeconds: e.prescription?.restSeconds ?? 0, repsLabel: e.prescription?.repsLabel ?? "" })) });
   }
   return out;
 }
@@ -293,7 +299,7 @@ afterAll(async () => {
 describe("generator simulation", () => {
   it(`${N} random profiles: safety and feasibility violations = 0`, async () => {
     const safetyAll: Violation[] = []; const safety = safetyAll; const feas: Violation[] = [];
-    const stat = { limitedDays: 0, wrongRefusalText: 0, profiles: 0, days: 0, daysRefused: 0, exercises: 0, emptyDays: 0, structuralWarnings: 0, dupInPlan: 0, plans: 0, patternDupDays: 0, patternDupExtra: 0 };
+    const stat = { limitedDays: 0, wrongRefusalText: 0, profiles: 0, days: 0, daysRefused: 0, exercises: 0, emptyDays: 0, structuralWarnings: 0, dupInPlan: 0, plans: 0, patternDupDays: 0, patternDupExtra: 0, methodDays: 0 };
     const sets = { push: 0, pull: 0, knee: 0, hip: 0 };
     const balance: Array<{ push: number; pull: number; knee: number; hip: number }> = [];
     const perSession: Record<string, number[]> = {}; const timeRatio: Record<string, number[]> = {};
@@ -328,6 +334,16 @@ describe("generator simulation", () => {
         if (d.status !== 200 && (d.code !== "TOO_FEW_EXERCISES" || !d.error || /V0|exercises required/.test(d.error))) stat.wrongRefusalText++;
         if (d.status !== 200) { stat.daysRefused++; refused[`${bucket}|${d.type}`] = (refused[`${bucket}|${d.type}`] ?? 0) + 1; const why = `${p.place === "gym" ? "gym" : "home/outdoor"}|${d.error}`; refusedWhy[why] = (refusedWhy[why] ?? 0) + 1; continue; }
         if (d.exercises.length === 0) stat.emptyDays++;
+        if (METHODS) { // reguły metod: najwyżej 2 w dniu, para obok siebie, tylko poziom Ś/Z, Solo bez rest-pause i upadku, nigdy martwy ciąg / sztanga nad głową
+          const withM = d.exercises.filter((e) => e.method);
+          const bad = (rule: string, detail: string) => safety.push({ rule, profile: i, level: p.effective, goal: p.goal, place: p.place, exercise: d.type, id: 0, detail } as Violation);
+          if (withM.length > 2) bad("metody: więcej niż 2 w dniu", String(withM.length));
+          if (withM.length && !(p.effective === "Średniozaawansowany" || p.effective === "Zaawansowany")) bad("metody: poniżej Ś", p.effective);
+          if (SOLO) for (const e of withM) if (e.method === "rest_pause" || e.method === "upadek" || e.method === "serie_zlozone") bad("metody: niedozwolona w Solo", String(e.method));
+          for (const e of withM) { const nm = cat.get(e.id)!.name; if (/martwy ciąg|przysiad ze sztang|sztang.*nad głow/i.test(nm) || (/nad głow/i.test(nm) && (cat.get(e.id)!.equipment ?? []).includes("Sztanga"))) bad("metody: zakazane ćwiczenie", nm); }
+          for (const g of new Set(withM.map((e) => e.methodGroup).filter((g): g is number => g != null))) { const idx = d.exercises.map((e, k) => (e.methodGroup === g ? k : -1)).filter((k) => k >= 0); if (idx.length !== 2 || idx[1]! - idx[0]! !== 1) bad("metody: para nie obok siebie", String(idx)); }
+          stat.methodDays = (stat.methodDays ?? 0) + (withM.length ? 1 : 0);
+        }
         { const extra = familyDuplicates(d.exercises.map((e) => cat.get(e.id)?.name ?? "")); if (extra > 0) { stat.patternDupDays++; stat.patternDupExtra += extra; } } // „duplikaty wzorca w dniu” (cel: 0)
         stat.structuralWarnings += d.warnings;
         let minutes = 6; // warm-up + cool-down allowance
