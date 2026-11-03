@@ -29,6 +29,10 @@ import {
   weightError,
   maxPriorityMuscles,
   toPriorityTiles,
+  methodTilesFor,
+  methodTileOf,
+  METHOD_AUTO,
+  type MethodTile,
   normalizeCardioPreference,
   resolveEffectiveLevel,
   CARDIO_PREFERENCE_OPTIONS,
@@ -97,6 +101,8 @@ export interface Answers {
   priorityMuscle2: string;
   priorityMuscle3: string;
   avoidsAdvancedMethods: "" | "Tak" | "Nie";
+  /** Kafelki „Jakie metody chcesz w planie?” (docs/METODY.md; tylko przy włączonej fladze) */
+  preferredMethods: string[];
   advancedMethodsToAvoid: string[];
   additionalInfo: string;
 }
@@ -115,7 +121,7 @@ export const EMPTY_ANSWERS: Answers = {
   avoidedExercises: [], avoidedOtherText: "", avoidedOtherReason: "",
   favoriteExercises: [],
   priorityMuscle1: "", priorityMuscle2: "", priorityMuscle3: "",
-  avoidsAdvancedMethods: "", advancedMethodsToAvoid: [],
+  avoidsAdvancedMethods: "", advancedMethodsToAvoid: [], preferredMethods: [],
   additionalInfo: "",
 };
 
@@ -130,7 +136,7 @@ export type StepId =
   | "injury" | "healthDesc"
   | "activity" | "sleep" | "stress"
   | "cardioPref" | "cardioType"
-  | "planStyle" | "avoided" | "favorite" | "priority" | "methodsList" | "additional";
+  | "planStyle" | "avoided" | "favorite" | "priority" | "methodsPick" | "methodsList" | "additional";
 
 export interface Stage {
   id: string;
@@ -148,7 +154,7 @@ export const STAGES: Stage[] = [
   { id: "health", name: "Zdrowie i ograniczenia", steps: ["injury", "healthDesc"] },
   { id: "life", name: "Styl życia", steps: ["activity", "sleep", "stress"] },
   { id: "cardio", name: "Cardio", steps: ["cardioPref", "cardioType"] },
-  { id: "prefs", name: "Preferencje planu", steps: ["planStyle", "avoided", "favorite", "priority", "methodsList", "additional"] },
+  { id: "prefs", name: "Preferencje planu", steps: ["planStyle", "avoided", "favorite", "priority", "methodsPick", "methodsList", "additional"] },
 ];
 
 export interface Prefill {
@@ -158,6 +164,9 @@ export interface Prefill {
   phone?: string;
   /** Existing client: personal data comes from the client record and the screens are skipped. */
   existingClient?: boolean;
+  /** Włączone METHODS_V2_ENABLED: kafelki metod zamiast pytań „Metody do unikania”. */
+  methodsV2?: boolean;
+  methodMode?: "solo" | "trainer";
 }
 
 /** Whether a screen is shown for the current answers (the old form's conditions, verbatim). */
@@ -182,14 +191,16 @@ export function isStepVisible(id: StepId, a: Answers, prefill: Prefill = {}): bo
       return a.healthConsent && a.injuryStatus === "Tak";
     // Intermediate / advanced by the EFFECTIVE level (the choice capped by training time).
     // Krótszy wywiad dla „Brak aktywności” i „Początkujący” (poziom efektywny): bez preferowanych ćwiczeń,
-    // partii priorytetowych i drugiego ekranu o cardio — generator wybiera sam (cardio: domyślnie w planie).
+    // partii priorytetowych — generator wybiera sam (cardio: domyślnie w planie).
     case "favorite":
     case "priority":
-    case "cardioPref":
       return !isBeginnerLevel(resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective ?? undefined);
     case "avoided":
-    case "methodsList":
       return isIntermediateOrAdvancedLevel(resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective ?? undefined);
+    case "methodsList":
+      return !prefill.methodsV2 && isIntermediateOrAdvancedLevel(resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective ?? undefined);
+    case "methodsPick":
+      return !!prefill.methodsV2 && methodTilesFor(resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective, prefill.methodMode ?? "trainer").length > 0;
     default:
       return true;
   }
@@ -259,6 +270,12 @@ export function normalizeAnswers(input: Answers, prefill: Prefill = {}): Answers
   else if (cardio === "none") a.cardioPreference = CARDIO_PREFERENCE_OPTIONS[1];
   a.avoidsAdvancedMethods = ""; // legacy draft field — derived from the methods list in the payload
   if (!isStepVisible("methodsList", a, prefill)) a.advancedMethodsToAvoid = [];
+  if (!isStepVisible("methodsPick", a, prefill)) a.preferredMethods = [];
+  else {
+    const allowed = methodTilesFor(resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective, prefill.methodMode ?? "trainer");
+    const tiles = [...new Set(a.preferredMethods.map(methodTileOf).filter((t): t is MethodTile => t != null && allowed.includes(t)))];
+    a.preferredMethods = tiles.includes(METHOD_AUTO) ? [METHOD_AUTO] : tiles;
+  }
   return a;
 }
 
@@ -433,6 +450,7 @@ export function buildSurveyPayload(raw: Answers, prefill: Prefill = {}): Record<
     jumpExperience: showJumpExperience(a.trainingGoal) && a.jumpExperience ? a.jumpExperience : undefined,
     sportsPriorities: isSport ? a.sportPerformanceNeeds.map((n) => SPORT_NEED_KEY[n]).filter(Boolean) : [],
     avoidsAdvancedMethods: avoids,
+    preferredMethods: isStepVisible("methodsPick", a, prefill) ? a.preferredMethods : undefined,
     advancedMethodsToAvoid: avoids === true ? a.advancedMethodsToAvoid : [],
     avoidedExerciseIds: a.avoidedExercises.map((e) => e.id),
     avoidedExerciseReasons: reasons,

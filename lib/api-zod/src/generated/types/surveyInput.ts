@@ -24,6 +24,7 @@ export interface SurveyInput {
   avoidedExercises?: string;
   favoriteExercises?: string;
   advancedMethodsToAvoid?: string[];
+  preferredMethods?: string[];
   additionalInfo?: string;
   /**
      * @minimum 0

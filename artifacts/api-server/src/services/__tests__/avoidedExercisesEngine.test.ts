@@ -89,9 +89,12 @@ describe("excluded intensification methods", () => {
       return p.endsWith(".ts") ? [p] : [];
     });
   }
-  it("the generator never applies any intensification method (so an excluded one cannot appear)", () => {
+  it("only services/methods.ts names intensification methods, and it honours the client's excluded ones", () => {
     const root = join(__dirname, "..", "..");
-    const files = [...sources(join(root, "services")), ...sources(join(root, "routes"))].filter((f) => !/inviteEmail|public\.ts|surveys\.ts|clients\.ts/.test(f));
+    const all = [...sources(join(root, "services")), ...sources(join(root, "routes"))].filter((f) => !/inviteEmail|public\.ts|surveys\.ts|clients\.ts|routes[\\/]plans\.ts/.test(f));
+    const methodsFile = all.find((f) => /services[\\/]methods\.ts$/.test(f))!;
+    expect(readFileSync(methodsFile, "utf8")).toContain("avoid"); // docs/METODY.md: „Metody do unikania” are never applied
+    const files = all.filter((f) => f !== methodsFile);
     const names = ADVANCED_METHODS.map((m) => m.split(" (")[0]!.toLowerCase());
     for (const f of files) {
       const text = readFileSync(f, "utf8").toLowerCase();

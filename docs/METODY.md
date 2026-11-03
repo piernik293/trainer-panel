@@ -1,4 +1,7 @@
-# Metody intensyfikacji w planie — projekt do zatwierdzenia
+# Metody intensyfikacji w planie — ZATWIERDZONE 4.11.2026, wdrożone (flaga METHODS_V2_ENABLED)
+
+Odpowiedzi właściciela: (1) tak — Solo bez rest-pause i upadku; (2) tak; (3) przy Sile bez metod, wyjątek: superserie tylko na ćwiczeniach dodatkowych przy krótkim czasie (do 45 min); (4) tak — nowe kolumny; (5) tak — drop set i rest-pause = +1 seria. Reguła „nie w pierwszym tygodniu” pominięta. Pytanie o cardio widzą wszystkie poziomy.
+
 
 Stan: **projekt, nic z tego nie działa w aplikacji.** Po akceptacji właściciela powstaje wdrożenie (gałąź `feature/metody`, flaga `METHODS_V2_ENABLED=0`, bez scalenia do `main` bez zgody). Wszystkie teksty dla użytkownika: proste, bez języka medycznego, bez form zależnych od płci.
 

@@ -170,7 +170,7 @@ describe("summary", () => {
     mount();
     expect(question()).toBe("Sprawdź swoje odpowiedzi");
     const rows = screen.getAllByTestId("summary-stage");
-    expect(rows).toHaveLength(8); // stage "Cardio" is hidden for beginners (no questions left in it)
+    expect(rows).toHaveLength(9); // pytanie o cardio widzą wszyscy (decyzja 4.11)
     fireEvent.click(within(rows[1]).getByRole("button", { name: /Zmień/ }));
     expect(question()).toBe("Jaki jest Twój cel treningowy?");
     fireEvent.click(screen.getByLabelText("Wstecz"));
@@ -182,8 +182,9 @@ describe("summary", () => {
     fireEvent.click(screen.getByRole("button", { name: "Wyślij trenerowi" }));
     await screen.findByText("Dziękujemy!");
     expect(screen.getByText(/zwykle w ciągu 1–2 dni/)).toBeTruthy();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+    const submits = (fetchMock.mock.calls as unknown as Array<[string, RequestInit]>).filter((c) => !String(c[0]).includes("/methods/status"));
+    expect(submits).toHaveLength(1);
+    const body = JSON.parse(submits[0]![1].body as string);
     expect(body).toMatchObject({ trainingGoal: "Budowa sylwetki", injuryStatus: "Brak", healthConsent: true, firstName: "Marta", athleteStatus: "Nie" });
     expect(window.localStorage.getItem(draftKey(TOKEN))).toBeNull();
   });

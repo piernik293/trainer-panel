@@ -134,6 +134,9 @@ interface PlanExercise {
   tempo: string | null;
   restSeconds: number | null;
   clientInstructions: string | null;
+  method?: string | null;
+  methodGroup?: number | null;
+  methodNote?: string | null;
 }
 
 interface PlanDay {
@@ -335,6 +338,8 @@ function SignInGate() {
   );
 }
 
+const METHOD_LABEL: Record<string, string> = { superserie: "Superseria", serie_zlozone: "Seria złożona", drop_set: "Drop set", rest_pause: "Rest-pause", upadek: "Do upadku" };
+
 // ─── DayPreview (read-only) ───────────────────────────────────────────────────
 // The plan screen only shows the plan. Results are logged in the "Trening" flow
 // (components/training), never here.
@@ -376,6 +381,7 @@ function DayPreview({ day, onBack }: { day: PlanDay; onBack: () => void }) {
                 <p className="font-semibold">{i + 1}. {ex.exerciseName}</p>
                 <p className="text-sm text-muted-foreground">{formatPrescription(ex)}</p>
                 {ex.clientInstructions && <p className="mt-1 text-sm text-foreground/90">{ex.clientInstructions}</p>}
+                {ex.methodNote && <p className="mt-1 text-sm text-muted-foreground" data-testid="method-note"><span className="font-semibold">{METHOD_LABEL[ex.method ?? ""] ?? "Metoda"}.</span> {ex.methodNote}</p>}
                 {left !== null && (
                   <button type="button" disabled={busy === ex.id || left <= 0} onClick={() => void swap(ex.id)}
                     className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-primary underline disabled:text-muted-foreground disabled:no-underline" data-testid="swap-exercise">

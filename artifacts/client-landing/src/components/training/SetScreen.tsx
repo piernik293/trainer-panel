@@ -7,6 +7,8 @@ import { activeSetNumber } from "@/lib/training/run";
 import { NumberField, RirPicker } from "./TrainingUi";
 
 /** Odliczanie czasu dla ćwiczenia izometrycznego: tylko pomoc — zapisuje się wartość z pola „Czas”. */
+const METHOD_NAMES: Record<string, string> = { superserie: "Superseria", serie_zlozone: "Seria złożona", drop_set: "Drop set", rest_pause: "Rest-pause", upadek: "Do upadku" };
+
 export function HoldTimer({ seconds }: { seconds: number }) {
   const [left, setLeft] = useState<number | null>(null);
   useEffect(() => {
@@ -86,6 +88,15 @@ export function SetScreen({
         )}
         <p className="mt-1 text-sm font-medium text-foreground">{formatTarget(ex)}</p>
         {ex.note && <p className="mt-1 text-sm text-muted-foreground">{ex.note}</p>}
+        {ex.method && (
+          <div className="mt-2 rounded-lg border border-border bg-brand-soft px-3 py-2 text-sm" data-testid="method-banner">
+            <p className="font-semibold text-primary">
+              {METHOD_NAMES[ex.method] ?? "Metoda"}
+              {ex.pair ? (ex.pair.first ? ` — po każdej serii od razu: ${ex.pair.partnerName}` : ` — po serii wróć do: ${ex.pair.partnerName}`) : ""}
+            </p>
+            {ex.methodNote && <p className="text-muted-foreground">{ex.methodNote}</p>}
+          </div>
+        )}
         {ex.record?.weightKg ? (
           <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             <Trophy className="h-4 w-4 text-primary" aria-hidden /> Rekord: <b className="text-foreground">{formatSetResult(ex.record, ex.showWeight)}</b>

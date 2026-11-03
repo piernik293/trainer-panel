@@ -39,6 +39,9 @@ export interface PlanExercise {
   // Notes
   notes: string | null;
   clientInstructions: string | null;
+  method?: string | null;
+  methodGroup?: number | null;
+  methodNote?: string | null;
   /**
    * Exercise class derived from the catalogue (exerciseType, exercisePriority,
    * mainMuscleGroup, suitableForNoActivity) — never stored on the plan itself.
@@ -186,6 +189,9 @@ export interface ExercisePrescription {
   restSeconds?: number | null;
   notes?: string | null;
   clientInstructions?: string | null;
+  method?: string | null;
+  methodGroup?: number | null;
+  methodNote?: string | null;
 }
 
 // ─── Query key factories ──────────────────────────────────────────────────────

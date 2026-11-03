@@ -26,6 +26,7 @@
  */
 
 import { variationSeed } from "../services/variation";
+import { methodsV2Enabled, chooseMethods, orderForMethods, type MethodExercise } from "../services/methods";
 import { usedEquipment } from "../services/dayNaming";
 import { priorityGroupsOf } from "@workspace/survey-config";
 import { soloAllowsExercise, soloEnabled, soloPainExcludedIds } from "../services/solo";
@@ -188,6 +189,8 @@ const BodySchema = z.object({
       sets: z.number().int().min(1),
     }),
   ).optional().default([]),
+  /** Ile dni tygodnia ma już daną metodę (limity tygodniowe, docs/METODY.md); tylko za flagą METHODS_V2_ENABLED. */
+  weekMethodDays: z.record(z.string(), z.number().int().min(0)).optional(),
 });
 
 /** Wywołanie dla osoby Solo (bez trenera): `soloClientId` ustawia wyłącznie serwerowy kierowca Solo (services/soloPlanDriver.ts), nigdy żądanie HTTP. */
@@ -1135,6 +1138,22 @@ export async function generateDayHandler(req: GenerateDayReq, res: Response): Pr
       } catch (err) {
         // Balance pass is best-effort — never block the response.
         console.error("[BalancePass] Non-fatal error:", err);
+      }
+    }
+
+    // ── Metody intensyfikacji (docs/METODY.md) — tylko za flagą METHODS_V2_ENABLED ─
+    if (methodsV2Enabled()) {
+      const full = v0Result.exercises as unknown as Array<MethodExercise & { id: number }>;
+      const assignments = chooseMethods(
+        enrichedExercises.map((e) => ({ ...(full.find((f) => f.id === e.id) ?? {}), id: e.id, name: e.name, mainMuscleGroup: e.mainMuscleGroup, exerciseType: e.exerciseType, exercisePriority: e.exercisePriority, equipment: e.equipment, avoided: e.isAvoided }) as MethodExercise),
+        { level: survey.experienceLevel, goal: survey.trainingGoal, solo: !!solo, choices: (survey as { preferredMethods?: string[] | null }).preferredMethods ?? [], weekDays: body.data.weekMethodDays, sessionDuration: survey.sessionDuration, avoid: (survey as { advancedMethodsToAvoid?: string[] | null }).advancedMethodsToAvoid ?? [] },
+      );
+      if (assignments.length > 0) {
+        const byId = new Map(assignments.map((a) => [a.exerciseId, a]));
+        enrichedExercises = orderForMethods(enrichedExercises, assignments).map((e) => {
+          const a = byId.get(e.id);
+          return a ? { ...e, method: a.method, methodGroup: a.group, methodNote: a.note } : e;
+        }) as typeof enrichedExercises;
       }
     }
 

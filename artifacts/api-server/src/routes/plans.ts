@@ -254,6 +254,10 @@ const ExercisePrescriptionFields = z.object({
   // Notes
   notes: z.string().nullable().optional(),
   clientInstructions: z.string().nullable().optional(),
+  // Metoda intensyfikacji (docs/METODY.md)
+  method: z.enum(["superserie", "serie_zlozone", "drop_set", "rest_pause", "upadek"]).nullable().optional(),
+  methodGroup: z.number().int().positive().nullable().optional(),
+  methodNote: z.string().max(300).nullable().optional(),
 });
 
 const CreatePlanExerciseBody = ExercisePrescriptionFields.extend({
@@ -720,6 +724,10 @@ const SaveDraftExerciseBody = z.object({
   restSeconds: z.number().int().positive().nullable().optional(),
   notes: z.string().nullable().optional(),
   clientInstructions: z.string().nullable().optional(),
+  // Metoda intensyfikacji (docs/METODY.md)
+  method: z.enum(["superserie", "serie_zlozone", "drop_set", "rest_pause", "upadek"]).nullable().optional(),
+  methodGroup: z.number().int().positive().nullable().optional(),
+  methodNote: z.string().max(300).nullable().optional(),
 });
 
 const SaveDraftDayBody = z.object({
@@ -907,6 +915,9 @@ router.post("/clients/:clientId/plans/draft", requireAuth, async (req, res): Pro
             restSeconds: ex.restSeconds ?? null,
             notes: ex.notes ?? null,
             clientInstructions: ex.clientInstructions ?? null,
+            method: ex.method ?? null,
+            methodGroup: ex.methodGroup ?? null,
+            methodNote: ex.methodNote ?? null,
           });
         }
       }
@@ -1518,6 +1529,9 @@ router.post("/plans/:id/days/:dayId/exercises", requireAuth, async (req, res): P
       rirOrRpe: d.rirOrRpe ?? null,
       tempo: d.tempo ?? null,
       restSeconds: d.restSeconds ?? null,
+      method: d.method ?? null,
+      methodGroup: d.methodGroup ?? null,
+      methodNote: d.methodNote ?? null,
       notes: d.notes ?? null,
       clientInstructions: d.clientInstructions ?? null,
     }).returning({ id: workoutPlanExercisesTable.id });
@@ -1707,6 +1721,9 @@ router.patch(
     if (d.rirOrRpe !== undefined) updates.rirOrRpe = d.rirOrRpe;
     if (d.tempo !== undefined) updates.tempo = d.tempo;
     if (d.restSeconds !== undefined) updates.restSeconds = d.restSeconds;
+    if (d.method !== undefined) updates.method = d.method;
+    if (d.methodGroup !== undefined) updates.methodGroup = d.methodGroup;
+    if (d.methodNote !== undefined) updates.methodNote = d.methodNote;
     if (d.notes !== undefined) updates.notes = d.notes;
     if (d.clientInstructions !== undefined) updates.clientInstructions = d.clientInstructions;
     if (d.orderInDay !== undefined) updates.orderInDay = d.orderInDay;
