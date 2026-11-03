@@ -5,6 +5,7 @@
  * Uproszczenie wersji 1: dawkowanie (serie, powtórzenia, przerwy) bierze z silnika (prescribeExercise), bez ręcznego bilansu objętości trenera.
  * Dotyczy też „Mojego treningu” trenera (jego własny wiersz klienta). Nic tu nie dotyka kont trenerów ani cudzych podopiecznych.
  */
+import { dayNames } from "./dayNaming";
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import type { Request, Response } from "express";
@@ -74,7 +75,8 @@ export async function generateSoloPlan(clientId: number, now: Date = new Date())
   const gid = randomUUID();
   const used: number[] = []; const raw: Array<{ exerciseId: number; sets: number }> = [];
   const typeCount: Record<string, number> = {}; const lastByType: Record<string, Array<{ id: number; equipment: string[] }>> = {};
-  const dayResults: Array<{ type: string; exercises: Array<{ id: number; prescription?: { sets: number; repsLabel: string; restSeconds: number } }> }> = [];
+  type DayEx = { id: number; name?: string; mainMuscleGroup?: string | null; matchReasons?: string[]; equipment?: string[]; prescription?: { sets: number; repsLabel: string; restSeconds: number } };
+  const dayResults: Array<{ type: string; exercises: DayEx[] }> = [];
   let skipped = 0; let idx = 0;
   for (const t of types) {
     const alt = typeCount[t] ?? 0; typeCount[t] = alt + 1;
@@ -84,7 +86,7 @@ export async function generateSoloPlan(clientId: number, now: Date = new Date())
       body: { generationId: gid, generationDayIndex: idx++, expectedDayCount: types.length, v0SessionType: t, alternativeIndex: alt, weekUsedExerciseIds: [...used], sameTypePreviousExercises: lastByType[t] ?? [], weekExercisesRaw: t === "full_body" ? raw : [] },
     } as unknown as GenerateDayReq;
     await generateDayHandler(req, res);
-    const exs = (out.body?.exercises ?? []) as Array<{ id: number; equipment?: string[]; prescription?: { sets: number; repsLabel: string; restSeconds: number } }>;
+    const exs = (out.body?.exercises ?? []) as DayEx[];
     if (out.status !== 200 || exs.length === 0) { skipped++; continue; } // dzień odrzucony (np. za mało bezpiecznych ćwiczeń) — pomijamy, plan ma krótszy tydzień
     for (const e of exs) { used.push(e.id); raw.push({ exerciseId: e.id, sets: e.prescription?.sets ?? 1 }); }
     lastByType[t] = exs.map((e) => ({ id: e.id, equipment: e.equipment ?? [] }));
@@ -101,8 +103,10 @@ export async function generateSoloPlan(clientId: number, now: Date = new Date())
       status: "active", activatedAt: now, startDate: isoDay(now), endDate: end, splitType: split, blockDurationWeeks: weeks, createdBy: "solo",
     } as never).returning({ id: workoutPlansTable.id });
     let order = 1;
+    // nazwy dni wg akcentu („Drążek i poręcze”, „Nogi i skoki”, „Góra ciała”), nie „Dzień 1”
+    const names = dayNames(dayResults.map((d) => ({ type: d.type, exercises: d.exercises.map((e) => ({ name: e.name ?? "", mainMuscleGroup: e.mainMuscleGroup, equipment: e.equipment, jump: (e.matchReasons ?? []).includes("Blok pliometryczny") })) })));
     for (const d of dayResults) {
-      const [pd] = await tx.insert(workoutPlanDaysTable).values({ planId: plan!.id, dayOrder: order, dayName: `Dzień ${order}`, subtitle: d.type } as never).returning({ id: workoutPlanDaysTable.id });
+      const [pd] = await tx.insert(workoutPlanDaysTable).values({ planId: plan!.id, dayOrder: order, dayName: names[order - 1] ?? `Dzień ${order}`, subtitle: d.type } as never).returning({ id: workoutPlanDaysTable.id });
       order++; let o = 1;
       for (const e of d.exercises) {
         const reps = parseRepsLabel(e.prescription?.repsLabel);

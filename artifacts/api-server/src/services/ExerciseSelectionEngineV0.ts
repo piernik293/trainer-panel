@@ -25,6 +25,7 @@
  *   useV0Selector=true&v0SessionType=<push|pull|legs|upper|lower>
  */
 
+import { exerciseFamily } from "./exerciseFamily";
 import type {
   ScoredAndFilteredExercise,
   DayRecommendationExercise,
@@ -1451,8 +1452,11 @@ export function runExerciseSelectionEngineV0(
       ctx?.capPushUpsAtOne === true &&
       results.some((r) => r.ex.name.trim().toLowerCase().startsWith("pompki"));
 
+    // Jeden wzorzec na dzień: gdy w sesji jest już dip/pompka/podciągnięcie/martwy ciąg/przysiad (itd.), wariant tej samej rodziny odpada.
+    const familiesInSession = new Set(results.map((r) => exerciseFamily(r.ex.name)).filter((f): f is string => f != null));
     const filtered = eligible.filter(
       (ex) =>
+        !(familiesInSession.size > 0 && familiesInSession.has(exerciseFamily(ex.name) ?? "")) &&
         !usedExerciseIds.has(String(ex.id)) &&
         safetyFilter(ex) &&
         filter(ex) &&
@@ -1482,7 +1486,11 @@ export function runExerciseSelectionEngineV0(
       // restriction) but safetyFilter still applies, so every hard constraint
       // (suitableForNoActivity, learningDifficulty) is enforced during reuse.
       if (ctx?.isNoActivityClient || ctx?.isBeginnerClient) {
-        const reusePool = eligible.filter((ex) => safetyFilter(ex) && filter(ex));
+        const reusePoolAll = eligible.filter((ex) => safetyFilter(ex) && filter(ex));
+        // Jeden wzorzec na dzień także przy powtórzeniu: pomijamy tę samą rodzinę (np. trzeci wariant pompek);
+        // tylko wymagany slot, bez którego dzień nie osiągnie minimum ćwiczeń, może ją powtórzyć.
+        const reusePoolOtherFamily = reusePoolAll.filter((ex) => !familiesInSession.has(exerciseFamily(ex.name) ?? ""));
+        const reusePool = reusePoolOtherFamily.length > 0 || !required || results.length >= MIN_EXERCISES ? reusePoolOtherFamily : reusePoolAll;
         if (reusePool.length > 0) {
           const sorted = sortDeterministic(reusePool, ctx?.preferredExerciseKeywords, ctx);
           const lastUsedIndex = (ex: ScoredAndFilteredExercise): number => {

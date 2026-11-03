@@ -33,6 +33,7 @@ import { selectWarmup, selectCooldown, type CatalogueWarmupItem } from "../servi
 import { WARMUP_ROLES } from "../lib/exerciseRoles";
 import { generateDayHandler, type GenerateDayReq } from "../routes/planDraftGenerateDay";
 import { isSoloPlyoOrOlympic } from "../services/solo";
+import { familyDuplicates } from "../services/exerciseFamily";
 import { getDayTemplate, recommendSplitType } from "../services/planDraftVolumeDistributionService";
 
 const STYLE = process.env.SIM_STYLE ?? ""; // "" = standard, "calisthenics" = docs/KALISTENIKA.md (forces the flag on for this run)
@@ -289,7 +290,7 @@ afterAll(async () => {
 describe("generator simulation", () => {
   it(`${N} random profiles: safety and feasibility violations = 0`, async () => {
     const safetyAll: Violation[] = []; const safety = safetyAll; const feas: Violation[] = [];
-    const stat = { limitedDays: 0, wrongRefusalText: 0, profiles: 0, days: 0, daysRefused: 0, exercises: 0, emptyDays: 0, structuralWarnings: 0, dupInPlan: 0, plans: 0 };
+    const stat = { limitedDays: 0, wrongRefusalText: 0, profiles: 0, days: 0, daysRefused: 0, exercises: 0, emptyDays: 0, structuralWarnings: 0, dupInPlan: 0, plans: 0, patternDupDays: 0, patternDupExtra: 0 };
     const sets = { push: 0, pull: 0, knee: 0, hip: 0 };
     const balance: Array<{ push: number; pull: number; knee: number; hip: number }> = [];
     const perSession: Record<string, number[]> = {}; const timeRatio: Record<string, number[]> = {};
@@ -324,6 +325,7 @@ describe("generator simulation", () => {
         if (d.status !== 200 && (d.code !== "TOO_FEW_EXERCISES" || !d.error || /V0|exercises required/.test(d.error))) stat.wrongRefusalText++;
         if (d.status !== 200) { stat.daysRefused++; refused[`${bucket}|${d.type}`] = (refused[`${bucket}|${d.type}`] ?? 0) + 1; const why = `${p.place === "gym" ? "gym" : "home/outdoor"}|${d.error}`; refusedWhy[why] = (refusedWhy[why] ?? 0) + 1; continue; }
         if (d.exercises.length === 0) stat.emptyDays++;
+        { const extra = familyDuplicates(d.exercises.map((e) => cat.get(e.id)?.name ?? "")); if (extra > 0) { stat.patternDupDays++; stat.patternDupExtra += extra; } } // „duplikaty wzorca w dniu” (cel: 0)
         stat.structuralWarnings += d.warnings;
         let minutes = 6; // warm-up + cool-down allowance
         let workSets = 0;

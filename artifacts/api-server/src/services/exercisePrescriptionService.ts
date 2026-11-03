@@ -271,3 +271,34 @@ export function prescribeExercise(
   const classTable = TABLE[effectiveCls];
   return classTable[goalBias] ?? classTable["_default"];
 }
+
+// ─── Per-exercise rep ranges ───────────────────────────────────────────────────
+
+const lowerNorm = (s: string | null | undefined) => (s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ł/g, "l");
+
+/**
+ * Class × goal gives one prescription for a whole class; a plan where every exercise reads "3×10–15" looks automatic.
+ * This adjusts only the repetition range (and rest / sets for negatives) by what the exercise IS:
+ * negatives are slow and few (3×3–5), hard bodyweight rungs (weighted, one-sided, archer) 5–8, dips and pull-ups 6–10,
+ * rows 8–12, calves 12–20. Core and jump drills are left as they are. Beginners (regression class) keep the safe base,
+ * except that negatives, calves and rows follow their own range.
+ */
+export function refinePrescription(
+  ex: { name: string; mainMuscleGroup?: string | null; movementPattern?: string | null },
+  cls: ExerciseClass,
+  base: ExercisePrescription,
+): ExercisePrescription {
+  if (cls === "core" || cls === "plyometric_power") return base;
+  if (/sek/.test(base.repsLabel)) return base; // timed (isometric) prescription
+  const n = lowerNorm(ex.name);
+  const beginner = cls === "regression_beginner";
+  if (/negatyw|ekscentry/.test(n)) {
+    return { sets: 3, repsLabel: "3–5", restSeconds: 150, prescriptionNote: "Opuszczaj się powoli, około 3–5 sekund. Mało powtórzeń, dobra jakość." };
+  }
+  if (lowerNorm(ex.mainMuscleGroup) === "lydki" || /wspiecia na palce/.test(n)) return { ...base, repsLabel: beginner ? "12–15" : "12–20", restSeconds: Math.min(base.restSeconds, 60) };
+  if (/wioslowan/.test(n) || lowerNorm(ex.movementPattern) === "przyciaganie poziome") return { ...base, repsLabel: beginner ? "10–12" : "8–12" };
+  if (beginner) return base;
+  if (/z obciazeniem|jednonoz|jednorecz.*(przysiad|pompk)|archer|pistol|pompki.*(diament|jednorecz)|podciaganie.*(obciaz|jednorecz)/.test(n)) return { ...base, repsLabel: "5–8", restSeconds: Math.max(base.restSeconds, 120) };
+  if (/dip|podciag/.test(n)) return { ...base, repsLabel: "6–10", restSeconds: Math.max(base.restSeconds, 90) };
+  return base;
+}

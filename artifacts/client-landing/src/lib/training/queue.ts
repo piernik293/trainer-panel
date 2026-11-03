@@ -102,3 +102,14 @@ export function createQueue(deps: {
   };
 }
 export type TrainingQueue = ReturnType<typeof createQueue>;
+
+/**
+ * Retries what is still queued while the phone is online. Without it a temporary failure (server hiccup, expired
+ * session) left the operation waiting until the next "online" event — the badge said "Zapisywanie…" for good.
+ * Returns a function that stops the retries.
+ */
+export function startAutoRetry(q: TrainingQueue, opts: { intervalMs?: number; isOnline?: () => boolean } = {}): () => void {
+  const isOnline = opts.isOnline ?? (() => (typeof navigator === "undefined" ? true : navigator.onLine));
+  const id = setInterval(() => { if (q.pending() > 0 && isOnline()) void q.flush(); }, opts.intervalMs ?? 15_000);
+  return () => clearInterval(id);
+}
