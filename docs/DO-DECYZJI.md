@@ -273,3 +273,9 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 
 ## Metody intensyfikacji (blok 5, 4.11.2026)
 - Projekt w `docs/METODY.md`, 5 pytań z rekomendacjami (Solo bez rest-pause/upadku; drop sety dla Ś na maszynach; „Dobierz za mnie” przy Sile bez metod; nowe kolumny w modelu planu; drop set i rest-pause jako +1 seria). Do czasu odpowiedzi blok 6 używa rekomendacji jako założenia i nie jest scalany.
+
+## Metody intensyfikacji — wdrożenie próbne (blok 6, gałąź `feature/metody`, NIE scalona)
+- Za flagą `METHODS_V2_ENABLED` (domyślnie 0, wpis w `.env.example`; w `.env` nie włączana). Zrobione: kafelki w wywiadzie portalu (Solo: tylko Superserie i Drop sety), dobór metod w generatorze (`services/methods.ts`) wg `docs/METODY.md` z założeniem rekomendacji z pytań 1–5, „Metody do unikania” respektowane, zapis w planie (migracja `0067_metody.sql` — nowe kolumny: `surveys.preferred_methods`, `workout_plan_exercises.method/method_group/method_note`), para ćwiczeń obok siebie, opis „Dlaczego?” w podglądzie dnia w portalu, status `/api/methods/status`.
+- **Nie zrobione (do dokończenia po akceptacji):** pole metod w formularzu wywiadu trenera i opcja „Dobiorę sam”, edycja metody w edytorze planu trenera, wspólny ekran pary w „Dziś”, korekta analizatora objętości (+1 seria przy drop secie i rest-pause).
+- **Odstępstwo od projektu:** reguła „nigdy w pierwszym tygodniu cyklu” nie jest zakodowana — plan jest taki sam co tydzień; zamiast tego do ustalenia, czy metody mają się włączać od drugiego tygodnia (np. w ekranie „Dziś”).
+- Migracja 0067 zastosowana tylko w bazie testowej (kopia przed: `~/backups/trainer_panel_test_przed_0067_*`). Przed scaleniem: kopia bazy aplikacji i `scripts/db-setup-gcp.sh`.

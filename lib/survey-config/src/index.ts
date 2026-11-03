@@ -680,3 +680,39 @@ export function dayFocusLabel(subtitle: string | null | undefined): string | nul
   if (/^[a-z]+(_[a-z0-9]+)+$/.test(key)) return key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
   return raw;
 }
+
+// ─── Methods of intensification (docs/METODY.md) ──────────────────────────────
+
+export const METHOD_AUTO = "Dobierz za mnie";
+export const METHOD_TILES = [
+  METHOD_AUTO,
+  "Superserie",
+  "Serie złożone",
+  "Drop sety",
+  "Rest-pause",
+  "Serie do upadku mięśniowego",
+] as const;
+export type MethodTile = (typeof METHOD_TILES)[number];
+export const METHOD_QUESTION = "Jakie metody chcesz w planie?";
+export const METHOD_HINT = "Metody to sposoby na ciekawszy trening. Możesz je zmienić później.";
+
+/** Tiles offered for the effective level and mode. Beginners are not asked. Solo: only supersets and drop sets. */
+export function methodTilesFor(effectiveLevel: string | null | undefined, mode: "solo" | "trainer"): MethodTile[] {
+  if (!effectiveLevel || !(effectiveLevel === "Średniozaawansowany" || effectiveLevel === "Zaawansowany")) return [];
+  const solo: MethodTile[] = [METHOD_AUTO, "Superserie", "Drop sety"];
+  if (mode === "solo") return solo;
+  return METHOD_TILES.filter((t) => t !== "Rest-pause" || effectiveLevel === "Zaawansowany");
+}
+
+/** Stored wording (tile labels and earlier names) → tile; unknown and "Serie wymuszone" → null. */
+export function methodTileOf(raw: string | null | undefined): MethodTile | null {
+  const t = (raw ?? "").trim().toLowerCase();
+  if (!t) return null;
+  if (t.startsWith("dobierz")) return METHOD_AUTO;
+  if (t.startsWith("superser")) return "Superserie";
+  if (t.startsWith("serie złożone") || t.startsWith("serie zlozone")) return "Serie złożone";
+  if (t.startsWith("drop")) return "Drop sety";
+  if (t.startsWith("rest")) return "Rest-pause";
+  if (t.startsWith("serie do upadku")) return "Serie do upadku mięśniowego";
+  return null;
+}

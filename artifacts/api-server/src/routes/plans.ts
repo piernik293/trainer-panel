@@ -720,6 +720,10 @@ const SaveDraftExerciseBody = z.object({
   restSeconds: z.number().int().positive().nullable().optional(),
   notes: z.string().nullable().optional(),
   clientInstructions: z.string().nullable().optional(),
+  // Metoda intensyfikacji (docs/METODY.md)
+  method: z.enum(["superserie", "serie_zlozone", "drop_set", "rest_pause", "upadek"]).nullable().optional(),
+  methodGroup: z.number().int().positive().nullable().optional(),
+  methodNote: z.string().max(300).nullable().optional(),
 });
 
 const SaveDraftDayBody = z.object({
@@ -907,6 +911,9 @@ router.post("/clients/:clientId/plans/draft", requireAuth, async (req, res): Pro
             restSeconds: ex.restSeconds ?? null,
             notes: ex.notes ?? null,
             clientInstructions: ex.clientInstructions ?? null,
+            method: ex.method ?? null,
+            methodGroup: ex.methodGroup ?? null,
+            methodNote: ex.methodNote ?? null,
           });
         }
       }

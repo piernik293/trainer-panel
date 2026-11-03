@@ -34,6 +34,7 @@ export interface Survey {
   /** @nullable */
   favoriteExercises?: string | null;
   advancedMethodsToAvoid: string[];
+  preferredMethods?: string[];
   /** @nullable */
   additionalInfo?: string | null;
   /** @nullable */
