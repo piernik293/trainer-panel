@@ -34,6 +34,7 @@ import { WARMUP_ROLES } from "../lib/exerciseRoles";
 import { generateDayHandler, type GenerateDayReq } from "../routes/planDraftGenerateDay";
 import { isSoloPlyoOrOlympic } from "../services/solo";
 import { familyDuplicates } from "../services/exerciseFamily";
+import { variationSeed } from "../services/variation";
 import { getDayTemplate, recommendSplitType } from "../services/planDraftVolumeDistributionService";
 
 const STYLE = process.env.SIM_STYLE ?? ""; // "" = standard, "calisthenics" = docs/KALISTENIKA.md (forces the flag on for this run)
@@ -41,6 +42,8 @@ if (STYLE === "calisthenics") process.env.CALISTHENICS_ENABLED = "1";
 const SOLO = process.env.SIM_SOLO === "1"; // osoba bez trenera: reguły Solo (docs/SOLO-STEROWNIK.md), generator wołany jak przez kierowcę Solo
 if (SOLO) process.env.SOLO_ENABLED = "1";
 const N = Number(process.env.SIM_N ?? 24);
+const PAIRS = process.env.SIM_PAIRS === "1"; // pary identycznych profili na różnych kontach (zmienność planów)
+const pairStats = { ex: [] as number[], warm: [] as number[], cool: [] as number[], day: [] as number[] };
 const SEED = Number(process.env.SIM_SEED ?? 20261028);
 const REPORT = process.env.SIM_REPORT ?? "";
 const DUMP = process.env.SIM_DUMP ?? ""; // optional: per-day results of the first generation (profile, type, status, exercise ids, warm-up, cool-down) for the catalogue and graphics lists
@@ -346,6 +349,24 @@ describe("generator simulation", () => {
       (sets.push += b.push, sets.pull += b.pull, sets.knee += b.knee, sets.hip += b.hip);
       balance.push(b);
       (byGoalPlyo[p.goal] ??= { plans: 0, withPlyo: 0 }).plans++; if (anyPlyo) byGoalPlyo[p.goal]!.withPlyo++;
+      // Zmienność (SIM_PAIRS=1): drugie konto z IDENTYCZNYM profilem — ile ćwiczeń, rozgrzewek i schłodzeń się pokrywa
+      if (PAIRS) {
+        const cid2 = await createClient(p);
+        const week2 = await generateWeek(cid2, p);
+        const jacc = (x: number[], y: number[]) => { const A = new Set(x), B = new Set(y); const u = new Set([...A, ...B]).size; return u ? [...A].filter((v) => B.has(v)).length / u : 0; };
+        const day = (w: DayOut[], i: number) => w[i]?.exercises.map((e) => e.id) ?? [];
+        const ex1 = week.flatMap((d) => d.exercises.map((e) => e.id)), ex2 = week2.flatMap((d) => d.exercises.map((e) => e.id));
+        if (ex1.length && ex2.length) pairStats.ex.push(jacc(ex1, ex2));
+        week2.forEach((d) => d.exercises.forEach((e) => { ctx = `drugie konto, dzień ${d.type}`; checkExercise(cat.get(e.id)!, p, safety, feas); }));
+        const place = PLACES.find((x) => x.key === p.place)!;
+        const wc = (clientId: number, w: DayOut[]) => w.map((d, di) => {
+          const groups = [...new Set(d.exercises.map((e) => cat.get(e.id)?.mainMuscleGroup).filter((g): g is string => !!g))];
+          const c = { dayGroups: groups, level: p.effective, painAreas: new Set(p.joints), conservative: p.consent === "declined", trainingLocation: place.location, equipmentText: place.equipment, rollerAllowed: di % 2 === 0, seed: process.env.SIM_NOSEED === "1" ? undefined : variationSeed(String(clientId), 1, di) };
+          return { w: selectWarmup(warmCatalogue, c).map((x) => x.id), c: selectCooldown(warmCatalogue, c).map((x) => x.id) };
+        });
+        const a1 = wc(cid, week), a2 = wc(cid2, week2);
+        for (let i = 0; i < Math.min(a1.length, a2.length); i++) { if (week[i]?.status === 200 && week2[i]?.status === 200) { pairStats.warm.push(jacc(a1[i]!.w, a2[i]!.w)); pairStats.cool.push(jacc(a1[i]!.c, a2[i]!.c)); pairStats.day.push(jacc(day(week, i), day(week2, i))); } }
+      }
       // "Generuj od nowa": save the week, generate again, measure repetition
       await savePlan(cid, week);
       const again = await generateWeek(cid, p);
@@ -361,6 +382,7 @@ describe("generator simulation", () => {
     const report = {
       aboveLevel: { count: aboveLevel.length, byLevel: Object.fromEntries([...new Set(aboveLevel.map((x) => x.level))].map((l) => [l, aboveLevel.filter((x) => x.level === l).length])), samples: aboveLevel.slice(0, 12) },
       missingJointData: jointGap,
+      pairs: PAIRS ? Object.fromEntries(Object.entries(pairStats).map(([k, v]) => [k, { n: v.length, mean: +(v.reduce((a, b) => a + b, 0) / Math.max(1, v.length)).toFixed(3), median: +med(v).toFixed(3), above50pct: v.filter((x) => x > 0.5).length }])) : undefined,
       style: STYLE || "standard", seed: SEED, n: N, stat, safetyViolations: safety.length, feasibilityViolations: feas.length,
       safetyByRule: Object.fromEntries([...new Set(safety.map((x) => x.rule))].map((r) => [r, safety.filter((x) => x.rule === r).length])),
       feasibilityByRule: Object.fromEntries([...new Set(feas.map((x) => x.rule))].map((r) => [r, feas.filter((x) => x.rule === r).length])),

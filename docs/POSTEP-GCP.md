@@ -452,3 +452,6 @@
 
 ## 4.11.2026 — raport poranny (gałąź `docs/raport-rano`)
 - `docs/RAPORT-DLA-WLASCICIELA.md` i `~/RAPORT-RANO.md` (kopia).
+
+## 4.11.2026 — zmienność planów i zamiana ćwiczenia w Solo (gałąź `feature/zmiennosc-zamiana`)
+- `services/variation.ts`, ziarno w silniku wyboru i w rozgrzewce/schłodzeniu, tryb `SIM_PAIRS=1` w symulacji; `services/soloSwap.ts`, migracja 0068 (kopia bazy przed: `~/backups/trainer_panel_przed_0068_*`), przycisk w portalu; testy `variation`, `solo-zamiana`.

@@ -25,6 +25,7 @@
  *   useV0Selector=true&v0SessionType=<push|pull|legs|upper|lower>
  */
 
+import { seededIndex } from "./variation";
 import { exerciseFamily } from "./exerciseFamily";
 import type {
   ScoredAndFilteredExercise,
@@ -208,6 +209,8 @@ export interface V0PriorityContext {
  */
 export interface V0EngineOptions {
   alternativeIndex?: number;
+  /** Ziarno zmienności (services/variation.ts): wśród równorzędnych kandydatów z pasma wybór zależy od konta i numeru planu. Bez ziarna — jak dotąd. */
+  variationSeed?: number;
   /**
    * Exercises selected in the previous occurrence of this same session type
    * (e.g., Upper A's exercises when generating Upper B).
@@ -1548,8 +1551,8 @@ export function runExerciseSelectionEngineV0(
     // more candidates to search for implement / angle diversity.  Default sessions
     // (altIdx=0) keep the tighter BAND_MAIN to stay within the quality tier.
     const bandSize = pickOpts?.protected
-      ? (altIdx > 0 ? BAND_MAIN_ALT : BAND_MAIN)
-      : BAND_ACCESSORY;
+      ? (altIdx > 0 ? BAND_MAIN_ALT : options?.variationSeed != null ? 3 : BAND_MAIN)
+      : (options?.variationSeed != null ? 12 : BAND_ACCESSORY);
     const band = candidates.slice(0, bandSize);
 
     // Safety note: for isNoActivityClient, every exercise in `candidates` (and
@@ -1565,6 +1568,10 @@ export function runExerciseSelectionEngineV0(
       // altIdx=0: activeBand === band, so band[0] is returned as before.
       // activeBand.length <= 1: only one safe candidate; no diversity possible.
       selected = activeBand[0];
+      // Zmienność: ćwiczenia główne wybieramy spośród 2 najlepszych (równorzędny wariant), dodatkowe z całego pasma (5).
+      if (options?.variationSeed != null && activeBand.length > 1) {
+        selected = activeBand[seededIndex(options.variationSeed, `${sessionType}|${slotName}`, activeBand.length)]!;
+      }
     } else {
       const defaultPattern = normP(activeBand[0].movementPattern);
       const defaultEquip = primaryEquipmentClass(activeBand[0].equipment);

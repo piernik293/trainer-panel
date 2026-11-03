@@ -340,6 +340,23 @@ function SignInGate() {
 // (components/training), never here.
 
 function DayPreview({ day, onBack }: { day: PlanDay; onBack: () => void }) {
+  // Solo: „Zamień na inne” (max 3 na tydzień). Dla podopiecznego trenera endpoint odpowiada 403/404 i przycisk się nie pojawia.
+  const [left, setLeft] = useState<number | null>(null);
+  const [swapped, setSwapped] = useState<Record<number, Partial<PlanExercise>>>({});
+  const [busy, setBusy] = useState<number | null>(null);
+  const [swapMsg, setSwapMsg] = useState<string | null>(null);
+  useEffect(() => {
+    apiFetch<{ left: number }>("/solo/swaps").then((r) => setLeft(r.left)).catch(() => setLeft(null));
+  }, []);
+  const swap = async (id: number) => {
+    setBusy(id); setSwapMsg(null);
+    try {
+      const r = await apiFetch<{ exercise: { name: string }; left: number; entry: { workingSets: number; repRangeMin: number | null; repRangeMax: number | null; restSeconds: number | null } }>(`/solo/plan-exercises/${id}/swap`, { method: "POST" });
+      setSwapped((m) => ({ ...m, [id]: { exerciseName: r.exercise.name, ...r.entry, clientInstructions: null } }));
+      setLeft(r.left);
+    } catch (err) { setSwapMsg(humanizeError(err, "Nie udało się zamienić ćwiczenia. Spróbuj ponownie.")); }
+    setBusy(null);
+  };
   return (
     <div className="min-h-screen bg-background pb-16 text-foreground">
       <div className="mx-auto max-w-2xl space-y-5 px-4 pt-8">
@@ -352,14 +369,24 @@ function DayPreview({ day, onBack }: { day: PlanDay; onBack: () => void }) {
           <p className="mt-1 text-xs text-muted-foreground">Podgląd planu. Trening zaczniesz na ekranie „Dziś”.</p>
         </div>
         <ol className="space-y-2">
-          {day.exercises.map((ex, i) => (
-            <li key={ex.id} className="rounded-lg border border-border bg-card px-4 py-3">
-              <p className="font-semibold">{i + 1}. {ex.exerciseName}</p>
-              <p className="text-sm text-muted-foreground">{formatPrescription(ex)}</p>
-              {ex.clientInstructions && <p className="mt-1 text-sm text-foreground/90">{ex.clientInstructions}</p>}
-            </li>
-          ))}
+          {day.exercises.map((orig, i) => {
+            const ex = { ...orig, ...(swapped[orig.id] ?? {}) } as PlanExercise;
+            return (
+              <li key={ex.id} className="rounded-lg border border-border bg-card px-4 py-3">
+                <p className="font-semibold">{i + 1}. {ex.exerciseName}</p>
+                <p className="text-sm text-muted-foreground">{formatPrescription(ex)}</p>
+                {ex.clientInstructions && <p className="mt-1 text-sm text-foreground/90">{ex.clientInstructions}</p>}
+                {left !== null && (
+                  <button type="button" disabled={busy === ex.id || left <= 0} onClick={() => void swap(ex.id)}
+                    className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-primary underline disabled:text-muted-foreground disabled:no-underline" data-testid="swap-exercise">
+                    {busy === ex.id ? "Szukam zamiennika…" : left <= 0 ? "Zamień na inne (limit na ten tydzień)" : `Zamień na inne (zostało ${left})`}
+                  </button>
+                )}
+              </li>
+            );
+          })}
         </ol>
+        {swapMsg && <p role="alert" className="text-sm text-destructive">{swapMsg}</p>}
       </div>
     </div>
   );

@@ -14,6 +14,7 @@
  * Cool-down: up to 3–4 stretches for the day's groups; rolling (at most one roller exercise) only on 1–2 days a week (rollerDayIndexes); one calm
  * breathing exercise at the end ONLY when the client switched that on (default off).
  */
+import { hash32 } from "./variation";
 import { PAIN_AREAS } from "@workspace/db";
 import { withheldForUnknownJoints } from "./jointData";
 
@@ -58,6 +59,8 @@ export interface SelectionContext {
   breathing?: boolean;
   /** this plan day may carry rolling (1–2 days a week, see rollerDayIndexes) — default NO */
   rollerAllowed?: boolean;
+  /** Ziarno zmienności (services/variation.ts): wśród równie trafnych ćwiczeń kolejność zależy od konta; bez ziarna — jak dotąd (po id). */
+  seed?: number;
 }
 
 /**
@@ -126,8 +129,8 @@ function eligible(it: CatalogueWarmupItem, ctx: SelectionContext): boolean {
 
 const groupsOf = (it: CatalogueWarmupItem) => [it.mainMuscleGroup, ...it.secondaryMuscleGroups];
 const overlap = (it: CatalogueWarmupItem, day: readonly string[]) => groupsOf(it).filter((g) => day.includes(g)).length;
-const byRelevance = (day: readonly string[]) => (a: CatalogueWarmupItem, b: CatalogueWarmupItem) =>
-  overlap(b, day) - overlap(a, day) || a.id - b.id;
+const byRelevance = (day: readonly string[], seed?: number) => (a: CatalogueWarmupItem, b: CatalogueWarmupItem) =>
+  (seed == null ? overlap(b, day) - overlap(a, day) : Math.min(1, overlap(b, day)) - Math.min(1, overlap(a, day))) || (seed == null ? a.id - b.id : hash32(`${seed}|${a.id}`) - hash32(`${seed}|${b.id}`)) || a.id - b.id;
 
 // ─── Selection ────────────────────────────────────────────────────────────────
 
@@ -141,18 +144,18 @@ export function selectWarmup(catalogue: readonly CatalogueWarmupItem[], ctx: Sel
   const isGeneral = (i: CatalogueWarmupItem) => i.name === GENERAL_BIKE || i.name === GENERAL_MARCH;
 
   // 1 activation (for the day's groups, else any).
-  const activations = pool.filter((i) => i.movementPattern === "Aktywacja" && !isGeneral(i)).sort(byRelevance(ctx.dayGroups));
+  const activations = pool.filter((i) => i.movementPattern === "Aktywacja" && !isGeneral(i)).sort(byRelevance(ctx.dayGroups, ctx.seed));
   const activation = activations.find((i) => overlap(i, ctx.dayGroups) > 0) ?? activations[0];
 
   // 2–3 for the day's muscle groups (relevant only), without the activation.
   const forDay = pool
     .filter((i) => !isGeneral(i) && i !== activation && i.movementPattern !== "Aktywacja" && overlap(i, ctx.dayGroups) > 0)
-    .sort(byRelevance(ctx.dayGroups));
+    .sort(byRelevance(ctx.dayGroups, ctx.seed));
   forDay.slice(0, 3).forEach(add);
   // Not enough relevant ones: fill up to 2 with the remaining simple mobilisation.
   if (chosen.length < 3) {
     pool.filter((i) => !isGeneral(i) && i !== activation && i.movementPattern === "Mobilizacja" && !chosen.includes(i))
-      .sort((a, b) => a.id - b.id)
+      .sort((a, b) => (ctx.seed == null ? a.id - b.id : hash32(`${ctx.seed}|${a.id}`) - hash32(`${ctx.seed}|${b.id}`)))
       .slice(0, 3 - chosen.length)
       .forEach(add);
   }
@@ -164,7 +167,7 @@ const BREATHING = "Oddychanie";
 const isRoller = (i: CatalogueWarmupItem) => i.equipment.includes("Roller");
 
 export function selectCooldown(catalogue: readonly CatalogueWarmupItem[], ctx: SelectionContext): CatalogueWarmupItem[] {
-  const all = catalogue.filter((i) => i.role === "rozciąganie" && eligible(i, ctx) && (ctx.rollerAllowed === true || !isRoller(i))).sort(byRelevance(ctx.dayGroups));
+  const all = catalogue.filter((i) => i.role === "rozciąganie" && eligible(i, ctx) && (ctx.rollerAllowed === true || !isRoller(i))).sort(byRelevance(ctx.dayGroups, ctx.seed));
   const breathing = all.filter((i) => i.movementPattern === BREATHING).sort((a, b) => a.id - b.id);
   const pool = all.filter((i) => i.movementPattern !== BREATHING);
   // Only when the client switched it on; rotated with the day's groups so consecutive days differ; none when there is no eligible one.

@@ -25,6 +25,7 @@
  *   { hasProfile, hasLocationData, sessionType, exercises: DayRecommendationExercise[] }
  */
 
+import { variationSeed } from "../services/variation";
 import { usedEquipment } from "../services/dayNaming";
 import { priorityGroupsOf } from "@workspace/survey-config";
 import { soloAllowsExercise, soloEnabled, soloPainExcludedIds } from "../services/solo";
@@ -40,6 +41,7 @@ import {
   surveysTable,
   exercisesTable,
   clientExerciseUsageLogTable,
+  workoutPlansTable,
 } from "@workspace/db";
 import { desc } from "drizzle-orm";
 import { scoreExercise } from "../lib/recommendation-engine";
@@ -670,6 +672,9 @@ export async function generateDayHandler(req: GenerateDayReq, res: Response): Pr
     // "Generuj od nowa": first without the exercises of the client's previous plan; the previous plan's exercises come back only for
     // slots where no other safe option exists (see chooseFreshRun). All safety filters apply to both runs, they are in the pool.
     const previousIds = await previousPlanExerciseIds(clientId);
+    // Zmienność: ziarno z konta (id klienta) i numeru planu tego konta — identyczne profile na różnych kontach dają różne plany.
+    const [{ n: planNo } = { n: 0 }] = await db.select({ n: sql<number>`count(*)::int` }).from(workoutPlansTable).where(eq(workoutPlansTable.clientId, clientId));
+    const variationSeedValue = variationSeed(String(clientId), planNo ?? 0);
     const baselineUsed = new Set(usedExerciseIds);
     for (const id of previousIds) usedExerciseIds.add(String(id));
     let v0Result = runExerciseSelectionEngineV0(
@@ -677,13 +682,13 @@ export async function generateDayHandler(req: GenerateDayReq, res: Response): Pr
       v0SessionType as V0SessionType,
       usedExerciseIds,
       priorityContext,
-      { alternativeIndex, sameTypePreviousExercises: sameTypePrev },
+      { alternativeIndex, sameTypePreviousExercises: sameTypePrev, variationSeed: variationSeedValue },
     );
     let repeatNote: string | null = null;
     if (previousIds.size > 0) {
       const baseline = runExerciseSelectionEngineV0(
         pool, v0SessionType as V0SessionType, new Set(baselineUsed), priorityContext,
-        { alternativeIndex, sameTypePreviousExercises: sameTypePrev },
+        { alternativeIndex, sameTypePreviousExercises: sameTypePrev, variationSeed: variationSeedValue },
       );
       const chosen = chooseFreshRun(v0Result, baseline, previousIds);
       v0Result = chosen.result;
@@ -719,7 +724,7 @@ export async function generateDayHandler(req: GenerateDayReq, res: Response): Pr
         v0SessionType as V0SessionType,
         sameTypeOnlyIds,
         priorityContext,
-        { alternativeIndex, sameTypePreviousExercises: sameTypePrev },
+        { alternativeIndex, sameTypePreviousExercises: sameTypePrev, variationSeed: variationSeedValue },
       );
       if (v0Result.valid) {
         console.log(
