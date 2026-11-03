@@ -446,3 +446,6 @@
 
 ## 4.11.2026 — blok 4: jakość planu (gałąź `fix/plan-jakosc`)
 - `exerciseFamily` (jeden wzorzec na dzień, silnik wyboru + powtórzenia bezpieczne), metryka symulacji, `refinePrescription`, `dayNaming` (nazwy dni Solo), poprawka kolejki zapisów w portalu (`startAutoRetry`, odznaka); testy `exerciseFamily`, `prescriptionRefine`, `dayNaming`, `queue`, `SyncBadge`.
+
+## 4.11.2026 — blok 5: projekt metod intensyfikacji (gałąź `docs/metody`)
+- `docs/METODY.md`: pytanie i kafelki, tabela reguł metod, „Dobierz za mnie”, teksty „Dlaczego?”, opis zmian i 5 pytań do właściciela. Sam dokument scalony do `main`; wdrożenie to blok 6 (gałąź `feature/metody`, nie scalana).
