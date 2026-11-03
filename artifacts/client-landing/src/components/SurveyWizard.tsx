@@ -24,6 +24,8 @@ import {
   SESSION_RECOMMENDED_BADGE,
   PRIORITY_BEGINNER_TEXT,
   maxPriorityMuscles,
+  PRIORITY_TILES,
+  toPriorityTiles,
   normalizeCardioPreference,
   resolveEffectiveLevel,
   NO_EQUIPMENT,
@@ -36,7 +38,6 @@ import {
   JUMP_EXPERIENCE_QUESTION,
   equipmentHint,
   EXPERIENCE_LEVEL_OPTIONS,
-  MUSCLE_GROUPS,
   PLAN_STYLE_OPTIONS,
   PREFERRED_CARDIO_TYPE_OPTIONS,
   SESSION_DURATION_OPTIONS,
@@ -57,7 +58,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { AvoidedExercisesPicker } from "./AvoidedExercisesPicker";
 import { FavoriteExercisesPicker } from "./FavoriteExercisesPicker";
-import { MuscleGroupCombobox } from "./MuscleGroupCombobox";
 import { humanizeError } from "@/lib/userError";
 import { cn } from "@/lib/utils";
 import {
@@ -489,6 +489,7 @@ export default function SurveyWizard({
   const effectiveLevel = resolveEffectiveLevel(answers.experienceLevel, answers.trainingDuration).effective;
   const rec = effectiveLevel ? SESSION_DURATION_RECOMMENDATIONS[effectiveLevel] : undefined;
   const maxPriority = maxPriorityMuscles(effectiveLevel);
+  const chosenTiles: string[] = toPriorityTiles([answers.priorityMuscle1, answers.priorityMuscle2, answers.priorityMuscle3]);
   const age = calculateAge(answers.dateOfBirth);
   const multiCount =
     effectiveStep === "sportNeeds" ? answers.sportPerformanceNeeds.length
@@ -754,13 +755,16 @@ export default function SurveyWizard({
             title="Partie priorytetowe"
             lead={<Opt text={maxPriority === 1 ? PRIORITY_BEGINNER_TEXT : HINT_TEXT.priOther} />}
           >
-            {(["priorityMuscle1", "priorityMuscle2", "priorityMuscle3"] as const).slice(0, maxPriority).map((k, i) => (
-              <div key={k} className="space-y-1.5">
-                <p className="text-sm font-semibold">Priorytet {i + 1}</p>
-                <MuscleGroupCombobox value={answers[k]} onChange={(v) => set({ [k]: v } as Partial<Answers>)} placeholder={["np. Barki", "np. Pośladki", "np. Plecy"][i]} />
-              </div>
-            ))}
-            <span className="sr-only">{MUSCLE_GROUPS.length} grup mięśniowych do wyboru</span>
+            <MultiList
+              columns={2}
+              options={PRIORITY_TILES.map((v) => ({ value: v, label: v }))}
+              selected={chosenTiles}
+              onToggle={(v) => {
+                const next = chosenTiles.includes(v) ? chosenTiles.filter((t) => t !== v) : chosenTiles.length < maxPriority ? [...chosenTiles, v] : chosenTiles;
+                set({ priorityMuscle1: next[0] ?? "", priorityMuscle2: next[1] ?? "", priorityMuscle3: next[2] ?? "" });
+              }}
+            />
+            {chosenTiles.length >= maxPriority && <Note>{maxPriority === 1 ? "Wybrano jedną partię." : `Wybrano ${maxPriority} partie — to maksimum.`}</Note>}
           </Section>
         );
       case "methodsList":

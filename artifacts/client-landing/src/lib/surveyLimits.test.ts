@@ -133,3 +133,12 @@ describe("earlier wording of the methods question is ignored", async () => {
     expect(methodsAnswerUsable(undefined)).toBe(false);
   });
 });
+
+describe("partie priorytetowe jako kafelki: starsze wartości", () => {
+  it("pojedyncze partie mapują się na kafelki, duplikaty znikają, maksymalnie 3", () => {
+    const a = normalizeAnswers({ ...EMPTY_ANSWERS, experienceLevel: "Zaawansowany", trainingDuration: "5 lat", priorityMuscle1: "uda", priorityMuscle2: "łydki", priorityMuscle3: "biceps" });
+    expect([a.priorityMuscle1, a.priorityMuscle2, a.priorityMuscle3]).toEqual(["Nogi", "Ręce", ""]);
+    const b = normalizeAnswers({ ...EMPTY_ANSWERS, experienceLevel: "Zaawansowany", trainingDuration: "5 lat", priorityMuscle1: "klatka piersiowa", priorityMuscle2: "Plecy", priorityMuscle3: "pośladki" });
+    expect([b.priorityMuscle1, b.priorityMuscle2, b.priorityMuscle3]).toEqual(["Klatka", "Plecy", "Pośladki"]);
+  });
+});

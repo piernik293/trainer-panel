@@ -366,7 +366,12 @@ describe("goals with descriptions, recommended session length, priority groups (
     expect(isStepVisible("priority", { ...EMPTY_ANSWERS, experienceLevel: "Średniozaawansowany", trainingDuration: "1 rok" })).toBe(false); // effective = beginner
     open("priority", { experienceLevel: "Zaawansowany" });
     expect(screen.getByText(/Wybierz do 3 partii mięśniowych/)).toBeTruthy();
-    expect(screen.getAllByText(/^Priorytet \d$/)).toHaveLength(3);
+    const tiles = screen.getAllByRole("button").filter((b) => b.hasAttribute("aria-pressed")).map((b) => b.textContent);
+    expect(tiles).toEqual(["Nogi", "Pośladki", "Plecy", "Klatka", "Barki", "Ręce", "Brzuch"]);
+    for (const n of ["Nogi", "Plecy", "Barki"]) fireEvent.click(screen.getByRole("button", { name: n }));
+    fireEvent.click(screen.getByRole("button", { name: "Ręce" })); // czwarty kafelek nie wchodzi
+    expect(screen.getByRole("button", { name: "Ręce" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("button", { name: "Nogi" }).getAttribute("aria-pressed")).toBe("true");
   });
 
   it("cardio: two options only", () => {

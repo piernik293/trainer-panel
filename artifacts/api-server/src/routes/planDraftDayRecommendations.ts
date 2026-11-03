@@ -27,6 +27,7 @@
  *   { hasProfile, hasLocationData, exercises: DayRecommendationExercise[] }
  */
 
+import { priorityGroupsOf } from "@workspace/survey-config";
 import { buildLadderRules, loadLadderRows } from "../services/ladderSelection";
 import { hitsBlockedJoint, loadBlockedJoints, isConservativeHealth, violatesConservative, withheldForUnknownJoints } from "../services/jointExclusion";
 import { withEffectiveLevel } from "../lib/effectiveLevel";
@@ -373,10 +374,8 @@ router.get(
         isNoActivityClient,
         isBeginnerClient,
         goalProfile,
-        tierA: survey.priorityMuscle1 ? [survey.priorityMuscle1] : [],
-        tierB: [survey.priorityMuscle2, survey.priorityMuscle3].filter(
-          (v): v is string => v !== null && v !== undefined && v.trim() !== "",
-        ),
+        tierA: priorityGroupsOf(survey.priorityMuscle1),
+        tierB: [survey.priorityMuscle2, survey.priorityMuscle3].flatMap((v) => priorityGroupsOf(v)),
         benchGoalActive: isPriorityEligible && isBenchGoal && hasBarbell,
       };
 

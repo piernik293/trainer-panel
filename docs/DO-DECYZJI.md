@@ -258,3 +258,8 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 - **Nie** = brak rekomendacji cardio, kroków i elementów kondycyjnych, także przy celu Redukcja (trener może dodać ręcznie). **Tak** = jak dotąd.
 - Starsze wywiady: „Tylko niezbędne minimum” / „Wolę ograniczyć…” / „Nie wykonuję cardio” → Nie; reszta → Tak; nowa odpowiedź Tak/Nie ma pierwszeństwo przed starym polem częstotliwości. Dane w bazie nie są zmieniane (mapowanie przy odczycie, `wantsCardio` w `lib/survey-config`).
 - **Do potwierdzenia:** osoby początkujące i bez aktywności nadal nie widzą tego pytania (skrócony wywiad), więc u nich cardio zostaje domyślnie „Tak”, jak dotąd.
+
+## Wywiad: partie priorytetowe jako kafelki (blok 3, 4.11.2026)
+- Kafelki (max 3, pytanie dalej opcjonalne, nadal pomijane dla „Brak aktywności” i „Początkujący”): Nogi · Pośladki · Plecy · Klatka · Barki · Ręce · Brzuch. Mapowanie w `lib/survey-config`: Ręce = biceps + triceps, Nogi = uda + łydki, reszta 1:1. **Przedramion nie ma w katalogu partii**, więc „Ręce” ich nie obejmują — do decyzji, jeśli mają być osobno.
+- W bazie zapisuje się etykieta kafelka w istniejących polach `priority_muscle_1..3` (bez zmiany schematu); generator rozwija ją do partii (kolejność priorytetu zachowana: kafelek 1 = tier A). Starsze wywiady z pojedynczymi partiami (np. „uda”) działają bez zmian, a w formularzach pokazują się jako kafelek.
+- Ten sam wybór kafelków w formularzu trenera.

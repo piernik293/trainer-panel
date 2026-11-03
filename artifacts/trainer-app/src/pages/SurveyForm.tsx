@@ -43,7 +43,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { HEALTH_CONSENT_HINT, HEALTH_CONSENT_LABEL } from "@/lib/healthConsentText";
 import { Slider } from "@/components/ui/slider";
 import { ArrowLeft, Save, Pencil, AlertCircle, Plus, X } from "lucide-react";
-import { MuscleGroupCombobox } from "@/components/MuscleGroupCombobox";
 import { FavoriteExercisesPicker, type FavoriteExercise } from "@/components/FavoriteExercisesPicker";
 import { AvoidedExercisesPicker, type AvoidedExercise } from "@/components/AvoidedExercisesPicker";
 import { useToast } from "@/hooks/use-toast";
@@ -74,6 +73,9 @@ import {
   calculateAge,
   methodsAnswerUsable,
   normalizeCardioPreference,
+  PRIORITY_TILES,
+  PRIORITY_TILES_MAX,
+  toPriorityTiles,
   birthDateError,
   AGE_RANGE_MESSAGE,
   HEIGHT_RANGE_MESSAGE,
@@ -724,9 +726,11 @@ function SurveyFormBody({
         : [],
       hasAdditionalInfo: derivedHasAdditionalInfo as "Tak" | "Nie" | undefined,
       additionalInfo: (survey?.additionalInfo as string) ?? "",
-      priorityMuscle1: (survey?.priorityMuscle1 as string) ?? "",
-      priorityMuscle2: (survey?.priorityMuscle2 as string) ?? "",
-      priorityMuscle3: (survey?.priorityMuscle3 as string) ?? "",
+      // starsze wywiady mają pojedyncze partie (np. „uda”) — pokazujemy je jako kafelki (Nogi, Ręce…)
+      ...(() => {
+        const t = toPriorityTiles([survey?.priorityMuscle1 as string, survey?.priorityMuscle2 as string, survey?.priorityMuscle3 as string]);
+        return { priorityMuscle1: t[0] ?? "", priorityMuscle2: t[1] ?? "", priorityMuscle3: t[2] ?? "" };
+      })(),
       trainingLocation: (survey?.trainingLocation as string) ?? "",
       equipment: (survey?.equipment as string) ?? "",
       // An earlier answer ("Cardio może być dodatkiem do planu" etc.) is shown as one of the two current ones.
@@ -775,6 +779,17 @@ function SurveyFormBody({
   const pm2 = form.watch("priorityMuscle2");
   const pm3 = form.watch("priorityMuscle3");
   const hasBeginnerPriorityConflict = isBeginner && !!(pm2 || pm3);
+  const pm1 = form.watch("priorityMuscle1");
+  const chosenPriorityTiles: string[] = toPriorityTiles([pm1, pm2, pm3]);
+  const togglePriorityTile = (tile: string) => {
+    const max = isBeginner ? Math.max(1, chosenPriorityTiles.length) : PRIORITY_TILES_MAX;
+    const next = chosenPriorityTiles.includes(tile)
+      ? chosenPriorityTiles.filter((t) => t !== tile)
+      : chosenPriorityTiles.length < (isBeginner ? 1 : max) ? [...chosenPriorityTiles, tile] : chosenPriorityTiles;
+    form.setValue("priorityMuscle1", next[0] ?? "", { shouldDirty: true });
+    form.setValue("priorityMuscle2", next[1] ?? "", { shouldDirty: true });
+    form.setValue("priorityMuscle3", next[2] ?? "", { shouldDirty: true });
+  };
 
   const trainingFrequencyRecommendation = experienceLevel
     ? TRAINING_FREQUENCY_RECOMMENDATIONS[experienceLevel]
@@ -1707,99 +1722,32 @@ function SurveyFormBody({
                     ? "Na tym poziomie możesz wybrać maksymalnie jedną partię priorytetową."
                     : "Do 3 partii, na których klientowi zależy najbardziej."}
                 </p>
-                {isBeginner && !hasBeginnerPriorityConflict ? (
-                  // Beginner / inactive without conflict: single priority slot only
-                  <FormField
-                    control={form.control}
-                    name="priorityMuscle1"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs text-muted-foreground">
-                          Priorytet 1
-                        </FormLabel>
-                        <FormControl>
-                          <MuscleGroupCombobox
-                            value={field.value ?? ""}
-                            onChange={field.onChange}
-                            placeholder="np. Barki"
-                          />
-                        </FormControl>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Na tym poziomie możesz wybrać jeden priorytet. Pozostałe partie będą rozwijane w ramach planu ogólnorozwojowego.
-                        </p>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ) : isBeginner && hasBeginnerPriorityConflict ? (
-                  // Conflict: beginner has extra priority slots filled.
-                  // Show all 3 slots + blocking error so the trainer can clear the extras.
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2.5">
-                      <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                      <p className="text-sm text-destructive leading-snug">
-                        Klient jest na poziomie <strong>początkującym</strong> — dozwolony jest tylko jeden priorytet mięśniowy.
-                        Usuń dodatkowe priorytety, aby zapisać formularz.
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {(["priorityMuscle1", "priorityMuscle2", "priorityMuscle3"] as const).map(
-                        (name, i) => (
-                          <FormField
-                            key={name}
-                            control={form.control}
-                            name={name}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-xs text-muted-foreground">
-                                  Priorytet {i + 1}
-                                </FormLabel>
-                                <FormControl>
-                                  <MuscleGroupCombobox
-                                    value={field.value ?? ""}
-                                    onChange={field.onChange}
-                                    placeholder={["np. Barki", "np. Pośladki", "np. Plecy"][i]}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        )
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  // Intermediate / advanced: up to 3 priority slots
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {(["priorityMuscle1", "priorityMuscle2", "priorityMuscle3"] as const).map(
-                      (name, i) => (
-                        <FormField
-                          key={name}
-                          control={form.control}
-                          name={name}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs text-muted-foreground">
-                                Priorytet {i + 1}
-                              </FormLabel>
-                              <FormControl>
-                                <MuscleGroupCombobox
-                                  value={field.value ?? ""}
-                                  onChange={field.onChange}
-                                  placeholder={
-                                    ["np. Barki", "np. Pośladki", "np. Plecy"][i]
-                                  }
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )
-                    )}
+                {isBeginner && hasBeginnerPriorityConflict && (
+                  <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2.5 mb-3">
+                    <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                    <p className="text-sm text-destructive leading-snug">
+                      Klient jest na poziomie <strong>początkującym</strong> — dozwolony jest tylko jeden priorytet mięśniowy.
+                      Odznacz dodatkowe partie, aby zapisać formularz.
+                    </p>
                   </div>
                 )}
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Partie priorytetowe">
+                  {PRIORITY_TILES.map((tile) => {
+                    const on = chosenPriorityTiles.includes(tile);
+                    return (
+                      <Button
+                        key={tile}
+                        type="button"
+                        size="sm"
+                        variant={on ? "default" : "outline"}
+                        aria-pressed={on}
+                        onClick={() => togglePriorityTile(tile)}
+                      >
+                        {tile}
+                      </Button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="space-y-1.5">

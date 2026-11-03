@@ -28,6 +28,7 @@ import {
   heightError,
   weightError,
   maxPriorityMuscles,
+  toPriorityTiles,
   normalizeCardioPreference,
   resolveEffectiveLevel,
   CARDIO_PREFERENCE_OPTIONS,
@@ -239,6 +240,12 @@ export function normalizeAnswers(input: Answers, prefill: Prefill = {}): Answers
     a.avoidedExercises = [];
     a.avoidedOtherText = "";
     a.avoidedOtherReason = "";
+  }
+  // Priority muscles are tiles (Nogi, Pośladki, Plecy, Klatka, Barki, Ręce, Brzuch): older single groups
+  // (e.g. "uda", "biceps") map to their tile, duplicates are dropped, at most three.
+  {
+    const tiles = toPriorityTiles([a.priorityMuscle1, a.priorityMuscle2, a.priorityMuscle3]);
+    a.priorityMuscle1 = tiles[0] ?? ""; a.priorityMuscle2 = tiles[1] ?? ""; a.priorityMuscle3 = tiles[2] ?? "";
   }
   // Priority muscle groups: one for beginners (EFFECTIVE level — chosen level capped by training time).
   const effective = resolveEffectiveLevel(a.experienceLevel, a.trainingDuration).effective;

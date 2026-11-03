@@ -440,3 +440,6 @@
 
 ## 4.11.2026 — blok 2: wywiad, cardio (gałąź `fix/wywiad-cardio`)
 - Jedno pytanie Tak/Nie w portalu i w formularzu trenera; `wantsCardio` w `lib/survey-config`; generator rekomendacji cardio (panel) i `planDraftInputService` (serwer) respektują „Nie”; testy `cardio-nie`, `cardio-preference`, zaktualizowane testy kreatora.
+
+## 4.11.2026 — blok 3: partie priorytetowe jako kafelki (gałąź `fix/wywiad-partie`)
+- `PRIORITY_TILES`, `priorityGroupsOf`, `toPriorityTiles` w `lib/survey-config`; rozwijanie w `planDraftVolumeDecisionService`, `recommendation-engine`, `planDraftGenerateDay`, `planDraftDayRecommendations`; kafelki w portalu i formularzu trenera; testy `priorityTiles`, `surveyLimits`, kreatora.
