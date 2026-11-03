@@ -370,7 +370,7 @@ function DayPreview({ day, onBack }: { day: PlanDay; onBack: () => void }) {
         </button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{day.dayName ?? `Dzień ${day.dayOrder}`}</h1>
-          {day.subtitle && <p className="text-sm text-muted-foreground">{dayFocusLabel(day.subtitle)}</p>}
+          {day.subtitle && dayFocusLabel(day.subtitle) !== day.dayName && <p className="text-sm text-muted-foreground">{dayFocusLabel(day.subtitle)}</p>}
           <p className="mt-1 text-xs text-muted-foreground">Podgląd planu. Trening zaczniesz na ekranie „Dziś”.</p>
         </div>
         <ol className="space-y-2">

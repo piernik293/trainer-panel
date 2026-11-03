@@ -461,3 +461,5 @@
 
 ## 4.11.2026 — blok 6 dokończony i scalony (gałąź `feature/metody-final`), flaga METHODS_V2_ENABLED=1
 - Formularz trenera, edytor planu, para w „Dziś”, korekta objętości, symulacja z flagą (SIM_METHODS=1).
+
+## 4.11.2026 — QA przycisku „Zamień na inne” (375 px): mieści się bez poziomego przewijania, przycisk 180×44 px, zamiana działa, licznik „zostało N”; usunięto zdublowany podtytuł dnia (zrzuty `docs/screens/qa/swap-*.png`).
