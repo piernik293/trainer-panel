@@ -21,6 +21,8 @@ export const surveysTable = pgTable("surveys", {
   avoidedExercises: text("avoided_exercises"),
   favoriteExercises: text("favorite_exercises"),
   advancedMethodsToAvoid: text("advanced_methods_to_avoid").array().notNull().default([]),
+  /** Kafelki „Jakie metody chcesz w planie?” (docs/METODY.md); pusta lista = brak odpowiedzi. */
+  preferredMethods: text("preferred_methods").array().notNull().default([]),
   additionalInfo: text("additional_info"),
   // Dane podstawowe
   age: integer("age"),

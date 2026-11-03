@@ -24,6 +24,10 @@ import {
   SESSION_RECOMMENDED_BADGE,
   PRIORITY_BEGINNER_TEXT,
   maxPriorityMuscles,
+  METHOD_AUTO,
+  METHOD_HINT,
+  METHOD_QUESTION,
+  methodTilesFor,
   PRIORITY_TILES,
   toPriorityTiles,
   normalizeCardioPreference,
@@ -330,7 +334,7 @@ export const SOLO_DONE_TEXT = "Układamy Twój plan. To potrwa chwilę.";
 
 export default function SurveyWizard({
   inviteToken,
-  prefill = {},
+  prefill: prefillProp = {},
   submitUrl,
   onSubmitted,
 }: {
@@ -340,6 +344,14 @@ export default function SurveyWizard({
   submitUrl?: string;
   onSubmitted?: () => void;
 }) {
+  // Kafelki metod (docs/METODY.md) tylko, gdy serwer ma włączoną flagę METHODS_V2_ENABLED.
+  const [methodsV2, setMethodsV2] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/methods/status").then((r) => (r.ok ? r.json() : null)).then((b: { enabled?: boolean } | null) => { if (!cancelled && b?.enabled === true) setMethodsV2(true); }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
+  const prefill = useMemo<Prefill>(() => ({ ...prefillProp, methodsV2, methodMode: inviteToken === "solo" ? "solo" : "trainer" }), [prefillProp, methodsV2, inviteToken]);
   const initial = useMemo(() => {
     const base: Answers = {
       ...EMPTY_ANSWERS,
@@ -767,6 +779,18 @@ export default function SurveyWizard({
             {chosenTiles.length >= maxPriority && <Note>{maxPriority === 1 ? "Wybrano jedną partię." : `Wybrano ${maxPriority} partie — to maksimum.`}</Note>}
           </Section>
         );
+      case "methodsPick": {
+        const tiles = methodTilesFor(resolveEffectiveLevel(answers.experienceLevel, answers.trainingDuration).effective, prefill.methodMode ?? "trainer");
+        return (
+          <Section id={id} headingRef={heading} title={METHOD_QUESTION} lead={METHOD_HINT}>
+            <MultiList
+              options={tiles.map((v) => ({ value: v, label: v }))}
+              selected={answers.preferredMethods}
+              onToggle={(v) => set({ preferredMethods: v === METHOD_AUTO ? (answers.preferredMethods.includes(METHOD_AUTO) ? [] : [METHOD_AUTO]) : toggle(answers.preferredMethods.filter((m) => m !== METHOD_AUTO), v) })}
+            />
+          </Section>
+        );
+      }
       case "methodsList":
         return (
           <Section id={id} headingRef={heading} title="Metody do unikania" lead={<>Pytamy o to, bo masz większe doświadczenie. <Opt text="Zaznacz metody intensyfikacji, których nie chcesz w planie." /></>}>
@@ -962,6 +986,7 @@ export function summaryText(id: StepId, a: Answers): string {
     case "avoided": return [...a.avoidedExercises.map((e) => e.name), a.avoidedOtherText].filter(Boolean).join(", ");
     case "favorite": return a.favoriteExercises.map((e) => e.name).join(", ");
     case "priority": return [a.priorityMuscle1, a.priorityMuscle2, a.priorityMuscle3].filter(Boolean).join(", ");
+    case "methodsPick": return a.preferredMethods.join(", ");
     case "methodsList": return a.advancedMethodsToAvoid.join(", ");
     case "additional": return a.additionalInfo;
   }

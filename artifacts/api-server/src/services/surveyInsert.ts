@@ -31,6 +31,7 @@ export function surveyInsertValues(clientId: number, d: any, ctx: { age: number 
     avoidedExercises: d.avoidedExercises,
     favoriteExercises: d.favoriteExercises,
     advancedMethodsToAvoid: d.advancedMethodsToAvoid ?? [],
+    preferredMethods: d.preferredMethods ?? [],
     additionalInfo: d.additionalInfo,
     age: ctx.age,
     dateOfBirth: ctx.dobIso,

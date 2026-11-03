@@ -1118,6 +1118,10 @@ components:
           type: array
           items:
             type: string
+        preferredMethods:
+          type: array
+          items:
+            type: string
         additionalInfo:
           type: ["string", "null"]
         age:
@@ -1204,6 +1208,10 @@ components:
         favoriteExercises:
           type: string
         advancedMethodsToAvoid:
+          type: array
+          items:
+            type: string
+        preferredMethods:
           type: array
           items:
             type: string
@@ -1834,6 +1842,10 @@ components:
         favoriteExercises:
           type: string
         advancedMethodsToAvoid:
+          type: array
+          items:
+            type: string
+        preferredMethods:
           type: array
           items:
             type: string

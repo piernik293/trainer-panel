@@ -210,6 +210,14 @@ export const workoutPlanExercisesTable = pgTable("workout_plan_exercises", {
   /** Rest between sets in seconds */
   restSeconds: integer("rest_seconds"),
 
+  // ── Method (docs/METODY.md) ───────────────────────────────────────────────
+  /** "superserie" | "serie_zlozone" | "drop_set" | "rest_pause" | "upadek" or null */
+  method: text("method"),
+  /** Exercises of one pair (superset / compound set) share this number within the day */
+  methodGroup: integer("method_group"),
+  /** Short "Dlaczego?" text shown next to the exercise */
+  methodNote: text("method_note"),
+
   // ── Notes ─────────────────────────────────────────────────────────────────
   /** Private trainer notes */
   notes: text("notes"),

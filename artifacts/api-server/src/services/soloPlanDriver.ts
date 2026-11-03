@@ -75,20 +75,22 @@ export async function generateSoloPlan(clientId: number, now: Date = new Date())
   const gid = randomUUID();
   const used: number[] = []; const raw: Array<{ exerciseId: number; sets: number }> = [];
   const typeCount: Record<string, number> = {}; const lastByType: Record<string, Array<{ id: number; equipment: string[] }>> = {};
-  type DayEx = { id: number; name?: string; mainMuscleGroup?: string | null; matchReasons?: string[]; equipment?: string[]; prescription?: { sets: number; repsLabel: string; restSeconds: number } };
+  type DayEx = { method?: string; methodGroup?: number | null; methodNote?: string; id: number; name?: string; mainMuscleGroup?: string | null; matchReasons?: string[]; equipment?: string[]; prescription?: { sets: number; repsLabel: string; restSeconds: number } };
   const dayResults: Array<{ type: string; exercises: DayEx[] }> = [];
   let skipped = 0; let idx = 0;
+  const weekMethodDays: Record<string, number> = {}; // metody (docs/METODY.md, flaga METHODS_V2_ENABLED): ile dni tygodnia ma już daną metodę
   for (const t of types) {
     const alt = typeCount[t] ?? 0; typeCount[t] = alt + 1;
     const { res, out } = fakeRes();
     const req = {
       params: { clientId: String(clientId) }, soloClientId: clientId,
-      body: { generationId: gid, generationDayIndex: idx++, expectedDayCount: types.length, v0SessionType: t, alternativeIndex: alt, weekUsedExerciseIds: [...used], sameTypePreviousExercises: lastByType[t] ?? [], weekExercisesRaw: t === "full_body" ? raw : [] },
+      body: { generationId: gid, generationDayIndex: idx++, expectedDayCount: types.length, v0SessionType: t, alternativeIndex: alt, weekUsedExerciseIds: [...used], sameTypePreviousExercises: lastByType[t] ?? [], weekExercisesRaw: t === "full_body" ? raw : [], weekMethodDays },
     } as unknown as GenerateDayReq;
     await generateDayHandler(req, res);
     const exs = (out.body?.exercises ?? []) as DayEx[];
     if (out.status !== 200 || exs.length === 0) { skipped++; continue; } // dzień odrzucony (np. za mało bezpiecznych ćwiczeń) — pomijamy, plan ma krótszy tydzień
     for (const e of exs) { used.push(e.id); raw.push({ exerciseId: e.id, sets: e.prescription?.sets ?? 1 }); }
+    for (const m of new Set(exs.map((e) => e.method).filter((m): m is string => !!m))) weekMethodDays[m] = (weekMethodDays[m] ?? 0) + 1;
     lastByType[t] = exs.map((e) => ({ id: e.id, equipment: e.equipment ?? [] }));
     dayResults.push({ type: t, exercises: exs });
   }
@@ -113,6 +115,7 @@ export async function generateSoloPlan(clientId: number, now: Date = new Date())
         await tx.insert(workoutPlanExercisesTable).values({
           dayId: pd!.id, exerciseId: e.id, orderInDay: o++, workingSets: Math.max(1, e.prescription?.sets ?? 3), repType: "range", repRangeMin: reps.min, repRangeMax: reps.max,
           rir: RIR[level] ?? 3, restSeconds: e.prescription?.restSeconds ?? 90,
+          method: e.method ?? null, methodGroup: e.methodGroup ?? null, methodNote: e.methodNote ?? null,
         } as never);
       }
     }

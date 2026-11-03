@@ -142,3 +142,26 @@ describe("partie priorytetowe jako kafelki: starsze wartości", () => {
     expect([b.priorityMuscle1, b.priorityMuscle2, b.priorityMuscle3]).toEqual(["Klatka", "Plecy", "Pośladki"]);
   });
 });
+
+import { visibleSteps, buildSurveyPayload } from "./surveyWizard";
+describe("metody w wywiadzie (docs/METODY.md, flaga METHODS_V2_ENABLED)", () => {
+  const adv = { ...EMPTY_ANSWERS, experienceLevel: "Zaawansowany", trainingDuration: "5 lat" } as Answers;
+  it("bez flagi: stare pytanie o metody do unikania; z flagą: kafelki zamiast niego", () => {
+    expect(visibleSteps(adv, {})).toContain("methodsList");
+    expect(visibleSteps(adv, {})).not.toContain("methodsPick");
+    const on = visibleSteps(adv, { methodsV2: true });
+    expect(on).toContain("methodsPick"); expect(on).not.toContain("methodsList");
+  });
+  it("początkujący nie widzą kafelków; „Dobierz za mnie” wyklucza resztę; Solo bez rest-pause", () => {
+    expect(visibleSteps({ ...EMPTY_ANSWERS, experienceLevel: "Początkujący" } as Answers, { methodsV2: true })).not.toContain("methodsPick");
+    const a = normalizeAnswers({ ...adv, preferredMethods: ["Superserie", "Dobierz za mnie", "Rest-pause"] }, { methodsV2: true, methodMode: "trainer" });
+    expect(a.preferredMethods).toEqual(["Dobierz za mnie"]);
+    const solo = normalizeAnswers({ ...adv, preferredMethods: ["Superserie", "Rest-pause", "Serie wymuszone"] }, { methodsV2: true, methodMode: "solo" });
+    expect(solo.preferredMethods).toEqual(["Superserie"]);
+  });
+  it("wysyłka: preferredMethods tylko gdy ekran był pokazany", () => {
+    const withTiles = buildSurveyPayload({ ...adv, preferredMethods: ["Drop sety"] }, { methodsV2: true });
+    expect(withTiles["preferredMethods"]).toEqual(["Drop sety"]);
+    expect(buildSurveyPayload({ ...adv, preferredMethods: ["Drop sety"] }, {})["preferredMethods"]).toBeUndefined();
+  });
+});

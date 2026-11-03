@@ -450,6 +450,9 @@
 ## 4.11.2026 — blok 5: projekt metod intensyfikacji (gałąź `docs/metody`)
 - `docs/METODY.md`: pytanie i kafelki, tabela reguł metod, „Dobierz za mnie”, teksty „Dlaczego?”, opis zmian i 5 pytań do właściciela. Sam dokument scalony do `main`; wdrożenie to blok 6 (gałąź `feature/metody`, nie scalana).
 
+## 4.11.2026 — blok 6: metody intensyfikacji, wdrożenie próbne (gałąź `feature/metody`, bez scalenia)
+- Flaga `METHODS_V2_ENABLED=0`, `services/methods.ts`, migracja 0067 (tylko baza testowa), kafelki w portalu, zapis i podgląd metod, testy `methods`, `metody-integracja`, `surveyLimits`.
+
 ## 4.11.2026 — raport poranny (gałąź `docs/raport-rano`)
 - `docs/RAPORT-DLA-WLASCICIELA.md` i `~/RAPORT-RANO.md` (kopia).
 

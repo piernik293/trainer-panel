@@ -214,6 +214,9 @@ async function getClientPlanFull(planId: number) {
             tempo: workoutPlanExercisesTable.tempo,
             restSeconds: workoutPlanExercisesTable.restSeconds,
             clientInstructions: workoutPlanExercisesTable.clientInstructions,
+            method: workoutPlanExercisesTable.method,
+            methodGroup: workoutPlanExercisesTable.methodGroup,
+            methodNote: workoutPlanExercisesTable.methodNote,
           })
           .from(workoutPlanExercisesTable)
           .innerJoin(exercisesTable, eq(workoutPlanExercisesTable.exerciseId, exercisesTable.id))
