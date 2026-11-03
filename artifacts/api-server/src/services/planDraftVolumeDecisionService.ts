@@ -37,6 +37,7 @@
  *  - The existing Volume Calculator (computeVolumeCore) is not modified.
  */
 
+import { priorityGroupsOf } from "@workspace/survey-config";
 import { eq, and } from "drizzle-orm";
 import {
   db,
@@ -201,6 +202,13 @@ function resolveGroup(
   targets: TargetRecord[],
 ): { ids: number[]; status: ResolveStatus } {
   if (!muscleGroup?.trim()) return { ids: [], status: "unknown" };
+
+  // Kafelek wywiadu (np. „Nogi” = uda + łydki, „Ręce” = biceps + triceps): suma celów jego partii.
+  const members = priorityGroupsOf(muscleGroup);
+  if (members.length > 1 || (members.length === 1 && normalizeText(members[0]!) !== normalizeText(muscleGroup))) {
+    const ids = [...new Set(members.flatMap((m) => resolveGroup(m, targets).ids))];
+    return { ids, status: ids.length > 0 ? "found" : "unknown" };
+  }
 
   const q = normalizeText(muscleGroup);
 

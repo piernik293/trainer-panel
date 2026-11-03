@@ -576,6 +576,50 @@ export function equipmentConflict(items: readonly string[], other?: string | nul
 export const PRIORITY_BEGINNER_TEXT = "Wybierz jedną partię, na której chcesz się skupić. Plan i tak rozwinie całe ciało.";
 export const PRIORITY_BEGINNER_MESSAGE = "Przy tym poziomie możesz wskazać najwyżej jedną partię priorytetową.";
 
+/**
+ * Priority muscles are picked as tiles (max 3). The tile label is what the interview stores in
+ * priorityMuscle1..3; the generator expands it to the muscle groups below. Older interviews hold
+ * the single groups from MUSCLE_GROUPS — they keep working (see priorityTileOf / priorityGroupsOf).
+ */
+export const PRIORITY_TILES = ["Nogi", "Pośladki", "Plecy", "Klatka", "Barki", "Ręce", "Brzuch"] as const;
+export type PriorityTile = (typeof PRIORITY_TILES)[number];
+export const PRIORITY_TILE_MUSCLES: Record<PriorityTile, readonly string[]> = {
+  Nogi: ["uda", "łydki"],
+  Pośladki: ["pośladki"],
+  Plecy: ["plecy"],
+  Klatka: ["klatka piersiowa"],
+  Barki: ["barki"],
+  Ręce: ["biceps", "triceps"],
+  Brzuch: ["brzuch"],
+};
+export const PRIORITY_TILES_MAX = 3;
+
+const lc = (s: string) => s.trim().toLowerCase();
+
+/** Muscle groups behind a stored priority value: a tile expands, anything else (older interviews) stays as it is. */
+export function priorityGroupsOf(raw: string | null | undefined): string[] {
+  if (!raw || !raw.trim()) return [];
+  const tile = PRIORITY_TILES.find((t) => lc(t) === lc(raw));
+  return tile ? [...PRIORITY_TILE_MUSCLES[tile]] : [raw];
+}
+
+/** Tile that covers a stored value (tile label or an older single group); null when none does. */
+export function priorityTileOf(raw: string | null | undefined): PriorityTile | null {
+  if (!raw || !raw.trim()) return null;
+  const direct = PRIORITY_TILES.find((t) => lc(t) === lc(raw));
+  if (direct) return direct;
+  const v = lc(raw);
+  if (v === "klatka piersiowa") return "Klatka";
+  return PRIORITY_TILES.find((t) => PRIORITY_TILE_MUSCLES[t].some((m) => lc(m) === v)) ?? null;
+}
+
+/** Older stored values → tiles for display/editing: unique, order kept, at most 3. */
+export function toPriorityTiles(values: ReadonlyArray<string | null | undefined>): PriorityTile[] {
+  const out: PriorityTile[] = [];
+  for (const v of values) { const t = priorityTileOf(v); if (t && !out.includes(t)) out.push(t); }
+  return out.slice(0, PRIORITY_TILES_MAX);
+}
+
 /** How many priority muscle groups the client may name at this (effective) level. */
 export function maxPriorityMuscles(effectiveLevel: string | null | undefined): number {
   return isBeginnerLevel(effectiveLevel ?? undefined) ? 1 : 3;

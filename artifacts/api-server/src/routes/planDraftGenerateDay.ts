@@ -25,6 +25,7 @@
  *   { hasProfile, hasLocationData, sessionType, exercises: DayRecommendationExercise[] }
  */
 
+import { priorityGroupsOf } from "@workspace/survey-config";
 import { soloAllowsExercise, soloEnabled, soloPainExcludedIds } from "../services/solo";
 import { buildLadderRules, loadLadderRows } from "../services/ladderSelection";
 import { loadBlockedJoints, isConservativeHealth, CONSERVATIVE_NOTE } from "../services/jointExclusion";
@@ -621,10 +622,8 @@ export async function generateDayHandler(req: GenerateDayReq, res: Response): Pr
       isPriorityEligible,
       isNoActivityClient,
       isBeginnerClient,
-      tierA: survey.priorityMuscle1 ? [survey.priorityMuscle1] : [],
-      tierB: [survey.priorityMuscle2, survey.priorityMuscle3].filter(
-        (v): v is string => v !== null && v !== undefined && v.trim() !== "",
-      ),
+      tierA: priorityGroupsOf(survey.priorityMuscle1),
+      tierB: [survey.priorityMuscle2, survey.priorityMuscle3].flatMap((v) => priorityGroupsOf(v)),
       benchGoalActive: isPriorityEligible && isBenchGoal && hasBarbell,
       allowPlyometrics,
       preferredExerciseKeywords,

@@ -23,6 +23,7 @@
  * 4. Document the range in the JSDoc.
  */
 
+import { priorityGroupsOf } from "@workspace/survey-config";
 import type { Exercise, Survey } from "@workspace/db";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
@@ -223,7 +224,7 @@ function scorePriorityMuscles(ex: Exercise, sv: Survey): ScoreBreakdown {
     [sv.priorityMuscle3, 5,  "Priorytet #3"],
   ];
   for (const [muscle, pts, label] of checks) {
-    if (muscle && norm(muscle) === main) {
+    if (muscle && priorityGroupsOf(muscle).some((g) => norm(g) === main)) {
       return {
         dimension: "priorityMuscle",
         points: pts,
@@ -620,7 +621,7 @@ function scoreSubTargetBias(ex: Exercise, sv: Survey): ScoreBreakdown {
   }
 
   const priorityMuscles = [sv.priorityMuscle1, sv.priorityMuscle2, sv.priorityMuscle3]
-    .filter((m): m is string => !!m?.trim())
+    .flatMap((m) => (m?.trim() ? [m, ...priorityGroupsOf(m)] : [])) // etykieta kafelka (np. „Klatka”) i jego partie
     .map(norm);
 
   if (priorityMuscles.length === 0) {
