@@ -11,6 +11,7 @@
  * then never blocks the next attempt. Use `status` (not is_completed) to tell
  * completed from aborted; status NULL = session from the older per-exercise flow.
  */
+import { variationSeed } from "./../services/variation";
 import { historyCutoff, afterCutoff } from "../services/soloHistory";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { and, asc, desc, eq, gte, inArray, isNull, ne, sql } from "drizzle-orm";
@@ -166,7 +167,7 @@ const repsText = (e: { repType: string | null; repsExact: number | null; repRang
  * Warm-up and cool-down from the catalogue (services/warmupSelection.ts). When the catalogue has no such
  * exercises (an empty / test database) the static RAMP template is the fallback.
  */
-async function buildWarmupAndCooldown(opts: { clientId: number; level: string | null; dayType: ReturnType<typeof determineDayType>; dayGroups: string[]; dayIndex: number; totalDays: number }) {
+async function buildWarmupAndCooldown(opts: { clientId: number; level: string | null; dayType: ReturnType<typeof determineDayType>; dayGroups: string[]; dayIndex: number; totalDays: number; planId?: number }) {
   const catalogue = (await db.select().from(exercisesTable).where(and(eq(exercisesTable.isActive, true), inArray(exercisesTable.role, [...WARMUP_ROLES])))) as unknown as CatalogueWarmupItem[];
   const [survey] = await db
     .select({ equipment: surveysTable.equipment, trainingLocation: surveysTable.trainingLocation, healthLimitations: surveysTable.healthLimitations, healthConsentStatus: surveysTable.healthConsentStatus })
@@ -181,6 +182,7 @@ async function buildWarmupAndCooldown(opts: { clientId: number; level: string | 
     conservative: isConservativeHealth(survey?.healthConsentStatus),
     trainingLocation: survey?.trainingLocation ?? null, equipmentText: survey?.equipment ?? null,
     breathing: setting?.breathing === true, rollerAllowed: isRollerDay(opts.dayIndex, opts.totalDays),
+    seed: variationSeed(String(opts.clientId), opts.planId ?? 0, opts.dayIndex),
   };
   const toItem = (it: CatalogueWarmupItem) => ({ name: it.name, detail: formatAmount(it), description: it.executionInstructions ?? "", joints: it.jointStressAreas ?? [] });
   const w = selectWarmup(catalogue, ctx);
@@ -319,7 +321,7 @@ router.get("/client-portal/training/today", requireClientAuth, async (req, res):
   const dayType = determineDayType(exRows.map((e) => e.mainMuscleGroup));
   const { warmup, warmupMinutes, cooldown, cooldownMinutes } = await buildWarmupAndCooldown({
     clientId, level: plan.level, dayType, dayGroups: [...new Set(exRows.map((e) => e.mainMuscleGroup))],
-    dayIndex: days.findIndex((d) => d.id === targetDay.id), totalDays: days.length,
+    dayIndex: days.findIndex((d) => d.id === targetDay.id), totalDays: days.length, planId: plan.id,
   });
   const equipment = [...new Set(exRows.flatMap((e) => e.equipment))].filter((x) => !["Masa własnego ciała", "Brak sprzętu"].includes(x));
 

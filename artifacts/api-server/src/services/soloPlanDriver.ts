@@ -41,7 +41,7 @@ export function parseRepsLabel(label: string | undefined): { min: number; max: n
 const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 86_400_000);
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 
-function fakeRes() {
+export function fakeRes() {
   const out: { status: number; body: any } = { status: 200, body: undefined }; // eslint-disable-line @typescript-eslint/no-explicit-any
   const res = { status(c: number) { out.status = c; return res; }, json(b: unknown) { out.body = b; return res; }, sendStatus(c: number) { out.status = c; return res; } };
   return { res: res as unknown as Response, out };

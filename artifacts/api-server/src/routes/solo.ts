@@ -14,6 +14,7 @@ import { clerkClient } from "@clerk/express";
 import { SubmitPublicSurveyBody } from "@workspace/api-zod";
 import { isSoloClient, soloEnabled, ensureSoloClient } from "../services/solo";
 import { isSelfTraining } from "../services/selfTraining";
+import { swapExercise, swapsUsed } from "../services/soloSwap";
 import { generateSoloPlan } from "../services/soloPlanDriver";
 import { surveyInsertValues, validateSurveyAnswers } from "../services/surveyInsert";
 import { surveysTable } from "@workspace/db";
@@ -90,6 +91,28 @@ router.post("/solo/plan", gate, async (req, res): Promise<void> => {
   const r = await generateSoloPlan(actor.id);
   if (r.ok) { res.status(201).json(r); return; }
   res.status(r.code === "PLAN_LIMIT" ? 429 : r.code === "NO_SURVEY" ? 409 : r.code === "NOT_SOLO" ? 403 : 422).json({ error: r.message, code: r.code, retryAfter: r.retryAfter ?? null });
+});
+
+/** „Zamień na inne” (max 3 zamiany na tydzień): ile zostało. */
+router.get("/solo/swaps", gate, async (req, res): Promise<void> => {
+  const userId = getAuth(req)?.userId;
+  if (!userId) { res.status(401).json({ error: "Twoja sesja wygasła. Zaloguj się ponownie." }); return; }
+  const actor = await soloActor(userId);
+  if (!actor) { res.status(403).json({ error: "Zamiany układa Twój trener.", code: "NOT_SOLO" }); return; }
+  const q = await swapsUsed(actor.id);
+  res.json({ used: q.used, limit: q.limit, left: Math.max(0, q.limit - q.used), nextAt: q.nextAt });
+});
+
+router.post("/solo/plan-exercises/:id/swap", gate, async (req, res): Promise<void> => {
+  const userId = getAuth(req)?.userId;
+  if (!userId) { res.status(401).json({ error: "Twoja sesja wygasła. Zaloguj się ponownie." }); return; }
+  const actor = await soloActor(userId);
+  if (!actor) { res.status(403).json({ error: "Zamiany układa Twój trener.", code: "NOT_SOLO" }); return; }
+  const id = Number(req.params["id"]);
+  if (!Number.isInteger(id) || id <= 0) { res.status(400).json({ error: "Nieprawidłowe ćwiczenie." }); return; }
+  const r = await swapExercise(actor.id, id);
+  if (r.ok) { res.json(r); return; }
+  res.status(r.status).json({ error: r.message, code: r.code });
 });
 
 export default router;
