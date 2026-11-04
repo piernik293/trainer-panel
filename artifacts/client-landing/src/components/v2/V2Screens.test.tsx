@@ -6,6 +6,7 @@ import { FinishV2 } from "./FinishV2";
 import { ProgressV2 } from "./ProgressV2";
 import { YouV2, EditProfile } from "./YouV2";
 import { FALLBACK_PROFILE } from "@/lib/v2/profile";
+import { getTimerSettings, resetTimerSettingsForTests } from "@/lib/timer/settings";
 import type { CatalogueItem, Overview } from "@/lib/v2/achievements";
 import type { TodayResponse, TrainingDay } from "@/lib/training/types";
 import type { RunState } from "@/lib/training/run";
@@ -153,6 +154,17 @@ describe("Ty (v2) i edycja profilu", () => {
     expect(screen.getByTestId("you-sub").textContent).toBe("trenuje od października");
     fireEvent.click(screen.getByRole("button", { name: /Wyloguj się/ }));
     expect(base.onSignOut).toHaveBeenCalled();
+  });
+  it("stoper w „Ty”: dźwięk i wibracja domyślnie włączone; wyłączenie dźwięku zapisuje ustawienie (to samo co przycisk głośnika)", () => {
+    resetTimerSettingsForTests();
+    render(<YouV2 {...base} profile={FALLBACK_PROFILE("Anna")} />);
+    fireEvent.click(screen.getByText("Stoper przerw"));
+    const sound = screen.getByRole("switch", { name: "Dźwięk stopera" }) as HTMLInputElement;
+    const vib = screen.getByRole("switch", { name: "Wibracja" }) as HTMLInputElement;
+    expect(sound.checked).toBe(true); expect(vib.checked).toBe(true);
+    fireEvent.click(sound);
+    expect(getTimerSettings()).toEqual({ sound: false, vibration: true });
+    resetTimerSettingsForTests();
   });
   it("edycja: 6 kolorów, błąd „nick zajęty” z serwera, zapis wywołuje onSaved", async () => {
     const onSaved = vi.fn();

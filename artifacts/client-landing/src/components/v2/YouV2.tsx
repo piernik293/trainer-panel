@@ -6,6 +6,7 @@ import { kgLabel, shownName, trainsSinceLabel } from "@/lib/v2/helpers";
 import { saveProfile, type ProfileV2 } from "@/lib/v2/profile";
 import { fetchSummary, saveGoal, cacheSummary } from "@/lib/steps/sync";
 import type { CatalogueItem } from "@/lib/v2/achievements";
+import { setTimerSettings, useTimerSettings } from "@/lib/timer/settings";
 
 function ListRow({ label, value, open, onToggle, children, testId }: { label: string; value?: string; open: boolean; onToggle: () => void; children?: ReactNode; testId: string }) {
   return (
@@ -17,6 +18,18 @@ function ListRow({ label, value, open, onToggle, children, testId }: { label: st
       {open && <div className="px-4 pb-4 text-sm">{children}</div>}
     </div>
   );
+}
+
+/** Timer: sound and vibration on/off (default both on). The sound switch is the same state as the speaker button on the timer screen. */
+function TimerSettingsRows() {
+  const t = useTimerSettings();
+  const row = (label: string, on: boolean, key: "sound" | "vibration") => (
+    <label className="flex min-h-11 items-center justify-between gap-3">
+      <span className="font-medium">{label}</span>
+      <input type="checkbox" role="switch" checked={on} onChange={(e) => setTimerSettings({ [key]: e.target.checked })} className="h-6 w-11 cursor-pointer accent-[#C2410C]" />
+    </label>
+  );
+  return <div className="space-y-1" data-testid="timer-settings">{row("Dźwięk stopera", t.sound, "sound")}{row("Wibracja", t.vibration, "vibration")}</div>;
 }
 
 /** Steps goal: presets or off; same API as the "Kroki" tile. */
@@ -92,13 +105,13 @@ export function YouV2({ profile, featured, trainerRow, applyRow, appearance, pri
   onEdited: () => void; onAllAchievements: () => void; onSignOut: () => void; signingOut?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
-  const [open, setOpen] = useState<"goal" | "look" | "privacy" | null>(null);
+  const [open, setOpen] = useState<"goal" | "look" | "timer" | "privacy" | null>(null);
   const [goal, setGoal] = useState<number | null | undefined>(undefined);
   useEffect(() => { let alive = true; void fetchSummary().then((s) => { if (alive) setGoal(s.goal); }).catch(() => {}); return () => { alive = false; }; }, []);
   const name = shownName(profile);
   const since = trainsSinceLabel(profile.trainsSince);
   const sub = [profile.nick ? `@${profile.nick}` : null, since].filter(Boolean).join(" · ");
-  const toggle = (k: "goal" | "look" | "privacy") => setOpen(open === k ? null : k);
+  const toggle = (k: "goal" | "look" | "timer" | "privacy") => setOpen(open === k ? null : k);
   return (
     <div className="space-y-4" data-testid="you-v2">
       {editing ? (
@@ -126,6 +139,7 @@ export function YouV2({ profile, featured, trainerRow, applyRow, appearance, pri
         <div className="border-b border-border px-4 [&_[data-testid=row-trainer]]:border-0 [&_button]:px-0">{trainerRow}</div>
         <ListRow testId="row-goal" label="Cel kroków" value={goal === undefined ? "" : goal ? kgLabel(goal) : "Brak"} open={open === "goal"} onToggle={() => toggle("goal")}><GoalEditor onChange={setGoal} /></ListRow>
         <ListRow testId="row-look" label="Wygląd" open={open === "look"} onToggle={() => toggle("look")}>{appearance}</ListRow>
+        <ListRow testId="row-timer" label="Stoper przerw" open={open === "timer"} onToggle={() => toggle("timer")}><TimerSettingsRows /></ListRow>
         <ListRow testId="row-privacy" label="Prywatność i zgody" open={open === "privacy"} onToggle={() => toggle("privacy")}><div className="space-y-4">{privacy}</div></ListRow>
       </section>
 

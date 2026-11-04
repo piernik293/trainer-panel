@@ -286,3 +286,39 @@ async function mountKeep(todayDay: TrainingDay) {
   render(<TodayCard reloadKey={0} onStart={vi.fn()} onRamp={vi.fn()} />);
   await waitFor(() => expect(document.body.textContent).toContain("Dzień B"));
 }
+
+describe("stoper przerwy po serii (nowy wygląd)", () => {
+  beforeEach(() => {
+    window.localStorage.clear(); resetTrainingQueueForTests();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ id: 1 }), { status: 200, headers: { "Content-Type": "application/json" } })));
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("z nowym wyglądem: „Zapisz serię” startuje przerwę z planu z tekstem „Następnie: Seria 2 z 3”; pominięcie wraca do serii", () => {
+    render(<TrainingFlow day={day()} firstName="Ala" week={{ done: 1, target: 4 }} onExit={vi.fn()} v2={{ streakWeeks: null, nick: null }} />);
+    expect(screen.queryByTestId("rest-timer")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz serię" }));
+    expect(screen.getByTestId("rest-timer")).toBeTruthy();
+    expect(screen.getByTestId("rest-next-small").textContent).toBe("Następnie: Seria 2 z 3");
+    expect(screen.queryByText(/bez minutnika/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Pomiń przerwę" }));
+    expect(screen.queryByTestId("rest-timer")).toBeNull();
+    expect(screen.getByText("Seria 2 z 3")).toBeTruthy();
+  });
+  it("poprawa już zapisanej serii nie uruchamia przerwy", () => {
+    render(<TrainingFlow day={day()} firstName="Ala" week={{ done: 1, target: 4 }} onExit={vi.fn()} v2={{ streakWeeks: null, nick: null }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz serię" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pomiń przerwę" }));
+    fireEvent.click(screen.getByRole("button", { name: /Popraw serię 1/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz zmianę" }));
+    expect(screen.queryByTestId("rest-timer")).toBeNull();
+  });
+  it("bez nowego wyglądu (flaga wyłączona): brak stopera, jest dawna wskazówka", () => {
+    render(<TrainingFlow day={day()} firstName="Ala" week={{ done: 1, target: 4 }} onExit={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz serię" }));
+    expect(screen.queryByTestId("rest-timer")).toBeNull();
+    expect(screen.getByText(/bez minutnika/)).toBeTruthy();
+  });
+});
+

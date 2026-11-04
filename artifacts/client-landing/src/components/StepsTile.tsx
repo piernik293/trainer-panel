@@ -116,7 +116,7 @@ export function StepsTile({ compact = false }: { compact?: boolean } = {}) {
 
       <div className="mt-3">
         {!editingGoal ? (
-          <button type="button" className="text-sm font-medium text-primary underline-offset-2 hover:underline" onClick={() => setEditingGoal(true)}>{data.goal ? "Zmień cel" : "Ustaw cel kroków"}</button>
+          <button type="button" className="min-h-11 text-sm font-medium text-primary underline-offset-2 hover:underline" onClick={() => setEditingGoal(true)}>{data.goal ? "Zmień cel" : "Ustaw cel kroków"}</button>
         ) : (
           <div className="flex flex-wrap items-center gap-2" data-testid="steps-goal-picker">
             {PRESET_GOALS.map((g) => <button key={g} type="button" onClick={() => void pickGoal(g)} className={`h-10 rounded-lg border px-3 text-sm font-semibold ${data.goal === g ? "border-primary bg-brand-soft" : "border-border"}`}>{nf(g)}</button>)}

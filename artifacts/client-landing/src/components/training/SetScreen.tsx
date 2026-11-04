@@ -29,7 +29,7 @@ export function HoldTimer({ seconds }: { seconds: number }) {
 
 /** Per-set logging for one exercise: table (Seria / Poprzednio / Dziś / RIR) + editor of the active set. */
 export function SetScreen({
-  ex, index, total, sets, skipped, onSave, onPrev, onNext, onOpenList, onPain,
+  ex, index, total, sets, skipped, onSave, onPrev, onNext, onOpenList, onPain, timer = false,
 }: {
   ex: ExerciseInfo;
   index: number;
@@ -41,6 +41,8 @@ export function SetScreen({
   onNext: () => void;
   onOpenList: () => void;
   onPain: () => void;
+  /** new look: the rest timer starts after a set, so the "no timer" hint is not shown */
+  timer?: boolean;
 }) {
   const nextNo = activeSetNumber(sets, ex.sets);
   const [editing, setEditing] = useState<number | null>(null);
@@ -183,7 +185,7 @@ export function SetScreen({
           <AlertTriangle className="h-4 w-4 text-warning" aria-hidden /> Coś boli? Zgłoś trenerowi
         </button>
       )}
-      <p className="text-center text-xs text-muted-foreground">Przerwa jest tylko wskazówką — bez minutnika.</p>
+      {!timer && <p className="text-center text-xs text-muted-foreground">Przerwa jest tylko wskazówką — bez minutnika.</p>}
     </div>
   );
 }

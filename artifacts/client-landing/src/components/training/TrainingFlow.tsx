@@ -11,6 +11,9 @@ import { SetScreen } from "./SetScreen";
 import { PainSheet, type PainInput } from "./PainSheet";
 import { MediaPlaceholder, SyncBadge } from "./TrainingUi";
 import { FinishV2 } from "@/components/v2/FinishV2";
+import { RestTimer } from "@/components/timer/RestTimer";
+import { restSecondsFor, startRest, type RestState } from "@/lib/timer/rest";
+import { unlockAudio } from "@/lib/timer/sound";
 
 const newUuid = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`.padEnd(36, "0").replace(/^(.{8})(.{4})(.{4})(.{4})(.{12}).*$/, "$1-$2-$3-$4-$5"));
 
@@ -137,6 +140,8 @@ export function TrainingFlow({ day, firstName, week, v2, onExit }: {
   useEffect(() => { saveRun(run); void queue.flush(); }, [run, queue]);
   const [list, setList] = useState(false);
   const [pain, setPain] = useState(false);
+  // Rest timer between sets (new look only): starts after "Zapisz serię".
+  const [rest, setRest] = useState<(RestState & { counter: number }) | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
   useEffect(() => { topRef.current?.scrollIntoView({ block: "start" }); }, [run.stage, run.exerciseIndex]);
 
@@ -144,7 +149,18 @@ export function TrainingFlow({ day, firstName, week, v2, onExit }: {
   const dayOf = useCallback((a: Parameters<typeof dispatch>[0]) => dispatch(a), []);
 
   const saveSet = (planExerciseId: number, setNumber: number, value: { weightKg: number | null; reps: number | null; durationSeconds?: number | null; rir: number | null }) => {
+    const wasLogged = !!run.sets[planExerciseId]?.[setNumber];
     dayOf({ type: "saveSet", planExerciseId, setNumber, value });
+    if (v2 && !wasLogged) {
+      unlockAudio(); // this tap lets the browser play the timer sounds
+      const cur = day.exercises.find((e) => e.planExerciseId === planExerciseId);
+      const lastOfWorkout = !!cur && run.exerciseIndex + 1 >= day.exercises.length && setNumber >= cur.sets;
+      if (cur && !cur.pair?.first && !lastOfWorkout) {
+        const nextEx = day.exercises[run.exerciseIndex + 1];
+        const next = setNumber < cur.sets ? `Seria ${setNumber + 1} z ${cur.sets}` : nextEx ? `Następne: ${nextEx.name}` : "Koniec ćwiczenia";
+        setRest({ ...startRest(restSecondsFor(cur), next), counter: setNumber });
+      }
+    }
     const id = newUuid();
     queue.enqueue({ id, kind: "set", sessionUuid: run.sessionUuid, slot: `${planExerciseId}:${setNumber}`,
       body: { clientUuid: id, planExerciseId, setNumber, weightKg: value.weightKg, reps: value.reps, durationSeconds: value.durationSeconds ?? null, rir: value.rir, skipped: false } });
@@ -158,10 +174,12 @@ export function TrainingFlow({ day, firstName, week, v2, onExit }: {
     dayOf({ type: "painArea", area: p.area });
     for (let n = 1; n <= ex.sets; n++) if (!run.sets[ex.planExerciseId]?.[n]) dayOf({ type: "saveSet", planExerciseId: ex.planExerciseId, setNumber: n, value: { weightKg: null, reps: null, rir: null, skipped: true } });
     setPain(false);
+    setRest(null);
     dayOf({ type: "nextExercise", total: day.exercises.length });
   };
 
   const finish = (status: "completed" | "aborted") => {
+    setRest(null);
     const endedAt = new Date().toISOString();
     const id = newUuid();
     queue.enqueue({ id, kind: "finish", sessionUuid: run.sessionUuid, body: { status, rating: run.rating, note: run.note || null, endedAt } });
@@ -190,7 +208,7 @@ export function TrainingFlow({ day, firstName, week, v2, onExit }: {
             sets={run.sets[ex.planExerciseId]} skipped={run.skippedExercises.includes(ex.planExerciseId)}
             onSave={(n, v) => saveSet(ex.planExerciseId, n, v)}
             onPrev={() => dayOf({ type: "prevExercise" })} onNext={() => dayOf({ type: "nextExercise", total: day.exercises.length })}
-            onOpenList={() => setList(true)} onPain={() => setPain(true)} />
+            onOpenList={() => setList(true)} onPain={() => setPain(true)} timer={!!v2} />
         )}
         {run.stage === "finish" && (
           <FinishScreen firstName={firstName} day={day} run={run} week={week} v2={v2} onFeedback={(rating, note) => dayOf({ type: "feedback", rating, note })} onFinish={() => finish("completed")} />
@@ -204,6 +222,7 @@ export function TrainingFlow({ day, firstName, week, v2, onExit }: {
       </main>
 
       {list && <ExerciseList day={day} run={run} onClose={() => setList(false)} onPick={(i) => { dayOf({ type: "goToExercise", index: i }); setList(false); }} />}
+      {v2 && rest && <RestTimer state={rest} counter={rest.counter} onChange={(r) => setRest({ ...r, counter: rest.counter })} onClose={() => setRest(null)} />}
       {pain && ex && <PainSheet exerciseName={ex.name} onCancel={() => setPain(false)} onSubmit={submitPain} />}
     </div>
   );

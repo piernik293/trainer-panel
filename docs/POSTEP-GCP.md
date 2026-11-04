@@ -464,3 +464,7 @@
 
 ## 4.11.2026 — QA przycisku „Zamień na inne” (375 px): mieści się bez poziomego przewijania, przycisk 180×44 px, zamiana działa, licznik „zostało N”; usunięto zdublowany podtytuł dnia (zrzuty `docs/screens/qa/swap-*.png`).
 - 4.11.2026: dodano cron @reboot (autostart aplikacji, opóźnienie 60 s); decyzje właściciela zapisane w DO-DECYZJI.md.
+
+## 04.11.2026 — blok 1: błąd adresata maila (scalony, `main` d86083e) i UX v2 (gałąź `feature/ux-v2`, NIE scalona)
+- Mail: wniosek o konto trenera brał adres zastępczy profilu „Mój trening”. Teraz maile systemowe → główny e-mail konta z Clerk; blokada `.invalid/.example/.test/.localhost/.local` (log zamiast wysyłki); nadawca „Optimatren” / „Imię Nazwisko przez Optimatren” + Reply-To trenera. Test `mail-adresat.test.ts`.
+- UX v2 za `UI_V2_ENABLED=0`: ekrany Dziś, Koniec, Story, Postępy, Ty, nick (migracje 0069–0070), stoper przerwy z wyciszaniem. Szczegóły i odstępstwa od makiet: `docs/UX-V2.md`, `docs/STOPER.md`. Zrzuty: `docs/screens/ux-v2/`.
