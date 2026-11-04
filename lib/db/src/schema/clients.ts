@@ -1,4 +1,5 @@
-import { pgTable, serial, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, boolean, integer, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { trainersTable } from "./trainers";
@@ -48,9 +49,14 @@ export const clientsTable = pgTable("clients", {
    * Ustawiane przy akceptacji połączenia, gdy osoba z konta Solo NIE zgodziła się na udostępnienie wcześniejszej historii.
    */
   historyVisibleFrom: timestamp("history_visible_from"),
+  /** Migracja 0069: opcjonalny nick (3–20 znaków, unikalny bez względu na wielkość liter) i kolor awatara (klucz z listy w portalu). */
+  nick: text("nick"),
+  avatarColor: text("avatar_color"),
+  /** Migracja 0070: nazwa wyświetlana w portalu (trener nadal widzi imię i nazwisko). */
+  displayName: text("display_name"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [uniqueIndex("clients_nick_lower_idx").on(sql`lower(${t.nick})`).where(sql`${t.nick} is not null`)]);
 
 export const insertClientSchema = createInsertSchema(clientsTable).omit({
   id: true,

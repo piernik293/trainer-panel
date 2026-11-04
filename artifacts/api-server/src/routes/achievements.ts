@@ -17,6 +17,7 @@ import { requireAuth } from "../middlewares/requireAuth";
 import { requireClientAuth } from "../middlewares/requireClientAuth";
 import { achievementsEnabled } from "../services/achievements";
 import { evaluateAndStore } from "../services/achievementsStore";
+import { buildCatalogue } from "../services/achievementsCatalogue";
 import { shiftDate, todayWarsaw, isIsoDate } from "../services/steps";
 
 const router: IRouter = Router();
@@ -35,6 +36,16 @@ router.get("/client-portal/achievements", gate, requireClientAuth, async (req, r
   res.json({
     items: rows.map((r) => ({ id: r.id, kind: r.kind, title: r.title, body: r.body, earnedAt: r.earnedAt, seen: r.seenAt != null })),
     streakWeeks: streakWeeks > 0 ? streakWeeks : null,
+  });
+});
+
+router.get("/client-portal/achievements/overview", gate, requireClientAuth, async (req, res): Promise<void> => {
+  const clientId = req.client!.id;
+  const { streakWeeks, sessionCount } = await evaluateAndStore(clientId);
+  const rows = await db.select().from(clientAchievementsTable).where(eq(clientAchievementsTable.clientId, clientId)).orderBy(desc(clientAchievementsTable.earnedAt), desc(clientAchievementsTable.id));
+  res.json({
+    streakWeeks: streakWeeks > 0 ? streakWeeks : null,
+    ...buildCatalogue(rows.map((r) => ({ id: r.id, kind: r.kind, key: r.key, title: r.title, body: r.body, earnedAt: r.earnedAt.toISOString(), seen: r.seenAt != null })), sessionCount, streakWeeks),
   });
 });
 
