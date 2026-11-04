@@ -91,7 +91,7 @@ function makeExercise(overrides: Partial<Exercise> = {}): Exercise {
     secondaryMuscleGroups: [],
     equipment: ["Sztanga"],
     requiredEquipmentAll: [],
-    createdByTrainerId: null, // public catalogue exercise
+    createdByTrainerId: null, createdByClientId: null, // public catalogue exercise
     equipmentOther: null,
     trainingLocation: ["Siłownia"],
     difficultyLevel: "Początkujący",

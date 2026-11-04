@@ -10,6 +10,7 @@ import { FinishV2, storyDataFor } from "@/components/v2/FinishV2";
 import { ProgressV2 } from "@/components/v2/ProgressV2";
 import { YouV2, EditProfile } from "@/components/v2/YouV2";
 import { RestTimer } from "@/components/timer/RestTimer";
+import { OwnPlanEditor } from "@/components/ownplan/OwnPlanEditor";
 import { RoleRows } from "@/components/shell/RoleRows";
 import { StepsTile } from "@/components/StepsTile";
 import { ThemeSelect } from "@/components/ThemeSelect";
@@ -53,7 +54,7 @@ if (isUxV2PreviewPath()) {
   const realFetch = window.fetch.bind(window);
   const ROUTES: Record<string, unknown> = {
     "/api/client-portal/training/today": SCREEN === "dzis-brak-planu" ? null : TODAY_DATA, "/api/client-portal/steps": STEPS, "/api/client-portal/settings": { breathingCooldown: false },
-    "/api/account/roles": { isTrainer: false, isClient: true, application: null }, "/api/client-portal/profile": PROFILE, "/api/account/status": { linked: false }, "/api/golden-bulls/status": { enabled: true, trainer: { pool: 10, left: 7 }, solo: { pool: 100, left: 64 } },
+    "/api/account/roles": { isTrainer: false, isClient: true, application: null }, "/api/client-portal/profile": PROFILE, "/api/account/status": { linked: false }, "/api/own-plan": { plan: { planId: 5, title: "Mój plan", origin: "own", days: [{ id: 11, name: "Góra ciała", exercises: [{ id: 101, exerciseId: 7, name: "Wyciskanie sztangi leżąc", custom: false, sets: 4, repMin: 6, repMax: 8, weightKg: 60, rir: 2, restSeconds: 120, note: "powoli" }, { id: 102, exerciseId: 9, name: "Spacer farmera", custom: true, sets: 3, repMin: 1, repMax: 1, weightKg: null, rir: null, restSeconds: null, note: null }] }, { id: 12, name: "Nogi", exercises: [] }] } }, "/api/golden-bulls/status": { enabled: true, trainer: { pool: 10, left: 7 }, solo: { pool: 100, left: 64 } },
   };
   window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = (typeof input === "string" ? input : input instanceof URL ? input.pathname : input.url).split("?")[0]!;
@@ -93,6 +94,7 @@ export default function UxV2PreviewPage() {
     case "ty": case "ty-bez-nicka": case "ty-byczek":
       return <PortalShell tab={"ty" as ShellTab} onTab={noop}><YouV2 profile={profile} featured={FULL.filter((i) => i.state === "earned")} trainerRow={<RoleRows part="trainer" bare trainerName={null} onJoin={noop} />} applyRow={<RoleRows part="apply" bare trainerName={null} onJoin={noop} />} appearance={<ThemeSelect />} privacy={<BreathingSetting />} legal={<LegalLinks className="justify-start" />} onEdited={noop} onAllAchievements={noop} onSignOut={noop} /></PortalShell>;
     case "edycja": return <PortalShell tab={"ty" as ShellTab} onTab={noop}><EditProfile profile={profile} onSaved={noop} onCancel={noop} /></PortalShell>;
+    case "wlasny-plan": return <OwnPlanEditor onClose={noop} onSaved={noop} />;
     case "przerwa": return <RestTimer state={startRest(90, "Seria 2 z 3")} counter={1} onChange={noop} onClose={noop} />;
     case "przerwa-koniec": return <RestTimer state={{ endsAt: Date.now() - 1000, total: 90, next: "Seria 2 z 3" }} counter={1} onChange={noop} onClose={noop} />;
     default: return home;

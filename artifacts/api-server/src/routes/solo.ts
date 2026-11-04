@@ -54,7 +54,7 @@ router.get("/solo/me", gate, async (req, res): Promise<void> => {
 });
 
 /** Osoba, która może sama układać sobie plan: bez trenera albo „Mój trening” trenera. */
-async function soloActor(userId: string): Promise<{ id: number; firstName: string } | null> {
+export async function soloActor(userId: string): Promise<{ id: number; firstName: string } | null> {
   await ensureSoloClient(userId);
   const [c] = await db.select({ id: clientsTable.id, firstName: clientsTable.firstName, trainerId: clientsTable.trainerId }).from(clientsTable).where(eq(clientsTable.clerkUserId, userId));
   if (!c) return null;

@@ -109,6 +109,8 @@ export const exercisesTable = pgTable("exercises", {
    * Non-NULL = private exercise; only visible to the trainer who created it.
    */
   createdByTrainerId: integer("created_by_trainer_id").references(() => trainersTable.id),
+  /** Migracja 0074: ćwiczenie własne osoby Solo (własny plan). Zawsze nieaktywne i ukryte — poza katalogiem, generatorem i listami trenerów. */
+  createdByClientId: integer("created_by_client_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

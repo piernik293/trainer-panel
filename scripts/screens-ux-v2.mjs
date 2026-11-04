@@ -17,7 +17,7 @@ mkdirSync(OUT, { recursive: true });
 const SCREENS = [
   ["1-dzis", "dzis"], ["2-dzis-odpoczynek", "dzis-odpoczynek"], ["3-dzis-nowe-konto", "dzis-nowe-konto"], ["4-dzis-brak-planu", "dzis-brak-planu"],
   ["5-koniec", "koniec"], ["6-koniec-po-bolu", "koniec-bol"], ["7-story", "story"], ["8-postepy", "postepy"], ["9-postepy-nowe-konto", "postepy-nowe"],
-  ["10-ty", "ty"], ["11-ty-bez-nicka", "ty-bez-nicka"], ["12-edycja-profilu", "edycja"], ["13-przerwa", "przerwa"], ["14-przerwa-koniec", "przerwa-koniec"], ["15-ty-zloty-byczek", "ty-byczek"],
+  ["10-ty", "ty"], ["11-ty-bez-nicka", "ty-bez-nicka"], ["12-edycja-profilu", "edycja"], ["13-przerwa", "przerwa"], ["14-przerwa-koniec", "przerwa-koniec"], ["15-ty-zloty-byczek", "ty-byczek"], ["16-wlasny-plan", "wlasny-plan"],
 ];
 const browser = await chromium.launch();
 let bad = 0;
