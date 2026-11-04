@@ -4,6 +4,7 @@
  * jeden przycisk akcji, stopka: kto wysłał, dlaczego dostajesz ten mail, kontakt (CONTACT_EMAIL, jeśli ustawiony) i polityka prywatności.
  * W treści NIE ma danych zdrowotnych (ból, wywiad) — tylko „masz nowe zgłoszenie, zobacz w aplikacji”.
  */
+import { brandV1Enabled } from "../brandFlag";
 export const MAIL_ACCENT = "#C2410C";
 
 export interface MailContent {
@@ -33,13 +34,17 @@ export function renderMail(c: MailContent): { subject: string; html: string; tex
   const footerText = [`Wysyła: ${sender}.`, `Dostajesz tę wiadomość, bo ${c.reason}.`, contact ? `Kontakt: ${contact}` : null, `Polityka prywatności: ${privacyUrl()}`].filter(Boolean).join("\n");
   const text = [hello, "", ...c.paragraphs.flatMap((p) => [p, ""]), ...(c.button ? [`${c.button.label}: ${c.button.url}`, ""] : []), "—", footerText].join("\n");
 
+  // Logo A w mailu: klienci pocztowi nie pokazują SVG ani zdalnych obrazków, więc „O” z pierścienia rysujemy stylem (rogi pomijamy). Bez flagi: dotychczasowy kwadrat z „O”.
+  const logoMark = brandV1Enabled()
+    ? `<span style="display:inline-block;width:18px;height:18px;border:6px solid ${MAIL_ACCENT};border-radius:50%;vertical-align:middle;"></span>`
+    : `<span style="display:inline-block;width:32px;height:32px;line-height:32px;text-align:center;border-radius:9px;background:${MAIL_ACCENT};color:#FFFFFF;font-weight:800;font-size:17px;">O</span>`;
   const font = "Manrope,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
   const html = `<!doctype html>
 <html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>${esc(c.subject)}</title></head>
 <body style="margin:0;padding:0;background:#FAF8F5;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F5;"><tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FFFFFF;border:1px solid #ECE7E2;border-radius:16px;">
-<tr><td style="padding:24px 28px 8px 28px;font-family:${font};"><span style="display:inline-block;width:32px;height:32px;line-height:32px;text-align:center;border-radius:9px;background:${MAIL_ACCENT};color:#FFFFFF;font-weight:800;font-size:17px;">O</span><span style="font-size:18px;font-weight:800;color:#1C1917;vertical-align:middle;margin-left:10px;">Optimatren</span></td></tr>
+<tr><td style="padding:24px 28px 8px 28px;font-family:${font};">${logoMark}<span style="font-size:18px;font-weight:800;color:#1C1917;vertical-align:middle;margin-left:10px;">${brandV1Enabled() ? "optimatren" : "Optimatren"}</span></td></tr>
 <tr><td style="padding:12px 28px 4px 28px;font-family:${font};color:#1C1917;font-size:16px;line-height:1.55;">
 <p style="margin:0 0 14px 0;font-weight:700;">${esc(hello)}</p>
 ${c.paragraphs.map((p) => `<p style="margin:0 0 14px 0;">${esc(p).replace(/\n/g, "<br>")}</p>`).join("\n")}

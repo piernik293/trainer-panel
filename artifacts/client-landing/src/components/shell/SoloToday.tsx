@@ -9,6 +9,7 @@ import SurveyWizard from "@/components/SurveyWizard";
 import { StepsTile } from "@/components/StepsTile";
 import { Button } from "@/components/ui/button";
 
+import { IfBrand, Loading, ErrorState, EmptyState, PlanBuilding, Maskotka, LoginSequence } from "@workspace/design-tokens/brand";
 type Phase = "start" | "interview" | "building";
 
 export function SoloToday({ firstName, hasSurvey, onPlanReady }: { firstName: string; hasSurvey: boolean; onPlanReady: () => void }) {
@@ -31,10 +32,10 @@ export function SoloToday({ firstName, hasSurvey, onPlanReady }: { firstName: st
   }
   if (phase === "building") {
     return (
-      <div className="flex flex-col items-center gap-3 py-16 text-center" role="status" data-testid="solo-building">
+      <IfBrand fallback={<div className="flex flex-col items-center gap-3 py-16 text-center" role="status" data-testid="solo-building">
         <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
         <p className="font-semibold">Układamy Twój plan…</p>
-      </div>
+      </div>}><PlanBuilding /></IfBrand>
     );
   }
   return (

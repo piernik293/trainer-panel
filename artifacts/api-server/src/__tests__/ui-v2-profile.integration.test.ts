@@ -54,6 +54,15 @@ describe("UI_V2_ENABLED", () => {
   });
 });
 
+describe("BRAND_V1_ENABLED", () => {
+  it("domyślnie wyłączona (status false), z env — true", async () => {
+    vi.stubEnv("BRAND_V1_ENABLED", "");
+    expect((await request(app).get("/api/brand-v1/status")).body).toEqual({ enabled: false });
+    vi.stubEnv("BRAND_V1_ENABLED", "1");
+    expect((await request(app).get("/api/brand-v1/status")).body).toEqual({ enabled: true });
+  });
+});
+
 describe("profil i nick", () => {
   it("pierwsze ustawienie nicka jest wolne; nazwa i kolor zapisują się; odczyt zwraca 6 kolorów", async () => {
     vi.stubEnv("UI_V2_ENABLED", "1");

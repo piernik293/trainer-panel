@@ -7,6 +7,7 @@ import { loadRamp, withoutPainJoints, type RampKind } from "@/lib/training/ramp"
 import { cacheToday, readCachedToday } from "@/lib/training/sync";
 import { SyncBadge } from "./TrainingUi";
 
+import { IfBrand, Loading, ErrorState, EmptyState, PlanBuilding, Maskotka, LoginSequence } from "@workspace/design-tokens/brand";
 async function fetchToday(): Promise<TodayResponse> {
   const res = await fetch("/api/client-portal/training/today", { credentials: "include" });
   if (!res.ok) throw Object.assign(new Error(String(res.status)), { status: res.status });
@@ -44,7 +45,7 @@ export function TodayCard({ reloadKey, onStart, onRamp }: {
 }) {
   const { data, state, fromCache } = useTodayData(reloadKey);
 
-  if (state === "loading") return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Ładowanie" /></div>;
+  if (state === "loading") return <IfBrand fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Ładowanie" /></div>}><Loading /></IfBrand>;
   if (state === "none" || !data) return null;
 
   const day = data.today;

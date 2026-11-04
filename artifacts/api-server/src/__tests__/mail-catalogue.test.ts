@@ -80,4 +80,14 @@ describe("katalog maili", () => {
     const t = trainerCodeShareText("Marek Nowak", "AB12CD34EF", "https://x.pl/join/AB12CD34EF");
     expect(t).toContain("AB12CD34EF"); expect(t).toContain("https://x.pl/join/AB12CD34EF"); expect(t).toContain("Marek Nowak");
   });
+  it("nagłówek maila: bez flagi BRAND_V1_ENABLED dawny kwadrat „O”, z flagą pierścień logo A i napis małymi literami", () => {
+    delete process.env["BRAND_V1_ENABLED"];
+    const old = buildMail("plan_ready", { name: "Anna" }).html;
+    expect(old).toContain(">O</span>"); expect(old).toContain(">Optimatren</span>");
+    process.env["BRAND_V1_ENABLED"] = "1";
+    try {
+      const v1 = buildMail("plan_ready", { name: "Anna" }).html;
+      expect(v1).toContain("border-radius:50%"); expect(v1).toContain(">optimatren</span>"); expect(v1).not.toContain(">O</span>");
+    } finally { delete process.env["BRAND_V1_ENABLED"]; }
+  });
 });

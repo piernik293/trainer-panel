@@ -58,6 +58,7 @@ import { SoloNewPlan } from "@/components/shell/SoloToday";
 import type { ShellTab } from "@/components/shell/BottomBar";
 import { ProgressContainer, ProgressContainerV2, YouContainer, YouContainerV2, SoloGate } from "@/components/shell/ShellContainers";
 
+import { IfBrand, Loading, ErrorState, EmptyState, LoginSequence, useBrandV1 } from "@workspace/design-tokens/brand";
 async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
   if (BOOKING_MOCK && path.startsWith("/client-portal/booking")) {
     return mockBookingApi<T>(path, opts);
@@ -335,9 +336,9 @@ function formatPrescription(ex: PlanExercise): string {
 function SignInGate() {
   useEffect(() => { window.location.replace("/sign-in"); }, []);
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center" role="status">
+    <IfBrand fallback={<div className="min-h-screen bg-background flex items-center justify-center" role="status">
       <Loader2 className="w-8 h-8 animate-spin text-primary" />
-    </div>
+    </div>}><div className="min-h-screen bg-background"><Loading fullScreen /></div></IfBrand>
   );
 }
 
@@ -1264,6 +1265,7 @@ export default function PlanPortal() {
   const [tab, setTab] = useState<ShellTab>("dzis");
   // New look of the screens (UI_V2_ENABLED): own profile (nick, colour) and the achievements catalogue.
   const uiV2 = flagsReady && flags.uiV2;
+  const brandV1 = useBrandV1();
   const { profile: profileV2, reload: reloadProfileV2 } = useProfileV2(client?.firstName ?? "", uiV2);
   const { overview: overviewV2 } = useOverview(uiV2 && flags.achievements);
 
@@ -1323,9 +1325,9 @@ export default function PlanPortal() {
   // Signed in but plan is still loading.
   if (planLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <IfBrand fallback={<div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      </div>}><div className="min-h-screen bg-background"><Loading fullScreen /></div></IfBrand>
     );
   }
 
@@ -1335,18 +1337,22 @@ export default function PlanPortal() {
       <div className="min-h-screen bg-background flex items-center justify-center px-6">
         <div className="text-center space-y-2 max-w-sm" role="alert">
           {!unlinked && (
-            <>
+            <IfBrand fallback={<>
             <Dumbbell className="w-10 h-10 mx-auto text-muted-foreground mb-4" />
             <p className="font-semibold">{planError ?? "Brak aktywnego planu"}</p>
             <p className="text-sm text-muted-foreground">
               Skontaktuj się ze swoim trenerem — musi aktywować Twój plan i powiązać konto z Twoim profilem.
             </p>
-            </>
+            </>}>
+              {planError
+                ? <ErrorState title="Nie udało się wczytać planu" message={planError} onRetry={() => setPlanRetry((c) => c + 1)} />
+                : <EmptyState title="Brak aktywnego planu" message="Skontaktuj się ze swoim trenerem — musi aktywować Twój plan i powiązać konto z Twoim profilem." />}
+            </IfBrand>
           )}
           {flagsReady && flags.solo
             ? <SoloGate onStatus={(st) => setUnlinked(!!st && !st.linked)} />
             : <AccountNotice onStatus={(st) => setUnlinked(!!st && !st.linked)} />}
-          {planError && !unlinked && (
+          {planError && !unlinked && !brandV1 && (
             <Button onClick={() => setPlanRetry((c) => c + 1)} className="rounded-lg mt-2">
               Spróbuj ponownie
             </Button>
@@ -1415,6 +1421,7 @@ export default function PlanPortal() {
   if (flagsReady && shellEnabled(flags)) {
     return (
       <PortalShell tab={tab} onTab={(t) => { setTab(t); window.scrollTo({ top: 0 }); }}>
+        <LoginSequence today={todayWarsaw()} />
         {tab === "dzis" && uiV2 && (
           <HomeV2
             profile={profileV2} reloadKey={todayReload} streakWeeks={overviewV2?.streakWeeks ?? null} achievements={overviewV2?.items ?? []}
@@ -1446,6 +1453,7 @@ export default function PlanPortal() {
 
   return (
     <>
+      <LoginSequence today={todayWarsaw()} />
       {nav}
       <PlanView
         client={client}

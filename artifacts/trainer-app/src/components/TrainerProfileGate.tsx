@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ErrorState";
 import { humanizeError } from "@/lib/userError";
 
+import { IfBrand, Loading } from "@workspace/design-tokens/brand";
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const CLIENT_PORTAL_PATH = "/client-landing/plan";
 
@@ -55,10 +56,10 @@ export function TrainerProfileGate({ children }: { children: ReactNode }) {
 
   if (isPending) {
     return (
-      <div className="min-h-screen flex items-center justify-center gap-2 text-muted-foreground" role="status">
+      <IfBrand fallback={<div className="min-h-screen flex items-center justify-center gap-2 text-muted-foreground" role="status">
         <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
         Przygotowywanie panelu…
-      </div>
+      </div>}><div className="min-h-screen flex items-center justify-center"><Loading label="Przygotowywanie panelu" /></div></IfBrand>
     );
   }
 

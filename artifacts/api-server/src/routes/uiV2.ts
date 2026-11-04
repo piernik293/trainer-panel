@@ -11,6 +11,7 @@ import { Router, type IRouter, type Request, type Response, type NextFunction } 
 import { and, asc, eq, gt, ne } from "drizzle-orm";
 import { db, clientsTable, nickHistoryTable, trainersTable, workoutSessionsTable } from "@workspace/db";
 import { requireClientAuth } from "../middlewares/requireClientAuth";
+import { brandV1Enabled } from "../services/brandFlag";
 import { AVATAR_COLORS, checkNick, holdUntil, nextNickChangeAt, nickKey, trainerLookalikeCore } from "../services/nick";
 
 export const uiV2Enabled = (env: NodeJS.ProcessEnv = process.env) => env.UI_V2_ENABLED === "1";
@@ -22,6 +23,8 @@ const gate = (_req: Request, res: Response, next: NextFunction): void => {
 };
 
 router.get("/ui-v2/status", (_req, res): void => { res.json({ enabled: uiV2Enabled() }); });
+/** Nowe logo i byczek (BRAND_V1_ENABLED, domyślnie wyłączone): aplikacje pytają o to jednym zapytaniem. */
+router.get("/brand-v1/status", (_req, res): void => { res.json({ enabled: brandV1Enabled() }); });
 
 async function profileOf(clientId: number) {
   const [c] = await db.select().from(clientsTable).where(eq(clientsTable.id, clientId));

@@ -1,0 +1,64 @@
+/* Byczek (Maskotka): animacje stanów — zatwierdzony projekt (docs/MASKOTKA.md). Przy prefers-reduced-motion stoi nieruchomo. */
+.bull{display:inline-block;overflow:visible}
+.bull g{transform-box:view-box}
+.bull .armL{transform-origin:64px 108px}
+.bull .armR{transform-origin:136px 108px}
+.bull .head{transform-origin:100px 96px}
+.bull .torso{transform-origin:100px 170px}
+.bull .all{transform-origin:100px 205px}
+.bull .bar,.bull .fx-star,.bull .fx-dots,.bull .fx-err{display:none}
+.s-lift .bar{display:inline}
+.s-success .fx-star{display:inline}
+.s-loading .fx-dots{display:inline}
+.s-error .fx-err{display:inline}
+
+.s-idle .torso{animation:bull-breathe 3s ease-in-out infinite}
+.s-idle .head{animation:bull-tilt 4s ease-in-out infinite}
+
+.s-walk .all{animation:bull-bob .6s ease-in-out infinite}
+.s-walk .legL{animation:bull-step .6s ease-in-out infinite}
+.s-walk .legR{animation:bull-step .6s ease-in-out infinite reverse}
+.s-walk .armL{animation:bull-swingL .6s ease-in-out infinite}
+.s-walk .armR{animation:bull-swingR .6s ease-in-out infinite}
+
+.s-lift .armL{animation:bull-liftL 2.4s ease-in-out infinite}
+.s-lift .armR{animation:bull-liftR 2.4s ease-in-out infinite}
+.s-lift .bar{animation:bull-liftBar 2.4s ease-in-out infinite}
+.s-lift .all{animation:bull-dip 2.4s ease-in-out infinite}
+
+.s-success .armL{transform:rotate(140deg);animation:bull-waveL 1s ease-in-out infinite}
+.s-success .armR{transform:rotate(-140deg);animation:bull-waveR 1s ease-in-out infinite}
+.s-success .all{animation:bull-jump 1s ease-in-out infinite}
+.s-success .fx-star circle,.s-success .fx-star path{animation:bull-twinkle 1s ease-in-out infinite}
+
+.s-loading .head{animation:bull-look 1.6s ease-in-out infinite}
+.s-loading .fx-dots circle{animation:bull-dot 1.2s ease-in-out infinite}
+.s-loading .fx-dots circle:nth-child(2){animation-delay:.2s}
+.s-loading .fx-dots circle:nth-child(3){animation-delay:.4s}
+
+.s-error .all{transform:translateY(10px)}
+.s-error .head{transform:rotate(9deg)}
+.s-error .armL{animation:bull-shrugL 2s ease-in-out infinite}
+.s-error .armR{animation:bull-shrugR 2s ease-in-out infinite}
+.s-error .drop{animation:bull-drop 1.8s ease-in infinite}
+
+@keyframes bull-breathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.035)}}
+@keyframes bull-tilt{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes bull-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes bull-step{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes bull-swingL{0%,100%{transform:rotate(18deg)}50%{transform:rotate(-18deg)}}
+@keyframes bull-swingR{0%,100%{transform:rotate(-18deg)}50%{transform:rotate(18deg)}}
+@keyframes bull-liftL{0%,12%{transform:rotate(0)}45%,65%{transform:rotate(152deg)}95%,100%{transform:rotate(0)}}
+@keyframes bull-liftR{0%,12%{transform:rotate(0)}45%,65%{transform:rotate(-152deg)}95%,100%{transform:rotate(0)}}
+@keyframes bull-liftBar{0%,12%{transform:translateY(0)}45%,65%{transform:translateY(-106px)}95%,100%{transform:translateY(0)}}
+@keyframes bull-dip{0%,100%{transform:translateY(0)}10%{transform:translateY(5px)}70%{transform:translateY(3px)}}
+@keyframes bull-waveL{0%,100%{transform:rotate(132deg)}50%{transform:rotate(152deg)}}
+@keyframes bull-waveR{0%,100%{transform:rotate(-132deg)}50%{transform:rotate(-152deg)}}
+@keyframes bull-jump{0%,100%{transform:translateY(0)}40%{transform:translateY(-14px)}}
+@keyframes bull-twinkle{0%,100%{opacity:.25}50%{opacity:1}}
+@keyframes bull-look{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(9deg)}}
+@keyframes bull-dot{0%,100%{opacity:.2}50%{opacity:1}}
+@keyframes bull-shrugL{0%,100%{transform:rotate(25deg)}50%{transform:rotate(35deg)}}
+@keyframes bull-shrugR{0%,100%{transform:rotate(-25deg)}50%{transform:rotate(-35deg)}}
+@keyframes bull-drop{0%{transform:translateY(0);opacity:0}20%{opacity:1}100%{transform:translateY(26px);opacity:0}}
+@media (prefers-reduced-motion: reduce){.bull *{animation:none!important}}

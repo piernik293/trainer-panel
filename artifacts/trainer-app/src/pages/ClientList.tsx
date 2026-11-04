@@ -24,6 +24,7 @@ import { clientStatusLabel, surveyStatusLabel } from "@/lib/client-status";
 import { ErrorState } from "@/components/ErrorState";
 import { humanizeError } from "@/lib/userError";
 
+import { IfBrand, EmptyState } from "@workspace/design-tokens/brand";
 function statusBadgeVariant(status: string | null | undefined) {
   switch (status) {
     case "paused":
@@ -332,7 +333,7 @@ export default function ClientList() {
             />
           </div>
         ) : filteredClients?.length === 0 ? (
-          <div className="p-12 text-center flex flex-col items-center">
+          <IfBrand fallback={<div className="p-12 text-center flex flex-col items-center">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
               <Users className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -345,7 +346,10 @@ export default function ClientList() {
                 Wyczyść filtry
               </Button>
             )}
-          </div>
+          </div>}>
+            <EmptyState title="Brak wyników" message="Nie znaleziono klientów pasujących do wybranych filtrów."
+              action={hasActiveFilters ? <Button variant="outline" onClick={clearFilters}>Wyczyść filtry</Button> : undefined} />
+          </IfBrand>
         ) : (
           <>
             {/* ── Desktop table ─────────────────────────────────────────── */}
