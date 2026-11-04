@@ -1,25 +1,22 @@
 /**
- * Maile przy wniosku o konto trenera: do właściciela (nowy wniosek) i do wnioskodawcy (decyzja). Każda wysyłka zostawia w logu serwera wynik
- * (wysłano / nie wysłano i dlaczego), żeby brak maila dało się zdiagnozować. Adresów ani haseł nie logujemy.
+ * Maile przy wniosku o konto trenera: potwierdzenie przyjęcia i decyzja (do wnioskodawcy), nowy wniosek (do właściciela). Teksty i szablon:
+ * services/mail (docs/MAILE.md). Każda wysyłka zostawia w logu serwera wynik (wysłano / nie wysłano i dlaczego); adresów ani haseł nie logujemy.
  */
-import { logger } from "../lib/logger";
-import { sendPlainEmail } from "./inviteEmail";
+import { sendCatalogueMail } from "./mail/send";
 
 export const ownerAddress = (env: NodeJS.ProcessEnv = process.env) => env["OWNER_NOTIFY_EMAIL"]?.trim() || env["ADMIN_EMAIL"]?.trim() || null;
 
-async function send(kind: string, to: string | null | undefined, subject: string, text: string): Promise<boolean> {
-  if (!to) { logger.warn({ kind }, "Mail nie wysłany: brak adresu odbiorcy"); return false; }
-  const ok = await sendPlainEmail({ to, subject, text });
-  if (ok) logger.info({ kind }, "Mail wysłany"); else logger.warn({ kind }, "Mail NIE wysłany (brak SMTP albo błąd wysyłki — szczegóły w poprzedniej linii)");
-  return ok;
-}
-
 export const notifyOwnerNewApplication = (a: { name: string | null; email: string | null; note: string | null }) =>
-  send("application-owner", ownerAddress(), "Nowy wniosek o konto trenera",
-    `Nowy wniosek o konto trenera.\nOsoba: ${a.name ?? "(bez imienia)"}${a.email ? ` · ${a.email}` : ""}\n${a.note ? `Notatka: ${a.note}\n` : ""}\nRozpatrz go w panelu administratora (zakładka „Wnioski”).`);
+  sendCatalogueMail("application_new", { to: ownerAddress(), data: { name: a.name, email: a.email, note: a.note } });
 
-export const mailApplicationAccepted = (to: string | null | undefined) =>
-  send("application-accepted", to, "Twoje konto trenera jest aktywne", "Twoje konto trenera jest aktywne — zaloguj się tym samym kontem, a panel trenera będzie dostępny.");
+export const mailApplicationReceived = (to: string | null | undefined, name: string | null) =>
+  sendCatalogueMail("application_received", { to, data: { name: firstName(name) } });
 
-export const mailApplicationRejected = (to: string | null | undefined) =>
-  send("application-rejected", to, "Wniosek o konto trenera", "Twój wniosek o konto trenera nie został przyjęty. Możesz złożyć nowy za 14 dni.");
+export const mailApplicationAccepted = (to: string | null | undefined, name: string | null = null) =>
+  sendCatalogueMail("application_accepted", { to, data: { name: firstName(name) } });
+
+export const mailApplicationRejected = (to: string | null | undefined, name: string | null = null) =>
+  sendCatalogueMail("application_rejected", { to, data: { name: firstName(name) } });
+
+/** Pierwsze imię z „Imię Nazwisko” (do zwrotu „Cześć, Anna,”); brak → null. */
+export const firstName = (full: string | null | undefined) => full?.trim().split(/\s+/)[0] || null;

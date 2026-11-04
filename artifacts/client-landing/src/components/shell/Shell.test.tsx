@@ -18,12 +18,13 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 describe("flags: both off is the default and any failure means off", () => {
   it("reads both flags; a failing or 404 call counts as off", async () => {
     vi.stubGlobal("fetch", vi.fn(async (u: string) => (u.includes("solo") ? json({ enabled: true }) : json({}, 404))));
-    expect(await fetchPortalFlags()).toEqual({ solo: true, achievements: false });
+    expect(await fetchPortalFlags()).toEqual({ solo: true, achievements: false, uiV2: false });
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("offline"); }));
-    expect(await fetchPortalFlags()).toEqual({ solo: false, achievements: false });
-    expect(shellEnabled({ solo: false, achievements: false })).toBe(false);
-    expect(shellEnabled({ solo: true, achievements: false })).toBe(true);
-    expect(shellEnabled({ solo: false, achievements: true })).toBe(true);
+    expect(await fetchPortalFlags()).toEqual({ solo: false, achievements: false, uiV2: false });
+    expect(shellEnabled({ solo: false, achievements: false, uiV2: false })).toBe(false);
+    expect(shellEnabled({ solo: true, achievements: false, uiV2: false })).toBe(true);
+    expect(shellEnabled({ solo: false, achievements: true, uiV2: false })).toBe(true);
+    expect(shellEnabled({ solo: false, achievements: false, uiV2: true })).toBe(true);
   });
 });
 

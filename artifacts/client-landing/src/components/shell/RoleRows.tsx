@@ -31,7 +31,13 @@ export function applicationValue(r: { isTrainer: boolean; application: { status:
   return "";
 }
 
-export function RoleRows({ trainerName, pendingTrainerName, onJoin }: { trainerName: string | null; pendingTrainerName?: string | null; onJoin: (path: string) => void }) {
+export function RoleRows({ trainerName, pendingTrainerName, onJoin, part, bare }: {
+  trainerName: string | null; pendingTrainerName?: string | null; onJoin: (path: string) => void;
+  /** new look: show only one of the two rows ("Mój trener" in the list, "Prowadzę podopiecznych" at the bottom) */
+  part?: "trainer" | "apply";
+  /** without the card frame (the caller provides it) */
+  bare?: boolean;
+}) {
   const [open, setOpen] = useState<"trainer" | "apply" | null>(null);
   const [code, setCode] = useState("");
   const [roles, setRoles] = useState<{ isTrainer: boolean; application: { status: string; canApply: boolean } | null } | null>(null);
@@ -54,8 +60,8 @@ export function RoleRows({ trainerName, pendingTrainerName, onJoin }: { trainerN
   };
   const link = "min-h-11 font-semibold text-primary underline underline-offset-4 disabled:opacity-40 disabled:no-underline";
   return (
-    <section aria-label="Konto" className="rounded-lg border border-border bg-card px-4" data-testid="role-rows">
-      {trainerName ? (
+    <section aria-label="Konto" className={bare ? "" : "rounded-lg border border-border bg-card px-4"} data-testid="role-rows">
+      {part === "apply" ? null : trainerName ? (
         <Row testId="row-trainer" label="Mój trener" value={trainerName} open={false} />
       ) : pendingTrainerName ? (
         <Row testId="row-trainer" label="Mój trener" value={`Prośba do: ${pendingTrainerName} — czeka na akceptację`} open={false} />
@@ -67,7 +73,7 @@ export function RoleRows({ trainerName, pendingTrainerName, onJoin }: { trainerN
           </div>
         </Row>
       )}
-      {roles && (value && !canApply ? (
+      {roles && part !== "trainer" && (value && !canApply ? (
         <Row testId="row-apply" label="Prowadzę podopiecznych" value={value} open={false} />
       ) : roles.isTrainer ? null : (
         <Row testId="row-apply" label="Prowadzę podopiecznych" value="" open={open === "apply"} onToggle={() => setOpen(open === "apply" ? null : "apply")}>

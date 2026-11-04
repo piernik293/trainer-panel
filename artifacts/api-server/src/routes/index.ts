@@ -44,6 +44,8 @@ import soloRouter from "./solo";
 import conditioningRouter from "./conditioning";
 import calisthenicsRouter from "./calisthenics";
 import achievementsRouter from "./achievements";
+import uiV2Router from "./uiV2";
+import adminMailsRouter from "./adminMails";
 
 const router: IRouter = Router();
 
@@ -92,6 +94,8 @@ router.use(soloRouter);
 router.use(conditioningRouter);
 router.use(calisthenicsRouter);
 router.use(achievementsRouter);
+router.use(uiV2Router);
+router.use(adminMailsRouter);
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────

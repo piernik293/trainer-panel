@@ -66,7 +66,7 @@ export async function loadAchievementInput(clientId: number, today: string = tod
 export type StoredAchievement = typeof clientAchievementsTable.$inferSelect;
 
 /** Computes everything from the history and stores what is new (unique key: repeated runs and duplicated sessions create nothing twice). */
-export async function evaluateAndStore(clientId: number, today: string = todayWarsaw()): Promise<{ earned: (StoredAchievement & { priority: number })[]; streakWeeks: number }> {
+export async function evaluateAndStore(clientId: number, today: string = todayWarsaw()): Promise<{ earned: (StoredAchievement & { priority: number })[]; streakWeeks: number; sessionCount: number }> {
   const result = computeAchievements(await loadAchievementInput(clientId, today));
   const earned: (StoredAchievement & { priority: number })[] = [];
   for (const c of result.candidates) {
@@ -75,7 +75,7 @@ export async function evaluateAndStore(clientId: number, today: string = todayWa
     }).onConflictDoNothing().returning();
     if (row) earned.push({ ...row, priority: c.priority });
   }
-  return { earned, streakWeeks: result.streakWeeks };
+  return { earned, streakWeeks: result.streakWeeks, sessionCount: result.sessionCount };
 }
 
 export { pickCelebration };

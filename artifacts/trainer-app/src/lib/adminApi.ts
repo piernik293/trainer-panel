@@ -75,3 +75,10 @@ export function useFeedbackRead() {
   return useMutation({ mutationFn: (id: number) => customFetch(`/api/admin/feedback/${id}/read`, { method: "POST" }), onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-feedback"] }) });
 }
 export const FEEDBACK_CATEGORY_LABEL: Record<AdminFeedback["category"], string> = { blad: "Błąd", pomysl: "Pomysł", niejasne: "Niejasne" };
+
+// ─── Maile (podgląd szablonów i test do właściciela) ─────────────────────────
+export interface AdminMailItem { id: string; label: string; audience: string; when: string }
+export const useAdminMails = () => useQuery<{ ownerAddressSet: boolean; mails: AdminMailItem[] }>({ queryKey: ["admin-mails"], queryFn: () => customFetch("/api/admin/mails") });
+export const useAdminMailPreview = (id: string | null) =>
+  useQuery<{ subject: string; html: string; text: string }>({ queryKey: ["admin-mail-preview", id], enabled: !!id, queryFn: () => customFetch(`/api/admin/mails/${id}/preview`) });
+export const useAdminMailTest = () => useMutation({ mutationFn: (id: string) => customFetch<{ ok: true }>(`/api/admin/mails/${id}/test`, { method: "POST" }) });

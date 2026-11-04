@@ -43,9 +43,13 @@ describe("adres właściciela", () => {
 describe("maile", () => {
   it("nowy wniosek: mail do właściciela z imieniem wnioskodawcy", async () => {
     as(PA); expect((await request(app).post("/api/trainer-applications").send({ note: "Prowadzę klientów" })).status).toBe(201);
-    expect(sent).toHaveLength(1);
-    expect(sent[0]).toMatchObject({ to: "wlasciciel@poczta-testowa.pl", subject: "Nowy wniosek o konto trenera" });
-    expect(sent[0]!.text).toContain("Ala Test"); expect(sent[0]!.text).toContain("Prowadzę klientów");
+    expect(sent).toHaveLength(2); // właściciel + potwierdzenie przyjęcia dla wnioskodawcy
+    const owner = sent.find((m) => m.to === "wlasciciel@poczta-testowa.pl")!;
+    expect(owner).toMatchObject({ subject: "Nowy wniosek o konto trenera" });
+    expect(owner.text).toContain("Ala Test"); expect(owner.text).toContain("Prowadzę klientów");
+    const applicant = sent.find((m) => m.to === `${PA}@poczta-testowa.pl`)!;
+    expect(applicant.subject).toBe("Dostaliśmy Twój wniosek o konto trenera");
+    expect(applicant.text.startsWith("Cześć, Ala,")).toBe(true); // po imieniu
   });
   it("akceptacja: mail „Twoje konto trenera jest aktywne” do wnioskodawcy", async () => {
     as(ADMIN); const list = await request(app).get("/api/admin/trainer-applications?status=pending");

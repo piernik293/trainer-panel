@@ -1,12 +1,13 @@
 /**
- * Flags of the new portal shell (bottom bar Dziś · Plan · Postępy · Ty), read from the API: SOLO_ENABLED and ACHIEVEMENTS_ENABLED.
- * Both OFF (the default, or any failure to read them) → the portal is exactly what it was before; nothing here renders.
+ * Flags of the new portal shell (bottom bar Dziś · Plan · Postępy · Ty), read from the API: SOLO_ENABLED, ACHIEVEMENTS_ENABLED and UI_V2_ENABLED.
+ * All OFF (the default, or any failure to read them) → the portal is exactly what it was before; nothing here renders.
  */
 import { useEffect, useState } from "react";
 
-export interface PortalFlags { solo: boolean; achievements: boolean }
-export const NO_FLAGS: PortalFlags = { solo: false, achievements: false };
-export const shellEnabled = (f: PortalFlags) => f.solo || f.achievements;
+/** `uiV2`: UI_V2_ENABLED — the new look of the portal screens (Dziś, koniec treningu, Postępy, Ty). */
+export interface PortalFlags { solo: boolean; achievements: boolean; uiV2: boolean }
+export const NO_FLAGS: PortalFlags = { solo: false, achievements: false, uiV2: false };
+export const shellEnabled = (f: PortalFlags) => f.solo || f.achievements || f.uiV2;
 
 async function enabled(path: string): Promise<boolean> {
   try {
@@ -18,8 +19,8 @@ async function enabled(path: string): Promise<boolean> {
 
 /** Never throws: any failure counts as "off". */
 export async function fetchPortalFlags(): Promise<PortalFlags> {
-  const [solo, achievements] = await Promise.all([enabled("/api/solo/status"), enabled("/api/achievements/status")]);
-  return { solo, achievements };
+  const [solo, achievements, uiV2] = await Promise.all([enabled("/api/solo/status"), enabled("/api/achievements/status"), enabled("/api/ui-v2/status")]);
+  return { solo, achievements, uiV2 };
 }
 
 export function usePortalFlags(): { ready: boolean; flags: PortalFlags } {

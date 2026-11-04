@@ -15,13 +15,8 @@ async function fetchToday(): Promise<TodayResponse> {
 
 const approxMinutes = (items: number) => Math.max(3, Math.round(items * 1.5));
 
-/** "Dziś" — the start of the portal when there is a workout today (works from cache without network). */
-export function TodayCard({ reloadKey, onStart, onRamp }: {
-  reloadKey: number;
-  onStart: (day: TrainingDay, ctx: Pick<TodayResponse, "client" | "week">) => void;
-  /** warm-up / cool-down opened on its own */
-  onRamp: (kind: RampKind, planDayId: number, items: RampItem[]) => void;
-}) {
+/** Loads "today" with the offline cache; shared by the classic card and the v2 home screen. */
+export function useTodayData(reloadKey: number) {
   const [data, setData] = useState<TodayResponse | null>(null);
   const [state, setState] = useState<"loading" | "ok" | "none">("loading");
   const [fromCache, setFromCache] = useState(false);
@@ -37,6 +32,17 @@ export function TodayCard({ reloadKey, onStart, onRamp }: {
     }
   }, []);
   useEffect(() => { void load(); }, [load, reloadKey]);
+  return { data, state, fromCache };
+}
+
+/** "Dziś" — the start of the portal when there is a workout today (works from cache without network). */
+export function TodayCard({ reloadKey, onStart, onRamp }: {
+  reloadKey: number;
+  onStart: (day: TrainingDay, ctx: Pick<TodayResponse, "client" | "week">) => void;
+  /** warm-up / cool-down opened on its own */
+  onRamp: (kind: RampKind, planDayId: number, items: RampItem[]) => void;
+}) {
+  const { data, state, fromCache } = useTodayData(reloadKey);
 
   if (state === "loading") return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Ładowanie" /></div>;
   if (state === "none" || !data) return null;
@@ -106,7 +112,7 @@ export function TodayCard({ reloadKey, onStart, onRamp }: {
 }
 
 /** Warm-up or cool-down as its own tile with its own button (the cool-down can be skipped). */
-function RampTile({ kind, count, minutes, done, optional, onOpen }: {
+export function RampTile({ kind, count, minutes, done, optional, onOpen }: {
   kind: RampKind; count: number; minutes: number | null; done: boolean; optional?: boolean; onOpen: () => void;
 }) {
   const warm = kind === "warmup";

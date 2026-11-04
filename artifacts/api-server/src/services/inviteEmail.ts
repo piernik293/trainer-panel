@@ -212,8 +212,8 @@ export async function sendInviteEmail(
   }
 }
 
-/** Krótki mail tekstowy do jednej osoby (np. odłączenie od trenera). Ten sam SMTP co zaproszenia; bez SMTP — cichy brak wysyłki. */
-export async function sendPlainEmail(opts: { to: string | null | undefined; subject: string; text: string; fromName?: string | null; replyTo?: string | null }): Promise<boolean> {
+/** Krótki mail (tekst, opcjonalnie HTML z szablonu services/mail) do jednej osoby (np. odłączenie od trenera). Ten sam SMTP co zaproszenia; bez SMTP — cichy brak wysyłki. */
+export async function sendPlainEmail(opts: { to: string | null | undefined; subject: string; text: string; html?: string; fromName?: string | null; replyTo?: string | null }): Promise<boolean> {
   const host = process.env["SMTP_HOST"];
   const user = process.env["SMTP_USER"];
   const pass = process.env["SMTP_PASS"];
@@ -223,7 +223,7 @@ export async function sendPlainEmail(opts: { to: string | null | undefined; subj
   try {
     const nodemailer = await import("nodemailer");
     const transporter = nodemailer.default.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
-    await transporter.sendMail({ from: senderHeader(opts.fromName ?? null), ...(opts.replyTo ? { replyTo: opts.replyTo } : {}), to: opts.to, subject: opts.subject, text: opts.text });
+    await transporter.sendMail({ from: senderHeader(opts.fromName ?? null), ...(opts.replyTo ? { replyTo: opts.replyTo } : {}), to: opts.to, subject: opts.subject, text: opts.text, ...(opts.html ? { html: opts.html } : {}) });
     return true;
   } catch (err) {
     logger.error({ err: err instanceof Error ? err.message : String(err) }, "Failed to send notification email");

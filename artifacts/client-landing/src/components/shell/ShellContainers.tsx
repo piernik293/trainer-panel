@@ -13,6 +13,10 @@ import { ProgressScreen, type AchievementItem } from "./ProgressScreen";
 import { YouScreen } from "./YouScreen";
 import { SoloStart } from "./SoloStart";
 import { RoleRows } from "./RoleRows";
+import { ProgressV2 } from "@/components/v2/ProgressV2";
+import { useOverview } from "@/lib/v2/achievements";
+import { YouV2 } from "@/components/v2/YouV2";
+import type { ProfileV2 } from "@/lib/v2/profile";
 
 const todayWarsaw = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Warsaw", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const base = () => import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -79,5 +83,52 @@ export function SoloGate({ onStatus }: { onStatus?: (s: AccountStatus | null) =>
       <SoloStart onStart={(n) => void start(n)} interviewReady={false} busy={state.busy} error={state.error} created={state.created} />
       <div className="mx-auto max-w-sm px-4"><TrainerApplyCard /></div>
     </div>
+  );
+}
+
+/** "Postępy" in the new look (UI_V2_ENABLED). Same data as the classic one plus the achievements catalogue. */
+export function ProgressContainerV2({ achievementsOn }: { achievementsOn: boolean }) {
+  const { overview, loaded } = useOverview(achievementsOn);
+  const [extra, setExtra] = useState<{ records: AchievementItem[]; days: string[] } | null>(null);
+  useEffect(() => {
+    if (!achievementsOn) { setExtra({ records: [], days: [] }); return; }
+    let alive = true;
+    void (async () => {
+      const [a, act] = await Promise.all([
+        getJson<{ items: AchievementItem[] }>("/api/client-portal/achievements"),
+        getJson<{ days: string[] }>("/api/client-portal/activity"),
+      ]);
+      if (!alive) return;
+      setExtra({ records: (a?.items ?? []).filter((i) => i.kind === "record").slice(0, 5), days: act?.days ?? [] });
+      // what was just shown counts as seen (the "Nowe" mark stays on screen for this visit)
+      if (a?.items.some((i) => !i.seen)) void fetch("/api/client-portal/achievements/seen", { method: "POST", credentials: "include" }).catch(() => {});
+    })();
+    return () => { alive = false; };
+  }, [achievementsOn]);
+  if (!loaded || !extra) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Ładowanie" /></div>;
+  return <ProgressV2 overview={overview} records={extra.records} activityDays={extra.days} today={todayWarsaw()} steps={<StepsTile />} />;
+}
+
+/** "Ty" in the new look (UI_V2_ENABLED). The settings blocks are the existing, self-contained ones. */
+export function YouContainerV2({ profile, reloadProfile, achievementsOn, onAllAchievements }: { profile: ProfileV2; reloadProfile: () => void; achievementsOn: boolean; onAllAchievements: () => void }) {
+  const { signOut } = useClerk();
+  const { overview } = useOverview(achievementsOn);
+  const [status, setStatus] = useState<AccountStatus | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  useEffect(() => { let alive = true; void getJson<AccountStatus>("/api/account/status").then((s) => { if (alive) setStatus(s); }); return () => { alive = false; }; }, []);
+  const join = (path: string) => window.location.assign(`${base()}${path}`);
+  const earned = (overview?.items ?? []).filter((i) => i.state === "earned").slice(0, 3);
+  return (
+    <YouV2
+      profile={profile} featured={earned}
+      trainerRow={<RoleRows part="trainer" bare trainerName={status?.linked ? status.trainerName ?? "Twój trener" : null} pendingTrainerName={status?.pendingTrainerName ?? null} onJoin={join} />}
+      applyRow={<RoleRows part="apply" bare trainerName={null} onJoin={join} />}
+      appearance={<ThemeSelect />}
+      privacy={<><HealthConsentSetting /><BreathingSetting /></>}
+      legal={<LegalLinks className="justify-start" />}
+      onEdited={reloadProfile} onAllAchievements={onAllAchievements}
+      signingOut={signingOut}
+      onSignOut={async () => { if (signingOut) return; setSigningOut(true); try { await signOut({ redirectUrl: `${import.meta.env.BASE_URL}plan` }); } finally { setSigningOut(false); } }}
+    />
   );
 }

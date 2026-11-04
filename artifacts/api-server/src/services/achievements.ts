@@ -68,7 +68,7 @@ export interface Candidate {
   /** which award to show right after a session (higher wins) */
   priority: number;
 }
-export interface AchResult { candidates: Candidate[]; streakWeeks: number }
+export interface AchResult { candidates: Candidate[]; streakWeeks: number; /** trainings counted within the weekly plan (progress towards milestones) */ sessionCount: number }
 
 // ─── Dates and wording ────────────────────────────────────────────────────────
 
@@ -260,7 +260,7 @@ export function computeAchievements(input: AchInput): AchResult {
     }
   }
 
-  return { candidates: out, streakWeeks: streak };
+  return { candidates: out, streakWeeks: streak, sessionCount: count };
 }
 
 /** The one award to show right after a session: the highest priority among the newly earned. */
