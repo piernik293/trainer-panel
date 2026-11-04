@@ -463,3 +463,4 @@
 - Formularz trenera, edytor planu, para w „Dziś”, korekta objętości, symulacja z flagą (SIM_METHODS=1).
 
 ## 4.11.2026 — QA przycisku „Zamień na inne” (375 px): mieści się bez poziomego przewijania, przycisk 180×44 px, zamiana działa, licznik „zostało N”; usunięto zdublowany podtytuł dnia (zrzuty `docs/screens/qa/swap-*.png`).
+- 4.11.2026: dodano cron @reboot (autostart aplikacji, opóźnienie 60 s); decyzje właściciela zapisane w DO-DECYZJI.md.

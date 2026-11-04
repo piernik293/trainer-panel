@@ -288,3 +288,10 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 - Zrobione: pole metod w formularzu trenera (kafelki + „Dobiorę sam”), edycja metody/pary/„Dlaczego?” w edytorze planu, para na ekranie „Dziś” (pierwsze ćwiczenie „bez przerwy — od razu: …”, baner z opisem), korekta objętości (+1 seria przy drop secie i rest-pause), wyjątek Siły (superserie na ćwiczeniach dodatkowych przy czasie do 45 min), pytanie o cardio dla wszystkich poziomów.
 - Symulacja z flagą (200 profili, Solo i trener): 0 naruszeń bezpieczeństwa i wykonalności (w tym ≤2 metody w dniu, para obok siebie, Solo bez rest-pause/upadku/serii złożonych, brak martwego ciągu i sztangi nad głową).
 - Nie zrobione: zmiana kolejności pary w edytorze przeciąganiem (numer pary wpisuje się ręcznie).
+
+## Decyzje właściciela z 4.11.2026 — ZAMKNIĘTE
+- **METODY.md:** pyt. 1 TAK (Solo bez rest-pause/upadku) · pyt. 2 TAK (drop sety dla Ś na maszynach) · pyt. 3: przy Sile bez metod, wyjątek — superserie tylko na ćwiczeniach dodatkowych przy krótkim czasie (zrobione, do 45 min) · pyt. 4 TAK (nowe kolumny planu) · pyt. 5 TAK (+1 seria przy drop secie i rest-pause).
+- **Wyjątek pompek** dla początkujących w domu (dwa różne warianty w dniu pchania): OK.
+- **Przedramiona poza kafelkiem „Ręce”:** OK.
+- **Pytanie o cardio dla wszystkich poziomów:** OK; sprawdzone w kodzie — krok `cardioPref` w `surveyWizard.ts` nie ma warunku poziomu, więc widzą go także początkujący i nieaktywni.
+- **Pozycje 39–45** (przegląd przed betą): zamknięte, zrobione 28.10; w kodzie potwierdzone: 39 okrąg „maskotka” ukryty (test `Training.test.tsx`), 41 nowy komunikat w `routes/public.ts`, 42 polskie nazwy dni (`soloPlanDriver`/`dayNaming`), 43 etykieta „Konto …” w `admin.ts`, 44 „Nie ma takiej strony” (`not-found.tsx`), 40 `TrainerApplyCard` użyty w koncie i na ekranie osoby bez trenera (`RoleRows`). Poz. 45 (dane QA w bazie) — nie usuwane, nadal wg `docs/BETA-START.md` pkt 10.
