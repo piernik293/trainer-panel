@@ -474,3 +474,9 @@
 - Nadawca: „Optimatren” (systemowe) / „Imię Nazwisko przez Optimatren” + Reply-To trenera; blokada adresów zastępczych jak w poprzednim bloku. Bez danych zdrowotnych i bez form zależnych od płci (testy).
 - Panel administratora → „Maile”: podgląd każdego szablonu (ramka bez skryptów) i „Wyślij test do mnie” (OWNER_NOTIFY_EMAIL).
 - NIE zrobione / do decyzji: zaproszenie od trenera nadal własnym, wcześniejszym renderem (ten sam układ i kolory) — nowy temat i treść są w `docs/MAILE.md` do akceptacji; „strażnik” (`scripts/watchdog-mail.mjs`) nadal wysyła własny prosty mail; przycisk „Skopiuj tekst z kodem” w ustawieniach trenera nie jest dodany (tekst jest w katalogu: `trainerCodeShareText`); maile o zgłoszeniu bólu nie są jeszcze wysyłane (szablon „Masz nowe zgłoszenie” gotowy, bez danych zdrowotnych).
+
+## 04.11.2026 — scalenie UX v2 + nick + maile do `main` (771873b), UWAGA na procedurę scalania
+- Scalone `feature/maile` (łańcuch: feature/ux-v2 → feature/nick-zasady → fix/nick-cyfry → feature/maile) po: testy API 3017 / panel 807 / portal 337 / typecheck / build zielone, symulacja generatora 1000 profili = 0 naruszeń (bezpieczeństwo, wykonalność, ponad poziom), kopia `~/backups/trainer_panel_przed_scaleniem_*`.
+- Pierwszy smoke po restarcie: 63 OK / 54 BŁĄD (HTTP 500). Przyczyna: `scripts/dev-gcp.sh` NIE stosuje migracji, więc w bazie aplikacji brakowało kolumn z 0069–0072. Naprawa: `scripts/db-setup-gcp.sh` (addytywnie, z własnym pg_dump) → smoke **131 OK / 0 BŁĄD**. Okno z błędami trwało kilka minut (od restartu do migracji).
+- OD TERAZ procedura scalania: pg_dump → merge → push → `scripts/db-setup-gcp.sh` → restart (`stop-gcp.sh && dev-gcp.sh`) → smoke 131 OK. (Migracje przed restartem, nie po.)
+- Flaga `UI_V2_ENABLED=1` włączona w `.env` (zgoda właściciela); `GOLDEN_BULLS`, `OWN_PLAN`, `BRAND_V1` i pozostałe nowe — wyłączone.
