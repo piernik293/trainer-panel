@@ -5,7 +5,7 @@ vi.mock("nodemailer", () => ({ default: { createTransport: () => ({ sendMail: as
 vi.mock("@clerk/express", () => ({
   clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
   getAuth: () => ({ userId: authUser }),
-  clerkClient: { users: { getUser: async (id: string) => ({ firstName: id.endsWith("a") ? "Ala" : "Bartek", lastName: "Test", primaryEmailAddress: { emailAddress: `${id}@example.invalid` } }) } },
+  clerkClient: { users: { getUser: async (id: string) => ({ firstName: id.endsWith("a") ? "Ala" : "Bartek", lastName: "Test", primaryEmailAddress: { emailAddress: `${id}@poczta-testowa.pl` } }) } },
 }));
 vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
 
@@ -26,7 +26,7 @@ async function cleanup() {
   await db.delete(trainersTable).where(inArray(trainersTable.clerkUserId, USERS));
 }
 beforeAll(async () => {
-  Object.assign(process.env, { SMTP_HOST: "smtp.example.invalid", SMTP_USER: "u", SMTP_PASS: "p", SMTP_FROM: "noreply@example.invalid", OWNER_NOTIFY_EMAIL: "wlasciciel@example.invalid", APP_ADMIN_CLERK_IDS: ADMIN });
+  Object.assign(process.env, { SMTP_HOST: "smtp.example.invalid", SMTP_USER: "u", SMTP_PASS: "p", SMTP_FROM: "noreply@example.invalid", OWNER_NOTIFY_EMAIL: "wlasciciel@poczta-testowa.pl", APP_ADMIN_CLERK_IDS: ADMIN });
   await provisionTrainer(ADMIN); await cleanup();
 });
 afterAll(async () => { await cleanup(); for (const k of ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_FROM", "OWNER_NOTIFY_EMAIL"]) delete process.env[k]; });
@@ -44,7 +44,7 @@ describe("maile", () => {
   it("nowy wniosek: mail do właściciela z imieniem wnioskodawcy", async () => {
     as(PA); expect((await request(app).post("/api/trainer-applications").send({ note: "Prowadzę klientów" })).status).toBe(201);
     expect(sent).toHaveLength(1);
-    expect(sent[0]).toMatchObject({ to: "wlasciciel@example.invalid", subject: "Nowy wniosek o konto trenera" });
+    expect(sent[0]).toMatchObject({ to: "wlasciciel@poczta-testowa.pl", subject: "Nowy wniosek o konto trenera" });
     expect(sent[0]!.text).toContain("Ala Test"); expect(sent[0]!.text).toContain("Prowadzę klientów");
   });
   it("akceptacja: mail „Twoje konto trenera jest aktywne” do wnioskodawcy", async () => {
@@ -53,7 +53,7 @@ describe("maile", () => {
     sent.length = 0;
     expect((await request(app).post(`/api/admin/trainer-applications/${mine.id}/accept`)).status).toBe(200);
     expect(sent).toHaveLength(1);
-    expect(sent[0]).toMatchObject({ to: `${PA}@example.invalid`, subject: "Twoje konto trenera jest aktywne" });
+    expect(sent[0]).toMatchObject({ to: `${PA}@poczta-testowa.pl`, subject: "Twoje konto trenera jest aktywne" });
     expect(sent[0]!.text).toContain("zaloguj się");
   });
   it("odrzucenie: krótka odmowa z ponownym wnioskiem za 14 dni", async () => {
@@ -62,7 +62,7 @@ describe("maile", () => {
     const mine = list.body.applications.find((a: { name: string }) => a.name === "Bartek Test");
     sent.length = 0;
     expect((await request(app).post(`/api/admin/trainer-applications/${mine.id}/reject`)).status).toBe(200);
-    expect(sent[0]).toMatchObject({ to: `${PB}@example.invalid` });
+    expect(sent[0]).toMatchObject({ to: `${PB}@poczta-testowa.pl` });
     expect(sent[0]!.text).toContain("14 dni");
   });
   it("bez ustawień SMTP wniosek i tak się zapisuje (mail jest dodatkiem)", async () => {

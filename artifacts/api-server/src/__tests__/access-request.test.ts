@@ -3,7 +3,7 @@ let authUser: string | null = null;
 vi.mock("@clerk/express", () => ({
   clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
   getAuth: () => ({ userId: authUser }),
-  clerkClient: { users: { getUser: async () => ({ firstName: "Ola", lastName: "Nowak", primaryEmailAddress: { emailAddress: "ola.access@example.invalid" } }) } },
+  clerkClient: { users: { getUser: async () => ({ firstName: "Ola", lastName: "Nowak", primaryEmailAddress: { emailAddress: "ola.access@poczta-testowa.pl" } }) } },
 }));
 vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
 
@@ -27,7 +27,7 @@ describe("konto bez trenera i bez klienta", () => {
     authUser = NEW;
     expect((await request(app).post("/api/trainer-applications").send({ note: "Chcę prowadzić klientów" })).status).toBe(201);
     const [row] = await db.select().from(trainerApplicationsTable).where(eq(trainerApplicationsTable.clerkUserId, NEW));
-    expect(row).toMatchObject({ displayName: "Ola Nowak", email: "ola.access@example.invalid", status: "pending" });
+    expect(row).toMatchObject({ displayName: "Ola Nowak", email: "ola.access@poczta-testowa.pl", status: "pending" });
     const profile = await request(app).post("/api/trainer/profile");
     expect(profile.status).toBe(403);
     expect(await db.select().from(trainersTable).where(eq(trainersTable.clerkUserId, NEW))).toHaveLength(0);

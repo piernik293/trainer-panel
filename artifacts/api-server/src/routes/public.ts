@@ -8,6 +8,7 @@
  * POST /public/survey/:token   Submit the survey, create the client, consume the token.
  */
 
+import { isPlaceholderAddress, warnBlocked } from "../services/mailAddress";
 import { surveyInsertValues } from "../services/surveyInsert";
 import { HEALTH_CONSENT_VERSION } from "@workspace/survey-config";
 import { Router, type IRouter } from "express";
@@ -60,6 +61,7 @@ async function sendNotificationEmail(
     return;
   }
 
+  if (isPlaceholderAddress(adminEmail)) { warnBlocked("survey-notification"); return; }
   const smtpPort = parseInt(process.env["SMTP_PORT"] ?? "587", 10);
 
   try {
