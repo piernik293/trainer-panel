@@ -45,6 +45,7 @@ router.get("/client-portal/achievements/overview", gate, requireClientAuth, asyn
   const rows = await db.select().from(clientAchievementsTable).where(eq(clientAchievementsTable.clientId, clientId)).orderBy(desc(clientAchievementsTable.earnedAt), desc(clientAchievementsTable.id));
   res.json({
     streakWeeks: streakWeeks > 0 ? streakWeeks : null,
+    sessionCount, recordCount: rows.filter((r) => r.kind === "record").length,
     ...buildCatalogue(rows.map((r) => ({ id: r.id, kind: r.kind, key: r.key, title: r.title, body: r.body, earnedAt: r.earnedAt.toISOString(), seen: r.seenAt != null })), sessionCount, streakWeeks),
   });
 });

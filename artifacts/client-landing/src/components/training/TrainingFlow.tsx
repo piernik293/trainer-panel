@@ -10,6 +10,7 @@ import { trainingQueue } from "@/lib/training/sync";
 import { SetScreen } from "./SetScreen";
 import { PainSheet, type PainInput } from "./PainSheet";
 import { MediaPlaceholder, SyncBadge } from "./TrainingUi";
+import { FinishV2 } from "@/components/v2/FinishV2";
 
 const newUuid = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`.padEnd(36, "0").replace(/^(.{8})(.{4})(.{4})(.{4})(.{12}).*$/, "$1-$2-$3-$4-$5"));
 
@@ -38,9 +39,9 @@ function ExerciseList({ day, run, onPick, onClose }: { day: TrainingDay; run: Ru
   );
 }
 
-interface Summary { minutes: number; sets: number; weekDone: number; weekTarget: number; records: { name: string; weightKg: number; reps: number; gainKg: number }[] }
+export interface Summary { minutes: number; sets: number; /** kg lifted (weight × reps of done sets) and repetitions */ kg: number; reps: number; hadPain: boolean; weekDone: number; weekTarget: number; records: { name: string; weightKg: number; reps: number; gainKg: number }[] }
 
-function summarize(day: TrainingDay, run: RunState, week: { done: number; target: number }, end: Date): Summary {
+export function summarize(day: TrainingDay, run: RunState, week: { done: number; target: number }, end: Date): Summary {
   const minutes = Math.max(1, Math.round((end.getTime() - new Date(run.startedAt).getTime()) / 60000));
   const records: Summary["records"] = [];
   for (const ex of day.exercises) {
@@ -52,14 +53,23 @@ function summarize(day: TrainingDay, run: RunState, week: { done: number; target
     }
     if (top) records.push(top);
   }
-  return { minutes, sets: countDoneSets(run), weekDone: week.done + 1, weekTarget: week.target, records };
+  let kg = 0, reps = 0;
+  for (const ex of day.exercises) for (const x of Object.values(run.sets[ex.planExerciseId] ?? {})) {
+    if (x.skipped) continue;
+    reps += x.reps ?? 0;
+    if (x.weightKg != null && x.reps != null) kg += x.weightKg * x.reps;
+  }
+  return { minutes, sets: countDoneSets(run), kg: Math.round(kg), reps, hadPain: (run.painAreas ?? []).length > 0, weekDone: week.done + 1, weekTarget: week.target, records };
 }
 
-function FinishScreen({ firstName, day, run, week, onFeedback, onFinish }: {
+function FinishScreen({ firstName, day, run, week, v2, onFeedback, onFinish }: {
   firstName: string; day: TrainingDay; run: RunState; week: { done: number; target: number };
+  /** new look (UI_V2_ENABLED): the end screen of the mock-up */
+  v2?: { streakWeeks: number | null; nick: string | null };
   onFeedback: (rating: Rating | null, note: string) => void; onFinish: () => void;
 }) {
   const sum = useMemo(() => summarize(day, run, week, new Date()), [day, run, week]);
+  if (v2) return <FinishV2 day={day} run={run} sum={sum} v2={v2} onFeedback={onFeedback} onFinish={onFinish} />;
   const [rating, setRating] = useState<Rating | null>(run.rating);
   const [note, setNote] = useState(run.note);
   const h = useRef<HTMLHeadingElement>(null);
@@ -105,8 +115,10 @@ function FinishScreen({ firstName, day, run, week, onFeedback, onFinish }: {
   );
 }
 
-export function TrainingFlow({ day, firstName, week, onExit }: {
+export function TrainingFlow({ day, firstName, week, v2, onExit }: {
   day: TrainingDay; firstName: string; week: { done: number; target: number }; onExit: (finished: boolean) => void;
+  /** new look of the end screen (UI_V2_ENABLED); absent = the classic end screen */
+  v2?: { streakWeeks: number | null; nick: string | null };
 }) {
   const queue = trainingQueue();
   const [run, dispatch] = useReducer(runReducer, undefined, () => {
@@ -181,7 +193,7 @@ export function TrainingFlow({ day, firstName, week, onExit }: {
             onOpenList={() => setList(true)} onPain={() => setPain(true)} />
         )}
         {run.stage === "finish" && (
-          <FinishScreen firstName={firstName} day={day} run={run} week={week} onFeedback={(rating, note) => dayOf({ type: "feedback", rating, note })} onFinish={() => finish("completed")} />
+          <FinishScreen firstName={firstName} day={day} run={run} week={week} v2={v2} onFeedback={(rating, note) => dayOf({ type: "feedback", rating, note })} onFinish={() => finish("completed")} />
         )}
         {run.stage !== "finish" && (
           <p className="mt-6 text-center">

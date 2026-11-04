@@ -1,3 +1,4 @@
+import { rememberFinishAnswer } from "@/lib/v2/celebration";
 import { createQueue, startAutoRetry, type QueueOp, type SendResult, type TrainingQueue } from "./queue";
 
 /** Absolute /api path, Clerk cookie (same as the rest of the portal). */
@@ -14,7 +15,11 @@ async function send(op: QueueOp, sessionId: number | null): Promise<SendResult> 
   } catch {
     return { ok: false, permanent: false };
   }
-  if (res.ok) return { ok: true, data: await res.json().catch(() => ({})) };
+  if (res.ok) {
+    const data = await res.json().catch(() => ({}));
+    if (op.kind === "finish") rememberFinishAnswer(data);
+    return { ok: true, data };
+  }
   // 401 (session expired), 408, 429 and 5xx: retry later. Other 4xx will never succeed.
   const temporary = res.status === 401 || res.status === 408 || res.status === 429 || res.status >= 500;
   return { ok: false, permanent: !temporary };

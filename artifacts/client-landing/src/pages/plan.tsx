@@ -49,11 +49,14 @@ const BOOKING_MOCK =
   new URLSearchParams(window.location.search).has("mockBooking");
 
 import { usePortalFlags, shellEnabled } from "@/lib/shell/flags";
+import { HomeV2 } from "@/components/v2/HomeV2";
+import { useProfileV2 } from "@/lib/v2/profile";
+import { useOverview } from "@/lib/v2/achievements";
 import { PortalShell } from "@/components/shell/PortalShell";
 import { SoloEntry } from "@/components/shell/SoloEntry";
 import { SoloNewPlan } from "@/components/shell/SoloToday";
 import type { ShellTab } from "@/components/shell/BottomBar";
-import { ProgressContainer, YouContainer, SoloGate } from "@/components/shell/ShellContainers";
+import { ProgressContainer, ProgressContainerV2, YouContainer, YouContainerV2, SoloGate } from "@/components/shell/ShellContainers";
 
 async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
   if (BOOKING_MOCK && path.startsWith("/client-portal/booking")) {
@@ -1259,6 +1262,10 @@ export default function PlanPortal() {
   // New portal shell (bottom bar) — only when SOLO_ENABLED or ACHIEVEMENTS_ENABLED is on; both off = the portal as before.
   const { ready: flagsReady, flags } = usePortalFlags();
   const [tab, setTab] = useState<ShellTab>("dzis");
+  // New look of the screens (UI_V2_ENABLED): own profile (nick, colour) and the achievements catalogue.
+  const uiV2 = flagsReady && flags.uiV2;
+  const { profile: profileV2, reload: reloadProfileV2 } = useProfileV2(client?.firstName ?? "", uiV2);
+  const { overview: overviewV2 } = useOverview(uiV2 && flags.achievements);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
@@ -1378,6 +1385,7 @@ export default function PlanPortal() {
         day={training.day}
         firstName={training.firstName}
         week={training.week}
+        v2={uiV2 ? { streakWeeks: overviewV2?.streakWeeks ?? null, nick: profileV2.nick } : undefined}
         onExit={() => { setTraining(null); setTodayReload((n) => n + 1); window.scrollTo({ top: 0 }); }}
       />
     );
@@ -1407,7 +1415,17 @@ export default function PlanPortal() {
   if (flagsReady && shellEnabled(flags)) {
     return (
       <PortalShell tab={tab} onTab={(t) => { setTab(t); window.scrollTo({ top: 0 }); }}>
-        {tab === "dzis" && (
+        {tab === "dzis" && uiV2 && (
+          <HomeV2
+            profile={profileV2} reloadKey={todayReload} streakWeeks={overviewV2?.streakWeeks ?? null} achievements={overviewV2?.items ?? []}
+            onStart={(day, ctx) => setTraining({ day, firstName: ctx.client.firstName, week: ctx.week })}
+            onRamp={(kind, planDayId, items) => setRamp({ kind, planDayId, items })}
+            onOpenYou={() => { setTab("ty"); window.scrollTo({ top: 0 }); }}
+            top={flags.solo && (plan as { endDate?: string | null }).endDate && (plan as { endDate: string }).endDate < new Date().toISOString().slice(0, 10)
+              ? <SoloNewPlan endDate={(plan as { endDate: string }).endDate} onPlanReady={() => setPlanRetry((c) => c + 1)} /> : undefined}
+          />
+        )}
+        {tab === "dzis" && !uiV2 && (
           <div className="space-y-6">
             <div>
               <p className="section-label">Dziś</p>
@@ -1418,8 +1436,10 @@ export default function PlanPortal() {
           </div>
         )}
         {tab === "plan" && (<><PlanView client={client} plan={plan} onSelectDay={setSelectedDay} embedded />{flags.solo && <div className="mt-6"><SoloNewPlan endDate={(plan as { endDate?: string | null }).endDate} onPlanReady={() => setPlanRetry((c) => c + 1)} /></div>}</>)}
-        {tab === "postepy" && <ProgressContainer achievementsOn={flags.achievements} />}
-        {tab === "ty" && <YouContainer firstName={client.firstName} lastName={client.lastName} />}
+        {tab === "postepy" && (uiV2 ? <ProgressContainerV2 achievementsOn={flags.achievements} /> : <ProgressContainer achievementsOn={flags.achievements} />)}
+        {tab === "ty" && (uiV2
+          ? <YouContainerV2 profile={profileV2} reloadProfile={reloadProfileV2} achievementsOn={flags.achievements} onAllAchievements={() => { setTab("postepy"); window.scrollTo({ top: 0 }); }} />
+          : <YouContainer firstName={client.firstName} lastName={client.lastName} />)}
       </PortalShell>
     );
   }
