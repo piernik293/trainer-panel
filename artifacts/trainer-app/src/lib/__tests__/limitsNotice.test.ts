@@ -29,3 +29,16 @@ describe("komunikat okresu próbnego", () => {
     expect(trialNotice({ ...t("active", 5), noLimits: true })).toBeNull();
   });
 });
+
+describe("Pro gratis dla trenera ze Złotym Byczkiem", () => {
+  const trial = (daysLeft: number) => ({ state: "active" as const, daysLeft, showEnded: false });
+  it("pokazuje „Pro gratis (Złoty Byczek #N): zostało X dni”, w ostatnich 3 dniach wyraźniej", () => {
+    expect(trialNotice({ trial: trial(120), goldenBull: { number: 4 } })).toEqual({ text: "Pro gratis (Złoty Byczek #4): zostało 120 dni", urgent: false });
+    expect(trialNotice({ trial: trial(1), goldenBull: { number: 4 } })).toEqual({ text: "Pro gratis (Złoty Byczek #4): zostało 1 dzień", urgent: true });
+  });
+  it("bez odznaki zostaje zwykły komunikat o okresie próbnym; po końcu okresu nie ma tekstu o Pro gratis", () => {
+    expect(trialNotice({ trial: trial(10), goldenBull: null })?.text).toBe("Okres próbny: zostało 10 dni");
+    expect(trialNotice({ trial: { state: "ended", daysLeft: 0, showEnded: true }, goldenBull: { number: 4 } })?.text).not.toContain("Pro gratis");
+  });
+});
+

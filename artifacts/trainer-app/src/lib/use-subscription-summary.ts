@@ -26,6 +26,8 @@ export interface SubscriptionSummaryData {
   noLimits?: boolean;
   /** Okres próbny trenera (14 dni po akceptacji wniosku) */
   trial?: { state: "active" | "ended" | "none"; daysLeft: number; endsAt: string | null; showEnded: boolean };
+  /** „Złoty Byczek” trenera (kampania): numer odznaki albo null */
+  goldenBull?: { number: number } | null;
   availablePlans: Array<{
     code: string;
     name: string;

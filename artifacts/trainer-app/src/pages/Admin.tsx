@@ -1,4 +1,4 @@
-/** Panel administratora (blok 3): Błędy · Wnioski · Trenerzy · Solo · Abonamenty i limity · Uwagi · Maile · Dziennik dostępu. Tylko dla administratora z listy w .env. */
+/** Panel administratora (blok 3): Błędy · Wnioski · Trenerzy · Solo · Abonamenty i limity · Uwagi · Maile · Byczki · Dziennik dostępu. Tylko dla administratora z listy w .env. */
 import { useState } from "react";
 import { Redirect } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -7,13 +7,13 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { humanizeError } from "@/lib/userError";
 import {
-  AUTO_ACCEPT_CONFIRM, BLOCK_CONFIRM, FEEDBACK_CATEGORY_LABEL, useAdminFeedback, useFeedbackRead, SOURCE_LABEL, useApplicationActions, useAutoAccept, useTrainerApplications, useAccessLog, useAdminAction, useAdminErrors, useAdminMails, useAdminMailPreview, useAdminMailTest, useAdminSolo, useAdminSubscriptions, useAdminTrainers, useIsAdmin,
+  AUTO_ACCEPT_CONFIRM, BLOCK_CONFIRM, FEEDBACK_CATEGORY_LABEL, useAdminFeedback, useFeedbackRead, SOURCE_LABEL, useApplicationActions, useAutoAccept, useTrainerApplications, useAccessLog, useAdminAction, useAdminErrors, useAdminMails, useAdminMailPreview, useAdminMailTest, useAdminBulls, useBullActions, useAdminSolo, useAdminSubscriptions, useAdminTrainers, useIsAdmin,
 } from "@/lib/adminApi";
 
-type Tab = "errors" | "applications" | "trainers" | "solo" | "subs" | "feedback" | "mails" | "log";
+type Tab = "errors" | "applications" | "trainers" | "solo" | "subs" | "feedback" | "mails" | "bulls" | "log";
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: "errors", label: "Błędy" }, { id: "applications", label: "Wnioski" }, { id: "trainers", label: "Trenerzy" }, { id: "solo", label: "Solo" },
-  { id: "subs", label: "Abonamenty i limity" }, { id: "feedback", label: "Uwagi" }, { id: "mails", label: "Maile" }, { id: "log", label: "Dziennik dostępu" },
+  { id: "subs", label: "Abonamenty i limity" }, { id: "feedback", label: "Uwagi" }, { id: "mails", label: "Maile" }, { id: "bulls", label: "Byczki" }, { id: "log", label: "Dziennik dostępu" },
 ];
 const fmt = (d: string | null) => (d ? new Date(d).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" }) : "—");
 /** Wnioskodawca: imię i e-mail (gdy znane), inaczej „(bez imienia)”. */
@@ -271,6 +271,58 @@ function Mails() {
   );
 }
 
+/** „Byczki”: lista Złotych Byczków (kto, numer, kiedy), ręczne przyznanie i odebranie — zawsze z powodem. */
+function Bulls() {
+  const { toast } = useToast();
+  const { data, isLoading } = useAdminBulls();
+  const { grant, revoke } = useBullActions();
+  const [kind, setKind] = useState<"trainer" | "solo">("trainer");
+  const [id, setId] = useState("");
+  const [reason, setReason] = useState("");
+  const [revoking, setRevoking] = useState<number | null>(null);
+  const [revokeReason, setRevokeReason] = useState("");
+  if (isLoading) return <div className="h-16 bg-muted animate-pulse rounded" />;
+  const active = (k: string) => (data?.bulls ?? []).filter((b) => b.kind === k && !b.revoked).length;
+  const err = (e: unknown) => toast({ title: humanizeError(e), variant: "destructive" });
+  return (
+    <div className="space-y-4">
+      {data && !data.enabled && <p className="text-sm text-muted-foreground">Kampania jest wyłączona (GOLDEN_BULLS_ENABLED w .env) — odznaki nie są przyznawane automatycznie.</p>}
+      <p className="text-sm" data-testid="bulls-counts">Trenerzy: {active("trainer")} z {data?.pools.trainer ?? 0} · Solo: {active("solo")} z {data?.pools.solo ?? 0}</p>
+      <Card>
+        <CardHeader><CardTitle className="text-base">Przyznaj ręcznie</CardTitle><CardDescription>Wpisz numer trenera (z listy „Trenerzy”) albo osoby Solo i powód. Konto testowe: najpierw odbierz odznakę z powodem.</CardDescription></CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex gap-2" role="radiogroup" aria-label="Rodzaj">
+            {(["trainer", "solo"] as const).map((k) => <Button key={k} size="sm" role="radio" aria-checked={kind === k} variant={kind === k ? "default" : "outline"} onClick={() => setKind(k)}>{k === "trainer" ? "Trener" : "Solo"}</Button>)}
+          </div>
+          <Input value={id} onChange={(e) => setId(e.target.value)} placeholder="Numer konta" inputMode="numeric" aria-label="Numer konta" />
+          <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Powód (co najmniej 5 znaków)" aria-label="Powód przyznania" maxLength={300} />
+          <Button size="sm" disabled={!Number(id) || reason.trim().length < 5 || grant.isPending} onClick={() => grant.mutate({ kind, id: Number(id), reason }, { onSuccess: (r) => { toast({ title: `Przyznano: #${r.number}` }); setId(""); setReason(""); }, onError: err })}>Przyznaj</Button>
+        </CardContent>
+      </Card>
+      <ul className="divide-y rounded-md border" data-testid="admin-bulls">
+        {(data?.bulls ?? []).map((b) => (
+          <li key={b.id} className="space-y-1 p-3" data-testid="admin-bull">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm font-medium">{b.kind === "trainer" ? "Trener" : "Solo"} #{b.number} · {b.who}{b.revoked ? " · odebrany" : ""}</span>
+              <span className="text-xs text-muted-foreground">{fmt(b.grantedAt)} · {b.grantedBy}</span>
+            </div>
+            {b.reason && <p className="text-xs text-muted-foreground">Powód: {b.reason}</p>}
+            {b.revoked && <p className="text-xs text-muted-foreground">Odebrany: {b.revokedReason}</p>}
+            {!b.revoked && (revoking === b.id ? (
+              <div className="flex flex-wrap gap-2">
+                <Input value={revokeReason} onChange={(e) => setRevokeReason(e.target.value)} placeholder="Powód odebrania" aria-label="Powód odebrania" maxLength={300} className="max-w-xs" />
+                <Button size="sm" variant="outline" disabled={revokeReason.trim().length < 5 || revoke.isPending} onClick={() => revoke.mutate({ id: b.id, reason: revokeReason }, { onSuccess: () => { setRevoking(null); setRevokeReason(""); }, onError: err })}>Odbierz</Button>
+                <Button size="sm" variant="ghost" onClick={() => setRevoking(null)}>Anuluj</Button>
+              </div>
+            ) : <Button size="sm" variant="outline" onClick={() => setRevoking(b.id)}>Odbierz…</Button>)}
+          </li>
+        ))}
+        {data?.bulls.length === 0 && <li className="p-3 text-sm text-muted-foreground">Nikt jeszcze nie dostał odznaki.</li>}
+      </ul>
+    </div>
+  );
+}
+
 /** Etykieta karty z licznikiem nowych wniosków („Wnioski (2)”). */
 export const tabLabel = (t: { id: Tab; label: string }, pendingApplications: number) => (t.id === "applications" && pendingApplications > 0 ? `${t.label} (${pendingApplications})` : t.label);
 
@@ -297,6 +349,7 @@ export default function Admin() {
       {activeTab === "subs" && <Subs />}
       {activeTab === "feedback" && <Feedback />}
       {activeTab === "mails" && <Mails />}
+      {activeTab === "bulls" && <Bulls />}
       {activeTab === "log" && <Log />}
     </div>
   );

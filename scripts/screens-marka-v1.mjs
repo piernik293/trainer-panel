@@ -14,7 +14,7 @@ const BASE = process.argv[2] ?? "http://127.0.0.1:22391/client-landing";
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "../docs/screens/marka-v1");
 mkdirSync(OUT, { recursive: true });
 
-const SCREENS = [["1-logo", "logo"], ["2-byczek-stany", "stany"], ["3-blad-i-pusty-stan", "stany-ekranow"]];
+const SCREENS = [["1-logo", "logo"], ["2-byczek-stany", "stany"], ["3-blad-i-pusty-stan", "stany-ekranow"], ["4-zlote-byczki-licznik", "licznik"]];
 const browser = await chromium.launch();
 let bad = 0;
 for (const theme of ["light", "dark"]) {

@@ -6,13 +6,15 @@ export function showLimitsNotice(s: { noLimits?: boolean; plan: { code: string }
   return !!s && !s.noLimits && s.plan.code === "FREE" && !seen;
 }
 
-type TrialSummary = { noLimits?: boolean; trial?: { state: "active" | "ended" | "none"; daysLeft: number; showEnded: boolean } };
+type TrialSummary = { noLimits?: boolean; trial?: { state: "active" | "ended" | "none"; daysLeft: number; showEnded: boolean }; goldenBull?: { number: number } | null };
 export const TRIAL_ENDED_TEXT = "Okres próbny minął — masz plan Free: 3 podopiecznych. Napisz do nas, jeśli potrzebujesz więcej.";
 
 /** Komunikat o okresie próbnym: spokojny, w ostatnich 3 dniach wyraźniejszy; przy BETA_NO_LIMITS ukryty. Dane nigdy nie są blokowane. */
 export function trialNotice(s: TrialSummary | undefined): { text: string; urgent: boolean } | null {
   if (!s || s.noLimits || !s.trial) return null;
   const t = s.trial;
+  // Trener z odznaką „Złoty Byczek”: okres próbny to jego Pro gratis (kampania) — pokazujemy to wprost
+  if (t.state === "active" && s.goldenBull) return { text: `Pro gratis (Złoty Byczek #${s.goldenBull.number}): zostało ${t.daysLeft} ${t.daysLeft === 1 ? "dzień" : "dni"}`, urgent: t.daysLeft <= 3 };
   if (t.state === "active") return { text: `Okres próbny: zostało ${t.daysLeft} ${t.daysLeft === 1 ? "dzień" : "dni"}`, urgent: t.daysLeft <= 3 };
   if (t.state === "ended" && t.showEnded) return { text: TRIAL_ENDED_TEXT, urgent: false };
   return null;

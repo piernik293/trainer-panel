@@ -46,14 +46,14 @@ const FULL: CatalogueItem[] = [
 ];
 const OVERVIEW: Overview = { streakWeeks: 4, sessionCount: 8, recordCount: 5, earnedCount: 4, total: FULL.length, items: FULL };
 const NEW_OVERVIEW: Overview = { streakWeeks: null, sessionCount: 0, recordCount: 0, earnedCount: 0, total: 9, items: [item("m1", "milestone", "Pierwszy trening", "progress", { progress: { value: 0, target: 1 } }), item("w2", "week_streak", "2 tygodnie z rzędu", "progress", { progress: { value: 0, target: 2 } }), item("fm", "first_month", "Pierwszy miesiąc", "locked"), item("rec", "record", "Pierwszy rekord", "locked"), item("m10", "milestone", "10 treningów", "locked")] };
-const PROFILE = { firstName: "Anna", displayName: null, nick: SCREEN === "ty-bez-nicka" ? null : "shiifuu", avatarColor: "#C2410C", colors: ["#C2410C", "#0F766E", "#1D4ED8", "#7E22CE", "#BE123C", "#4D7C0F"], trainsSince: "2026-10" };
+const PROFILE = { firstName: "Anna", displayName: null, nick: SCREEN === "ty-bez-nicka" ? null : "shiifuu", avatarColor: "#C2410C", colors: ["#C2410C", "#0F766E", "#1D4ED8", "#7E22CE", "#BE123C", "#4D7C0F"], trainsSince: "2026-10", goldenBull: SCREEN === "ty-byczek" ? 12 : null };
 
 export const isUxV2PreviewPath = () => import.meta.env.DEV && typeof window !== "undefined" && window.location.pathname.endsWith("/ux-v2-preview");
 if (isUxV2PreviewPath()) {
   const realFetch = window.fetch.bind(window);
   const ROUTES: Record<string, unknown> = {
     "/api/client-portal/training/today": SCREEN === "dzis-brak-planu" ? null : TODAY_DATA, "/api/client-portal/steps": STEPS, "/api/client-portal/settings": { breathingCooldown: false },
-    "/api/account/roles": { isTrainer: false, isClient: true, application: null }, "/api/client-portal/profile": PROFILE, "/api/account/status": { linked: false },
+    "/api/account/roles": { isTrainer: false, isClient: true, application: null }, "/api/client-portal/profile": PROFILE, "/api/account/status": { linked: false }, "/api/golden-bulls/status": { enabled: true, trainer: { pool: 10, left: 7 }, solo: { pool: 100, left: 64 } },
   };
   window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = (typeof input === "string" ? input : input instanceof URL ? input.pathname : input.url).split("?")[0]!;
@@ -90,7 +90,7 @@ export default function UxV2PreviewPage() {
     case "story": return <div style={{ background: "#000" }}><StoryPreview /></div>;
     case "postepy": case "postepy-nowe":
       return <PortalShell tab={"postepy" as ShellTab} onTab={noop}><ProgressV2 overview={SCREEN === "postepy" ? OVERVIEW : NEW_OVERVIEW} records={[]} activityDays={SCREEN === "postepy" ? Array.from({ length: 90 }, (_, i) => SHIFT(NOW, -i)).filter((_, i) => i % 3 !== 1) : []} today={NOW} steps={<StepsTile />} /></PortalShell>;
-    case "ty": case "ty-bez-nicka":
+    case "ty": case "ty-bez-nicka": case "ty-byczek":
       return <PortalShell tab={"ty" as ShellTab} onTab={noop}><YouV2 profile={profile} featured={FULL.filter((i) => i.state === "earned")} trainerRow={<RoleRows part="trainer" bare trainerName={null} onJoin={noop} />} applyRow={<RoleRows part="apply" bare trainerName={null} onJoin={noop} />} appearance={<ThemeSelect />} privacy={<BreathingSetting />} legal={<LegalLinks className="justify-start" />} onEdited={noop} onAllAchievements={noop} onSignOut={noop} /></PortalShell>;
     case "edycja": return <PortalShell tab={"ty" as ShellTab} onTab={noop}><EditProfile profile={profile} onSaved={noop} onCancel={noop} /></PortalShell>;
     case "przerwa": return <RestTimer state={startRest(90, "Seria 2 z 3")} counter={1} onChange={noop} onClose={noop} />;

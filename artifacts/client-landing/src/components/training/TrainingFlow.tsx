@@ -68,7 +68,7 @@ export function summarize(day: TrainingDay, run: RunState, week: { done: number;
 function FinishScreen({ firstName, day, run, week, v2, onFeedback, onFinish }: {
   firstName: string; day: TrainingDay; run: RunState; week: { done: number; target: number };
   /** new look (UI_V2_ENABLED): the end screen of the mock-up */
-  v2?: { streakWeeks: number | null; nick: string | null };
+  v2?: { streakWeeks: number | null; nick: string | null; goldenBull?: boolean };
   onFeedback: (rating: Rating | null, note: string) => void; onFinish: () => void;
 }) {
   const sum = useMemo(() => summarize(day, run, week, new Date()), [day, run, week]);
@@ -121,7 +121,7 @@ function FinishScreen({ firstName, day, run, week, v2, onFeedback, onFinish }: {
 export function TrainingFlow({ day, firstName, week, v2, onExit }: {
   day: TrainingDay; firstName: string; week: { done: number; target: number }; onExit: (finished: boolean) => void;
   /** new look of the end screen (UI_V2_ENABLED); absent = the classic end screen */
-  v2?: { streakWeeks: number | null; nick: string | null };
+  v2?: { streakWeeks: number | null; nick: string | null; goldenBull?: boolean };
 }) {
   const queue = trainingQueue();
   const [run, dispatch] = useReducer(runReducer, undefined, () => {

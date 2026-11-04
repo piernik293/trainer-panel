@@ -14,6 +14,7 @@ export interface StoryData {
   streakWeeks: number | null;
   /** dots of the current week: done / planned */ weekDone: number; weekTarget: number;
   /** only a nick (no first/last name); null = no signature */ nick: string | null;
+  /** „Złoty Byczek”: mały złoty znaczek obok logo (tylko flaga — bez numeru konta) */ goldenBull: boolean;
 }
 
 export const STORY_W = 1080;
@@ -51,6 +52,13 @@ export function drawStory(c: CanvasRenderingContext2D, d: StoryData): void {
   c.fillStyle = "#C2410C"; rr(c, pad, 32 * K, 34 * K, 34 * K, 10 * K); c.fill();
   c.fillStyle = "#FFFFFF"; c.font = font(18, 800); c.fillText("O", pad + 10 * K, 32 * K + 25 * K);
   c.font = font(17, 800); c.fillText("Optimatren", pad + 46 * K, 32 * K + 24 * K);
+  if (d.goldenBull) { // mały złoty znaczek (koło z rogami) po prawej od napisu
+    const cx = STORY_W - pad - 17 * K, cy = 32 * K + 17 * K;
+    c.fillStyle = "#B7791F"; c.beginPath(); c.arc(cx, cy, 17 * K, 0, Math.PI * 2); c.fill();
+    c.fillStyle = "#F2C14E"; rr(c, cx - 7 * K, cy - 8 * K, 14 * K, 17 * K, 6.5 * K); c.fill();
+    c.fillStyle = "#FFF4D6"; c.beginPath(); c.moveTo(cx - 9 * K, cy - 6 * K); c.quadraticCurveTo(cx - 14 * K, cy - 10 * K, cx - 11 * K, cy - 16 * K); c.quadraticCurveTo(cx - 8 * K, cy - 10 * K, cx - 4 * K, cy - 9 * K); c.fill();
+    c.beginPath(); c.moveTo(cx + 9 * K, cy - 6 * K); c.quadraticCurveTo(cx + 14 * K, cy - 10 * K, cx + 11 * K, cy - 16 * K); c.quadraticCurveTo(cx + 8 * K, cy - 10 * K, cx + 4 * K, cy - 9 * K); c.fill();
+  }
   // heading
   let y = 32 * K + 34 * K + 24 * K + 16 * K;
   c.fillStyle = "#FDBA8C"; c.font = font(14, 700); c.fillText(`${d.weekday} · TRENING`, pad, y);

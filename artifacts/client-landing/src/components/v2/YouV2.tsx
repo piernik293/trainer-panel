@@ -8,6 +8,7 @@ import { fetchSummary, saveGoal, cacheSummary } from "@/lib/steps/sync";
 import type { CatalogueItem } from "@/lib/v2/achievements";
 import { setTimerSettings, useTimerSettings } from "@/lib/timer/settings";
 
+import { GoldenBullBadge } from "@workspace/design-tokens/brand";
 function ListRow({ label, value, open, onToggle, children, testId }: { label: string; value?: string; open: boolean; onToggle: () => void; children?: ReactNode; testId: string }) {
   return (
     <div className="border-b border-border last:border-b-0" data-testid={testId}>
@@ -129,6 +130,7 @@ export function YouV2({ profile, featured, trainerRow, applyRow, appearance, pri
         <section aria-label="Profil" className="flex flex-col items-center gap-1.5 pt-2 text-center">
           <AvatarV2 name={name} color={profile.avatarColor} size={88} />
           <h1 className="mt-1 text-2xl font-extrabold" data-testid="you-name">{name}{profile.isTrainer && <TrainerBadge />}</h1>
+          {profile.goldenBull != null && <p className="flex items-center gap-1.5 text-sm font-semibold" data-testid="golden-bull"><GoldenBullBadge size={28} decorative /> Złoty Byczek #{profile.goldenBull}</p>}
           {sub && <p className="text-sm text-muted-foreground" data-testid="you-sub">{sub}</p>}
           <button type="button" onClick={() => setEditing(true)} className="mt-1 flex min-h-11 items-center rounded-xl border border-border bg-card px-5 text-sm font-bold">Edytuj profil</button>
         </section>

@@ -1,4 +1,5 @@
 import { trialInfo, type TrialInfo } from "./trial";
+import { bullOf } from "./goldenBulls";
 import { createHash } from "node:crypto";
 import {
   clientsTable,
@@ -318,6 +319,13 @@ async function trialSummary(tx: SubscriptionTransaction, trainerId: number, plan
   return { ...info, showEnded: info.state === "ended" && planCode === "FREE" };
 }
 
+/** Trener z odznaką „Złoty Byczek”: numer (pulpit pokazuje „Pro gratis: zostało X dni”). Bez flagi i bez odznaki: null. */
+async function goldenBullForTrainer(tx: SubscriptionTransaction, trainerId: number): Promise<{ number: number } | null> {
+  const [t] = await tx.select({ clerk: trainersTable.clerkUserId }).from(trainersTable).where(eq(trainersTable.id, trainerId));
+  const b = await bullOf(t?.clerk);
+  return b?.kind === "trainer" ? { number: b.number } : null;
+}
+
 export async function getSubscriptionSummary(trainerId: number) {
   return db.transaction(async (tx) => {
     const plan = await ensureSubscription(tx, trainerId);
@@ -349,6 +357,7 @@ export async function getSubscriptionSummary(trainerId: number) {
       resetsAt,
       noLimits: betaNoLimits(),
       trial: await trialSummary(tx, trainerId, plan.code),
+      goldenBull: await goldenBullForTrainer(tx, trainerId),
       availablePlans: betaNoLimits() ? [] : Object.values(SUBSCRIPTION_PLANS).map(
         ({ code, name, monthlyPricePln, benefits }) => ({
           code,

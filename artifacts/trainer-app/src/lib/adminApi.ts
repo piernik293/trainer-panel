@@ -82,3 +82,15 @@ export const useAdminMails = () => useQuery<{ ownerAddressSet: boolean; mails: A
 export const useAdminMailPreview = (id: string | null) =>
   useQuery<{ subject: string; html: string; text: string }>({ queryKey: ["admin-mail-preview", id], enabled: !!id, queryFn: () => customFetch(`/api/admin/mails/${id}/preview`) });
 export const useAdminMailTest = () => useMutation({ mutationFn: (id: string) => customFetch<{ ok: true }>(`/api/admin/mails/${id}/test`, { method: "POST" }) });
+
+// ─── „Złote Byczki” (kampania) ────────────────────────────────────────────────
+export interface AdminBull { id: number; kind: "trainer" | "solo"; number: number; who: string; grantedAt: string; grantedBy: string; reason: string | null; perksUntil: string | null; revoked: boolean; revokedAt: string | null; revokedReason: string | null }
+export const useAdminBulls = () => useQuery<{ enabled: boolean; pools: { trainer: number; solo: number }; bulls: AdminBull[] }>({ queryKey: ["admin-bulls"], queryFn: () => customFetch("/api/admin/golden-bulls") });
+export function useBullActions() {
+  const qc = useQueryClient();
+  const done = () => qc.invalidateQueries({ queryKey: ["admin-bulls"] });
+  return {
+    grant: useMutation({ mutationFn: (v: { kind: "trainer" | "solo"; id: number; reason: string }) => customFetch<{ id: number; number: number }>("/api/admin/golden-bulls/grant", { method: "POST", body: JSON.stringify(v) }), onSuccess: done }),
+    revoke: useMutation({ mutationFn: (v: { id: number; reason: string }) => customFetch(`/api/admin/golden-bulls/${v.id}/revoke`, { method: "POST", body: JSON.stringify({ reason: v.reason }) }), onSuccess: done }),
+  };
+}

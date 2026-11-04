@@ -17,6 +17,7 @@ import { requireAuth, checkIsAppAdmin, provisionTrainer, canBecomeTrainer } from
 import { ensureSoloClient, soloEnabled } from "../services/solo";
 import { ensureSelfClient } from "../services/selfTraining";
 import { isPlaceholderAddress, realAddressOrNull, accountEmail } from "../services/mailAddress";
+import { grantBull } from "../services/goldenBulls";
 import { mailApplicationAccepted, mailApplicationReceived, mailApplicationRejected, notifyOwnerNewApplication } from "../services/applicationMail";
 import { AUTO_ACCEPT_KEY, REAPPLY_LATER_MESSAGE, canApplyNow, nextApplyAt } from "../services/trainerApplications";
 
@@ -85,6 +86,8 @@ async function grantTrainer(app: { id: number; clerkUserId: string; displayName:
   }
   if (trainer) await ensureSelfClient({ id: trainer.id, clerkUserId: trainer.clerkUserId, email: trainer.email ?? app.email });
   await db.update(trainerApplicationsTable).set({ status: "accepted", decidedAt: new Date(), decidedBy }).where(eq(trainerApplicationsTable.id, app.id));
+  // „Złoty Byczek” dla pierwszych trenerów (flaga GOLDEN_BULLS_ENABLED; konta admina i testowe nie zabierają miejsc)
+  if (trainer) await grantBull("trainer", { clerkUserId: app.clerkUserId, trainerId: trainer.id, email: trainer.email ?? app.email });
   await mailApplicationAccepted(await accountEmail(app.clerkUserId, app.email), app.displayName);
 }
 

@@ -39,6 +39,7 @@ import { getCooldown } from "../services/cooldown";
 import { WARMUP_ROLES } from "../lib/exerciseRoles";
 import { logger } from "../lib/logger";
 import { achievementsEnabled, pickCelebration } from "../services/achievements";
+import { grantBull } from "../services/goldenBulls";
 import { evaluateAndStore } from "../services/achievementsStore";
 import { isConservativeHealth } from "../services/jointExclusion";
 import { estimateMinutes, formatAmount, isRollerDay, reportedJoints, selectCooldown, selectWarmup, type CatalogueWarmupItem } from "../services/warmupSelection";
@@ -565,6 +566,13 @@ router.post("/client-portal/training/sessions/:sessionId/finish", requireClientA
     } catch (err) {
       logger.warn({ err }, "achievements not evaluated");
     }
+  }
+  // „Złoty Byczek” dla osób Solo (bez trenera): przy pierwszym ukończonym treningu (flaga GOLDEN_BULLS_ENABLED; nie psuje zakończenia treningu)
+  if (fresh.status === "completed") {
+    try {
+      const [me] = await db.select({ clerk: clientsTable.clerkUserId, trainerId: clientsTable.trainerId }).from(clientsTable).where(eq(clientsTable.id, clientId));
+      if (me?.clerk && me.trainerId == null) await grantBull("solo", { clerkUserId: me.clerk, clientId });
+    } catch { /* odznaka jest dodatkiem */ }
   }
   res.json({
     id: fresh.id, status: fresh.status, minutes, sets: sets.length,

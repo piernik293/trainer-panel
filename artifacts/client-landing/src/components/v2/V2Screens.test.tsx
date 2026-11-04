@@ -178,6 +178,13 @@ describe("Ty (v2) i edycja profilu", () => {
     expect((screen.getByLabelText(/Nick/) as HTMLInputElement).disabled).toBe(false);
     expect(screen.getByTestId("nick-hint").textContent).toContain("raz na 30 dni");
   });
+  it("„Złoty Byczek” w profilu: odznaka z numerem tylko gdy jest; bez niej nic", () => {
+    const { rerender } = render(<YouV2 {...base} profile={{ ...FALLBACK_PROFILE("Anna"), goldenBull: 12 }} />);
+    expect(screen.getByTestId("golden-bull").textContent).toContain("Złoty Byczek #12");
+    expect(screen.getByTestId("golden-bull-badge")).toBeTruthy();
+    rerender(<YouV2 {...base} profile={{ ...FALLBACK_PROFILE("Anna"), goldenBull: null }} />);
+    expect(screen.queryByTestId("golden-bull")).toBeNull();
+  });
   it("stoper w „Ty”: dźwięk i wibracja domyślnie włączone; wyłączenie dźwięku zapisuje ustawienie (to samo co przycisk głośnika)", () => {
     resetTimerSettingsForTests();
     render(<YouV2 {...base} profile={FALLBACK_PROFILE("Anna")} />);

@@ -7,6 +7,7 @@ import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { joinPathFromCode } from "@/components/AccountNotice";
 
+import { GoldenBullsCounter } from "@workspace/design-tokens/brand";
 export const APPLICATION_SENT_TEXT = "Wniosek wysłany — odpowiemy zwykle w ciągu 24 godzin";
 
 function Row({ label, value, open, onToggle, children, testId }: { label: string; value: string; open: boolean; onToggle?: () => void; children?: ReactNode; testId: string }) {
@@ -78,6 +79,7 @@ export function RoleRows({ trainerName, pendingTrainerName, onJoin, part, bare }
       ) : roles.isTrainer ? null : (
         <Row testId="row-apply" label="Prowadzę podopiecznych" value="" open={open === "apply"} onToggle={() => setOpen(open === "apply" ? null : "apply")}>
           <div className="space-y-2">
+            <GoldenBullsCounter kind="trainer" />
             <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="Kilka słów o Tobie (opcjonalnie)" aria-label="Kilka słów o Tobie" className="min-h-20 w-full rounded-md border border-input bg-transparent p-3" />
             {msg && <p className="text-destructive" role="alert">{msg}</p>}
             <button type="button" className={link} disabled={busy} onClick={() => void send()}>{busy ? "Wysyłanie…" : "Wyślij wniosek"}</button>
