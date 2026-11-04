@@ -28,3 +28,4 @@ export * from "./planTemplates";
 export * from "./conditioning";
 export * from "./achievements";
 export * from "./soloSwaps";
+export * from "./goldenBulls";

@@ -37,6 +37,7 @@ import CalendarPage from "@/pages/CalendarPage";
 import Settings from "@/pages/Settings";
 import Admin from "@/pages/Admin";
 
+import { GoldenBullsCounter } from "@workspace/design-tokens/brand";
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so the
 // same build serves multiple Clerk custom domains. Do not inline the env var.
 const clerkPubKey = publishableKeyFromHost(
@@ -181,6 +182,7 @@ function AuthShell({
           <p className="mt-2 text-2xl font-bold tracking-tight">Optimatren</p>
           <p className="mt-1 text-base font-semibold">{title}</p>
           <p className="mt-1 max-w-sm text-sm text-white/85">{description}</p>
+          <GoldenBullsCounter kind="solo" className="mt-3 !text-white/80" />
         </div>
         {children}
       </div>

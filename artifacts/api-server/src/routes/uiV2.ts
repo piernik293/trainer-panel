@@ -12,6 +12,7 @@ import { and, asc, eq, gt, ne } from "drizzle-orm";
 import { db, clientsTable, nickHistoryTable, trainersTable, workoutSessionsTable } from "@workspace/db";
 import { requireClientAuth } from "../middlewares/requireClientAuth";
 import { brandV1Enabled } from "../services/brandFlag";
+import { bullOf } from "../services/goldenBulls";
 import { AVATAR_COLORS, checkNick, holdUntil, nextNickChangeAt, nickKey, trainerLookalikeCore } from "../services/nick";
 
 export const uiV2Enabled = (env: NodeJS.ProcessEnv = process.env) => env.UI_V2_ENABLED === "1";
@@ -33,6 +34,8 @@ async function profileOf(clientId: number) {
   return {
     firstName: c!.firstName, displayName: c!.displayName, nick: c!.nick, avatarColor: c!.avatarColor ?? AVATAR_COLORS[0],
     colors: AVATAR_COLORS, trainsSince: first ? String(first.d).slice(0, 7) : null, // YYYY-MM of the first finished training
+    /** „Złoty Byczek” (kampania, za flagą GOLDEN_BULLS_ENABLED): numer odznaki albo null */
+    goldenBull: (await bullOf(c!.clerkUserId))?.number ?? null,
     /** the "Trener" badge next to the nick */
     isTrainer: c!.clerkUserId ? !!(await db.select({ id: trainersTable.id }).from(trainersTable).where(eq(trainersTable.clerkUserId, c!.clerkUserId)).limit(1))[0] : false,
     /** null = the nick can be changed now */

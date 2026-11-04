@@ -4,6 +4,8 @@ export interface ProfileV2 {
   firstName: string; displayName: string | null; nick: string | null; avatarColor: string; colors: string[]; trainsSince: string | null;
   /** the "Trener" badge next to the nick */
   isTrainer?: boolean;
+  /** numer odznaki „Złoty Byczek” (kampania) albo null */
+  goldenBull?: number | null;
   /** ISO date from which the nick can be changed again (once per 30 days); null/absent = now */
   nickChangeAvailableAt?: string | null;
 }

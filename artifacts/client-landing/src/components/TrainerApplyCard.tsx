@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
+import { GoldenBullsCounter } from "@workspace/design-tokens/brand";
 export interface Roles { isTrainer: boolean; isClient: boolean; application: { status: "pending" | "accepted" | "rejected"; canApply: boolean; applyAgainFrom: string | null } | null }
 
 /** Czysta funkcja: co pokazać w sekcji wniosku. */
@@ -50,6 +51,7 @@ export function TrainerApplyCard() {
   return (
     <div className="rounded-lg border border-border p-3 space-y-2" data-testid="trainer-apply">
       <p className="text-sm font-medium">Prowadzę podopiecznych</p>
+      {view === "form" && <GoldenBullsCounter kind="trainer" />}
       {view === "pending" && <p className="text-sm text-muted-foreground">Wniosek wysłany. Czeka na rozpatrzenie.</p>}
       {view === "rejected_wait" && <p className="text-sm text-muted-foreground">Poprzedni wniosek został odrzucony. Nowy możesz złożyć po 14 dniach{roles?.application?.applyAgainFrom ? ` (od ${new Date(roles.application.applyAgainFrom).toLocaleDateString("pl-PL")})` : ""}.</p>}
       {view === "form" && (open ? (

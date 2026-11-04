@@ -50,7 +50,7 @@ describe("story 9:16 — prywatność", () => {
     expect(all).toContain("WTOREK · TRENING"); expect(all).toContain("Góra ciała"); expect(all).toContain("48 min"); expect(all).toContain("3 240 kg");
     expect(all).toContain("NOWY REKORD") ; expect(all).toContain("4 tygodnie z rzędu · @shiifuu");
     for (const w of private_) expect(all.toLowerCase()).not.toContain(w.toLowerCase());
-    expect(Object.keys(d).sort()).toEqual(["kg", "minutes", "nick", "record", "reps", "sets", "streakWeeks", "title", "weekDone", "weekTarget", "weekday"]);
+    expect(Object.keys(d).sort()).toEqual(["goldenBull", "kg", "minutes", "nick", "record", "reps", "sets", "streakWeeks", "title", "weekDone", "weekTarget", "weekday"]);
   });
   it("po zgłoszeniu bólu: bez rekordu na obrazku", () => {
     const d = storyDataFor(DAY, { ...SUM, hadPain: true }, { streakWeeks: 4, nick: "shiifuu" });
@@ -67,8 +67,16 @@ describe("story 9:16 — prywatność", () => {
     expect(d.kg).toBeNull();
     expect(storyTexts(d)).toContain("Powtórzenia");
   });
+  it("Złoty Byczek na story: tylko znaczek (flaga), bez numeru i bez tekstu; bez flagi nie ma znaczka", () => {
+    const withBull = storyDataFor(DAY, SUM, { streakWeeks: 4, nick: "shiifuu", goldenBull: true }, new Date(2026, 10, 3));
+    expect(withBull.goldenBull).toBe(true);
+    expect(storyDataFor(DAY, SUM, { streakWeeks: 4, nick: "x" }).goldenBull).toBe(false);
+    const { ctx, texts } = fakeCtx();
+    drawStory(ctx, withBull);
+    expect(texts.join(" | ").toLowerCase()).not.toMatch(/byczek|#\d/); // znaczek jest rysunkiem, nie tekstem
+  });
   it("StoryData nie ma pól na imię, nazwisko, wagę ciała ani ból", () => {
-    const keys: (keyof StoryData)[] = ["weekday", "title", "minutes", "kg", "reps", "sets", "record", "streakWeeks", "weekDone", "weekTarget", "nick"];
+    const keys: (keyof StoryData)[] = ["weekday", "title", "minutes", "kg", "reps", "sets", "record", "streakWeeks", "weekDone", "weekTarget", "nick", "goldenBull"];
     expect(keys.join(",")).not.toMatch(/name|weight|pain|health|email/i);
   });
 });

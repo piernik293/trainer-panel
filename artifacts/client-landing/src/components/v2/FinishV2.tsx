@@ -12,18 +12,18 @@ import { IfBrand, Loading, ErrorState, EmptyState, PlanBuilding, Maskotka, Login
 const WEEKDAY_UP = ["NIEDZIELA", "PONIEDZIAŁEK", "WTOREK", "ŚRODA", "CZWARTEK", "PIĄTEK", "SOBOTA"];
 
 /** What goes on the story: never pain, health data, body weight or a name (only the nick). Exported for the privacy test. */
-export function storyDataFor(day: TrainingDay, sum: Summary, v2: { streakWeeks: number | null; nick: string | null }, now = new Date()): StoryData {
+export function storyDataFor(day: TrainingDay, sum: Summary, v2: { streakWeeks: number | null; nick: string | null; goldenBull?: boolean }, now = new Date()): StoryData {
   const top = sum.hadPain ? null : sum.records[0] ?? null; // after a pain report: no record on the picture
   return {
     weekday: WEEKDAY_UP[now.getDay()]!, title: day.name, minutes: sum.minutes, kg: sum.kg > 0 ? sum.kg : null, reps: sum.reps, sets: sum.sets,
     record: top ? { name: top.name, weightKg: top.weightKg, reps: top.reps } : null,
-    streakWeeks: v2.streakWeeks, weekDone: Math.min(sum.weekDone, sum.weekTarget), weekTarget: sum.weekTarget, nick: v2.nick?.trim() || null,
+    streakWeeks: v2.streakWeeks, weekDone: Math.min(sum.weekDone, sum.weekTarget), weekTarget: sum.weekTarget, nick: v2.nick?.trim() || null, goldenBull: v2.goldenBull === true,
   };
 }
 
 /** End of a workout in the new look. After a reported pain: the plain summary only (no record, no celebration). */
 export function FinishV2({ day, run, sum, v2, onFeedback, onFinish }: {
-  day: TrainingDay; run: RunState; sum: Summary; v2: { streakWeeks: number | null; nick: string | null };
+  day: TrainingDay; run: RunState; sum: Summary; v2: { streakWeeks: number | null; nick: string | null; goldenBull?: boolean };
   onFeedback: (rating: Rating | null, note: string) => void; onFinish: () => void;
 }) {
   const [rating, setRating] = useState<Rating | null>(run.rating);

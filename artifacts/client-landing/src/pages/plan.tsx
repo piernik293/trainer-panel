@@ -1391,7 +1391,7 @@ export default function PlanPortal() {
         day={training.day}
         firstName={training.firstName}
         week={training.week}
-        v2={uiV2 ? { streakWeeks: overviewV2?.streakWeeks ?? null, nick: profileV2.nick } : undefined}
+        v2={uiV2 ? { streakWeeks: overviewV2?.streakWeeks ?? null, nick: profileV2.nick, goldenBull: profileV2.goldenBull != null } : undefined}
         onExit={() => { setTraining(null); setTodayReload((n) => n + 1); window.scrollTo({ top: 0 }); }}
       />
     );
