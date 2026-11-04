@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ErrorState";
 import { homeTargetUrl, type AccountHome } from "@/lib/authHome";
 
+import { IfBrand, Loading } from "@workspace/design-tokens/brand";
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function Resolver() {
@@ -42,9 +43,9 @@ function Resolver() {
     return <div className="flex min-h-[100dvh] items-center justify-center px-4"><ErrorState title="Nie udało się otworzyć konta" message="Sprawdź połączenie i spróbuj ponownie." onRetry={() => setAttempt((n) => n + 1)} /></div>;
   }
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center gap-2 text-muted-foreground" role="status">
+    <IfBrand fallback={<div className="flex min-h-[100dvh] items-center justify-center gap-2 text-muted-foreground" role="status">
       <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />Przygotowywanie konta…
-    </div>
+    </div>}><div className="flex min-h-[100dvh] items-center justify-center"><Loading label="Przygotowywanie konta" /></div></IfBrand>
   );
 }
 

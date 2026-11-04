@@ -23,6 +23,7 @@ import PortalPreviewPage from '@/pages/portal-preview';
 import DemoPage from '@/pages/demo';
 import SoloPreviewPage, { isSoloPreviewPath } from '@/pages/solo-preview';
 import UxV2PreviewPage, { isUxV2PreviewPath } from '@/pages/ux-v2-preview';
+import BrandPreviewPage, { isBrandPreviewPath } from '@/pages/brand-preview';
 
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so
 // the same build serves multiple Clerk custom domains. Do not inline the env var.
@@ -150,6 +151,7 @@ function App() {
   // Dev-only: visual preview of the new shell and the Solo screens, outside Clerk, with mocked API (docs/screens/solo/).
   if (isSoloPreviewPath()) return <SoloPreviewPage />;
   if (isUxV2PreviewPath()) return <UxV2PreviewPage />;
+  if (isBrandPreviewPath()) return <BrandPreviewPage />;
   const [resume] = useState(readOfflineResume);
   if (resume) {
     return (

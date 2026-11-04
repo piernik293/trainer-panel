@@ -15,6 +15,7 @@
     "src"
   ],
   "exclude": [
-    "src/hero"
+    "src/hero",
+    "src/brand"
   ]
 }

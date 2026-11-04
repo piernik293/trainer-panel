@@ -6,6 +6,7 @@ import type { ShellTab } from "./BottomBar";
 import { SoloToday } from "./SoloToday";
 import { ProgressContainer, YouContainer } from "./ShellContainers";
 
+import { IfBrand, Loading, ErrorState, EmptyState, PlanBuilding, Maskotka, LoginSequence } from "@workspace/design-tokens/brand";
 interface Status { linked: boolean; firstName?: string; hasSurvey?: boolean; trainerName?: string | null; pendingTrainerName?: string | null }
 
 export function SoloEntry({ achievementsOn, onPlanReady, fallback }: { achievementsOn: boolean; onPlanReady: () => void; fallback: ReactNode }) {
@@ -13,7 +14,7 @@ export function SoloEntry({ achievementsOn, onPlanReady, fallback }: { achieveme
   const [status, setStatus] = useState<Status | null | "loading">("loading");
   const [tab, setTab] = useState<ShellTab>("dzis");
   useEffect(() => { let alive = true; fetch("/api/account/status", { credentials: "include" }).then((r) => (r.ok ? r.json() : null)).then((s) => { if (alive) setStatus(s); }).catch(() => { if (alive) setStatus(null); }); return () => { alive = false; }; }, []);
-  if (status === "loading") return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" aria-label="Ładowanie" /></div>;
+  if (status === "loading") return <IfBrand fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" aria-label="Ładowanie" /></div>}><Loading fullScreen /></IfBrand>;
   if (!status) return <>{fallback}</>;
   const firstName = status.firstName ?? "Ty";
   // Podopieczny trenera bez aktywnego planu: ten sam portal z dolnym paskiem (żeby mógł wejść w „Ty”), a na „Dziś” jedno zdanie, na co czeka.

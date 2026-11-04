@@ -6,7 +6,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./tokens.css": "./src/tokens.css",
-    "./hero": "./src/hero/AppHero.tsx"
+    "./hero": "./src/hero/AppHero.tsx",
+    "./brand": "./src/brand/index.ts",
+    "./brand.css": "./src/brand/brand.css"
   },
   "peerDependencies": {
     "react": "catalog:"

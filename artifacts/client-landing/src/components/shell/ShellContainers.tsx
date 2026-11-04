@@ -18,6 +18,7 @@ import { useOverview } from "@/lib/v2/achievements";
 import { YouV2 } from "@/components/v2/YouV2";
 import type { ProfileV2 } from "@/lib/v2/profile";
 
+import { IfBrand, Loading, ErrorState, EmptyState, PlanBuilding, Maskotka, LoginSequence } from "@workspace/design-tokens/brand";
 const todayWarsaw = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Warsaw", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const base = () => import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -42,7 +43,7 @@ export function ProgressContainer({ achievementsOn }: { achievementsOn: boolean 
     })();
     return () => { alive = false; };
   }, [achievementsOn]);
-  if (!data) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Ładowanie" /></div>;
+  if (!data) return <IfBrand fallback={<div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Ładowanie" /></div>}><Loading /></IfBrand>;
   return <ProgressScreen items={data.items} streakWeeks={data.streakWeeks} activityDays={data.days} today={todayWarsaw()} steps={<StepsTile />} showAchievements={achievementsOn} />;
 }
 
@@ -105,7 +106,7 @@ export function ProgressContainerV2({ achievementsOn }: { achievementsOn: boolea
     })();
     return () => { alive = false; };
   }, [achievementsOn]);
-  if (!loaded || !extra) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Ładowanie" /></div>;
+  if (!loaded || !extra) return <IfBrand fallback={<div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Ładowanie" /></div>}><Loading /></IfBrand>;
   return <ProgressV2 overview={overview} records={extra.records} activityDays={extra.days} today={todayWarsaw()} steps={<StepsTile />} />;
 }
 

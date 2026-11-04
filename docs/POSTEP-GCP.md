@@ -480,3 +480,8 @@
 - Pierwszy smoke po restarcie: 63 OK / 54 BŁĄD (HTTP 500). Przyczyna: `scripts/dev-gcp.sh` NIE stosuje migracji, więc w bazie aplikacji brakowało kolumn z 0069–0072. Naprawa: `scripts/db-setup-gcp.sh` (addytywnie, z własnym pg_dump) → smoke **131 OK / 0 BŁĄD**. Okno z błędami trwało kilka minut (od restartu do migracji).
 - OD TERAZ procedura scalania: pg_dump → merge → push → `scripts/db-setup-gcp.sh` → restart (`stop-gcp.sh && dev-gcp.sh`) → smoke 131 OK. (Migracje przed restartem, nie po.)
 - Flaga `UI_V2_ENABLED=1` włączona w `.env` (zgoda właściciela); `GOLDEN_BULLS`, `OWN_PLAN`, `BRAND_V1` i pozostałe nowe — wyłączone.
+
+## 04.11.2026 — CZĘŚĆ 1 CAŁY-PLAN: logo i byczek (gałąź `feature/marka-v1`, flaga `BRAND_V1_ENABLED`)
+- Jedno źródło marki w `lib/design-tokens/src/brand/`: logo A „Rogate O”, Maskotka (6 stanów × 3 rozmiary, CSS z projektu), odznaka Złoty Byczek, Loading (po 0,6 s, „Jeszcze chwila…” po 5 s), ErrorState, EmptyState, PlanBuilding, LoginSequence. Status flagi: `GET /api/brand-v1/status`.
+- Podmienione miejsca: ładowanie, błąd wczytania planu, puste stany, koniec treningu, osiągnięcie, układanie planu Solo, logowanie (sekwencja), znak w nagłówkach (BrandMark), nagłówek maili. Ikony PWA/favicon/apple-touch i SVG logo z jednego skryptu `scripts/brand-assets.mjs`. Dokument: `docs/MASKOTKA.md`; zrzuty: `docs/screens/marka-v1/`.
+- Testy: portal `Brand.test.tsx` (17: 6 stanów, rozmiary, reduced-motion, brak migania, sekwencja raz dziennie, ikony PWA we wszystkich rozmiarach), API (flaga, nagłówek maili).

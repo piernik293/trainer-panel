@@ -16,6 +16,7 @@ import { AvatarV2 } from "./Avatar";
 import { clearCelebration, readCelebration, type Celebration } from "@/lib/v2/celebration";
 
 
+import { IfBrand, Loading, ErrorState, EmptyState, PlanBuilding, Maskotka, LoginSequence } from "@workspace/design-tokens/brand";
 /** Streak card: weekly streak (never a loss message), "X z Y treningów w tym tygodniu" and one circle per planned training. */
 export function StreakCard({ streakWeeks, done, target }: { streakWeeks: number | null; done: number; target: number }) {
   const circles = weekCircles(done, target);
@@ -115,16 +116,18 @@ export function HomeV2({ profile, reloadKey, streakWeeks, achievements, onStart,
       {top}
       {celebration && (
         <section role="status" aria-label="Nowe osiągnięcie" className="flex items-start gap-3 rounded-[20px] border border-primary/40 bg-brand-soft p-4" data-testid="celebration">
-          <Award className="mt-0.5 h-6 w-6 shrink-0 text-primary" aria-hidden />
+          <IfBrand fallback={<Award className="mt-0.5 h-6 w-6 shrink-0 text-primary" aria-hidden />}><Maskotka stan="success" rozmiar="s" decorative /></IfBrand>
           <div className="min-w-0 grow"><p className="font-extrabold">{celebration.title}</p>{celebration.body && <p className="text-sm text-muted-foreground">{celebration.body}</p>}</div>
           <button type="button" onClick={() => { clearCelebration(); setCelebration(null); }} className="flex min-h-11 items-center px-1 text-sm font-bold text-primary">OK</button>
         </section>
       )}
-      {state === "loading" && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Ładowanie" /></div>}
+      {state === "loading" && <IfBrand fallback={<div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Ładowanie" /></div>}><Loading /></IfBrand>}
       {state === "none" && (
         <section className="rounded-[20px] border border-border bg-card p-4" data-testid="home-no-plan">
-          <p className="text-lg font-extrabold">Trener przygotowuje Twój plan</p>
-          <p className="mt-1 text-sm text-muted-foreground">Gdy będzie gotowy, zobaczysz go tutaj.</p>
+          <IfBrand fallback={<><p className="text-lg font-extrabold">Trener przygotowuje Twój plan</p>
+          <p className="mt-1 text-sm text-muted-foreground">Gdy będzie gotowy, zobaczysz go tutaj.</p></>}>
+            <EmptyState title="Trener przygotowuje Twój plan" message="Gdy będzie gotowy, zobaczysz go tutaj." />
+          </IfBrand>
         </section>
       )}
       {state === "ok" && data && (
