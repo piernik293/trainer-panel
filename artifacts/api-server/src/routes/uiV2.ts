@@ -11,7 +11,7 @@ import { Router, type IRouter, type Request, type Response, type NextFunction } 
 import { and, asc, eq, gt, ne } from "drizzle-orm";
 import { db, clientsTable, nickHistoryTable, trainersTable, workoutSessionsTable } from "@workspace/db";
 import { requireClientAuth } from "../middlewares/requireClientAuth";
-import { AVATAR_COLORS, checkNick, holdUntil, nextNickChangeAt, nickKey } from "../services/nick";
+import { AVATAR_COLORS, checkNick, holdUntil, nextNickChangeAt, nickKey, trainerLookalikeCore } from "../services/nick";
 
 export const uiV2Enabled = (env: NodeJS.ProcessEnv = process.env) => env.UI_V2_ENABLED === "1";
 
@@ -57,6 +57,14 @@ router.put("/client-portal/profile", gate, requireClientAuth, async (req, res): 
       if (key) {
         const [taken] = await db.select({ id: clientsTable.id }).from(clientsTable).where(and(eq(clientsTable.nickKey, key), ne(clientsTable.id, req.client!.id))).limit(1);
         if (taken) { res.status(409).json({ error: "Ten nick jest zajęty albo zbyt podobny do cudzego.", code: "NICK_TAKEN" }); return; }
+        // „trener_ola” przy trenerce „ola”: nick z dopiskiem trenera, którego rdzeń jest nickiem konta z odznaką „Trener”
+        const core = trainerLookalikeCore(n.nick!);
+        if (core) {
+          const [lookalike] = await db.select({ id: clientsTable.id }).from(clientsTable)
+            .innerJoin(trainersTable, eq(trainersTable.clerkUserId, clientsTable.clerkUserId))
+            .where(and(eq(clientsTable.nickKey, core), ne(clientsTable.id, req.client!.id))).limit(1);
+          if (lookalike) { res.status(409).json({ error: "Ten nick jest zbyt podobny do nicka trenera. Wybierz inny.", code: "NICK_TRAINER_LOOKALIKE" }); return; }
+        }
         const [held] = await db.select({ id: nickHistoryTable.id }).from(nickHistoryTable).where(and(eq(nickHistoryTable.nickKey, key), gt(nickHistoryTable.blockedUntil, new Date()), ne(nickHistoryTable.clientId, req.client!.id))).limit(1);
         if (held) { res.status(409).json({ error: "Ten nick jest chwilowo zablokowany. Wybierz inny.", code: "NICK_HELD" }); return; }
       }

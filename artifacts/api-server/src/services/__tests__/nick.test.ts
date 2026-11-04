@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { checkNick, isBadNick, isReservedNick, nextNickChangeAt, nickKey } from "../nick";
+import { checkNick, isBadNick, isReservedNick, nextNickChangeAt, nickKey, trainerLookalikeCore } from "../nick";
 
 describe("nick", () => {
   it("poprawne: 3–20 znaków, litery/cyfry/_/., wolno @ na początku; puste = brak nicka", () => {
@@ -18,13 +18,17 @@ describe("nick", () => {
 });
 
 describe("nicki prawie identyczne (klucz)", () => {
-  it("różnice tylko w wielkości liter, _ . albo cyfrach na końcu dają ten sam klucz", () => {
+  it("wielkość liter oraz _ i . nie tworzą osobnego nicka", () => {
     const k = nickKey("ola");
-    for (const n of ["Ola", "ola_", "o.l.a", "ola1", "ola22", "_ola_", "OLA.99"]) expect(nickKey(n), n).toBe(k);
+    for (const n of ["Ola", "ola_", "o.l.a", "_ola_", "OLA.", "O_L.A"]) expect(nickKey(n), n).toBe(k);
   });
-  it("cyfry w środku jak litery (k0wal = kowal); krótkie nicki nie tracą cyfr", () => {
-    expect(nickKey("k0wal")).toBe(nickKey("kowal"));
-    expect(nickKey("a12")).toBe("ai2"); // cyfry zostają (za krótko, by je obciąć), tylko ujednolicone jak litery
+  it("cyfry ROZRÓŻNIAJĄ nicki: kasia, kasia92, kasia2004 to trzy różne nicki", () => {
+    const keys = ["kasia", "kasia92", "kasia2004", "Kasia_92", "kasia.2004"].map(nickKey);
+    expect(new Set(keys.slice(0, 3)).size).toBe(3);
+    expect(keys[3]).toBe(keys[1]); // ale kasia_92 to nadal kasia92
+    expect(keys[4]).toBe(keys[2]);
+    expect(nickKey("ola1")).not.toBe(nickKey("ola"));
+    expect(nickKey("k0wal")).not.toBe(nickKey("kowal"));
   });
   it("różne nicki mają różne klucze", () => {
     expect(nickKey("ola")).not.toBe(nickKey("olaf"));
@@ -32,9 +36,20 @@ describe("nicki prawie identyczne (klucz)", () => {
   });
 });
 
+describe("podobieństwo do nicka trenera (dopiski)", () => {
+  it("wyciąga rdzeń z dopiskiem trener/trenerka/coach/pt/official z przodu lub z tyłu", () => {
+    for (const [nick, core] of [["trener_ola", "ola"], ["Trenerka.Ola", "ola"], ["ola_trener", "ola"], ["coach_ola", "ola"], ["ola_pt", "ola"], ["official_ola", "ola"], ["trener_ola92", "ola92"]] as const) {
+      expect(trainerLookalikeCore(nick), nick).toBe(core);
+    }
+  });
+  it("bez dopiska albo przy zbyt krótkim rdzeniu: null", () => {
+    for (const nick of ["ola", "kasia92", "ola_trenuje", "trener_ab", "systematyk"]) expect(trainerLookalikeCore(nick), nick).toBeNull();
+  });
+});
+
 describe("nicki zarezerwowane", () => {
   it("admin, optimatren, trener, support, pomoc, moderator, root, system — także w wariantach", () => {
-    for (const n of ["admin", "Admin", "admin_1", "a.d.m.i.n", "ADMIN99", "optimatren", "optimatren_pl", "Optimatren.support", "trener", "trener1", "support", "pomoc", "moderator", "root", "system", "administrator"]) {
+    for (const n of ["admin", "Admin", "admin_1", "a.d.m.i.n", "ADMIN99", "adm1n", "trener2004", "optimatren", "optimatren_pl", "Optimatren.support", "trener", "trener1", "support", "pomoc", "moderator", "root", "system", "administrator"]) {
       expect(isReservedNick(n), n).toBe(true);
       expect(checkNick(n), n).toMatchObject({ ok: false, code: "NICK_RESERVED" });
     }

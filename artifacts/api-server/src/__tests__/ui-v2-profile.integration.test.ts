@@ -17,8 +17,8 @@ vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mo
 import app from "../app";
 import { db, pool, trainersTable, clientsTable, nickHistoryTable } from "@workspace/db";
 
-const A = "uiv2_client_a", B = "uiv2_client_b", T = "uiv2_client_trainer";
-const IDS = [A, B, T];
+const A = "uiv2_client_a", B = "uiv2_client_b", T = "uiv2_client_trainer", C = "uiv2_client_c", D = "uiv2_client_d", E = "uiv2_client_e";
+const IDS = [A, B, T, C, D, E];
 let trainerId = 0;
 const put = (body: unknown) => request(app).put("/api/client-portal/profile").send(body as object);
 const as = (id: string) => { auth.userId = id; };
@@ -36,7 +36,7 @@ beforeAll(async () => {
   const [t] = await db.insert(trainersTable).values({ clerkUserId: "uiv2_trainer" }).onConflictDoUpdate({ target: trainersTable.clerkUserId, set: { clerkUserId: "uiv2_trainer" } }).returning();
   trainerId = t.id;
   await db.insert(trainersTable).values({ clerkUserId: T }).onConflictDoNothing();
-  for (const [i, id] of IDS.entries()) await db.insert(clientsTable).values({ firstName: ["Anna", "Beata", "Tomasz"][i]!, lastName: "uiv2-test", trainerId, status: "active", clerkUserId: id });
+  for (const [i, id] of IDS.entries()) await db.insert(clientsTable).values({ firstName: ["Anna", "Beata", "Tomasz", "Celina", "Dorota", "Ewa"][i]!, lastName: "uiv2-test", trainerId, status: "active", clerkUserId: id });
 }, 60_000);
 afterEach(() => { vi.unstubAllEnvs(); as(A); });
 afterAll(async () => { await wipe(); await pool.end(); });
@@ -80,19 +80,44 @@ describe("profil i nick", () => {
     expect(r.status).toBe(409);
     expect(r.body.code).toBe("NICK_TAKEN");
   });
-  it("nick prawie identyczny z cudzym (tylko _ . lub cyfra na końcu) → 409", async () => {
+  it("nick prawie identyczny z cudzym (różnice tylko w wielkości liter oraz _ i .) → 409", async () => {
     vi.stubEnv("UI_V2_ENABLED", "1");
     as(B);
-    for (const n of ["shii_fuu", "Shii.Fuu", "shiifuu1", "ShiiFuu77", "_shiifuu_"]) {
+    for (const n of ["shii_fuu", "Shii.Fuu", "_shiifuu_", "S.H.I.I.F.U.U"]) {
       const r = await put({ nick: n });
       expect(r.status, n).toBe(409);
       expect(r.body.code, n).toBe("NICK_TAKEN");
     }
   });
+  it("cyfry rozróżniają nicki: kasia, kasia92 i kasia2004 istnieją osobno; kasia_92 to nadal kasia92", async () => {
+    vi.stubEnv("UI_V2_ENABLED", "1");
+    as(C); expect((await put({ nick: "kasia" })).status).toBe(200);
+    as(D); expect((await put({ nick: "kasia92" })).status).toBe(200);
+    as(E); expect((await put({ nick: "kasia2004" })).status).toBe(200);
+    as(B);
+    expect((await put({ nick: "Kasia_" })).status).toBe(409);
+    expect((await put({ nick: "kasia_92" })).status).toBe(409);
+    expect((await put({ nick: "kasia.2004" })).status).toBe(409);
+    // „shiifuu1” przy istniejącym „shiifuu”: osobny nick (cyfra rozróżnia); zmianę B cofamy, żeby kolejne testy startowały od czystego stanu
+    expect((await put({ nick: "shiifuu1" })).status).toBe(200);
+    await db.update(clientsTable).set({ nick: null, nickKey: null, nickChangedAt: null }).where(eq(clientsTable.clerkUserId, B));
+  });
+  it("nick z dopiskiem trenera, którego rdzeń to nick konta z odznaką „Trener”, jest odrzucony (trener_ola przy trenerce ola)", async () => {
+    vi.stubEnv("UI_V2_ENABLED", "1");
+    as(T); expect((await put({ nick: "tomek_t" })).status).toBe(200); // konto z rolą trenera
+    as(B);
+    for (const n of ["trener_tomek_t", "Trenerka.Tomek.T", "tomekt_coach", "tomek_t_pt", "official_tomekt"]) {
+      const r = await put({ nick: n });
+      expect(r.status, n).toBe(409);
+      expect(r.body.code, n).toBe("NICK_TRAINER_LOOKALIKE");
+    }
+    expect((await put({ nick: "tomek_t92" })).status).toBe(200); // bez dopiska: osobny nick (cyfry rozróżniają)
+    await db.update(clientsTable).set({ nick: null, nickKey: null, nickChangedAt: null }).where(eq(clientsTable.clerkUserId, B));
+  });
   it("nicki zarezerwowane → 400 NICK_RESERVED; zły format i wulgaryzm → 400; nic się nie zmienia", async () => {
     vi.stubEnv("UI_V2_ENABLED", "1");
     as(B);
-    for (const n of ["admin", "Admin_1", "optimatren", "trener", "support", "pomoc", "moderator", "root", "system"]) {
+    for (const n of ["admin", "Admin_1", "adm1n", "optimatren", "trener", "trener2004", "support", "pomoc", "moderator", "root", "system"]) {
       const r = await put({ nick: n });
       expect(r.status, n).toBe(400);
       expect(r.body.code, n).toBe("NICK_RESERVED");
@@ -108,7 +133,7 @@ describe("profil i nick", () => {
     await backdate(A, 31);
     expect((await put({ nick: "NowyNick" })).status).toBe(200);
     as(B);
-    for (const n of ["ShiiFuu", "shii_fuu2"]) {
+    for (const n of ["ShiiFuu", "shii_fuu", "S.hii.fuu"]) {
       const r = await put({ nick: n });
       expect(r.status, n).toBe(409);
       expect(r.body.code, n).toBe("NICK_HELD");
