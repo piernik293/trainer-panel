@@ -58,7 +58,7 @@ describe("POST /clients/:id/survey-invite (profile / new client path)", () => {
     await db.delete(trainersTable).where(eq(trainersTable.clerkUserId, T));
     const [t] = await db.insert(trainersTable).values({ clerkUserId: T, displayName: "Anna Nowak", email: "anna.trener@example.com" }).returning();
     trainerId = t!.id;
-    const [c] = await db.insert(clientsTable).values({ firstName: "Marta", lastName: "T", email: "marta-template@example.invalid", trainerId }).returning();
+    const [c] = await db.insert(clientsTable).values({ firstName: "Marta", lastName: "T", email: "marta-template@poczta-testowa.pl", trainerId }).returning();
     clientId = c!.id;
   });
   beforeEach(() => {
@@ -81,7 +81,7 @@ describe("POST /clients/:id/survey-invite (profile / new client path)", () => {
     const mail = sendMail.mock.calls[0]![0] as { from: string; subject: string; html: string; text: string; replyTo?: string };
     expect(mail.subject).toBe("Anna zaprasza Cię do wywiadu treningowego");
     expect(mail.subject).not.toBe("Twój wywiad treningowy");
-    expect(mail.from).toContain("Anna Nowak · Optimatren");
+    expect(mail.from).toContain("Anna Nowak przez Optimatren");
     expect(mail.replyTo).toBe("anna.trener@example.com");
     expect(mail.html).not.toMatch(/#2563eb/i);
     expect(mail.html).toContain("https://app.example.com/client-landing/survey/");

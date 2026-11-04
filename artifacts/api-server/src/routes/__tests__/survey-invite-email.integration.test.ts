@@ -1,7 +1,7 @@
 /**
  * "Zaproś klienta" (real database):
  *   - validation, link from APP_PUBLIC_URL (never from the Host header),
- *   - e-mail: sender "{trainer} · Optimatren", Reply-To trainer, text version,
+ *   - e-mail: sender "{trainer} przez Optimatren", Reply-To trainer, text version,
  *     client name and trainer message, readable message without SMTP,
  *   - duplicate active invitation → 409, replace → previous revoked (not deleted),
  *   - statuses sent / opened / completed / expired / revoked,
@@ -113,7 +113,7 @@ describe("wysyłka e-mailem", () => {
     expect(res.body.url).toBe(expectedUrl);
     const mail = sendMail.mock.calls[0][0];
     expect(mail.to).toBe(to);
-    expect(mail.from).toBe('"Anna Nowak · Optimatren" <sender@example.invalid>');
+    expect(mail.from).toBe('"Anna Nowak przez Optimatren" <sender@example.invalid>');
     expect(mail.replyTo).toBe("anna.trener@example.com");
     expect(mail.subject).toBe("Anna zaprasza Cię do wywiadu treningowego");
     expect(mail.html).toContain("Cześć Marta,");

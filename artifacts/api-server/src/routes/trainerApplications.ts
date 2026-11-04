@@ -16,6 +16,7 @@ import { db, clientsTable, trainersTable, trainerApplicationsTable, appSettingsT
 import { requireAuth, checkIsAppAdmin, provisionTrainer, canBecomeTrainer } from "../middlewares/requireAuth";
 import { ensureSoloClient, soloEnabled } from "../services/solo";
 import { ensureSelfClient } from "../services/selfTraining";
+import { isPlaceholderAddress, realAddressOrNull, accountEmail } from "../services/mailAddress";
 import { mailApplicationAccepted, mailApplicationRejected, notifyOwnerNewApplication } from "../services/applicationMail";
 import { AUTO_ACCEPT_KEY, REAPPLY_LATER_MESSAGE, canApplyNow, nextApplyAt } from "../services/trainerApplications";
 
@@ -84,7 +85,7 @@ async function grantTrainer(app: { id: number; clerkUserId: string; displayName:
   }
   if (trainer) await ensureSelfClient({ id: trainer.id, clerkUserId: trainer.clerkUserId, email: trainer.email ?? app.email });
   await db.update(trainerApplicationsTable).set({ status: "accepted", decidedAt: new Date(), decidedBy }).where(eq(trainerApplicationsTable.id, app.id));
-  await mailApplicationAccepted(app.email);
+  await mailApplicationAccepted(await accountEmail(app.clerkUserId, app.email));
 }
 
 router.post("/trainer-applications", async (req, res): Promise<void> => {
@@ -103,14 +104,14 @@ router.post("/trainer-applications", async (req, res): Promise<void> => {
   }
   const [c] = await db.select({ firstName: clientsTable.firstName, email: clientsTable.email }).from(clientsTable).where(eq(clientsTable.clerkUserId, userId));
   // Imię i e-mail do podglądu wniosku w panelu administratora: z wiersza klienta albo z konta (Clerk); brak = puste, wniosek i tak się zapisuje.
-  let displayName = c?.firstName ?? null, email = c?.email ?? null;
-  if (!displayName || !email) {
-    try {
-      const u = await clerkClient.users.getUser(userId);
-      displayName = displayName ?? ([u.firstName, u.lastName].filter(Boolean).join(" ") || null);
-      email = email ?? u.primaryEmailAddress?.emailAddress ?? null;
-    } catch { /* bez danych z konta */ }
-  }
+  // E-mail wniosku = główny e-mail konta z Clerk (profil „Mój trening” ma adres zastępczy — nigdy z niego); zapas: adres z rekordu klienta, o ile prawdziwy.
+  let displayName = c?.firstName ?? null, email: string | null = null;
+  try {
+    const u = await clerkClient.users.getUser(userId);
+    displayName = displayName ?? ([u.firstName, u.lastName].filter(Boolean).join(" ") || null);
+    email = u.primaryEmailAddress?.emailAddress ?? null;
+  } catch { /* bez danych z konta */ }
+  if (!email || isPlaceholderAddress(email)) email = realAddressOrNull(c?.email);
   const [created] = await db.insert(trainerApplicationsTable).values({ clerkUserId: userId, displayName, email, note: body.data.note ?? null })
     .onConflictDoNothing().returning();
   if (!created) { res.status(409).json({ error: "Twój wniosek czeka na rozpatrzenie.", code: "PENDING" }); return; }
@@ -140,7 +141,7 @@ async function decide(req: import("express").Request, res: import("express").Res
   if (accept) await grantTrainer(a, req.clerkUserId!);
   else {
     await db.update(trainerApplicationsTable).set({ status: "rejected", decidedAt: new Date(), decidedBy: req.clerkUserId! }).where(eq(trainerApplicationsTable.id, id));
-    await mailApplicationRejected(a.email);
+    await mailApplicationRejected(await accountEmail(a.clerkUserId, a.email));
   }
   res.json({ ok: true });
 }

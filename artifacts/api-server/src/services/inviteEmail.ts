@@ -8,6 +8,7 @@
  * readable code, never silently.
  */
 
+import { isPlaceholderAddress, warnBlocked } from "./mailAddress";
 import { logger } from "../lib/logger";
 import { EMAIL_BANNER_ALT, EMAIL_BANNER_BASE64, EMAIL_BANNER_CID } from "../assets/emailBanner";
 
@@ -164,7 +165,8 @@ export function renderInviteEmail(c: InviteEmailContent) {
 /** "Anna Nowak · Optimatren" <smtp-address> — the display name says who invites. */
 export function senderHeader(trainerName: string | null): string {
   const address = process.env["SMTP_FROM"] || process.env["SMTP_USER"] || "";
-  const name = `${trainerName ?? "Twój trener"} · Optimatren`.replace(/["\\\r\n]/g, "");
+  // Maile systemowe: „Optimatren”; w imieniu trenera: „Imię Nazwisko przez Optimatren” (+ Reply-To trenera).
+  const name = (trainerName?.trim() ? `${trainerName.trim()} przez Optimatren` : "Optimatren").replace(/["\\\r\n]/g, "");
   return `"${name}" <${address}>`;
 }
 
@@ -177,6 +179,7 @@ export async function sendInviteEmail(
   if (!host || !user || !pass) {
     return { sent: false, code: "SMTP_NOT_CONFIGURED", message: SMTP_NOT_CONFIGURED_MESSAGE };
   }
+  if (isPlaceholderAddress(opts.to)) { warnBlocked("invite"); return { sent: false, code: "SEND_FAILED", message: SEND_FAILED_MESSAGE }; }
   const port = parseInt(process.env["SMTP_PORT"] ?? "587", 10);
   const { subject, text, html } = renderInviteEmail(opts);
   try {
@@ -210,16 +213,17 @@ export async function sendInviteEmail(
 }
 
 /** Krótki mail tekstowy do jednej osoby (np. odłączenie od trenera). Ten sam SMTP co zaproszenia; bez SMTP — cichy brak wysyłki. */
-export async function sendPlainEmail(opts: { to: string | null | undefined; subject: string; text: string; fromName?: string | null }): Promise<boolean> {
+export async function sendPlainEmail(opts: { to: string | null | undefined; subject: string; text: string; fromName?: string | null; replyTo?: string | null }): Promise<boolean> {
   const host = process.env["SMTP_HOST"];
   const user = process.env["SMTP_USER"];
   const pass = process.env["SMTP_PASS"];
+  if (opts.to && isPlaceholderAddress(opts.to)) { warnBlocked("plain"); return false; }
   if (!opts.to || !host || !user || !pass) { logger.warn({ hasTo: !!opts.to, hasSmtp: !!(host && user && pass) }, "Mail pominięty: brak odbiorcy albo ustawień SMTP"); return false; }
   const port = parseInt(process.env["SMTP_PORT"] ?? "587", 10);
   try {
     const nodemailer = await import("nodemailer");
     const transporter = nodemailer.default.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
-    await transporter.sendMail({ from: senderHeader(opts.fromName ?? null), to: opts.to, subject: opts.subject, text: opts.text });
+    await transporter.sendMail({ from: senderHeader(opts.fromName ?? null), ...(opts.replyTo ? { replyTo: opts.replyTo } : {}), to: opts.to, subject: opts.subject, text: opts.text });
     return true;
   } catch (err) {
     logger.error({ err: err instanceof Error ? err.message : String(err) }, "Failed to send notification email");

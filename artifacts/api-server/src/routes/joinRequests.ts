@@ -24,6 +24,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db, clientsTable, trainersTable, trainerJoinRequestsTable, clientLinkEventsTable, surveysTable, workoutPlansTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
+import { accountEmail, realAddressOrNull } from "../services/mailAddress";
 import { appPublicUrl, sendPlainEmail } from "../services/inviteEmail";
 import { allowJoinAttempt, generateJoinCode, normalizeJoinCode } from "../services/joinCode";
 
@@ -117,13 +118,13 @@ async function disconnect(clientId: number, trainerId: number, by: "trainer" | "
     return true;
   });
   if (!done) return false;
-  const [c] = await db.select({ email: clientsTable.email, firstName: clientsTable.firstName }).from(clientsTable).where(eq(clientsTable.id, clientId));
-  const [t] = await db.select({ email: trainersTable.email, name: trainersTable.displayName }).from(trainersTable).where(eq(trainersTable.id, trainerId));
+  const [c] = await db.select({ email: clientsTable.email, firstName: clientsTable.firstName, clerkUserId: clientsTable.clerkUserId }).from(clientsTable).where(eq(clientsTable.id, clientId));
+  const [t] = await db.select({ email: trainersTable.email, name: trainersTable.displayName, clerkUserId: trainersTable.clerkUserId }).from(trainersTable).where(eq(trainersTable.id, trainerId));
   if (by === "trainer") {
-    await sendPlainEmail({ to: c?.email, fromName: t?.name, subject: "Zakończono współpracę z trenerem",
+    await sendPlainEmail({ to: await accountEmail(c?.clerkUserId, c?.email), fromName: t?.name, replyTo: realAddressOrNull(t?.email), subject: "Zakończono współpracę z trenerem",
       text: `Trener ${t?.name ?? ""} odłączył Twoje konto. Twoja historia treningów zostaje u Ciebie.` });
   } else {
-    await sendPlainEmail({ to: t?.email, subject: "Podopieczny odłączył się",
+    await sendPlainEmail({ to: await accountEmail(t?.clerkUserId, t?.email), subject: "Podopieczny odłączył się",
       text: `${c?.firstName ?? "Podopieczny"} odłączył się od Ciebie. Nie masz już dostępu do danych tej osoby.` });
   }
   return true;
