@@ -45,6 +45,8 @@ import { jointWarningMessage, loadBlockedJoints, reportedJointsLoaded } from "..
 import { findJointConflicts, replaceWithProposal, replaceWithVariant } from "../services/jointPlanAudit";
 import { swapPlanExercise } from "../services/planSwap";
 import { VOLUME_ABOVE_RANGE_TEXT, VOLUME_IN_RANGE_TEXT, hasHardVolumeLimit } from "@workspace/survey-config";
+import { sendCatalogueMail } from "../services/mail/send";
+import { accountEmail } from "../services/mailAddress";
 
 const router: IRouter = Router();
 
@@ -2117,6 +2119,17 @@ router.post("/plans/:id/activate", requireAuth, async (req, res): Promise<void> 
         targets: violations.map((v) => ({ targetName: v.targetName, weeklyEffectiveSets: Math.round(v.weeklyEffectiveSets * 10) / 10, weeklyAbsoluteCeiling: v.weeklyAbsoluteCeiling })),
       }
     : { status: "in_range" as const, text: VOLUME_IN_RANGE_TEXT, targets: [] };
+  // Mail „Twój plan jest gotowy” do podopiecznego z kontem (nie do trenera w jego własnym profilu „Mój trening”). Nie psuje aktywacji.
+  try {
+    const [cl] = await db.select({ firstName: clientsTable.firstName, email: clientsTable.email, clerkUserId: clientsTable.clerkUserId }).from(clientsTable).where(eq(clientsTable.id, plan.clientId));
+    if (cl?.clerkUserId && cl.clerkUserId !== req.trainer!.clerkUserId) {
+      await sendCatalogueMail("plan_ready", {
+        to: await accountEmail(cl.clerkUserId, cl.email), data: { name: cl.firstName?.trim() || null },
+        onBehalfOf: { name: req.trainer!.displayName ?? null, email: req.trainer!.email ?? null },
+        once: { kind: "plan_ready", ref: String(planId) },
+      });
+    }
+  } catch { /* mail jest dodatkiem */ }
   res.json({ ...full, archivedPlans, volumeNotice });
 });
 

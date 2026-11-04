@@ -3,10 +3,11 @@
  * Panel administratora: osoba bez roli administratora nie widzi panelu (przekierowanie), administrator widzi zakładki.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import React from "react";
 
 let isAdmin = false;
+const testSent: string[] = [];
 vi.mock("@/lib/adminApi", () => ({
   useIsAdmin: () => ({ data: { isAdmin }, isLoading: false }),
   useAdminErrors: () => ({ data: { errors: [] }, isLoading: false }),
@@ -14,6 +15,9 @@ vi.mock("@/lib/adminApi", () => ({
   useAdminSolo: () => ({ data: undefined }),
   useAdminSubscriptions: () => ({ data: undefined }),
   useAccessLog: () => ({ data: { entries: [] } }),
+  useAdminMails: () => ({ data: { ownerAddressSet: true, mails: [{ id: "plan_ready", label: "Plan gotowy (do podopiecznego)", audience: "podopieczny", when: "Trener aktywował plan." }] }, isLoading: false }),
+  useAdminMailPreview: (id: string | null) => ({ data: id ? { subject: "Twój plan jest gotowy", html: "<p>Cześć, Anna,</p>", text: "Cześć, Anna," } : undefined }),
+  useAdminMailTest: () => ({ mutate: (id: string, o: { onSuccess: () => void }) => { testSent.push(id); o.onSuccess(); }, isPending: false }),
   useTrainerApplications: () => ({ data: { applications: [] } }),
   useAutoAccept: () => ({ data: { autoAccept: false } }),
   useApplicationActions: () => ({ decide: { mutate: vi.fn() }, setAutoAccept: { mutate: vi.fn() } }),
@@ -38,8 +42,20 @@ describe("strona /admin", () => {
   it("administrator widzi wszystkie zakładki", () => {
     isAdmin = true;
     render(<Admin />);
-    for (const name of ["Błędy", "Wnioski", "Trenerzy", "Solo", "Abonamenty i limity", "Dziennik dostępu"]) {
+    for (const name of ["Błędy", "Wnioski", "Trenerzy", "Solo", "Abonamenty i limity", "Maile", "Dziennik dostępu"]) {
       expect(screen.getByRole("tab", { name })).toBeTruthy();
     }
+  });
+  it("zakładka „Maile”: lista szablonów, podgląd w ramce bez skryptów i „Wyślij test do mnie”", () => {
+    isAdmin = true; testSent.length = 0;
+    render(<Admin />);
+    fireEvent.click(screen.getByRole("tab", { name: "Maile" }));
+    expect(screen.getByText("Plan gotowy (do podopiecznego)")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Podgląd" }));
+    const frame = screen.getByTitle("Podgląd: Plan gotowy (do podopiecznego)") as HTMLIFrameElement;
+    expect(frame.getAttribute("sandbox")).toBe(""); // bez skryptów i formularzy
+    expect(screen.getByText("Twój plan jest gotowy")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Wyślij test do mnie" }));
+    expect(testSent).toEqual(["plan_ready"]);
   });
 });

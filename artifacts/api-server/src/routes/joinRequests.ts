@@ -24,9 +24,21 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db, clientsTable, trainersTable, trainerJoinRequestsTable, clientLinkEventsTable, surveysTable, workoutPlansTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
-import { accountEmail, realAddressOrNull } from "../services/mailAddress";
-import { appPublicUrl, sendPlainEmail } from "../services/inviteEmail";
+import { accountEmail } from "../services/mailAddress";
+import { appPublicUrl } from "../services/inviteEmail";
+import { sendCatalogueMail } from "../services/mail/send";
+import { firstName as firstNameOf } from "../services/applicationMail";
 import { allowJoinAttempt, generateJoinCode, normalizeJoinCode } from "../services/joinCode";
+
+/** Dane do maili o prośbach i odłączeniu: osoba (konto klienta) i trener — adres z konta Clerk (accountEmail), nigdy z adresu zastępczego. */
+async function mailParties(clientId: number, trainerId: number) {
+  const [c] = await db.select({ email: clientsTable.email, firstName: clientsTable.firstName, clerkUserId: clientsTable.clerkUserId }).from(clientsTable).where(eq(clientsTable.id, clientId));
+  const [t] = await db.select({ email: trainersTable.email, name: trainersTable.displayName, clerkUserId: trainersTable.clerkUserId }).from(trainersTable).where(eq(trainersTable.id, trainerId));
+  return {
+    person: { name: c?.firstName?.trim() || null, to: await accountEmail(c?.clerkUserId, c?.email) },
+    trainer: { name: t?.name ?? null, email: t?.email ?? null, to: await accountEmail(t?.clerkUserId, t?.email) },
+  };
+}
 
 const router: IRouter = Router();
 
@@ -78,7 +90,11 @@ router.post("/join/:code/request", async (req, res): Promise<void> => {
     [client] = await db.insert(clientsTable).values({ trainerId: null, firstName: body.data.firstName, lastName: "", status: "active", clerkUserId: userId })
       .returning({ id: clientsTable.id, trainerId: clientsTable.trainerId });
   }
-  await db.insert(trainerJoinRequestsTable).values({ trainerId: trainer.id, clientId: client!.id, shareHistory: body.data.shareHistory === true }).onConflictDoNothing();
+  const [created] = await db.insert(trainerJoinRequestsTable).values({ trainerId: trainer.id, clientId: client!.id, shareHistory: body.data.shareHistory === true }).onConflictDoNothing().returning({ id: trainerJoinRequestsTable.id });
+  if (created) { // nowa prośba → mail do trenera (powtórzone kliknięcie nie wysyła drugiego)
+    const p = await mailParties(client!.id, trainer.id);
+    await sendCatalogueMail("join_request", { to: p.trainer.to, data: { name: firstNameOf(p.trainer.name), personName: body.data.firstName ?? p.person.name } });
+  }
   res.status(201).json({ ok: true, trainerName: trainer.displayName ?? "Twój trener" });
 });
 
@@ -118,14 +134,11 @@ async function disconnect(clientId: number, trainerId: number, by: "trainer" | "
     return true;
   });
   if (!done) return false;
-  const [c] = await db.select({ email: clientsTable.email, firstName: clientsTable.firstName, clerkUserId: clientsTable.clerkUserId }).from(clientsTable).where(eq(clientsTable.id, clientId));
-  const [t] = await db.select({ email: trainersTable.email, name: trainersTable.displayName, clerkUserId: trainersTable.clerkUserId }).from(trainersTable).where(eq(trainersTable.id, trainerId));
+  const p = await mailParties(clientId, trainerId);
   if (by === "trainer") {
-    await sendPlainEmail({ to: await accountEmail(c?.clerkUserId, c?.email), fromName: t?.name, replyTo: realAddressOrNull(t?.email), subject: "Zakończono współpracę z trenerem",
-      text: `Trener ${t?.name ?? ""} odłączył Twoje konto. Twoja historia treningów zostaje u Ciebie.` });
+    await sendCatalogueMail("disconnected_by_trainer", { to: p.person.to, data: { name: p.person.name }, onBehalfOf: { name: p.trainer.name, email: p.trainer.email } });
   } else {
-    await sendPlainEmail({ to: await accountEmail(t?.clerkUserId, t?.email), subject: "Podopieczny odłączył się",
-      text: `${c?.firstName ?? "Podopieczny"} odłączył się od Ciebie. Nie masz już dostępu do danych tej osoby.` });
+    await sendCatalogueMail("disconnected_by_client", { to: p.trainer.to, data: { name: firstNameOf(p.trainer.name), personName: p.person.name } });
   }
   return true;
 }
@@ -219,10 +232,14 @@ async function decide(req: import("express").Request, res: import("express").Res
       res.status(409).json({ error: "Ta osoba jest już połączona z innym trenerem.", code: "ALREADY_LINKED" });
       return;
     }
+    const p = await mailParties(r.clientId, req.trainer!.id);
+    await sendCatalogueMail("join_accepted", { to: p.person.to, data: { name: p.person.name }, onBehalfOf: { name: p.trainer.name, email: p.trainer.email } });
     res.json({ ok: true, clientId: r.clientId });
     return;
   }
   await db.update(trainerJoinRequestsTable).set({ status: "rejected", decidedAt: new Date() }).where(eq(trainerJoinRequestsTable.id, id));
+  const p = await mailParties(r.clientId, req.trainer!.id);
+  await sendCatalogueMail("join_rejected", { to: p.person.to, data: { name: p.person.name, trainerName: p.trainer.name } });
   res.json({ ok: true });
 }
 

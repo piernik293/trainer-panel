@@ -17,7 +17,7 @@ import { requireAuth, checkIsAppAdmin, provisionTrainer, canBecomeTrainer } from
 import { ensureSoloClient, soloEnabled } from "../services/solo";
 import { ensureSelfClient } from "../services/selfTraining";
 import { isPlaceholderAddress, realAddressOrNull, accountEmail } from "../services/mailAddress";
-import { mailApplicationAccepted, mailApplicationRejected, notifyOwnerNewApplication } from "../services/applicationMail";
+import { mailApplicationAccepted, mailApplicationReceived, mailApplicationRejected, notifyOwnerNewApplication } from "../services/applicationMail";
 import { AUTO_ACCEPT_KEY, REAPPLY_LATER_MESSAGE, canApplyNow, nextApplyAt } from "../services/trainerApplications";
 
 const router: IRouter = Router();
@@ -85,7 +85,7 @@ async function grantTrainer(app: { id: number; clerkUserId: string; displayName:
   }
   if (trainer) await ensureSelfClient({ id: trainer.id, clerkUserId: trainer.clerkUserId, email: trainer.email ?? app.email });
   await db.update(trainerApplicationsTable).set({ status: "accepted", decidedAt: new Date(), decidedBy }).where(eq(trainerApplicationsTable.id, app.id));
-  await mailApplicationAccepted(await accountEmail(app.clerkUserId, app.email));
+  await mailApplicationAccepted(await accountEmail(app.clerkUserId, app.email), app.displayName);
 }
 
 router.post("/trainer-applications", async (req, res): Promise<void> => {
@@ -121,6 +121,7 @@ router.post("/trainer-applications", async (req, res): Promise<void> => {
     return;
   }
   await notifyOwnerNewApplication({ name: displayName, email, note: body.data.note ?? null });
+  await mailApplicationReceived(await accountEmail(userId, email), displayName); // potwierdzenie przyjęcia do wnioskodawcy
   res.status(201).json({ status: "pending" });
 });
 
@@ -141,7 +142,7 @@ async function decide(req: import("express").Request, res: import("express").Res
   if (accept) await grantTrainer(a, req.clerkUserId!);
   else {
     await db.update(trainerApplicationsTable).set({ status: "rejected", decidedAt: new Date(), decidedBy: req.clerkUserId! }).where(eq(trainerApplicationsTable.id, id));
-    await mailApplicationRejected(await accountEmail(a.clerkUserId, a.email));
+    await mailApplicationRejected(await accountEmail(a.clerkUserId, a.email), a.displayName);
   }
   res.json({ ok: true });
 }

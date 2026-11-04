@@ -15,3 +15,11 @@ export const attentionDismissalsTable = pgTable("attention_dismissals", {
   ref: text("ref").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => [uniqueIndex("attention_dismissals_unique_idx").on(t.trainerId, t.kind, t.ref)]);
+
+/** Migracja 0072: dziennik maili wysyłanych automatycznie — unikalny (rodzaj, odniesienie), więc ten sam mail nie wychodzi dwa razy. */
+export const mailLogTable = pgTable("mail_log", {
+  id: serial("id").primaryKey(),
+  kind: text("kind").notNull(),
+  ref: text("ref").notNull(),
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+}, (t) => [uniqueIndex("mail_log_kind_ref_idx").on(t.kind, t.ref)]);

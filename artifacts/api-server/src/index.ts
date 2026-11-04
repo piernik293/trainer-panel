@@ -10,6 +10,7 @@ import { seedWarmupCatalogue } from "./seeds/warmupCatalogueSeed";
 import { runSchemaMigrations } from "./seeds/schemaMigrations";
 import { seedUnmappedMuscleVtm, checkUnmappedMuscles } from "./seeds/unmappedMuscleVtm";
 import { runStartupMigration } from "./lib/migration";
+import { startMailJobs } from "./services/mail/jobs";
 
 const rawPort = process.env["PORT"];
 
@@ -95,6 +96,7 @@ async function startServer() {
     }
 
     logger.info({ port, host }, "Server listening");
+    startMailJobs(); // maile automatyczne: okres próbny, pakiety (MAIL_JOBS_ENABLED=0 wyłącza)
   };
   if (host) {
     app.listen(port, host, onListen);

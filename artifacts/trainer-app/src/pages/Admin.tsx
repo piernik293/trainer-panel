@@ -1,4 +1,4 @@
-/** Panel administratora (blok 3): Błędy · Wnioski · Trenerzy · Solo · Abonamenty i limity · Uwagi · Dziennik dostępu. Tylko dla administratora z listy w .env. */
+/** Panel administratora (blok 3): Błędy · Wnioski · Trenerzy · Solo · Abonamenty i limity · Uwagi · Maile · Dziennik dostępu. Tylko dla administratora z listy w .env. */
 import { useState } from "react";
 import { Redirect } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -7,13 +7,13 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { humanizeError } from "@/lib/userError";
 import {
-  AUTO_ACCEPT_CONFIRM, BLOCK_CONFIRM, FEEDBACK_CATEGORY_LABEL, useAdminFeedback, useFeedbackRead, SOURCE_LABEL, useApplicationActions, useAutoAccept, useTrainerApplications, useAccessLog, useAdminAction, useAdminErrors, useAdminSolo, useAdminSubscriptions, useAdminTrainers, useIsAdmin,
+  AUTO_ACCEPT_CONFIRM, BLOCK_CONFIRM, FEEDBACK_CATEGORY_LABEL, useAdminFeedback, useFeedbackRead, SOURCE_LABEL, useApplicationActions, useAutoAccept, useTrainerApplications, useAccessLog, useAdminAction, useAdminErrors, useAdminMails, useAdminMailPreview, useAdminMailTest, useAdminSolo, useAdminSubscriptions, useAdminTrainers, useIsAdmin,
 } from "@/lib/adminApi";
 
-type Tab = "errors" | "applications" | "trainers" | "solo" | "subs" | "feedback" | "log";
+type Tab = "errors" | "applications" | "trainers" | "solo" | "subs" | "feedback" | "mails" | "log";
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: "errors", label: "Błędy" }, { id: "applications", label: "Wnioski" }, { id: "trainers", label: "Trenerzy" }, { id: "solo", label: "Solo" },
-  { id: "subs", label: "Abonamenty i limity" }, { id: "feedback", label: "Uwagi" }, { id: "log", label: "Dziennik dostępu" },
+  { id: "subs", label: "Abonamenty i limity" }, { id: "feedback", label: "Uwagi" }, { id: "mails", label: "Maile" }, { id: "log", label: "Dziennik dostępu" },
 ];
 const fmt = (d: string | null) => (d ? new Date(d).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" }) : "—");
 /** Wnioskodawca: imię i e-mail (gdy znane), inaczej „(bez imienia)”. */
@@ -238,6 +238,39 @@ function Log() {
   );
 }
 
+/** „Maile”: lista szablonów, podgląd (z danymi przykładowymi) i „Wyślij test do mnie” na adres właściciela. */
+function Mails() {
+  const { toast } = useToast();
+  const { data, isLoading } = useAdminMails();
+  const [open, setOpen] = useState<string | null>(null);
+  const preview = useAdminMailPreview(open);
+  const test = useAdminMailTest();
+  if (isLoading) return <div className="h-16 bg-muted animate-pulse rounded" />;
+  return (
+    <div className="space-y-3">
+      {data && !data.ownerAddressSet && <p className="text-sm text-muted-foreground">Ustaw OWNER_NOTIFY_EMAIL w .env, żeby wysyłać testy do siebie.</p>}
+      <ul className="divide-y rounded-md border" data-testid="admin-mails">
+        {(data?.mails ?? []).map((m) => (
+          <li key={m.id} className="p-3 space-y-2" data-testid="admin-mail">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div><p className="text-sm font-medium">{m.label}</p><p className="text-xs text-muted-foreground">Do: {m.audience} · {m.when}</p></div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" aria-expanded={open === m.id} onClick={() => setOpen(open === m.id ? null : m.id)}>{open === m.id ? "Zwiń podgląd" : "Podgląd"}</Button>
+                <Button size="sm" variant="outline" disabled={test.isPending || !data?.ownerAddressSet} onClick={() => test.mutate(m.id, {
+                  onSuccess: () => toast({ title: "Test wysłany na Twój adres." }), onError: (e) => toast({ title: humanizeError(e), variant: "destructive" }),
+                })}>Wyślij test do mnie</Button>
+              </div>
+            </div>
+            {open === m.id && (preview.data
+              ? <div className="space-y-2"><p className="text-sm"><b>Temat:</b> {preview.data.subject}</p><iframe title={`Podgląd: ${m.label}`} sandbox="" srcDoc={preview.data.html} className="h-[520px] w-full rounded border bg-white" /></div>
+              : <div className="h-16 bg-muted animate-pulse rounded" />)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /** Etykieta karty z licznikiem nowych wniosków („Wnioski (2)”). */
 export const tabLabel = (t: { id: Tab; label: string }, pendingApplications: number) => (t.id === "applications" && pendingApplications > 0 ? `${t.label} (${pendingApplications})` : t.label);
 
@@ -263,6 +296,7 @@ export default function Admin() {
       {activeTab === "solo" && <Solo />}
       {activeTab === "subs" && <Subs />}
       {activeTab === "feedback" && <Feedback />}
+      {activeTab === "mails" && <Mails />}
       {activeTab === "log" && <Log />}
     </div>
   );
