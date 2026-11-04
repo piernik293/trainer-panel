@@ -41,9 +41,10 @@ describe("TrainerProfileGate", () => {
     const fetchMock = stubFetch(200, { id: 7 });
     renderGate();
     expect(await screen.findByText("Panel trenera")).toBeTruthy();
-    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toMatch(/\/api\/trainer\/profile$/);
-    expect(init.method).toBe("POST");
+    // obok profilu idzie zapytanie o flagę marki (/api/brand-v1/status) — szukamy wywołania profilu, nie zakładamy kolejności
+    const call = (fetchMock.mock.calls as unknown as [string, RequestInit][]).find(([u]) => /\/api\/trainer\/profile$/.test(u));
+    expect(call).toBeTruthy();
+    expect(call![1].method).toBe("POST");
   });
 
   it("konto bez roli trenera (klient, nowe konto, Solo): bez ślepego ekranu — od razu przejście do portalu, ekranów trenera nie widać", async () => {
