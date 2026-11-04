@@ -155,6 +155,29 @@ describe("Ty (v2) i edycja profilu", () => {
     fireEvent.click(screen.getByRole("button", { name: /Wyloguj się/ }));
     expect(base.onSignOut).toHaveBeenCalled();
   });
+  it("odznaka „Trener” przy nicku tylko dla konta trenera", () => {
+    const { rerender } = render(<YouV2 {...base} profile={{ ...FALLBACK_PROFILE("Anna"), nick: "ola", isTrainer: true }} />);
+    expect(screen.getByTestId("trainer-badge").textContent).toBe("Trener");
+    rerender(<YouV2 {...base} profile={{ ...FALLBACK_PROFILE("Anna"), nick: "ola", isTrainer: false }} />);
+    expect(screen.queryByTestId("trainer-badge")).toBeNull();
+  });
+  it("edycja: przy zablokowanej zmianie nick jest tylko do odczytu z datą, a zapis nie wysyła nicka (nazwa i kolor dalej się zapisują)", async () => {
+    const until = new Date(Date.now() + 10 * 86_400_000).toISOString();
+    const fetchMock = vi.fn().mockResolvedValue(json({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    const onSaved = vi.fn();
+    render(<EditProfile profile={{ ...FALLBACK_PROFILE("Anna"), nick: "ola_k", nickChangeAvailableAt: until }} onSaved={onSaved} onCancel={vi.fn()} />);
+    expect((screen.getByLabelText(/Nick/) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByTestId("nick-hint").textContent).toContain("Nick możesz zmienić ponownie");
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(JSON.parse(String((fetchMock.mock.calls[0]![1] as RequestInit).body))).not.toHaveProperty("nick");
+  });
+  it("edycja: odblokowana — podpowiedź o zasadach (raz na 30 dni, stary nick zablokowany 30 dni)", () => {
+    render(<EditProfile profile={FALLBACK_PROFILE("Anna")} onSaved={vi.fn()} onCancel={vi.fn()} />);
+    expect((screen.getByLabelText(/Nick/) as HTMLInputElement).disabled).toBe(false);
+    expect(screen.getByTestId("nick-hint").textContent).toContain("raz na 30 dni");
+  });
   it("stoper w „Ty”: dźwięk i wibracja domyślnie włączone; wyłączenie dźwięku zapisuje ustawienie (to samo co przycisk głośnika)", () => {
     resetTimerSettingsForTests();
     render(<YouV2 {...base} profile={FALLBACK_PROFILE("Anna")} />);

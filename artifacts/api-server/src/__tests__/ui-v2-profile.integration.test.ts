@@ -1,7 +1,10 @@
-/** Nowy wygląd portalu: flaga UI_V2_ENABLED, profil (nick unikalny bez względu na wielkość liter, walidacja, kolor), izolacja kont. */
+/**
+ * Nowy wygląd portalu: flaga UI_V2_ENABLED, profil i zasady nicka — unikalność bez względu na wielkość liter, nicki zarezerwowane i „prawie identyczne”,
+ * zmiana najwyżej raz na 30 dni, stary nick zablokowany dla innych na 30 dni, odznaka „Trener”, izolacja kont.
+ */
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
 import request from "supertest";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 const auth = vi.hoisted(() => ({ userId: "uiv2_client_a" }));
 vi.mock("@clerk/express", () => ({
@@ -12,26 +15,35 @@ vi.mock("@clerk/express", () => ({
 vi.mock("@clerk/shared/keys", () => ({ publishableKeyFromHost: () => "pk_test_mock" }));
 
 import app from "../app";
-import { db, pool, trainersTable, clientsTable } from "@workspace/db";
+import { db, pool, trainersTable, clientsTable, nickHistoryTable } from "@workspace/db";
 
-const IDS = ["uiv2_client_a", "uiv2_client_b"];
+const A = "uiv2_client_a", B = "uiv2_client_b", T = "uiv2_client_trainer";
+const IDS = [A, B, T];
 let trainerId = 0;
 const put = (body: unknown) => request(app).put("/api/client-portal/profile").send(body as object);
+const as = (id: string) => { auth.userId = id; };
+const DAY = 86_400_000;
+/** pretend the last change was `days` ago (the 30-day limit) */
+const backdate = (clerk: string, days: number) => db.update(clientsTable).set({ nickChangedAt: new Date(Date.now() - days * DAY) }).where(eq(clientsTable.clerkUserId, clerk));
+const idOf = async (clerk: string) => (await db.select({ id: clientsTable.id }).from(clientsTable).where(eq(clientsTable.clerkUserId, clerk)))[0]!.id;
 
+async function wipe() {
+  await db.delete(clientsTable).where(inArray(clientsTable.clerkUserId, IDS)); // nick_history goes with it (ON DELETE CASCADE)
+  await db.delete(trainersTable).where(eq(trainersTable.clerkUserId, T));
+}
 beforeAll(async () => {
-  await db.delete(clientsTable).where(inArray(clientsTable.clerkUserId, IDS));
+  await wipe();
   const [t] = await db.insert(trainersTable).values({ clerkUserId: "uiv2_trainer" }).onConflictDoUpdate({ target: trainersTable.clerkUserId, set: { clerkUserId: "uiv2_trainer" } }).returning();
   trainerId = t.id;
-  for (const [i, id] of IDS.entries()) await db.insert(clientsTable).values({ firstName: i ? "Beata" : "Anna", lastName: "uiv2-test", trainerId, status: "active", clerkUserId: id });
+  await db.insert(trainersTable).values({ clerkUserId: T }).onConflictDoNothing();
+  for (const [i, id] of IDS.entries()) await db.insert(clientsTable).values({ firstName: ["Anna", "Beata", "Tomasz"][i]!, lastName: "uiv2-test", trainerId, status: "active", clerkUserId: id });
 }, 60_000);
-afterEach(() => { vi.unstubAllEnvs(); auth.userId = "uiv2_client_a"; });
-afterAll(async () => {
-  await db.delete(clientsTable).where(inArray(clientsTable.clerkUserId, IDS));
-  await pool.end();
-});
+afterEach(() => { vi.unstubAllEnvs(); as(A); });
+afterAll(async () => { await wipe(); await pool.end(); });
 
 describe("UI_V2_ENABLED", () => {
   it("wyłączona (domyślnie): status mówi false, profil to 404", async () => {
+    vi.stubEnv("UI_V2_ENABLED", ""); // niezależnie od .env (tam flaga może być włączona)
     expect((await request(app).get("/api/ui-v2/status")).body).toEqual({ enabled: false });
     expect((await request(app).get("/api/client-portal/profile")).status).toBe(404);
     expect((await put({ nick: "abc" })).status).toBe(404);
@@ -42,36 +54,90 @@ describe("UI_V2_ENABLED", () => {
   });
 });
 
-describe("profil", () => {
-  it("zapis nicka, nazwy i koloru; odczyt zwraca to samo i listę 6 kolorów", async () => {
+describe("profil i nick", () => {
+  it("pierwsze ustawienie nicka jest wolne; nazwa i kolor zapisują się; odczyt zwraca 6 kolorów", async () => {
     vi.stubEnv("UI_V2_ENABLED", "1");
     const r = await put({ nick: "ShiiFuu", displayName: "Shii", avatarColor: "#0F766E" });
     expect(r.status).toBe(200);
-    expect(r.body).toMatchObject({ nick: "ShiiFuu", displayName: "Shii", avatarColor: "#0F766E", firstName: "Anna" });
+    expect(r.body).toMatchObject({ nick: "ShiiFuu", displayName: "Shii", avatarColor: "#0F766E", firstName: "Anna", isTrainer: false });
     expect(r.body.colors).toHaveLength(6);
-    expect((await request(app).get("/api/client-portal/profile")).body.nick).toBe("ShiiFuu");
+    expect(typeof r.body.nickChangeAvailableAt).toBe("string"); // a change is now locked for 30 days
   });
-  it("nick zajęty (także inną wielkością liter) → 409; własny nick można zapisać ponownie", async () => {
+  it("zmiana innego nicka zaraz potem → 429 z datą; sama zmiana wielkości liter jest wolna", async () => {
     vi.stubEnv("UI_V2_ENABLED", "1");
-    auth.userId = "uiv2_client_b";
+    const r = await put({ nick: "InnyNick" });
+    expect(r.status).toBe(429);
+    expect(r.body.code).toBe("NICK_COOLDOWN");
+    expect(r.body.availableAt).toBeTruthy();
+    expect((await put({ nick: "SHIIFUU" })).status).toBe(200);
+    expect((await request(app).get("/api/client-portal/profile")).body.nick).toBe("SHIIFUU");
+    expect((await put({ displayName: "Nowa" })).status).toBe(200); // nazwa i kolor bez ograniczeń
+  });
+  it("nick zajęty, także inną wielkością liter → 409", async () => {
+    vi.stubEnv("UI_V2_ENABLED", "1");
+    as(B);
     const r = await put({ nick: "shiifuu" });
     expect(r.status).toBe(409);
     expect(r.body.code).toBe("NICK_TAKEN");
-    auth.userId = "uiv2_client_a";
-    expect((await put({ nick: "SHIIFUU" })).status).toBe(200);
   });
-  it("walidacja: zły nick, wulgaryzm, nieznany kolor, za długa nazwa → 400; nic się nie zmienia", async () => {
+  it("nick prawie identyczny z cudzym (tylko _ . lub cyfra na końcu) → 409", async () => {
     vi.stubEnv("UI_V2_ENABLED", "1");
+    as(B);
+    for (const n of ["shii_fuu", "Shii.Fuu", "shiifuu1", "ShiiFuu77", "_shiifuu_"]) {
+      const r = await put({ nick: n });
+      expect(r.status, n).toBe(409);
+      expect(r.body.code, n).toBe("NICK_TAKEN");
+    }
+  });
+  it("nicki zarezerwowane → 400 NICK_RESERVED; zły format i wulgaryzm → 400; nic się nie zmienia", async () => {
+    vi.stubEnv("UI_V2_ENABLED", "1");
+    as(B);
+    for (const n of ["admin", "Admin_1", "optimatren", "trener", "support", "pomoc", "moderator", "root", "system"]) {
+      const r = await put({ nick: n });
+      expect(r.status, n).toBe(400);
+      expect(r.body.code, n).toBe("NICK_RESERVED");
+    }
     expect((await put({ nick: "a" })).status).toBe(400);
     expect((await put({ nick: "kurwa123" })).status).toBe(400);
     expect((await put({ avatarColor: "#000000" })).status).toBe(400);
     expect((await put({ displayName: "x".repeat(41) })).status).toBe(400);
-    expect((await request(app).get("/api/client-portal/profile")).body.nick).toBe("SHIIFUU");
+    expect((await request(app).get("/api/client-portal/profile")).body.nick).toBeNull();
   });
-  it("nick można usunąć (null); imię i nazwisko widoczne dla trenera się nie zmieniają", async () => {
+  it("po 30 dniach zmiana jest możliwa, a stary nick zostaje zablokowany dla innych na 30 dni", async () => {
     vi.stubEnv("UI_V2_ENABLED", "1");
-    const r = await put({ nick: null });
-    expect(r.body.nick).toBeNull();
-    expect(r.body.firstName).toBe("Anna");
+    await backdate(A, 31);
+    expect((await put({ nick: "NowyNick" })).status).toBe(200);
+    as(B);
+    for (const n of ["ShiiFuu", "shii_fuu2"]) {
+      const r = await put({ nick: n });
+      expect(r.status, n).toBe(409);
+      expect(r.body.code, n).toBe("NICK_HELD");
+    }
+    expect((await put({ nick: "MojNick" })).status).toBe(200); // wolny nick przechodzi
+  });
+  it("po upływie blokady (30 dni) stary nick jest znów dostępny dla innych", async () => {
+    vi.stubEnv("UI_V2_ENABLED", "1");
+    await db.update(nickHistoryTable).set({ blockedUntil: new Date(Date.now() - DAY) }).where(eq(nickHistoryTable.clientId, await idOf(A)));
+    await backdate(B, 31);
+    as(B);
+    expect((await put({ nick: "ShiiFuu" })).status).toBe(200);
+  });
+  it("usunięcie nicka też liczy się jako zmiana (nie da się obejść limitu przez „usuń i ustaw”)", async () => {
+    vi.stubEnv("UI_V2_ENABLED", "1");
+    as(B);
+    await backdate(B, 31);
+    expect((await put({ nick: null })).body.nick).toBeNull();
+    const again = await put({ nick: "Cokolwiek" });
+    expect(again.status).toBe(429);
+    expect(again.body.code).toBe("NICK_COOLDOWN");
+  });
+  it("odznaka „Trener” tylko przy koncie z rolą trenera; imię i nazwisko dla trenera się nie zmieniają", async () => {
+    vi.stubEnv("UI_V2_ENABLED", "1");
+    as(T);
+    expect((await request(app).get("/api/client-portal/profile")).body.isTrainer).toBe(true);
+    as(A);
+    const p = (await request(app).get("/api/client-portal/profile")).body;
+    expect(p.isTrainer).toBe(false);
+    expect(p.firstName).toBe("Anna");
   });
 });

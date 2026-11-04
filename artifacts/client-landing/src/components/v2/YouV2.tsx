@@ -20,6 +20,11 @@ function ListRow({ label, value, open, onToggle, children, testId }: { label: st
   );
 }
 
+/** Small badge next to the nick of a trainer's account. */
+export function TrainerBadge() {
+  return <span data-testid="trainer-badge" className="ml-2 inline-flex items-center rounded-full bg-brand-soft px-2 py-0.5 align-middle text-xs font-bold text-primary">Trener</span>;
+}
+
 /** Timer: sound and vibration on/off (default both on). The sound switch is the same state as the speaker button on the timer screen. */
 function TimerSettingsRows() {
   const t = useTimerSettings();
@@ -61,9 +66,11 @@ export function EditProfile({ profile, onSaved, onCancel }: { profile: ProfileV2
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const name = shownName({ nick: nick.trim() || null, displayName: displayName.trim() || null, firstName: profile.firstName });
+  // a nick can be changed once per 30 days; until then the field is read-only (the server enforces it too)
+  const lockedUntil = profile.nickChangeAvailableAt && new Date(profile.nickChangeAvailableAt).getTime() > Date.now() ? new Date(profile.nickChangeAvailableAt) : null;
   const submit = async () => {
     setBusy(true); setError(null);
-    const r = await saveProfile({ nick: nick.trim() === "" ? null : nick.trim(), displayName, avatarColor: color });
+    const r = await saveProfile({ ...(lockedUntil ? {} : { nick: nick.trim() === "" ? null : nick.trim() }), displayName, avatarColor: color });
     setBusy(false);
     if (r.ok) onSaved(); else setError(r.error);
   };
@@ -83,8 +90,10 @@ export function EditProfile({ profile, onSaved, onCancel }: { profile: ProfileV2
       </div>
       <div>
         <label htmlFor="pv2-nick" className="mb-1 block text-xs font-semibold text-muted-foreground">Nick (opcjonalnie)</label>
-        <input id="pv2-nick" value={nick} maxLength={21} autoCapitalize="none" autoCorrect="off" onChange={(e) => setNick(e.target.value)} placeholder="np. ola_trenuje" className="h-12 w-full rounded-xl border border-input bg-background px-3 text-base" />
-        <p className="mt-1 text-xs text-muted-foreground">3–20 znaków: litery, cyfry, _ lub kropka.</p>
+        <input id="pv2-nick" value={nick} maxLength={21} autoCapitalize="none" autoCorrect="off" disabled={!!lockedUntil} onChange={(e) => setNick(e.target.value)} placeholder="np. ola_trenuje" className="h-12 w-full rounded-xl border border-input bg-background px-3 text-base disabled:opacity-60" />
+        <p className="mt-1 text-xs text-muted-foreground" data-testid="nick-hint">{lockedUntil
+          ? `Nick możesz zmienić ponownie ${lockedUntil.toLocaleDateString("pl-PL")}.`
+          : "3–20 znaków: litery, cyfry, _ lub kropka. Nick można zmienić raz na 30 dni; stary nick przez 30 dni nie jest dostępny dla innych."}</p>
       </div>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       <div className="grid grid-cols-2 gap-2">
@@ -119,7 +128,7 @@ export function YouV2({ profile, featured, trainerRow, applyRow, appearance, pri
       ) : (
         <section aria-label="Profil" className="flex flex-col items-center gap-1.5 pt-2 text-center">
           <AvatarV2 name={name} color={profile.avatarColor} size={88} />
-          <h1 className="mt-1 text-2xl font-extrabold" data-testid="you-name">{name}</h1>
+          <h1 className="mt-1 text-2xl font-extrabold" data-testid="you-name">{name}{profile.isTrainer && <TrainerBadge />}</h1>
           {sub && <p className="text-sm text-muted-foreground" data-testid="you-sub">{sub}</p>}
           <button type="button" onClick={() => setEditing(true)} className="mt-1 flex min-h-11 items-center rounded-xl border border-border bg-card px-5 text-sm font-bold">Edytuj profil</button>
         </section>

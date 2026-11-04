@@ -2,8 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 
 export interface ProfileV2 {
   firstName: string; displayName: string | null; nick: string | null; avatarColor: string; colors: string[]; trainsSince: string | null;
+  /** the "Trener" badge next to the nick */
+  isTrainer?: boolean;
+  /** ISO date from which the nick can be changed again (once per 30 days); null/absent = now */
+  nickChangeAvailableAt?: string | null;
 }
-export const FALLBACK_PROFILE = (firstName: string): ProfileV2 => ({ firstName, displayName: null, nick: null, avatarColor: "#C2410C", colors: ["#C2410C", "#0F766E", "#1D4ED8", "#7E22CE", "#BE123C", "#4D7C0F"], trainsSince: null });
+export const FALLBACK_PROFILE = (firstName: string): ProfileV2 => ({ firstName, displayName: null, nick: null, avatarColor: "#C2410C", colors: ["#C2410C", "#0F766E", "#1D4ED8", "#7E22CE", "#BE123C", "#4D7C0F"], trainsSince: null, isTrainer: false, nickChangeAvailableAt: null });
 
 /** Own profile of the v2 screens. Any failure → fallback built from the first name (the screens still render). */
 export function useProfileV2(firstName: string, enabled = true): { profile: ProfileV2; reload: () => void } {
