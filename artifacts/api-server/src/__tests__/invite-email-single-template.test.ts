@@ -79,13 +79,16 @@ describe("POST /clients/:id/survey-invite (profile / new client path)", () => {
     expect(res.body.emailSent).toBe(true);
     expect(sendMail).toHaveBeenCalledTimes(1);
     const mail = sendMail.mock.calls[0]![0] as { from: string; subject: string; html: string; text: string; replyTo?: string };
-    expect(mail.subject).toBe("Anna zaprasza Cię do wywiadu treningowego");
+    expect(mail.subject).toBe("Anna Nowak zaprasza Cię do Optimatren — przygotuje Twój plan treningowy");
     expect(mail.subject).not.toBe("Twój wywiad treningowy");
     expect(mail.from).toContain("Anna Nowak przez Optimatren");
     expect(mail.replyTo).toBe("anna.trener@example.com");
     expect(mail.html).not.toMatch(/#2563eb/i);
     expect(mail.html).toContain("https://app.example.com/client-landing/survey/");
-    expect(mail.text).toContain("Cześć Marta,");
+    expect(mail.text).toContain("Cześć, Marta,");
+    expect(mail.text).toContain("Anna Nowak, Twój trener, zaprasza Cię do Optimatren");
+    expect(mail.text).toContain("Dla Ciebie jest bezpłatna.");
+    expect(mail.text).toContain("Link jest ważny 7 dni. Jeśli nie znasz tej osoby, zignoruj tę wiadomość.");
     expect(res.body.url).toBe(mail.text.match(/https:\/\/\S+/)![0]);
   });
   it("banner: embedded CID JPEG <= 80 KB, alt text, graphite cell behind it, text independent of the image", async () => {
