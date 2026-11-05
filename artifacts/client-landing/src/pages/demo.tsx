@@ -67,7 +67,7 @@ export default function DemoPage() {
         )}
         {stage === "train" && (
           <>
-            <SetScreen key={ex.planExerciseId} ex={ex} index={index} total={DEMO_EXERCISES.length} sets={mine} skipped={false}
+            <SetScreen animation={false} key={ex.planExerciseId} ex={ex} index={index} total={DEMO_EXERCISES.length} sets={mine} skipped={false}
               onSave={saveSet} onPrev={() => setIndex(Math.max(0, index - 1))} onNext={next} onOpenList={() => setStage("today")} onPain={() => setPainNote(true)} />
             {painNote && <p role="status" className="rounded-lg bg-muted px-3 py-2 text-sm">W trybie podglądu to zgłoszenie nic nie zapisuje. W prawdziwej aplikacji trener dostaje wiadomość.</p>}
           </>

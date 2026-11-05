@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ExerciseAnimationBox } from "./ExerciseAnimationBox";
 import { ChevronLeft, ListChecks, HelpCircle, Trophy, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ExerciseInfo } from "@/lib/training/types";
@@ -29,7 +30,7 @@ export function HoldTimer({ seconds }: { seconds: number }) {
 
 /** Per-set logging for one exercise: table (Seria / Poprzednio / Dziś / RIR) + editor of the active set. */
 export function SetScreen({
-  ex, index, total, sets, skipped, onSave, onPrev, onNext, onOpenList, onPain, timer = false,
+  ex, index, total, sets, skipped, onSave, onPrev, onNext, onOpenList, onPain, timer = false, animation = true,
 }: {
   ex: ExerciseInfo;
   index: number;
@@ -43,6 +44,8 @@ export function SetScreen({
   onPain: () => void;
   /** new look: the rest timer starts after a set, so the "no timer" hint is not shown */
   timer?: boolean;
+  /** animacja ćwiczenia (zatwierdzone, za flagą); tryb podglądu bez konta jej nie pobiera */
+  animation?: boolean;
 }) {
   const nextNo = activeSetNumber(sets, ex.sets);
   const [editing, setEditing] = useState<number | null>(null);
@@ -88,6 +91,7 @@ export function SetScreen({
             <p className="whitespace-pre-line pb-2 text-sm text-foreground/90">{ex.howTo}</p>
           </details>
         )}
+        {animation && <ExerciseAnimationBox exerciseId={ex.exerciseId} name={ex.name} />}
         <p className="mt-1 text-sm font-medium text-foreground">{formatTarget(ex)}</p>
         {ex.note && <p className="mt-1 text-sm text-muted-foreground">{ex.note}</p>}
         {ex.method && (

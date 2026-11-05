@@ -52,6 +52,7 @@ import termsRouter from "./terms";
 import bodyLogRouter from "./bodyLog";
 import trainerLibraryRouter from "./trainerLibrary";
 import onboardingRouter from "./onboarding";
+import exerciseAnimationsRouter from "./exerciseAnimations";
 import ownPlanRouter from "./ownPlan";
 
 const router: IRouter = Router();
@@ -109,6 +110,7 @@ router.use(termsRouter);
 router.use(bodyLogRouter);
 router.use(trainerLibraryRouter);
 router.use(onboardingRouter);
+router.use(exerciseAnimationsRouter);
 router.use(ownPlanRouter);
 
 /**
