@@ -63,4 +63,8 @@ export const LIMITS = {
   generator: { name: "generator", windowMs: 60_000, max: 120, by: "user" as const },
   /** trainer join codes (block 2 of the accounts work uses this): few attempts, long window */
   trainerCode: { name: "trainer-code", windowMs: 15 * 60_000, max: 10 },
+  /** Solo i własny plan: zwykłe używanie mieści się z zapasem, skrypty nie */
+  soloGeneral: { name: "solo-general", windowMs: 60_000, max: 120, by: "user" as const },
+  /** ułożenie planu Solo (generator) — kilka prób na minutę wystarczy */
+  soloPlan: { name: "solo-plan", windowMs: 60_000, max: 10, by: "user" as const },
 } satisfies Record<string, RateLimitOptions>;
