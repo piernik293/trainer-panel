@@ -4,7 +4,7 @@
  * wywołanego dla typu dnia z wykluczeniem wszystkich ćwiczeń planu. Wybieramy ćwiczenie tej samej partii (najchętniej tego
  * samego wzorca ruchu), które nie dubluje rodziny wzorca z reszty dnia.
  */
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db, workoutPlanExercisesTable, workoutPlanDaysTable, workoutPlansTable, soloExerciseSwapsTable, exercisesTable } from "@workspace/db";
 import { generateDayHandler, type GenerateDayReq } from "../routes/planDraftGenerateDay";
@@ -49,7 +49,12 @@ export async function swapExercise(clientId: number, planExerciseId: number, now
     .innerJoin(workoutPlanDaysTable, eq(workoutPlanDaysTable.id, workoutPlanExercisesTable.dayId))
     .innerJoin(exercisesTable, eq(exercisesTable.id, workoutPlanExercisesTable.exerciseId))
     .where(eq(workoutPlanDaysTable.planId, row.plan.id));
-  const inPlan = planRows.map((r) => r.exerciseId!).filter((x) => x != null);
+  // Nie wracamy też do ćwiczeń już zamienionych w tym planie (wypadły z planu, więc samo „jest w planie” ich nie wyklucza).
+  const peIds = planRows.map((r) => r.id);
+  const swappedAway = peIds.length
+    ? await db.select({ id: soloExerciseSwapsTable.fromExerciseId }).from(soloExerciseSwapsTable).where(and(eq(soloExerciseSwapsTable.clientId, clientId), inArray(soloExerciseSwapsTable.planExerciseId, peIds)))
+    : [];
+  const inPlan = [...planRows.map((r) => r.exerciseId!), ...swappedAway.map((r) => r.id)].filter((x) => x != null);
   const [orig] = await db.select({ name: exercisesTable.name, mainMuscleGroup: exercisesTable.mainMuscleGroup, movementPattern: exercisesTable.movementPattern }).from(exercisesTable).where(eq(exercisesTable.id, row.pe.exerciseId));
   const restOfDay = planRows.filter((r) => r.dayId === row.day.id && r.id !== planExerciseId);
   const dayFamilies = new Set(restOfDay.map((r) => exerciseFamily(r.name)).filter((f): f is string => f != null));

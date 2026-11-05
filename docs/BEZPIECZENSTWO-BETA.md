@@ -107,3 +107,19 @@ Bez zgody generator używa najostrożniejszych ustawień. Wycofanie zgody nie us
 
 ## 11. Pytania do prawnika (bez zmian)
 Co z danymi po wycofaniu zgody; treść zgody i polityki; okres przechowywania kopii (14 dni) i dziennika dostępu; czy trener ręcznie potwierdzający zgodę podopiecznego wystarcza (pole „Podopieczny wyraził zgodę…”).
+
+## 12. Przegląd 2 (05.11.2026, gałąź `qa/bezpieczenstwo-2`) — trasy dodane od poprzedniego przeglądu
+Zakres: nick i profil (`/client-portal/profile`), osiągnięcia i przerwy (`achievements.ts`), story/stoper/ustawienia (`clientSettings.ts`), uwagi (`feedback.ts`), maile (`adminMails.ts`), okres próbny, Solo (`solo.ts`), metody, Złote Byczki (`goldenBulls.ts`), własny plan (`ownPlan.ts`).
+
+**Nowe zabezpieczenie: inwentarz tras z samego routera** (`__tests__/route-inventory-auth.integration.test.ts`). Test czyta listę tras z routera (nie z ręcznej tabeli), więc nowa trasa bez zabezpieczenia wywali go automatycznie. Sprawdza: (a) bez sesji żadna trasa spoza jawnej listy publicznej (z uzasadnieniem każdej) nie odpowiada 2xx; (b) zalogowane konto bez roli nie dotyka żadnej trasy `/admin/*` ani tras trenera i podopiecznego; (c) lista publiczna nie gnije.
+
+Wyniki:
+- **Uprawnienia:** brak luk. Trasy bez sesji to wyłącznie przełączniki flag, kontakt, katalog publiczny, tokeny i szablon CSV (nowe pozycje na liście publicznej: `/contact`, `/guest-demo/status`, `/methods/status`, `/calisthenics/status`, `/own-plan/template.csv` — bez danych osób).
+- **Izolacja:** przerwy trenera (`/clients/:id/pauses`) sprawdzają, że klient należy do trenera; zamiana ćwiczenia i własny plan filtrują po koncie (testy `own-plan`, `solo-zamiana`); podopieczny trenera nie ma dostępu do własnego planu Solo.
+- **Limity (poprawka):** dodane limity na konto: ułożenie planu Solo 10/min (`/api/solo/plan`), reszta Solo i własny plan 120/min. Zwykłe używanie mieści się z dużym zapasem. Test 429 w `security-headers-rate-limit.test.ts`.
+- **Import pliku (własny plan):** limit 2 MB, 1500 wierszy, 30 kolumn, ochrona przed „zip bombą” (20 MB po rozpakowaniu, 500 elementów) — bez zmian, wystarczające.
+- **Dane zdrowotne:** logi nie zawierają treści żądań ani adresów e-mail (serializer żądania: metoda i ścieżka z zamaskowanymi tokenami); uwagi z danymi zdrowotnymi są odrzucane (422); mail „Coś boli?” bez szczegółów; ostrzeżenie przy stawie w własnym planie widzi tylko właściciel konta.
+- **Maile:** test z panelu administratora idzie tylko na adres właściciela; zaproszenie escapuje treść od trenera (`escapeHtml`); adresy zastępcze są blokowane.
+- **Okres próbny i Złote Byczki:** zmiany tylko przez trasy administratora (`requireAdmin`), przyznanie automatyczne w transakcji z blokadą; ręczne przyznanie/odebranie wymaga powodu.
+
+Niezałatwione (do decyzji, `docs/DO-DECYZJI.md`): limity są w pamięci jednego procesu (OK dla jednej maszyny), nagłówek CSP nadal w trybie raportowania do otwarcia na świat.

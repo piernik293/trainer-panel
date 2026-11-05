@@ -81,6 +81,9 @@ app.use("/api/client-invitations", rateLimit(LIMITS.publicToken));
 app.use("/api/trainer/profile", rateLimit(LIMITS.trainerProfile));
 app.use("/api/clients/:clientId/plan-draft", rateLimit(LIMITS.generator));
 app.use("/api/plans/draft-input", rateLimit(LIMITS.generator));
+app.use("/api/solo/plan", rateLimit(LIMITS.soloPlan));
+app.use("/api/solo", rateLimit(LIMITS.soloGeneral));
+app.use("/api/own-plan", rateLimit(LIMITS.soloGeneral));
 
 const safeUserId = (req: Request): string | null => {
   try { return getAuth(req)?.userId ?? null; } catch { return null; }

@@ -69,4 +69,10 @@ describe("rateLimit", () => {
     for (let i = 0; i < 32; i++) last = (await request(app).get("/api/public/survey/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).status;
     expect(last).toBe(429);
   });
+  it("układanie planu Solo: 429 po 10 próbach na minutę; własny plan i reszta Solo mają szerszy limit", async () => {
+    let last = 0;
+    for (let i = 0; i < 12; i++) last = (await request(app).post("/api/solo/plan").send({})).status;
+    expect(last).toBe(429);
+    expect(LIMITS.soloPlan).toMatchObject({ max: 10, by: "user" }); expect(LIMITS.soloGeneral.max).toBe(120);
+  });
 });
