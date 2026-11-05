@@ -7,13 +7,13 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { humanizeError } from "@/lib/userError";
 import {
-  AUTO_ACCEPT_CONFIRM, BLOCK_CONFIRM, FEEDBACK_CATEGORY_LABEL, useAdminFeedback, useFeedbackRead, SOURCE_LABEL, useApplicationActions, useAutoAccept, useTrainerApplications, useAccessLog, useAdminAction, useAdminErrors, useAdminMails, useAdminMailPreview, useAdminMailTest, useAdminBulls, useBullActions, useAdminSolo, useAdminSubscriptions, useAdminTrainers, useIsAdmin,
+  AUTO_ACCEPT_CONFIRM, BLOCK_CONFIRM, FEEDBACK_CATEGORY_LABEL, useAdminFeedback, useFeedbackRead, SOURCE_LABEL, useApplicationActions, useAutoAccept, useTrainerApplications, useAccessLog, useAdminAction, useAdminErrors, useAdminMails, useAdminMailPreview, useAdminMailTest, useAdminBulls, useBullActions, useAdminRoadmap, useRoadmapActions, useAdminSolo, useAdminSubscriptions, useAdminTrainers, useIsAdmin,
 } from "@/lib/adminApi";
 
-type Tab = "errors" | "applications" | "trainers" | "solo" | "subs" | "feedback" | "mails" | "bulls" | "log";
+type Tab = "errors" | "applications" | "trainers" | "solo" | "subs" | "feedback" | "mails" | "bulls" | "roadmap" | "log";
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: "errors", label: "Błędy" }, { id: "applications", label: "Wnioski" }, { id: "trainers", label: "Trenerzy" }, { id: "solo", label: "Solo" },
-  { id: "subs", label: "Abonamenty i limity" }, { id: "feedback", label: "Uwagi" }, { id: "mails", label: "Maile" }, { id: "bulls", label: "Byczki" }, { id: "log", label: "Dziennik dostępu" },
+  { id: "subs", label: "Abonamenty i limity" }, { id: "feedback", label: "Uwagi" }, { id: "mails", label: "Maile" }, { id: "bulls", label: "Byczki" }, { id: "roadmap", label: "Wkrótce" }, { id: "log", label: "Dziennik dostępu" },
 ];
 const fmt = (d: string | null) => (d ? new Date(d).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" }) : "—");
 /** Wnioskodawca: imię i e-mail (gdy znane), inaczej „(bez imienia)”. */
@@ -271,6 +271,45 @@ function Mails() {
   );
 }
 
+/** „Wkrótce”: pozycje karty z głosowaniem „Chcę to” — wyniki z podziałem trener/Solo/podopieczny, dodawanie, ukrywanie, „Gotowe”. */
+function Roadmap() {
+  const { toast } = useToast();
+  const { data, isLoading } = useAdminRoadmap();
+  const { add, patch } = useRoadmapActions();
+  const [title, setTitle] = useState("");
+  const [blurb, setBlurb] = useState("");
+  if (isLoading) return <div className="h-16 bg-muted animate-pulse rounded" />;
+  const err = (e: unknown) => toast({ title: humanizeError(e), variant: "destructive" });
+  return (
+    <div className="space-y-4">
+      {data && !data.enabled && <p className="text-sm text-muted-foreground">Karta „Wkrótce” jest wyłączona (ROADMAP_ENABLED w .env) — użytkownicy jej nie widzą.</p>}
+      <ul className="divide-y rounded-md border" data-testid="admin-roadmap">
+        {(data?.items ?? []).map((i) => (
+          <li key={i.id} className="space-y-1 p-3" data-testid="admin-roadmap-item">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm font-medium">{i.title}{i.hidden ? " · ukryta" : ""}{i.status === "done" ? " · gotowe" : ""}</span>
+              <span className="text-xs text-muted-foreground" data-testid="admin-roadmap-votes">Głosy: {i.votes.total} (trenerzy {i.votes.trener} · Solo {i.votes.solo} · podopieczni {i.votes.podopieczny})</span>
+            </div>
+            <p className="text-xs text-muted-foreground">{i.blurb}</p>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => patch.mutate({ id: i.id, hidden: !i.hidden }, { onError: err })}>{i.hidden ? "Pokaż" : "Ukryj"}</Button>
+              <Button size="sm" variant="outline" onClick={() => patch.mutate({ id: i.id, status: i.status === "done" ? "soon" : "done" }, { onError: err })}>{i.status === "done" ? "Cofnij „Gotowe”" : "Oznacz „Gotowe”"}</Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <Card>
+        <CardHeader><CardTitle className="text-base">Dodaj pozycję</CardTitle><CardDescription>Krótko, bez dat i obietnic.</CardDescription></CardHeader>
+        <CardContent className="space-y-2">
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nazwa (3–80 znaków)" aria-label="Nazwa pozycji" maxLength={80} />
+          <Input value={blurb} onChange={(e) => setBlurb(e.target.value)} placeholder="Jedno zdanie opisu" aria-label="Opis pozycji" maxLength={200} />
+          <Button size="sm" disabled={title.trim().length < 3 || blurb.trim().length < 3 || add.isPending} onClick={() => add.mutate({ title, blurb }, { onSuccess: () => { setTitle(""); setBlurb(""); toast({ title: "Dodano" }); }, onError: err })}>Dodaj</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 /** „Byczki”: lista Złotych Byczków (kto, numer, kiedy), ręczne przyznanie i odebranie — zawsze z powodem. */
 function Bulls() {
   const { toast } = useToast();
@@ -350,6 +389,7 @@ export default function Admin() {
       {activeTab === "feedback" && <Feedback />}
       {activeTab === "mails" && <Mails />}
       {activeTab === "bulls" && <Bulls />}
+      {activeTab === "roadmap" && <Roadmap />}
       {activeTab === "log" && <Log />}
     </div>
   );

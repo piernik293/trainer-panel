@@ -47,6 +47,7 @@ import achievementsRouter from "./achievements";
 import uiV2Router from "./uiV2";
 import adminMailsRouter from "./adminMails";
 import goldenBullsRouter from "./goldenBulls";
+import roadmapRouter from "./roadmap";
 import ownPlanRouter from "./ownPlan";
 
 const router: IRouter = Router();
@@ -99,6 +100,7 @@ router.use(achievementsRouter);
 router.use(uiV2Router);
 router.use(adminMailsRouter);
 router.use(goldenBullsRouter);
+router.use(roadmapRouter);
 router.use(ownPlanRouter);
 
 /**

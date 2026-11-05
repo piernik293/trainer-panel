@@ -303,3 +303,6 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 ## Porządki przed betą (lista; zamknąć przed otwarciem)
 - [x] **Test `solo-zamiana.test.ts` był niestabilny — naprawiony w kodzie, nie pominięty** (05.11.2026). Przyczyna: `swapExercise` wykluczał tylko ćwiczenia będące w planie, więc po zamianie ćwiczenie, które wypadło z planu, mogło wrócić przy kolejnej zamianie (komentarz w kodzie mówił „nie wracamy do żadnego”). Teraz wykluczone są też ćwiczenia już zamienione w tym planie (`soloExerciseSwapsTable`). Test przeszedł 12× z rzędu; pełny przebieg API w ramach bloku 6.
 - [ ] Konta QA/demo i `qaSolo…+clerk_test` do sprzątania skryptem `usun-konta-demo.sh` (blok 9, tylko lista).
+
+## CZĘŚĆ 3 (05.11.2026)
+- **`ROADMAP_ENABLED` (karta „Wkrótce” z głosowaniem)** — zbudowana i przetestowana, **wyłączona**. Włączyć? (docs/WKROTCE.md) Pozycje startowe i ich opisy do Twojej akceptacji.

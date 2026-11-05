@@ -26,6 +26,7 @@ vi.mock("@/lib/dashboardApi", () => ({
   useDismissAttention: () => ({ mutate: mockDismiss, isPending: false }),
   useSetSilenceDays: () => ({ mutate: mockSetDays, isPending: false }),
 }));
+vi.mock("@/components/dashboard/RoadmapPanelCard", () => ({ RoadmapPanelCard: () => null })); // karta „Wkrótce” ma własny test (roadmap-card.test.tsx)
 vi.mock("@/lib/use-subscription-summary", () => ({ useSubscriptionSummary: () => ({ data: mockSub }) }));
 vi.mock("@clerk/react", () => ({ useUser: () => ({ user: { firstName: "Anna" } }) }));
 vi.mock("wouter", () => ({

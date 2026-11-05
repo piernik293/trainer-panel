@@ -9,6 +9,7 @@ import type { CatalogueItem } from "@/lib/v2/achievements";
 import { setTimerSettings, useTimerSettings } from "@/lib/timer/settings";
 
 import { GoldenBullBadge } from "@workspace/design-tokens/brand";
+import { RoadmapSection } from "./RoadmapSection";
 function ListRow({ label, value, open, onToggle, children, testId }: { label: string; value?: string; open: boolean; onToggle: () => void; children?: ReactNode; testId: string }) {
   return (
     <div className="border-b border-border last:border-b-0" data-testid={testId}>
@@ -154,6 +155,7 @@ export function YouV2({ profile, featured, trainerRow, applyRow, appearance, pri
         <ListRow testId="row-privacy" label="Prywatność i zgody" open={open === "privacy"} onToggle={() => toggle("privacy")}><div className="space-y-4">{privacy}</div></ListRow>
       </section>
 
+      <RoadmapSection />
       <section aria-label="Pozostałe" className="space-y-1 text-sm text-muted-foreground">
         <div className="[&_*]:text-muted-foreground">{applyRow}</div>
         <div className="flex flex-wrap items-center gap-x-1">{legal}</div>
