@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import SurveyWizard from "@/components/SurveyWizard";
+import { OwnPlanEntry } from "@/components/ownplan/OwnPlanEditor";
 import { StepsTile } from "@/components/StepsTile";
 import { Button } from "@/components/ui/button";
 
@@ -51,6 +52,7 @@ export function SoloToday({ firstName, hasSurvey, onPlanReady }: { firstName: st
         <p className="text-sm text-muted-foreground">{hasSurvey ? "Masz już odpowiedzi na pytania — plan ułożymy od razu." : "Odpowiesz na kilka pytań, a my ułożymy bezpieczny plan treningowy."}</p>
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
         <Button size="lg" className="w-full" onClick={() => (hasSurvey ? void build() : setPhase("interview"))}>{hasSurvey ? "Ułóż plan" : "Zaczynamy"}</Button>
+        <OwnPlanEntry compact onSaved={onPlanReady} />
       </section>
       <StepsTile compact />
     </div>

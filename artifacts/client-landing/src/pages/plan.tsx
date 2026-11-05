@@ -55,6 +55,7 @@ import { useOverview } from "@/lib/v2/achievements";
 import { PortalShell } from "@/components/shell/PortalShell";
 import { SoloEntry } from "@/components/shell/SoloEntry";
 import { SoloNewPlan } from "@/components/shell/SoloToday";
+import { OwnPlanEntry } from "@/components/ownplan/OwnPlanEditor";
 import type { ShellTab } from "@/components/shell/BottomBar";
 import { ProgressContainer, ProgressContainerV2, YouContainer, YouContainerV2, SoloGate } from "@/components/shell/ShellContainers";
 
@@ -1442,7 +1443,7 @@ export default function PlanPortal() {
             {todayBlock(true)}
           </div>
         )}
-        {tab === "plan" && (<><PlanView client={client} plan={plan} onSelectDay={setSelectedDay} embedded />{flags.solo && <div className="mt-6"><SoloNewPlan endDate={(plan as { endDate?: string | null }).endDate} onPlanReady={() => setPlanRetry((c) => c + 1)} /></div>}</>)}
+        {tab === "plan" && (<><PlanView client={client} plan={plan} onSelectDay={setSelectedDay} embedded />{flags.solo && <div className="mt-6 space-y-3"><SoloNewPlan endDate={(plan as { endDate?: string | null }).endDate} onPlanReady={() => setPlanRetry((c) => c + 1)} /><OwnPlanEntry onSaved={() => setPlanRetry((c) => c + 1)} /></div>}</>)}
         {tab === "postepy" && (uiV2 ? <ProgressContainerV2 achievementsOn={flags.achievements} /> : <ProgressContainer achievementsOn={flags.achievements} />)}
         {tab === "ty" && (uiV2
           ? <YouContainerV2 profile={profileV2} reloadProfile={reloadProfileV2} achievementsOn={flags.achievements} onAllAchievements={() => { setTab("postepy"); window.scrollTo({ top: 0 }); }} />

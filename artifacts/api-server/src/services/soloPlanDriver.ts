@@ -5,6 +5,7 @@
  * Uproszczenie wersji 1: dawkowanie (serie, powtórzenia, przerwy) bierze z silnika (prescribeExercise), bez ręcznego bilansu objętości trenera.
  * Dotyczy też „Mojego treningu” trenera (jego własny wiersz klienta). Nic tu nie dotyka kont trenerów ani cudzych podopiecznych.
  */
+import { realSurvey } from "./ownPlan";
 import { dayNames } from "./dayNaming";
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
@@ -51,7 +52,8 @@ export async function generateSoloPlan(clientId: number, now: Date = new Date())
   const [client] = await db.select({ id: clientsTable.id, trainerId: clientsTable.trainerId, override: clientsTable.experienceLevelOverride }).from(clientsTable).where(eq(clientsTable.id, clientId));
   if (!client || (client.trainerId !== null && !(await isSelfTraining(clientId)))) return { ok: false, code: "NOT_SOLO", message: "Plan układa Twój trener." };
 
-  const [rawSurvey] = await db.select().from(surveysTable).where(eq(surveysTable.clientId, clientId)).orderBy(desc(surveysTable.createdAt)).limit(1);
+  // wywiad-zaślepka z własnego planu (osoba nie odpowiadała na pytania) nie służy do układania planu przez generator
+  const rawSurvey = await realSurvey(clientId);
   if (!rawSurvey) return { ok: false, code: "NO_SURVEY", message: "Najpierw odpowiedz na kilka pytań o siebie." };
 
   if (!betaNoLimits()) {

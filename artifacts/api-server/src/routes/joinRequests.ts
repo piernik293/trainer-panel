@@ -20,12 +20,13 @@ import { hideSoloHistory, restoreSoloHistory } from "../services/soloHistory";
 import { ensureSoloClient, soloEnabled } from "../services/solo";
 import { Router, type IRouter } from "express";
 import { getAuth } from "@clerk/express";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, ne, or } from "drizzle-orm";
 import { z } from "zod";
 import { db, clientsTable, trainersTable, trainerJoinRequestsTable, clientLinkEventsTable, surveysTable, workoutPlansTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { accountEmail } from "../services/mailAddress";
 import { appPublicUrl } from "../services/inviteEmail";
+import { OWN_PLAN_STUB } from "../services/ownPlan";
 import { sendCatalogueMail } from "../services/mail/send";
 import { firstName as firstNameOf } from "../services/applicationMail";
 import { allowJoinAttempt, generateJoinCode, normalizeJoinCode } from "../services/joinCode";
@@ -113,7 +114,7 @@ router.get("/account/status", async (req, res): Promise<void> => {
     .innerJoin(trainersTable, eq(trainersTable.id, trainerJoinRequestsTable.trainerId))
     .where(and(eq(trainerJoinRequestsTable.clientId, c.id), eq(trainerJoinRequestsTable.status, "pending")))
     .orderBy(desc(trainerJoinRequestsTable.createdAt)).limit(1);
-  const [sv] = await db.select({ id: surveysTable.id }).from(surveysTable).where(eq(surveysTable.clientId, c.id)).limit(1);
+  const [sv] = await db.select({ id: surveysTable.id }).from(surveysTable).where(and(eq(surveysTable.clientId, c.id), or(isNull(surveysTable.additionalInfo), ne(surveysTable.additionalInfo, OWN_PLAN_STUB)))).limit(1); // wywiad-zaślepka własnego planu nie liczy się
   const [pl] = await db.select({ id: workoutPlansTable.id }).from(workoutPlansTable).where(and(eq(workoutPlansTable.clientId, c.id), eq(workoutPlansTable.status, "active"))).limit(1);
   res.json({
     linked: c.trainerId != null && !(await isSelfTraining(c.id)), trainerName: linkedTrainer ? (linkedTrainer.name ?? "Twój trener") : null,
