@@ -299,3 +299,7 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 ## CZĘŚĆ 1 — logo i byczek (04.11.2026)
 49. **Statyczne ikony (favicon, apple-touch, PWA 192/512/maskable, manifest) są podmienione od razu**, bo plików statycznych nie da się przełączać flagą `BRAND_V1_ENABLED`. Pozostałe elementy marki (logo w nagłówkach, byczek, nagłówek maili) działają dopiero z flagą. Jeśli wolisz stare ikony do czasu włączenia flagi — przywróć `public/*.png` z gitu.
 50. Logo w mailu: klienci pocztowi nie pokazują SVG ani zdalnych obrazków, więc „Rogate O” jest w mailu uproszczone do pierścienia „O” (bez rogów). Pełne logo w mailu wymagałoby obrazka z domeny (po otwarciu na świat).
+
+## Porządki przed betą (lista; zamknąć przed otwarciem)
+- [x] **Test `solo-zamiana.test.ts` był niestabilny — naprawiony w kodzie, nie pominięty** (05.11.2026). Przyczyna: `swapExercise` wykluczał tylko ćwiczenia będące w planie, więc po zamianie ćwiczenie, które wypadło z planu, mogło wrócić przy kolejnej zamianie (komentarz w kodzie mówił „nie wracamy do żadnego”). Teraz wykluczone są też ćwiczenia już zamienione w tym planie (`soloExerciseSwapsTable`). Test przeszedł 12× z rzędu; pełny przebieg API w ramach bloku 6.
+- [ ] Konta QA/demo i `qaSolo…+clerk_test` do sprzątania skryptem `usun-konta-demo.sh` (blok 9, tylko lista).
