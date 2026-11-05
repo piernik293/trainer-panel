@@ -1,10 +1,9 @@
-import LegalPage from "@/pages/legal";
 import { ClerkProvider } from '@clerk/react';
 import { plPL } from '@clerk/localizations';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { TrainingFlow } from '@/components/training/TrainingFlow';
 import { loadRun } from '@/lib/training/run';
 import { readCachedToday } from '@/lib/training/sync';
@@ -16,12 +15,8 @@ import NotFound from '@/pages/not-found';
 import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import Home from '@/pages/home';
 import PlanPortal from '@/pages/plan';
-import SurveyTokenPage from '@/pages/survey';
-import ActivatePage from '@/pages/activate';
-import JoinPage from '@/pages/join';
 import BookingPreviewPage from '@/pages/booking-preview';
 import PortalPreviewPage from '@/pages/portal-preview';
-import DemoPage from '@/pages/demo';
 import SoloPreviewPage, { isSoloPreviewPath } from '@/pages/solo-preview';
 import UxV2PreviewPage, { isUxV2PreviewPath } from '@/pages/ux-v2-preview';
 import BrandPreviewPage, { isBrandPreviewPath } from '@/pages/brand-preview';
@@ -85,8 +80,16 @@ const clerkLocalization = {
 
 const queryClient = new QueryClient();
 
+// Rzadkie ścieżki (prawne, ankieta, zaproszenie, dołączenie, demo) ładują się dopiero po wejściu — mniejszy start na telefonie.
+const LegalPage = lazy(() => import('@/pages/legal'));
+const SurveyTokenPage = lazy(() => import('@/pages/survey'));
+const ActivatePage = lazy(() => import('@/pages/activate'));
+const JoinPage = lazy(() => import('@/pages/join'));
+const DemoPage = lazy(() => import('@/pages/demo'));
+
 function Router() {
   return (
+    <Suspense fallback={<div className="min-h-screen" aria-busy="true" />}>
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/plan" component={PlanPortal} />
@@ -111,6 +114,7 @@ function Router() {
       <Route path="/demo" component={DemoPage} />
       <Route component={NotFound} />
     </Switch>
+    </Suspense>
   );
 }
 

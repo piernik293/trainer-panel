@@ -1,0 +1,18 @@
+import { chromium } from "playwright";
+const url = process.argv[2], label = process.argv[3] || "";
+const b = await chromium.launch();
+const ctx = await b.newContext({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, userAgent: "Mozilla/5.0 (Linux; Android 12; Pixel 5) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36" });
+const p = await ctx.newPage();
+const c = await ctx.newCDPSession(p);
+await c.send("Network.enable");
+await c.send("Network.emulateNetworkConditions", { offline: false, latency: 150, downloadThroughput: 1.6*1024*1024/8, uploadThroughput: 750*1024/8 });
+await c.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+let bytes = 0, reqs = 0, jsb = 0;
+c.on("Network.loadingFinished", (e) => { bytes += e.encodedDataLength; reqs++; });
+const t0 = Date.now();
+await p.goto(url, { waitUntil: "load", timeout: 120000 });
+const loadMs = Date.now() - t0;
+await p.waitForTimeout(3000);
+const m = await p.evaluate(() => ({ fcp: performance.getEntriesByName("first-contentful-paint")[0]?.startTime, lcp: 0 }));
+console.log(JSON.stringify({ label, loadMs, fcp: Math.round(m.fcp||0), kB: Math.round(bytes/1024), reqs }));
+await b.close();
