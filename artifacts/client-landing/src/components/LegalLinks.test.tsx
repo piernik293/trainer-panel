@@ -8,7 +8,9 @@ import LegalPage from "../pages/legal";
 describe("legal documents (skeletons)", () => {
   it("three documents; every section is marked as a placeholder for the lawyer; no legal wording invented", () => {
     expect(LEGAL_DOCUMENTS.map((d) => d.slug)).toEqual(["polityka-prywatnosci", "regulamin", "zgoda-zdrowie"]);
-    for (const d of LEGAL_DOCUMENTS) for (const s of d.sections) expect(s.text.startsWith(LEGAL_PLACEHOLDER)).toBe(true);
+    // szkielety (polityka, zgoda): każda sekcja oznaczona dla prawnika; Regulamin to projekt 0.1 z własnymi znacznikami [ ] i oznaczeniem draft
+    for (const d of LEGAL_DOCUMENTS.filter((x) => x.slug !== "regulamin")) for (const s of d.sections) expect(s.text.startsWith(LEGAL_PLACEHOLDER)).toBe(true);
+    expect(legalDocument("regulamin")?.draft).toBe(true);
     expect(legalDocument("zgoda-zdrowie")?.version).toBe(HEALTH_CONSENT_VERSION);
     expect(legalDocument("nie-ma")).toBeUndefined();
   });
@@ -18,12 +20,12 @@ describe("legal documents (skeletons)", () => {
     expect(hrefs.length).toBe(3);
     for (const d of LEGAL_DOCUMENTS) expect(hrefs.some((h) => h?.endsWith(`/legal/${d.slug}`))).toBe(true);
   });
-  it("the page shows the 'DO UZUPEŁNIENIA PRZEZ PRAWNIKA' notice", async () => {
+  it("the Regulamin page shows the 'Wersja testowa — w trakcie weryfikacji prawnej' bar", async () => {
     const { Router, Route } = await import("wouter");
     const { memoryLocation } = await import("wouter/memory-location");
     const { hook } = memoryLocation({ path: "/legal/regulamin" });
     const { getByTestId, container } = render(<Router hook={hook}><Route path="/legal/:slug" component={LegalPage} /></Router>);
-    expect(getByTestId("legal-draft-note").textContent).toContain("DO UZUPEŁNIENIA PRZEZ PRAWNIKA");
+    expect(getByTestId("legal-draft-note").textContent).toContain("Wersja testowa — dokument w trakcie weryfikacji prawnej");
     expect(container.textContent).toContain("Regulamin");
   });
 });
