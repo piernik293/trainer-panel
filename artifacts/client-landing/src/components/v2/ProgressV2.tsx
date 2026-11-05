@@ -5,6 +5,7 @@ import type { CatalogueItem, Overview } from "@/lib/v2/achievements";
 import { ActivityMap } from "@/components/shell/ActivityMap";
 import type { AchievementItem } from "@/components/shell/ProgressScreen";
 
+import { IfBrand, MascotEvent } from "@workspace/design-tokens/brand";
 const ICON: Record<string, typeof Award> = { week_streak: Flame, record: TrendingUp, milestone: Medal, first_month: Sparkles, ladder_step: Award, steps_week: Footprints, month_challenge: Award };
 const fmt = (iso: string) => new Date(iso).toLocaleDateString("pl-PL", { day: "numeric", month: "long" });
 const SHOWN = 9;
@@ -58,6 +59,7 @@ export function ProgressV2({ overview, records, activityDays, today, steps }: {
       <h1 className="text-[26px] font-extrabold tracking-tight">Postępy</h1>
       {overview && (
         <>
+          <IfBrand fallback={null}>{overview.streakWeeks ? <div className="flex justify-center" data-testid="streak-view"><MascotEvent event="streak_view" rozmiar="m" /></div> : null}</IfBrand>
           <dl className="grid grid-cols-3 gap-2" data-testid="progress-tiles">
             <Tile value={overview.sessionCount} label={pluralPl(overview.sessionCount, "trening", "treningi", "treningów")} />
             <Tile value={overview.streakWeeks ?? 0} label="tyg. z rzędu" />

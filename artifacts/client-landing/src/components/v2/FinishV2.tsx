@@ -8,7 +8,8 @@ import { kgLabel } from "@/lib/v2/helpers";
 import { shareStory, type StoryData } from "@/lib/v2/story";
 import type { Summary } from "@/components/training/TrainingFlow";
 
-import { IfBrand, Loading, ErrorState, EmptyState, PlanBuilding, Maskotka, LoginSequence } from "@workspace/design-tokens/brand";
+
+import { IfBrand, MascotEvent } from "@workspace/design-tokens/brand";
 const WEEKDAY_UP = ["NIEDZIELA", "PONIEDZIAŁEK", "WTOREK", "ŚRODA", "CZWARTEK", "PIĄTEK", "SOBOTA"];
 
 /** What goes on the story: never pain, health data, body weight or a name (only the nick). Exported for the privacy test. */
@@ -41,7 +42,7 @@ export function FinishV2({ day, run, sum, v2, onFeedback, onFinish }: {
     <div className="flex flex-col gap-4" data-testid="finish-v2">
       <div className="flex flex-col items-center gap-2.5 pt-2 text-center">
         <IfBrand fallback={<span className="flex h-24 w-24 items-center justify-center rounded-full bg-brand-soft"><span className="flex h-[68px] w-[68px] items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="h-[34px] w-[34px]" strokeWidth={3} aria-hidden /></span></span>}>
-          <Maskotka stan="success" rozmiar="m" decorative />
+          <MascotEvent event="workout_done" rozmiar="m" />
         </IfBrand>
         <h2 ref={h} tabIndex={-1} className="text-[28px] font-extrabold outline-none">Trening zrobiony!</h2>
         <p className="text-[15px] text-muted-foreground">{day.name} · {sum.weekDone} z {sum.weekTarget} w tym tygodniu</p>

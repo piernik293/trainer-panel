@@ -10,6 +10,7 @@ import { loadRun } from '@/lib/training/run';
 import { readCachedToday } from '@/lib/training/sync';
 import type { TodayResponse } from '@/lib/training/types';
 import { Toaster } from '@/components/ui/toaster';
+import { MascotHost } from '@workspace/design-tokens/brand';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
@@ -129,6 +130,7 @@ function ClerkProviderWithRoutes() {
         <TooltipProvider>
           <Router />
           <Toaster />
+          <MascotHost />
         </TooltipProvider>
       </QueryClientProvider>
     </ClerkProvider>

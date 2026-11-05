@@ -16,14 +16,16 @@ import { AvatarV2 } from "./Avatar";
 import { clearCelebration, readCelebration, type Celebration } from "@/lib/v2/celebration";
 
 
-import { IfBrand, Loading, ErrorState, EmptyState, PlanBuilding, Maskotka, LoginSequence } from "@workspace/design-tokens/brand";
+import { IfBrand, Loading, EmptyState, MascotEvent, showMascot, useBrandV1, wasShown, markShown } from "@workspace/design-tokens/brand";
 /** Streak card: weekly streak (never a loss message), "X z Y treningów w tym tygodniu" and one circle per planned training. */
 export function StreakCard({ streakWeeks, done, target }: { streakWeeks: number | null; done: number; target: number }) {
   const circles = weekCircles(done, target);
   return (
     <section aria-label="Seria" className="space-y-3.5 rounded-[20px] border border-border bg-card p-4" data-testid="streak-card">
       <div className="flex items-center gap-3">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft text-primary"><Flame className="h-6 w-6" aria-hidden /></span>
+        <IfBrand fallback={<span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft text-primary"><Flame className="h-6 w-6" aria-hidden /></span>}>
+          <span className="flex h-16 w-14 shrink-0 items-center justify-center overflow-visible" data-testid="streak-mascot"><MascotEvent event={streakWeeks ? "streak_view" : "home_idle"} rozmiar="s" /></span>
+        </IfBrand>
         <div className="min-w-0">
           <p className="text-[22px] font-extrabold leading-tight" data-testid="streak-title">
             {streakWeeks ? `${streakWeeks} ${pluralPl(streakWeeks, "tydzień", "tygodnie", "tygodni")} z rzędu` : "Zacznij swoją serię"}
@@ -90,6 +92,10 @@ export interface HomeV2Props {
   profile: ProfileV2;
   reloadKey: number;
   streakWeeks: number | null;
+  /** the achievements answer has arrived (streakWeeks null then really means no streak) */
+  streakLoaded?: boolean;
+  /** „Złoty Byczek” number of this account (campaign) or null */
+  goldenBull?: number | null;
   achievements: readonly CatalogueItem[];
   onStart: (day: TrainingDay, ctx: Pick<TodayResponse, "client" | "week">) => void;
   onRamp: (kind: RampKind, planDayId: number, items: RampItem[]) => void;
@@ -99,9 +105,28 @@ export interface HomeV2Props {
 }
 
 /** "Dziś" in the new look (docs/screens/ux-v2). Data: the same "today" answer as the classic card (works offline from the cache). */
-export function HomeV2({ profile, reloadKey, streakWeeks, achievements, onStart, onRamp, onOpenYou, top }: HomeV2Props) {
+export function HomeV2({ profile, reloadKey, streakWeeks, streakLoaded = false, goldenBull = null, achievements, onStart, onRamp, onOpenYou, top }: HomeV2Props) {
   const { data, state, fromCache } = useTodayData(reloadKey);
   const [celebration, setCelebration] = useState<Celebration | null>(() => readCelebration());
+  const brand = useBrandV1();
+  const [starting, setStarting] = useState<{ day: TrainingDay; ctx: Pick<TodayResponse, "client" | "week"> } | null>(null);
+  const [returned, setReturned] = useState(false);
+  // Byczek (tylko z flagą marki): nowa seria (raz na serię), seria się skończyła (raz, po ochronie serii), Złoty Byczek (raz)
+  useEffect(() => {
+    if (!brand || !streakLoaded) return;
+    try {
+      const last = Number(window.localStorage.getItem("optimatren-streak-last:v1") ?? "0") || 0;
+      const now = streakWeeks ?? 0;
+      if (now === 1 && last < 1) showMascot("streak_started", `start-${isoWeek(new Date())}`);
+      else if (now === 0 && last >= 2) showMascot("streak_ended", `end-${last}-${isoWeek(new Date())}`);
+      window.localStorage.setItem("optimatren-streak-last:v1", String(now));
+    } catch { /* bez pamięci: bez animacji */ }
+  }, [brand, streakLoaded, streakWeeks]);
+  useEffect(() => { if (brand && goldenBull != null) showMascot("gold_bull", String(goldenBull)); }, [brand, goldenBull]);
+  const startNow = (day: TrainingDay, ctx: Pick<TodayResponse, "client" | "week">) => {
+    const key = new Date().toISOString().slice(0, 10);
+    if (brand && !wasShown("workout_start", key)) { markShown("workout_start", key); setStarting({ day, ctx }); } else onStart(day, ctx);
+  };
   const name = shownName(profile);
   const next = nextAchievement(achievements);
   return (
@@ -114,9 +139,18 @@ export function HomeV2({ profile, reloadKey, streakWeeks, achievements, onStart,
         <button type="button" onClick={onOpenYou} aria-label="Twój profil" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"><AvatarV2 name={name} color={profile.avatarColor} /></button>
       </header>
       {top}
+      {brand && state === "ok" && data && !returned && daysSince(data.lastSession?.completedAt) >= 14 && !wasShown("long_break_return", new Date().toISOString().slice(0, 10)) && (
+        <section className="flex flex-col items-center gap-2 rounded-[20px] border border-border bg-card p-4 text-center" data-testid="long-break">
+          <MascotEvent event="long_break_return" rozmiar="m" />
+          <button type="button" onClick={() => { markShown("long_break_return", new Date().toISOString().slice(0, 10)); setReturned(true); }} className="min-h-11 rounded-xl bg-primary px-5 font-bold text-primary-foreground">Wracam</button>
+        </section>
+      )}
+      {starting && (
+        <StartOverlay onDone={() => { const s = starting; setStarting(null); onStart(s.day, s.ctx); }} />
+      )}
       {celebration && (
         <section role="status" aria-label="Nowe osiągnięcie" className="flex items-start gap-3 rounded-[20px] border border-primary/40 bg-brand-soft p-4" data-testid="celebration">
-          <IfBrand fallback={<Award className="mt-0.5 h-6 w-6 shrink-0 text-primary" aria-hidden />}><Maskotka stan="success" rozmiar="s" decorative /></IfBrand>
+          <IfBrand fallback={<Award className="mt-0.5 h-6 w-6 shrink-0 text-primary" aria-hidden />}><MascotEvent event="achievement_unlocked" rozmiar="s" /></IfBrand>
           <div className="min-w-0 grow"><p className="font-extrabold">{celebration.title}</p>{celebration.body && <p className="text-sm text-muted-foreground">{celebration.body}</p>}</div>
           <button type="button" onClick={() => { clearCelebration(); setCelebration(null); }} className="flex min-h-11 items-center px-1 text-sm font-bold text-primary">OK</button>
         </section>
@@ -133,7 +167,7 @@ export function HomeV2({ profile, reloadKey, streakWeeks, achievements, onStart,
       {state === "ok" && data && (
         <>
           <StreakCard streakWeeks={streakWeeks} done={data.week.done} target={data.week.target} />
-          <TrainingBlock data={data} fromCache={fromCache} onStart={onStart} onRamp={onRamp} />
+          <TrainingBlock data={data} fromCache={fromCache} onStart={startNow} onRamp={onRamp} />
         </>
       )}
       {next && <NextAchievement item={next} />}
@@ -193,5 +227,24 @@ function TrainingBlock({ data, fromCache, onStart, onRamp }: { data: TodayRespon
           done={!!mine?.cooldownDone} optional onOpen={() => onRamp("cooldown", day.planDayId, cooldownItems)} />
       )}
     </>
+  );
+}
+
+/** Numer tygodnia ISO jako tekst (klucz zdarzeń „raz”). */
+function isoWeek(d: Date): string {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return `${t.getUTCFullYear()}-W${Math.ceil(((t.getTime() - y0.getTime()) / 86_400_000 + 1) / 7)}`;
+}
+const daysSince = (iso: string | null | undefined) => (iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000) : 0);
+
+/** „Zaczynamy”: byczek podnosi sztangę ok. 1,5 s (raz dziennie), dotknięcie pomija; potem trening startuje. */
+function StartOverlay({ onDone }: { onDone: () => void }) {
+  useEffect(() => { const t = setTimeout(onDone, 1500); return () => clearTimeout(t); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <button type="button" onClick={onDone} aria-label="Pomiń animację" data-testid="start-overlay" className="fixed inset-0 z-[60] flex items-center justify-center bg-background">
+      <MascotEvent event="workout_start" rozmiar="l" />
+    </button>
   );
 }

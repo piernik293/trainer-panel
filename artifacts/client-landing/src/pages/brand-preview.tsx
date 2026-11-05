@@ -28,10 +28,10 @@ export default function BrandPreviewPage() {
       )}
       {show("stany") && (
         <section aria-label="Byczek" className="space-y-3">
-          <h2 className="section-label">Byczek: 6 stanów</h2>
-          <div className="grid grid-cols-3 gap-3">
+          <h2 className="section-label">Byczek: 19 stanów</h2>
+          <div className="grid grid-cols-2 gap-3">
             {MASKOTKA_STANY.map((s) => (
-              <div key={s} className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card p-2"><Maskotka stan={s} rozmiar="s" /><span className="text-xs text-muted-foreground">{s}</span></div>
+              <div key={s} className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card p-2"><Maskotka stan={s} rozmiar="m" /><span className="text-xs text-muted-foreground">{s}</span></div>
             ))}
           </div>
           <div className="flex flex-wrap items-end gap-4"><Maskotka stan="idle" rozmiar="s" /><Maskotka stan="idle" rozmiar="m" /><Maskotka stan="idle" rozmiar="l" /></div>

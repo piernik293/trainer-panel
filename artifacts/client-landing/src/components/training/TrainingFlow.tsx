@@ -15,6 +15,8 @@ import { RestTimer } from "@/components/timer/RestTimer";
 import { restSecondsFor, startRest, type RestState } from "@/lib/timer/rest";
 import { unlockAudio } from "@/lib/timer/sound";
 
+import { IfBrand, MascotEvent, useBrandV1, useMascotSuppressed } from "@workspace/design-tokens/brand";
+import { OfflineBanner } from "@/components/OfflineBanner";
 const newUuid = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`.padEnd(36, "0").replace(/^(.{8})(.{4})(.{4})(.{4})(.{12}).*$/, "$1-$2-$3-$4-$5"));
 
 function ExerciseList({ day, run, onPick, onClose }: { day: TrainingDay; run: RunState; onPick: (i: number) => void; onClose: () => void }) {
@@ -141,7 +143,11 @@ export function TrainingFlow({ day, firstName, week, v2, onExit }: {
   const [list, setList] = useState(false);
   const [pain, setPain] = useState(false);
   // Rest timer between sets (new look only): starts after "Zapisz serię".
-  const [rest, setRest] = useState<(RestState & { counter: number }) | null>(null);
+  const [rest, setRest] = useState<(RestState & { counter: number; pr: boolean }) | null>(null);
+  // Byczek: żadnych animacji nad ekranem w trakcie wykonywania serii (po zapisaniu i w przerwie wolno)
+  const brandV1 = useBrandV1();
+  const [care, setCare] = useState(false);
+  useMascotSuppressed(run.stage === "exercises" && !rest && !care && !pain);
   const topRef = useRef<HTMLDivElement>(null);
   useEffect(() => { topRef.current?.scrollIntoView({ block: "start" }); }, [run.stage, run.exerciseIndex]);
 
@@ -158,7 +164,8 @@ export function TrainingFlow({ day, firstName, week, v2, onExit }: {
       if (cur && !cur.pair?.first && !lastOfWorkout) {
         const nextEx = day.exercises[run.exerciseIndex + 1];
         const next = setNumber < cur.sets ? `Seria ${setNumber + 1} z ${cur.sets}` : nextEx ? `Następne: ${nextEx.name}` : "Koniec ćwiczenia";
-        setRest({ ...startRest(restSecondsFor(cur), next), counter: setNumber });
+        const isPr = recordGain(cur.history, value) != null;
+        setRest({ ...startRest(restSecondsFor(cur), next), counter: setNumber, pr: isPr });
       }
     }
     const id = newUuid();
@@ -175,6 +182,7 @@ export function TrainingFlow({ day, firstName, week, v2, onExit }: {
     for (let n = 1; n <= ex.sets; n++) if (!run.sets[ex.planExerciseId]?.[n]) dayOf({ type: "saveSet", planExerciseId: ex.planExerciseId, setNumber: n, value: { weightKg: null, reps: null, rir: null, skipped: true } });
     setPain(false);
     setRest(null);
+    setCare(brandV1); // „Coś boli?”: spokojny komunikat z byczkiem (care), bez żartów
     dayOf({ type: "nextExercise", total: day.exercises.length });
   };
 
@@ -203,6 +211,7 @@ export function TrainingFlow({ day, firstName, week, v2, onExit }: {
       </header>
 
       <main className="mx-auto max-w-lg px-4 pt-4">
+        <OfflineBanner />
         {run.stage === "exercises" && ex && (
           <SetScreen key={ex.planExerciseId} ex={ex} index={run.exerciseIndex} total={day.exercises.length}
             sets={run.sets[ex.planExerciseId]} skipped={run.skippedExercises.includes(ex.planExerciseId)}
@@ -222,7 +231,17 @@ export function TrainingFlow({ day, firstName, week, v2, onExit }: {
       </main>
 
       {list && <ExerciseList day={day} run={run} onClose={() => setList(false)} onPick={(i) => { dayOf({ type: "goToExercise", index: i }); setList(false); }} />}
-      {v2 && rest && <RestTimer state={rest} counter={rest.counter} onChange={(r) => setRest({ ...r, counter: rest.counter })} onClose={() => setRest(null)} />}
+      {v2 && rest && <RestTimer state={rest} counter={rest.counter} pr={rest.pr} onChange={(r) => setRest({ ...r, counter: rest.counter, pr: false })} onClose={() => setRest(null)} />}
+      {care && (
+        <div role="alertdialog" aria-modal="true" aria-label="Zgłoszenie wysłane" className="fixed inset-0 z-[55] flex items-center justify-center bg-black/50 px-6" data-testid="care-notice">
+          <div className="w-full max-w-sm space-y-3 rounded-2xl bg-card p-5 text-center">
+            <IfBrand fallback={null}><div className="flex justify-center"><MascotEvent event="pain_report" rozmiar="m" /></div></IfBrand>
+            <p className="text-lg font-bold">Zgłoszenie wysłane</p>
+            <p className="text-sm text-muted-foreground">Przerwij to ćwiczenie, jeśli boli. Trener dostał wiadomość.</p>
+            <button type="button" onClick={() => setCare(false)} className="h-12 w-full rounded-xl bg-primary font-bold text-primary-foreground">OK</button>
+          </div>
+        </div>
+      )}
       {pain && ex && <PainSheet exerciseName={ex.name} onCancel={() => setPain(false)} onSubmit={submitPain} />}
     </div>
   );

@@ -9,6 +9,8 @@ import { loadRamp, localDate } from "@/lib/training/ramp";
 import { TodayCard } from "./TodayCard";
 import { resetTrainingQueueForTests } from "@/lib/training/sync";
 import type { ExerciseInfo, TrainingDay } from "@/lib/training/types";
+import { setBrandV1ForTests, resetBrandV1ForTests, resetMascotForTests, showMascot, hideMascot } from "@workspace/design-tokens/brand";
+import { act } from "@testing-library/react";
 
 afterEach(cleanup);
 
@@ -173,7 +175,8 @@ describe("TrainingFlow end to end (offline queue)", () => {
     expect(new Set(uuids).size).toBe(uuids.length); // no repeated id
     expect(calls.find((c) => c.url.endsWith("/pain"))!.body).toMatchObject({ area: "Bark", severity: 4, planExerciseId: 12 });
     expect(calls.find((c) => c.url.endsWith("/finish"))!.body).toMatchObject({ status: "completed", rating: "just_right" });
-    expect(calls[0]!.url).toBe("/api/client-portal/training/sessions");
+    // obok zapisów idzie zapytanie o flagę marki (/api/brand-v1/status) — szukamy startu sesji, nie zakładamy kolejności
+    expect(calls.find((c) => c.url.endsWith("/training/sessions"))!.url).toBe("/api/client-portal/training/sessions");
     errors.mockRestore();
   });
 
@@ -319,6 +322,54 @@ describe("stoper przerwy po serii (nowy wygląd)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Zapisz serię" }));
     expect(screen.queryByTestId("rest-timer")).toBeNull();
     expect(screen.getByText(/bez minutnika/)).toBeTruthy();
+  });
+});
+
+describe("byczek w treningu (flaga marki)", () => {
+  beforeEach(() => {
+    window.localStorage.clear(); resetTrainingQueueForTests(); resetBrandV1ForTests(); resetMascotForTests();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ id: 1 }), { status: 200, headers: { "Content-Type": "application/json" } })));
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
+  });
+  afterEach(() => { vi.unstubAllGlobals(); resetBrandV1ForTests(); resetMascotForTests(); });
+  const flow = (d = day()) => render(<TrainingFlow day={d} firstName="Ala" week={{ done: 1, target: 4 }} onExit={vi.fn()} v2={{ streakWeeks: null, nick: null }} />);
+
+  it("w trakcie wykonywania serii animacje nad ekranem są zawieszone; po zapisaniu serii (przerwa) wolno", () => {
+    act(() => setBrandV1ForTests(true));
+    flow();
+    expect(showMascot("workout_done")).toBe(false); // ekran serii
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz serię" }));
+    expect(screen.getByTestId("rest-timer")).toBeTruthy();
+    expect(showMascot("workout_done")).toBe(true); // przerwa
+    act(() => hideMascot());
+    fireEvent.click(screen.getByRole("button", { name: "Pomiń przerwę" }));
+    expect(showMascot("workout_done")).toBe(false); // znowu ekran serii
+  });
+  it("seria z nowym rekordem ciężaru: w przerwie byczek prezentuje mięśnie (flex); bez rekordu — odpoczywa na ławce (rest)", () => {
+    act(() => setBrandV1ForTests(true));
+    const d = day(); d.exercises[0] = ex({ history: [{ weightKg: 40, reps: 8 }] }); // zapisujemy 60 × 8 > 40 × 8
+    const { unmount } = flow(d);
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz serię" }));
+    expect(within(screen.getByTestId("rest-timer")).getByTestId("maskotka").getAttribute("data-stan")).toBe("flex");
+    unmount();
+    resetTrainingQueueForTests();
+    flow(); // historia 70 × 5 i 60 × 8: 60 × 8 nie jest rekordem
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz serię" }));
+    expect(within(screen.getByTestId("rest-timer")).getByTestId("maskotka").getAttribute("data-stan")).toBe("rest");
+  });
+  it("„Coś boli?”: spokojny komunikat z byczkiem „care” i tekstem „Przerwij to ćwiczenie, jeśli boli”; bez flagi marki go nie ma", () => {
+    const report = () => { fireEvent.click(screen.getByRole("button", { name: /Coś boli\?/ })); fireEvent.click(screen.getByRole("radio", { name: "Bark" })); fireEvent.click(screen.getByRole("radio", { name: "4" })); fireEvent.click(screen.getByRole("button", { name: "Wyślij i pomiń ćwiczenie" })); };
+    flow(); report();
+    expect(screen.queryByTestId("care-notice")).toBeNull(); // flaga wyłączona
+    cleanup(); resetTrainingQueueForTests(); window.localStorage.clear();
+    act(() => setBrandV1ForTests(true));
+    flow(); report();
+    const care = screen.getByTestId("care-notice");
+    expect(care.textContent).toContain("Przerwij to ćwiczenie, jeśli boli");
+    expect(within(care).getByTestId("maskotka").getAttribute("data-stan")).toBe("care");
+    expect(care.textContent).not.toMatch(/ha|żart|super/i);
+    fireEvent.click(within(care).getByRole("button", { name: "OK" }));
+    expect(screen.queryByTestId("care-notice")).toBeNull();
   });
 });
 

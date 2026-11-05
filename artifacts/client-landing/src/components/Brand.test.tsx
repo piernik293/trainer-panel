@@ -6,7 +6,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import {
   Maskotka, MASKOTKA_STANY, MASKOTKA_PX, Logo, LogoIcon, GoldenBullBadge, Loading, ErrorState, EmptyState, IfBrand, PlanBuilding, LoginSequence,
-  shouldPlayLoginSequence, LOGIN_STEPS, setBrandV1ForTests, resetBrandV1ForTests,
+  shouldPlayLoginSequence, setBrandV1ForTests, resetBrandV1ForTests, resetMascotForTests,
 } from "@workspace/design-tokens/brand";
 import { BrandMark } from "./BrandMark";
 
@@ -14,15 +14,16 @@ beforeEach(() => { resetBrandV1ForTests(); vi.stubGlobal("fetch", vi.fn(async ()
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe("Byczek (Maskotka)", () => {
-  it("renderuje każdy z 6 stanów z klasą stanu i opisem dla czytników", () => {
+  it("renderuje każdy z 19 stanów z klasą stanu i opisem dla czytników", () => {
     for (const stan of MASKOTKA_STANY) {
       const { unmount } = render(<Maskotka stan={stan} />);
       const el = screen.getByTestId("maskotka");
       expect(el.getAttribute("class")).toContain(`s-${stan}`);
       expect(el.getAttribute("aria-label")).toContain("Byczek");
+      expect(el.querySelector(".head")).toBeTruthy(); expect(el.querySelector(".torso")).toBeTruthy(); // wysportowane ciało: klasy bez zmian
       unmount();
     }
-    expect(MASKOTKA_STANY).toEqual(["idle", "walk", "lift", "success", "loading", "error"]);
+    expect(MASKOTKA_STANY).toHaveLength(19);
   });
   it("3 rozmiary (s, m, l), proporcje 200:220; ozdobny byczek jest ukryty dla czytników", () => {
     const sizes = (["s", "m", "l"] as const).map((r) => { const { unmount } = render(<Maskotka rozmiar={r} decorative />); const el = screen.getByTestId("maskotka"); const w = Number(el.getAttribute("width")); unmount(); return w; });
@@ -31,11 +32,15 @@ describe("Byczek (Maskotka)", () => {
     expect(screen.getByTestId("maskotka").getAttribute("aria-hidden")).toBe("true");
     expect(screen.getByTestId("maskotka").getAttribute("role")).toBeNull();
   });
-  it("CSS: animacje wszystkich stanów i prefers-reduced-motion (byczek stoi nieruchomo)", () => {
+  it("CSS: klasy wszystkich 19 stanów i prefers-reduced-motion (byczek stoi nieruchomo); środki obrotu rąk 62/138", () => {
     const css = readFileSync(join(__dirname, "../../../../lib/design-tokens/src/brand/brand.css"), "utf8");
-    for (const s of ["s-idle", "s-walk", "s-lift", "s-success", "s-loading", "s-error"]) expect(css, s).toContain(`.${s} `);
+    for (const s of MASKOTKA_STANY) expect(css, s).toContain(`.s-${s} `);
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\{\.bull \*\{animation:none!important\}\}/);
-    expect(css).toContain("transform-origin:64px 108px"); // ręce i głowa mają transform-origin w px (jak w projekcie)
+    expect(css).toContain("transform-origin:62px 108px"); expect(css).toContain("transform-origin:138px 108px");
+    // każda animacja ma swoje @keyframes (prefiks bull-), żadnej nie brakuje
+    const used = [...css.matchAll(/animation:(bull-[A-Za-z0-9]+)/g)].map((m) => m[1]!);
+    const defined = new Set([...css.matchAll(/@keyframes (bull-[A-Za-z0-9]+)/g)].map((m) => m[1]!));
+    for (const u of used) expect(defined.has(u), u).toBe(true);
   });
   it("odznaka „Złoty Byczek” ma opis", () => {
     render(<GoldenBullBadge />);
@@ -105,25 +110,18 @@ describe("ładowanie, błąd, puste stany", () => {
     expect(screen.getByTestId("maskotka").getAttribute("data-stan")).toBe("idle");
     expect(screen.getByText("Brak podopiecznych")).toBeTruthy();
   });
-  it("układanie planu: Walk → Lift → Success (po ukończeniu i min. 2 powtórzeniach)", () => {
-    vi.useFakeTimers();
+  it("układanie planu: myśli (plan_generating), po ukończeniu cieszy się (plan_ready)", () => {
     const { rerender } = render(<PlanBuilding />);
-    expect(screen.getByTestId("plan-building").getAttribute("data-stan")).toBe("walk");
-    act(() => { vi.advanceTimersByTime(1300); });
-    expect(screen.getByTestId("plan-building").getAttribute("data-stan")).toBe("lift");
-    rerender(<PlanBuilding done />); // gotowe zbyt wcześnie — byczek dokończy powtórzenia
-    expect(screen.getByTestId("plan-building").getAttribute("data-stan")).toBe("lift");
-    act(() => { vi.advanceTimersByTime(5000); });
+    expect(screen.getByTestId("plan-building").getAttribute("data-stan")).toBe("thinking");
+    expect(screen.getByTestId("maskotka").getAttribute("data-stan")).toBe("thinking");
+    rerender(<PlanBuilding done />);
     expect(screen.getByTestId("plan-building").getAttribute("data-stan")).toBe("success");
+    expect(screen.getByTestId("maskotka").getAttribute("data-stan")).toBe("success");
   });
 });
 
 describe("sekwencja logowania", () => {
-  it("łącznie ok. 1,5 s: Idle → Walk → Lift → Success", () => {
-    expect(LOGIN_STEPS.map((s) => s.stan)).toEqual(["idle", "walk", "lift", "success"]);
-    const total = LOGIN_STEPS.reduce((a, s) => a + s.ms, 0);
-    expect(total).toBeGreaterThan(1200); expect(total).toBeLessThanOrEqual(1600);
-  });
+  beforeEach(() => resetMascotForTests());
   it("raz dziennie: drugi raz tego samego dnia nie gra, następnego dnia gra", () => {
     const mem = new Map<string, string>();
     const st = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v) };
@@ -131,7 +129,7 @@ describe("sekwencja logowania", () => {
     expect(shouldPlayLoginSequence("2026-11-04", st)).toBe(false);
     expect(shouldPlayLoginSequence("2026-11-05", st)).toBe(true);
   });
-  it("bez flagi nie pokazuje nic; z flagą gra kolejne stany, kończy się sama i da się pominąć dotknięciem", () => {
+  it("bez flagi nic; z flagą pierwsze wejście = wave → idle (ok. 2 s), kolejne dni = walk (ok. 1,5 s); pomijalna dotknięciem", () => {
     vi.useFakeTimers();
     const { unmount } = render(<LoginSequence today="2026-11-04" />);
     expect(screen.queryByTestId("login-sequence")).toBeNull(); // flaga wyłączona
@@ -139,14 +137,22 @@ describe("sekwencja logowania", () => {
     window.localStorage.clear();
     act(() => setBrandV1ForTests(true));
     render(<LoginSequence today="2026-11-04" />);
-    expect(screen.getByTestId("login-sequence").getAttribute("data-stan")).toBe("idle");
-    act(() => { vi.advanceTimersByTime(300); });
-    expect(screen.getByTestId("login-sequence").getAttribute("data-stan")).toBe("walk");
+    expect(screen.getByTestId("login-sequence").getAttribute("data-event")).toBe("first_login");
+    expect(screen.getByTestId("maskotka").getAttribute("data-stan")).toBe("wave");
+    act(() => { vi.advanceTimersByTime(2100); });
+    expect(screen.getByTestId("maskotka").getAttribute("data-stan")).toBe("idle");
+    act(() => { vi.advanceTimersByTime(600); });
+    expect(screen.queryByTestId("login-sequence")).toBeNull(); // skończyła się sama
+    cleanup();
+    window.localStorage.removeItem("optimatren-login-day");
+    window.localStorage.setItem("optimatren-bull-login-day:v1", "2026-11-03");
+    render(<LoginSequence today="2026-11-04" />);
+    expect(screen.getByTestId("login-sequence").getAttribute("data-event")).toBe("login");
+    expect(screen.getByTestId("maskotka").getAttribute("data-stan")).toBe("walk");
     fireEvent.click(screen.getByRole("button", { name: "Pomiń animację" }));
     expect(screen.queryByTestId("login-sequence")).toBeNull();
     cleanup();
-    // ten sam dzień: nie gra drugi raz
-    render(<LoginSequence today="2026-11-04" />);
+    render(<LoginSequence today="2026-11-04" />); // ten sam dzień: nie gra drugi raz
     expect(screen.queryByTestId("login-sequence")).toBeNull();
   });
 });
