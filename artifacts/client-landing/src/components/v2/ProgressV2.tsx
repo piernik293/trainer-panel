@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { BodyLogCard } from "./BodyLogCard";
 import { Award, Flame, Footprints, Lock, Medal, Sparkles, TrendingUp } from "lucide-react";
 import { pluralPl } from "@/lib/plural";
 import type { CatalogueItem, Overview } from "@/lib/v2/achievements";
@@ -101,6 +102,7 @@ export function ProgressV2({ overview, records, activityDays, today, steps }: {
         </>
       )}
       {steps}
+      <BodyLogCard />
     </div>
   );
 }

@@ -249,4 +249,34 @@ router.post("/plan-templates/:id/apply", requireAuth, async (req, res): Promise<
   if (out) res.status(201).json(out);
 });
 
+// ─── Kopiowanie planu (jednym kliknięciem) ────────────────────────────────────
+// POST /plans/:id/copy { target: "client", clientId } | { target: "template", title? } — plan źródłowy musi należeć do klienta tego trenera.
+// Idzie tą samą ścieżką zapisu co import i szablony, więc filtry nowego klienta (sprzęt/miejsce, zgłoszony staw z potwierdzeniem) działają jak zawsze.
+const CopyBody = z.object({ target: z.enum(["client", "template"]), clientId: z.number().int().positive().optional(), title: z.string().trim().min(1).max(120).optional(), acknowledgeJointWarning: z.boolean().optional() });
+router.post("/plans/:id/copy", requireAuth, async (req, res): Promise<void> => {
+  const b = CopyBody.safeParse(req.body); const planId = Number(req.params["id"]);
+  if (!b.success || !Number.isInteger(planId) || (b.data.target === "client" && !b.data.clientId)) { res.status(400).json({ error: "Wybierz, dokąd skopiować plan." }); return; }
+  const [src] = await db.select({ p: workoutPlansTable }).from(workoutPlansTable).innerJoin(clientsTable, eq(clientsTable.id, workoutPlansTable.clientId))
+    .where(and(eq(workoutPlansTable.id, planId), eq(clientsTable.trainerId, req.trainer!.id)));
+  if (!src) { res.status(404).json({ error: "Plan nie znaleziony." }); return; }
+  const days = await db.select().from(workoutPlanDaysTable).where(eq(workoutPlanDaysTable.planId, planId)).orderBy(workoutPlanDaysTable.dayOrder);
+  const rows = days.length ? await db.select().from(workoutPlanExercisesTable).where(inArray(workoutPlanExercisesTable.dayId, days.map((d) => d.id))).orderBy(workoutPlanExercisesTable.orderInDay) : [];
+  const outDays = days.map((d) => ({
+    dayName: (d.dayName ?? `Dzień ${d.dayOrder}`).slice(0, 80),
+    exercises: rows.filter((r) => r.dayId === d.id && r.exerciseId != null).map((r) => ({
+      exerciseId: r.exerciseId as number, sets: Math.min(20, Math.max(1, r.workingSets ?? 3)),
+      repsMin: r.repType === "exact" ? r.repsExact : r.repRangeMin, repsMax: r.repType === "range" ? r.repRangeMax : null,
+      repsText: r.repOpenInstruction ?? undefined, loadText: (r.loadType === "fixed" && r.loadValue != null ? String(r.loadValue) : r.loadInstruction) ?? undefined,
+      rir: r.rir ?? null, note: r.notes ?? undefined,
+    })),
+  })).filter((d) => d.exercises.length > 0);
+  if (outDays.length === 0) { res.status(422).json({ error: "Ten plan nie ma ćwiczeń do skopiowania." }); return; }
+  const title = b.data.title ?? `${src.p.title ?? "Plan"} (kopia)`.slice(0, 120);
+  const body: SaveIn = { title, target: b.data.target === "client" ? "plan" : "template", goal: src.p.goal ?? undefined, acknowledgeJointWarning: b.data.acknowledgeJointWarning === true, days: outDays };
+  let clientId = src.p.clientId;
+  if (b.data.target === "client") { if (!(await ownClient(req, res, b.data.clientId!))) return; clientId = b.data.clientId!; }
+  const out = await savePlan(req, res, req.trainer!.id, clientId, body);
+  if (out) res.status(201).json(out);
+});
+
 export default router;

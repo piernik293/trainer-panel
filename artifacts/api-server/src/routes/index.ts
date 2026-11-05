@@ -49,6 +49,7 @@ import adminMailsRouter from "./adminMails";
 import goldenBullsRouter from "./goldenBulls";
 import roadmapRouter from "./roadmap";
 import termsRouter from "./terms";
+import bodyLogRouter from "./bodyLog";
 import ownPlanRouter from "./ownPlan";
 
 const router: IRouter = Router();
@@ -103,6 +104,7 @@ router.use(adminMailsRouter);
 router.use(goldenBullsRouter);
 router.use(roadmapRouter);
 router.use(termsRouter);
+router.use(bodyLogRouter);
 router.use(ownPlanRouter);
 
 /**
