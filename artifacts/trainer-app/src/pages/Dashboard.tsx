@@ -14,6 +14,7 @@ import { formatPolishDate, headerSentence } from "@/lib/dashboardFormat";
 import { useSubscriptionSummary } from "@/lib/use-subscription-summary";
 import { LIMITS_NOTICE_KEY, LIMITS_NOTICE_TEXT, showLimitsNotice, trialNotice } from "@/lib/limitsNotice";
 import { AttentionList } from "@/components/dashboard/AttentionList";
+import { RoadmapPanelCard } from "@/components/dashboard/RoadmapPanelCard";
 import { RecentEventsCard, TodayCard } from "@/components/dashboard/SideColumn";
 import { ExcelCard, FirstStepsCard, WillAppearCard } from "@/components/dashboard/FirstDay";
 
@@ -195,6 +196,7 @@ export default function Dashboard() {
         <div className="space-y-6">
           <TodayCard bookings={data.todayBookings} />
           <RecentEventsCard events={data.recentEvents} today={data.today} />
+          <RoadmapPanelCard />
         </div>
       </div>
     </div>

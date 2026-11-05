@@ -94,3 +94,27 @@ export function useBullActions() {
     revoke: useMutation({ mutationFn: (v: { id: number; reason: string }) => customFetch(`/api/admin/golden-bulls/${v.id}/revoke`, { method: "POST", body: JSON.stringify({ reason: v.reason }) }), onSuccess: done }),
   };
 }
+
+// ─── „Wkrótce w Optimatren” (głosowanie) ──────────────────────────────────────
+export interface AdminRoadmapItem { id: number; slug: string; title: string; blurb: string; icon: string; status: "soon" | "in_progress" | "done"; hidden: boolean; sortOrder: number; votes: { total: number; trener: number; solo: number; podopieczny: number } }
+export const useAdminRoadmap = () => useQuery<{ enabled: boolean; items: AdminRoadmapItem[] }>({ queryKey: ["admin-roadmap"], queryFn: () => customFetch("/api/admin/roadmap") });
+export function useRoadmapActions() {
+  const qc = useQueryClient();
+  const done = () => qc.invalidateQueries({ queryKey: ["admin-roadmap"] });
+  return {
+    add: useMutation({ mutationFn: (v: { title: string; blurb: string }) => customFetch("/api/admin/roadmap", { method: "POST", body: JSON.stringify(v) }), onSuccess: done }),
+    patch: useMutation({ mutationFn: (v: { id: number; hidden?: boolean; status?: "soon" | "in_progress" | "done" }) => { const { id, ...b } = v; return customFetch(`/api/admin/roadmap/${id}`, { method: "PATCH", body: JSON.stringify(b) }); }, onSuccess: done }),
+  };
+}
+
+// ─── Karta „Wkrótce” u trenera ────────────────────────────────────────────────
+export interface RoadmapUserItem { id: number; title: string; blurb: string; icon: string; status: string; statusLabel: string; votes: number; voted: boolean }
+export const useRoadmapStatus = () => useQuery<{ enabled: boolean }>({ queryKey: ["roadmap-status"], queryFn: () => customFetch("/api/roadmap/status"), staleTime: 300_000, retry: false });
+export const useRoadmap = (enabled: boolean) => useQuery<{ items: RoadmapUserItem[] }>({ queryKey: ["roadmap"], enabled, retry: false, queryFn: () => customFetch("/api/roadmap") });
+export function useRoadmapVote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: number; voted: boolean }) => customFetch(`/api/roadmap/${v.id}/vote`, { method: v.voted ? "DELETE" : "POST" }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["roadmap"] }),
+  });
+}

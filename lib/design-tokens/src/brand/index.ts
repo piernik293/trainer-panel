@@ -6,3 +6,4 @@ export { Loading, ErrorState, EmptyState, useAfter, LOADING_DELAY_MS, LOADING_SL
 export { useBrandV1, setBrandV1ForTests, resetBrandV1ForTests } from "./useBrandV1";
 export { IfBrand, PlanBuilding, LoginSequence, shouldPlayLoginSequence, isFirstLogin } from "./Sequences";
 export { GoldenBullsCounter } from "./GoldenBullsCounter";
+export { RoadmapCard, type RoadmapCardItem } from "./RoadmapCard";
