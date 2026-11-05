@@ -215,3 +215,15 @@ describe("Ty (v2) i edycja profilu", () => {
     expect(JSON.parse(String((fetchMock.mock.calls[1]![1] as RequestInit).body))).toMatchObject({ nick: "wolny_nick" });
   });
 });
+
+describe("długie imię bez spacji (QA beta 2)", () => {
+  const LONG = "Wojciechowska-Kowalczykowska-Przybylska-Nowak";
+  it("nagłówki z imieniem łamią słowo, zamiast wypychać stronę poza ekran 375 px", () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ goal: 8000, today: "2026-11-05", todaySteps: 0, todayPercent: 0, days: [], average: 0, daysAtGoal: 0, averagePercent: 0 })));
+    render(<YouV2 featured={[]} trainerRow={null} applyRow={null} appearance={null} privacy={null} legal={null} onEdited={vi.fn()} onAllAchievements={vi.fn()} onSignOut={vi.fn()} profile={{ ...FALLBACK_PROFILE(LONG) }} />);
+    const h = screen.getByTestId("you-name");
+    expect(h.textContent).toBe(LONG);
+    expect(h.className).toMatch(/break-words/);
+    expect(h.className).toMatch(/max-w-full/);
+  });
+});

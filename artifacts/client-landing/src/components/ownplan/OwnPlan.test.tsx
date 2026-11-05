@@ -132,7 +132,9 @@ describe("edytor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Usuń: Spacer farmera" }));
     fireEvent.click(screen.getByRole("button", { name: "Usuń: Wyciskanie sztangi leżąc" }));
     expect((screen.getByRole("button", { name: "Zapisz plan" }) as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByRole("alert").textContent).toContain("nie ma ćwiczeń");
+    // podpowiedź walidacji to komunikat (status), nie alarm — alert zostaje dla błędów serwera
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("status", { name: "" }).textContent).toContain("nie ma ćwiczeń");
   });
   it("dodawanie i przesuwanie dni; ostatniego dnia nie da się usunąć; limit 7 dni", async () => {
     render(<OwnPlanEditor onClose={vi.fn()} onSaved={vi.fn()} />);

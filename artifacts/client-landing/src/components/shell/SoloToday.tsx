@@ -43,7 +43,7 @@ export function SoloToday({ firstName, hasSurvey, onPlanReady }: { firstName: st
     <div className="space-y-6" data-testid="solo-today">
       <div>
         <p className="section-label">Dziś</p>
-        <h1 className="text-2xl font-bold tracking-tight">Cześć, {firstName}!</h1>
+        <h1 className="break-words text-2xl font-bold tracking-tight">Cześć, {firstName}!</h1>
       </div>
       <div data-slot="maskotka" aria-hidden="true" />
       <section className="space-y-3 rounded-xl border border-border bg-card p-5" data-testid="solo-plan-card">

@@ -8,7 +8,7 @@ const j = async <T,>(r: Response): Promise<T | null> => (r.ok ? ((await r.json()
 const fileToBase64 = (f: File) => new Promise<string>((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(",")[1] ?? ""); fr.onerror = () => rej(fr.error); fr.readAsDataURL(f); });
 
 const field = "h-11 w-full rounded-lg border border-input bg-background px-2 text-base tabular-nums";
-const iconBtn = "flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-card disabled:opacity-30";
+const iconBtn = "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-card disabled:opacity-30";
 
 /** Wyszukiwarka ćwiczeń: katalog + „dodaj własne”. */
 function AddExercise({ onPick, onCustom, onClose }: { onPick: (h: SearchHit) => void; onCustom: (name: string) => void; onClose: () => void }) {
@@ -167,7 +167,7 @@ export function OwnPlanEditor({ onClose, onSaved }: { onClose: () => void; onSav
         )}
       </div>
       <footer className="fixed inset-x-0 bottom-0 border-t border-border bg-background/95 p-3 backdrop-blur" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
-        {(error || problem) && <p role="alert" className={cn("mb-2 text-sm", problem ? "text-muted-foreground" : "text-destructive")}>{problem ?? error}</p>}
+        {(error || problem) && <p role={problem ? "status" : "alert"} className={cn("mb-2 text-sm", problem ? "text-muted-foreground" : "text-destructive")}>{problem ?? error}</p>}
         <button type="button" onClick={() => void save()} disabled={!!problem || saving || notes.length > 0} className="h-14 w-full rounded-xl bg-primary text-base font-bold text-primary-foreground disabled:opacity-50">{saving ? "Zapisuję…" : "Zapisz plan"}</button>
       </footer>
       {adding != null && <AddExercise onClose={() => setAdding(null)} onPick={(h) => addEx(adding, newExercise({ id: h.id, name: h.name, warning: h.warning }))} onCustom={(name) => addEx(adding, newExercise({ customName: name }))} />}
