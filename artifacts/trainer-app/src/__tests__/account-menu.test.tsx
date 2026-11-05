@@ -47,6 +47,7 @@ const mockNavigate = vi.fn();
 
 // ─── Mocks — hoisted before imports by Vitest ─────────────────────────────────
 
+vi.mock("@/components/onboarding/TutorialCard", () => ({ useShowTutorialItem: () => null })); // samouczek ma własny test (tutorial.test.tsx)
 vi.mock("@clerk/react", () => ({
   useUser: () => ({ user: mockUserData, isLoaded: mockIsLoaded }),
   useClerk: () => ({ signOut: mockSignOut, openUserProfile: mockOpenUserProfile }),

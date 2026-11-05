@@ -12,6 +12,7 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useHasOwnTraining, useIsAdmin } from "@/lib/adminApi";
+import { useShowTutorialItem } from "@/components/onboarding/TutorialCard";
 
 /** Derives up to 2 uppercase initials from a display name. */
 export function getInitials(name: string | null | undefined): string {
@@ -31,6 +32,7 @@ export function AccountMenu({ compact = false }: AccountMenuProps) {
   const { signOut, openUserProfile } = useClerk();
   const [, navigate] = useLocation();
   const { data: adminInfo } = useIsAdmin();
+  const tutorial = useShowTutorialItem();
   const hasOwnTraining = useHasOwnTraining();
 
   if (!isLoaded) {
@@ -138,6 +140,12 @@ export function AccountMenu({ compact = false }: AccountMenuProps) {
           <DropdownMenuItem onClick={() => window.location.assign("/client-landing/plan")} data-testid="menu-own-training">
             <Dumbbell className="w-4 h-4 mr-2" />
             Mój trening
+          </DropdownMenuItem>
+        )}
+
+        {tutorial && (
+          <DropdownMenuItem onClick={() => { tutorial.show(); navigate("/"); }} data-testid="menu-tutorial">
+            Pokaż samouczek
           </DropdownMenuItem>
         )}
 

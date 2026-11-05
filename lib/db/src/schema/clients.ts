@@ -12,6 +12,8 @@ export const clientsTable = pgTable("clients", {
   phone: text("phone"),
   notes: text("notes"),
   status: text("status").notNull().default("active"),
+  /** Migracja 0080: klient przykładowy samouczka — poza limitami, statystykami i pulpitem. */
+  isExample: boolean("is_example").notNull().default(false),
   /** FK to trainers.id — assigned server-side; nullable until migration Step C completes */
   trainerId: integer("trainer_id").references(() => trainersTable.id),
   /**

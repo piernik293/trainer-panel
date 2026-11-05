@@ -18,7 +18,8 @@ router.get("/stats", requireAuth, async (req, res): Promise<void> => {
 
   // Build the WHERE clause for all client-scoped queries.
   // Admins see all clients; ordinary trainers see only their own.
-  const trainerFilter = isAdmin ? undefined : eq(clientsTable.trainerId, trainerId);
+  // klient przykładowy samouczka (is_example) nie liczy się nigdzie
+  const trainerFilter = isAdmin ? eq(clientsTable.isExample, false) : and(eq(clientsTable.trainerId, trainerId), eq(clientsTable.isExample, false));
 
   const [totalRow] = await db
     .select({ total: count() })
