@@ -6,6 +6,12 @@ panel.example.pl {
 		max_size 12MB
 	}
 
+	# Pliki z hashem w nazwie (assets/) można trzymać w pamięci podręcznej długo; index.html zawsze świeży.
+	@hashed path_regexp hashed ^(/client-landing)?/assets/.+
+	header @hashed Cache-Control "public, max-age=31536000, immutable"
+	@html path /index.html /client-landing/index.html /client-landing/ /
+	header @html Cache-Control "no-cache"
+
 	handle /api/* {
 		reverse_proxy 127.0.0.1:8080
 	}
