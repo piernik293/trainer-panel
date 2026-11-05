@@ -13,6 +13,7 @@ import { nextAchievement, type CatalogueItem } from "@/lib/v2/achievements";
 import type { ProfileV2 } from "@/lib/v2/profile";
 import { cacheSummary, fetchSummary, readCachedSummary } from "@/lib/steps/sync";
 import { AvatarV2 } from "./Avatar";
+import { AddToHomeHint } from "./AddToHomeHint";
 import { clearCelebration, readCelebration, type Celebration } from "@/lib/v2/celebration";
 
 
@@ -139,6 +140,7 @@ export function HomeV2({ profile, reloadKey, streakWeeks, streakLoaded = false, 
         <button type="button" onClick={onOpenYou} aria-label="Twój profil" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"><AvatarV2 name={name} color={profile.avatarColor} /></button>
       </header>
       {top}
+      <AddToHomeHint show={state === "ok" && !!data?.lastSession} />
       {brand && state === "ok" && data && !returned && daysSince(data.lastSession?.completedAt) >= 14 && !wasShown("long_break_return", new Date().toISOString().slice(0, 10)) && (
         <section className="flex flex-col items-center gap-2 rounded-[20px] border border-border bg-card p-4 text-center" data-testid="long-break">
           <MascotEvent event="long_break_return" rozmiar="m" />
