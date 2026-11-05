@@ -16,12 +16,14 @@ export default function Legal() {
         <article>
           <h1 className="text-2xl font-bold tracking-tight">{doc.title}</h1>
           <p className="mt-2 rounded-md border border-border bg-muted px-3 py-2 text-sm" role="note" data-testid="legal-draft-note">
-            {LEGAL_PLACEHOLDER}. To jest szkielet dokumentu — treść nie jest ostateczna. Wersja: {doc.version}.
+            {doc.draft
+              ? <>Wersja testowa — dokument w trakcie weryfikacji prawnej. Wersja: {doc.version}.</>
+              : <>{LEGAL_PLACEHOLDER}. To jest szkielet dokumentu — treść nie jest ostateczna. Wersja: {doc.version}.</>}
           </p>
           {doc.sections.map((s) => (
             <section key={s.heading} className="mt-6">
               <h2 className="text-lg font-semibold">{s.heading}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{s.text}</p>
+              <p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{s.text}</p>
             </section>
           ))}
         </article>

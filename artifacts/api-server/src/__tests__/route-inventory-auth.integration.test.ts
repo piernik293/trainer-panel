@@ -33,7 +33,7 @@ function collect(stack: Layer[], out: { method: string; path: string }[] = []) {
 /** Trasy dostępne bez sesji — każda z uzasadnieniem (zob. docs/BEZPIECZENSTWO-BETA.md, sekcja 3). */
 const PUBLIC: Record<string, string> = {
   "GET /healthz": "status bez danych",
-  "GET /ui-v2/status": "tylko flaga", "GET /brand-v1/status": "tylko flaga", "GET /own-plan/status": "tylko flaga", "GET /roadmap/status": "tylko flaga", "GET /solo/status": "tylko flaga",
+  "GET /ui-v2/status": "tylko flaga", "GET /brand-v1/status": "tylko flaga", "GET /own-plan/status": "tylko flaga", "GET /roadmap/status": "tylko flaga", "GET /terms/status": "tylko flaga i numer wersji regulaminu", "GET /solo/status": "tylko flaga",
   "GET /achievements/status": "tylko flaga", "GET /feedback/status": "tylko flaga", "GET /golden-bulls/status": "licznik wolnych miejsc, bez danych osób",
   "GET /contact": "publiczny adres kontaktowy firmy", "GET /guest-demo/status": "tylko flaga", "GET /methods/status": "tylko flaga", "GET /calisthenics/status": "tylko flaga",
   "GET /own-plan/template.csv": "statyczny szablon CSV bez danych (link do pobrania, za flagą)",
@@ -48,7 +48,7 @@ const routes = collect((router as unknown as { stack: Layer[] }).stack);
 const fill = (p: string) => "/api" + p.replace(/:[A-Za-z]+/g, "1");
 
 describe("inwentarz tras bez sesji", () => {
-  beforeAll(() => { vi.stubEnv("SOLO_ENABLED", "1"); vi.stubEnv("OWN_PLAN_ENABLED", "1"); vi.stubEnv("UI_V2_ENABLED", "1"); vi.stubEnv("ACHIEVEMENTS_ENABLED", "1"); vi.stubEnv("FEEDBACK_ENABLED", "1"); vi.stubEnv("GOLDEN_BULLS_ENABLED", "1"); vi.stubEnv("ROADMAP_ENABLED", "1"); });
+  beforeAll(() => { vi.stubEnv("SOLO_ENABLED", "1"); vi.stubEnv("OWN_PLAN_ENABLED", "1"); vi.stubEnv("UI_V2_ENABLED", "1"); vi.stubEnv("ACHIEVEMENTS_ENABLED", "1"); vi.stubEnv("FEEDBACK_ENABLED", "1"); vi.stubEnv("GOLDEN_BULLS_ENABLED", "1"); vi.stubEnv("ROADMAP_ENABLED", "1"); vi.stubEnv("TERMS_ENABLED", "1"); });
   afterAll(async () => { await db.delete(trainerApplicationsTable).where(eq(trainerApplicationsTable.clerkUserId, "inw_zwykle_konto")).catch(() => {}); vi.unstubAllEnvs(); await pool.end(); });
 
   it("router ma sensowną liczbę tras (test nie jest pusty)", () => { expect(routes.length).toBeGreaterThan(150); });

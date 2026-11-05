@@ -7,3 +7,4 @@ export { useBrandV1, setBrandV1ForTests, resetBrandV1ForTests } from "./useBrand
 export { IfBrand, PlanBuilding, LoginSequence, shouldPlayLoginSequence, isFirstLogin } from "./Sequences";
 export { GoldenBullsCounter } from "./GoldenBullsCounter";
 export { RoadmapCard, type RoadmapCardItem } from "./RoadmapCard";
+export { TermsScreen } from "./TermsScreen";

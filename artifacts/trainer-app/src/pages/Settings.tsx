@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { MyDataCard } from "@/components/MyDataCard";
 import { useUser, useClerk } from "@clerk/react";
 import { UserCog, LogOut, User, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +58,8 @@ export default function Settings() {
           Zarządzaj swoim profilem i ustawieniami konta.
         </p>
       </div>
+
+      <MyDataCard />
 
       {/* ── Profil ─────────────────────────────────────────────────── */}
       <Card>

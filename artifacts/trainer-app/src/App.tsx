@@ -1,5 +1,6 @@
 import { plPL } from "@clerk/localizations";
 import Legal from "@/pages/Legal";
+import { TermsGate } from "@/components/TermsGate";
 import AuthRedirectPage from "@/components/AuthRedirectPage";
 import { AUTH_REDIRECT_PATH } from "@/lib/authHome";
 import { useEffect, useRef, useState } from "react";
@@ -265,7 +266,9 @@ function AppContent() {
         <ClerkQueryClientCacheInvalidator />
         <SessionProblemGuard>
           <TrainerProfileGate>
-            <Router />
+            <TermsGate>
+              <Router />
+            </TermsGate>
           </TrainerProfileGate>
         </SessionProblemGuard>
       </Show>

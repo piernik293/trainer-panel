@@ -1,5 +1,6 @@
 import { LegalLinks } from "@/components/LegalLinks";
 
+import { useTermsGate, TermsGateScreen } from "@/components/TermsGate";
 import { PackageTile } from "@/components/PackageTile";
 import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/react";
@@ -1248,6 +1249,7 @@ export function PlanView({
 
 export default function PlanPortal() {
   const { isSignedIn, isLoaded } = useUser();
+  const terms = useTermsGate(isLoaded && !!isSignedIn);
   const [client, setClient] = useState<ClientInfo | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
@@ -1322,6 +1324,9 @@ export default function PlanPortal() {
   if (!isSignedIn) {
     return <SignInGate />;
   }
+
+  // Regulamin (TERMS_ENABLED): bieżąca wersja musi być zaakceptowana.
+  if (terms.state.phase === "needs") return <TermsGateScreen update={terms.state.update} onAccept={terms.accept} />;
 
   // Signed in but plan is still loading.
   if (planLoading) {

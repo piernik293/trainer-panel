@@ -10,6 +10,7 @@ import { setTimerSettings, useTimerSettings } from "@/lib/timer/settings";
 
 import { GoldenBullBadge } from "@workspace/design-tokens/brand";
 import { RoadmapSection } from "./RoadmapSection";
+import { DownloadMyData } from "./DownloadMyData";
 function ListRow({ label, value, open, onToggle, children, testId }: { label: string; value?: string; open: boolean; onToggle: () => void; children?: ReactNode; testId: string }) {
   return (
     <div className="border-b border-border last:border-b-0" data-testid={testId}>
@@ -159,6 +160,7 @@ export function YouV2({ profile, featured, trainerRow, applyRow, appearance, pri
       <section aria-label="Pozostałe" className="space-y-1 text-sm text-muted-foreground">
         <div className="[&_*]:text-muted-foreground">{applyRow}</div>
         <div className="flex flex-wrap items-center gap-x-1">{legal}</div>
+        <DownloadMyData />
         <button type="button" onClick={onSignOut} disabled={signingOut} className="flex min-h-11 items-center gap-2 font-semibold"><LogOut className="h-4 w-4" aria-hidden /> Wyloguj się</button>
       </section>
     </div>

@@ -277,6 +277,10 @@ function ExerciseFormBody({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit, onInvalidSubmit)} className="space-y-6">
 
+        <p className="text-sm text-muted-foreground" data-testid="exercise-library-note">
+          Własne ćwiczenia widzisz tylko Ty i Twoi podopieczni. Zasady wspólnej biblioteki opisuje <Link href="/legal/regulamin" className="font-semibold underline underline-offset-2">Regulamin, §8</Link>.
+        </p>
+
         {/* ── Section 1: Basic Information ── */}
         <Card className="border-border/50 shadow-sm">
           <CardHeader className="bg-muted/20 border-b border-border/50">

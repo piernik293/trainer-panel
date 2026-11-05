@@ -30,3 +30,4 @@ export * from "./achievements";
 export * from "./soloSwaps";
 export * from "./goldenBulls";
 export * from "./roadmap";
+export * from "./terms";

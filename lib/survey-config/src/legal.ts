@@ -3,10 +3,13 @@
  * Every placeholder is marked "DO UZUPEŁNIENIA PRZEZ PRAWNIKA". The lawyer replaces the text; the app only shows it.
  * The health-consent version (HEALTH_CONSENT_VERSION) is stored with each consent (block 5d) — bump it when the text changes.
  */
+import { REGULAMIN_VERSION, REGULAMIN_SECTIONS } from "./regulamin";
+export { REGULAMIN_VERSION } from "./regulamin";
 export const LEGAL_PLACEHOLDER = "DO UZUPEŁNIENIA PRZEZ PRAWNIKA";
 
 export interface LegalSection { heading: string; text: string }
-export interface LegalDocument { slug: "polityka-prywatnosci" | "regulamin" | "zgoda-zdrowie"; title: string; version: string; sections: LegalSection[] }
+/** `draft`: tekst jest projektem w trakcie weryfikacji prawnej (pasek „Wersja testowa”). */
+export interface LegalDocument { draft?: boolean; slug: "polityka-prywatnosci" | "regulamin" | "zgoda-zdrowie"; title: string; version: string; sections: LegalSection[] }
 
 const ph = (what: string) => `${LEGAL_PLACEHOLDER}: ${what}`;
 
@@ -26,18 +29,7 @@ export const LEGAL_DOCUMENTS: readonly LegalDocument[] = [
       { heading: "8. Kontakt", text: ph("adres e-mail do spraw danych osobowych") },
     ],
   },
-  {
-    slug: "regulamin", title: "Regulamin", version: "szkielet-1",
-    sections: [
-      { heading: "1. Postanowienia ogólne", text: ph("definicje, zakres usługi") },
-      { heading: "2. Konto i rodzaje użytkowników", text: ph("trener, podopieczny, osoba bez trenera; zasady zakładania konta") },
-      { heading: "3. Zasady korzystania", text: ph("obowiązki użytkownika, zakazane zachowania") },
-      { heading: "4. Plany treningowe i odpowiedzialność", text: ph("charakter planów, rola trenera, zastrzeżenia; konsultacja ze specjalistą") },
-      { heading: "5. Opłaty i pakiety", text: ph("jeśli dotyczy; obecnie brak płatności online") },
-      { heading: "6. Reklamacje", text: ph("tryb składania i rozpatrywania") },
-      { heading: "7. Zmiany regulaminu i rozwiązanie umowy", text: ph("tryb zmian, usunięcie konta") },
-    ],
-  },
+  { slug: "regulamin", title: "Regulamin", version: REGULAMIN_VERSION, draft: true, sections: REGULAMIN_SECTIONS },
   {
     slug: "zgoda-zdrowie", title: "Zgoda na przetwarzanie danych o zdrowiu", version: HEALTH_CONSENT_VERSION,
     sections: [
