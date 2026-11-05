@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, boolean } from "drizzle-orm/pg-core";
 
 export const trainersTable = pgTable("trainers", {
   id: serial("id").primaryKey(),
@@ -8,6 +8,9 @@ export const trainersTable = pgTable("trainers", {
   /** Kod/link do dołączenia podopiecznych (migration 0038); NULL = jeszcze nie wygenerowany. Nowy kod unieważnia stary. */
   joinCode: text("join_code"),
   joinCodeCreatedAt: timestamp("join_code_created_at"),
+
+  /** Migracja 0078: generator może używać WŁASNYCH, kompletnych ćwiczeń trenera (domyślnie nie). */
+  useOwnExercisesInGenerator: boolean("use_own_exercises_in_generator").notNull().default(false),
 
   /** Blokada konta przez administratora (migration 0039); NULL = konto aktywne. */
   blockedAt: timestamp("blocked_at"),

@@ -111,6 +111,12 @@ export const exercisesTable = pgTable("exercises", {
   createdByTrainerId: integer("created_by_trainer_id").references(() => trainersTable.id),
   /** Migracja 0074: ćwiczenie własne osoby Solo (własny plan). Zawsze nieaktywne i ukryte — poza katalogiem, generatorem i listami trenerów. */
   createdByClientId: integer("created_by_client_id"),
+  /** Migracja 0078: zgoda trenera na dodanie ćwiczenia do wspólnej biblioteki (domyślnie nie) i status propozycji. */
+  shareConsent: boolean("share_consent").notNull().default(false),
+  shareConsentAt: timestamp("share_consent_at"),
+  shareStatus: text("share_status").notNull().default("none"), // 'none' | 'proposed' | 'added' | 'rejected'
+  shareRejectReason: text("share_reject_reason"),
+  sharedCopyExerciseId: integer("shared_copy_exercise_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

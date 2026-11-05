@@ -27,6 +27,7 @@
  *   { hasProfile, hasLocationData, exercises: DayRecommendationExercise[] }
  */
 
+import { generatorOwnerFilter } from "../services/exerciseOwnership";
 import { priorityGroupsOf } from "@workspace/survey-config";
 import { buildLadderRules, loadLadderRows } from "../services/ladderSelection";
 import { hitsBlockedJoint, loadBlockedJoints, isConservativeHealth, violatesConservative, withheldForUnknownJoints } from "../services/jointExclusion";
@@ -207,7 +208,9 @@ router.get(
 
     // ── Filter to complete exercises ───────────────────────────────────────────
     const statsMap = await fetchMuscleStats(exercises.map((e) => e.id));
+    const ownerAllows = await generatorOwnerFilter(req.trainer?.id);
     const completeExercises = exercises.filter((ex) => {
+      if (!ownerAllows(ex)) return false;
       if (!isGeneratorSafe(ex, survey.experienceLevel)) return false;
       const stats = statsMap.get(ex.id);
       const { isComplete } = computeCompleteness(ex, stats);

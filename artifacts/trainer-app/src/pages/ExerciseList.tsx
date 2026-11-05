@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLibraryStatus } from "@/lib/libraryApi";
 import { Link } from "wouter";
 import { useListExercises } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,12 @@ import { useSubscriptionSummary } from "@/lib/use-subscription-summary";
 import { ErrorState } from "@/components/ErrorState";
 import { humanizeError } from "@/lib/userError";
 import { CATALOGUE_TABS, splitByTab, type CatalogueTab } from "@/lib/catalogueTabs";
+
+function LibraryLink() {
+  const { data } = useLibraryStatus();
+  if (data?.enabled !== true) return null;
+  return <Button asChild variant="outline"><Link href="/library" data-testid="link-library">Moja biblioteka</Link></Button>;
+}
 
 export default function ExerciseList() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -83,6 +90,7 @@ export default function ExerciseList() {
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline"><Link href="/exercises/review" data-testid="link-review">Do weryfikacji</Link></Button>
+          <LibraryLink />
           <Button asChild={!customExerciseLimitReached} disabled={customExerciseLimitReached}>
             {customExerciseLimitReached ? (
               <span className="flex items-center gap-2" title="Osiągnięto limit własnych ćwiczeń">
