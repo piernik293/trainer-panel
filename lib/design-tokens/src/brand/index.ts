@@ -8,3 +8,4 @@ export { IfBrand, PlanBuilding, LoginSequence, shouldPlayLoginSequence, isFirstL
 export { GoldenBullsCounter } from "./GoldenBullsCounter";
 export { RoadmapCard, type RoadmapCardItem } from "./RoadmapCard";
 export { TermsScreen } from "./TermsScreen";
+export { ExerciseAnimation, ExerciseFigure } from "./ExerciseAnimation";

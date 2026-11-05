@@ -723,3 +723,5 @@ export const methodTilesForTrainerForm = (effectiveLevel: string | null | undefi
   const t = methodTilesFor(effectiveLevel, "trainer");
   return t.length ? [...t, METHOD_SELF] : [];
 };
+export * from "./animModel";
+export * from "./animLibrary";

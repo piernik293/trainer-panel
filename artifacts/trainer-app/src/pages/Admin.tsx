@@ -10,11 +10,13 @@ import {
   AUTO_ACCEPT_CONFIRM, BLOCK_CONFIRM, FEEDBACK_CATEGORY_LABEL, useAdminFeedback, useFeedbackRead, SOURCE_LABEL, useApplicationActions, useAutoAccept, useTrainerApplications, useAccessLog, useAdminAction, useAdminErrors, useAdminMails, useAdminMailPreview, useAdminMailTest, useAdminBulls, useBullActions, useAdminRoadmap, useRoadmapActions, useAdminSolo, useAdminSubscriptions, useAdminTrainers, useIsAdmin,
 } from "@/lib/adminApi";
 import { useAdminProposals, useProposalActions } from "@/lib/libraryApi";
+import { useAdminAnimations, useAnimationActions } from "@/lib/animationsApi";
+import { ExerciseAnimation } from "@workspace/design-tokens/brand";
 
-type Tab = "errors" | "applications" | "trainers" | "solo" | "subs" | "feedback" | "mails" | "bulls" | "roadmap" | "proposals" | "log";
+type Tab = "errors" | "applications" | "trainers" | "solo" | "subs" | "feedback" | "mails" | "bulls" | "roadmap" | "proposals" | "animations" | "log";
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: "errors", label: "Błędy" }, { id: "applications", label: "Wnioski" }, { id: "trainers", label: "Trenerzy" }, { id: "solo", label: "Solo" },
-  { id: "subs", label: "Abonamenty i limity" }, { id: "feedback", label: "Uwagi" }, { id: "mails", label: "Maile" }, { id: "bulls", label: "Byczki" }, { id: "roadmap", label: "Wkrótce" }, { id: "proposals", label: "Propozycje ćwiczeń" }, { id: "log", label: "Dziennik dostępu" },
+  { id: "subs", label: "Abonamenty i limity" }, { id: "feedback", label: "Uwagi" }, { id: "mails", label: "Maile" }, { id: "bulls", label: "Byczki" }, { id: "roadmap", label: "Wkrótce" }, { id: "proposals", label: "Propozycje ćwiczeń" }, { id: "animations", label: "Animacje" }, { id: "log", label: "Dziennik dostępu" },
 ];
 const fmt = (d: string | null) => (d ? new Date(d).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" }) : "—");
 /** Wnioskodawca: imię i e-mail (gdy znane), inaczej „(bez imienia)”. */
@@ -272,6 +274,62 @@ function Mails() {
   );
 }
 
+/** „Animacje”: podgląd każdej animacji obok opisu i wskazówek, [Zatwierdź] / [Do poprawy] (z uwagą). W aplikacji widać wyłącznie zatwierdzone (flaga EXERCISE_ANIMATIONS_ENABLED). */
+export function Animations() {
+  const { toast } = useToast();
+  const { data, isLoading, error } = useAdminAnimations();
+  const { seed, approve, needsWork } = useAnimationActions();
+  const [noteFor, setNoteFor] = useState<number | null>(null);
+  const [note, setNote] = useState("");
+  if (isLoading) return <div className="h-16 bg-muted animate-pulse rounded" />;
+  const err = (e: unknown) => toast({ title: humanizeError(e), variant: "destructive" });
+  const label = { draft: "Szkic", review: "Do sprawdzenia", approved: "Zatwierdzona" } as const;
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">Oceniasz tu animacje przed włączeniem flagi (EXERCISE_ANIMATIONS_ENABLED); użytkownicy zobaczą wyłącznie zatwierdzone, i to dopiero po jej włączeniu.</p>{error ? <p className="text-sm text-destructive">Nie udało się wczytać animacji.</p> : null}
+      <Button size="sm" variant="outline" disabled={seed.isPending} onClick={() => seed.mutate(undefined, { onSuccess: (r) => toast({ title: `Dodano: ${r.added.length}, pominięto: ${r.skipped.length}` }), onError: err })}>Wstaw animacje z biblioteki</Button>
+      <ul className="space-y-3" data-testid="admin-animations">
+        {(data?.items ?? []).map((a) => (
+          <li key={a.exerciseId} className="space-y-2 rounded-md border p-3" data-testid="admin-animation">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm font-medium">{a.name}</span>
+              <span className="text-xs text-muted-foreground">{label[a.status]}{a.approvedAt ? ` · ${fmt(a.approvedAt)}` : ""}</span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[260px_1fr]">
+              <ExerciseAnimation spec={a.spec} label={a.name} />
+              <div className="space-y-1 text-sm">
+                {a.description && <p>{a.description}</p>}
+                {a.executionInstructions && <p className="text-muted-foreground"><b>Wykonanie:</b> {a.executionInstructions}</p>}
+                {a.coachingTips && <p className="text-muted-foreground"><b>Wskazówki:</b> {a.coachingTips}</p>}
+                {a.commonMistakes && <p className="text-muted-foreground"><b>Częste błędy:</b> {a.commonMistakes}</p>}
+                {a.spec.note && <p className="text-xs text-muted-foreground">{a.spec.note}</p>}
+                {a.problems.length > 0 && <p className="text-xs text-destructive" role="alert">Błędy danych: {a.problems.join("; ")}</p>}
+                {a.reviewNote && <p className="text-xs text-amber-700">Uwaga do poprawy: {a.reviewNote}</p>}
+                <p className="text-xs text-muted-foreground">Sprawdź: kolana w linii stóp, neutralne plecy, pełny zakres ruchu.</p>
+              </div>
+            </div>
+            {noteFor === a.exerciseId ? (
+              <div className="space-y-2">
+                <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Co poprawić?" aria-label="Uwaga do poprawy" maxLength={300} />
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => { setNoteFor(null); setNote(""); }}>Anuluj</Button>
+                  <Button size="sm" disabled={note.trim().length < 3 || needsWork.isPending} onClick={() => needsWork.mutate({ id: a.exerciseId, note }, { onSuccess: () => { setNoteFor(null); setNote(""); toast({ title: "Oznaczono do poprawy" }); }, onError: err })}>Zapisz uwagę</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button size="sm" disabled={approve.isPending || a.status === "approved" || a.problems.length > 0} onClick={() => approve.mutate(a.exerciseId, { onSuccess: () => toast({ title: "Zatwierdzono" }), onError: err })}>Zatwierdź</Button>
+                <Button size="sm" variant="outline" onClick={() => setNoteFor(a.exerciseId)}>Do poprawy</Button>
+              </div>
+            )}
+          </li>
+        ))}
+        {(data?.items ?? []).length === 0 && !error && <li className="text-sm text-muted-foreground">Brak animacji — użyj „Wstaw animacje z biblioteki”.</li>}
+      </ul>
+    </div>
+  );
+}
+
 /** „Propozycje ćwiczeń”: ćwiczenia trenerów ze zgodą na wspólną bibliotekę — podgląd, ostrzeżenie o duplikatach, [Dodaj do wspólnej] (kopia „do weryfikacji”) / [Odrzuć] (z powodem). */
 function Proposals() {
   const { toast } = useToast();
@@ -439,6 +497,7 @@ export default function Admin() {
       {activeTab === "bulls" && <Bulls />}
       {activeTab === "roadmap" && <Roadmap />}
       {activeTab === "proposals" && <Proposals />}
+      {activeTab === "animations" && <Animations />}
       {activeTab === "log" && <Log />}
     </div>
   );

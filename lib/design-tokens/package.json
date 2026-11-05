@@ -16,5 +16,8 @@
   "devDependencies": {
     "react": "catalog:",
     "@types/react": "catalog:"
+  },
+  "dependencies": {
+    "@workspace/survey-config": "workspace:*"
   }
 }
