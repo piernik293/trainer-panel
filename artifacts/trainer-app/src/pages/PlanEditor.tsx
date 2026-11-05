@@ -76,6 +76,7 @@ import {
 } from "@/components/ui/dialog";
 import { isJustSaved } from "@/lib/planJustSaved";
 import { PlanActiveDialog } from "@/components/PlanActiveDialog";
+import { CopyPlanDialog } from "@/components/CopyPlanDialog";
 import { customFetch } from "@workspace/api-client-react";
 import {
   AlertDialog,
@@ -860,10 +861,10 @@ function ExerciseRow({
   return (
     <>
       <div className="py-2 px-1 rounded hover:bg-muted/30 transition-colors group">
-        <div className="flex items-start gap-1.5">
+        <div className="flex flex-wrap items-start gap-1.5 md:flex-nowrap">
           {/* Drag handle */}
           <button
-            className="mt-0.5 p-0.5 text-muted-foreground hover:text-muted-foreground cursor-grab active:cursor-grabbing shrink-0 touch-none"
+            className="mt-0.5 flex h-11 w-9 items-center justify-center md:block md:h-auto md:w-auto md:p-0.5 text-muted-foreground hover:text-muted-foreground cursor-grab active:cursor-grabbing shrink-0 touch-none"
             aria-label="Przeciągnij aby zmienić kolejność"
             {...(dragHandleListeners as React.HTMLAttributes<HTMLButtonElement>)}
             {...(dragHandleAttributes as React.HTMLAttributes<HTMLButtonElement>)}
@@ -968,24 +969,25 @@ function ExerciseRow({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onMoveUp} disabled={index === 0} title="Przesuń wyżej">
-              <ChevronUp size={12} />
+          {/* Telefon: akcje zawsze widoczne (brak „hover” na dotyk), w osobnym rzędzie i po 44 px; komputer: po najechaniu, małe */}
+          <div className="flex w-full flex-wrap justify-end gap-1 md:w-auto md:flex-nowrap md:gap-0.5 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity shrink-0" data-testid="exercise-actions">
+            <Button variant="ghost" size="icon" className="h-11 w-11 md:h-6 md:w-6" onClick={onMoveUp} disabled={index === 0} title="Przesuń wyżej">
+              <ChevronUp size={16} />
             </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onMoveDown} disabled={index === total - 1} title="Przesuń niżej">
-              <ChevronDown size={12} />
+            <Button variant="ghost" size="icon" className="h-11 w-11 md:h-6 md:w-6" onClick={onMoveDown} disabled={index === total - 1} title="Przesuń niżej">
+              <ChevronDown size={16} />
             </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditing(true)} title="Edytuj">
-              <Pencil size={12} />
+            <Button variant="ghost" size="icon" className="h-11 w-11 md:h-6 md:w-6" onClick={() => setEditing(true)} title="Edytuj">
+              <Pencil size={16} />
             </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleDuplicate} disabled={duplicateExercise.isPending} title="Duplikuj">
-              <Copy size={12} />
+            <Button variant="ghost" size="icon" className="h-11 w-11 md:h-6 md:w-6" onClick={handleDuplicate} disabled={duplicateExercise.isPending} title="Duplikuj">
+              <Copy size={16} />
             </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setMoving(true)} title="Przenieś do innego dnia">
-              <ArrowRight size={12} />
+            <Button variant="ghost" size="icon" className="h-11 w-11 md:h-6 md:w-6" onClick={() => setMoving(true)} title="Przenieś do innego dnia">
+              <ArrowRight size={16} />
             </Button>
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={handleDelete} title="Usuń">
-              <Trash2 size={12} />
+            <Button variant="ghost" size="icon" className="h-11 w-11 md:h-6 md:w-6 text-destructive hover:text-destructive" onClick={handleDelete} title="Usuń">
+              <Trash2 size={16} />
             </Button>
           </div>
         </div>
@@ -1208,7 +1210,7 @@ function DaySection({
   return (
     <Card className="border-border/50 shadow-sm">
       {/* Day header */}
-      <CardHeader className="pb-3 flex flex-row items-start gap-2 bg-muted/20 border-b border-border/50">
+      <CardHeader className="pb-3 flex flex-row flex-wrap md:flex-nowrap items-start gap-2 bg-muted/20 border-b border-border/50">
         {/* Drag handle for day */}
         <button
           className="mt-1 p-0.5 text-muted-foreground hover:text-muted-foreground cursor-grab active:cursor-grabbing shrink-0 touch-none"
@@ -1260,27 +1262,27 @@ function DaySection({
         )}
 
         {!editingName && (
-          <div className="flex gap-0.5 shrink-0">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onMoveUp} disabled={dayIndex === 0} title="Dzień wyżej">
+          <div className="flex w-full flex-wrap justify-end gap-1 md:w-auto md:flex-nowrap md:gap-0.5 shrink-0" data-testid="day-actions">
+            <Button variant="ghost" size="icon" className="h-11 w-11 md:h-7 md:w-7" onClick={onMoveUp} disabled={dayIndex === 0} title="Dzień wyżej">
               <ChevronUp size={13} />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onMoveDown} disabled={dayIndex === daysTotal - 1} title="Dzień niżej">
+            <Button variant="ghost" size="icon" className="h-11 w-11 md:h-7 md:w-7" onClick={onMoveDown} disabled={dayIndex === daysTotal - 1} title="Dzień niżej">
               <ChevronDown size={13} />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setNameValue(day.dayName ?? `Dzień ${day.dayOrder}`); setEditingName(true); }} title="Zmień nazwę">
+            <Button variant="ghost" size="icon" className="h-11 w-11 md:h-7 md:w-7" onClick={() => { setNameValue(day.dayName ?? `Dzień ${day.dayOrder}`); setEditingName(true); }} title="Zmień nazwę">
               <Pencil size={13} />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setDetailForm({ subtitle: day.subtitle ?? "", description: day.description ?? "", estimatedDurationMinutes: day.estimatedDurationMinutes != null ? String(day.estimatedDurationMinutes) : "", trainerNotes: day.trainerNotes ?? "" }); setShowDetails((v) => !v); }} title="Szczegóły dnia">
+            <Button variant="ghost" size="icon" className="h-11 w-11 md:h-7 md:w-7" onClick={() => { setDetailForm({ subtitle: day.subtitle ?? "", description: day.description ?? "", estimatedDurationMinutes: day.estimatedDurationMinutes != null ? String(day.estimatedDurationMinutes) : "", trainerNotes: day.trainerNotes ?? "" }); setShowDetails((v) => !v); }} title="Szczegóły dnia">
               <Info size={13} className={showDetails ? "text-primary" : ""} />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleDuplicateDay} disabled={duplicateDay.isPending} title="Duplikuj dzień">
+            <Button variant="ghost" size="icon" className="h-11 w-11 md:h-7 md:w-7" onClick={handleDuplicateDay} disabled={duplicateDay.isPending} title="Duplikuj dzień">
               <Copy size={13} />
             </Button>
             {day.exercises.length > 0 && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                className="h-11 w-11 md:h-7 md:w-7 text-muted-foreground hover:text-destructive"
                 onClick={() => setConfirmClearDay(true)}
                 disabled={clearDay.isPending}
                 title="Wyczyść dzień"
@@ -1288,7 +1290,7 @@ function DaySection({
                 <ListX size={13} />
               </Button>
             )}
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={handleDeleteDay} title="Usuń dzień">
+            <Button variant="ghost" size="icon" className="h-11 w-11 md:h-7 md:w-7 text-destructive hover:text-destructive" onClick={handleDeleteDay} title="Usuń dzień">
               <Trash2 size={13} />
             </Button>
           </div>
@@ -1593,7 +1595,7 @@ function PlanSummaryCard({ plan }: { plan: WorkoutPlan }) {
 
 // ─── PlanInfoForm ─────────────────────────────────────────────────────────────
 
-function PlanInfoForm({ plan, planId }: { plan: WorkoutPlan; planId: number }) {
+export function PlanInfoForm({ plan, planId }: { plan: WorkoutPlan; planId: number }) {
   const { toast } = useToast();
 
   const makeFormFromPlan = (p: WorkoutPlan) => ({
@@ -1628,7 +1630,8 @@ function PlanInfoForm({ plan, planId }: { plan: WorkoutPlan; planId: number }) {
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const handleSave = () => {
+  const [autoSaved, setAutoSaved] = useState(false);
+  const save = (silent: boolean) => {
     updatePlan.mutate(
       {
         title: form.title.trim() || plan.title,
@@ -1641,12 +1644,22 @@ function PlanInfoForm({ plan, planId }: { plan: WorkoutPlan; planId: number }) {
       {
         onSuccess: (updated) => {
           setSavedForm(makeFormFromPlan(updated));
-          toast({ title: "Informacje planu zapisane" });
+          if (silent) setAutoSaved(true); else toast({ title: "Informacje planu zapisane" });
         },
         onError: (err) => toast({ title: humanizeError(err), variant: "destructive" }),
       },
     );
   };
+  const handleSave = () => save(false);
+
+  // Autozapis: po 1,5 s bez zmian szkic informacji planu zapisuje się sam (wynik zostaje na serwerze, więc po zamknięciu karty nic nie ginie).
+  // Zależność tylko od `form`: nieudany zapis nie powtarza się w pętli — ponowi się przy kolejnej zmianie albo przyciskiem „Zapisz”.
+  useEffect(() => {
+    if (!isDirty) return;
+    setAutoSaved(false);
+    const t = setTimeout(() => save(true), 1500);
+    return () => clearTimeout(t);
+  }, [form]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDiscard = () => {
     setForm(savedForm);
@@ -1665,8 +1678,11 @@ function PlanInfoForm({ plan, planId }: { plan: WorkoutPlan; planId: number }) {
           Informacje planu
           {isDirty && (
             <Badge variant="outline" className="ml-auto text-xs text-amber-600 border-amber-300">
-              Niezapisane zmiany
+              {updatePlan.isPending ? "Zapisuję…" : "Niezapisane zmiany"}
             </Badge>
+          )}
+          {!isDirty && autoSaved && (
+            <Badge variant="outline" className="ml-auto text-xs text-emerald-700 border-emerald-300" data-testid="plan-autosaved">Zapisano automatycznie</Badge>
           )}
         </button>
       </CardHeader>
@@ -1801,6 +1817,7 @@ export default function PlanEditor() {
   // Wszystkie hooki muszą być przed wczesnymi `return` (ładowanie / brak planu) — inaczej zmienia się ich kolejność (test hooks-order)
   const [justSaved, setJustSaved] = useState(() => typeof window !== "undefined" && isJustSaved(window.location.search));
   const [accessOpen, setAccessOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
   const [accessClient, setAccessClient] = useState<{ id: number; firstName: string; email: string | null } | null>(null);
 
   if (isLoading) {
@@ -2009,6 +2026,8 @@ export default function PlanEditor() {
           </div>
 
           <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+            <Button variant="outline" className="gap-1" size="sm" onClick={() => setCopyOpen(true)} data-testid="copy-plan">Kopiuj plan</Button>
+            <CopyPlanDialog planId={planId} fromClientId={plan.clientId} open={copyOpen} onOpenChange={setCopyOpen} />
             <Button variant="outline" asChild className="gap-1" size="sm">
               <Link href={`/clients/${plan.clientId}/plans/generate`}>
                 <Sparkles size={14} />

@@ -307,3 +307,5 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 ## CZĘŚĆ 3 (05.11.2026)
 - **`ROADMAP_ENABLED` (karta „Wkrótce” z głosowaniem)** — zbudowana i przetestowana, **wyłączona**. Włączyć? (docs/WKROTCE.md) Pozycje startowe i ich opisy do Twojej akceptacji.
 - **`TERMS_ENABLED` (akceptacja Regulaminu + „Pobierz moje dane”)** — zbudowane i przetestowane, **wyłączone**. Treść Regulaminu to projekt do prawnika (decyzje [DECYZJA] w tekście: wiek 18/16, autor przy ćwiczeniu we wspólnej bibliotece). Włączyć na betę z paskiem „Wersja testowa”, czy dopiero po prawniku? (docs/REGULAMIN-W-APLIKACJI.md)
+- **`BODY_LOG_ENABLED` (masa i obwody w „Postępach”)** — zbudowane i przetestowane, **wyłączone**. Włączyć? Czy trener ma widzieć te liczby za zgodą podopiecznego? (docs/KONKURENCJA-POPRAWKI.md)
+- **Ćwiczenia „na czas” przy kopiowaniu planu** zostają „na czas” (typ wynika z katalogu, nie z kopii) — zachowanie zgodne z importem.

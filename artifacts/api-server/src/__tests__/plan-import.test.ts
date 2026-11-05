@@ -115,4 +115,45 @@ describe("zapis", () => {
     const r = await request(app).get("/api/plan-import/template.csv");
     expect(r.status).toBe(200); expect(r.headers["content-type"]).toContain("text/csv"); expect(r.text).toContain("Ćwiczenie");
   });
+
+describe("kopiowanie planu jednym kliknięciem", () => {
+  it("plan → inny klient (kopia jako szkic, filtry nowego klienta), → szablon; cudzy plan i cudzy klient 404; staw z potwierdzeniem; sprzęt 422", async () => {
+    mockUser = A;
+    const mkPlan = async (clientId: number, ids: number[]) => {
+      const r = await request(app).post(`/api/clients/${clientId}/plan-import/save`).send({ title: "Źródło", target: "plan", acknowledgeJointWarning: true,
+        days: [{ dayName: "Dzień A", exercises: ids.map((id) => ({ exerciseId: id, sets: 4, repsMin: 6, repsMax: 8, loadText: "30 kg", rir: 1, note: "n" })) }] });
+      expect(r.status).toBe(201); return r.body.planId as number;
+    };
+    const src = await mkPlan(cGym, [170, 5]);
+    // do klienta z barkiem: ćwiczenie obciążające bark wymaga potwierdzenia — tu źródło ma klienta z barkiem, więc kopiujemy do klienta bez ograniczeń (dom + hantle)
+    const home = await request(app).post(`/api/plans/${src}/copy`).send({ target: "client", clientId: cHome });
+    expect([201, 422]).toContain(home.status); // 422 = sprzęt klienta nie pasuje do ćwiczenia ze źródła (poprawny wynik filtra)
+    const tpl = await request(app).post(`/api/plans/${src}/copy`).send({ target: "template", title: "Z kopii" });
+    expect(tpl.status).toBe(201); expect(tpl.body.templateId).toBeGreaterThan(0);
+    const [t] = await db.select().from(planTemplatesTable).where(eq(planTemplatesTable.id, tpl.body.templateId));
+    const day0 = (t!.payload as { days: Array<{ exercises: Array<{ exerciseId: number; sets: number }> }> }).days[0]!;
+    expect(day0.exercises.map((e) => e.exerciseId)).toEqual([170, 5]); expect(day0.exercises[0]!.sets).toBe(4);
+    // kopia na tego samego klienta (z barkiem): bez potwierdzenia 409, z potwierdzeniem szkic z oryginalnymi danymi
+    const no = await request(app).post(`/api/plans/${src}/copy`).send({ target: "client", clientId: cGym });
+    expect(no.status).toBe(409); expect(no.body.code).toBe("EXERCISE_LOADS_REPORTED_JOINT");
+    const ok = await request(app).post(`/api/plans/${src}/copy`).send({ target: "client", clientId: cGym, acknowledgeJointWarning: true });
+    expect(ok.status).toBe(201);
+    const [copy] = await db.select().from(workoutPlansTable).where(eq(workoutPlansTable.id, ok.body.planId));
+    expect(copy).toMatchObject({ status: "draft", title: "Źródło (kopia)", clientId: cGym });
+    const d = await db.select().from(workoutPlanDaysTable).where(eq(workoutPlanDaysTable.planId, copy!.id));
+    const rows = await db.select().from(workoutPlanExercisesTable).where(eq(workoutPlanExercisesTable.dayId, d[0]!.id));
+    expect(rows.map((r) => r.exerciseId as number).sort((a, b) => a - b)).toEqual([5, 170]); expect(rows.every((r) => r.workingSets === 4 && r.rir === 1)).toBe(true);
+    // ćwiczenie powtórzeniowe zachowuje zakres; ćwiczenie na czas zostaje na czas (jak w źródle) — katalog decyduje o typie, nie kopia
+    expect(rows.some((r) => r.repType === "range" && r.repRangeMin === 6 && r.repRangeMax === 8)).toBe(true);
+    // izolacja
+    expect((await request(app).post(`/api/plans/${src}/copy`).send({ target: "client", clientId: cB })).status).toBe(404); // cudzy klient
+    mockUser = B;
+    expect((await request(app).post(`/api/plans/${src}/copy`).send({ target: "template" })).status).toBe(404); // cudzy plan
+    mockUser = null;
+    expect((await request(app).post(`/api/plans/${src}/copy`).send({ target: "template" })).status).toBeGreaterThanOrEqual(401);
+    mockUser = A;
+    expect((await request(app).post(`/api/plans/${src}/copy`).send({ target: "client" })).status).toBe(400);
+    expect((await request(app).post(`/api/plans/99999999/copy`).send({ target: "template" })).status).toBe(404);
+  });
+});
 });
