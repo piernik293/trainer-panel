@@ -28,7 +28,8 @@ const ADMIN = "gb_admin";
 let exerciseId = 0;
 
 async function wipe() {
-  await db.delete(goldenBullsTable).where(like(goldenBullsTable.clerkUserId, `${PREFIX}%`));
+  // baza testowa (guard *_test): czyścimy całą tabelę, bo pule liczą się globalnie, a inne pliki testów mogły zostawić odznaki (np. akceptacje wniosków)
+  await db.delete(goldenBullsTable);
   await db.delete(trainerApplicationsTable).where(like(trainerApplicationsTable.clerkUserId, `${PREFIX}%`));
   const cl = await db.select({ id: clientsTable.id }).from(clientsTable).where(like(clientsTable.clerkUserId, `${PREFIX}%`));
   if (cl.length) {
