@@ -51,6 +51,7 @@ import roadmapRouter from "./roadmap";
 import termsRouter from "./terms";
 import bodyLogRouter from "./bodyLog";
 import trainerLibraryRouter from "./trainerLibrary";
+import onboardingRouter from "./onboarding";
 import ownPlanRouter from "./ownPlan";
 
 const router: IRouter = Router();
@@ -107,6 +108,7 @@ router.use(roadmapRouter);
 router.use(termsRouter);
 router.use(bodyLogRouter);
 router.use(trainerLibraryRouter);
+router.use(onboardingRouter);
 router.use(ownPlanRouter);
 
 /**

@@ -45,7 +45,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
     })
     .from(clientsTable)
     // pulpit liczy podopiecznych trenera — bez jego własnego profilu „Mój trening” (to samo konto), który ma swoją pozycję w liście klientów
-    .where(and(eq(clientsTable.trainerId, trainerId), sql`${clientsTable.clerkUserId} is distinct from ${req.trainer!.clerkUserId}`));
+    .where(and(eq(clientsTable.trainerId, trainerId), eq(clientsTable.isExample, false), sql`${clientsTable.clerkUserId} is distinct from ${req.trainer!.clerkUserId}`));
   const clientIds = clients.map((c) => c.id);
   // dane z okresu Solo, których osoba nie udostępniła, nie wchodzą na pulpit (plany, treningi, zgłoszenia bólu)
   const visibleFromOf = new Map(clients.filter((c) => c.visibleFrom).map((c) => [c.id, c.visibleFrom as Date]));
