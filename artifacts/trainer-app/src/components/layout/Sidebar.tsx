@@ -108,7 +108,7 @@ export function Sidebar() {
           <button
             aria-label="Otwórz menu"
             onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
           >
             <Menu size={22} />
           </button>

@@ -1798,6 +1798,11 @@ export default function PlanEditor() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  // Wszystkie hooki muszą być przed wczesnymi `return` (ładowanie / brak planu) — inaczej zmienia się ich kolejność (test hooks-order)
+  const [justSaved, setJustSaved] = useState(() => typeof window !== "undefined" && isJustSaved(window.location.search));
+  const [accessOpen, setAccessOpen] = useState(false);
+  const [accessClient, setAccessClient] = useState<{ id: number; firstName: string; email: string | null } | null>(null);
+
   if (isLoading) {
     return <div className="p-8 text-center text-muted-foreground animate-pulse">Ładowanie planu...</div>;
   }
@@ -1814,9 +1819,6 @@ export default function PlanEditor() {
   const canActivate = plan.status === "draft" && !hasAbsoluteViolation && !hasUnassignedExercises;
   const canEdit = plan.status === "draft";
 
-  const [justSaved, setJustSaved] = useState(() => typeof window !== "undefined" && isJustSaved(window.location.search));
-  const [accessOpen, setAccessOpen] = useState(false);
-  const [accessClient, setAccessClient] = useState<{ id: number; firstName: string; email: string | null } | null>(null);
   const handleActivate = () => setConfirmActivate(true);
 
   const doActivate = () => {

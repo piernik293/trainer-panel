@@ -1176,7 +1176,7 @@ export function PlanView({
               Plan w trakcie
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">Cześć, {client.firstName}!</p>
+          <p className="text-sm text-muted-foreground mt-1 break-words">Cześć, {client.firstName}!</p>
           {plan.goal && (
             <p className="text-sm text-primary bg-primary/5 border border-primary/10 px-3 py-2 mt-3">
               {/^cel\b/i.test(plan.goal ?? "") ? plan.goal : `Cel: ${plan.goal}`}
@@ -1267,8 +1267,8 @@ export default function PlanPortal() {
   // New look of the screens (UI_V2_ENABLED): own profile (nick, colour) and the achievements catalogue.
   const uiV2 = flagsReady && flags.uiV2;
   const brandV1 = useBrandV1();
-  const { profile: profileV2, reload: reloadProfileV2 } = useProfileV2(client?.firstName ?? "", uiV2);
-  const { overview: overviewV2, loaded: overviewLoaded } = useOverview(uiV2 && flags.achievements);
+  const { profile: profileV2, reload: reloadProfileV2 } = useProfileV2(client?.firstName ?? "", uiV2 && !!client); // nie pytamy o profil, zanim konto ma wiersz klienta (nowe konto Solo: 404 w konsoli)
+  const { overview: overviewV2, loaded: overviewLoaded } = useOverview(uiV2 && flags.achievements && !!client);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
@@ -1437,7 +1437,7 @@ export default function PlanPortal() {
           <div className="space-y-6">
             <div>
               <p className="section-label">Dziś</p>
-              <h1 className="text-2xl font-bold tracking-tight">Cześć, {client.firstName}!</h1>
+              <h1 className="break-words text-2xl font-bold tracking-tight">Cześć, {client.firstName}!</h1>
             </div>
             {flags.solo && (plan as { endDate?: string | null }).endDate && (plan as { endDate: string }).endDate < new Date().toISOString().slice(0, 10) && <SoloNewPlan endDate={(plan as { endDate: string }).endDate} onPlanReady={() => setPlanRetry((c) => c + 1)} />}
             {todayBlock(true)}
