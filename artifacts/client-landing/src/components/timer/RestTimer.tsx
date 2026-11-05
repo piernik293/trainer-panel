@@ -4,12 +4,14 @@ import { ADJUST_SECONDS, adjustRest, cheerFor, formatClock, remainingSeconds, ty
 import { setTimerSettings, useTimerSettings } from "@/lib/timer/settings";
 import { cancelRestCues, scheduleRestCues, vibrate } from "@/lib/timer/sound";
 
+import { IfBrand, MascotEvent, MASCOT_EVENTS } from "@workspace/design-tokens/brand";
 /**
  * Rest between sets (reusable: the trainer's "Prowadzę trening" will use it too). The time is computed from `state.endsAt`, so after a locked
  * screen it shows the right value at once. Cues: 3 beeps before the end, an energetic tune + vibration at the end, "Dawaj! <next set>".
  */
-export function RestTimer({ state, counter, onChange, onClose }: {
+export function RestTimer({ state, counter, pr = false, onChange, onClose }: {
   state: RestState; /** number of the set just done (rotates the cheer) */ counter: number;
+  /** the set just saved was a new weight record: the bull flexes for the first 1.5 s */ pr?: boolean;
   onChange: (s: RestState) => void; onClose: () => void;
 }) {
   const settings = useTimerSettings();
@@ -17,6 +19,8 @@ export function RestTimer({ state, counter, onChange, onClose }: {
   const left = remainingSeconds(state, now);
   const finished = left <= 0;
   const cued = useRef<string>("");
+  const [flexing, setFlexing] = useState(pr);
+  useEffect(() => { if (!pr) return; const t = setTimeout(() => setFlexing(false), (MASCOT_EVENTS.set_pr as { ms: number }).ms); return () => clearTimeout(t); }, [pr]);
 
   // clock: recomputed from the timestamp; also when the page becomes visible again
   useEffect(() => {
@@ -53,6 +57,7 @@ export function RestTimer({ state, counter, onChange, onClose }: {
         </button>
       </div>
       <div className="mx-auto flex w-full max-w-lg grow flex-col items-center justify-center gap-4 text-center">
+        <IfBrand fallback={null}><MascotEvent key={flexing ? "pr" : "rest"} event={flexing ? "set_pr" : "rest_timer"} rozmiar="m" /></IfBrand>
         {finished ? (
           <>
             <p className="text-5xl font-extrabold text-primary" role="status" data-testid="rest-cheer">{cheerFor(counter)}</p>

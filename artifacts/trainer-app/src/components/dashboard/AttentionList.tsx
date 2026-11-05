@@ -9,6 +9,7 @@ import { getInitials } from "@/components/layout/AccountMenu";
 import { useDismissAttention, useSetSilenceDays, type AttentionItem, type AttentionKind } from "@/lib/dashboardApi";
 import { formatWhen } from "@/lib/dashboardFormat";
 
+import { IfBrand, MascotEvent } from "@workspace/design-tokens/brand";
 // The pill always carries a text label: colour only reinforces it.
 const PILL: Record<AttentionKind, string> = {
   pain: "bg-destructive/10 text-destructive",
@@ -71,6 +72,12 @@ export function AttentionList({
                 data-testid="attention-row"
               >
                 <div className="flex min-w-0 flex-1 items-start gap-3">
+                  {/* Byczek śpi: klient bez treningu 7+ dni (silent) albo zaproszenie bez odpowiedzi (invite_pending) — tylko z flagą marki */}
+                  <IfBrand fallback={null}>
+                    {item.kind === "silent" || item.kind === "invite_pending"
+                      ? <span className="shrink-0" data-testid="attention-sleep"><MascotEvent event={item.kind === "silent" ? "inactive_client" : "no_checkin"} rozmiar="s" /></span>
+                      : null}
+                  </IfBrand>
                   <Avatar className="h-10 w-10 shrink-0">
                     <AvatarFallback aria-hidden="true">{getInitials(item.name)}</AvatarFallback>
                   </Avatar>

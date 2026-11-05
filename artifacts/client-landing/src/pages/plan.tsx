@@ -1268,7 +1268,7 @@ export default function PlanPortal() {
   const uiV2 = flagsReady && flags.uiV2;
   const brandV1 = useBrandV1();
   const { profile: profileV2, reload: reloadProfileV2 } = useProfileV2(client?.firstName ?? "", uiV2);
-  const { overview: overviewV2 } = useOverview(uiV2 && flags.achievements);
+  const { overview: overviewV2, loaded: overviewLoaded } = useOverview(uiV2 && flags.achievements);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
@@ -1425,7 +1425,7 @@ export default function PlanPortal() {
         <LoginSequence today={todayWarsaw()} />
         {tab === "dzis" && uiV2 && (
           <HomeV2
-            profile={profileV2} reloadKey={todayReload} streakWeeks={overviewV2?.streakWeeks ?? null} achievements={overviewV2?.items ?? []}
+            profile={profileV2} reloadKey={todayReload} streakWeeks={overviewV2?.streakWeeks ?? null} streakLoaded={overviewLoaded && flags.achievements} goldenBull={profileV2.goldenBull ?? null} achievements={overviewV2?.items ?? []}
             onStart={(day, ctx) => setTraining({ day, firstName: ctx.client.firstName, week: ctx.week })}
             onRamp={(kind, planDayId, items) => setRamp({ kind, planDayId, items })}
             onOpenYou={() => { setTab("ty"); window.scrollTo({ top: 0 }); }}

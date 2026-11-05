@@ -4,6 +4,7 @@ import type { RampItem } from "@/lib/training/types";
 import { updateRamp, type RampKind } from "@/lib/training/ramp";
 import { MediaPlaceholder } from "./TrainingUi";
 
+import { IfBrand, MascotEvent } from "@workspace/design-tokens/brand";
 const TITLES: Record<RampKind, string> = { warmup: "Rozgrzewka", cooldown: "Schłodzenie" };
 
 /** Warm-up / cool-down on its own (not part of the workout run): one item at a time, the amount is information (no timer). */
@@ -38,7 +39,9 @@ export function RampFlow({ kind, planDayId, items, onExit }: {
       </header>
       <main className="mx-auto max-w-lg space-y-4 px-4 pt-4">
         <p className="text-sm font-semibold text-muted-foreground">{title} · {index + 1} z {items.length}</p>
-        <MediaPlaceholder label="Animacja pojawi się tutaj" />
+        <IfBrand fallback={<MediaPlaceholder label="Animacja pojawi się tutaj" />}>
+          <div className="flex justify-center"><MascotEvent event={kind === "warmup" ? "warmup_screen" : "cooldown_screen"} rozmiar="l" /></div>
+        </IfBrand>
         <div>
           <h2 className="text-2xl font-bold leading-tight tracking-tight">{it.name}</h2>
           <p className="mt-1 text-sm text-foreground/90">{it.description}</p>
