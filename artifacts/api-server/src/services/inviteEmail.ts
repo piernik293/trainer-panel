@@ -82,15 +82,15 @@ export function renderInviteEmail(c: InviteEmailContent) {
   const kind = c.kind ?? "invite";
   const trainer = c.trainerName ?? "Twój trener";
   const firstName = c.trainerName?.split(/\s+/)[0] ?? "Twój trener";
-  const hello = c.clientName ? `Cześć ${c.clientName},` : "Cześć,";
+  const hello = c.clientName ? `Cześć, ${c.clientName},` : "Cześć,";
   const expiry = formatExpiry(c.expiresAt);
   const subject =
     kind === "invite"
-      ? `${firstName} zaprasza Cię do wywiadu treningowego`
+      ? `${trainer} zaprasza Cię do Optimatren — przygotuje Twój plan treningowy`
       : `Przypomnienie: wywiad treningowy od ${firstName}`;
   const lead =
     kind === "invite"
-      ? `Zapraszam Cię do wypełnienia wywiadu treningowego. Na podstawie Twoich odpowiedzi przygotuję plan dopasowany do Ciebie. ${SURVEY_DURATION_TEXT}`
+      ? `${trainer}, Twój trener, zaprasza Cię do Optimatren — aplikacji, w której dostaniesz od niego plan i zapiszesz treningi. Dla Ciebie jest bezpłatna. Zacznij od krótkiego wywiadu (ok. 5 minut). Na jego podstawie trener przygotuje Twój plan.`
       : `Przypominam o wywiadzie treningowym — gdy go wypełnisz, przygotuję Twój plan. ${SURVEY_DURATION_TEXT}`;
 
   const text = [
@@ -101,7 +101,7 @@ export function renderInviteEmail(c: InviteEmailContent) {
     "",
     `Wypełnij wywiad: ${c.url}`,
     "",
-    `Link jest jednorazowy i ważny do ${expiry}.`,
+    kind === "invite" ? "Link jest ważny 7 dni. Jeśli nie znasz tej osoby, zignoruj tę wiadomość." : `Link jest jednorazowy i ważny do ${expiry}.`,
     "",
     `${trainer} · Trener personalny`,
     "Wysłano przez Optimatren",
@@ -147,7 +147,7 @@ export function renderInviteEmail(c: InviteEmailContent) {
       </tr></table>
     </td></tr>
     <tr><td style="padding:0 0 16px 0;color:#57534E;font-size:13px;line-height:20px;">Jeśli przycisk nie działa, skopiuj ten adres do przeglądarki:<br><a href="${url}" style="color:${ACCENT};word-break:break-all;">${url}</a></td></tr>
-    <tr><td style="padding:0 0 24px 0;color:#57534E;font-size:14px;line-height:20px;">Link jest jednorazowy i ważny do ${escapeHtml(expiry)}.</td></tr>
+    <tr><td style="padding:0 0 24px 0;color:#57534E;font-size:14px;line-height:20px;">${kind === "invite" ? "Link jest ważny 7 dni. Jeśli nie znasz tej osoby, zignoruj tę wiadomość." : `Link jest jednorazowy i ważny do ${escapeHtml(expiry)}.`}</td></tr>
   </table>
 </td></tr>
 <tr><td style="padding:16px 24px;border-top:1px solid #E7E5E4;">

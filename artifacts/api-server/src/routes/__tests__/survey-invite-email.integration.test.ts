@@ -115,18 +115,18 @@ describe("wysyłka e-mailem", () => {
     expect(mail.to).toBe(to);
     expect(mail.from).toBe('"Anna Nowak przez Optimatren" <sender@example.invalid>');
     expect(mail.replyTo).toBe("anna.trener@example.com");
-    expect(mail.subject).toBe("Anna zaprasza Cię do wywiadu treningowego");
-    expect(mail.html).toContain("Cześć Marta,");
+    expect(mail.subject).toBe("Anna Nowak zaprasza Cię do Optimatren — przygotuje Twój plan treningowy");
+    expect(mail.html).toContain("Cześć, Marta,");
     expect(mail.html).toContain("Do zobaczenia &lt;b&gt;w poniedziałek&lt;/b&gt;!"); // escaped
     expect(mail.html).toContain(`href="${expectedUrl}"`);
     expect(mail.html).toContain("Wypełnij wywiad");
     expect(mail.html).toContain("Wysłano przez Optimatren");
     expect((mail.html.match(/<img [^>]*>/g) ?? []).every((t: string) => t.includes(`src="cid:optimatren-banner"`))).toBe(true); // only the embedded banner, no remote images
     expect(mail.html).not.toContain("evil.example");
-    expect(mail.text).toContain("Cześć Marta,");
+    expect(mail.text).toContain("Cześć, Marta,");
     expect(mail.text).toContain("Do zobaczenia <b>w poniedziałek</b>!");
     expect(mail.text).toContain(expectedUrl);
-    expect(mail.text).toContain("Link jest jednorazowy i ważny do");
+    expect(mail.text).toContain("Link jest ważny 7 dni. Jeśli nie znasz tej osoby, zignoruj tę wiadomość.");
   });
 
   it("błąd wysyłki: zaproszenie powstaje, komunikat bez szczegółów serwera", async () => {

@@ -42,8 +42,8 @@ export const MAIL_CATALOGUE: Record<MailId, MailDef> = {
     id: "invite", label: "Zaproszenie od trenera", audience: "osoba", when: "Trener zaprasza osobę do wywiadu (e-mail albo link).",
     sample: { name: "Anna", trainerName: "Marek Nowak" },
     // Wysyłany własnym, wcześniejszym renderem (services/inviteEmail.ts — ten sam układ i kolory); tu tylko tekst do akceptacji.
-    build: (d) => ({ name: d.name ?? null, subject: `${d.trainerName ?? "Trener"} zaprasza Cię do współpracy w Optimatren`, onBehalfOf: d.trainerName ?? null, reason: "trener zaprosił Cię do aplikacji",
-      paragraphs: [`${d.trainerName ?? "Twój trener"} zaprasza Cię do współpracy w Optimatren.`, "Wypełnij krótki wywiad — zajmie to kilka minut. Na jego podstawie trener przygotuje Twój plan.", "Link jest ważny 7 dni."],
+    build: (d) => ({ name: d.name ?? null, subject: `${d.trainerName ?? "Trener"} zaprasza Cię do Optimatren — przygotuje Twój plan treningowy`, onBehalfOf: d.trainerName ?? null, reason: "trener zaprosił Cię do aplikacji",
+      paragraphs: [`${d.trainerName ?? "Trener"}, Twój trener, zaprasza Cię do Optimatren — aplikacji, w której dostaniesz od niego plan i zapiszesz treningi. Dla Ciebie jest bezpłatna.`, "Zacznij od krótkiego wywiadu (ok. 5 minut). Na jego podstawie trener przygotuje Twój plan.", "Link jest ważny 7 dni. Jeśli nie znasz tej osoby, zignoruj tę wiadomość."],
       button: { label: "Wypełnij wywiad", url: `${appUrl()}/client-landing/survey/PRZYKLAD` } }),
   },
   join_request: {

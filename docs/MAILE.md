@@ -5,24 +5,25 @@ Zasady: zwrot po imieniu („Cześć, Anna,”), 3–5 krótkich zdań, bez form
 Nadawca: maile systemowe — „Optimatren”; maile w imieniu trenera — „Imię Nazwisko przez Optimatren” + Reply-To = e-mail trenera. Maile idą zawsze na główny e-mail konta z Clerk i nigdy na adresy zastępcze (`.invalid`, `.example`, `.test`, `.localhost`, `.local`).
 Teksty są wdrożone dokładnie tak, jak niżej — zmiana to edycja `services/mail/catalogue.ts` (ten dokument jest jego kopią). Podgląd każdego szablonu i „Wyślij test do mnie”: panel administratora → „Maile”.
 
-Uwaga: zaproszenie od trenera (`invite`) wychodzi nadal własnym, wcześniejszym renderem (`services/inviteEmail.ts`: ten sam układ i kolory, dodatkowo baner), z tematem „<Imię trenera> zaprasza Cię do wywiadu treningowego”. Poniżej proponowany nowy temat i treść w jednym szablonie — do akceptacji; po zatwierdzeniu przełączę wysyłkę.
+Zaproszenie od trenera (`invite`) wychodzi renderem `services/inviteEmail.ts` (ten sam układ, kolory i baner); tekst zatwierdzony przez właściciela 05.11.2026 („ZGODA MAIL z poprawkami”). Przypomnienie o wywiadzie (`reminder`) bez zmian.
 
 ## Zaproszenie od trenera
 
 - Do: osoba · Kiedy: Trener zaprasza osobę do wywiadu (e-mail albo link).
-- Temat: **Marek Nowak zaprasza Cię do współpracy w Optimatren**
+- Temat: **Marek Nowak zaprasza Cię do Optimatren — przygotuje Twój plan treningowy**
 - Nadawca: Marek Nowak przez Optimatren (Reply-To: trener)
 - Treść:
 
   > Cześć, Anna,
   >
-  > Marek Nowak zaprasza Cię do współpracy w Optimatren.
+  > Marek Nowak, Twój trener, zaprasza Cię do Optimatren — aplikacji, w której dostaniesz od niego plan i zapiszesz treningi. Dla Ciebie jest bezpłatna.
   >
-  > Wypełnij krótki wywiad — zajmie to kilka minut. Na jego podstawie trener przygotuje Twój plan.
+  > Zacznij od krótkiego wywiadu (ok. 5 minut). Na jego podstawie trener przygotuje Twój plan.
   >
-  > Link jest ważny 7 dni.
+  > [Wypełnij wywiad]
+  >
+  > Link jest ważny 7 dni. Jeśli nie znasz tej osoby, zignoruj tę wiadomość.
 
-- Przycisk: **Wypełnij wywiad**
 - Stopka: „Dostajesz tę wiadomość, bo trener zaprosił Cię do aplikacji.”
 
 ## Prośba o dołączenie (do trenera)
