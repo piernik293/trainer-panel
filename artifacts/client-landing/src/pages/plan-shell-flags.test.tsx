@@ -74,7 +74,8 @@ describe("UI_V2_ENABLED", () => {
   it("włączona: nowe „Dziś” (powitanie z nickiem), „Postępy” z siatką osiągnięć i nowe „Ty” z @nickiem", async () => {
     stubApi({ solo: false, achievements: true, uiV2: true });
     render(<PlanPortal />);
-    expect((await screen.findByTestId("home-greeting")).textContent).toBe("Cześć, Anna!");
+    // stan przejściowy: imię z planu, zanim przyjdzie profil z nickiem (zależnie od tempa może go już nie być) — stan końcowy sprawdza waitFor niżej
+    expect((await screen.findByTestId("home-greeting")).textContent).toMatch(/^Cześć, (Anna|ShiiFuu)!$/);
     await waitFor(() => expect(screen.getByTestId("home-greeting").textContent).toBe("Cześć, ShiiFuu!"));
     await waitFor(() => expect(screen.getByTestId("next-achievement").textContent).toContain("8/10"));
     fireEvent.click(screen.getByRole("button", { name: "Postępy" }));
