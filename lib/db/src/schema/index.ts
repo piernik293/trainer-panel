@@ -32,3 +32,4 @@ export * from "./goldenBulls";
 export * from "./roadmap";
 export * from "./terms";
 export * from "./bodyMeasurements";
+export * from "./exerciseProposalLog";

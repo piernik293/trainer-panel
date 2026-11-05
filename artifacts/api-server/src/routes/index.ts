@@ -50,6 +50,7 @@ import goldenBullsRouter from "./goldenBulls";
 import roadmapRouter from "./roadmap";
 import termsRouter from "./terms";
 import bodyLogRouter from "./bodyLog";
+import trainerLibraryRouter from "./trainerLibrary";
 import ownPlanRouter from "./ownPlan";
 
 const router: IRouter = Router();
@@ -105,6 +106,7 @@ router.use(goldenBullsRouter);
 router.use(roadmapRouter);
 router.use(termsRouter);
 router.use(bodyLogRouter);
+router.use(trainerLibraryRouter);
 router.use(ownPlanRouter);
 
 /**

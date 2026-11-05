@@ -28,6 +28,7 @@ import { eq, and } from "drizzle-orm";
 import { z } from "zod/v4";
 import { db, clientsTable, surveysTable, exercisesTable } from "@workspace/db";
 import { desc } from "drizzle-orm";
+import { generatorOwnerFilter } from "../services/exerciseOwnership";
 import { requireAuth } from "../middlewares/requireAuth";
 import { ListExerciseRecommendationsResponse } from "@workspace/api-zod";
 import { scoreExercise } from "../lib/recommendation-engine";
@@ -110,7 +111,9 @@ router.get("/clients/:clientId/exercise-recommendations", requireAuth, async (re
   // Filter to complete-only exercises.
   // FUTURE: AI plan generation engine should use the same filter before
   // building its exercise pool to ensure only ready exercises are used.
+  const ownerAllows = await generatorOwnerFilter(req.trainer!.id);
   const completeExercises = exercises.filter((ex) => {
+    if (!ownerAllows(ex)) return false;
     if (!isGeneratorSafe(ex, survey.experienceLevel)) return false;
     const stats = statsMap.get(ex.id);
     const { isComplete } = computeCompleteness(ex, stats);

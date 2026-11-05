@@ -1,6 +1,7 @@
 import { plPL } from "@clerk/localizations";
 import Legal from "@/pages/Legal";
 import { TermsGate } from "@/components/TermsGate";
+import TrainerLibrary from "@/pages/TrainerLibrary";
 import AuthRedirectPage from "@/components/AuthRedirectPage";
 import { AUTH_REDIRECT_PATH } from "@/lib/authHome";
 import { useEffect, useRef, useState } from "react";
@@ -248,6 +249,7 @@ function Router() {
         <Route path="/exercises/:id/edit" component={ExerciseEdit} />
         <Route path="/exercises/:id" component={ExerciseDetail} />
         <Route path="/exercises" component={ExerciseList} />
+        <Route path="/library" component={TrainerLibrary} />
         <Route path="/plans/:id" component={PlanEditor} />
         <Route path="/calendar" component={CalendarPage} />
         <Route path="/survey-invite" component={SurveyInvite} />

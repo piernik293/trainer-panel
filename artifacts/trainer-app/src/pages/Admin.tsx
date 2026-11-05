@@ -9,11 +9,12 @@ import { humanizeError } from "@/lib/userError";
 import {
   AUTO_ACCEPT_CONFIRM, BLOCK_CONFIRM, FEEDBACK_CATEGORY_LABEL, useAdminFeedback, useFeedbackRead, SOURCE_LABEL, useApplicationActions, useAutoAccept, useTrainerApplications, useAccessLog, useAdminAction, useAdminErrors, useAdminMails, useAdminMailPreview, useAdminMailTest, useAdminBulls, useBullActions, useAdminRoadmap, useRoadmapActions, useAdminSolo, useAdminSubscriptions, useAdminTrainers, useIsAdmin,
 } from "@/lib/adminApi";
+import { useAdminProposals, useProposalActions } from "@/lib/libraryApi";
 
-type Tab = "errors" | "applications" | "trainers" | "solo" | "subs" | "feedback" | "mails" | "bulls" | "roadmap" | "log";
+type Tab = "errors" | "applications" | "trainers" | "solo" | "subs" | "feedback" | "mails" | "bulls" | "roadmap" | "proposals" | "log";
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: "errors", label: "Błędy" }, { id: "applications", label: "Wnioski" }, { id: "trainers", label: "Trenerzy" }, { id: "solo", label: "Solo" },
-  { id: "subs", label: "Abonamenty i limity" }, { id: "feedback", label: "Uwagi" }, { id: "mails", label: "Maile" }, { id: "bulls", label: "Byczki" }, { id: "roadmap", label: "Wkrótce" }, { id: "log", label: "Dziennik dostępu" },
+  { id: "subs", label: "Abonamenty i limity" }, { id: "feedback", label: "Uwagi" }, { id: "mails", label: "Maile" }, { id: "bulls", label: "Byczki" }, { id: "roadmap", label: "Wkrótce" }, { id: "proposals", label: "Propozycje ćwiczeń" }, { id: "log", label: "Dziennik dostępu" },
 ];
 const fmt = (d: string | null) => (d ? new Date(d).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" }) : "—");
 /** Wnioskodawca: imię i e-mail (gdy znane), inaczej „(bez imienia)”. */
@@ -271,6 +272,53 @@ function Mails() {
   );
 }
 
+/** „Propozycje ćwiczeń”: ćwiczenia trenerów ze zgodą na wspólną bibliotekę — podgląd, ostrzeżenie o duplikatach, [Dodaj do wspólnej] (kopia „do weryfikacji”) / [Odrzuć] (z powodem). */
+function Proposals() {
+  const { toast } = useToast();
+  const { data, isLoading } = useAdminProposals();
+  const { add, reject } = useProposalActions();
+  const [rejecting, setRejecting] = useState<number | null>(null);
+  const [reason, setReason] = useState("");
+  if (isLoading) return <div className="h-16 bg-muted animate-pulse rounded" />;
+  const err = (e: unknown) => toast({ title: humanizeError(e), variant: "destructive" });
+  const label: Record<string, string> = { proposed: "Do rozpatrzenia", added: "Dodane (kopia do weryfikacji)", rejected: "Odrzucone" };
+  return (
+    <div className="space-y-3">
+      <ul className="divide-y rounded-md border" data-testid="admin-proposals">
+        {(data?.items ?? []).map((p) => (
+          <li key={p.id} className="space-y-2 p-3" data-testid="admin-proposal">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm font-medium">{p.name} · {p.author}</span>
+              <span className="text-xs text-muted-foreground">{label[p.status]}{p.consentAt ? ` · zgoda ${fmt(p.consentAt)}` : ""}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">{[p.mainMuscleGroup, p.movementPattern, p.difficultyLevel, (p.equipment ?? []).join(", "), p.jointStress ? `stawy: ${p.jointStress}${p.jointStressAreas?.length ? ` (${p.jointStressAreas.join(", ")})` : ""}` : null].filter(Boolean).join(" · ")}</p>
+            {p.description && <p className="text-sm">{p.description}</p>}
+            {p.executionInstructions && <p className="text-xs text-muted-foreground">Wykonanie: {p.executionInstructions}</p>}
+            {p.similar.length > 0 && <p className="text-sm text-amber-700" role="note" data-testid="proposal-similar">Podobne w katalogu: {p.similar.map((s) => s.name).join(", ")}</p>}
+            {p.status === "rejected" && p.rejectReason && <p className="text-xs text-muted-foreground">Powód: {p.rejectReason}</p>}
+            {p.status === "proposed" && (rejecting === p.id ? (
+              <div className="space-y-2">
+                <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Powód odrzucenia (co najmniej 5 znaków)" aria-label="Powód odrzucenia" maxLength={300} />
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => { setRejecting(null); setReason(""); }}>Anuluj</Button>
+                  <Button size="sm" disabled={reason.trim().length < 5 || reject.isPending} onClick={() => reject.mutate({ id: p.id, reason }, { onSuccess: () => { setRejecting(null); setReason(""); toast({ title: "Odrzucono" }); }, onError: err })}>Odrzuć</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button size="sm" disabled={add.isPending} onClick={() => add.mutate(p.id, { onSuccess: () => toast({ title: "Dodano jako kopię do weryfikacji" }), onError: err })}>Dodaj do wspólnej</Button>
+                <Button size="sm" variant="outline" onClick={() => setRejecting(p.id)}>Odrzuć</Button>
+              </div>
+            ))}
+          </li>
+        ))}
+        {(data?.items ?? []).length === 0 && <li className="p-3 text-sm text-muted-foreground">Brak propozycji.</li>}
+      </ul>
+      <p className="text-xs text-muted-foreground">Kopia trafia do katalogu jako nieaktywna, „do weryfikacji” — nie jest używana w planach, dopóki nie przejdzie przeglądu katalogu. Oryginał zostaje u trenera.</p>
+    </div>
+  );
+}
+
 /** „Wkrótce”: pozycje karty z głosowaniem „Chcę to” — wyniki z podziałem trener/Solo/podopieczny, dodawanie, ukrywanie, „Gotowe”. */
 function Roadmap() {
   const { toast } = useToast();
@@ -390,6 +438,7 @@ export default function Admin() {
       {activeTab === "mails" && <Mails />}
       {activeTab === "bulls" && <Bulls />}
       {activeTab === "roadmap" && <Roadmap />}
+      {activeTab === "proposals" && <Proposals />}
       {activeTab === "log" && <Log />}
     </div>
   );

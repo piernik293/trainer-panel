@@ -25,6 +25,7 @@
  *   { hasProfile, hasLocationData, sessionType, exercises: DayRecommendationExercise[] }
  */
 
+import { generatorOwnerFilter } from "../services/exerciseOwnership";
 import { variationSeed } from "../services/variation";
 import { methodsV2Enabled, chooseMethods, orderForMethods, type MethodExercise } from "../services/methods";
 import { usedEquipment } from "../services/dayNaming";
@@ -312,7 +313,9 @@ export async function generateDayHandler(req: GenerateDayReq, res: Response): Pr
     const solo = soloEnabled() && soloCtx !== undefined
       ? { effectiveLevel: survey.experienceLevel, jumpExperience: survey.jumpExperience, painExcludedIds: await soloPainExcludedIds(clientId) }
       : null;
+    const ownerAllows = await generatorOwnerFilter(req.trainer?.id);
     const completeExercises = exercises.filter((ex) => {
+      if (!ownerAllows(ex)) return false; // cudze/własne ćwiczenia trenera: tylko za jego zgodą (services/exerciseOwnership.ts)
       if (!isGeneratorSafe(ex, survey.experienceLevel)) return false;
       if (solo && !soloAllowsExercise(ex, solo)) return false;
       if (calis && (!isCalisthenicsExercise(ex) || !calisthenicsLevelAllows(ex, survey.experienceLevel))) return false;
