@@ -15,7 +15,7 @@ import { useSubscriptionSummary } from "@/lib/use-subscription-summary";
 import { LIMITS_NOTICE_KEY, LIMITS_NOTICE_TEXT, showLimitsNotice, trialNotice } from "@/lib/limitsNotice";
 import { AttentionList } from "@/components/dashboard/AttentionList";
 import { RoadmapPanelCard } from "@/components/dashboard/RoadmapPanelCard";
-import { TutorialCard } from "@/components/onboarding/TutorialCard";
+import { TutorialCard, HideWhenTutorial } from "@/components/onboarding/TutorialCard";
 import { RecentEventsCard, TodayCard } from "@/components/dashboard/SideColumn";
 import { ExcelCard, FirstStepsCard, WillAppearCard } from "@/components/dashboard/FirstDay";
 
@@ -164,7 +164,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
             <TutorialCard />
-            {!allDone && <FirstStepsCard onboarding={data.onboarding} />}
+            {!allDone && <HideWhenTutorial><FirstStepsCard onboarding={data.onboarding} /></HideWhenTutorial>}
             <ExcelCard onAdd={() => navigate("/clients/new")} />
           </div>
           <WillAppearCard />
@@ -191,7 +191,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <TutorialCard />
-          {data.onboarding.completed < data.onboarding.total && <FirstStepsCard onboarding={data.onboarding} />}
+          {data.onboarding.completed < data.onboarding.total && <HideWhenTutorial><FirstStepsCard onboarding={data.onboarding} /></HideWhenTutorial>}
           <AttentionList items={data.attention.items} allItems={data.attention.allItems} total={data.attention.total} today={data.today} silenceDays={data.attention.silenceDays} />
           {/* TODO(docs/ROADMAP.md pkt 4): powody wymagające zapisanych treningów
               (zgłoszony ból, przerwa w treningach, spadek realizacji, rekordy). */}

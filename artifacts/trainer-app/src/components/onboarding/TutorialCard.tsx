@@ -104,3 +104,9 @@ export function useShowTutorialItem() {
   const act = useOnboardingActions();
   return status.data?.enabled === true ? { show: () => act.show.mutate() } : null;
 }
+
+/** Stara karta „Pierwsze kroki” znika, gdy działa nowy samouczek (flaga ONBOARDING_ENABLED) — nie pokazujemy dwóch list startowych naraz. */
+export function HideWhenTutorial({ children }: { children: React.ReactNode }) {
+  const status = useOnboardingStatus();
+  return status.data?.enabled === true ? null : <>{children}</>;
+}
