@@ -38,7 +38,8 @@ const SAFE_POOL_IDS = [
 ] as const;
 
 /** IDs that must NOT be promoted (suitable_for_no_activity must not be true) */
-const DONT_PROMOTE_IDS = [89, 94, 96, 97, 98, 174, 197, 218, 219, 220, 256] as const;
+// 89 (Przysiad do skrzyni) removed: promoted by the owner's decision of 06.11.2026 (52–54, A)
+const DONT_PROMOTE_IDS = [94, 96, 97, 98, 174, 197, 218, 219, 220, 256] as const;
 
 const ALL_IDS = [...SAFE_POOL_IDS, ...DONT_PROMOTE_IDS] as const;
 
@@ -222,9 +223,9 @@ describe("7. id=185 requires Hantle AND Ławka", () => {
 
 describe("8. No-activity sort: suitableForNoActivity exercises come first", () => {
   it("sortDeterministic places suitableForNoActivity=true before null/false in each band", () => {
-    // Build a small mixed list: one safe (id=90) and one non-safe (id=89)
+    // Build a small mixed list: one safe (id=90) and one non-safe (id=94)
     const safe = rows.get(90)!;
-    const notSafe = rows.get(89)!;
+    const notSafe = rows.get(94)!;
     expect(safe.suitableForNoActivity).toBe(true);
     expect(notSafe.suitableForNoActivity).not.toBe(true);
 
@@ -246,7 +247,7 @@ describe("8. No-activity sort: suitableForNoActivity exercises come first", () =
     // If safe exercise is in results at all, the sort is working.
     // Both are in the pool; the safe one should be preferred.
     expect(ids.includes(90) || ids.length === 0,
-      "engine with mixed safe/unsafe pool should not omit id=90 in favour of id=89").toBe(true);
+      "engine with mixed safe/unsafe pool should not omit id=90 in favour of id=94").toBe(true);
   });
 });
 

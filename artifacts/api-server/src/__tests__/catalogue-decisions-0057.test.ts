@@ -23,7 +23,7 @@ const NEW: Array<[string, string, "P" | "Ś" | "Z"]> = [
   ["Zwis na drążku", "Początkujący", "P"], ["Negatywy podciągnięcia", "Średniozaawansowany", "Ś"], ["Podciąganie łucznik (archer)", "Zaawansowany", "Z"],
   ["Negatywy dipów", "Średniozaawansowany", "Ś"], ["Dipy z gumą", "Średniozaawansowany", "Ś"], ["Dipy z obciążeniem", "Zaawansowany", "Z"],
   ["Pompki łucznik (archer)", "Zaawansowany", "Z"], ["Wiosłowanie australijskie — nogi proste", "Średniozaawansowany", "Ś"],
-  ["Wiosłowanie australijskie — nogi wyżej lub na kółkach", "Zaawansowany", "Z"], ["Toes to bar", "Zaawansowany", "Z"], ["Pistol z podparciem", "Zaawansowany", "Z"],
+  ["Wiosłowanie australijskie — nogi wyżej lub na kółkach", "Zaawansowany", "Z"], ["Toes to bar", "Zaawansowany", "Z"], ["Pistol z podparciem", "Średniozaawansowany", "Ś"], // 06.11.2026 (decyzja D, migracja 0082): wersja ułatwiona, szczebel Ś (było Z)
 ];
 
 afterAll(async () => { await pool.end(); });
