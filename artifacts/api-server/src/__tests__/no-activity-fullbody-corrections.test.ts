@@ -73,9 +73,9 @@ describe("DB values after correction", () => {
     const r = allRows.find((x) => x.id === 95)!;
     expect(r.suitableForNoActivity).toBe(true);
   });
-  it("id=89 has suitableForNoActivity NOT promoted (null or false)", () => {
+  it("id=89 (Przysiad do skrzyni) IS suitable for no-activity — owner decision 06.11.2026 (52–54, A): the basic exercise for beginners; it was held back earlier", () => {
     const r = allRows.find((x) => x.id === 89)!;
-    expect(r.suitableForNoActivity).not.toBe(true);
+    expect(r.suitableForNoActivity).toBe(true);
   });
   it("id=96 has suitableForNoActivity NOT promoted (null or false)", () => {
     const r = allRows.find((x) => x.id === 96)!;
