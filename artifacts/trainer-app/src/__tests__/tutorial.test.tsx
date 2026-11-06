@@ -18,7 +18,7 @@ vi.mock("@workspace/api-client-react", async (orig) => ({
   },
 }));
 vi.mock("wouter", () => ({ Link: ({ children, href }: { children: unknown; href: string }) => <a href={href}>{children as never}</a> }));
-import { TutorialCard, Spotlight } from "@/components/onboarding/TutorialCard";
+import { TutorialCard, Spotlight, HideWhenTutorial } from "@/components/onboarding/TutorialCard";
 
 const wrap = () => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><TutorialCard /></QueryClientProvider>);
 afterEach(() => { cleanup(); calls.length = 0; enabled = true; view = base; });
@@ -51,5 +51,10 @@ describe("samouczek trenera", () => {
     const target = document.createElement("div"); target.setAttribute("data-tour", "plan"); document.body.appendChild(target);
     const { unmount } = render(<Spotlight step={3} total={4} text="x" targetId="plan" onNext={() => {}} onSkip={() => {}} />);
     expect(target.style.outline).toContain("3px"); unmount(); expect(target.style.outline).toBe(""); target.remove();
+  });
+  it("stara karta „Pierwsze kroki” znika przy włączonym samouczku, a bez flagi zostaje", async () => {
+    const wrapOld = () => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><HideWhenTutorial><p>stara karta</p></HideWhenTutorial></QueryClientProvider>);
+    enabled = true; const a = wrapOld(); await waitFor(() => expect(calls.some((c) => c.url === "/api/onboarding/status")).toBe(true)); await waitFor(() => expect(screen.queryByText("stara karta")).toBeNull()); a.unmount();
+    calls.length = 0; enabled = false; wrapOld(); await screen.findByText("stara karta");
   });
 });
