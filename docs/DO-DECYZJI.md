@@ -312,3 +312,8 @@ Gałęzie z `main`: `feature/generator-priorytety` (0037), `feature/konta-link-k
 - **`TRAINER_LIBRARY_ENABLED` (Moja biblioteka + propozycje do wspólnej)** — zbudowane i przetestowane, **wyłączone**. Włączyć? Uwaga: **poprawka bezpieczeństwa wchodzi od razu niezależnie od flagi** — generator nie używa już cudzych ani własnych ćwiczeń trenera (wcześniej brak filtra właściciela; docs/BIBLIOTEKA-TRENERA.md).
 - **`ONBOARDING_ENABLED` (samouczek trenera + klient przykładowy + podpowiedzi „Na początek”)** — zbudowane i przetestowane, **wyłączone**. Włączyć? Czy wyłączyć starą kartę „Pierwsze kroki” na Pulpicie, gdy samouczek działa? (docs/SAMOUCZEK.md)
 - **Animacje ćwiczeń (8 szt. „do sprawdzenia”)** — system gotowy, **flaga `EXERCISE_ANIMATIONS_ENABLED` wyłączona**. Oceń w panelu administratora → „Animacje” (działa bez włączania flagi) — albo zobacz `docs/screens/animacje/arkusz-klatek.png`. Zatwierdzone pokażą się dopiero po włączeniu flagi. Wykrok w tył i wspięcia jednostronne czekają na model z dwiema nogami. (docs/ANIMACJE.md)
+
+## Decyzje właściciela z 06.11.2026
+- **Włączone (ZGODA):** `ROADMAP_ENABLED`, `TRAINER_LIBRARY_ENABLED`, `ONBOARDING_ENABLED`, `BODY_LOG_ENABLED`, `BETA_NO_LIMITS` (już było). Stara karta „Pierwsze kroki” znika przy włączonym samouczku. Kopia `.env` sprzed zmian: `~/backups/env-przed-flagami-*.bak`.
+- **Zostają wyłączone:** `TERMS_ENABLED`, `EXERCISE_ANIMATIONS_ENABLED`.
+- Gałęzie `feature/progresja` i `docs/przeglad-katalogu` — opis i rekomendacja przekazane właścicielowi; **nie scalone** do decyzji.
